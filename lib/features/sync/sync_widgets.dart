@@ -1,0 +1,299 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/sync/sync_manager.dart';
+
+/// شريط عرض حالة المزامنة
+class SyncStatusBar extends ConsumerWidget {
+  const SyncStatusBar({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncStatusAsync = ref.watch(syncStatusProvider);
+
+    return syncStatusAsync.when(
+      data: (status) {
+        if (!status.isSyncing && status.lastError == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: status.lastError != null
+              ? Colors.red.shade100
+              : Colors.blue.shade100,
+          child: Row(
+            children: [
+              if (status.isSyncing)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (status.lastError != null)
+                const Icon(Icons.error, color: Colors.red, size: 20),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (status.isSyncing)
+                      Text(
+                        'جاري المزامنة... ${status.currentEntity ?? ""}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      )
+                    else if (status.lastError != null)
+                      const Text(
+                        'خطأ في المزامنة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+
+                    if (status.isSyncing)
+                      Text(
+                        '${status.completedItems} من ${status.totalItems}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      )
+                    else if (status.lastError != null)
+                      Text(
+                        status.lastError!,
+                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+
+              if (status.isSyncing) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 60,
+                  child: LinearProgressIndicator(value: status.progress),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// زر المزامنة اليدوية
+class SyncButton extends ConsumerWidget {
+  const SyncButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncStatusAsync = ref.watch(syncStatusProvider);
+    final syncManager = ref.watch(syncManagerProvider);
+
+    return syncStatusAsync.when(
+      data: (status) {
+        return IconButton(
+          icon: status.isSyncing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Badge(
+                  label: status.totalItems > 0
+                      ? Text('${status.totalItems}')
+                      : null,
+                  isLabelVisible: status.totalItems > 0,
+                  child: const Icon(Icons.sync),
+                ),
+          onPressed: status.isSyncing ? null : () => syncManager.syncAll(),
+          tooltip: status.isSyncing ? 'جاري المزامنة...' : 'مزامنة',
+        );
+      },
+      loading: () => const IconButton(icon: Icon(Icons.sync), onPressed: null),
+      error: (_, __) => IconButton(
+        icon: const Icon(Icons.sync_problem),
+        onPressed: () => syncManager.syncAll(),
+        tooltip: 'إعادة المحاولة',
+      ),
+    );
+  }
+}
+
+/// شاشة تفاصيل المزامنة
+class SyncDetailsPage extends ConsumerWidget {
+  const SyncDetailsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final syncStatusAsync = ref.watch(syncStatusProvider);
+    final syncManager = ref.watch(syncManagerProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('حالة المزامنة'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => syncManager.syncAll(),
+            tooltip: 'مزامنة الآن',
+          ),
+        ],
+      ),
+      body: syncStatusAsync.when(
+        data: (status) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // حالة المزامنة
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            status.isSyncing
+                                ? Icons.sync
+                                : status.lastError != null
+                                ? Icons.error
+                                : Icons.check_circle,
+                            color: status.isSyncing
+                                ? Colors.blue
+                                : status.lastError != null
+                                ? Colors.red
+                                : Colors.green,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            status.isSyncing
+                                ? 'جاري المزامنة'
+                                : status.lastError != null
+                                ? 'خطأ'
+                                : 'متزامن',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (status.isSyncing) ...[
+                        const SizedBox(height: 16),
+                        LinearProgressIndicator(value: status.progress),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${status.completedItems} من ${status.totalItems}',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+
+                      if (status.lastError != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  status.lastError!,
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // معلومات إضافية
+              Card(
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.info_outline),
+                      title: const Text('المزامنة التلقائية'),
+                      subtitle: const Text('كل 5 دقائق عند توفر الإنترنت'),
+                      trailing: Switch(
+                        value: true, // TODO: Make this configurable
+                        onChanged: (value) {
+                          // TODO: Toggle auto sync
+                        },
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.cloud_upload),
+                      title: const Text('عناصر في الانتظار'),
+                      trailing: Text(
+                        '${status.totalItems}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // زر المزامنة
+              if (!status.isSyncing)
+                ElevatedButton.icon(
+                  onPressed: () => syncManager.syncAll(),
+                  icon: const Icon(Icons.sync),
+                  label: const Text('مزامنة الآن'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.all(16),
+                  ),
+                ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('خطأ: $error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => syncManager.syncAll(),
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

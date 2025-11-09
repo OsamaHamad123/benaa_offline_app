@@ -1,0 +1,572 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/providers/providers.dart';
+import '../../data/db/drift_database.dart';
+
+class ViewBeneficiaryPage extends ConsumerWidget {
+  final String beneficiaryId;
+
+  const ViewBeneficiaryPage({super.key, required this.beneficiaryId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final database = ref.watch(databaseProvider);
+
+    return FutureBuilder<Beneficiary?>(
+      future: database.getBeneficiaryById(beneficiaryId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final beneficiary = snapshot.data;
+        if (beneficiary == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('خطأ')),
+            body: const Center(child: Text('لم يتم العثور على المستفيد')),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('تفاصيل المستفيد'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                  context.push('/beneficiaries/add?id=$beneficiaryId');
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => _showDeleteDialog(context, database),
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Header Card
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.1),
+                        child: Icon(
+                          beneficiary.gender == 'male'
+                              ? Icons.person
+                              : Icons.person_outline,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        beneficiary.fullName,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      _SyncStatusBadge(syncState: beneficiary.syncState),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Basic Info Section
+              _buildSectionTitle(context, 'المعلومات الأساسية'),
+              const SizedBox(height: 8),
+              Card(
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      icon: Icons.badge,
+                      label: 'الرقم الوطني',
+                      value: beneficiary.nationalId,
+                    ),
+                    const Divider(height: 1),
+                    _InfoRow(
+                      icon: Icons.folder,
+                      label: 'رقم الملف',
+                      value: beneficiary.fileNo,
+                    ),
+                    const Divider(height: 1),
+                    _InfoRow(
+                      icon: Icons.location_on,
+                      label: 'المحافظة',
+                      value: beneficiary.governorate,
+                    ),
+                    const Divider(height: 1),
+                    _InfoRow(
+                      icon: Icons.wc,
+                      label: 'الجنس',
+                      value: beneficiary.gender == 'male' ? 'ذكر' : 'أنثى',
+                    ),
+                    const Divider(height: 1),
+                    _InfoRow(
+                      icon: Icons.category,
+                      label: 'الفئة',
+                      value: _getCategoryLabel(beneficiary.category),
+                    ),
+                    if (beneficiary.birthDate != null) ...[
+                      const Divider(height: 1),
+                      _InfoRow(
+                        icon: Icons.cake,
+                        label: 'تاريخ الميلاد',
+                        value:
+                            '${beneficiary.birthDate!.year}-${beneficiary.birthDate!.month.toString().padLeft(2, '0')}-${beneficiary.birthDate!.day.toString().padLeft(2, '0')}',
+                      ),
+                      const Divider(height: 1),
+                      _InfoRow(
+                        icon: Icons.person,
+                        label: 'العمر',
+                        value: '${beneficiary.age} سنة',
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Contact Info Section
+              if ((beneficiary.phoneNumber != null &&
+                      beneficiary.phoneNumber!.isNotEmpty) ||
+                  (beneficiary.district != null &&
+                      beneficiary.district!.isNotEmpty) ||
+                  (beneficiary.address != null &&
+                      beneficiary.address!.isNotEmpty)) ...[
+                _buildSectionTitle(context, 'معلومات التواصل'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Column(
+                    children: [
+                      if (beneficiary.phoneNumber != null &&
+                          beneficiary.phoneNumber!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.phone,
+                          label: 'رقم الهاتف',
+                          value: beneficiary.phoneNumber!,
+                        ),
+                        if ((beneficiary.district != null &&
+                                beneficiary.district!.isNotEmpty) ||
+                            (beneficiary.address != null &&
+                                beneficiary.address!.isNotEmpty))
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.district != null &&
+                          beneficiary.district!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.location_city,
+                          label: 'القضاء',
+                          value: beneficiary.district!,
+                        ),
+                        if (beneficiary.address != null &&
+                            beneficiary.address!.isNotEmpty)
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.address != null &&
+                          beneficiary.address!.isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.home,
+                          label: 'العنوان',
+                          value: beneficiary.address!,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Family Info Section
+              if ((beneficiary.fatherName != null &&
+                      beneficiary.fatherName!.isNotEmpty) ||
+                  (beneficiary.motherName != null &&
+                      beneficiary.motherName!.isNotEmpty) ||
+                  beneficiary.familySize != null ||
+                  beneficiary.maritalStatus != null) ...[
+                _buildSectionTitle(context, 'معلومات العائلة'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Column(
+                    children: [
+                      if (beneficiary.fatherName != null &&
+                          beneficiary.fatherName!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.person,
+                          label: 'اسم الأب',
+                          value: beneficiary.fatherName!,
+                        ),
+                        if ((beneficiary.motherName != null &&
+                                beneficiary.motherName!.isNotEmpty) ||
+                            beneficiary.familySize != null ||
+                            beneficiary.maritalStatus != null)
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.motherName != null &&
+                          beneficiary.motherName!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.person,
+                          label: 'اسم الأم',
+                          value: beneficiary.motherName!,
+                        ),
+                        if (beneficiary.familySize != null ||
+                            beneficiary.maritalStatus != null)
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.familySize != null) ...[
+                        _InfoRow(
+                          icon: Icons.family_restroom,
+                          label: 'عدد أفراد الأسرة',
+                          value: '${beneficiary.familySize} أفراد',
+                        ),
+                        if (beneficiary.maritalStatus != null)
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.maritalStatus != null)
+                        _InfoRow(
+                          icon: Icons.favorite,
+                          label: 'الحالة الاجتماعية',
+                          value: _getMaritalStatusLabel(
+                            beneficiary.maritalStatus,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Education & Health Section
+              if (beneficiary.educationLevel != null ||
+                  beneficiary.healthStatus != null ||
+                  (beneficiary.hasDisability != null &&
+                      beneficiary.hasDisability!)) ...[
+                _buildSectionTitle(context, 'التعليم والصحة'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Column(
+                    children: [
+                      if (beneficiary.educationLevel != null) ...[
+                        _InfoRow(
+                          icon: Icons.school,
+                          label: 'المستوى التعليمي',
+                          value: _getEducationLabel(
+                            beneficiary.educationLevel!,
+                          ),
+                        ),
+                        if (beneficiary.healthStatus != null ||
+                            (beneficiary.hasDisability != null &&
+                                beneficiary.hasDisability!))
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.healthStatus != null) ...[
+                        _InfoRow(
+                          icon: Icons.health_and_safety,
+                          label: 'الحالة الصحية',
+                          value: _getHealthStatusLabel(
+                            beneficiary.healthStatus!,
+                          ),
+                        ),
+                        if (beneficiary.hasDisability != null &&
+                            beneficiary.hasDisability!)
+                          const Divider(height: 1),
+                      ],
+                      if (beneficiary.hasDisability != null &&
+                          beneficiary.hasDisability!)
+                        _InfoRow(
+                          icon: Icons.accessible,
+                          label: 'الإعاقة',
+                          value: 'يوجد إعاقة',
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Notes Section
+              if (beneficiary.notes.isNotEmpty) ...[
+                _buildSectionTitle(context, 'الملاحظات'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(beneficiary.notes),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Metadata Section
+              _buildSectionTitle(context, 'بيانات النظام'),
+              const SizedBox(height: 8),
+              Card(
+                child: Column(
+                  children: [
+                    _InfoRow(
+                      icon: Icons.access_time,
+                      label: 'تاريخ الإنشاء',
+                      value: _formatDateTime(beneficiary.createdAt),
+                    ),
+                    const Divider(height: 1),
+                    _InfoRow(
+                      icon: Icons.update,
+                      label: 'آخر تحديث',
+                      value: _formatDateTime(beneficiary.updatedAt),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        context.push('/attachments/$beneficiaryId');
+                      },
+                      icon: const Icon(Icons.attachment),
+                      label: const Text('المرفقات'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // TODO: Add visit
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('إضافة زيارة'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  String _getCategoryLabel(String category) {
+    switch (category) {
+      case 'orphan':
+        return 'يتيم';
+      case 'poor':
+        return 'فقير';
+      case 'widow':
+        return 'أرملة';
+      case 'disabled':
+        return 'معاق';
+      default:
+        return category;
+    }
+  }
+
+  String _getMaritalStatusLabel(String status) {
+    switch (status) {
+      case 'single':
+        return 'أعزب';
+      case 'married':
+        return 'متزوج';
+      case 'divorced':
+        return 'مطلق';
+      case 'widowed':
+        return 'أرمل';
+      default:
+        return status;
+    }
+  }
+
+  String _getEducationLabel(String level) {
+    switch (level) {
+      case 'none':
+        return 'بدون تعليم';
+      case 'primary':
+        return 'ابتدائي';
+      case 'secondary':
+        return 'متوسط/ثانوي';
+      case 'university':
+        return 'جامعي';
+      default:
+        return level;
+    }
+  }
+
+  String _getHealthStatusLabel(String status) {
+    switch (status) {
+      case 'good':
+        return 'جيدة';
+      case 'fair':
+        return 'متوسطة';
+      case 'poor':
+        return 'ضعيفة';
+      case 'chronic':
+        return 'مرض مزمن';
+      default:
+        return status;
+    }
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _showDeleteDialog(
+    BuildContext context,
+    AppDatabase database,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: const Text('هل أنت متأكد من حذف هذا المستفيد؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await database.deleteBeneficiary(beneficiaryId);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم حذف المستفيد بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.pop();
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ في الحذف: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SyncStatusBadge extends StatelessWidget {
+  final String syncState;
+
+  const _SyncStatusBadge({required this.syncState});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    IconData icon;
+    String label;
+
+    switch (syncState) {
+      case 'synced':
+        color = Colors.green;
+        icon = Icons.check_circle;
+        label = 'تمت المزامنة';
+        break;
+      case 'failed':
+        color = Colors.red;
+        icon = Icons.error;
+        label = 'فشل المزامنة';
+        break;
+      default:
+        color = Colors.orange;
+        icon = Icons.sync;
+        label = 'بانتظار المزامنة';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

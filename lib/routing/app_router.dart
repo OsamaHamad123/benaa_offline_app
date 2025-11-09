@@ -1,0 +1,70 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../features/auth/login_page.dart';
+import '../features/dashboard/dashboard_page.dart';
+import '../features/beneficiaries/beneficiaries_list_page.dart';
+import '../features/beneficiaries/add_beneficiary_page.dart';
+import '../features/beneficiaries/view_beneficiary_page.dart';
+import '../features/search/civil_search_page.dart';
+import '../features/sync/sync_page.dart';
+import '../features/reports/reports_page.dart';
+import '../features/attachments/attachments_page.dart';
+import '../core/storage/secure_store.dart';
+
+final appRouterProvider = Provider<GoRouter>((ref) {
+  return GoRouter(
+    initialLocation: '/login',
+    redirect: (context, state) async {
+      final isAuth = await SecureStore.isAuthenticated();
+      final isGoingToLogin = state.matchedLocation == '/login';
+
+      if (!isAuth && !isGoingToLogin) {
+        return '/login';
+      }
+
+      if (isAuth && isGoingToLogin) {
+        return '/dashboard';
+      }
+
+      return null;
+    },
+    routes: [
+      GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const DashboardPage(),
+      ),
+      GoRoute(
+        path: '/beneficiaries',
+        builder: (context, state) => const BeneficiariesListPage(),
+      ),
+      GoRoute(
+        path: '/beneficiaries/add',
+        builder: (context, state) => const AddBeneficiaryPage(),
+      ),
+      GoRoute(
+        path: '/beneficiaries/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return ViewBeneficiaryPage(beneficiaryId: id);
+        },
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (context, state) => const CivilSearchPage(),
+      ),
+      GoRoute(
+        path: '/attachments/:beneficiaryId',
+        builder: (context, state) {
+          final beneficiaryId = state.pathParameters['beneficiaryId']!;
+          return AttachmentsPage(beneficiaryId: beneficiaryId);
+        },
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportsPage(),
+      ),
+      GoRoute(path: '/sync', builder: (context, state) => const SyncPage()),
+    ],
+  );
+});

@@ -1,0 +1,6 @@
+﻿build/
+.dart_tool/
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+macos/Flutter/ephemeral/
+ios/Flutter/ephemeral/
