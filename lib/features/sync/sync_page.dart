@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
-import 'sync_settings_page.dart';
-import 'sync_test_guide_page.dart';
 
 class SyncPage extends ConsumerStatefulWidget {
   const SyncPage({super.key});
@@ -79,32 +77,18 @@ class _SyncPageState extends ConsumerState<SyncPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المزامنة'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SyncTestGuidePage(),
-                ),
-              );
-            },
-            tooltip: 'دليل التجربة',
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SyncSettingsPage(),
-                ),
-              );
-            },
-            tooltip: 'إعدادات المزامنة',
-          ),
-        ],
+        // actions: [ // تم تعطيل الإعدادات والدليل مؤقتاً
+        //   IconButton(
+        //     icon: const Icon(Icons.help_outline),
+        //     onPressed: () {},
+        //     tooltip: 'دليل التجربة',
+        //   ),
+        //   IconButton(
+        //     icon: const Icon(Icons.settings),
+        //     onPressed: () {},
+        //     tooltip: 'إعدادات المزامنة',
+        //   ),
+        // ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

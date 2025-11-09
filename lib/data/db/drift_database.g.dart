@@ -4788,48 +4788,241 @@ class $CivilRegistryTable extends CivilRegistry
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $CivilRegistryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _nationalIdMeta = const VerificationMeta(
     'nationalId',
   );
   @override
   late final GeneratedColumn<String> nationalId = GeneratedColumn<String>(
-    'national_id',
+    'CI_ID_NUM',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _fileNoMeta = const VerificationMeta('fileNo');
-  @override
-  late final GeneratedColumn<String> fileNo = GeneratedColumn<String>(
-    'file_no',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _fullNameNormMeta = const VerificationMeta(
-    'fullNameNorm',
+  static const VerificationMeta _firstNameMeta = const VerificationMeta(
+    'firstName',
   );
   @override
-  late final GeneratedColumn<String> fullNameNorm = GeneratedColumn<String>(
-    'full_name_norm',
+  late final GeneratedColumn<String> firstName = GeneratedColumn<String>(
+    'CI_FIRST_ARB',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _fullNameRawMeta = const VerificationMeta(
-    'fullNameRaw',
+  static const VerificationMeta _fatherNameMeta = const VerificationMeta(
+    'fatherName',
   );
   @override
-  late final GeneratedColumn<String> fullNameRaw = GeneratedColumn<String>(
-    'full_name_raw',
+  late final GeneratedColumn<String> fatherName = GeneratedColumn<String>(
+    'CI_FATHER_ARB',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _grandFatherNameMeta = const VerificationMeta(
+    'grandFatherName',
+  );
+  @override
+  late final GeneratedColumn<String> grandFatherName = GeneratedColumn<String>(
+    'CI_GRAND_FATHER_ARB',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _familyNameMeta = const VerificationMeta(
+    'familyName',
+  );
+  @override
+  late final GeneratedColumn<String> familyName = GeneratedColumn<String>(
+    'CI_FAMILY_ARB',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _birthCertificateIdMeta =
+      const VerificationMeta('birthCertificateId');
+  @override
+  late final GeneratedColumn<int> birthCertificateId = GeneratedColumn<int>(
+    'CI_BIRTH_TB_CD',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _birthCodeIdMeta = const VerificationMeta(
+    'birthCodeId',
+  );
+  @override
+  late final GeneratedColumn<int> birthCodeId = GeneratedColumn<int>(
+    'CI_BIRTH_CD',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _birthDateMeta = const VerificationMeta(
+    'birthDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> birthDate = GeneratedColumn<DateTime>(
+    'CI_BIRTH_DT',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sexCodeMeta = const VerificationMeta(
+    'sexCode',
+  );
+  @override
+  late final GeneratedColumn<int> sexCode = GeneratedColumn<int>(
+    'CI_SEX_CD',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _personalCodeIdMeta = const VerificationMeta(
+    'personalCodeId',
+  );
+  @override
+  late final GeneratedColumn<int> personalCodeId = GeneratedColumn<int>(
+    'CI_PERSONAL_CD',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deadDateMeta = const VerificationMeta(
+    'deadDate',
+  );
+  @override
+  late final GeneratedColumn<int> deadDate = GeneratedColumn<int>(
+    'CI_DEAD_DT',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _motherNameMeta = const VerificationMeta(
+    'motherName',
+  );
+  @override
+  late final GeneratedColumn<String> motherName = GeneratedColumn<String>(
+    'MOTHER_NAME1',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cityIdMeta = const VerificationMeta('cityId');
+  @override
+  late final GeneratedColumn<int> cityId = GeneratedColumn<int>(
+    'CITY',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cityNameMeta = const VerificationMeta(
+    'cityName',
+  );
+  @override
+  late final GeneratedColumn<String> cityName = GeneratedColumn<String>(
+    'city_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _streetMeta = const VerificationMeta('street');
+  @override
+  late final GeneratedColumn<String> street = GeneratedColumn<String>(
+    'STREET',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _houseNoMeta = const VerificationMeta(
+    'houseNo',
+  );
+  @override
+  late final GeneratedColumn<String> houseNo = GeneratedColumn<String>(
+    'HOUSE_NO',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _relationIdMeta = const VerificationMeta(
+    'relationId',
+  );
+  @override
+  late final GeneratedColumn<int> relationId = GeneratedColumn<int>(
+    'CF_ID_NUM',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _relativeCodeIdMeta = const VerificationMeta(
+    'relativeCodeId',
+  );
+  @override
+  late final GeneratedColumn<int> relativeCodeId = GeneratedColumn<int>(
+    'CF_RELATIVE_CD',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _relativeIdMeta = const VerificationMeta(
+    'relativeId',
+  );
+  @override
+  late final GeneratedColumn<int> relativeId = GeneratedColumn<int>(
+    'CF_ID_RELATIVE',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fullNameMeta = const VerificationMeta(
+    'fullName',
+  );
+  @override
+  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
+    'full_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fullNameNormalizedMeta =
+      const VerificationMeta('fullNameNormalized');
+  @override
+  late final GeneratedColumn<String> fullNameNormalized =
+      GeneratedColumn<String>(
+        'full_name_normalized',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _governorateMeta = const VerificationMeta(
     'governorate',
   );
@@ -4837,9 +5030,9 @@ class $CivilRegistryTable extends CivilRegistry
   late final GeneratedColumn<String> governorate = GeneratedColumn<String>(
     'governorate',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _districtMeta = const VerificationMeta(
     'district',
@@ -4852,62 +5045,68 @@ class $CivilRegistryTable extends CivilRegistry
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _birthDateMeta = const VerificationMeta(
-    'birthDate',
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
   );
   @override
-  late final GeneratedColumn<String> birthDate = GeneratedColumn<String>(
-    'birth_date',
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
     aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
   );
-  static const VerificationMeta _fatherNameMeta = const VerificationMeta(
-    'fatherName',
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
   );
   @override
-  late final GeneratedColumn<String> fatherName = GeneratedColumn<String>(
-    'father_name',
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
     aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
   );
-  static const VerificationMeta _motherNameMeta = const VerificationMeta(
-    'motherName',
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
   );
   @override
-  late final GeneratedColumn<String> motherName = GeneratedColumn<String>(
-    'mother_name',
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+    'last_synced_at',
     aliasedName,
     true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _addressMeta = const VerificationMeta(
-    'address',
-  );
-  @override
-  late final GeneratedColumn<String> address = GeneratedColumn<String>(
-    'address',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
     nationalId,
-    fileNo,
-    fullNameNorm,
-    fullNameRaw,
+    firstName,
+    fatherName,
+    grandFatherName,
+    familyName,
+    birthCertificateId,
+    birthCodeId,
+    birthDate,
+    sexCode,
+    personalCodeId,
+    deadDate,
+    motherName,
+    cityId,
+    cityName,
+    street,
+    houseNo,
+    relationId,
+    relativeCodeId,
+    relativeId,
+    fullName,
+    fullNameNormalized,
     governorate,
     district,
-    birthDate,
-    fatherName,
-    motherName,
-    address,
+    createdAt,
+    updatedAt,
+    lastSyncedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4921,43 +5120,174 @@ class $CivilRegistryTable extends CivilRegistry
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('national_id')) {
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('CI_ID_NUM')) {
       context.handle(
         _nationalIdMeta,
-        nationalId.isAcceptableOrUnknown(data['national_id']!, _nationalIdMeta),
+        nationalId.isAcceptableOrUnknown(data['CI_ID_NUM']!, _nationalIdMeta),
       );
     } else if (isInserting) {
       context.missing(_nationalIdMeta);
     }
-    if (data.containsKey('file_no')) {
+    if (data.containsKey('CI_FIRST_ARB')) {
       context.handle(
-        _fileNoMeta,
-        fileNo.isAcceptableOrUnknown(data['file_no']!, _fileNoMeta),
+        _firstNameMeta,
+        firstName.isAcceptableOrUnknown(data['CI_FIRST_ARB']!, _firstNameMeta),
       );
     } else if (isInserting) {
-      context.missing(_fileNoMeta);
+      context.missing(_firstNameMeta);
     }
-    if (data.containsKey('full_name_norm')) {
+    if (data.containsKey('CI_FATHER_ARB')) {
       context.handle(
-        _fullNameNormMeta,
-        fullNameNorm.isAcceptableOrUnknown(
-          data['full_name_norm']!,
-          _fullNameNormMeta,
+        _fatherNameMeta,
+        fatherName.isAcceptableOrUnknown(
+          data['CI_FATHER_ARB']!,
+          _fatherNameMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_fullNameNormMeta);
+      context.missing(_fatherNameMeta);
     }
-    if (data.containsKey('full_name_raw')) {
+    if (data.containsKey('CI_GRAND_FATHER_ARB')) {
       context.handle(
-        _fullNameRawMeta,
-        fullNameRaw.isAcceptableOrUnknown(
-          data['full_name_raw']!,
-          _fullNameRawMeta,
+        _grandFatherNameMeta,
+        grandFatherName.isAcceptableOrUnknown(
+          data['CI_GRAND_FATHER_ARB']!,
+          _grandFatherNameMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_fullNameRawMeta);
+      context.missing(_grandFatherNameMeta);
+    }
+    if (data.containsKey('CI_FAMILY_ARB')) {
+      context.handle(
+        _familyNameMeta,
+        familyName.isAcceptableOrUnknown(
+          data['CI_FAMILY_ARB']!,
+          _familyNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_familyNameMeta);
+    }
+    if (data.containsKey('CI_BIRTH_TB_CD')) {
+      context.handle(
+        _birthCertificateIdMeta,
+        birthCertificateId.isAcceptableOrUnknown(
+          data['CI_BIRTH_TB_CD']!,
+          _birthCertificateIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('CI_BIRTH_CD')) {
+      context.handle(
+        _birthCodeIdMeta,
+        birthCodeId.isAcceptableOrUnknown(
+          data['CI_BIRTH_CD']!,
+          _birthCodeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('CI_BIRTH_DT')) {
+      context.handle(
+        _birthDateMeta,
+        birthDate.isAcceptableOrUnknown(data['CI_BIRTH_DT']!, _birthDateMeta),
+      );
+    }
+    if (data.containsKey('CI_SEX_CD')) {
+      context.handle(
+        _sexCodeMeta,
+        sexCode.isAcceptableOrUnknown(data['CI_SEX_CD']!, _sexCodeMeta),
+      );
+    }
+    if (data.containsKey('CI_PERSONAL_CD')) {
+      context.handle(
+        _personalCodeIdMeta,
+        personalCodeId.isAcceptableOrUnknown(
+          data['CI_PERSONAL_CD']!,
+          _personalCodeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('CI_DEAD_DT')) {
+      context.handle(
+        _deadDateMeta,
+        deadDate.isAcceptableOrUnknown(data['CI_DEAD_DT']!, _deadDateMeta),
+      );
+    }
+    if (data.containsKey('MOTHER_NAME1')) {
+      context.handle(
+        _motherNameMeta,
+        motherName.isAcceptableOrUnknown(
+          data['MOTHER_NAME1']!,
+          _motherNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('CITY')) {
+      context.handle(
+        _cityIdMeta,
+        cityId.isAcceptableOrUnknown(data['CITY']!, _cityIdMeta),
+      );
+    }
+    if (data.containsKey('city_name')) {
+      context.handle(
+        _cityNameMeta,
+        cityName.isAcceptableOrUnknown(data['city_name']!, _cityNameMeta),
+      );
+    }
+    if (data.containsKey('STREET')) {
+      context.handle(
+        _streetMeta,
+        street.isAcceptableOrUnknown(data['STREET']!, _streetMeta),
+      );
+    }
+    if (data.containsKey('HOUSE_NO')) {
+      context.handle(
+        _houseNoMeta,
+        houseNo.isAcceptableOrUnknown(data['HOUSE_NO']!, _houseNoMeta),
+      );
+    }
+    if (data.containsKey('CF_ID_NUM')) {
+      context.handle(
+        _relationIdMeta,
+        relationId.isAcceptableOrUnknown(data['CF_ID_NUM']!, _relationIdMeta),
+      );
+    }
+    if (data.containsKey('CF_RELATIVE_CD')) {
+      context.handle(
+        _relativeCodeIdMeta,
+        relativeCodeId.isAcceptableOrUnknown(
+          data['CF_RELATIVE_CD']!,
+          _relativeCodeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('CF_ID_RELATIVE')) {
+      context.handle(
+        _relativeIdMeta,
+        relativeId.isAcceptableOrUnknown(
+          data['CF_ID_RELATIVE']!,
+          _relativeIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('full_name')) {
+      context.handle(
+        _fullNameMeta,
+        fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta),
+      );
+    }
+    if (data.containsKey('full_name_normalized')) {
+      context.handle(
+        _fullNameNormalizedMeta,
+        fullNameNormalized.isAcceptableOrUnknown(
+          data['full_name_normalized']!,
+          _fullNameNormalizedMeta,
+        ),
+      );
     }
     if (data.containsKey('governorate')) {
       context.handle(
@@ -4967,8 +5297,6 @@ class $CivilRegistryTable extends CivilRegistry
           _governorateMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_governorateMeta);
     }
     if (data.containsKey('district')) {
       context.handle(
@@ -4976,78 +5304,151 @@ class $CivilRegistryTable extends CivilRegistry
         district.isAcceptableOrUnknown(data['district']!, _districtMeta),
       );
     }
-    if (data.containsKey('birth_date')) {
+    if (data.containsKey('created_at')) {
       context.handle(
-        _birthDateMeta,
-        birthDate.isAcceptableOrUnknown(data['birth_date']!, _birthDateMeta),
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
     }
-    if (data.containsKey('father_name')) {
+    if (data.containsKey('updated_at')) {
       context.handle(
-        _fatherNameMeta,
-        fatherName.isAcceptableOrUnknown(data['father_name']!, _fatherNameMeta),
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
     }
-    if (data.containsKey('mother_name')) {
+    if (data.containsKey('last_synced_at')) {
       context.handle(
-        _motherNameMeta,
-        motherName.isAcceptableOrUnknown(data['mother_name']!, _motherNameMeta),
-      );
-    }
-    if (data.containsKey('address')) {
-      context.handle(
-        _addressMeta,
-        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
       );
     }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {nationalId};
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {nationalId},
+  ];
   @override
   CivilRegistryData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return CivilRegistryData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
       nationalId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}national_id'],
+        data['${effectivePrefix}CI_ID_NUM'],
       )!,
-      fileNo: attachedDatabase.typeMapping.read(
+      firstName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}file_no'],
+        data['${effectivePrefix}CI_FIRST_ARB'],
       )!,
-      fullNameNorm: attachedDatabase.typeMapping.read(
+      fatherName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}full_name_norm'],
+        data['${effectivePrefix}CI_FATHER_ARB'],
       )!,
-      fullNameRaw: attachedDatabase.typeMapping.read(
+      grandFatherName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}full_name_raw'],
+        data['${effectivePrefix}CI_GRAND_FATHER_ARB'],
       )!,
+      familyName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}CI_FAMILY_ARB'],
+      )!,
+      birthCertificateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CI_BIRTH_TB_CD'],
+      ),
+      birthCodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CI_BIRTH_CD'],
+      ),
+      birthDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}CI_BIRTH_DT'],
+      ),
+      sexCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CI_SEX_CD'],
+      ),
+      personalCodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CI_PERSONAL_CD'],
+      ),
+      deadDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CI_DEAD_DT'],
+      ),
+      motherName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}MOTHER_NAME1'],
+      ),
+      cityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CITY'],
+      ),
+      cityName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}city_name'],
+      ),
+      street: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}STREET'],
+      ),
+      houseNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}HOUSE_NO'],
+      ),
+      relationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CF_ID_NUM'],
+      ),
+      relativeCodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CF_RELATIVE_CD'],
+      ),
+      relativeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CF_ID_RELATIVE'],
+      ),
+      fullName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}full_name'],
+      ),
+      fullNameNormalized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}full_name_normalized'],
+      ),
       governorate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}governorate'],
-      )!,
+      ),
       district: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}district'],
       ),
-      birthDate: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}birth_date'],
-      ),
-      fatherName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}father_name'],
-      ),
-      motherName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}mother_name'],
-      ),
-      address: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}address'],
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_synced_at'],
       ),
     );
   }
@@ -5060,76 +5461,200 @@ class $CivilRegistryTable extends CivilRegistry
 
 class CivilRegistryData extends DataClass
     implements Insertable<CivilRegistryData> {
+  final int id;
   final String nationalId;
-  final String fileNo;
-  final String fullNameNorm;
-  final String fullNameRaw;
-  final String governorate;
-  final String? district;
-  final String? birthDate;
-  final String? fatherName;
+  final String firstName;
+  final String fatherName;
+  final String grandFatherName;
+  final String familyName;
+  final int? birthCertificateId;
+  final int? birthCodeId;
+  final DateTime? birthDate;
+  final int? sexCode;
+  final int? personalCodeId;
+  final int? deadDate;
   final String? motherName;
-  final String? address;
+  final int? cityId;
+  final String? cityName;
+  final String? street;
+  final String? houseNo;
+  final int? relationId;
+  final int? relativeCodeId;
+  final int? relativeId;
+  final String? fullName;
+  final String? fullNameNormalized;
+  final String? governorate;
+  final String? district;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? lastSyncedAt;
   const CivilRegistryData({
+    required this.id,
     required this.nationalId,
-    required this.fileNo,
-    required this.fullNameNorm,
-    required this.fullNameRaw,
-    required this.governorate,
-    this.district,
+    required this.firstName,
+    required this.fatherName,
+    required this.grandFatherName,
+    required this.familyName,
+    this.birthCertificateId,
+    this.birthCodeId,
     this.birthDate,
-    this.fatherName,
+    this.sexCode,
+    this.personalCodeId,
+    this.deadDate,
     this.motherName,
-    this.address,
+    this.cityId,
+    this.cityName,
+    this.street,
+    this.houseNo,
+    this.relationId,
+    this.relativeCodeId,
+    this.relativeId,
+    this.fullName,
+    this.fullNameNormalized,
+    this.governorate,
+    this.district,
+    required this.createdAt,
+    required this.updatedAt,
+    this.lastSyncedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['national_id'] = Variable<String>(nationalId);
-    map['file_no'] = Variable<String>(fileNo);
-    map['full_name_norm'] = Variable<String>(fullNameNorm);
-    map['full_name_raw'] = Variable<String>(fullNameRaw);
-    map['governorate'] = Variable<String>(governorate);
+    map['id'] = Variable<int>(id);
+    map['CI_ID_NUM'] = Variable<String>(nationalId);
+    map['CI_FIRST_ARB'] = Variable<String>(firstName);
+    map['CI_FATHER_ARB'] = Variable<String>(fatherName);
+    map['CI_GRAND_FATHER_ARB'] = Variable<String>(grandFatherName);
+    map['CI_FAMILY_ARB'] = Variable<String>(familyName);
+    if (!nullToAbsent || birthCertificateId != null) {
+      map['CI_BIRTH_TB_CD'] = Variable<int>(birthCertificateId);
+    }
+    if (!nullToAbsent || birthCodeId != null) {
+      map['CI_BIRTH_CD'] = Variable<int>(birthCodeId);
+    }
+    if (!nullToAbsent || birthDate != null) {
+      map['CI_BIRTH_DT'] = Variable<DateTime>(birthDate);
+    }
+    if (!nullToAbsent || sexCode != null) {
+      map['CI_SEX_CD'] = Variable<int>(sexCode);
+    }
+    if (!nullToAbsent || personalCodeId != null) {
+      map['CI_PERSONAL_CD'] = Variable<int>(personalCodeId);
+    }
+    if (!nullToAbsent || deadDate != null) {
+      map['CI_DEAD_DT'] = Variable<int>(deadDate);
+    }
+    if (!nullToAbsent || motherName != null) {
+      map['MOTHER_NAME1'] = Variable<String>(motherName);
+    }
+    if (!nullToAbsent || cityId != null) {
+      map['CITY'] = Variable<int>(cityId);
+    }
+    if (!nullToAbsent || cityName != null) {
+      map['city_name'] = Variable<String>(cityName);
+    }
+    if (!nullToAbsent || street != null) {
+      map['STREET'] = Variable<String>(street);
+    }
+    if (!nullToAbsent || houseNo != null) {
+      map['HOUSE_NO'] = Variable<String>(houseNo);
+    }
+    if (!nullToAbsent || relationId != null) {
+      map['CF_ID_NUM'] = Variable<int>(relationId);
+    }
+    if (!nullToAbsent || relativeCodeId != null) {
+      map['CF_RELATIVE_CD'] = Variable<int>(relativeCodeId);
+    }
+    if (!nullToAbsent || relativeId != null) {
+      map['CF_ID_RELATIVE'] = Variable<int>(relativeId);
+    }
+    if (!nullToAbsent || fullName != null) {
+      map['full_name'] = Variable<String>(fullName);
+    }
+    if (!nullToAbsent || fullNameNormalized != null) {
+      map['full_name_normalized'] = Variable<String>(fullNameNormalized);
+    }
+    if (!nullToAbsent || governorate != null) {
+      map['governorate'] = Variable<String>(governorate);
+    }
     if (!nullToAbsent || district != null) {
       map['district'] = Variable<String>(district);
     }
-    if (!nullToAbsent || birthDate != null) {
-      map['birth_date'] = Variable<String>(birthDate);
-    }
-    if (!nullToAbsent || fatherName != null) {
-      map['father_name'] = Variable<String>(fatherName);
-    }
-    if (!nullToAbsent || motherName != null) {
-      map['mother_name'] = Variable<String>(motherName);
-    }
-    if (!nullToAbsent || address != null) {
-      map['address'] = Variable<String>(address);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
     }
     return map;
   }
 
   CivilRegistryCompanion toCompanion(bool nullToAbsent) {
     return CivilRegistryCompanion(
+      id: Value(id),
       nationalId: Value(nationalId),
-      fileNo: Value(fileNo),
-      fullNameNorm: Value(fullNameNorm),
-      fullNameRaw: Value(fullNameRaw),
-      governorate: Value(governorate),
-      district: district == null && nullToAbsent
+      firstName: Value(firstName),
+      fatherName: Value(fatherName),
+      grandFatherName: Value(grandFatherName),
+      familyName: Value(familyName),
+      birthCertificateId: birthCertificateId == null && nullToAbsent
           ? const Value.absent()
-          : Value(district),
+          : Value(birthCertificateId),
+      birthCodeId: birthCodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(birthCodeId),
       birthDate: birthDate == null && nullToAbsent
           ? const Value.absent()
           : Value(birthDate),
-      fatherName: fatherName == null && nullToAbsent
+      sexCode: sexCode == null && nullToAbsent
           ? const Value.absent()
-          : Value(fatherName),
+          : Value(sexCode),
+      personalCodeId: personalCodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personalCodeId),
+      deadDate: deadDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deadDate),
       motherName: motherName == null && nullToAbsent
           ? const Value.absent()
           : Value(motherName),
-      address: address == null && nullToAbsent
+      cityId: cityId == null && nullToAbsent
           ? const Value.absent()
-          : Value(address),
+          : Value(cityId),
+      cityName: cityName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cityName),
+      street: street == null && nullToAbsent
+          ? const Value.absent()
+          : Value(street),
+      houseNo: houseNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(houseNo),
+      relationId: relationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relationId),
+      relativeCodeId: relativeCodeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relativeCodeId),
+      relativeId: relativeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(relativeId),
+      fullName: fullName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fullName),
+      fullNameNormalized: fullNameNormalized == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fullNameNormalized),
+      governorate: governorate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(governorate),
+      district: district == null && nullToAbsent
+          ? const Value.absent()
+          : Value(district),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
     );
   }
 
@@ -5139,243 +5664,574 @@ class CivilRegistryData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CivilRegistryData(
+      id: serializer.fromJson<int>(json['id']),
       nationalId: serializer.fromJson<String>(json['nationalId']),
-      fileNo: serializer.fromJson<String>(json['fileNo']),
-      fullNameNorm: serializer.fromJson<String>(json['fullNameNorm']),
-      fullNameRaw: serializer.fromJson<String>(json['fullNameRaw']),
-      governorate: serializer.fromJson<String>(json['governorate']),
-      district: serializer.fromJson<String?>(json['district']),
-      birthDate: serializer.fromJson<String?>(json['birthDate']),
-      fatherName: serializer.fromJson<String?>(json['fatherName']),
+      firstName: serializer.fromJson<String>(json['firstName']),
+      fatherName: serializer.fromJson<String>(json['fatherName']),
+      grandFatherName: serializer.fromJson<String>(json['grandFatherName']),
+      familyName: serializer.fromJson<String>(json['familyName']),
+      birthCertificateId: serializer.fromJson<int?>(json['birthCertificateId']),
+      birthCodeId: serializer.fromJson<int?>(json['birthCodeId']),
+      birthDate: serializer.fromJson<DateTime?>(json['birthDate']),
+      sexCode: serializer.fromJson<int?>(json['sexCode']),
+      personalCodeId: serializer.fromJson<int?>(json['personalCodeId']),
+      deadDate: serializer.fromJson<int?>(json['deadDate']),
       motherName: serializer.fromJson<String?>(json['motherName']),
-      address: serializer.fromJson<String?>(json['address']),
+      cityId: serializer.fromJson<int?>(json['cityId']),
+      cityName: serializer.fromJson<String?>(json['cityName']),
+      street: serializer.fromJson<String?>(json['street']),
+      houseNo: serializer.fromJson<String?>(json['houseNo']),
+      relationId: serializer.fromJson<int?>(json['relationId']),
+      relativeCodeId: serializer.fromJson<int?>(json['relativeCodeId']),
+      relativeId: serializer.fromJson<int?>(json['relativeId']),
+      fullName: serializer.fromJson<String?>(json['fullName']),
+      fullNameNormalized: serializer.fromJson<String?>(
+        json['fullNameNormalized'],
+      ),
+      governorate: serializer.fromJson<String?>(json['governorate']),
+      district: serializer.fromJson<String?>(json['district']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
       'nationalId': serializer.toJson<String>(nationalId),
-      'fileNo': serializer.toJson<String>(fileNo),
-      'fullNameNorm': serializer.toJson<String>(fullNameNorm),
-      'fullNameRaw': serializer.toJson<String>(fullNameRaw),
-      'governorate': serializer.toJson<String>(governorate),
-      'district': serializer.toJson<String?>(district),
-      'birthDate': serializer.toJson<String?>(birthDate),
-      'fatherName': serializer.toJson<String?>(fatherName),
+      'firstName': serializer.toJson<String>(firstName),
+      'fatherName': serializer.toJson<String>(fatherName),
+      'grandFatherName': serializer.toJson<String>(grandFatherName),
+      'familyName': serializer.toJson<String>(familyName),
+      'birthCertificateId': serializer.toJson<int?>(birthCertificateId),
+      'birthCodeId': serializer.toJson<int?>(birthCodeId),
+      'birthDate': serializer.toJson<DateTime?>(birthDate),
+      'sexCode': serializer.toJson<int?>(sexCode),
+      'personalCodeId': serializer.toJson<int?>(personalCodeId),
+      'deadDate': serializer.toJson<int?>(deadDate),
       'motherName': serializer.toJson<String?>(motherName),
-      'address': serializer.toJson<String?>(address),
+      'cityId': serializer.toJson<int?>(cityId),
+      'cityName': serializer.toJson<String?>(cityName),
+      'street': serializer.toJson<String?>(street),
+      'houseNo': serializer.toJson<String?>(houseNo),
+      'relationId': serializer.toJson<int?>(relationId),
+      'relativeCodeId': serializer.toJson<int?>(relativeCodeId),
+      'relativeId': serializer.toJson<int?>(relativeId),
+      'fullName': serializer.toJson<String?>(fullName),
+      'fullNameNormalized': serializer.toJson<String?>(fullNameNormalized),
+      'governorate': serializer.toJson<String?>(governorate),
+      'district': serializer.toJson<String?>(district),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
     };
   }
 
   CivilRegistryData copyWith({
+    int? id,
     String? nationalId,
-    String? fileNo,
-    String? fullNameNorm,
-    String? fullNameRaw,
-    String? governorate,
-    Value<String?> district = const Value.absent(),
-    Value<String?> birthDate = const Value.absent(),
-    Value<String?> fatherName = const Value.absent(),
+    String? firstName,
+    String? fatherName,
+    String? grandFatherName,
+    String? familyName,
+    Value<int?> birthCertificateId = const Value.absent(),
+    Value<int?> birthCodeId = const Value.absent(),
+    Value<DateTime?> birthDate = const Value.absent(),
+    Value<int?> sexCode = const Value.absent(),
+    Value<int?> personalCodeId = const Value.absent(),
+    Value<int?> deadDate = const Value.absent(),
     Value<String?> motherName = const Value.absent(),
-    Value<String?> address = const Value.absent(),
+    Value<int?> cityId = const Value.absent(),
+    Value<String?> cityName = const Value.absent(),
+    Value<String?> street = const Value.absent(),
+    Value<String?> houseNo = const Value.absent(),
+    Value<int?> relationId = const Value.absent(),
+    Value<int?> relativeCodeId = const Value.absent(),
+    Value<int?> relativeId = const Value.absent(),
+    Value<String?> fullName = const Value.absent(),
+    Value<String?> fullNameNormalized = const Value.absent(),
+    Value<String?> governorate = const Value.absent(),
+    Value<String?> district = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<DateTime?> lastSyncedAt = const Value.absent(),
   }) => CivilRegistryData(
+    id: id ?? this.id,
     nationalId: nationalId ?? this.nationalId,
-    fileNo: fileNo ?? this.fileNo,
-    fullNameNorm: fullNameNorm ?? this.fullNameNorm,
-    fullNameRaw: fullNameRaw ?? this.fullNameRaw,
-    governorate: governorate ?? this.governorate,
-    district: district.present ? district.value : this.district,
+    firstName: firstName ?? this.firstName,
+    fatherName: fatherName ?? this.fatherName,
+    grandFatherName: grandFatherName ?? this.grandFatherName,
+    familyName: familyName ?? this.familyName,
+    birthCertificateId: birthCertificateId.present
+        ? birthCertificateId.value
+        : this.birthCertificateId,
+    birthCodeId: birthCodeId.present ? birthCodeId.value : this.birthCodeId,
     birthDate: birthDate.present ? birthDate.value : this.birthDate,
-    fatherName: fatherName.present ? fatherName.value : this.fatherName,
+    sexCode: sexCode.present ? sexCode.value : this.sexCode,
+    personalCodeId: personalCodeId.present
+        ? personalCodeId.value
+        : this.personalCodeId,
+    deadDate: deadDate.present ? deadDate.value : this.deadDate,
     motherName: motherName.present ? motherName.value : this.motherName,
-    address: address.present ? address.value : this.address,
+    cityId: cityId.present ? cityId.value : this.cityId,
+    cityName: cityName.present ? cityName.value : this.cityName,
+    street: street.present ? street.value : this.street,
+    houseNo: houseNo.present ? houseNo.value : this.houseNo,
+    relationId: relationId.present ? relationId.value : this.relationId,
+    relativeCodeId: relativeCodeId.present
+        ? relativeCodeId.value
+        : this.relativeCodeId,
+    relativeId: relativeId.present ? relativeId.value : this.relativeId,
+    fullName: fullName.present ? fullName.value : this.fullName,
+    fullNameNormalized: fullNameNormalized.present
+        ? fullNameNormalized.value
+        : this.fullNameNormalized,
+    governorate: governorate.present ? governorate.value : this.governorate,
+    district: district.present ? district.value : this.district,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
   );
   CivilRegistryData copyWithCompanion(CivilRegistryCompanion data) {
     return CivilRegistryData(
+      id: data.id.present ? data.id.value : this.id,
       nationalId: data.nationalId.present
           ? data.nationalId.value
           : this.nationalId,
-      fileNo: data.fileNo.present ? data.fileNo.value : this.fileNo,
-      fullNameNorm: data.fullNameNorm.present
-          ? data.fullNameNorm.value
-          : this.fullNameNorm,
-      fullNameRaw: data.fullNameRaw.present
-          ? data.fullNameRaw.value
-          : this.fullNameRaw,
+      firstName: data.firstName.present ? data.firstName.value : this.firstName,
+      fatherName: data.fatherName.present
+          ? data.fatherName.value
+          : this.fatherName,
+      grandFatherName: data.grandFatherName.present
+          ? data.grandFatherName.value
+          : this.grandFatherName,
+      familyName: data.familyName.present
+          ? data.familyName.value
+          : this.familyName,
+      birthCertificateId: data.birthCertificateId.present
+          ? data.birthCertificateId.value
+          : this.birthCertificateId,
+      birthCodeId: data.birthCodeId.present
+          ? data.birthCodeId.value
+          : this.birthCodeId,
+      birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
+      sexCode: data.sexCode.present ? data.sexCode.value : this.sexCode,
+      personalCodeId: data.personalCodeId.present
+          ? data.personalCodeId.value
+          : this.personalCodeId,
+      deadDate: data.deadDate.present ? data.deadDate.value : this.deadDate,
+      motherName: data.motherName.present
+          ? data.motherName.value
+          : this.motherName,
+      cityId: data.cityId.present ? data.cityId.value : this.cityId,
+      cityName: data.cityName.present ? data.cityName.value : this.cityName,
+      street: data.street.present ? data.street.value : this.street,
+      houseNo: data.houseNo.present ? data.houseNo.value : this.houseNo,
+      relationId: data.relationId.present
+          ? data.relationId.value
+          : this.relationId,
+      relativeCodeId: data.relativeCodeId.present
+          ? data.relativeCodeId.value
+          : this.relativeCodeId,
+      relativeId: data.relativeId.present
+          ? data.relativeId.value
+          : this.relativeId,
+      fullName: data.fullName.present ? data.fullName.value : this.fullName,
+      fullNameNormalized: data.fullNameNormalized.present
+          ? data.fullNameNormalized.value
+          : this.fullNameNormalized,
       governorate: data.governorate.present
           ? data.governorate.value
           : this.governorate,
       district: data.district.present ? data.district.value : this.district,
-      birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
-      fatherName: data.fatherName.present
-          ? data.fatherName.value
-          : this.fatherName,
-      motherName: data.motherName.present
-          ? data.motherName.value
-          : this.motherName,
-      address: data.address.present ? data.address.value : this.address,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('CivilRegistryData(')
+          ..write('id: $id, ')
           ..write('nationalId: $nationalId, ')
-          ..write('fileNo: $fileNo, ')
-          ..write('fullNameNorm: $fullNameNorm, ')
-          ..write('fullNameRaw: $fullNameRaw, ')
+          ..write('firstName: $firstName, ')
+          ..write('fatherName: $fatherName, ')
+          ..write('grandFatherName: $grandFatherName, ')
+          ..write('familyName: $familyName, ')
+          ..write('birthCertificateId: $birthCertificateId, ')
+          ..write('birthCodeId: $birthCodeId, ')
+          ..write('birthDate: $birthDate, ')
+          ..write('sexCode: $sexCode, ')
+          ..write('personalCodeId: $personalCodeId, ')
+          ..write('deadDate: $deadDate, ')
+          ..write('motherName: $motherName, ')
+          ..write('cityId: $cityId, ')
+          ..write('cityName: $cityName, ')
+          ..write('street: $street, ')
+          ..write('houseNo: $houseNo, ')
+          ..write('relationId: $relationId, ')
+          ..write('relativeCodeId: $relativeCodeId, ')
+          ..write('relativeId: $relativeId, ')
+          ..write('fullName: $fullName, ')
+          ..write('fullNameNormalized: $fullNameNormalized, ')
           ..write('governorate: $governorate, ')
           ..write('district: $district, ')
-          ..write('birthDate: $birthDate, ')
-          ..write('fatherName: $fatherName, ')
-          ..write('motherName: $motherName, ')
-          ..write('address: $address')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
+    id,
     nationalId,
-    fileNo,
-    fullNameNorm,
-    fullNameRaw,
+    firstName,
+    fatherName,
+    grandFatherName,
+    familyName,
+    birthCertificateId,
+    birthCodeId,
+    birthDate,
+    sexCode,
+    personalCodeId,
+    deadDate,
+    motherName,
+    cityId,
+    cityName,
+    street,
+    houseNo,
+    relationId,
+    relativeCodeId,
+    relativeId,
+    fullName,
+    fullNameNormalized,
     governorate,
     district,
-    birthDate,
-    fatherName,
-    motherName,
-    address,
-  );
+    createdAt,
+    updatedAt,
+    lastSyncedAt,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CivilRegistryData &&
+          other.id == this.id &&
           other.nationalId == this.nationalId &&
-          other.fileNo == this.fileNo &&
-          other.fullNameNorm == this.fullNameNorm &&
-          other.fullNameRaw == this.fullNameRaw &&
+          other.firstName == this.firstName &&
+          other.fatherName == this.fatherName &&
+          other.grandFatherName == this.grandFatherName &&
+          other.familyName == this.familyName &&
+          other.birthCertificateId == this.birthCertificateId &&
+          other.birthCodeId == this.birthCodeId &&
+          other.birthDate == this.birthDate &&
+          other.sexCode == this.sexCode &&
+          other.personalCodeId == this.personalCodeId &&
+          other.deadDate == this.deadDate &&
+          other.motherName == this.motherName &&
+          other.cityId == this.cityId &&
+          other.cityName == this.cityName &&
+          other.street == this.street &&
+          other.houseNo == this.houseNo &&
+          other.relationId == this.relationId &&
+          other.relativeCodeId == this.relativeCodeId &&
+          other.relativeId == this.relativeId &&
+          other.fullName == this.fullName &&
+          other.fullNameNormalized == this.fullNameNormalized &&
           other.governorate == this.governorate &&
           other.district == this.district &&
-          other.birthDate == this.birthDate &&
-          other.fatherName == this.fatherName &&
-          other.motherName == this.motherName &&
-          other.address == this.address);
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.lastSyncedAt == this.lastSyncedAt);
 }
 
 class CivilRegistryCompanion extends UpdateCompanion<CivilRegistryData> {
+  final Value<int> id;
   final Value<String> nationalId;
-  final Value<String> fileNo;
-  final Value<String> fullNameNorm;
-  final Value<String> fullNameRaw;
-  final Value<String> governorate;
-  final Value<String?> district;
-  final Value<String?> birthDate;
-  final Value<String?> fatherName;
+  final Value<String> firstName;
+  final Value<String> fatherName;
+  final Value<String> grandFatherName;
+  final Value<String> familyName;
+  final Value<int?> birthCertificateId;
+  final Value<int?> birthCodeId;
+  final Value<DateTime?> birthDate;
+  final Value<int?> sexCode;
+  final Value<int?> personalCodeId;
+  final Value<int?> deadDate;
   final Value<String?> motherName;
-  final Value<String?> address;
-  final Value<int> rowid;
+  final Value<int?> cityId;
+  final Value<String?> cityName;
+  final Value<String?> street;
+  final Value<String?> houseNo;
+  final Value<int?> relationId;
+  final Value<int?> relativeCodeId;
+  final Value<int?> relativeId;
+  final Value<String?> fullName;
+  final Value<String?> fullNameNormalized;
+  final Value<String?> governorate;
+  final Value<String?> district;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<DateTime?> lastSyncedAt;
   const CivilRegistryCompanion({
+    this.id = const Value.absent(),
     this.nationalId = const Value.absent(),
-    this.fileNo = const Value.absent(),
-    this.fullNameNorm = const Value.absent(),
-    this.fullNameRaw = const Value.absent(),
+    this.firstName = const Value.absent(),
+    this.fatherName = const Value.absent(),
+    this.grandFatherName = const Value.absent(),
+    this.familyName = const Value.absent(),
+    this.birthCertificateId = const Value.absent(),
+    this.birthCodeId = const Value.absent(),
+    this.birthDate = const Value.absent(),
+    this.sexCode = const Value.absent(),
+    this.personalCodeId = const Value.absent(),
+    this.deadDate = const Value.absent(),
+    this.motherName = const Value.absent(),
+    this.cityId = const Value.absent(),
+    this.cityName = const Value.absent(),
+    this.street = const Value.absent(),
+    this.houseNo = const Value.absent(),
+    this.relationId = const Value.absent(),
+    this.relativeCodeId = const Value.absent(),
+    this.relativeId = const Value.absent(),
+    this.fullName = const Value.absent(),
+    this.fullNameNormalized = const Value.absent(),
     this.governorate = const Value.absent(),
     this.district = const Value.absent(),
-    this.birthDate = const Value.absent(),
-    this.fatherName = const Value.absent(),
-    this.motherName = const Value.absent(),
-    this.address = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
   });
   CivilRegistryCompanion.insert({
+    this.id = const Value.absent(),
     required String nationalId,
-    required String fileNo,
-    required String fullNameNorm,
-    required String fullNameRaw,
-    required String governorate,
-    this.district = const Value.absent(),
+    required String firstName,
+    required String fatherName,
+    required String grandFatherName,
+    required String familyName,
+    this.birthCertificateId = const Value.absent(),
+    this.birthCodeId = const Value.absent(),
     this.birthDate = const Value.absent(),
-    this.fatherName = const Value.absent(),
+    this.sexCode = const Value.absent(),
+    this.personalCodeId = const Value.absent(),
+    this.deadDate = const Value.absent(),
     this.motherName = const Value.absent(),
-    this.address = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.cityId = const Value.absent(),
+    this.cityName = const Value.absent(),
+    this.street = const Value.absent(),
+    this.houseNo = const Value.absent(),
+    this.relationId = const Value.absent(),
+    this.relativeCodeId = const Value.absent(),
+    this.relativeId = const Value.absent(),
+    this.fullName = const Value.absent(),
+    this.fullNameNormalized = const Value.absent(),
+    this.governorate = const Value.absent(),
+    this.district = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.lastSyncedAt = const Value.absent(),
   }) : nationalId = Value(nationalId),
-       fileNo = Value(fileNo),
-       fullNameNorm = Value(fullNameNorm),
-       fullNameRaw = Value(fullNameRaw),
-       governorate = Value(governorate);
+       firstName = Value(firstName),
+       fatherName = Value(fatherName),
+       grandFatherName = Value(grandFatherName),
+       familyName = Value(familyName),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
   static Insertable<CivilRegistryData> custom({
+    Expression<int>? id,
     Expression<String>? nationalId,
-    Expression<String>? fileNo,
-    Expression<String>? fullNameNorm,
-    Expression<String>? fullNameRaw,
+    Expression<String>? firstName,
+    Expression<String>? fatherName,
+    Expression<String>? grandFatherName,
+    Expression<String>? familyName,
+    Expression<int>? birthCertificateId,
+    Expression<int>? birthCodeId,
+    Expression<DateTime>? birthDate,
+    Expression<int>? sexCode,
+    Expression<int>? personalCodeId,
+    Expression<int>? deadDate,
+    Expression<String>? motherName,
+    Expression<int>? cityId,
+    Expression<String>? cityName,
+    Expression<String>? street,
+    Expression<String>? houseNo,
+    Expression<int>? relationId,
+    Expression<int>? relativeCodeId,
+    Expression<int>? relativeId,
+    Expression<String>? fullName,
+    Expression<String>? fullNameNormalized,
     Expression<String>? governorate,
     Expression<String>? district,
-    Expression<String>? birthDate,
-    Expression<String>? fatherName,
-    Expression<String>? motherName,
-    Expression<String>? address,
-    Expression<int>? rowid,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<DateTime>? lastSyncedAt,
   }) {
     return RawValuesInsertable({
-      if (nationalId != null) 'national_id': nationalId,
-      if (fileNo != null) 'file_no': fileNo,
-      if (fullNameNorm != null) 'full_name_norm': fullNameNorm,
-      if (fullNameRaw != null) 'full_name_raw': fullNameRaw,
+      if (id != null) 'id': id,
+      if (nationalId != null) 'CI_ID_NUM': nationalId,
+      if (firstName != null) 'CI_FIRST_ARB': firstName,
+      if (fatherName != null) 'CI_FATHER_ARB': fatherName,
+      if (grandFatherName != null) 'CI_GRAND_FATHER_ARB': grandFatherName,
+      if (familyName != null) 'CI_FAMILY_ARB': familyName,
+      if (birthCertificateId != null) 'CI_BIRTH_TB_CD': birthCertificateId,
+      if (birthCodeId != null) 'CI_BIRTH_CD': birthCodeId,
+      if (birthDate != null) 'CI_BIRTH_DT': birthDate,
+      if (sexCode != null) 'CI_SEX_CD': sexCode,
+      if (personalCodeId != null) 'CI_PERSONAL_CD': personalCodeId,
+      if (deadDate != null) 'CI_DEAD_DT': deadDate,
+      if (motherName != null) 'MOTHER_NAME1': motherName,
+      if (cityId != null) 'CITY': cityId,
+      if (cityName != null) 'city_name': cityName,
+      if (street != null) 'STREET': street,
+      if (houseNo != null) 'HOUSE_NO': houseNo,
+      if (relationId != null) 'CF_ID_NUM': relationId,
+      if (relativeCodeId != null) 'CF_RELATIVE_CD': relativeCodeId,
+      if (relativeId != null) 'CF_ID_RELATIVE': relativeId,
+      if (fullName != null) 'full_name': fullName,
+      if (fullNameNormalized != null)
+        'full_name_normalized': fullNameNormalized,
       if (governorate != null) 'governorate': governorate,
       if (district != null) 'district': district,
-      if (birthDate != null) 'birth_date': birthDate,
-      if (fatherName != null) 'father_name': fatherName,
-      if (motherName != null) 'mother_name': motherName,
-      if (address != null) 'address': address,
-      if (rowid != null) 'rowid': rowid,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
     });
   }
 
   CivilRegistryCompanion copyWith({
+    Value<int>? id,
     Value<String>? nationalId,
-    Value<String>? fileNo,
-    Value<String>? fullNameNorm,
-    Value<String>? fullNameRaw,
-    Value<String>? governorate,
-    Value<String?>? district,
-    Value<String?>? birthDate,
-    Value<String?>? fatherName,
+    Value<String>? firstName,
+    Value<String>? fatherName,
+    Value<String>? grandFatherName,
+    Value<String>? familyName,
+    Value<int?>? birthCertificateId,
+    Value<int?>? birthCodeId,
+    Value<DateTime?>? birthDate,
+    Value<int?>? sexCode,
+    Value<int?>? personalCodeId,
+    Value<int?>? deadDate,
     Value<String?>? motherName,
-    Value<String?>? address,
-    Value<int>? rowid,
+    Value<int?>? cityId,
+    Value<String?>? cityName,
+    Value<String?>? street,
+    Value<String?>? houseNo,
+    Value<int?>? relationId,
+    Value<int?>? relativeCodeId,
+    Value<int?>? relativeId,
+    Value<String?>? fullName,
+    Value<String?>? fullNameNormalized,
+    Value<String?>? governorate,
+    Value<String?>? district,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime?>? lastSyncedAt,
   }) {
     return CivilRegistryCompanion(
+      id: id ?? this.id,
       nationalId: nationalId ?? this.nationalId,
-      fileNo: fileNo ?? this.fileNo,
-      fullNameNorm: fullNameNorm ?? this.fullNameNorm,
-      fullNameRaw: fullNameRaw ?? this.fullNameRaw,
+      firstName: firstName ?? this.firstName,
+      fatherName: fatherName ?? this.fatherName,
+      grandFatherName: grandFatherName ?? this.grandFatherName,
+      familyName: familyName ?? this.familyName,
+      birthCertificateId: birthCertificateId ?? this.birthCertificateId,
+      birthCodeId: birthCodeId ?? this.birthCodeId,
+      birthDate: birthDate ?? this.birthDate,
+      sexCode: sexCode ?? this.sexCode,
+      personalCodeId: personalCodeId ?? this.personalCodeId,
+      deadDate: deadDate ?? this.deadDate,
+      motherName: motherName ?? this.motherName,
+      cityId: cityId ?? this.cityId,
+      cityName: cityName ?? this.cityName,
+      street: street ?? this.street,
+      houseNo: houseNo ?? this.houseNo,
+      relationId: relationId ?? this.relationId,
+      relativeCodeId: relativeCodeId ?? this.relativeCodeId,
+      relativeId: relativeId ?? this.relativeId,
+      fullName: fullName ?? this.fullName,
+      fullNameNormalized: fullNameNormalized ?? this.fullNameNormalized,
       governorate: governorate ?? this.governorate,
       district: district ?? this.district,
-      birthDate: birthDate ?? this.birthDate,
-      fatherName: fatherName ?? this.fatherName,
-      motherName: motherName ?? this.motherName,
-      address: address ?? this.address,
-      rowid: rowid ?? this.rowid,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
     if (nationalId.present) {
-      map['national_id'] = Variable<String>(nationalId.value);
+      map['CI_ID_NUM'] = Variable<String>(nationalId.value);
     }
-    if (fileNo.present) {
-      map['file_no'] = Variable<String>(fileNo.value);
+    if (firstName.present) {
+      map['CI_FIRST_ARB'] = Variable<String>(firstName.value);
     }
-    if (fullNameNorm.present) {
-      map['full_name_norm'] = Variable<String>(fullNameNorm.value);
+    if (fatherName.present) {
+      map['CI_FATHER_ARB'] = Variable<String>(fatherName.value);
     }
-    if (fullNameRaw.present) {
-      map['full_name_raw'] = Variable<String>(fullNameRaw.value);
+    if (grandFatherName.present) {
+      map['CI_GRAND_FATHER_ARB'] = Variable<String>(grandFatherName.value);
+    }
+    if (familyName.present) {
+      map['CI_FAMILY_ARB'] = Variable<String>(familyName.value);
+    }
+    if (birthCertificateId.present) {
+      map['CI_BIRTH_TB_CD'] = Variable<int>(birthCertificateId.value);
+    }
+    if (birthCodeId.present) {
+      map['CI_BIRTH_CD'] = Variable<int>(birthCodeId.value);
+    }
+    if (birthDate.present) {
+      map['CI_BIRTH_DT'] = Variable<DateTime>(birthDate.value);
+    }
+    if (sexCode.present) {
+      map['CI_SEX_CD'] = Variable<int>(sexCode.value);
+    }
+    if (personalCodeId.present) {
+      map['CI_PERSONAL_CD'] = Variable<int>(personalCodeId.value);
+    }
+    if (deadDate.present) {
+      map['CI_DEAD_DT'] = Variable<int>(deadDate.value);
+    }
+    if (motherName.present) {
+      map['MOTHER_NAME1'] = Variable<String>(motherName.value);
+    }
+    if (cityId.present) {
+      map['CITY'] = Variable<int>(cityId.value);
+    }
+    if (cityName.present) {
+      map['city_name'] = Variable<String>(cityName.value);
+    }
+    if (street.present) {
+      map['STREET'] = Variable<String>(street.value);
+    }
+    if (houseNo.present) {
+      map['HOUSE_NO'] = Variable<String>(houseNo.value);
+    }
+    if (relationId.present) {
+      map['CF_ID_NUM'] = Variable<int>(relationId.value);
+    }
+    if (relativeCodeId.present) {
+      map['CF_RELATIVE_CD'] = Variable<int>(relativeCodeId.value);
+    }
+    if (relativeId.present) {
+      map['CF_ID_RELATIVE'] = Variable<int>(relativeId.value);
+    }
+    if (fullName.present) {
+      map['full_name'] = Variable<String>(fullName.value);
+    }
+    if (fullNameNormalized.present) {
+      map['full_name_normalized'] = Variable<String>(fullNameNormalized.value);
     }
     if (governorate.present) {
       map['governorate'] = Variable<String>(governorate.value);
@@ -5383,20 +6239,14 @@ class CivilRegistryCompanion extends UpdateCompanion<CivilRegistryData> {
     if (district.present) {
       map['district'] = Variable<String>(district.value);
     }
-    if (birthDate.present) {
-      map['birth_date'] = Variable<String>(birthDate.value);
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
     }
-    if (fatherName.present) {
-      map['father_name'] = Variable<String>(fatherName.value);
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
-    if (motherName.present) {
-      map['mother_name'] = Variable<String>(motherName.value);
-    }
-    if (address.present) {
-      map['address'] = Variable<String>(address.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
     }
     return map;
   }
@@ -5404,17 +6254,1676 @@ class CivilRegistryCompanion extends UpdateCompanion<CivilRegistryData> {
   @override
   String toString() {
     return (StringBuffer('CivilRegistryCompanion(')
+          ..write('id: $id, ')
           ..write('nationalId: $nationalId, ')
-          ..write('fileNo: $fileNo, ')
-          ..write('fullNameNorm: $fullNameNorm, ')
-          ..write('fullNameRaw: $fullNameRaw, ')
+          ..write('firstName: $firstName, ')
+          ..write('fatherName: $fatherName, ')
+          ..write('grandFatherName: $grandFatherName, ')
+          ..write('familyName: $familyName, ')
+          ..write('birthCertificateId: $birthCertificateId, ')
+          ..write('birthCodeId: $birthCodeId, ')
+          ..write('birthDate: $birthDate, ')
+          ..write('sexCode: $sexCode, ')
+          ..write('personalCodeId: $personalCodeId, ')
+          ..write('deadDate: $deadDate, ')
+          ..write('motherName: $motherName, ')
+          ..write('cityId: $cityId, ')
+          ..write('cityName: $cityName, ')
+          ..write('street: $street, ')
+          ..write('houseNo: $houseNo, ')
+          ..write('relationId: $relationId, ')
+          ..write('relativeCodeId: $relativeCodeId, ')
+          ..write('relativeId: $relativeId, ')
+          ..write('fullName: $fullName, ')
+          ..write('fullNameNormalized: $fullNameNormalized, ')
           ..write('governorate: $governorate, ')
           ..write('district: $district, ')
-          ..write('birthDate: $birthDate, ')
-          ..write('fatherName: $fatherName, ')
-          ..write('motherName: $motherName, ')
-          ..write('address: $address, ')
-          ..write('rowid: $rowid')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CivilRegistryCityTable extends CivilRegistryCity
+    with TableInfo<$CivilRegistryCityTable, CivilRegistryCityData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CivilRegistryCityTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _cityMeta = const VerificationMeta('city');
+  @override
+  late final GeneratedColumn<String> city = GeneratedColumn<String>(
+    'city',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, city, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'civil_registry_city';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CivilRegistryCityData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('city')) {
+      context.handle(
+        _cityMeta,
+        city.isAcceptableOrUnknown(data['city']!, _cityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_cityMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CivilRegistryCityData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CivilRegistryCityData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      city: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}city'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CivilRegistryCityTable createAlias(String alias) {
+    return $CivilRegistryCityTable(attachedDatabase, alias);
+  }
+}
+
+class CivilRegistryCityData extends DataClass
+    implements Insertable<CivilRegistryCityData> {
+  final int id;
+  final String city;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CivilRegistryCityData({
+    required this.id,
+    required this.city,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['city'] = Variable<String>(city);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CivilRegistryCityCompanion toCompanion(bool nullToAbsent) {
+    return CivilRegistryCityCompanion(
+      id: Value(id),
+      city: Value(city),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CivilRegistryCityData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CivilRegistryCityData(
+      id: serializer.fromJson<int>(json['id']),
+      city: serializer.fromJson<String>(json['city']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'city': serializer.toJson<String>(city),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CivilRegistryCityData copyWith({
+    int? id,
+    String? city,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CivilRegistryCityData(
+    id: id ?? this.id,
+    city: city ?? this.city,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CivilRegistryCityData copyWithCompanion(CivilRegistryCityCompanion data) {
+    return CivilRegistryCityData(
+      id: data.id.present ? data.id.value : this.id,
+      city: data.city.present ? data.city.value : this.city,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryCityData(')
+          ..write('id: $id, ')
+          ..write('city: $city, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, city, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CivilRegistryCityData &&
+          other.id == this.id &&
+          other.city == this.city &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CivilRegistryCityCompanion
+    extends UpdateCompanion<CivilRegistryCityData> {
+  final Value<int> id;
+  final Value<String> city;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const CivilRegistryCityCompanion({
+    this.id = const Value.absent(),
+    this.city = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  CivilRegistryCityCompanion.insert({
+    this.id = const Value.absent(),
+    required String city,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) : city = Value(city),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<CivilRegistryCityData> custom({
+    Expression<int>? id,
+    Expression<String>? city,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (city != null) 'city': city,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  CivilRegistryCityCompanion copyWith({
+    Value<int>? id,
+    Value<String>? city,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return CivilRegistryCityCompanion(
+      id: id ?? this.id,
+      city: city ?? this.city,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (city.present) {
+      map['city'] = Variable<String>(city.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryCityCompanion(')
+          ..write('id: $id, ')
+          ..write('city: $city, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CivilRegistryRelationsTable extends CivilRegistryRelations
+    with TableInfo<$CivilRegistryRelationsTable, CivilRegistryRelation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CivilRegistryRelationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<int> personId = GeneratedColumn<int>(
+    'CF_ID_NUM',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relativeIdMeta = const VerificationMeta(
+    'relativeId',
+  );
+  @override
+  late final GeneratedColumn<int> relativeId = GeneratedColumn<int>(
+    'CF_ID_RELATIVE',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relativeCodeIdMeta = const VerificationMeta(
+    'relativeCodeId',
+  );
+  @override
+  late final GeneratedColumn<int> relativeCodeId = GeneratedColumn<int>(
+    'CF_RELATIVE_CD',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    personId,
+    relativeId,
+    relativeCodeId,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'civil_registry_relations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CivilRegistryRelation> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('CF_ID_NUM')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['CF_ID_NUM']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    if (data.containsKey('CF_ID_RELATIVE')) {
+      context.handle(
+        _relativeIdMeta,
+        relativeId.isAcceptableOrUnknown(
+          data['CF_ID_RELATIVE']!,
+          _relativeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativeIdMeta);
+    }
+    if (data.containsKey('CF_RELATIVE_CD')) {
+      context.handle(
+        _relativeCodeIdMeta,
+        relativeCodeId.isAcceptableOrUnknown(
+          data['CF_RELATIVE_CD']!,
+          _relativeCodeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativeCodeIdMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CivilRegistryRelation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CivilRegistryRelation(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CF_ID_NUM'],
+      )!,
+      relativeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CF_ID_RELATIVE'],
+      )!,
+      relativeCodeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}CF_RELATIVE_CD'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CivilRegistryRelationsTable createAlias(String alias) {
+    return $CivilRegistryRelationsTable(attachedDatabase, alias);
+  }
+}
+
+class CivilRegistryRelation extends DataClass
+    implements Insertable<CivilRegistryRelation> {
+  final int id;
+  final int personId;
+  final int relativeId;
+  final int relativeCodeId;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CivilRegistryRelation({
+    required this.id,
+    required this.personId,
+    required this.relativeId,
+    required this.relativeCodeId,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['CF_ID_NUM'] = Variable<int>(personId);
+    map['CF_ID_RELATIVE'] = Variable<int>(relativeId);
+    map['CF_RELATIVE_CD'] = Variable<int>(relativeCodeId);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CivilRegistryRelationsCompanion toCompanion(bool nullToAbsent) {
+    return CivilRegistryRelationsCompanion(
+      id: Value(id),
+      personId: Value(personId),
+      relativeId: Value(relativeId),
+      relativeCodeId: Value(relativeCodeId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CivilRegistryRelation.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CivilRegistryRelation(
+      id: serializer.fromJson<int>(json['id']),
+      personId: serializer.fromJson<int>(json['personId']),
+      relativeId: serializer.fromJson<int>(json['relativeId']),
+      relativeCodeId: serializer.fromJson<int>(json['relativeCodeId']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'personId': serializer.toJson<int>(personId),
+      'relativeId': serializer.toJson<int>(relativeId),
+      'relativeCodeId': serializer.toJson<int>(relativeCodeId),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CivilRegistryRelation copyWith({
+    int? id,
+    int? personId,
+    int? relativeId,
+    int? relativeCodeId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CivilRegistryRelation(
+    id: id ?? this.id,
+    personId: personId ?? this.personId,
+    relativeId: relativeId ?? this.relativeId,
+    relativeCodeId: relativeCodeId ?? this.relativeCodeId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CivilRegistryRelation copyWithCompanion(
+    CivilRegistryRelationsCompanion data,
+  ) {
+    return CivilRegistryRelation(
+      id: data.id.present ? data.id.value : this.id,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      relativeId: data.relativeId.present
+          ? data.relativeId.value
+          : this.relativeId,
+      relativeCodeId: data.relativeCodeId.present
+          ? data.relativeCodeId.value
+          : this.relativeCodeId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryRelation(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('relativeId: $relativeId, ')
+          ..write('relativeCodeId: $relativeCodeId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    personId,
+    relativeId,
+    relativeCodeId,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CivilRegistryRelation &&
+          other.id == this.id &&
+          other.personId == this.personId &&
+          other.relativeId == this.relativeId &&
+          other.relativeCodeId == this.relativeCodeId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CivilRegistryRelationsCompanion
+    extends UpdateCompanion<CivilRegistryRelation> {
+  final Value<int> id;
+  final Value<int> personId;
+  final Value<int> relativeId;
+  final Value<int> relativeCodeId;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const CivilRegistryRelationsCompanion({
+    this.id = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.relativeId = const Value.absent(),
+    this.relativeCodeId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  CivilRegistryRelationsCompanion.insert({
+    this.id = const Value.absent(),
+    required int personId,
+    required int relativeId,
+    required int relativeCodeId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) : personId = Value(personId),
+       relativeId = Value(relativeId),
+       relativeCodeId = Value(relativeCodeId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<CivilRegistryRelation> custom({
+    Expression<int>? id,
+    Expression<int>? personId,
+    Expression<int>? relativeId,
+    Expression<int>? relativeCodeId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (personId != null) 'CF_ID_NUM': personId,
+      if (relativeId != null) 'CF_ID_RELATIVE': relativeId,
+      if (relativeCodeId != null) 'CF_RELATIVE_CD': relativeCodeId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  CivilRegistryRelationsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? personId,
+    Value<int>? relativeId,
+    Value<int>? relativeCodeId,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return CivilRegistryRelationsCompanion(
+      id: id ?? this.id,
+      personId: personId ?? this.personId,
+      relativeId: relativeId ?? this.relativeId,
+      relativeCodeId: relativeCodeId ?? this.relativeCodeId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (personId.present) {
+      map['CF_ID_NUM'] = Variable<int>(personId.value);
+    }
+    if (relativeId.present) {
+      map['CF_ID_RELATIVE'] = Variable<int>(relativeId.value);
+    }
+    if (relativeCodeId.present) {
+      map['CF_RELATIVE_CD'] = Variable<int>(relativeCodeId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryRelationsCompanion(')
+          ..write('id: $id, ')
+          ..write('personId: $personId, ')
+          ..write('relativeId: $relativeId, ')
+          ..write('relativeCodeId: $relativeCodeId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CivilRegistryRelationCategoriesTable
+    extends CivilRegistryRelationCategories
+    with
+        TableInfo<
+          $CivilRegistryRelationCategoriesTable,
+          CivilRegistryRelationCategory
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CivilRegistryRelationCategoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attributeMeta = const VerificationMeta(
+    'attribute',
+  );
+  @override
+  late final GeneratedColumn<String> attribute = GeneratedColumn<String>(
+    'attribute',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, attribute, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'civil_registry_relation_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CivilRegistryRelationCategory> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('attribute')) {
+      context.handle(
+        _attributeMeta,
+        attribute.isAcceptableOrUnknown(data['attribute']!, _attributeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_attributeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CivilRegistryRelationCategory map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CivilRegistryRelationCategory(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      attribute: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attribute'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CivilRegistryRelationCategoriesTable createAlias(String alias) {
+    return $CivilRegistryRelationCategoriesTable(attachedDatabase, alias);
+  }
+}
+
+class CivilRegistryRelationCategory extends DataClass
+    implements Insertable<CivilRegistryRelationCategory> {
+  final int id;
+  final String attribute;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CivilRegistryRelationCategory({
+    required this.id,
+    required this.attribute,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['attribute'] = Variable<String>(attribute);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CivilRegistryRelationCategoriesCompanion toCompanion(bool nullToAbsent) {
+    return CivilRegistryRelationCategoriesCompanion(
+      id: Value(id),
+      attribute: Value(attribute),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CivilRegistryRelationCategory.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CivilRegistryRelationCategory(
+      id: serializer.fromJson<int>(json['id']),
+      attribute: serializer.fromJson<String>(json['attribute']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'attribute': serializer.toJson<String>(attribute),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CivilRegistryRelationCategory copyWith({
+    int? id,
+    String? attribute,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CivilRegistryRelationCategory(
+    id: id ?? this.id,
+    attribute: attribute ?? this.attribute,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CivilRegistryRelationCategory copyWithCompanion(
+    CivilRegistryRelationCategoriesCompanion data,
+  ) {
+    return CivilRegistryRelationCategory(
+      id: data.id.present ? data.id.value : this.id,
+      attribute: data.attribute.present ? data.attribute.value : this.attribute,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryRelationCategory(')
+          ..write('id: $id, ')
+          ..write('attribute: $attribute, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, attribute, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CivilRegistryRelationCategory &&
+          other.id == this.id &&
+          other.attribute == this.attribute &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CivilRegistryRelationCategoriesCompanion
+    extends UpdateCompanion<CivilRegistryRelationCategory> {
+  final Value<int> id;
+  final Value<String> attribute;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const CivilRegistryRelationCategoriesCompanion({
+    this.id = const Value.absent(),
+    this.attribute = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  CivilRegistryRelationCategoriesCompanion.insert({
+    this.id = const Value.absent(),
+    required String attribute,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) : attribute = Value(attribute),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<CivilRegistryRelationCategory> custom({
+    Expression<int>? id,
+    Expression<String>? attribute,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (attribute != null) 'attribute': attribute,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  CivilRegistryRelationCategoriesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? attribute,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return CivilRegistryRelationCategoriesCompanion(
+      id: id ?? this.id,
+      attribute: attribute ?? this.attribute,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (attribute.present) {
+      map['attribute'] = Variable<String>(attribute.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryRelationCategoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('attribute: $attribute, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CivilRegistryBirthCodeTable extends CivilRegistryBirthCode
+    with TableInfo<$CivilRegistryBirthCodeTable, CivilRegistryBirthCodeData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CivilRegistryBirthCodeTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _birthCodeMeta = const VerificationMeta(
+    'birthCode',
+  );
+  @override
+  late final GeneratedColumn<String> birthCode = GeneratedColumn<String>(
+    'CI_BIRTH_TB_CD',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, birthCode, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'civil_registry_birth_code';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CivilRegistryBirthCodeData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('CI_BIRTH_TB_CD')) {
+      context.handle(
+        _birthCodeMeta,
+        birthCode.isAcceptableOrUnknown(
+          data['CI_BIRTH_TB_CD']!,
+          _birthCodeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_birthCodeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CivilRegistryBirthCodeData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CivilRegistryBirthCodeData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      birthCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}CI_BIRTH_TB_CD'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CivilRegistryBirthCodeTable createAlias(String alias) {
+    return $CivilRegistryBirthCodeTable(attachedDatabase, alias);
+  }
+}
+
+class CivilRegistryBirthCodeData extends DataClass
+    implements Insertable<CivilRegistryBirthCodeData> {
+  final int id;
+  final String birthCode;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CivilRegistryBirthCodeData({
+    required this.id,
+    required this.birthCode,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['CI_BIRTH_TB_CD'] = Variable<String>(birthCode);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CivilRegistryBirthCodeCompanion toCompanion(bool nullToAbsent) {
+    return CivilRegistryBirthCodeCompanion(
+      id: Value(id),
+      birthCode: Value(birthCode),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CivilRegistryBirthCodeData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CivilRegistryBirthCodeData(
+      id: serializer.fromJson<int>(json['id']),
+      birthCode: serializer.fromJson<String>(json['birthCode']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'birthCode': serializer.toJson<String>(birthCode),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CivilRegistryBirthCodeData copyWith({
+    int? id,
+    String? birthCode,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CivilRegistryBirthCodeData(
+    id: id ?? this.id,
+    birthCode: birthCode ?? this.birthCode,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CivilRegistryBirthCodeData copyWithCompanion(
+    CivilRegistryBirthCodeCompanion data,
+  ) {
+    return CivilRegistryBirthCodeData(
+      id: data.id.present ? data.id.value : this.id,
+      birthCode: data.birthCode.present ? data.birthCode.value : this.birthCode,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryBirthCodeData(')
+          ..write('id: $id, ')
+          ..write('birthCode: $birthCode, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, birthCode, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CivilRegistryBirthCodeData &&
+          other.id == this.id &&
+          other.birthCode == this.birthCode &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CivilRegistryBirthCodeCompanion
+    extends UpdateCompanion<CivilRegistryBirthCodeData> {
+  final Value<int> id;
+  final Value<String> birthCode;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const CivilRegistryBirthCodeCompanion({
+    this.id = const Value.absent(),
+    this.birthCode = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  CivilRegistryBirthCodeCompanion.insert({
+    this.id = const Value.absent(),
+    required String birthCode,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) : birthCode = Value(birthCode),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<CivilRegistryBirthCodeData> custom({
+    Expression<int>? id,
+    Expression<String>? birthCode,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (birthCode != null) 'CI_BIRTH_TB_CD': birthCode,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  CivilRegistryBirthCodeCompanion copyWith({
+    Value<int>? id,
+    Value<String>? birthCode,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return CivilRegistryBirthCodeCompanion(
+      id: id ?? this.id,
+      birthCode: birthCode ?? this.birthCode,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (birthCode.present) {
+      map['CI_BIRTH_TB_CD'] = Variable<String>(birthCode.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryBirthCodeCompanion(')
+          ..write('id: $id, ')
+          ..write('birthCode: $birthCode, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CivilRegistryPersonalCodeTable extends CivilRegistryPersonalCode
+    with
+        TableInfo<
+          $CivilRegistryPersonalCodeTable,
+          CivilRegistryPersonalCodeData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CivilRegistryPersonalCodeTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _personalCodeMeta = const VerificationMeta(
+    'personalCode',
+  );
+  @override
+  late final GeneratedColumn<String> personalCode = GeneratedColumn<String>(
+    'CI_PERSONAL_CD',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    personalCode,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'civil_registry_personal_code';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CivilRegistryPersonalCodeData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('CI_PERSONAL_CD')) {
+      context.handle(
+        _personalCodeMeta,
+        personalCode.isAcceptableOrUnknown(
+          data['CI_PERSONAL_CD']!,
+          _personalCodeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_personalCodeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CivilRegistryPersonalCodeData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CivilRegistryPersonalCodeData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      personalCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}CI_PERSONAL_CD'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CivilRegistryPersonalCodeTable createAlias(String alias) {
+    return $CivilRegistryPersonalCodeTable(attachedDatabase, alias);
+  }
+}
+
+class CivilRegistryPersonalCodeData extends DataClass
+    implements Insertable<CivilRegistryPersonalCodeData> {
+  final int id;
+  final String personalCode;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CivilRegistryPersonalCodeData({
+    required this.id,
+    required this.personalCode,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['CI_PERSONAL_CD'] = Variable<String>(personalCode);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CivilRegistryPersonalCodeCompanion toCompanion(bool nullToAbsent) {
+    return CivilRegistryPersonalCodeCompanion(
+      id: Value(id),
+      personalCode: Value(personalCode),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CivilRegistryPersonalCodeData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CivilRegistryPersonalCodeData(
+      id: serializer.fromJson<int>(json['id']),
+      personalCode: serializer.fromJson<String>(json['personalCode']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'personalCode': serializer.toJson<String>(personalCode),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CivilRegistryPersonalCodeData copyWith({
+    int? id,
+    String? personalCode,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CivilRegistryPersonalCodeData(
+    id: id ?? this.id,
+    personalCode: personalCode ?? this.personalCode,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CivilRegistryPersonalCodeData copyWithCompanion(
+    CivilRegistryPersonalCodeCompanion data,
+  ) {
+    return CivilRegistryPersonalCodeData(
+      id: data.id.present ? data.id.value : this.id,
+      personalCode: data.personalCode.present
+          ? data.personalCode.value
+          : this.personalCode,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryPersonalCodeData(')
+          ..write('id: $id, ')
+          ..write('personalCode: $personalCode, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, personalCode, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CivilRegistryPersonalCodeData &&
+          other.id == this.id &&
+          other.personalCode == this.personalCode &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CivilRegistryPersonalCodeCompanion
+    extends UpdateCompanion<CivilRegistryPersonalCodeData> {
+  final Value<int> id;
+  final Value<String> personalCode;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const CivilRegistryPersonalCodeCompanion({
+    this.id = const Value.absent(),
+    this.personalCode = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  CivilRegistryPersonalCodeCompanion.insert({
+    this.id = const Value.absent(),
+    required String personalCode,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) : personalCode = Value(personalCode),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<CivilRegistryPersonalCodeData> custom({
+    Expression<int>? id,
+    Expression<String>? personalCode,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (personalCode != null) 'CI_PERSONAL_CD': personalCode,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  CivilRegistryPersonalCodeCompanion copyWith({
+    Value<int>? id,
+    Value<String>? personalCode,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return CivilRegistryPersonalCodeCompanion(
+      id: id ?? this.id,
+      personalCode: personalCode ?? this.personalCode,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (personalCode.present) {
+      map['CI_PERSONAL_CD'] = Variable<String>(personalCode.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CivilRegistryPersonalCodeCompanion(')
+          ..write('id: $id, ')
+          ..write('personalCode: $personalCode, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -6726,6 +9235,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TaxonomiesTable taxonomies = $TaxonomiesTable(this);
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
   late final $CivilRegistryTable civilRegistry = $CivilRegistryTable(this);
+  late final $CivilRegistryCityTable civilRegistryCity =
+      $CivilRegistryCityTable(this);
+  late final $CivilRegistryRelationsTable civilRegistryRelations =
+      $CivilRegistryRelationsTable(this);
+  late final $CivilRegistryRelationCategoriesTable
+  civilRegistryRelationCategories = $CivilRegistryRelationCategoriesTable(this);
+  late final $CivilRegistryBirthCodeTable civilRegistryBirthCode =
+      $CivilRegistryBirthCodeTable(this);
+  late final $CivilRegistryPersonalCodeTable civilRegistryPersonalCode =
+      $CivilRegistryPersonalCodeTable(this);
   late final $ActivitiesTable activities = $ActivitiesTable(this);
   late final $DataRequestsTable dataRequests = $DataRequestsTable(this);
   @override
@@ -6739,6 +9258,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     taxonomies,
     syncQueue,
     civilRegistry,
+    civilRegistryCity,
+    civilRegistryRelations,
+    civilRegistryRelationCategories,
+    civilRegistryBirthCode,
+    civilRegistryPersonalCode,
     activities,
     dataRequests,
   ];
@@ -8885,31 +11409,63 @@ typedef $$SyncQueueTableProcessedTableManager =
     >;
 typedef $$CivilRegistryTableCreateCompanionBuilder =
     CivilRegistryCompanion Function({
+      Value<int> id,
       required String nationalId,
-      required String fileNo,
-      required String fullNameNorm,
-      required String fullNameRaw,
-      required String governorate,
-      Value<String?> district,
-      Value<String?> birthDate,
-      Value<String?> fatherName,
+      required String firstName,
+      required String fatherName,
+      required String grandFatherName,
+      required String familyName,
+      Value<int?> birthCertificateId,
+      Value<int?> birthCodeId,
+      Value<DateTime?> birthDate,
+      Value<int?> sexCode,
+      Value<int?> personalCodeId,
+      Value<int?> deadDate,
       Value<String?> motherName,
-      Value<String?> address,
-      Value<int> rowid,
+      Value<int?> cityId,
+      Value<String?> cityName,
+      Value<String?> street,
+      Value<String?> houseNo,
+      Value<int?> relationId,
+      Value<int?> relativeCodeId,
+      Value<int?> relativeId,
+      Value<String?> fullName,
+      Value<String?> fullNameNormalized,
+      Value<String?> governorate,
+      Value<String?> district,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<DateTime?> lastSyncedAt,
     });
 typedef $$CivilRegistryTableUpdateCompanionBuilder =
     CivilRegistryCompanion Function({
+      Value<int> id,
       Value<String> nationalId,
-      Value<String> fileNo,
-      Value<String> fullNameNorm,
-      Value<String> fullNameRaw,
-      Value<String> governorate,
-      Value<String?> district,
-      Value<String?> birthDate,
-      Value<String?> fatherName,
+      Value<String> firstName,
+      Value<String> fatherName,
+      Value<String> grandFatherName,
+      Value<String> familyName,
+      Value<int?> birthCertificateId,
+      Value<int?> birthCodeId,
+      Value<DateTime?> birthDate,
+      Value<int?> sexCode,
+      Value<int?> personalCodeId,
+      Value<int?> deadDate,
       Value<String?> motherName,
-      Value<String?> address,
-      Value<int> rowid,
+      Value<int?> cityId,
+      Value<String?> cityName,
+      Value<String?> street,
+      Value<String?> houseNo,
+      Value<int?> relationId,
+      Value<int?> relativeCodeId,
+      Value<int?> relativeId,
+      Value<String?> fullName,
+      Value<String?> fullNameNormalized,
+      Value<String?> governorate,
+      Value<String?> district,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime?> lastSyncedAt,
     });
 
 class $$CivilRegistryTableFilterComposer
@@ -8921,23 +11477,113 @@ class $$CivilRegistryTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get nationalId => $composableBuilder(
     column: $table.nationalId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fileNo => $composableBuilder(
-    column: $table.fileNo,
+  ColumnFilters<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fullNameNorm => $composableBuilder(
-    column: $table.fullNameNorm,
+  ColumnFilters<String> get fatherName => $composableBuilder(
+    column: $table.fatherName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fullNameRaw => $composableBuilder(
-    column: $table.fullNameRaw,
+  ColumnFilters<String> get grandFatherName => $composableBuilder(
+    column: $table.grandFatherName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get familyName => $composableBuilder(
+    column: $table.familyName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get birthCertificateId => $composableBuilder(
+    column: $table.birthCertificateId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get birthCodeId => $composableBuilder(
+    column: $table.birthCodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get birthDate => $composableBuilder(
+    column: $table.birthDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sexCode => $composableBuilder(
+    column: $table.sexCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personalCodeId => $composableBuilder(
+    column: $table.personalCodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deadDate => $composableBuilder(
+    column: $table.deadDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get motherName => $composableBuilder(
+    column: $table.motherName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get cityId => $composableBuilder(
+    column: $table.cityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cityName => $composableBuilder(
+    column: $table.cityName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get street => $composableBuilder(
+    column: $table.street,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get houseNo => $composableBuilder(
+    column: $table.houseNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get relationId => $composableBuilder(
+    column: $table.relationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get relativeCodeId => $composableBuilder(
+    column: $table.relativeCodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get relativeId => $composableBuilder(
+    column: $table.relativeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fullName => $composableBuilder(
+    column: $table.fullName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fullNameNormalized => $composableBuilder(
+    column: $table.fullNameNormalized,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8951,23 +11597,18 @@ class $$CivilRegistryTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get birthDate => $composableBuilder(
-    column: $table.birthDate,
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fatherName => $composableBuilder(
-    column: $table.fatherName,
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get motherName => $composableBuilder(
-    column: $table.motherName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get address => $composableBuilder(
-    column: $table.address,
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8981,23 +11622,113 @@ class $$CivilRegistryTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get nationalId => $composableBuilder(
     column: $table.nationalId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fileNo => $composableBuilder(
-    column: $table.fileNo,
+  ColumnOrderings<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fullNameNorm => $composableBuilder(
-    column: $table.fullNameNorm,
+  ColumnOrderings<String> get fatherName => $composableBuilder(
+    column: $table.fatherName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fullNameRaw => $composableBuilder(
-    column: $table.fullNameRaw,
+  ColumnOrderings<String> get grandFatherName => $composableBuilder(
+    column: $table.grandFatherName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get familyName => $composableBuilder(
+    column: $table.familyName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get birthCertificateId => $composableBuilder(
+    column: $table.birthCertificateId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get birthCodeId => $composableBuilder(
+    column: $table.birthCodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get birthDate => $composableBuilder(
+    column: $table.birthDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sexCode => $composableBuilder(
+    column: $table.sexCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personalCodeId => $composableBuilder(
+    column: $table.personalCodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deadDate => $composableBuilder(
+    column: $table.deadDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get motherName => $composableBuilder(
+    column: $table.motherName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get cityId => $composableBuilder(
+    column: $table.cityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cityName => $composableBuilder(
+    column: $table.cityName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get street => $composableBuilder(
+    column: $table.street,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get houseNo => $composableBuilder(
+    column: $table.houseNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relationId => $composableBuilder(
+    column: $table.relationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relativeCodeId => $composableBuilder(
+    column: $table.relativeCodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relativeId => $composableBuilder(
+    column: $table.relativeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fullName => $composableBuilder(
+    column: $table.fullName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fullNameNormalized => $composableBuilder(
+    column: $table.fullNameNormalized,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9011,23 +11742,18 @@ class $$CivilRegistryTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get birthDate => $composableBuilder(
-    column: $table.birthDate,
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fatherName => $composableBuilder(
-    column: $table.fatherName,
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get motherName => $composableBuilder(
-    column: $table.motherName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get address => $composableBuilder(
-    column: $table.address,
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -9041,21 +11767,93 @@ class $$CivilRegistryTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<String> get nationalId => $composableBuilder(
     column: $table.nationalId,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get fileNo =>
-      $composableBuilder(column: $table.fileNo, builder: (column) => column);
+  GeneratedColumn<String> get firstName =>
+      $composableBuilder(column: $table.firstName, builder: (column) => column);
 
-  GeneratedColumn<String> get fullNameNorm => $composableBuilder(
-    column: $table.fullNameNorm,
+  GeneratedColumn<String> get fatherName => $composableBuilder(
+    column: $table.fatherName,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get fullNameRaw => $composableBuilder(
-    column: $table.fullNameRaw,
+  GeneratedColumn<String> get grandFatherName => $composableBuilder(
+    column: $table.grandFatherName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get familyName => $composableBuilder(
+    column: $table.familyName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get birthCertificateId => $composableBuilder(
+    column: $table.birthCertificateId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get birthCodeId => $composableBuilder(
+    column: $table.birthCodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get birthDate =>
+      $composableBuilder(column: $table.birthDate, builder: (column) => column);
+
+  GeneratedColumn<int> get sexCode =>
+      $composableBuilder(column: $table.sexCode, builder: (column) => column);
+
+  GeneratedColumn<int> get personalCodeId => $composableBuilder(
+    column: $table.personalCodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deadDate =>
+      $composableBuilder(column: $table.deadDate, builder: (column) => column);
+
+  GeneratedColumn<String> get motherName => $composableBuilder(
+    column: $table.motherName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get cityId =>
+      $composableBuilder(column: $table.cityId, builder: (column) => column);
+
+  GeneratedColumn<String> get cityName =>
+      $composableBuilder(column: $table.cityName, builder: (column) => column);
+
+  GeneratedColumn<String> get street =>
+      $composableBuilder(column: $table.street, builder: (column) => column);
+
+  GeneratedColumn<String> get houseNo =>
+      $composableBuilder(column: $table.houseNo, builder: (column) => column);
+
+  GeneratedColumn<int> get relationId => $composableBuilder(
+    column: $table.relationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get relativeCodeId => $composableBuilder(
+    column: $table.relativeCodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get relativeId => $composableBuilder(
+    column: $table.relativeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fullName =>
+      $composableBuilder(column: $table.fullName, builder: (column) => column);
+
+  GeneratedColumn<String> get fullNameNormalized => $composableBuilder(
+    column: $table.fullNameNormalized,
     builder: (column) => column,
   );
 
@@ -9067,21 +11865,16 @@ class $$CivilRegistryTableAnnotationComposer
   GeneratedColumn<String> get district =>
       $composableBuilder(column: $table.district, builder: (column) => column);
 
-  GeneratedColumn<String> get birthDate =>
-      $composableBuilder(column: $table.birthDate, builder: (column) => column);
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  GeneratedColumn<String> get fatherName => $composableBuilder(
-    column: $table.fatherName,
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
     builder: (column) => column,
   );
-
-  GeneratedColumn<String> get motherName => $composableBuilder(
-    column: $table.motherName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get address =>
-      $composableBuilder(column: $table.address, builder: (column) => column);
 }
 
 class $$CivilRegistryTableTableManager
@@ -9119,55 +11912,119 @@ class $$CivilRegistryTableTableManager
               $$CivilRegistryTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 Value<String> nationalId = const Value.absent(),
-                Value<String> fileNo = const Value.absent(),
-                Value<String> fullNameNorm = const Value.absent(),
-                Value<String> fullNameRaw = const Value.absent(),
-                Value<String> governorate = const Value.absent(),
-                Value<String?> district = const Value.absent(),
-                Value<String?> birthDate = const Value.absent(),
-                Value<String?> fatherName = const Value.absent(),
+                Value<String> firstName = const Value.absent(),
+                Value<String> fatherName = const Value.absent(),
+                Value<String> grandFatherName = const Value.absent(),
+                Value<String> familyName = const Value.absent(),
+                Value<int?> birthCertificateId = const Value.absent(),
+                Value<int?> birthCodeId = const Value.absent(),
+                Value<DateTime?> birthDate = const Value.absent(),
+                Value<int?> sexCode = const Value.absent(),
+                Value<int?> personalCodeId = const Value.absent(),
+                Value<int?> deadDate = const Value.absent(),
                 Value<String?> motherName = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<int?> cityId = const Value.absent(),
+                Value<String?> cityName = const Value.absent(),
+                Value<String?> street = const Value.absent(),
+                Value<String?> houseNo = const Value.absent(),
+                Value<int?> relationId = const Value.absent(),
+                Value<int?> relativeCodeId = const Value.absent(),
+                Value<int?> relativeId = const Value.absent(),
+                Value<String?> fullName = const Value.absent(),
+                Value<String?> fullNameNormalized = const Value.absent(),
+                Value<String?> governorate = const Value.absent(),
+                Value<String?> district = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => CivilRegistryCompanion(
+                id: id,
                 nationalId: nationalId,
-                fileNo: fileNo,
-                fullNameNorm: fullNameNorm,
-                fullNameRaw: fullNameRaw,
+                firstName: firstName,
+                fatherName: fatherName,
+                grandFatherName: grandFatherName,
+                familyName: familyName,
+                birthCertificateId: birthCertificateId,
+                birthCodeId: birthCodeId,
+                birthDate: birthDate,
+                sexCode: sexCode,
+                personalCodeId: personalCodeId,
+                deadDate: deadDate,
+                motherName: motherName,
+                cityId: cityId,
+                cityName: cityName,
+                street: street,
+                houseNo: houseNo,
+                relationId: relationId,
+                relativeCodeId: relativeCodeId,
+                relativeId: relativeId,
+                fullName: fullName,
+                fullNameNormalized: fullNameNormalized,
                 governorate: governorate,
                 district: district,
-                birthDate: birthDate,
-                fatherName: fatherName,
-                motherName: motherName,
-                address: address,
-                rowid: rowid,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                lastSyncedAt: lastSyncedAt,
               ),
           createCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 required String nationalId,
-                required String fileNo,
-                required String fullNameNorm,
-                required String fullNameRaw,
-                required String governorate,
-                Value<String?> district = const Value.absent(),
-                Value<String?> birthDate = const Value.absent(),
-                Value<String?> fatherName = const Value.absent(),
+                required String firstName,
+                required String fatherName,
+                required String grandFatherName,
+                required String familyName,
+                Value<int?> birthCertificateId = const Value.absent(),
+                Value<int?> birthCodeId = const Value.absent(),
+                Value<DateTime?> birthDate = const Value.absent(),
+                Value<int?> sexCode = const Value.absent(),
+                Value<int?> personalCodeId = const Value.absent(),
+                Value<int?> deadDate = const Value.absent(),
                 Value<String?> motherName = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<int?> cityId = const Value.absent(),
+                Value<String?> cityName = const Value.absent(),
+                Value<String?> street = const Value.absent(),
+                Value<String?> houseNo = const Value.absent(),
+                Value<int?> relationId = const Value.absent(),
+                Value<int?> relativeCodeId = const Value.absent(),
+                Value<int?> relativeId = const Value.absent(),
+                Value<String?> fullName = const Value.absent(),
+                Value<String?> fullNameNormalized = const Value.absent(),
+                Value<String?> governorate = const Value.absent(),
+                Value<String?> district = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
               }) => CivilRegistryCompanion.insert(
+                id: id,
                 nationalId: nationalId,
-                fileNo: fileNo,
-                fullNameNorm: fullNameNorm,
-                fullNameRaw: fullNameRaw,
+                firstName: firstName,
+                fatherName: fatherName,
+                grandFatherName: grandFatherName,
+                familyName: familyName,
+                birthCertificateId: birthCertificateId,
+                birthCodeId: birthCodeId,
+                birthDate: birthDate,
+                sexCode: sexCode,
+                personalCodeId: personalCodeId,
+                deadDate: deadDate,
+                motherName: motherName,
+                cityId: cityId,
+                cityName: cityName,
+                street: street,
+                houseNo: houseNo,
+                relationId: relationId,
+                relativeCodeId: relativeCodeId,
+                relativeId: relativeId,
+                fullName: fullName,
+                fullNameNormalized: fullNameNormalized,
                 governorate: governorate,
                 district: district,
-                birthDate: birthDate,
-                fatherName: fatherName,
-                motherName: motherName,
-                address: address,
-                rowid: rowid,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                lastSyncedAt: lastSyncedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -9192,6 +12049,1014 @@ typedef $$CivilRegistryTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $CivilRegistryTable, CivilRegistryData>,
       ),
       CivilRegistryData,
+      PrefetchHooks Function()
+    >;
+typedef $$CivilRegistryCityTableCreateCompanionBuilder =
+    CivilRegistryCityCompanion Function({
+      Value<int> id,
+      required String city,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+    });
+typedef $$CivilRegistryCityTableUpdateCompanionBuilder =
+    CivilRegistryCityCompanion Function({
+      Value<int> id,
+      Value<String> city,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$CivilRegistryCityTableFilterComposer
+    extends Composer<_$AppDatabase, $CivilRegistryCityTable> {
+  $$CivilRegistryCityTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get city => $composableBuilder(
+    column: $table.city,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CivilRegistryCityTableOrderingComposer
+    extends Composer<_$AppDatabase, $CivilRegistryCityTable> {
+  $$CivilRegistryCityTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get city => $composableBuilder(
+    column: $table.city,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CivilRegistryCityTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CivilRegistryCityTable> {
+  $$CivilRegistryCityTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get city =>
+      $composableBuilder(column: $table.city, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CivilRegistryCityTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CivilRegistryCityTable,
+          CivilRegistryCityData,
+          $$CivilRegistryCityTableFilterComposer,
+          $$CivilRegistryCityTableOrderingComposer,
+          $$CivilRegistryCityTableAnnotationComposer,
+          $$CivilRegistryCityTableCreateCompanionBuilder,
+          $$CivilRegistryCityTableUpdateCompanionBuilder,
+          (
+            CivilRegistryCityData,
+            BaseReferences<
+              _$AppDatabase,
+              $CivilRegistryCityTable,
+              CivilRegistryCityData
+            >,
+          ),
+          CivilRegistryCityData,
+          PrefetchHooks Function()
+        > {
+  $$CivilRegistryCityTableTableManager(
+    _$AppDatabase db,
+    $CivilRegistryCityTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CivilRegistryCityTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CivilRegistryCityTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CivilRegistryCityTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> city = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CivilRegistryCityCompanion(
+                id: id,
+                city: city,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String city,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+              }) => CivilRegistryCityCompanion.insert(
+                id: id,
+                city: city,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CivilRegistryCityTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CivilRegistryCityTable,
+      CivilRegistryCityData,
+      $$CivilRegistryCityTableFilterComposer,
+      $$CivilRegistryCityTableOrderingComposer,
+      $$CivilRegistryCityTableAnnotationComposer,
+      $$CivilRegistryCityTableCreateCompanionBuilder,
+      $$CivilRegistryCityTableUpdateCompanionBuilder,
+      (
+        CivilRegistryCityData,
+        BaseReferences<
+          _$AppDatabase,
+          $CivilRegistryCityTable,
+          CivilRegistryCityData
+        >,
+      ),
+      CivilRegistryCityData,
+      PrefetchHooks Function()
+    >;
+typedef $$CivilRegistryRelationsTableCreateCompanionBuilder =
+    CivilRegistryRelationsCompanion Function({
+      Value<int> id,
+      required int personId,
+      required int relativeId,
+      required int relativeCodeId,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+    });
+typedef $$CivilRegistryRelationsTableUpdateCompanionBuilder =
+    CivilRegistryRelationsCompanion Function({
+      Value<int> id,
+      Value<int> personId,
+      Value<int> relativeId,
+      Value<int> relativeCodeId,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$CivilRegistryRelationsTableFilterComposer
+    extends Composer<_$AppDatabase, $CivilRegistryRelationsTable> {
+  $$CivilRegistryRelationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get relativeId => $composableBuilder(
+    column: $table.relativeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get relativeCodeId => $composableBuilder(
+    column: $table.relativeCodeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CivilRegistryRelationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CivilRegistryRelationsTable> {
+  $$CivilRegistryRelationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personId => $composableBuilder(
+    column: $table.personId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relativeId => $composableBuilder(
+    column: $table.relativeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get relativeCodeId => $composableBuilder(
+    column: $table.relativeCodeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CivilRegistryRelationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CivilRegistryRelationsTable> {
+  $$CivilRegistryRelationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<int> get relativeId => $composableBuilder(
+    column: $table.relativeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get relativeCodeId => $composableBuilder(
+    column: $table.relativeCodeId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CivilRegistryRelationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CivilRegistryRelationsTable,
+          CivilRegistryRelation,
+          $$CivilRegistryRelationsTableFilterComposer,
+          $$CivilRegistryRelationsTableOrderingComposer,
+          $$CivilRegistryRelationsTableAnnotationComposer,
+          $$CivilRegistryRelationsTableCreateCompanionBuilder,
+          $$CivilRegistryRelationsTableUpdateCompanionBuilder,
+          (
+            CivilRegistryRelation,
+            BaseReferences<
+              _$AppDatabase,
+              $CivilRegistryRelationsTable,
+              CivilRegistryRelation
+            >,
+          ),
+          CivilRegistryRelation,
+          PrefetchHooks Function()
+        > {
+  $$CivilRegistryRelationsTableTableManager(
+    _$AppDatabase db,
+    $CivilRegistryRelationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CivilRegistryRelationsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CivilRegistryRelationsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CivilRegistryRelationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> personId = const Value.absent(),
+                Value<int> relativeId = const Value.absent(),
+                Value<int> relativeCodeId = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CivilRegistryRelationsCompanion(
+                id: id,
+                personId: personId,
+                relativeId: relativeId,
+                relativeCodeId: relativeCodeId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int personId,
+                required int relativeId,
+                required int relativeCodeId,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+              }) => CivilRegistryRelationsCompanion.insert(
+                id: id,
+                personId: personId,
+                relativeId: relativeId,
+                relativeCodeId: relativeCodeId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CivilRegistryRelationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CivilRegistryRelationsTable,
+      CivilRegistryRelation,
+      $$CivilRegistryRelationsTableFilterComposer,
+      $$CivilRegistryRelationsTableOrderingComposer,
+      $$CivilRegistryRelationsTableAnnotationComposer,
+      $$CivilRegistryRelationsTableCreateCompanionBuilder,
+      $$CivilRegistryRelationsTableUpdateCompanionBuilder,
+      (
+        CivilRegistryRelation,
+        BaseReferences<
+          _$AppDatabase,
+          $CivilRegistryRelationsTable,
+          CivilRegistryRelation
+        >,
+      ),
+      CivilRegistryRelation,
+      PrefetchHooks Function()
+    >;
+typedef $$CivilRegistryRelationCategoriesTableCreateCompanionBuilder =
+    CivilRegistryRelationCategoriesCompanion Function({
+      Value<int> id,
+      required String attribute,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+    });
+typedef $$CivilRegistryRelationCategoriesTableUpdateCompanionBuilder =
+    CivilRegistryRelationCategoriesCompanion Function({
+      Value<int> id,
+      Value<String> attribute,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$CivilRegistryRelationCategoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $CivilRegistryRelationCategoriesTable> {
+  $$CivilRegistryRelationCategoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attribute => $composableBuilder(
+    column: $table.attribute,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CivilRegistryRelationCategoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CivilRegistryRelationCategoriesTable> {
+  $$CivilRegistryRelationCategoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attribute => $composableBuilder(
+    column: $table.attribute,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CivilRegistryRelationCategoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CivilRegistryRelationCategoriesTable> {
+  $$CivilRegistryRelationCategoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get attribute =>
+      $composableBuilder(column: $table.attribute, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CivilRegistryRelationCategoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CivilRegistryRelationCategoriesTable,
+          CivilRegistryRelationCategory,
+          $$CivilRegistryRelationCategoriesTableFilterComposer,
+          $$CivilRegistryRelationCategoriesTableOrderingComposer,
+          $$CivilRegistryRelationCategoriesTableAnnotationComposer,
+          $$CivilRegistryRelationCategoriesTableCreateCompanionBuilder,
+          $$CivilRegistryRelationCategoriesTableUpdateCompanionBuilder,
+          (
+            CivilRegistryRelationCategory,
+            BaseReferences<
+              _$AppDatabase,
+              $CivilRegistryRelationCategoriesTable,
+              CivilRegistryRelationCategory
+            >,
+          ),
+          CivilRegistryRelationCategory,
+          PrefetchHooks Function()
+        > {
+  $$CivilRegistryRelationCategoriesTableTableManager(
+    _$AppDatabase db,
+    $CivilRegistryRelationCategoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CivilRegistryRelationCategoriesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CivilRegistryRelationCategoriesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CivilRegistryRelationCategoriesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> attribute = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CivilRegistryRelationCategoriesCompanion(
+                id: id,
+                attribute: attribute,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String attribute,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+              }) => CivilRegistryRelationCategoriesCompanion.insert(
+                id: id,
+                attribute: attribute,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CivilRegistryRelationCategoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CivilRegistryRelationCategoriesTable,
+      CivilRegistryRelationCategory,
+      $$CivilRegistryRelationCategoriesTableFilterComposer,
+      $$CivilRegistryRelationCategoriesTableOrderingComposer,
+      $$CivilRegistryRelationCategoriesTableAnnotationComposer,
+      $$CivilRegistryRelationCategoriesTableCreateCompanionBuilder,
+      $$CivilRegistryRelationCategoriesTableUpdateCompanionBuilder,
+      (
+        CivilRegistryRelationCategory,
+        BaseReferences<
+          _$AppDatabase,
+          $CivilRegistryRelationCategoriesTable,
+          CivilRegistryRelationCategory
+        >,
+      ),
+      CivilRegistryRelationCategory,
+      PrefetchHooks Function()
+    >;
+typedef $$CivilRegistryBirthCodeTableCreateCompanionBuilder =
+    CivilRegistryBirthCodeCompanion Function({
+      Value<int> id,
+      required String birthCode,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+    });
+typedef $$CivilRegistryBirthCodeTableUpdateCompanionBuilder =
+    CivilRegistryBirthCodeCompanion Function({
+      Value<int> id,
+      Value<String> birthCode,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$CivilRegistryBirthCodeTableFilterComposer
+    extends Composer<_$AppDatabase, $CivilRegistryBirthCodeTable> {
+  $$CivilRegistryBirthCodeTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get birthCode => $composableBuilder(
+    column: $table.birthCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CivilRegistryBirthCodeTableOrderingComposer
+    extends Composer<_$AppDatabase, $CivilRegistryBirthCodeTable> {
+  $$CivilRegistryBirthCodeTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get birthCode => $composableBuilder(
+    column: $table.birthCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CivilRegistryBirthCodeTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CivilRegistryBirthCodeTable> {
+  $$CivilRegistryBirthCodeTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get birthCode =>
+      $composableBuilder(column: $table.birthCode, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CivilRegistryBirthCodeTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CivilRegistryBirthCodeTable,
+          CivilRegistryBirthCodeData,
+          $$CivilRegistryBirthCodeTableFilterComposer,
+          $$CivilRegistryBirthCodeTableOrderingComposer,
+          $$CivilRegistryBirthCodeTableAnnotationComposer,
+          $$CivilRegistryBirthCodeTableCreateCompanionBuilder,
+          $$CivilRegistryBirthCodeTableUpdateCompanionBuilder,
+          (
+            CivilRegistryBirthCodeData,
+            BaseReferences<
+              _$AppDatabase,
+              $CivilRegistryBirthCodeTable,
+              CivilRegistryBirthCodeData
+            >,
+          ),
+          CivilRegistryBirthCodeData,
+          PrefetchHooks Function()
+        > {
+  $$CivilRegistryBirthCodeTableTableManager(
+    _$AppDatabase db,
+    $CivilRegistryBirthCodeTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CivilRegistryBirthCodeTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CivilRegistryBirthCodeTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CivilRegistryBirthCodeTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> birthCode = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CivilRegistryBirthCodeCompanion(
+                id: id,
+                birthCode: birthCode,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String birthCode,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+              }) => CivilRegistryBirthCodeCompanion.insert(
+                id: id,
+                birthCode: birthCode,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CivilRegistryBirthCodeTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CivilRegistryBirthCodeTable,
+      CivilRegistryBirthCodeData,
+      $$CivilRegistryBirthCodeTableFilterComposer,
+      $$CivilRegistryBirthCodeTableOrderingComposer,
+      $$CivilRegistryBirthCodeTableAnnotationComposer,
+      $$CivilRegistryBirthCodeTableCreateCompanionBuilder,
+      $$CivilRegistryBirthCodeTableUpdateCompanionBuilder,
+      (
+        CivilRegistryBirthCodeData,
+        BaseReferences<
+          _$AppDatabase,
+          $CivilRegistryBirthCodeTable,
+          CivilRegistryBirthCodeData
+        >,
+      ),
+      CivilRegistryBirthCodeData,
+      PrefetchHooks Function()
+    >;
+typedef $$CivilRegistryPersonalCodeTableCreateCompanionBuilder =
+    CivilRegistryPersonalCodeCompanion Function({
+      Value<int> id,
+      required String personalCode,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+    });
+typedef $$CivilRegistryPersonalCodeTableUpdateCompanionBuilder =
+    CivilRegistryPersonalCodeCompanion Function({
+      Value<int> id,
+      Value<String> personalCode,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$CivilRegistryPersonalCodeTableFilterComposer
+    extends Composer<_$AppDatabase, $CivilRegistryPersonalCodeTable> {
+  $$CivilRegistryPersonalCodeTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personalCode => $composableBuilder(
+    column: $table.personalCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CivilRegistryPersonalCodeTableOrderingComposer
+    extends Composer<_$AppDatabase, $CivilRegistryPersonalCodeTable> {
+  $$CivilRegistryPersonalCodeTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personalCode => $composableBuilder(
+    column: $table.personalCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CivilRegistryPersonalCodeTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CivilRegistryPersonalCodeTable> {
+  $$CivilRegistryPersonalCodeTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get personalCode => $composableBuilder(
+    column: $table.personalCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CivilRegistryPersonalCodeTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CivilRegistryPersonalCodeTable,
+          CivilRegistryPersonalCodeData,
+          $$CivilRegistryPersonalCodeTableFilterComposer,
+          $$CivilRegistryPersonalCodeTableOrderingComposer,
+          $$CivilRegistryPersonalCodeTableAnnotationComposer,
+          $$CivilRegistryPersonalCodeTableCreateCompanionBuilder,
+          $$CivilRegistryPersonalCodeTableUpdateCompanionBuilder,
+          (
+            CivilRegistryPersonalCodeData,
+            BaseReferences<
+              _$AppDatabase,
+              $CivilRegistryPersonalCodeTable,
+              CivilRegistryPersonalCodeData
+            >,
+          ),
+          CivilRegistryPersonalCodeData,
+          PrefetchHooks Function()
+        > {
+  $$CivilRegistryPersonalCodeTableTableManager(
+    _$AppDatabase db,
+    $CivilRegistryPersonalCodeTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CivilRegistryPersonalCodeTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CivilRegistryPersonalCodeTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CivilRegistryPersonalCodeTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> personalCode = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CivilRegistryPersonalCodeCompanion(
+                id: id,
+                personalCode: personalCode,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String personalCode,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+              }) => CivilRegistryPersonalCodeCompanion.insert(
+                id: id,
+                personalCode: personalCode,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CivilRegistryPersonalCodeTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CivilRegistryPersonalCodeTable,
+      CivilRegistryPersonalCodeData,
+      $$CivilRegistryPersonalCodeTableFilterComposer,
+      $$CivilRegistryPersonalCodeTableOrderingComposer,
+      $$CivilRegistryPersonalCodeTableAnnotationComposer,
+      $$CivilRegistryPersonalCodeTableCreateCompanionBuilder,
+      $$CivilRegistryPersonalCodeTableUpdateCompanionBuilder,
+      (
+        CivilRegistryPersonalCodeData,
+        BaseReferences<
+          _$AppDatabase,
+          $CivilRegistryPersonalCodeTable,
+          CivilRegistryPersonalCodeData
+        >,
+      ),
+      CivilRegistryPersonalCodeData,
       PrefetchHooks Function()
     >;
 typedef $$ActivitiesTableCreateCompanionBuilder =
@@ -9829,6 +13694,29 @@ class $AppDatabaseManager {
       $$SyncQueueTableTableManager(_db, _db.syncQueue);
   $$CivilRegistryTableTableManager get civilRegistry =>
       $$CivilRegistryTableTableManager(_db, _db.civilRegistry);
+  $$CivilRegistryCityTableTableManager get civilRegistryCity =>
+      $$CivilRegistryCityTableTableManager(_db, _db.civilRegistryCity);
+  $$CivilRegistryRelationsTableTableManager get civilRegistryRelations =>
+      $$CivilRegistryRelationsTableTableManager(
+        _db,
+        _db.civilRegistryRelations,
+      );
+  $$CivilRegistryRelationCategoriesTableTableManager
+  get civilRegistryRelationCategories =>
+      $$CivilRegistryRelationCategoriesTableTableManager(
+        _db,
+        _db.civilRegistryRelationCategories,
+      );
+  $$CivilRegistryBirthCodeTableTableManager get civilRegistryBirthCode =>
+      $$CivilRegistryBirthCodeTableTableManager(
+        _db,
+        _db.civilRegistryBirthCode,
+      );
+  $$CivilRegistryPersonalCodeTableTableManager get civilRegistryPersonalCode =>
+      $$CivilRegistryPersonalCodeTableTableManager(
+        _db,
+        _db.civilRegistryPersonalCode,
+      );
   $$ActivitiesTableTableManager get activities =>
       $$ActivitiesTableTableManager(_db, _db.activities);
   $$DataRequestsTableTableManager get dataRequests =>

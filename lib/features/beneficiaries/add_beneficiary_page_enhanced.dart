@@ -97,8 +97,73 @@ class _AddBeneficiaryPageEnhancedState
       setState(() => _currentTab = _tabController.index);
     });
     _loadBeneficiary();
+    _loadCivilRegistryData(); // تحميل البيانات من السجل المدني إن وُجدت
     _startAutoSave();
     _setupTextListeners();
+  }
+
+  /// تحميل البيانات من السجل المدني (إن وُجدت)
+  void _loadCivilRegistryData() {
+    // الحصول على البيانات من GoRouter extra
+    // سيتم تمريرها من civil_search_page_enhanced
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final router = GoRouter.of(context);
+      final extra = router.routerDelegate.currentConfiguration.extra;
+
+      if (extra != null && extra is Map<String, dynamic>) {
+        _fillFromCivilRegistry(extra);
+      }
+    });
+  }
+
+  /// ملء الحقول من بيانات السجل المدني
+  void _fillFromCivilRegistry(Map<String, dynamic> data) {
+    setState(() {
+      // المعلومات الأساسية
+      if (data['fullName'] != null) {
+        _fullNameController.text = data['fullName'];
+      }
+      if (data['nationalId'] != null) {
+        _nationalIdController.text = data['nationalId'];
+      }
+      if (data['fatherName'] != null) {
+        _fatherNameController.text = data['fatherName'];
+      }
+      if (data['motherName'] != null) {
+        _motherNameController.text = data['motherName'];
+      }
+      if (data['birthDate'] != null) {
+        _birthDateController.text = data['birthDate'];
+        // محاولة تحويل النص إلى تاريخ
+        try {
+          _birthDate = DateTime.parse(data['birthDate']);
+        } catch (e) {
+          // إذا فشل التحويل، نترك الحقل نصياً فقط
+        }
+      }
+      if (data['gender'] != null) {
+        _gender = data['gender'];
+      }
+      if (data['governorate'] != null) {
+        _governorateController.text = data['governorate'];
+      }
+      if (data['district'] != null) {
+        _districtController.text = data['district'];
+      }
+
+      _hasUnsavedChanges = true;
+    });
+
+    // إظهار رسالة نجاح
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ تم ملء البيانات من السجل المدني'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   /// إضافة listeners للحقول لتحديث Progress

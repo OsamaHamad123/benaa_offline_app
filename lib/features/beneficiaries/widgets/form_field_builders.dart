@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/widgets/form_widgets.dart';
 import '../utils/field_configs.dart';
 
 /// ✨ Reusable Form Field Builders
-/// Widgets مشتركة لبناء الحقول بشكل موحد
-
-// Cached border radius للأداء
-const _kBorderRadius = BorderRadius.all(Radius.circular(12));
-const _kOutlineBorder = OutlineInputBorder(borderRadius: _kBorderRadius);
+/// Wrapper functions for form_widgets with beneficiary-specific configs
 
 /// بناء TextField موحد
 Widget buildTextField({
@@ -25,30 +22,20 @@ Widget buildTextField({
   TextInputAction? textInputAction,
   VoidCallback? onEditingComplete,
 }) {
-  return TextField(
+  return CustomTextField(
     controller: controller,
-    decoration: InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      suffixIcon: suffix,
-      border: _kOutlineBorder,
-      filled: true,
-      // تحسين الأداء
-      isDense: true,
-    ),
+    label: label,
+    prefixIcon: icon,
+    hint: hint,
     keyboardType: keyboardType,
     inputFormatters: inputFormatters,
     maxLines: maxLines,
     readOnly: readOnly,
     onTap: onTap,
+    suffixIcon: suffix,
     onChanged: onChanged,
-    textInputAction:
-        textInputAction ??
-        (maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
+    textInputAction: textInputAction,
     onEditingComplete: onEditingComplete,
-    // تحسين الأداء - تقليل rebuilds
-    enableInteractiveSelection: true,
   );
 }
 
@@ -84,20 +71,12 @@ Widget buildDropdown<T>({
   required List<DropdownMenuItem<T>> items,
   required ValueChanged<T?> onChanged,
 }) {
-  return DropdownButtonFormField<T>(
+  return CustomDropdown<T>(
     value: value,
-    decoration: InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      border: _kOutlineBorder,
-      filled: true,
-      isDense: true, // تحسين الأداء
-    ),
+    label: label,
+    prefixIcon: icon,
     items: items,
     onChanged: onChanged,
-    isExpanded: true,
-    // تحسين الأداء
-    isDense: true,
   );
 }
 
@@ -107,10 +86,10 @@ Widget buildDropdownFromConfig<T>({
   required DropdownConfig<T> config,
   required ValueChanged<T?> onChanged,
 }) {
-  return buildDropdown<T>(
+  return CustomDropdown<T>(
     value: value,
     label: config.displayLabel,
-    icon: config.icon,
+    prefixIcon: config.icon,
     items: config.items,
     onChanged: onChanged,
   );

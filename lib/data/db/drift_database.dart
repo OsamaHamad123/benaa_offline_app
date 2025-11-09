@@ -138,21 +138,141 @@ class SyncQueue extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// Civil Registry table - السجل المدني (read-only, 17GB database)
+// Civil Registry table - السجل المدني (read-only, من قاعدة البيانات الرئيسية)
+// Schema من: civilregistry.persons + civilregistry.ci_birth_cd + civilregistry.city + etc.
 class CivilRegistry extends Table {
-  TextColumn get nationalId => text()();
-  TextColumn get fileNo => text()();
-  TextColumn get fullNameNorm => text()(); // الاسم مطبع للبحث
-  TextColumn get fullNameRaw => text()(); // الاسم الأصلي
-  TextColumn get governorate => text()();
-  TextColumn get district => text().nullable()(); // المنطقة/القضاء
-  TextColumn get birthDate => text().nullable()(); // تاريخ الميلاد
-  TextColumn get fatherName => text().nullable()(); // اسم الأب
-  TextColumn get motherName => text().nullable()(); // اسم الأم
-  TextColumn get address => text().nullable()(); // العنوان
+  // من جدول persons - معلومات شخصية أساسية
+  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
+  TextColumn get nationalId =>
+      text().named('CI_ID_NUM')(); // bigint(20) - الرقم الوطني
+  TextColumn get firstName =>
+      text().named('CI_FIRST_ARB')(); // varchar(255) - الاسم الأول
+  TextColumn get fatherName =>
+      text().named('CI_FATHER_ARB')(); // varchar(255) - اسم الأب
+  TextColumn get grandFatherName =>
+      text().named('CI_GRAND_FATHER_ARB')(); // varchar(255) - اسم الجد
+  TextColumn get familyName =>
+      text().named('CI_FAMILY_ARB')(); // varchar(255) - اسم العائلة
+
+  // معلومات الولادة - من ci_birth_cd و ci_birth_tb_cd
+  IntColumn get birthCertificateId =>
+      integer().nullable().named('CI_BIRTH_TB_CD')(); // bigint(20)
+  IntColumn get birthCodeId =>
+      integer().nullable().named('CI_BIRTH_CD')(); // bigint(20)
+  DateTimeColumn get birthDate =>
+      dateTime().nullable().named('CI_BIRTH_DT')(); // date
+  IntColumn get sexCode =>
+      integer().nullable().named('CI_SEX_CD')(); // int(11) - 1=ذكر, 2=أنثى
+
+  // المعلومات الشخصية - من ci_personal_cd
+  IntColumn get personalCodeId =>
+      integer().nullable().named('CI_PERSONAL_CD')(); // bigint(20)
+  IntColumn get deadDate =>
+      integer().nullable().named('CI_DEAD_DT')(); // bigint(20) - تاريخ الوفاة
+
+  // اسم الأم
+  TextColumn get motherName =>
+      text().nullable().named('MOTHER_NAME1')(); // varchar(255)
+
+  // معلومات العنوان - من city
+  IntColumn get cityId => integer().nullable().named('CITY')(); // bigint(20)
+  TextColumn get cityName => text().nullable()(); // من جدول city
+  TextColumn get street => text().nullable().named('STREET')(); // varchar(255)
+  TextColumn get houseNo =>
+      text().nullable().named('HOUSE_NO')(); // varchar(255)
+
+  // العلاقات - من relations و category_of_relations
+  IntColumn get relationId =>
+      integer().nullable().named('CF_ID_NUM')(); // bigint(20) - ID العلاقة
+  IntColumn get relativeCodeId => integer().nullable().named(
+    'CF_RELATIVE_CD',
+  )(); // bigint(20) - نوع العلاقة
+  IntColumn get relativeId => integer().nullable().named(
+    'CF_ID_RELATIVE',
+  )(); // bigint(20) - ID الشخص المرتبط
+
+  // حقول إضافية للبحث والفهرسة المحلية
+  TextColumn get fullName => text().nullable()(); // الاسم الكامل المجمّع
+  TextColumn get fullNameNormalized => text().nullable()(); // للبحث
+  TextColumn get governorate =>
+      text().nullable()(); // المحافظة (مستخرج من city)
+  TextColumn get district => text().nullable()(); // القضاء (مستخرج من city)
+
+  // حقول المزامنة
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
   @override
-  Set<Column> get primaryKey => {nationalId};
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {nationalId}, // الرقم الوطني فريد
+  ];
+}
+
+// City table - جدول المدن والمحافظات من قاعدة البيانات الرئيسية
+class CivilRegistryCity extends Table {
+  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
+  TextColumn get city =>
+      text().named('city')(); // varchar(255) - اسم المدينة/القضاء
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Relations table - جدول العلاقات العائلية
+class CivilRegistryRelations extends Table {
+  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
+  IntColumn get personId =>
+      integer().named('CF_ID_NUM')(); // bigint(20) - الشخص
+  IntColumn get relativeId =>
+      integer().named('CF_ID_RELATIVE')(); // bigint(20) - القريب
+  IntColumn get relativeCodeId =>
+      integer().named('CF_RELATIVE_CD')(); // bigint(20) - نوع العلاقة
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Category of Relations table - أنواع العلاقات (أب، أم، أخ، الخ)
+class CivilRegistryRelationCategories extends Table {
+  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
+  TextColumn get attribute =>
+      text()(); // varchar(255) - نوع العلاقة (father, mother, etc.)
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Birth Code table - رموز شهادات الميلاد
+class CivilRegistryBirthCode extends Table {
+  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
+  TextColumn get birthCode => text().named('CI_BIRTH_TB_CD')(); // varchar(255)
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Personal Code table - الأكواد الشخصية
+class CivilRegistryPersonalCode extends Table {
+  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
+  TextColumn get personalCode =>
+      text().named('CI_PERSONAL_CD')(); // varchar(255)
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 // Activities table - سجل الأنشطة والتعديلات
@@ -200,6 +320,11 @@ class DataRequests extends Table {
     Taxonomies,
     SyncQueue,
     CivilRegistry,
+    CivilRegistryCity,
+    CivilRegistryRelations,
+    CivilRegistryRelationCategories,
+    CivilRegistryBirthCode,
+    CivilRegistryPersonalCode,
     Activities,
     DataRequests,
   ],
@@ -208,7 +333,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5; // زيادة رقم الإصدار للتعديلات الجديدة
 
   @override
   MigrationStrategy get migration {
@@ -227,7 +352,54 @@ class AppDatabase extends _$AppDatabase {
         if (from < 4) {
           await _upgradeToV4(m);
         }
+        if (from < 5) {
+          await _upgradeToV5(m);
+        }
       },
+    );
+  }
+
+  // Migration إلى النسخة 5 - تحديث السجل المدني
+  Future<void> _upgradeToV5(Migrator m) async {
+    // حذف الجدول القديم
+    await customStatement('DROP TABLE IF EXISTS civil_registry;');
+
+    // إنشاء الجداول الجديدة
+    await m.createTable(civilRegistry);
+    await m.createTable($CivilRegistryCityTable(attachedDatabase));
+    await m.createTable($CivilRegistryRelationsTable(attachedDatabase));
+    await m.createTable(
+      $CivilRegistryRelationCategoriesTable(attachedDatabase),
+    );
+    await m.createTable($CivilRegistryBirthCodeTable(attachedDatabase));
+    await m.createTable($CivilRegistryPersonalCodeTable(attachedDatabase));
+
+    // إنشاء indexes لجدول CivilRegistry
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_national_id ON civil_registry(CI_ID_NUM);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_first_name ON civil_registry(CI_FIRST_ARB);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_family_name ON civil_registry(CI_FAMILY_ARB);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_full_name_norm ON civil_registry(full_name_normalized);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_city ON civil_registry(CITY);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_governorate ON civil_registry(governorate);',
+    );
+
+    // indexes للعلاقات
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_relations_person ON civil_registry_relations(CF_ID_NUM);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_relations_relative ON civil_registry_relations(CF_ID_RELATIVE);',
     );
   }
 
@@ -301,19 +473,16 @@ class AppDatabase extends _$AppDatabase {
 
     // Civil Registry indexes - مهمة جداً للبحث السريع
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_national ON civil_registry(national_id);',
+      'CREATE INDEX IF NOT EXISTS idx_civil_national ON civil_registry(CI_ID_NUM);',
     );
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_file ON civil_registry(file_no);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_name ON civil_registry(full_name_norm);',
+      'CREATE INDEX IF NOT EXISTS idx_civil_name_normalized ON civil_registry(full_name_normalized);',
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_civil_governorate ON civil_registry(governorate);',
     );
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_composite ON civil_registry(governorate, full_name_norm);',
+      'CREATE INDEX IF NOT EXISTS idx_civil_composite ON civil_registry(governorate, full_name_normalized);',
     );
 
     // FTS5 for beneficiaries search
@@ -372,12 +541,8 @@ class AppDatabase extends _$AppDatabase {
     await m.addColumn(syncQueue, syncQueue.priority);
     await m.addColumn(syncQueue, syncQueue.scheduledAt);
 
-    // إضافة أعمدة السجل المدني
-    await m.addColumn(civilRegistry, civilRegistry.district);
-    await m.addColumn(civilRegistry, civilRegistry.birthDate);
-    await m.addColumn(civilRegistry, civilRegistry.fatherName);
-    await m.addColumn(civilRegistry, civilRegistry.motherName);
-    await m.addColumn(civilRegistry, civilRegistry.address);
+    // ملاحظة: السجل المدني سيتم إعادة بنائه بالكامل في V5
+    // لذلك لا نضيف أعمدة هنا
 
     // إعادة إنشاء indexes
     await _createIndexes();
@@ -626,13 +791,6 @@ class AppDatabase extends _$AppDatabase {
     )..where((r) => r.nationalId.equals(nationalId))).getSingleOrNull();
   }
 
-  // Search by file number
-  Future<CivilRegistryData?> searchCivilByFileNo(String fileNo) async {
-    return await (select(
-      civilRegistry,
-    )..where((r) => r.fileNo.equals(fileNo))).getSingleOrNull();
-  }
-
   // Search by name
   Future<List<CivilRegistryData>> searchCivilByName(
     String name, {
@@ -641,7 +799,7 @@ class AppDatabase extends _$AppDatabase {
   }) async {
     final normalized = _normalizeName(name);
     var query = select(civilRegistry)
-      ..where((r) => r.fullNameNorm.like('%$normalized%'));
+      ..where((r) => r.fullNameNormalized.like('%$normalized%'));
 
     if (governorate != null) {
       query = query..where((r) => r.governorate.equals(governorate));
@@ -649,7 +807,7 @@ class AppDatabase extends _$AppDatabase {
 
     return await (query
           ..limit(limit)
-          ..orderBy([(r) => OrderingTerm.asc(r.fullNameNorm)]))
+          ..orderBy([(r) => OrderingTerm.asc(r.fullNameNormalized)]))
         .get();
   }
 

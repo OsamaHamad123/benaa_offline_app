@@ -14,9 +14,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('التقارير والإحصائيات'),
-      ),
+      appBar: AppBar(title: const Text('التقارير والإحصائيات')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -27,9 +25,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           // Report Categories
           Text(
             'تقارير مفصلة',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -98,9 +96,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
   }
 
   void _showAgeReport(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تقرير الأعمار قيد التطوير')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('تقرير الأعمار قيد التطوير')));
   }
 
   void _showSyncReport(BuildContext context) {
@@ -140,15 +138,16 @@ class _SummaryStatistics extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.assessment,
-                        color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.assessment,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'ملخص الإحصائيات',
-                      style:
-                          Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -178,21 +177,14 @@ class _StatRow extends StatelessWidget {
   final String value;
   final Color? valueColor;
 
-  const _StatRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _StatRow({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey[600]),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[600])),
         Text(
           value,
           style: TextStyle(
@@ -255,10 +247,7 @@ class _ReportCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -305,9 +294,9 @@ class _GovernorateReportSheet extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   'تقرير حسب المحافظة',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               Expanded(
@@ -421,9 +410,9 @@ class _CategoryReportSheet extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   'تقرير حسب الفئة',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               Expanded(
@@ -443,10 +432,26 @@ class _CategoryReportSheet extends ConsumerWidget {
                     final total = counts.reduce((a, b) => a + b);
 
                     final categories = [
-                      {'name': 'أيتام', 'count': counts[0], 'color': Colors.purple},
-                      {'name': 'فقراء', 'count': counts[1], 'color': Colors.green},
-                      {'name': 'أرامل', 'count': counts[2], 'color': Colors.orange},
-                      {'name': 'معاقين', 'count': counts[3], 'color': Colors.blue},
+                      {
+                        'name': 'أيتام',
+                        'count': counts[0],
+                        'color': Colors.purple,
+                      },
+                      {
+                        'name': 'فقراء',
+                        'count': counts[1],
+                        'color': Colors.green,
+                      },
+                      {
+                        'name': 'أرامل',
+                        'count': counts[2],
+                        'color': Colors.orange,
+                      },
+                      {
+                        'name': 'معاقين',
+                        'count': counts[3],
+                        'color': Colors.blue,
+                      },
                     ];
 
                     return ListView.builder(
@@ -456,7 +461,9 @@ class _CategoryReportSheet extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final category = categories[index];
                         final count = category['count'] as int;
-                        final percentage = total == 0 ? 0.0 : (count / total) * 100;
+                        final percentage = total == 0
+                            ? 0.0
+                            : (count / total) * 100;
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -544,9 +551,9 @@ class _GenderReportSheet extends ConsumerWidget {
               ),
               Text(
                 'تقرير حسب الجنس',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
               Expanded(
@@ -578,8 +585,11 @@ class _GenderReportSheet extends ConsumerWidget {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.male,
-                                            size: 48, color: Colors.blue),
+                                        Icon(
+                                          Icons.male,
+                                          size: 48,
+                                          color: Colors.blue,
+                                        ),
                                         const SizedBox(height: 8),
                                         Text(
                                           'ذكور',
@@ -620,8 +630,11 @@ class _GenderReportSheet extends ConsumerWidget {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.female,
-                                            size: 48, color: Colors.pink),
+                                        Icon(
+                                          Icons.female,
+                                          size: 48,
+                                          color: Colors.pink,
+                                        ),
                                         const SizedBox(height: 8),
                                         Text(
                                           'إناث',
@@ -701,9 +714,9 @@ class _SyncReportSheet extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   'تقرير المزامنة',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ),
               Expanded(

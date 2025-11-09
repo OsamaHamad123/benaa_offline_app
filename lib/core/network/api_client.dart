@@ -182,6 +182,88 @@ class ApiClient {
     }
   }
 
+  // Civil Registry endpoints
+  Future<Map<String, dynamic>> getCivilRecord(String nationalId) async {
+    try {
+      final response = await _dio.get(
+        '/civil-registry/by-national-id/$nationalId',
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getCivilRecordsBatch({
+    required int offset,
+    required int limit,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/civil-registry',
+        queryParameters: {'offset': offset, 'limit': limit},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getCivilRecordsUpdated({
+    required DateTime since,
+    required int offset,
+    required int limit,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/civil-registry/updated',
+        queryParameters: {
+          'since': since.toIso8601String(),
+          'offset': offset,
+          'limit': limit,
+        },
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<int> getCivilRegistryCount() async {
+    try {
+      final response = await _dio.get('/civil-registry/count');
+      return response.data['count'] as int? ?? 0;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<int> getCivilRegistryCountUpdated(DateTime since) async {
+    try {
+      final response = await _dio.get(
+        '/civil-registry/count-updated',
+        queryParameters: {'since': since.toIso8601String()},
+      );
+      return response.data['count'] as int? ?? 0;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> getCivilRecordsByNationalIds(
+    List<String> nationalIds,
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/civil-registry/batch',
+        data: {'national_ids': nationalIds},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
   Future<void> uploadAttachmentChunk({
     required String uploadId,
     required int chunkIndex,
