@@ -22,7 +22,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
   final _nationalIdController = TextEditingController();
   final _fileNoController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   // New controllers
   final _phoneNumberController = TextEditingController();
   final _addressController = TextEditingController();
@@ -35,7 +35,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
   String _selectedCategory = 'orphan';
   DateTime? _birthDate;
   bool _isLoading = false;
-  
+
   // New fields
   int _familySize = 1;
   String _maritalStatus = 'single';
@@ -69,7 +69,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
           _selectedGender = beneficiary.gender;
           _selectedCategory = beneficiary.category;
           _birthDate = beneficiary.birthDate;
-          
+
           // Load new fields
           _phoneNumberController.text = beneficiary.phoneNumber ?? '';
           _addressController.text = beneficiary.address ?? '';
@@ -153,7 +153,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
         category: drift.Value(_selectedCategory),
         birthDate: drift.Value(_birthDate),
         notes: drift.Value(_notesController.text.trim()),
-        
+
         // New fields
         phoneNumber: drift.Value(_phoneNumberController.text.trim()),
         address: drift.Value(_addressController.text.trim()),
@@ -165,7 +165,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
         educationLevel: drift.Value(_educationLevel),
         healthStatus: drift.Value(_healthStatus),
         hasDisability: drift.Value(_hasDisability),
-        
+
         createdAt: widget.beneficiaryId != null
             ? const drift.Value.absent()
             : drift.Value(now),
@@ -559,7 +559,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
                             textInputAction: TextInputAction.next,
                           ),
                           SizedBox(
-                            height: ResponsiveUtils.getResponsiveSpacing(context),
+                            height: ResponsiveUtils.getResponsiveSpacing(
+                              context,
+                            ),
                           ),
                           TextFormField(
                             controller: _motherNameController,
@@ -757,7 +759,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
                         });
                       },
                       title: const Text('لديه إعاقة'),
-                      subtitle: const Text('حدد إذا كان المستفيد لديه أي نوع من الإعاقة'),
+                      subtitle: const Text(
+                        'حدد إذا كان المستفيد لديه أي نوع من الإعاقة',
+                      ),
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),

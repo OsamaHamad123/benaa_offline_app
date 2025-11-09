@@ -385,7 +385,8 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     }
   }
 
-  String _getMaritalStatusLabel(String status) {
+  String _getMaritalStatusLabel(String? status) {
+    if (status == null) return '-';
     switch (status) {
       case 'single':
         return 'أعزب';
@@ -400,7 +401,8 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     }
   }
 
-  String _getEducationLabel(String level) {
+  String _getEducationLabel(String? level) {
+    if (level == null) return '-';
     switch (level) {
       case 'none':
         return 'بدون تعليم';
@@ -415,7 +417,8 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     }
   }
 
-  String _getHealthStatusLabel(String status) {
+  String _getHealthStatusLabel(String? status) {
+    if (status == null) return '-';
     switch (status) {
       case 'good':
         return 'جيدة';

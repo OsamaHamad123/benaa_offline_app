@@ -386,13 +386,13 @@ class _BeneficiaryCard extends StatelessWidget {
                       icon: Icons.cake_outlined,
                       label: '${beneficiary.age} سنة',
                     ),
-                  if (beneficiary.phoneNumber != null && 
+                  if (beneficiary.phoneNumber != null &&
                       beneficiary.phoneNumber!.isNotEmpty)
                     _InfoChip(
                       icon: Icons.phone_outlined,
                       label: beneficiary.phoneNumber!,
                     ),
-                  if (beneficiary.district != null && 
+                  if (beneficiary.district != null &&
                       beneficiary.district!.isNotEmpty)
                     _InfoChip(
                       icon: Icons.location_city_outlined,

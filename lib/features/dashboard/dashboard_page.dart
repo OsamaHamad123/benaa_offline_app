@@ -66,8 +66,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       body: _selectedIndex == 0
           ? const _DashboardHome()
           : _selectedIndex == 1
-              ? const SyncDetailsPage()
-              : const _SettingsView(),
+          ? const SyncDetailsPage()
+          : const _SettingsView(),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -119,7 +119,7 @@ class _DashboardHome extends ConsumerWidget {
                 // Welcome Header
                 _WelcomeHeader(),
                 SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
-                
+
                 // Statistics Cards
                 const _StatisticsSection(),
                 SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
@@ -174,7 +174,7 @@ class _WelcomeHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
     String greeting;
-    
+
     if (hour < 12) {
       greeting = 'صباح الخير';
     } else if (hour < 18) {
@@ -191,7 +191,9 @@ class _WelcomeHeader extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.1),
               child: Icon(
                 Icons.person,
                 size: 32,
@@ -205,9 +207,9 @@ class _WelcomeHeader extends StatelessWidget {
                 children: [
                   Text(
                     greeting,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 4),
                   Text(

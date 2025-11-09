@@ -27,7 +27,8 @@ class Beneficiaries extends Table {
   TextColumn get maritalStatus => text().nullable()(); // الحالة الاجتماعية
   TextColumn get educationLevel => text().nullable()(); // المستوى التعليمي
   TextColumn get healthStatus => text().nullable()(); // الحالة الصحية
-  BoolColumn get hasDisability => boolean().withDefault(const Constant(false))(); // لديه إعاقة
+  BoolColumn get hasDisability =>
+      boolean().withDefault(const Constant(false))(); // لديه إعاقة
   TextColumn get notes => text().withDefault(const Constant(''))();
   TextColumn get associationName => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
