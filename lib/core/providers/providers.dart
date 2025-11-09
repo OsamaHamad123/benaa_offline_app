@@ -39,3 +39,112 @@ final databaseReadyProvider = FutureProvider<bool>((ref) async {
     return false;
   }
 });
+
+// ============================================================================
+// PERFORMANCE OPTIMIZED PROVIDERS - محسّنة للأداء
+// ============================================================================
+
+// Beneficiaries Search Provider with filters
+final beneficiariesSearchProvider = FutureProvider.family
+    .autoDispose<List<Beneficiary>, BeneficiariesFilter>((ref, filter) async {
+      final db = ref.watch(databaseProvider);
+      return await db.searchBeneficiariesFiltered(
+        query: filter.searchQuery,
+        category: filter.category,
+        governorate: filter.governorate,
+        limit: filter.limit,
+        offset: filter.offset,
+      );
+    });
+
+// Statistics Provider - Cached for 5 minutes
+final statisticsProvider = FutureProvider.autoDispose<Statistics>((ref) async {
+  final db = ref.watch(databaseProvider);
+
+  final results = await Future.wait([
+    db.countBeneficiaries(),
+    db.countPendingSync(),
+    db.countBeneficiariesByCategory('orphan'),
+    db.countBeneficiariesByCategory('poor'),
+  ]);
+
+  return Statistics(
+    totalBeneficiaries: results[0],
+    pendingSync: results[1],
+    orphans: results[2],
+    poor: results[3],
+  );
+});
+
+// Single Beneficiary Provider
+final beneficiaryProvider = FutureProvider.family
+    .autoDispose<Beneficiary?, String>((ref, id) async {
+      final db = ref.watch(databaseProvider);
+      return await db.getBeneficiaryById(id);
+    });
+
+// ============================================================================
+// DATA CLASSES
+// ============================================================================
+
+class BeneficiariesFilter {
+  final String searchQuery;
+  final String? category;
+  final String? governorate;
+  final int limit;
+  final int offset;
+
+  const BeneficiariesFilter({
+    this.searchQuery = '',
+    this.category,
+    this.governorate,
+    this.limit = 50,
+    this.offset = 0,
+  });
+
+  BeneficiariesFilter copyWith({
+    String? searchQuery,
+    String? category,
+    String? governorate,
+    int? limit,
+    int? offset,
+  }) {
+    return BeneficiariesFilter(
+      searchQuery: searchQuery ?? this.searchQuery,
+      category: category ?? this.category,
+      governorate: governorate ?? this.governorate,
+      limit: limit ?? this.limit,
+      offset: offset ?? this.offset,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is BeneficiariesFilter &&
+        other.searchQuery == searchQuery &&
+        other.category == category &&
+        other.governorate == governorate &&
+        other.limit == limit &&
+        other.offset == offset;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(searchQuery, category, governorate, limit, offset);
+  }
+}
+
+class Statistics {
+  final int totalBeneficiaries;
+  final int pendingSync;
+  final int orphans;
+  final int poor;
+
+  const Statistics({
+    required this.totalBeneficiaries,
+    required this.pendingSync,
+    required this.orphans,
+    required this.poor,
+  });
+}

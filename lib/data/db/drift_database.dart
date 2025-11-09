@@ -382,6 +382,54 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  // Search beneficiaries with filters (OPTIMIZED) - محسّنة للأداء
+  Future<List<Beneficiary>> searchBeneficiariesFiltered({
+    String query = '',
+    String? category,
+    String? governorate,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final normalized = query.trim().toLowerCase();
+
+    // Build query with all filters in SQL (faster than Dart filtering)
+    var selectQuery = select(beneficiaries);
+
+    // Apply filters
+    selectQuery = selectQuery
+      ..where((b) {
+        Expression<bool> condition = const Constant(true);
+
+        // Search filter
+        if (normalized.isNotEmpty) {
+          condition =
+              condition &
+              (b.fullNameNorm.like('%$normalized%') |
+                  b.nationalId.like('%$normalized%') |
+                  b.fileNo.like('%$normalized%'));
+        }
+
+        // Category filter
+        if (category != null && category != 'all') {
+          condition = condition & b.category.equals(category);
+        }
+
+        // Governorate filter
+        if (governorate != null && governorate != 'all') {
+          condition = condition & b.governorate.equals(governorate);
+        }
+
+        return condition;
+      });
+
+    // Apply pagination
+    selectQuery = selectQuery
+      ..orderBy([(b) => OrderingTerm.asc(b.fullName)])
+      ..limit(limit, offset: offset);
+
+    return await selectQuery.get();
+  }
+
   // Get beneficiary by ID
   Future<Beneficiary?> getBeneficiaryById(String id) async {
     return await (select(
