@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../../core/providers/providers.dart';
+import '../../core/services/taxonomy_service.dart';
 import '../../data/db/drift_database.dart';
 import '../../core/utils/responsive_utils.dart';
 
@@ -32,6 +33,13 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
   final _districtController = TextEditingController();
   final _associationNameController = TextEditingController();
 
+  // Backend fields controllers
+  final _grandFatherNameController = TextEditingController();
+  final _familyNameController = TextEditingController();
+  final _altPhoneNumberController = TextEditingController();
+  final _addressBeforeDisplacementController = TextEditingController();
+  final _currentAddressController = TextEditingController();
+
   String _selectedGovernorate = 'بغداد';
   String _selectedGender = 'male';
   String _selectedCategory = 'orphan';
@@ -44,6 +52,17 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
   String _educationLevel = 'none';
   String _healthStatus = 'good';
   bool _hasDisability = false;
+
+  // Backend additional fields
+  int? _displacementStatus;
+  int? _numberOfMales;
+  int? _numberOfFemales;
+  int _chronicDiseasesCount = 0;
+  int _specialNeedsCount = 0;
+  int? _employmentStatus;
+  int? _housingStatus;
+  int? _housingType;
+  int? _requestStatus;
 
   @override
   bool get wantKeepAlive => true; // منع rebuild الصفحة
@@ -82,11 +101,31 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
           _fatherNameController.text = beneficiary.fatherName ?? '';
           _districtController.text = beneficiary.district ?? '';
           _associationNameController.text = beneficiary.associationName ?? '';
+
+          // Load backend fields
+          _grandFatherNameController.text = beneficiary.grandFatherName ?? '';
+          _familyNameController.text = beneficiary.familyName ?? '';
+          _altPhoneNumberController.text = beneficiary.altPhoneNumber ?? '';
+          _addressBeforeDisplacementController.text =
+              beneficiary.addressBeforeDisplacement ?? '';
+          _currentAddressController.text = beneficiary.currentAddress ?? '';
+
           _familySize = beneficiary.familySize ?? 1;
           _maritalStatus = beneficiary.maritalStatus ?? 'single';
           _educationLevel = beneficiary.educationLevel ?? 'none';
           _healthStatus = beneficiary.healthStatus ?? 'good';
           _hasDisability = beneficiary.hasDisability;
+
+          // Load backend numeric fields
+          _displacementStatus = beneficiary.displacementStatus;
+          _numberOfMales = beneficiary.numberOfMales;
+          _numberOfFemales = beneficiary.numberOfFemales;
+          _chronicDiseasesCount = beneficiary.chronicDiseasesCount ?? 0;
+          _specialNeedsCount = beneficiary.specialNeedsCount ?? 0;
+          _employmentStatus = beneficiary.employmentStatus;
+          _housingStatus = beneficiary.housingStatus;
+          _housingType = beneficiary.housingType;
+          _requestStatus = beneficiary.requestStatus;
         });
       }
     } catch (e) {
@@ -114,6 +153,11 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
     _fatherNameController.dispose();
     _districtController.dispose();
     _associationNameController.dispose();
+    _grandFatherNameController.dispose();
+    _familyNameController.dispose();
+    _altPhoneNumberController.dispose();
+    _addressBeforeDisplacementController.dispose();
+    _currentAddressController.dispose();
     super.dispose();
   }
 
@@ -168,11 +212,32 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
         fatherName: drift.Value(_fatherNameController.text.trim()),
         district: drift.Value(_districtController.text.trim()),
         associationName: drift.Value(_associationNameController.text.trim()),
+
+        // Backend fields
+        grandFatherName: drift.Value(_grandFatherNameController.text.trim()),
+        familyName: drift.Value(_familyNameController.text.trim()),
+        altPhoneNumber: drift.Value(_altPhoneNumberController.text.trim()),
+        addressBeforeDisplacement: drift.Value(
+          _addressBeforeDisplacementController.text.trim(),
+        ),
+        currentAddress: drift.Value(_currentAddressController.text.trim()),
+
         familySize: drift.Value(_familySize),
         maritalStatus: drift.Value(_maritalStatus),
         educationLevel: drift.Value(_educationLevel),
         healthStatus: drift.Value(_healthStatus),
         hasDisability: drift.Value(_hasDisability),
+
+        // Backend numeric fields
+        displacementStatus: drift.Value(_displacementStatus),
+        numberOfMales: drift.Value(_numberOfMales),
+        numberOfFemales: drift.Value(_numberOfFemales),
+        chronicDiseasesCount: drift.Value(_chronicDiseasesCount),
+        specialNeedsCount: drift.Value(_specialNeedsCount),
+        employmentStatus: drift.Value(_employmentStatus),
+        housingStatus: drift.Value(_housingStatus),
+        housingType: drift.Value(_housingType),
+        requestStatus: drift.Value(_requestStatus),
 
         createdAt: widget.beneficiaryId != null
             ? const drift.Value.absent()
@@ -348,58 +413,43 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                     _buildSectionTitle('التصنيف'),
                     SizedBox(height: rv.spacing),
 
-                    // Governorate
-                    DropdownButtonFormField<String>(
-                      value: _selectedGovernorate,
-                      decoration: const InputDecoration(
-                        labelText: 'المحافظة',
-                        prefixIcon: Icon(Icons.location_on),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'بغداد', child: Text('بغداد')),
-                        DropdownMenuItem(
-                          value: 'البصرة',
-                          child: Text('البصرة'),
-                        ),
-                        DropdownMenuItem(value: 'نينوى', child: Text('نينوى')),
-                        DropdownMenuItem(
-                          value: 'الأنبار',
-                          child: Text('الأنبار'),
-                        ),
-                        DropdownMenuItem(value: 'ديالى', child: Text('ديالى')),
-                        DropdownMenuItem(
-                          value: 'كربلاء',
-                          child: Text('كربلاء'),
-                        ),
-                        DropdownMenuItem(value: 'النجف', child: Text('النجف')),
-                        DropdownMenuItem(
-                          value: 'القادسية',
-                          child: Text('القادسية'),
-                        ),
-                        DropdownMenuItem(value: 'بابل', child: Text('بابل')),
-                        DropdownMenuItem(value: 'واسط', child: Text('واسط')),
-                        DropdownMenuItem(
-                          value: 'صلاح الدين',
-                          child: Text('صلاح الدين'),
-                        ),
-                        DropdownMenuItem(value: 'ميسان', child: Text('ميسان')),
-                        DropdownMenuItem(
-                          value: 'ذي قار',
-                          child: Text('ذي قار'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'المثنى',
-                          child: Text('المثنى'),
-                        ),
-                        DropdownMenuItem(value: 'كركوك', child: Text('كركوك')),
-                        DropdownMenuItem(value: 'أربيل', child: Text('أربيل')),
-                        DropdownMenuItem(value: 'دهوك', child: Text('دهوك')),
-                        DropdownMenuItem(
-                          value: 'السليمانية',
-                          child: Text('السليمانية'),
-                        ),
-                      ],
-                      onChanged: (value) => _selectedGovernorate = value!,
+                    // Governorate - ديناميكي من API
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final governoratesAsync = ref.watch(
+                          governoratesProvider,
+                        );
+
+                        return governoratesAsync.when(
+                          data: (governorates) {
+                            // التأكد من وجود القيمة المختارة في القائمة
+                            if (governorates.isNotEmpty &&
+                                !governorates.any(
+                                  (g) => g.label == _selectedGovernorate,
+                                )) {
+                              _selectedGovernorate = governorates.first.label;
+                            }
+
+                            return DropdownButtonFormField<String>(
+                              value: _selectedGovernorate,
+                              decoration: const InputDecoration(
+                                labelText: 'المحافظة',
+                                prefixIcon: Icon(Icons.location_on),
+                              ),
+                              items: governorates.map((gov) {
+                                return DropdownMenuItem(
+                                  value: gov.label,
+                                  child: Text(gov.label),
+                                );
+                              }).toList(),
+                              onChanged: (value) =>
+                                  _selectedGovernorate = value!,
+                            );
+                          },
+                          loading: () => const LinearProgressIndicator(),
+                          error: (err, stack) => Text('خطأ: $err'),
+                        );
+                      },
                     ),
                     SizedBox(height: rv.spacing),
 
@@ -428,31 +478,42 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedCategory,
-                            decoration: const InputDecoration(
-                              labelText: 'الفئة',
-                              prefixIcon: Icon(Icons.category),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'orphan',
-                                child: Text('يتيم'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'poor',
-                                child: Text('فقير'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'widow',
-                                child: Text('أرملة'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'disabled',
-                                child: Text('معاق'),
-                              ),
-                            ],
-                            onChanged: (value) => _selectedCategory = value!,
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final categoriesAsync = ref.watch(
+                                categoriesProvider,
+                              );
+
+                              return categoriesAsync.when(
+                                data: (categories) {
+                                  // التأكد من وجود القيمة المختارة
+                                  if (categories.isNotEmpty &&
+                                      !categories.any(
+                                        (c) => c.code == _selectedCategory,
+                                      )) {
+                                    _selectedCategory = categories.first.code;
+                                  }
+
+                                  return DropdownButtonFormField<String>(
+                                    value: _selectedCategory,
+                                    decoration: const InputDecoration(
+                                      labelText: 'الفئة',
+                                      prefixIcon: Icon(Icons.category),
+                                    ),
+                                    items: categories.map((cat) {
+                                      return DropdownMenuItem(
+                                        value: cat.code,
+                                        child: Text(cat.label),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) =>
+                                        _selectedCategory = value!,
+                                  );
+                                },
+                                loading: () => const LinearProgressIndicator(),
+                                error: (err, stack) => Text('خطأ: $err'),
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -612,31 +673,41 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _maritalStatus,
-                            decoration: const InputDecoration(
-                              labelText: 'الحالة الاجتماعية',
-                              prefixIcon: Icon(Icons.favorite),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'single',
-                                child: Text('أعزب'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'married',
-                                child: Text('متزوج'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'divorced',
-                                child: Text('مطلق'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'widowed',
-                                child: Text('أرمل'),
-                              ),
-                            ],
-                            onChanged: (value) => _maritalStatus = value!,
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final maritalAsync = ref.watch(
+                                maritalStatusesProvider,
+                              );
+
+                              return maritalAsync.when(
+                                data: (statuses) {
+                                  if (statuses.isNotEmpty &&
+                                      !statuses.any(
+                                        (s) => s.code == _maritalStatus,
+                                      )) {
+                                    _maritalStatus = statuses.first.code;
+                                  }
+
+                                  return DropdownButtonFormField<String>(
+                                    value: _maritalStatus,
+                                    decoration: const InputDecoration(
+                                      labelText: 'الحالة الاجتماعية',
+                                      prefixIcon: Icon(Icons.favorite),
+                                    ),
+                                    items: statuses.map((status) {
+                                      return DropdownMenuItem(
+                                        value: status.code,
+                                        child: Text(status.label),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) =>
+                                        _maritalStatus = value!,
+                                  );
+                                },
+                                loading: () => const LinearProgressIndicator(),
+                                error: (err, stack) => Text('خطأ: $err'),
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -650,60 +721,80 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                     Row(
                       children: [
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _educationLevel,
-                            decoration: const InputDecoration(
-                              labelText: 'المستوى التعليمي',
-                              prefixIcon: Icon(Icons.school),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'none',
-                                child: Text('بدون تعليم'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'primary',
-                                child: Text('ابتدائي'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'secondary',
-                                child: Text('متوسط/ثانوي'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'university',
-                                child: Text('جامعي'),
-                              ),
-                            ],
-                            onChanged: (value) => _educationLevel = value!,
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final educationAsync = ref.watch(
+                                educationLevelsProvider,
+                              );
+
+                              return educationAsync.when(
+                                data: (levels) {
+                                  if (levels.isNotEmpty &&
+                                      !levels.any(
+                                        (l) => l.code == _educationLevel,
+                                      )) {
+                                    _educationLevel = levels.first.code;
+                                  }
+
+                                  return DropdownButtonFormField<String>(
+                                    value: _educationLevel,
+                                    decoration: const InputDecoration(
+                                      labelText: 'المستوى التعليمي',
+                                      prefixIcon: Icon(Icons.school),
+                                    ),
+                                    items: levels.map((level) {
+                                      return DropdownMenuItem(
+                                        value: level.code,
+                                        child: Text(level.label),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) =>
+                                        _educationLevel = value!,
+                                  );
+                                },
+                                loading: () => const LinearProgressIndicator(),
+                                error: (err, stack) => Text('خطأ: $err'),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: _healthStatus,
-                            decoration: const InputDecoration(
-                              labelText: 'الحالة الصحية',
-                              prefixIcon: Icon(Icons.health_and_safety),
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'good',
-                                child: Text('جيدة'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'fair',
-                                child: Text('متوسطة'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'poor',
-                                child: Text('ضعيفة'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'chronic',
-                                child: Text('مرض مزمن'),
-                              ),
-                            ],
-                            onChanged: (value) => _healthStatus = value!,
+                          child: Consumer(
+                            builder: (context, ref, child) {
+                              final healthAsync = ref.watch(
+                                healthStatusesProvider,
+                              );
+
+                              return healthAsync.when(
+                                data: (statuses) {
+                                  if (statuses.isNotEmpty &&
+                                      !statuses.any(
+                                        (s) => s.code == _healthStatus,
+                                      )) {
+                                    _healthStatus = statuses.first.code;
+                                  }
+
+                                  return DropdownButtonFormField<String>(
+                                    value: _healthStatus,
+                                    decoration: const InputDecoration(
+                                      labelText: 'الحالة الصحية',
+                                      prefixIcon: Icon(Icons.health_and_safety),
+                                    ),
+                                    items: statuses.map((status) {
+                                      return DropdownMenuItem(
+                                        value: status.code,
+                                        child: Text(status.label),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) =>
+                                        _healthStatus = value!,
+                                  );
+                                },
+                                loading: () => const LinearProgressIndicator(),
+                                error: (err, stack) => Text('خطأ: $err'),
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -713,13 +804,153 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                     // Disability Checkbox
                     CheckboxListTile(
                       value: _hasDisability,
-                      onChanged: (value) => _hasDisability = value ?? false,
+                      onChanged: (value) {
+                        setState(() {
+                          _hasDisability = value ?? false;
+                          if (!_hasDisability) {
+                            _specialNeedsCount = 0;
+                          }
+                        });
+                      },
                       title: const Text('لديه إعاقة'),
                       subtitle: const Text(
                         'حدد إذا كان المستفيد لديه أي نوع من الإعاقة',
                       ),
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
+                    ),
+                    SizedBox(height: rv.spacing15),
+
+                    _buildSectionTitle('معلومات تفصيلية إضافية'),
+                    SizedBox(height: rv.spacing),
+
+                    // Grand Father Name & Family Name
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _grandFatherNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'اسم الجد',
+                              prefixIcon: Icon(Icons.person_outline),
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _familyNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'اسم العائلة',
+                              prefixIcon: Icon(Icons.family_restroom),
+                            ),
+                            textInputAction: TextInputAction.next,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: rv.spacing),
+
+                    // Alternative Phone Number
+                    TextFormField(
+                      controller: _altPhoneNumberController,
+                      decoration: const InputDecoration(
+                        labelText: 'رقم هاتف بديل',
+                        prefixIcon: Icon(Icons.phone_android),
+                      ),
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    SizedBox(height: rv.spacing),
+
+                    // Current Address & Address Before Displacement
+                    TextFormField(
+                      controller: _currentAddressController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان الحالي',
+                        prefixIcon: Icon(Icons.home),
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    SizedBox(height: rv.spacing),
+
+                    TextFormField(
+                      controller: _addressBeforeDisplacementController,
+                      decoration: const InputDecoration(
+                        labelText: 'العنوان قبل النزوح',
+                        prefixIcon: Icon(Icons.location_city),
+                      ),
+                      textInputAction: TextInputAction.next,
+                    ),
+                    SizedBox(height: rv.spacing),
+
+                    // Number of Males & Females
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: _numberOfMales?.toString() ?? '',
+                            decoration: const InputDecoration(
+                              labelText: 'عدد الذكور',
+                              prefixIcon: Icon(Icons.male),
+                            ),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) =>
+                                _numberOfMales = int.tryParse(value),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: _numberOfFemales?.toString() ?? '',
+                            decoration: const InputDecoration(
+                              labelText: 'عدد الإناث',
+                              prefixIcon: Icon(Icons.female),
+                            ),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) =>
+                                _numberOfFemales = int.tryParse(value),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: rv.spacing),
+
+                    // Chronic Diseases & Special Needs Count
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: _chronicDiseasesCount.toString(),
+                            decoration: const InputDecoration(
+                              labelText: 'عدد الأمراض المزمنة',
+                              prefixIcon: Icon(Icons.medical_services),
+                            ),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            onChanged: (value) => _chronicDiseasesCount =
+                                int.tryParse(value) ?? 0,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: _specialNeedsCount.toString(),
+                            decoration: const InputDecoration(
+                              labelText: 'عدد ذوي الاحتياجات الخاصة',
+                              prefixIcon: Icon(Icons.accessible),
+                            ),
+                            keyboardType: TextInputType.number,
+                            textInputAction: TextInputAction.next,
+                            enabled: _hasDisability,
+                            onChanged: (value) =>
+                                _specialNeedsCount = int.tryParse(value) ?? 0,
+                          ),
+                        ),
+                      ],
                     ),
                     SizedBox(height: rv.spacing15),
 

@@ -201,8 +201,14 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       beneficiary.fatherName!.isNotEmpty) ||
                   (beneficiary.motherName != null &&
                       beneficiary.motherName!.isNotEmpty) ||
+                  (beneficiary.grandFatherName != null &&
+                      beneficiary.grandFatherName!.isNotEmpty) ||
+                  (beneficiary.familyName != null &&
+                      beneficiary.familyName!.isNotEmpty) ||
                   beneficiary.familySize != null ||
-                  beneficiary.maritalStatus != null) ...[
+                  beneficiary.maritalStatus != null ||
+                  beneficiary.numberOfMales != null ||
+                  beneficiary.numberOfFemales != null) ...[
                 _buildSectionTitle(context, 'معلومات العائلة'),
                 const SizedBox(height: 8),
                 Card(
@@ -215,11 +221,25 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           label: 'اسم الأب',
                           value: beneficiary.fatherName!,
                         ),
-                        if ((beneficiary.motherName != null &&
-                                beneficiary.motherName!.isNotEmpty) ||
-                            beneficiary.familySize != null ||
-                            beneficiary.maritalStatus != null)
-                          const Divider(height: 1),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.grandFatherName != null &&
+                          beneficiary.grandFatherName!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.person_outline,
+                          label: 'اسم الجد',
+                          value: beneficiary.grandFatherName!,
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.familyName != null &&
+                          beneficiary.familyName!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.family_restroom,
+                          label: 'اسم العائلة',
+                          value: beneficiary.familyName!,
+                        ),
+                        const Divider(height: 1),
                       ],
                       if (beneficiary.motherName != null &&
                           beneficiary.motherName!.isNotEmpty) ...[
@@ -228,9 +248,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           label: 'اسم الأم',
                           value: beneficiary.motherName!,
                         ),
-                        if (beneficiary.familySize != null ||
-                            beneficiary.maritalStatus != null)
-                          const Divider(height: 1),
+                        const Divider(height: 1),
                       ],
                       if (beneficiary.familySize != null) ...[
                         _InfoRow(
@@ -238,10 +256,25 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           label: 'عدد أفراد الأسرة',
                           value: '${beneficiary.familySize} أفراد',
                         ),
-                        if (beneficiary.maritalStatus != null)
-                          const Divider(height: 1),
+                        const Divider(height: 1),
                       ],
-                      if (beneficiary.maritalStatus != null)
+                      if (beneficiary.numberOfMales != null) ...[
+                        _InfoRow(
+                          icon: Icons.male,
+                          label: 'عدد الذكور',
+                          value: '${beneficiary.numberOfMales}',
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.numberOfFemales != null) ...[
+                        _InfoRow(
+                          icon: Icons.female,
+                          label: 'عدد الإناث',
+                          value: '${beneficiary.numberOfFemales}',
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.maritalStatus != null) ...[
                         _InfoRow(
                           icon: Icons.favorite,
                           label: 'الحالة الاجتماعية',
@@ -249,6 +282,69 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             beneficiary.maritalStatus,
                           ),
                         ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Displacement & Housing Section
+              if ((beneficiary.currentAddress != null &&
+                      beneficiary.currentAddress!.isNotEmpty) ||
+                  (beneficiary.addressBeforeDisplacement != null &&
+                      beneficiary.addressBeforeDisplacement!.isNotEmpty) ||
+                  beneficiary.displacementStatus != null ||
+                  beneficiary.housingStatus != null ||
+                  beneficiary.housingType != null) ...[
+                _buildSectionTitle(context, 'معلومات السكن والنزوح'),
+                const SizedBox(height: 8),
+                Card(
+                  child: Column(
+                    children: [
+                      if (beneficiary.currentAddress != null &&
+                          beneficiary.currentAddress!.isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.home,
+                          label: 'العنوان الحالي',
+                          value: beneficiary.currentAddress!,
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.addressBeforeDisplacement != null &&
+                          beneficiary
+                              .addressBeforeDisplacement!
+                              .isNotEmpty) ...[
+                        _InfoRow(
+                          icon: Icons.location_city,
+                          label: 'العنوان قبل النزوح',
+                          value: beneficiary.addressBeforeDisplacement!,
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.displacementStatus != null) ...[
+                        _InfoRow(
+                          icon: Icons.move_down,
+                          label: 'حالة النزوح',
+                          value: 'كود: ${beneficiary.displacementStatus}',
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.housingStatus != null) ...[
+                        _InfoRow(
+                          icon: Icons.house,
+                          label: 'حالة السكن',
+                          value: 'كود: ${beneficiary.housingStatus}',
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.housingType != null) ...[
+                        _InfoRow(
+                          icon: Icons.apartment,
+                          label: 'نوع السكن',
+                          value: 'كود: ${beneficiary.housingType}',
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -258,7 +354,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               // Education & Health Section
               if (beneficiary.educationLevel != null ||
                   beneficiary.healthStatus != null ||
-                  beneficiary.hasDisability) ...[
+                  beneficiary.hasDisability ||
+                  (beneficiary.chronicDiseasesCount != null &&
+                      beneficiary.chronicDiseasesCount! > 0) ||
+                  (beneficiary.specialNeedsCount != null &&
+                      beneficiary.specialNeedsCount! > 0)) ...[
                 _buildSectionTitle(context, 'التعليم والصحة'),
                 const SizedBox(height: 8),
                 Card(
@@ -272,9 +372,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             beneficiary.educationLevel!,
                           ),
                         ),
-                        if (beneficiary.healthStatus != null ||
-                            beneficiary.hasDisability)
-                          const Divider(height: 1),
+                        const Divider(height: 1),
                       ],
                       if (beneficiary.healthStatus != null) ...[
                         _InfoRow(
@@ -284,15 +382,49 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             beneficiary.healthStatus!,
                           ),
                         ),
-                        if (beneficiary.hasDisability) const Divider(height: 1),
+                        const Divider(height: 1),
                       ],
-                      if (beneficiary.hasDisability)
+                      if (beneficiary.chronicDiseasesCount != null &&
+                          beneficiary.chronicDiseasesCount! > 0) ...[
+                        _InfoRow(
+                          icon: Icons.medical_services,
+                          label: 'عدد الأمراض المزمنة',
+                          value: '${beneficiary.chronicDiseasesCount}',
+                        ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.hasDisability) ...[
                         _InfoRow(
                           icon: Icons.accessible,
                           label: 'الإعاقة',
                           value: 'يوجد إعاقة',
                         ),
+                        const Divider(height: 1),
+                      ],
+                      if (beneficiary.specialNeedsCount != null &&
+                          beneficiary.specialNeedsCount! > 0) ...[
+                        _InfoRow(
+                          icon: Icons.accessible_forward,
+                          label: 'عدد ذوي الاحتياجات الخاصة',
+                          value: '${beneficiary.specialNeedsCount}',
+                        ),
+                      ],
                     ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Additional Contact Info
+              if (beneficiary.altPhoneNumber != null &&
+                  beneficiary.altPhoneNumber!.isNotEmpty) ...[
+                _buildSectionTitle(context, 'معلومات اتصال إضافية'),
+                const SizedBox(height: 8),
+                Card(
+                  child: _InfoRow(
+                    icon: Icons.phone_android,
+                    label: 'رقم هاتف بديل',
+                    value: beneficiary.altPhoneNumber!,
                   ),
                 ),
                 const SizedBox(height: 16),

@@ -6,11 +6,14 @@ import '../../data/db/drift_database.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../providers/providers.dart';
+import '../mappers/beneficiary_mapper.dart';
+import '../network/api_client.dart';
 
 // Provider للـ SyncManager
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final database = ref.watch(databaseProvider);
-  return SyncManager(database);
+  final apiClient = ref.watch(apiClientProvider);
+  return SyncManager(database, apiClient: apiClient);
 });
 
 // Provider for sync status
@@ -66,13 +69,14 @@ class SyncPriority {
 // مدير المزامنة
 class SyncManager {
   final AppDatabase _db;
+  final ApiClient? _apiClient;
   final _statusController = StreamController<SyncStatus>.broadcast();
   final _uuid = const Uuid();
 
   Timer? _autoSyncTimer;
   SyncStatus _currentStatus = SyncStatus();
 
-  SyncManager(this._db) {
+  SyncManager(this._db, {ApiClient? apiClient}) : _apiClient = apiClient {
     _startAutoSync();
   }
 
@@ -256,18 +260,42 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    // TODO: Implement actual API call
-    // final response = await _apiClient.post('/beneficiaries', data);
-    // final serverId = response.data['id'];
+    if (_apiClient == null) {
+      throw Exception('ApiClient not configured');
+    }
 
-    // Update local record with server ID
-    // await _db.customStatement(
-    //   'UPDATE beneficiaries SET server_id = ?, last_synced_at = ?, sync_state = ? WHERE id = ?',
-    //   [serverId, DateTime.now(), 'synced', id],
-    // );
+    try {
+      // Convert local data to backend format
+      final beneficiary = await _db.getBeneficiaryById(id);
+      if (beneficiary == null) {
+        throw Exception('Beneficiary not found: $id');
+      }
 
-    // For now, just simulate success
-    await Future.delayed(const Duration(milliseconds: 500));
+      final backendData = BeneficiaryMapper.toBackend(beneficiary);
+
+      // Send to backend
+      final response = await _apiClient.syncBeneficiaries([backendData]);
+
+      // Update local record with server ID and sync status
+      if (response['data'] != null && response['data'].isNotEmpty) {
+        final serverRecord = response['data'][0];
+        final serverId = serverRecord['id']?.toString();
+
+        if (serverId != null) {
+          await _db.customStatement(
+            'UPDATE beneficiaries SET server_id = ?, last_synced_at = ?, sync_state = ? WHERE id = ?',
+            [
+              drift.Variable.withString(serverId),
+              drift.Variable.withDateTime(DateTime.now()),
+              drift.Variable.withString('synced'),
+              drift.Variable.withString(id),
+            ],
+          );
+        }
+      }
+    } catch (e) {
+      throw Exception('Failed to sync beneficiary: $e');
+    }
   }
 
   // مزامنة زيارة
@@ -293,6 +321,60 @@ class SyncManager {
   // ============================================================================
   // PULL FROM SERVER - جلب من السيرفر
   // ============================================================================
+
+  // مزامنة المستفيدين من السيرفر (Pull)
+  Future<int> pullBeneficiariesFromServer({DateTime? updatedAfter}) async {
+    if (_apiClient == null) {
+      throw Exception('ApiClient not configured');
+    }
+
+    try {
+      // جلب البيانات من السيرفر
+      final response = await _apiClient.pullSync(updatedAfter: updatedAfter);
+      final beneficiariesData = response['beneficiaries'] as List? ?? [];
+
+      int insertedCount = 0;
+
+      // تحويل وحفظ كل مستفيد
+      for (final item in beneficiariesData) {
+        try {
+          // تحويل من Backend إلى Local باستخدام Mapper
+          final beneficiaryCompanion = BeneficiaryMapper.fromBackend(
+            item as Map<String, dynamic>,
+          );
+
+          // البحث عن مستفيد موجود بنفس الـ serverId
+          final serverId = item['id']?.toString();
+          if (serverId != null) {
+            final existing = await _db.getBeneficiaryByServerId(serverId);
+
+            if (existing != null) {
+              // تحديث الموجود
+              await _db.updateBeneficiaryCompanion(
+                existing.id,
+                beneficiaryCompanion,
+              );
+            } else {
+              // إدراج جديد
+              await _db.insertBeneficiary(beneficiaryCompanion);
+              insertedCount++;
+            }
+          } else {
+            // إدراج جديد (بدون serverId)
+            await _db.insertBeneficiary(beneficiaryCompanion);
+            insertedCount++;
+          }
+        } catch (e) {
+          // تسجيل الخطأ والمتابعة
+          print('Error processing beneficiary: $e');
+        }
+      }
+
+      return insertedCount;
+    } catch (e) {
+      throw Exception('Failed to pull beneficiaries from server: $e');
+    }
+  }
 
   // مزامنة التصنيفات من السيرفر
   Future<void> syncTaxonomiesFromServer() async {

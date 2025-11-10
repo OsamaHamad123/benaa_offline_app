@@ -1,0 +1,180 @@
+{
+    "governorates": [
+        {
+            "code": "BGD",
+            "label": "بغداد"
+        },
+        {
+            "code": "BSR",
+            "label": "البصرة"
+        },
+        {
+            "code": "NIN",
+            "label": "نينوى"
+        },
+        {
+            "code": "ANB",
+            "label": "الأنبار"
+        },
+        {
+            "code": "DYL",
+            "label": "ديالى"
+        },
+        {
+            "code": "KRB",
+            "label": "كربلاء"
+        },
+        {
+            "code": "NAJ",
+            "label": "النجف"
+        },
+        {
+            "code": "QAD",
+            "label": "القادسية"
+        },
+        {
+            "code": "MUT",
+            "label": "المثنى"
+        },
+        {
+            "code": "THQ",
+            "label": "ذي قار"
+        },
+        {
+            "code": "MSN",
+            "label": "ميسان"
+        },
+        {
+            "code": "BBL",
+            "label": "بابل"
+        },
+        {
+            "code": "WST",
+            "label": "واسط"
+        },
+        {
+            "code": "SLD",
+            "label": "صلاح الدين"
+        },
+        {
+            "code": "KRK",
+            "label": "كركوك"
+        },
+        {
+            "code": "ARB",
+            "label": "أربيل"
+        },
+        {
+            "code": "SLM",
+            "label": "السليمانية"
+        },
+        {
+            "code": "DHK",
+            "label": "دهوك"
+        },
+        {
+            "code": "Gaza",
+            "label": "غزة"
+        }
+    ],
+    "categories": [
+        {
+            "code": "orphan",
+            "label": "يتيم"
+        },
+        {
+            "code": "poor",
+            "label": "فقير"
+        },
+        {
+            "code": "widow",
+            "label": "أرملة"
+        },
+        {
+            "code": "disabled",
+            "label": "معاق"
+        },
+        {
+            "code": "elderly",
+            "label": "مسن"
+        },
+        {
+            "code": "refugee",
+            "label": "نازح"
+        },
+        {
+            "code": "other",
+            "label": "أخرى"
+        }
+    ],
+    "marital_status": [
+        {
+            "code": "single",
+            "label": "أعزب"
+        },
+        {
+            "code": "married",
+            "label": "متزوج"
+        },
+        {
+            "code": "divorced",
+            "label": "مطلق"
+        },
+        {
+            "code": "widowed",
+            "label": "أرمل"
+        }
+    ],
+    "education_levels": [
+        {
+            "code": "none",
+            "label": "بدون تعليم"
+        },
+        {
+            "code": "primary",
+            "label": "ابتدائي"
+        },
+        {
+            "code": "intermediate",
+            "label": "متوسط"
+        },
+        {
+            "code": "secondary",
+            "label": "ثانوي"
+        },
+        {
+            "code": "diploma",
+            "label": "دبلوم"
+        },
+        {
+            "code": "bachelor",
+            "label": "بكالوريوس"
+        },
+        {
+            "code": "master",
+            "label": "ماجستير"
+        },
+        {
+            "code": "phd",
+            "label": "دكتوراه"
+        }
+    ],
+    "health_status": [
+        {
+            "code": "good",
+            "label": "جيدة"
+        },
+        {
+            "code": "fair",
+            "label": "متوسطة"
+        },
+        {
+            "code": "poor",
+            "label": "ضعيفة"
+        },
+        {
+            "code": "chronic",
+            "label": "مرض مزمن"
+        }
+    ]
+}

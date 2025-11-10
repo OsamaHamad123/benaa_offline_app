@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/civil_registry_service.dart';
 
 class CivilSearchPage extends ConsumerStatefulWidget {
   const CivilSearchPage({super.key});
@@ -12,7 +13,7 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
-  List<Map<String, String>> _searchResults = [];
+  List<CivilRecord> _searchResults = [];
 
   @override
   void dispose() {
@@ -22,9 +23,9 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
 
   Future<void> _performSearch() async {
     if (_searchQuery.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال نص للبحث')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('الرجاء إدخال نص للبحث')));
       return;
     }
 
@@ -34,28 +35,12 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
     });
 
     try {
-      // Simulate search in civil registry
-      await Future.delayed(const Duration(seconds: 1));
+      // البحث الحقيقي في السجل المدني
+      final results = await CivilRegistryService.search(_searchQuery);
 
-      // Mock data
-      final mockResults = [
-        {
-          'nationalId': '1234567890',
-          'fileNo': 'F-2024-001',
-          'fullName': 'أحمد محمد علي',
-          'governorate': 'بغداد',
-        },
-        {
-          'nationalId': '0987654321',
-          'fileNo': 'F-2024-002',
-          'fullName': 'فاطمة حسن',
-          'governorate': 'البصرة',
-        },
-      ];
-
-      if (_searchQuery.isNotEmpty && mounted) {
+      if (mounted) {
         setState(() {
-          _searchResults = mockResults;
+          _searchResults = results;
         });
       }
     } catch (e) {
@@ -79,9 +64,7 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('البحث في السجل المدني'),
-      ),
+      appBar: AppBar(title: const Text('البحث في السجل المدني')),
       body: Column(
         children: [
           // Search Input Section
@@ -94,8 +77,8 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
                 Text(
                   'ابحث عن مواطن في السجل المدني',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -148,9 +131,7 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
           ),
 
           // Search Results
-          Expanded(
-            child: _buildSearchResults(),
-          ),
+          Expanded(child: _buildSearchResults()),
         ],
       ),
     );
@@ -170,18 +151,12 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
             const SizedBox(height: 16),
             Text(
               'ابحث عن مواطن',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
               'أدخل الاسم أو الرقم الوطني للبحث',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -197,18 +172,12 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
             const SizedBox(height: 16),
             Text(
               'لا توجد نتائج',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
             ),
             const SizedBox(height: 8),
             Text(
               'لم يتم العثور على نتائج مطابقة',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
           ],
         ),
@@ -227,7 +196,7 @@ class _CivilSearchPageState extends ConsumerState<CivilSearchPage> {
 }
 
 class _CivilRecordCard extends StatelessWidget {
-  final Map<String, String> record;
+  final CivilRecord record;
 
   const _CivilRecordCard({required this.record});
 
@@ -243,10 +212,13 @@ class _CivilRecordCard extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.1),
                   child: Icon(
-                    Icons.person,
+                    record.gender == 'male'
+                        ? Icons.person
+                        : Icons.person_outline,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
@@ -256,7 +228,7 @@ class _CivilRecordCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        record['fullName'] ?? '',
+                        record.fullName,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -264,11 +236,8 @@ class _CivilRecordCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        record['governorate'] ?? '',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        '${record.governorate} - ${record.district}',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -279,13 +248,31 @@ class _CivilRecordCard extends StatelessWidget {
             _InfoRow(
               icon: Icons.badge,
               label: 'الرقم الوطني',
-              value: record['nationalId'] ?? '',
+              value: record.nationalId,
             ),
             const SizedBox(height: 8),
             _InfoRow(
-              icon: Icons.folder,
-              label: 'رقم الملف',
-              value: record['fileNo'] ?? '',
+              icon: Icons.person,
+              label: 'اسم الأب',
+              value: record.fatherName,
+            ),
+            const SizedBox(height: 8),
+            _InfoRow(
+              icon: Icons.person_outline,
+              label: 'اسم الأم',
+              value: record.motherName,
+            ),
+            const SizedBox(height: 8),
+            _InfoRow(
+              icon: Icons.cake,
+              label: 'تاريخ الميلاد',
+              value: record.birthDate,
+            ),
+            const SizedBox(height: 8),
+            _InfoRow(
+              icon: Icons.wc,
+              label: 'الجنس',
+              value: record.gender == 'male' ? 'ذكر' : 'أنثى',
             ),
             const SizedBox(height: 16),
             Row(
@@ -309,7 +296,8 @@ class _CivilRecordCard extends StatelessWidget {
                       // TODO: Use this data to create beneficiary
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('سيتم إضافة المستفيد قريباً')),
+                          content: Text('سيتم إضافة المستفيد قريباً'),
+                        ),
                       );
                     },
                     icon: const Icon(Icons.person_add, size: 18),
@@ -344,18 +332,12 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
       ],

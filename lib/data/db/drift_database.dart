@@ -20,6 +20,9 @@ class Beneficiaries extends Table {
   TextColumn get phoneNumber => text().nullable()(); // رقم الهاتف
   TextColumn get motherName => text().nullable()(); // اسم الأم
   TextColumn get fatherName => text().nullable()(); // اسم الأب
+  TextColumn get grandFatherName => text().nullable()(); // اسم الجد
+  TextColumn get familyName => text().nullable()(); // اسم العائلة
+  TextColumn get altPhoneNumber => text().nullable()(); // رقم هاتف بديل
   IntColumn get familySize => integer().nullable()(); // عدد أفراد الأسرة
   TextColumn get gender => text()(); // 'male', 'female'
   TextColumn get category => text()();
@@ -29,6 +32,23 @@ class Beneficiaries extends Table {
   TextColumn get healthStatus => text().nullable()(); // الحالة الصحية
   BoolColumn get hasDisability =>
       boolean().withDefault(const Constant(false))(); // لديه إعاقة
+
+  // حقول إضافية من Backend
+  IntColumn get displacementStatus => integer().nullable()(); // حالة النزوح
+  TextColumn get addressBeforeDisplacement =>
+      text().nullable()(); // عنوان قبل النزوح
+  TextColumn get currentAddress => text().nullable()(); // العنوان الحالي
+  IntColumn get numberOfMales => integer().nullable()(); // عدد الذكور
+  IntColumn get numberOfFemales => integer().nullable()(); // عدد الإناث
+  IntColumn get chronicDiseasesCount =>
+      integer().nullable()(); // عدد المصابين بأمراض مزمنة
+  IntColumn get specialNeedsCount =>
+      integer().nullable()(); // عدد ذوي الاحتياجات الخاصة
+  IntColumn get employmentStatus => integer().nullable()(); // حالة توظيف المعيل
+  IntColumn get housingStatus => integer().nullable()(); // حالة السكن
+  IntColumn get housingType => integer().nullable()(); // نوع السكن
+  IntColumn get requestStatus => integer().nullable()(); // حالة الطلب
+
   TextColumn get notes => text().withDefault(const Constant(''))();
   TextColumn get associationName => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -437,9 +457,26 @@ class AppDatabase extends _$AppDatabase {
     )..where((b) => b.id.equals(id))).getSingleOrNull();
   }
 
+  // Get beneficiary by server ID
+  Future<Beneficiary?> getBeneficiaryByServerId(String serverId) async {
+    return await (select(
+      beneficiaries,
+    )..where((b) => b.serverId.equals(serverId))).getSingleOrNull();
+  }
+
   // Insert beneficiary
   Future<void> insertBeneficiary(BeneficiariesCompanion beneficiary) async {
     await into(beneficiaries).insert(beneficiary);
+  }
+
+  // Update beneficiary (using Companion)
+  Future<void> updateBeneficiaryCompanion(
+    String id,
+    BeneficiariesCompanion beneficiary,
+  ) async {
+    await (update(
+      beneficiaries,
+    )..where((b) => b.id.equals(id))).write(beneficiary);
   }
 
   // Update beneficiary

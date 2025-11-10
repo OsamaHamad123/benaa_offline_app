@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/login_page.dart';
+import '../features/initialization/initialization_page.dart';
 import '../features/dashboard/dashboard_page.dart';
 import '../features/beneficiaries/beneficiaries_list_page.dart';
 import '../features/beneficiaries/add_beneficiary_page.dart';
@@ -13,10 +14,16 @@ import '../core/storage/secure_store.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/init',
     redirect: (context, state) async {
+      final isGoingToInit = state.matchedLocation == '/init';
       final isAuth = await SecureStore.isAuthenticated();
       final isGoingToLogin = state.matchedLocation == '/login';
+
+      // السماح بالذهاب لصفحة التهيئة
+      if (isGoingToInit) {
+        return null;
+      }
 
       if (!isAuth && !isGoingToLogin) {
         return '/login';
@@ -29,6 +36,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/init',
+        builder: (context, state) => const InitializationPage(),
+      ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/dashboard',
