@@ -16,7 +16,8 @@ class AddBeneficiaryPage extends ConsumerStatefulWidget {
   ConsumerState<AddBeneficiaryPage> createState() => _AddBeneficiaryPageState();
 }
 
-class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
+class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
+    with AutomaticKeepAliveClientMixin {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _nationalIdController = TextEditingController();
@@ -42,6 +43,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
   String _educationLevel = 'none';
   String _healthStatus = 'good';
   bool _hasDisability = false;
+
+  @override
+  bool get wantKeepAlive => true; // منع rebuild الصفحة
 
   @override
   void initState() {
@@ -80,7 +84,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
           _maritalStatus = beneficiary.maritalStatus ?? 'single';
           _educationLevel = beneficiary.educationLevel ?? 'none';
           _healthStatus = beneficiary.healthStatus ?? 'good';
-          _hasDisability = beneficiary.hasDisability ?? false;
+          _hasDisability = beneficiary.hasDisability;
         });
       }
     } catch (e) {
@@ -204,6 +208,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
     final padding = ResponsiveUtils.getResponsivePadding(context);
 
     return Scaffold(
@@ -216,8 +221,12 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage> {
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: padding,
+              // تحسين الأداء
+              physics: const BouncingScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               child: Form(
                 key: _formKey,
+                autovalidateMode: AutovalidateMode.disabled,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
