@@ -30,6 +30,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
   final _motherNameController = TextEditingController();
   final _fatherNameController = TextEditingController();
   final _districtController = TextEditingController();
+  final _associationNameController = TextEditingController();
 
   String _selectedGovernorate = 'بغداد';
   String _selectedGender = 'male';
@@ -80,6 +81,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
           _motherNameController.text = beneficiary.motherName ?? '';
           _fatherNameController.text = beneficiary.fatherName ?? '';
           _districtController.text = beneficiary.district ?? '';
+          _associationNameController.text = beneficiary.associationName ?? '';
           _familySize = beneficiary.familySize ?? 1;
           _maritalStatus = beneficiary.maritalStatus ?? 'single';
           _educationLevel = beneficiary.educationLevel ?? 'none';
@@ -111,6 +113,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
     _motherNameController.dispose();
     _fatherNameController.dispose();
     _districtController.dispose();
+    _associationNameController.dispose();
     super.dispose();
   }
 
@@ -164,6 +167,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
         motherName: drift.Value(_motherNameController.text.trim()),
         fatherName: drift.Value(_fatherNameController.text.trim()),
         district: drift.Value(_districtController.text.trim()),
+        associationName: drift.Value(_associationNameController.text.trim()),
         familySize: drift.Value(_familySize),
         maritalStatus: drift.Value(_maritalStatus),
         educationLevel: drift.Value(_educationLevel),
@@ -248,6 +252,18 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                         }
                         return null;
                       },
+                      textInputAction: TextInputAction.next,
+                    ),
+                    SizedBox(height: rv.spacing),
+
+                    // Association Name
+                    TextFormField(
+                      controller: _associationNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'اسم الجمعية',
+                        prefixIcon: Icon(Icons.business),
+                        hintText: 'مثال: جمعية البناء الخيرية',
+                      ),
                       textInputAction: TextInputAction.next,
                     ),
                     SizedBox(height: rv.spacing),

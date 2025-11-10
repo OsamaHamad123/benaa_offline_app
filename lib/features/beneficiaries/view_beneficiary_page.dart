@@ -118,6 +118,15 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       label: 'الفئة',
                       value: _getCategoryLabel(beneficiary.category),
                     ),
+                    if (beneficiary.associationName != null &&
+                        beneficiary.associationName!.isNotEmpty) ...[
+                      const Divider(height: 1),
+                      _InfoRow(
+                        icon: Icons.business,
+                        label: 'اسم الجمعية',
+                        value: beneficiary.associationName!,
+                      ),
+                    ],
                     if (beneficiary.birthDate != null) ...[
                       const Divider(height: 1),
                       _InfoRow(
@@ -249,8 +258,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               // Education & Health Section
               if (beneficiary.educationLevel != null ||
                   beneficiary.healthStatus != null ||
-                  (beneficiary.hasDisability != null &&
-                      beneficiary.hasDisability!)) ...[
+                  beneficiary.hasDisability) ...[
                 _buildSectionTitle(context, 'التعليم والصحة'),
                 const SizedBox(height: 8),
                 Card(
@@ -265,8 +273,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           ),
                         ),
                         if (beneficiary.healthStatus != null ||
-                            (beneficiary.hasDisability != null &&
-                                beneficiary.hasDisability!))
+                            beneficiary.hasDisability)
                           const Divider(height: 1),
                       ],
                       if (beneficiary.healthStatus != null) ...[
@@ -277,12 +284,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             beneficiary.healthStatus!,
                           ),
                         ),
-                        if (beneficiary.hasDisability != null &&
-                            beneficiary.hasDisability!)
-                          const Divider(height: 1),
+                        if (beneficiary.hasDisability) const Divider(height: 1),
                       ],
-                      if (beneficiary.hasDisability != null &&
-                          beneficiary.hasDisability!)
+                      if (beneficiary.hasDisability)
                         _InfoRow(
                           icon: Icons.accessible,
                           label: 'الإعاقة',
