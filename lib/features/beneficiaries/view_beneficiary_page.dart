@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../data/db/drift_database.dart';
+import 'widgets/attachments_section.dart';
 
 class ViewBeneficiaryPage extends ConsumerWidget {
   final String beneficiaryId;
@@ -578,16 +579,30 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
+              // Attachments Section
+              _buildSectionTitle(context, 'المرفقات'),
+              const SizedBox(height: 8),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: AttachmentsSection(
+                    beneficiaryId: beneficiaryId,
+                    loadFromDatabase: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Action Buttons
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        context.push('/attachments/$beneficiaryId');
+                        context.push('/beneficiaries/add?id=$beneficiaryId');
                       },
-                      icon: const Icon(Icons.attachment),
-                      label: const Text('المرفقات'),
+                      icon: const Icon(Icons.edit),
+                      label: const Text('تعديل'),
                     ),
                   ),
                   const SizedBox(width: 12),

@@ -2935,6 +2935,28 @@ class $AttachmentsTable extends Attachments
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fileNameMeta = const VerificationMeta(
+    'fileName',
+  );
+  @override
+  late final GeneratedColumn<String> fileName = GeneratedColumn<String>(
+    'file_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   @override
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
@@ -2944,32 +2966,27 @@ class $AttachmentsTable extends Attachments
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _pathMeta = const VerificationMeta('path');
-  @override
-  late final GeneratedColumn<String> path = GeneratedColumn<String>(
-    'path',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
+  static const VerificationMeta _fileSizeMeta = const VerificationMeta(
+    'fileSize',
   );
-  static const VerificationMeta _hashMeta = const VerificationMeta('hash');
   @override
-  late final GeneratedColumn<String> hash = GeneratedColumn<String>(
-    'hash',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _sizeMeta = const VerificationMeta('size');
-  @override
-  late final GeneratedColumn<int> size = GeneratedColumn<int>(
-    'size',
+  late final GeneratedColumn<int> fileSize = GeneratedColumn<int>(
+    'file_size',
     aliasedName,
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _thumbnailPathMeta = const VerificationMeta(
+    'thumbnailPath',
+  );
+  @override
+  late final GeneratedColumn<String> thumbnailPath = GeneratedColumn<String>(
+    'thumbnail_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3032,10 +3049,11 @@ class $AttachmentsTable extends Attachments
     id,
     beneficiaryId,
     visitId,
+    fileName,
+    filePath,
     type,
-    path,
-    hash,
-    size,
+    fileSize,
+    thumbnailPath,
     createdAt,
     updatedAt,
     syncState,
@@ -3076,6 +3094,22 @@ class $AttachmentsTable extends Attachments
         visitId.isAcceptableOrUnknown(data['visit_id']!, _visitIdMeta),
       );
     }
+    if (data.containsKey('file_name')) {
+      context.handle(
+        _fileNameMeta,
+        fileName.isAcceptableOrUnknown(data['file_name']!, _fileNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fileNameMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_filePathMeta);
+    }
     if (data.containsKey('type')) {
       context.handle(
         _typeMeta,
@@ -3084,29 +3118,22 @@ class $AttachmentsTable extends Attachments
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
-    if (data.containsKey('path')) {
+    if (data.containsKey('file_size')) {
       context.handle(
-        _pathMeta,
-        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+        _fileSizeMeta,
+        fileSize.isAcceptableOrUnknown(data['file_size']!, _fileSizeMeta),
       );
     } else if (isInserting) {
-      context.missing(_pathMeta);
+      context.missing(_fileSizeMeta);
     }
-    if (data.containsKey('hash')) {
+    if (data.containsKey('thumbnail_path')) {
       context.handle(
-        _hashMeta,
-        hash.isAcceptableOrUnknown(data['hash']!, _hashMeta),
+        _thumbnailPathMeta,
+        thumbnailPath.isAcceptableOrUnknown(
+          data['thumbnail_path']!,
+          _thumbnailPathMeta,
+        ),
       );
-    } else if (isInserting) {
-      context.missing(_hashMeta);
-    }
-    if (data.containsKey('size')) {
-      context.handle(
-        _sizeMeta,
-        size.isAcceptableOrUnknown(data['size']!, _sizeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sizeMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -3166,22 +3193,26 @@ class $AttachmentsTable extends Attachments
         DriftSqlType.string,
         data['${effectivePrefix}visit_id'],
       ),
+      fileName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_name'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      )!,
       type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}type'],
       )!,
-      path: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}path'],
-      )!,
-      hash: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}hash'],
-      )!,
-      size: attachedDatabase.typeMapping.read(
+      fileSize: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}size'],
+        data['${effectivePrefix}file_size'],
       )!,
+      thumbnailPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thumbnail_path'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -3215,10 +3246,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
   final String id;
   final String beneficiaryId;
   final String? visitId;
+  final String fileName;
+  final String filePath;
   final String type;
-  final String path;
-  final String hash;
-  final int size;
+  final int fileSize;
+  final String? thumbnailPath;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String syncState;
@@ -3228,10 +3260,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     required this.id,
     required this.beneficiaryId,
     this.visitId,
+    required this.fileName,
+    required this.filePath,
     required this.type,
-    required this.path,
-    required this.hash,
-    required this.size,
+    required this.fileSize,
+    this.thumbnailPath,
     required this.createdAt,
     required this.updatedAt,
     required this.syncState,
@@ -3246,10 +3279,13 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     if (!nullToAbsent || visitId != null) {
       map['visit_id'] = Variable<String>(visitId);
     }
+    map['file_name'] = Variable<String>(fileName);
+    map['file_path'] = Variable<String>(filePath);
     map['type'] = Variable<String>(type);
-    map['path'] = Variable<String>(path);
-    map['hash'] = Variable<String>(hash);
-    map['size'] = Variable<int>(size);
+    map['file_size'] = Variable<int>(fileSize);
+    if (!nullToAbsent || thumbnailPath != null) {
+      map['thumbnail_path'] = Variable<String>(thumbnailPath);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     map['sync_state'] = Variable<String>(syncState);
@@ -3269,10 +3305,13 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       visitId: visitId == null && nullToAbsent
           ? const Value.absent()
           : Value(visitId),
+      fileName: Value(fileName),
+      filePath: Value(filePath),
       type: Value(type),
-      path: Value(path),
-      hash: Value(hash),
-      size: Value(size),
+      fileSize: Value(fileSize),
+      thumbnailPath: thumbnailPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailPath),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       syncState: Value(syncState),
@@ -3294,10 +3333,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       id: serializer.fromJson<String>(json['id']),
       beneficiaryId: serializer.fromJson<String>(json['beneficiaryId']),
       visitId: serializer.fromJson<String?>(json['visitId']),
+      fileName: serializer.fromJson<String>(json['fileName']),
+      filePath: serializer.fromJson<String>(json['filePath']),
       type: serializer.fromJson<String>(json['type']),
-      path: serializer.fromJson<String>(json['path']),
-      hash: serializer.fromJson<String>(json['hash']),
-      size: serializer.fromJson<int>(json['size']),
+      fileSize: serializer.fromJson<int>(json['fileSize']),
+      thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncState: serializer.fromJson<String>(json['syncState']),
@@ -3312,10 +3352,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       'id': serializer.toJson<String>(id),
       'beneficiaryId': serializer.toJson<String>(beneficiaryId),
       'visitId': serializer.toJson<String?>(visitId),
+      'fileName': serializer.toJson<String>(fileName),
+      'filePath': serializer.toJson<String>(filePath),
       'type': serializer.toJson<String>(type),
-      'path': serializer.toJson<String>(path),
-      'hash': serializer.toJson<String>(hash),
-      'size': serializer.toJson<int>(size),
+      'fileSize': serializer.toJson<int>(fileSize),
+      'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncState': serializer.toJson<String>(syncState),
@@ -3328,10 +3369,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     String? id,
     String? beneficiaryId,
     Value<String?> visitId = const Value.absent(),
+    String? fileName,
+    String? filePath,
     String? type,
-    String? path,
-    String? hash,
-    int? size,
+    int? fileSize,
+    Value<String?> thumbnailPath = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
     String? syncState,
@@ -3341,10 +3383,13 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     id: id ?? this.id,
     beneficiaryId: beneficiaryId ?? this.beneficiaryId,
     visitId: visitId.present ? visitId.value : this.visitId,
+    fileName: fileName ?? this.fileName,
+    filePath: filePath ?? this.filePath,
     type: type ?? this.type,
-    path: path ?? this.path,
-    hash: hash ?? this.hash,
-    size: size ?? this.size,
+    fileSize: fileSize ?? this.fileSize,
+    thumbnailPath: thumbnailPath.present
+        ? thumbnailPath.value
+        : this.thumbnailPath,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     syncState: syncState ?? this.syncState,
@@ -3358,10 +3403,13 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           ? data.beneficiaryId.value
           : this.beneficiaryId,
       visitId: data.visitId.present ? data.visitId.value : this.visitId,
+      fileName: data.fileName.present ? data.fileName.value : this.fileName,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
       type: data.type.present ? data.type.value : this.type,
-      path: data.path.present ? data.path.value : this.path,
-      hash: data.hash.present ? data.hash.value : this.hash,
-      size: data.size.present ? data.size.value : this.size,
+      fileSize: data.fileSize.present ? data.fileSize.value : this.fileSize,
+      thumbnailPath: data.thumbnailPath.present
+          ? data.thumbnailPath.value
+          : this.thumbnailPath,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncState: data.syncState.present ? data.syncState.value : this.syncState,
@@ -3378,10 +3426,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           ..write('id: $id, ')
           ..write('beneficiaryId: $beneficiaryId, ')
           ..write('visitId: $visitId, ')
+          ..write('fileName: $fileName, ')
+          ..write('filePath: $filePath, ')
           ..write('type: $type, ')
-          ..write('path: $path, ')
-          ..write('hash: $hash, ')
-          ..write('size: $size, ')
+          ..write('fileSize: $fileSize, ')
+          ..write('thumbnailPath: $thumbnailPath, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
@@ -3396,10 +3445,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     id,
     beneficiaryId,
     visitId,
+    fileName,
+    filePath,
     type,
-    path,
-    hash,
-    size,
+    fileSize,
+    thumbnailPath,
     createdAt,
     updatedAt,
     syncState,
@@ -3413,10 +3463,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           other.id == this.id &&
           other.beneficiaryId == this.beneficiaryId &&
           other.visitId == this.visitId &&
+          other.fileName == this.fileName &&
+          other.filePath == this.filePath &&
           other.type == this.type &&
-          other.path == this.path &&
-          other.hash == this.hash &&
-          other.size == this.size &&
+          other.fileSize == this.fileSize &&
+          other.thumbnailPath == this.thumbnailPath &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncState == this.syncState &&
@@ -3428,10 +3479,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
   final Value<String> id;
   final Value<String> beneficiaryId;
   final Value<String?> visitId;
+  final Value<String> fileName;
+  final Value<String> filePath;
   final Value<String> type;
-  final Value<String> path;
-  final Value<String> hash;
-  final Value<int> size;
+  final Value<int> fileSize;
+  final Value<String?> thumbnailPath;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> syncState;
@@ -3442,10 +3494,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     this.id = const Value.absent(),
     this.beneficiaryId = const Value.absent(),
     this.visitId = const Value.absent(),
+    this.fileName = const Value.absent(),
+    this.filePath = const Value.absent(),
     this.type = const Value.absent(),
-    this.path = const Value.absent(),
-    this.hash = const Value.absent(),
-    this.size = const Value.absent(),
+    this.fileSize = const Value.absent(),
+    this.thumbnailPath = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncState = const Value.absent(),
@@ -3457,10 +3510,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     required String id,
     required String beneficiaryId,
     this.visitId = const Value.absent(),
+    required String fileName,
+    required String filePath,
     required String type,
-    required String path,
-    required String hash,
-    required int size,
+    required int fileSize,
+    this.thumbnailPath = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.syncState = const Value.absent(),
@@ -3469,20 +3523,21 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        beneficiaryId = Value(beneficiaryId),
+       fileName = Value(fileName),
+       filePath = Value(filePath),
        type = Value(type),
-       path = Value(path),
-       hash = Value(hash),
-       size = Value(size),
+       fileSize = Value(fileSize),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<Attachment> custom({
     Expression<String>? id,
     Expression<String>? beneficiaryId,
     Expression<String>? visitId,
+    Expression<String>? fileName,
+    Expression<String>? filePath,
     Expression<String>? type,
-    Expression<String>? path,
-    Expression<String>? hash,
-    Expression<int>? size,
+    Expression<int>? fileSize,
+    Expression<String>? thumbnailPath,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncState,
@@ -3494,10 +3549,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       if (id != null) 'id': id,
       if (beneficiaryId != null) 'beneficiary_id': beneficiaryId,
       if (visitId != null) 'visit_id': visitId,
+      if (fileName != null) 'file_name': fileName,
+      if (filePath != null) 'file_path': filePath,
       if (type != null) 'type': type,
-      if (path != null) 'path': path,
-      if (hash != null) 'hash': hash,
-      if (size != null) 'size': size,
+      if (fileSize != null) 'file_size': fileSize,
+      if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncState != null) 'sync_state': syncState,
@@ -3511,10 +3567,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     Value<String>? id,
     Value<String>? beneficiaryId,
     Value<String?>? visitId,
+    Value<String>? fileName,
+    Value<String>? filePath,
     Value<String>? type,
-    Value<String>? path,
-    Value<String>? hash,
-    Value<int>? size,
+    Value<int>? fileSize,
+    Value<String?>? thumbnailPath,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<String>? syncState,
@@ -3526,10 +3583,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       id: id ?? this.id,
       beneficiaryId: beneficiaryId ?? this.beneficiaryId,
       visitId: visitId ?? this.visitId,
+      fileName: fileName ?? this.fileName,
+      filePath: filePath ?? this.filePath,
       type: type ?? this.type,
-      path: path ?? this.path,
-      hash: hash ?? this.hash,
-      size: size ?? this.size,
+      fileSize: fileSize ?? this.fileSize,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncState: syncState ?? this.syncState,
@@ -3551,17 +3609,20 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     if (visitId.present) {
       map['visit_id'] = Variable<String>(visitId.value);
     }
+    if (fileName.present) {
+      map['file_name'] = Variable<String>(fileName.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
     }
-    if (path.present) {
-      map['path'] = Variable<String>(path.value);
+    if (fileSize.present) {
+      map['file_size'] = Variable<int>(fileSize.value);
     }
-    if (hash.present) {
-      map['hash'] = Variable<String>(hash.value);
-    }
-    if (size.present) {
-      map['size'] = Variable<int>(size.value);
+    if (thumbnailPath.present) {
+      map['thumbnail_path'] = Variable<String>(thumbnailPath.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3590,10 +3651,11 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
           ..write('id: $id, ')
           ..write('beneficiaryId: $beneficiaryId, ')
           ..write('visitId: $visitId, ')
+          ..write('fileName: $fileName, ')
+          ..write('filePath: $filePath, ')
           ..write('type: $type, ')
-          ..write('path: $path, ')
-          ..write('hash: $hash, ')
-          ..write('size: $size, ')
+          ..write('fileSize: $fileSize, ')
+          ..write('thumbnailPath: $thumbnailPath, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
@@ -7920,10 +7982,11 @@ typedef $$AttachmentsTableCreateCompanionBuilder =
       required String id,
       required String beneficiaryId,
       Value<String?> visitId,
+      required String fileName,
+      required String filePath,
       required String type,
-      required String path,
-      required String hash,
-      required int size,
+      required int fileSize,
+      Value<String?> thumbnailPath,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<String> syncState,
@@ -7936,10 +7999,11 @@ typedef $$AttachmentsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> beneficiaryId,
       Value<String?> visitId,
+      Value<String> fileName,
+      Value<String> filePath,
       Value<String> type,
-      Value<String> path,
-      Value<String> hash,
-      Value<int> size,
+      Value<int> fileSize,
+      Value<String?> thumbnailPath,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<String> syncState,
@@ -7972,23 +8036,28 @@ class $$AttachmentsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get path => $composableBuilder(
-    column: $table.path,
+  ColumnFilters<int> get fileSize => $composableBuilder(
+    column: $table.fileSize,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get hash => $composableBuilder(
-    column: $table.hash,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get size => $composableBuilder(
-    column: $table.size,
+  ColumnFilters<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8042,23 +8111,28 @@ class $$AttachmentsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get fileName => $composableBuilder(
+    column: $table.fileName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get type => $composableBuilder(
     column: $table.type,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get path => $composableBuilder(
-    column: $table.path,
+  ColumnOrderings<int> get fileSize => $composableBuilder(
+    column: $table.fileSize,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get hash => $composableBuilder(
-    column: $table.hash,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get size => $composableBuilder(
-    column: $table.size,
+  ColumnOrderings<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -8108,17 +8182,22 @@ class $$AttachmentsTableAnnotationComposer
   GeneratedColumn<String> get visitId =>
       $composableBuilder(column: $table.visitId, builder: (column) => column);
 
+  GeneratedColumn<String> get fileName =>
+      $composableBuilder(column: $table.fileName, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
 
-  GeneratedColumn<String> get path =>
-      $composableBuilder(column: $table.path, builder: (column) => column);
+  GeneratedColumn<int> get fileSize =>
+      $composableBuilder(column: $table.fileSize, builder: (column) => column);
 
-  GeneratedColumn<String> get hash =>
-      $composableBuilder(column: $table.hash, builder: (column) => column);
-
-  GeneratedColumn<int> get size =>
-      $composableBuilder(column: $table.size, builder: (column) => column);
+  GeneratedColumn<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8172,10 +8251,11 @@ class $$AttachmentsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> beneficiaryId = const Value.absent(),
                 Value<String?> visitId = const Value.absent(),
+                Value<String> fileName = const Value.absent(),
+                Value<String> filePath = const Value.absent(),
                 Value<String> type = const Value.absent(),
-                Value<String> path = const Value.absent(),
-                Value<String> hash = const Value.absent(),
-                Value<int> size = const Value.absent(),
+                Value<int> fileSize = const Value.absent(),
+                Value<String?> thumbnailPath = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
@@ -8186,10 +8266,11 @@ class $$AttachmentsTableTableManager
                 id: id,
                 beneficiaryId: beneficiaryId,
                 visitId: visitId,
+                fileName: fileName,
+                filePath: filePath,
                 type: type,
-                path: path,
-                hash: hash,
-                size: size,
+                fileSize: fileSize,
+                thumbnailPath: thumbnailPath,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncState: syncState,
@@ -8202,10 +8283,11 @@ class $$AttachmentsTableTableManager
                 required String id,
                 required String beneficiaryId,
                 Value<String?> visitId = const Value.absent(),
+                required String fileName,
+                required String filePath,
                 required String type,
-                required String path,
-                required String hash,
-                required int size,
+                required int fileSize,
+                Value<String?> thumbnailPath = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<String> syncState = const Value.absent(),
@@ -8216,10 +8298,11 @@ class $$AttachmentsTableTableManager
                 id: id,
                 beneficiaryId: beneficiaryId,
                 visitId: visitId,
+                fileName: fileName,
+                filePath: filePath,
                 type: type,
-                path: path,
-                hash: hash,
-                size: size,
+                fileSize: fileSize,
+                thumbnailPath: thumbnailPath,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncState: syncState,

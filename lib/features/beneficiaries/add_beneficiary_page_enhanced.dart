@@ -4,13 +4,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'dart:async';
 import '../../core/providers/providers.dart';
 import '../../core/utils/responsive_utils.dart';
 import '../../data/db/drift_database.dart';
 import 'widgets/form_field_builders.dart';
+import 'widgets/attachments_section.dart';
 import 'utils/auto_save_manager.dart';
 import 'utils/tab_progress_calculator.dart';
-import 'utils/form_validators.dart';
+import 'utils/smart_validators.dart';
 
 /// صفحة إضافة/تعديل مستفيد - تصميم فخم وشامل
 /// ✨ Material Design 3 with Gradient Headers
@@ -31,7 +34,6 @@ class _AddBeneficiaryPageEnhancedState
     extends ConsumerState<AddBeneficiaryPageEnhanced>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _formKey = GlobalKey<FormState>();
   final _autoSaveManager = AutoSaveManager();
 
   // ==================== Controllers ====================
@@ -84,12 +86,11 @@ class _AddBeneficiaryPageEnhancedState
   bool _isLoading = false;
   int _currentTab = 0;
   bool _hasUnsavedChanges = false;
-  DateTime? _lastAutoSave;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       setState(() => _currentTab = _tabController.index);
     });
@@ -99,6 +100,8 @@ class _AddBeneficiaryPageEnhancedState
   }
 
   /// إضافة listeners للحقول لتحديث Progress
+  Timer? _debouncedSaveTimer;
+
   void _setupTextListeners() {
     // تحديث UI عند تغيير أي حقل
     final allControllers = [
@@ -128,8 +131,45 @@ class _AddBeneficiaryPageEnhancedState
 
     for (final controller in allControllers) {
       controller.addListener(() {
-        if (mounted) setState(() {});
+        if (mounted) {
+          setState(() => _hasUnsavedChanges = true);
+
+          // Debounced Auto-Save: حفظ بعد 3 ثواني من التوقف عن الكتابة
+          _debouncedSaveTimer?.cancel();
+          _debouncedSaveTimer = Timer(const Duration(seconds: 3), () {
+            if (mounted && _hasUnsavedChanges) {
+              _autoSaveDraft();
+            }
+          });
+        }
       });
+    }
+  }
+
+  /// حفظ مسودة تلقائي
+  Future<void> _autoSaveDraft() async {
+    final draftId = widget.beneficiaryId ?? 'draft_${const Uuid().v4()}';
+    final data = _collectFormData();
+
+    // حفظ في SharedPreferences أو قاعدة بيانات مؤقتة
+    await _autoSaveManager.saveDraft(draftId, data);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.cloud_done, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('تم الحفظ التلقائي'),
+            ],
+          ),
+          backgroundColor: Colors.green.shade700,
+          duration: const Duration(seconds: 1),
+          behavior: SnackBarBehavior.floating,
+          width: 200,
+        ),
+      );
     }
   }
 
@@ -139,10 +179,254 @@ class _AddBeneficiaryPageEnhancedState
     _autoSaveManager.startAutoSave(draftId, _collectFormData);
   }
 
+  /// معالج تغيير البطاقة الوطنية - Smart Validation & Auto-Fill
+  Timer? _nationalIdDebounceTimer;
+  void _onNationalIdChanged(String value) {
+    setState(() => _hasUnsavedChanges = true);
+
+    // Cancel previous timer
+    _nationalIdDebounceTimer?.cancel();
+
+    // Debounce for 1 second
+    _nationalIdDebounceTimer = Timer(const Duration(seconds: 1), () async {
+      if (value.isEmpty) return;
+
+      // 1. Validate Iraqi National ID
+      final validationError = SmartValidators.validateIraqiNationalId(value);
+      if (validationError != null) {
+        if (mounted) {
+          HapticFeedback.lightImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('⚠ $validationError'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+
+      // 2. Extract info from National ID
+      final info = SmartValidators.extractInfoFromNationalId(value);
+      if (info != null) {
+        // Show confirmation dialog for auto-fill
+        final shouldAutoFill = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.auto_fix_high, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('تعبئة تلقائية'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('تم استخراج المعلومات التالية من البطاقة الوطنية:'),
+                const SizedBox(height: 16),
+                _buildInfoRow('المحافظة', info['governorate'] ?? ''),
+                _buildInfoRow(
+                  'تاريخ الميلاد',
+                  info['birthDate']?.toString().substring(0, 10) ?? '',
+                ),
+                _buildInfoRow('الجنس', info['gender'] ?? ''),
+                _buildInfoRow('العمر', '${info['age']} سنة'),
+                const SizedBox(height: 16),
+                const Text(
+                  'هل تريد استخدام هذه البيانات؟',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('لا'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('نعم، استخدم البيانات'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldAutoFill == true && mounted) {
+          HapticFeedback.mediumImpact();
+          setState(() {
+            // Auto-fill governorate
+            if (info['governorate'] != null) {
+              _governorateController.text = info['governorate']!;
+            }
+
+            // Auto-fill birth date
+            if (info['birthDate'] != null) {
+              _birthDate = info['birthDate']!;
+              _birthDateController.text =
+                  '${info['birthDate']!.year}-${info['birthDate']!.month.toString().padLeft(2, '0')}-${info['birthDate']!.day.toString().padLeft(2, '0')}';
+            }
+
+            // Auto-fill gender
+            if (info['gender'] == 'ذكر') {
+              _gender = 'male';
+            } else if (info['gender'] == 'أنثى') {
+              _gender = 'female';
+            }
+          });
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✓ تم تعبئة البيانات تلقائياً'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+
+      // 3. Check for duplicates
+      _checkDuplicateBeneficiary(value);
+    });
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  /// فحص التكرار في قاعدة البيانات
+  Future<void> _checkDuplicateBeneficiary(String nationalId) async {
+    try {
+      final database = ref.read(databaseProvider);
+
+      // Query all beneficiaries and search manually
+      final allBeneficiaries = await database.getAllBeneficiaries();
+      final existing = allBeneficiaries.firstWhere(
+        (b) => b.nationalId == nationalId,
+        orElse: () => throw StateError('Not found'),
+      );
+
+      if (existing.id != widget.beneficiaryId) {
+        if (mounted) {
+          HapticFeedback.heavyImpact();
+          final action = await showDialog<String>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('مستفيد موجود مسبقاً'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('يوجد مستفيد مسجل بنفس الرقم الوطني:'),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'الاسم: ${existing.fullName}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Text('رقم الملف: ${existing.fileNo}'),
+                        Text('الرقم الوطني: ${existing.nationalId}'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 'cancel'),
+                  child: const Text('إلغاء'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, 'view'),
+                  child: const Text('عرض المستفيد'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, 'continue'),
+                  child: const Text('متابعة رغم ذلك'),
+                ),
+              ],
+            ),
+          );
+
+          if (action == 'cancel') {
+            _nationalIdController.clear();
+          } else if (action == 'view') {
+            // Navigate to beneficiary details
+            if (mounted) {
+              context.push('/beneficiaries/${existing.id}');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // No duplicate found or error - silent fail
+    }
+  }
+
+  /// Smart validation لحجم العائلة
+  void _validateFamilySize(String value) {
+    setState(() => _hasUnsavedChanges = true);
+
+    if (_familySizeController.text.isEmpty) return;
+    if (_numberOfMalesController.text.isEmpty &&
+        _numberOfFemalesController.text.isEmpty)
+      return;
+
+    // Validate family size logic
+    final error = SmartValidators.validateFamilySize(
+      familySize: _familySizeController.text,
+      numberOfMales: _numberOfMalesController.text,
+      numberOfFemales: _numberOfFemalesController.text,
+    );
+
+    if (error != null) {
+      HapticFeedback.lightImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠ $error'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   /// جمع بيانات النموذج للحفظ التلقائي
   Map<String, dynamic> _collectFormData() {
     _hasUnsavedChanges = true;
-    _lastAutoSave = DateTime.now();
 
     return {
       'fullName': _fullNameController.text,
@@ -229,6 +513,9 @@ class _AddBeneficiaryPageEnhancedState
           requestStatus: _requestStatus,
           notes: _notesController.text,
         );
+      case 4:
+        // Attachments tab progress - always 100% if there are any attachments
+        return 1.0; // Can be enhanced later to check actual attachment count
       default:
         return 0.0;
     }
@@ -311,6 +598,8 @@ class _AddBeneficiaryPageEnhancedState
 
   @override
   void dispose() {
+    _debouncedSaveTimer?.cancel();
+    _nationalIdDebounceTimer?.cancel();
     _autoSaveManager.dispose();
     _tabController.dispose();
     _fullNameController.dispose();
@@ -429,9 +718,10 @@ class _AddBeneficiaryPageEnhancedState
         );
       } else {
         // Insert
+        final newBeneficiaryId = const Uuid().v4();
         await db.insertBeneficiary(
           BeneficiariesCompanion.insert(
-            id: const Uuid().v4(),
+            id: newBeneficiaryId,
             fullName: _fullNameController.text.trim(),
             fullNameNorm: _fullNameController.text.trim().toLowerCase(),
             nationalId: _nationalIdController.text.trim(),
@@ -484,6 +774,17 @@ class _AddBeneficiaryPageEnhancedState
             updatedAt: now,
           ),
         );
+
+        // Update attachments with the new beneficiary ID
+        final tempBeneficiaryId =
+            widget.beneficiaryId ?? 'temp_${const Uuid().v4()}';
+        if (tempBeneficiaryId.startsWith('temp_')) {
+          await _updateAttachmentsBeneficiaryId(
+            db,
+            tempBeneficiaryId,
+            newBeneficiaryId,
+          );
+        }
       }
 
       if (mounted) {
@@ -491,16 +792,8 @@ class _AddBeneficiaryPageEnhancedState
         final draftId = widget.beneficiaryId ?? 'new';
         await _autoSaveManager.deleteDraft(draftId);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEdit
-                  ? '✓ تم تحديث البيانات بنجاح'
-                  : '✓ تم إضافة المستفيد بنجاح',
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
+        _showSuccess(
+          isEdit ? 'تم تحديث البيانات بنجاح' : 'تم إضافة المستفيد بنجاح',
         );
         context.pop();
       }
@@ -515,7 +808,34 @@ class _AddBeneficiaryPageEnhancedState
     }
   }
 
+  /// Update attachments beneficiary ID from temp to real ID
+  Future<void> _updateAttachmentsBeneficiaryId(
+    AppDatabase db,
+    String oldBeneficiaryId,
+    String newBeneficiaryId,
+  ) async {
+    try {
+      final attachments = await db.getBeneficiaryAttachments(oldBeneficiaryId);
+      debugPrint(
+        '📎 Updating ${attachments.length} attachments from $oldBeneficiaryId to $newBeneficiaryId',
+      );
+
+      for (final attachment in attachments) {
+        await (db.update(
+          db.attachments,
+        )..where((tbl) => tbl.id.equals(attachment.id))).write(
+          AttachmentsCompanion(beneficiaryId: drift.Value(newBeneficiaryId)),
+        );
+      }
+
+      debugPrint('✅ Successfully updated all attachments');
+    } catch (e) {
+      debugPrint('❌ Error updating attachments: $e');
+    }
+  }
+
   void _showError(String message) {
+    HapticFeedback.heavyImpact(); // اهتزاز قوي للأخطاء
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -526,6 +846,23 @@ class _AddBeneficiaryPageEnhancedState
           ],
         ),
         backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    HapticFeedback.mediumImpact(); // اهتزاز متوسط للنجاح
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -548,6 +885,56 @@ class _AddBeneficiaryPageEnhancedState
         _birthDateController.text =
             '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       });
+    }
+  }
+
+  /// مسح QR Code من البطاقة الوطنية
+  Future<void> _scanNationalIdQR() async {
+    HapticFeedback.selectionClick();
+
+    final scanned = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('مسح البطاقة الوطنية'),
+            backgroundColor: Colors.black,
+          ),
+          body: MobileScanner(
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                if (barcode.rawValue != null) {
+                  Navigator.pop(context, barcode.rawValue);
+                  break;
+                }
+              }
+            },
+          ),
+        ),
+      ),
+    );
+
+    if (scanned != null && mounted) {
+      HapticFeedback.mediumImpact();
+
+      // استخراج الرقم الوطني من QR
+      // عادة QR البطاقة العراقية يحتوي على بيانات متعددة
+      // نستخرج الأرقام فقط (11-12 رقم)
+      final numbers = scanned.replaceAll(RegExp(r'[^0-9]'), '');
+
+      if (numbers.length >= 11 && numbers.length <= 12) {
+        setState(() {
+          _nationalIdController.text = numbers;
+        });
+
+        // تشغيل validation و auto-fill
+        _onNationalIdChanged(numbers);
+
+        _showSuccess('تم قراءة البطاقة الوطنية بنجاح');
+      } else {
+        _showError('لم يتم التعرف على رقم البطاقة الوطنية');
+      }
     }
   }
 
@@ -618,15 +1005,20 @@ class _AddBeneficiaryPageEnhancedState
               ),
               child: TabBar(
                 controller: _tabController,
-                isScrollable: false,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 8),
+                isScrollable: true, // ✅ Make scrollable to prevent overflow
+                tabAlignment: TabAlignment.start, // ✅ Align tabs to start
+                labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+                indicatorSize: TabBarIndicatorSize.tab,
                 tabs: [
                   Tab(
-                    icon: const Icon(Icons.person, size: 20),
+                    height: 70,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('أساسي', style: TextStyle(fontSize: 12)),
+                        Icon(Icons.person, size: 22),
+                        const SizedBox(height: 4),
+                        const Text('أساسي', style: TextStyle(fontSize: 11)),
                         const SizedBox(height: 2),
                         TabProgressIndicator(
                           progress: _calculateTabProgress(0),
@@ -635,11 +1027,14 @@ class _AddBeneficiaryPageEnhancedState
                     ),
                   ),
                   Tab(
-                    icon: const Icon(Icons.family_restroom, size: 20),
+                    height: 70,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('عائلة', style: TextStyle(fontSize: 12)),
+                        Icon(Icons.family_restroom, size: 22),
+                        const SizedBox(height: 4),
+                        const Text('عائلة', style: TextStyle(fontSize: 11)),
                         const SizedBox(height: 2),
                         TabProgressIndicator(
                           progress: _calculateTabProgress(1),
@@ -648,11 +1043,14 @@ class _AddBeneficiaryPageEnhancedState
                     ),
                   ),
                   Tab(
-                    icon: const Icon(Icons.location_on, size: 20),
+                    height: 70,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('موقع', style: TextStyle(fontSize: 12)),
+                        Icon(Icons.location_on, size: 22),
+                        const SizedBox(height: 4),
+                        const Text('موقع', style: TextStyle(fontSize: 11)),
                         const SizedBox(height: 2),
                         TabProgressIndicator(
                           progress: _calculateTabProgress(2),
@@ -661,14 +1059,33 @@ class _AddBeneficiaryPageEnhancedState
                     ),
                   ),
                   Tab(
-                    icon: const Icon(Icons.health_and_safety, size: 20),
+                    height: 70,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('صحة', style: TextStyle(fontSize: 12)),
+                        Icon(Icons.health_and_safety, size: 22),
+                        const SizedBox(height: 4),
+                        const Text('صحة', style: TextStyle(fontSize: 11)),
                         const SizedBox(height: 2),
                         TabProgressIndicator(
                           progress: _calculateTabProgress(3),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    height: 70,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.attach_file, size: 22),
+                        const SizedBox(height: 4),
+                        const Text('مرفقات', style: TextStyle(fontSize: 11)),
+                        const SizedBox(height: 2),
+                        TabProgressIndicator(
+                          progress: _calculateTabProgress(4),
                         ),
                       ],
                     ),
@@ -699,12 +1116,32 @@ class _AddBeneficiaryPageEnhancedState
                         _buildFamilyTab(),
                         _buildLocationTab(),
                         _buildHealthTab(),
+                        _buildAttachmentsTab(),
                       ],
                     ),
                   ),
                   _buildBottomBar(isEdit),
                 ],
               ),
+        floatingActionButton: _buildFloatingActionButton(isEdit),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      ),
+    );
+  }
+
+  /// FAB عائم للحفظ السريع مع animation
+  Widget _buildFloatingActionButton(bool isEdit) {
+    return AnimatedScale(
+      scale: _isLoading ? 0.0 : 1.0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutBack,
+      child: FloatingActionButton.extended(
+        onPressed: _isLoading ? null : _save,
+        icon: const Icon(Icons.save_rounded),
+        label: Text(isEdit ? 'حفظ التعديلات' : 'حفظ'),
+        tooltip: isEdit ? 'حفظ التعديلات' : 'حفظ المستفيد',
+        elevation: 8,
+        heroTag: 'save_beneficiary',
       ),
     );
   }
@@ -731,16 +1168,29 @@ class _AddBeneficiaryPageEnhancedState
               Row(
                 children: [
                   Expanded(
+                    flex: 3,
                     child: _buildTextField(
                       controller: _nationalIdController,
                       label: 'الرقم الوطني *',
                       icon: Icons.credit_card,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: _onNationalIdChanged,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: _scanNationalIdQR,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    tooltip: 'مسح QR Code',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   Expanded(
+                    flex: 2,
                     child: _buildTextField(
                       controller: _fileNoController,
                       label: 'رقم الملف *',
@@ -901,6 +1351,7 @@ class _AddBeneficiaryPageEnhancedState
                 icon: Icons.group,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: _validateFamilySize,
               ),
               SizedBox(height: rv.spacing),
               Row(
@@ -912,6 +1363,8 @@ class _AddBeneficiaryPageEnhancedState
                       icon: Icons.male,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (_) =>
+                          _validateFamilySize(_familySizeController.text),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -922,6 +1375,8 @@ class _AddBeneficiaryPageEnhancedState
                       icon: Icons.female,
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (_) =>
+                          _validateFamilySize(_familySizeController.text),
                     ),
                   ),
                 ],
@@ -1184,6 +1639,29 @@ class _AddBeneficiaryPageEnhancedState
     );
   }
 
+  Widget _buildAttachmentsTab() {
+    final rv = ResponsiveUtils.getValues(context);
+
+    return SingleChildScrollView(
+      padding: rv.padding,
+      child: Column(
+        children: [
+          _buildSectionCard(
+            title: 'المرفقات',
+            icon: Icons.attach_file,
+            children: [
+              AttachmentsSection(
+                beneficiaryId:
+                    widget.beneficiaryId ?? 'temp_${const Uuid().v4()}',
+                loadFromDatabase: widget.beneficiaryId != null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionCard({
     required String title,
     required IconData icon,
@@ -1208,6 +1686,8 @@ class _AddBeneficiaryPageEnhancedState
     bool readOnly = false,
     VoidCallback? onTap,
     Widget? suffix,
+    ValueChanged<String>? onChanged,
+    TextInputAction? textInputAction,
   }) {
     return buildTextField(
       controller: controller,
@@ -1220,6 +1700,8 @@ class _AddBeneficiaryPageEnhancedState
       readOnly: readOnly,
       onTap: onTap,
       suffix: suffix,
+      onChanged: onChanged,
+      textInputAction: textInputAction,
     );
   }
 
@@ -1241,7 +1723,12 @@ class _AddBeneficiaryPageEnhancedState
 
   Widget _buildBottomBar(bool isEdit) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 16,
+      ),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -1268,7 +1755,7 @@ class _AddBeneficiaryPageEnhancedState
           if (_currentTab > 0) const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: _currentTab < 3
+            child: _currentTab < 4
                 ? ElevatedButton.icon(
                     onPressed: () => _tabController.animateTo(_currentTab + 1),
                     icon: const Icon(Icons.arrow_forward),

@@ -16,6 +16,9 @@ Widget buildTextField({
   bool readOnly = false,
   VoidCallback? onTap,
   Widget? suffix,
+  ValueChanged<String>? onChanged,
+  TextInputAction? textInputAction,
+  VoidCallback? onEditingComplete,
 }) {
   return TextField(
     controller: controller,
@@ -32,6 +35,11 @@ Widget buildTextField({
     maxLines: maxLines,
     readOnly: readOnly,
     onTap: onTap,
+    onChanged: onChanged,
+    textInputAction:
+        textInputAction ??
+        (maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
+    onEditingComplete: onEditingComplete,
   );
 }
 

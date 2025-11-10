@@ -86,10 +86,11 @@ class Attachments extends Table {
   TextColumn get id => text()();
   TextColumn get beneficiaryId => text()();
   TextColumn get visitId => text().nullable()();
-  TextColumn get type => text()(); // 'image', 'pdf', 'document'
-  TextColumn get path => text()();
-  TextColumn get hash => text()();
-  IntColumn get size => integer()();
+  TextColumn get fileName => text()(); // اسم الملف
+  TextColumn get filePath => text()(); // المسار الكامل
+  TextColumn get type => text()(); // 'image', 'pdf', 'other'
+  IntColumn get fileSize => integer()(); // حجم الملف بالبايت
+  TextColumn get thumbnailPath => text().nullable()(); // مسار الصورة المصغرة
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   TextColumn get syncState => text().withDefault(const Constant('pending'))();
@@ -558,6 +559,60 @@ class AppDatabase extends _$AppDatabase {
   // Delete beneficiary
   Future<void> deleteBeneficiary(String id) async {
     await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
+  }
+
+  // ============================================================================
+  // ATTACHMENTS QUERIES - المرفقات
+  // ============================================================================
+
+  // Get all attachments for a beneficiary
+  Future<List<Attachment>> getBeneficiaryAttachments(
+    String beneficiaryId,
+  ) async {
+    return await (select(attachments)
+          ..where((a) => a.beneficiaryId.equals(beneficiaryId))
+          ..orderBy([(a) => OrderingTerm.desc(a.createdAt)]))
+        .get();
+  }
+
+  // Add attachment
+  Future<void> addAttachment(AttachmentsCompanion attachment) async {
+    await into(attachments).insert(attachment);
+  }
+
+  // Delete attachment
+  Future<void> deleteAttachment(String id) async {
+    await (delete(attachments)..where((a) => a.id.equals(id))).go();
+  }
+
+  // Delete all attachments for a beneficiary
+  Future<void> deleteBeneficiaryAttachments(String beneficiaryId) async {
+    await (delete(
+      attachments,
+    )..where((a) => a.beneficiaryId.equals(beneficiaryId))).go();
+  }
+
+  // Get attachment by ID
+  Future<Attachment?> getAttachment(String id) async {
+    return await (select(
+      attachments,
+    )..where((a) => a.id.equals(id))).getSingleOrNull();
+  }
+
+  // Update attachment sync state
+  Future<void> updateAttachmentSyncState(
+    String id,
+    String syncState, {
+    String? serverUrl,
+  }) async {
+    await (update(attachments)..where((a) => a.id.equals(id))).write(
+      AttachmentsCompanion(
+        syncState: Value(syncState),
+        serverUrl: Value(serverUrl),
+        lastSyncedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   // ============================================================================
