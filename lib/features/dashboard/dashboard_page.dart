@@ -443,6 +443,18 @@ class _QuickActionsGrid extends StatelessWidget {
         color: Colors.indigo,
         onTap: () => context.push('/search'),
       ),
+      _QuickAction(
+        title: 'استيراد بيانات تجربة',
+        icon: Icons.cloud_download,
+        color: Colors.green,
+        onTap: () => context.push('/import-test'),
+      ),
+      _QuickAction(
+        title: 'اختبار Sync',
+        icon: Icons.sync_problem,
+        color: Colors.deepOrange,
+        onTap: () => context.push('/test-sync'),
+      ),
     ];
 
     final crossAxisCount = ResponsiveUtils.getCrossAxisCount(

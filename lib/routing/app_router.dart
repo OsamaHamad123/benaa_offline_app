@@ -8,6 +8,8 @@ import '../features/beneficiaries/add_beneficiary_page.dart';
 import '../features/beneficiaries/view_beneficiary_page.dart';
 import '../features/search/civil_search_page.dart';
 import '../features/sync/sync_page.dart';
+import '../features/sync/import_test_data_page.dart';
+import '../features/sync/test_sync_page.dart';
 import '../features/reports/reports_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../core/storage/secure_store.dart';
@@ -76,6 +78,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ReportsPage(),
       ),
       GoRoute(path: '/sync', builder: (context, state) => const SyncPage()),
+      GoRoute(
+        path: '/import-test',
+        builder: (context, state) => const ImportTestDataPage(),
+      ),
+      GoRoute(
+        path: '/test-sync',
+        builder: (context, state) => const TestSyncPage(),
+      ),
     ],
   );
 });

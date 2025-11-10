@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routing/app_router.dart';
@@ -13,8 +14,8 @@ class BenaaApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Benaa Offline',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.adaptiveTheme, // استخدام الثيم التكيفي
+      darkTheme: AppTheme.adaptiveDarkTheme,
       themeMode: ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
