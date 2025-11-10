@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:async';
 import '../../core/providers/providers.dart';
 import '../../core/utils/responsive_utils.dart';
+import '../../core/widgets/separated_flex.dart';
 import '../../data/db/drift_database.dart';
 import 'widgets/form_field_builders.dart';
 import 'widgets/attachments_section.dart';
@@ -1154,11 +1155,12 @@ class _AddBeneficiaryPageEnhancedState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'البيانات الشخصية',
             icon: Icons.badge,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _fullNameController,
                 label: 'الاسم الكامل *',
                 icon: Icons.person,
@@ -1169,7 +1171,7 @@ class _AddBeneficiaryPageEnhancedState
                 children: [
                   Expanded(
                     flex: 3,
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _nationalIdController,
                       label: 'الرقم الوطني *',
                       icon: Icons.credit_card,
@@ -1191,7 +1193,7 @@ class _AddBeneficiaryPageEnhancedState
                   const SizedBox(width: 4),
                   Expanded(
                     flex: 2,
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _fileNoController,
                       label: 'رقم الملف *',
                       icon: Icons.folder,
@@ -1200,7 +1202,7 @@ class _AddBeneficiaryPageEnhancedState
                 ],
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _birthDateController,
                 label: 'تاريخ الميلاد',
                 icon: Icons.cake,
@@ -1215,7 +1217,7 @@ class _AddBeneficiaryPageEnhancedState
               Row(
                 children: [
                   Expanded(
-                    child: _buildDropdown<String>(
+                    child: buildDropdown<String>(
                       value: _gender,
                       label: 'الجنس *',
                       icon: Icons.wc,
@@ -1228,7 +1230,7 @@ class _AddBeneficiaryPageEnhancedState
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildDropdown<String>(
+                    child: buildDropdown<String>(
                       value: _category,
                       label: 'الفئة *',
                       icon: Icons.category,
@@ -1249,17 +1251,18 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'معلومات إضافية',
             icon: Icons.info_outline,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _associationNameController,
                 label: 'اسم الجمعية',
                 icon: Icons.business,
               ),
               SizedBox(height: rv.spacing),
-              _buildDropdown<String?>(
+              buildDropdown<String?>(
                 value: _maritalStatus,
                 label: 'الحالة الاجتماعية',
                 icon: Icons.family_restroom,
@@ -1273,7 +1276,7 @@ class _AddBeneficiaryPageEnhancedState
                 onChanged: (v) => setState(() => _maritalStatus = v),
               ),
               SizedBox(height: rv.spacing),
-              _buildDropdown<String?>(
+              buildDropdown<String?>(
                 value: _educationLevel,
                 label: 'المستوى التعليمي',
                 icon: Icons.school,
@@ -1303,17 +1306,18 @@ class _AddBeneficiaryPageEnhancedState
       padding: rv.padding,
       child: Column(
         children: [
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'أفراد العائلة',
             icon: Icons.people,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _motherNameController,
                 label: 'اسم الأم',
                 icon: Icons.person,
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _fatherNameController,
                 label: 'اسم الأب',
                 icon: Icons.person,
@@ -1322,7 +1326,7 @@ class _AddBeneficiaryPageEnhancedState
               Row(
                 children: [
                   Expanded(
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _grandFatherNameController,
                       label: 'اسم الجد',
                       icon: Icons.person,
@@ -1330,7 +1334,7 @@ class _AddBeneficiaryPageEnhancedState
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _familyNameController,
                       label: 'اسم العائلة',
                       icon: Icons.people_alt,
@@ -1341,11 +1345,12 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'تفاصيل الأسرة',
             icon: Icons.family_restroom,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _familySizeController,
                 label: 'عدد أفراد الأسرة',
                 icon: Icons.group,
@@ -1357,7 +1362,7 @@ class _AddBeneficiaryPageEnhancedState
               Row(
                 children: [
                   Expanded(
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _numberOfMalesController,
                       label: 'عدد الذكور',
                       icon: Icons.male,
@@ -1369,7 +1374,7 @@ class _AddBeneficiaryPageEnhancedState
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _numberOfFemalesController,
                       label: 'عدد الإناث',
                       icon: Icons.female,
@@ -1395,18 +1400,19 @@ class _AddBeneficiaryPageEnhancedState
       padding: rv.padding,
       child: Column(
         children: [
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'معلومات الاتصال',
             icon: Icons.contact_phone,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _phoneNumberController,
                 label: 'رقم الهاتف',
                 icon: Icons.phone,
                 keyboardType: TextInputType.phone,
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _altPhoneNumberController,
                 label: 'رقم هاتف بديل',
                 icon: Icons.phone_android,
@@ -1415,30 +1421,31 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'الموقع الحالي',
             icon: Icons.location_city,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _governorateController,
                 label: 'المحافظة *',
                 icon: Icons.location_on,
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _districtController,
                 label: 'القضاء',
                 icon: Icons.place,
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _currentAddressController,
                 label: 'العنوان الحالي',
                 icon: Icons.home,
                 maxLines: 2,
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _addressController,
                 label: 'العنوان التفصيلي',
                 icon: Icons.map,
@@ -1447,11 +1454,12 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'معلومات النزوح',
             icon: Icons.move_to_inbox,
             children: [
-              _buildDropdown<int?>(
+              buildDropdown<int?>(
                 value: _displacementStatus,
                 label: 'حالة النزوح',
                 icon: Icons.info,
@@ -1464,7 +1472,7 @@ class _AddBeneficiaryPageEnhancedState
                 onChanged: (v) => setState(() => _displacementStatus = v),
               ),
               SizedBox(height: rv.spacing),
-              _buildTextField(
+              buildTextField(
                 controller: _addressBeforeDisplacementController,
                 label: 'العنوان قبل النزوح',
                 icon: Icons.history,
@@ -1473,11 +1481,12 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'السكن والتوظيف',
             icon: Icons.work,
             children: [
-              _buildDropdown<int?>(
+              buildDropdown<int?>(
                 value: _housingStatus,
                 label: 'حالة السكن',
                 icon: Icons.home_work,
@@ -1491,7 +1500,7 @@ class _AddBeneficiaryPageEnhancedState
                 onChanged: (v) => setState(() => _housingStatus = v),
               ),
               SizedBox(height: rv.spacing),
-              _buildDropdown<int?>(
+              buildDropdown<int?>(
                 value: _housingType,
                 label: 'نوع السكن',
                 icon: Icons.house,
@@ -1505,7 +1514,7 @@ class _AddBeneficiaryPageEnhancedState
                 onChanged: (v) => setState(() => _housingType = v),
               ),
               SizedBox(height: rv.spacing),
-              _buildDropdown<int?>(
+              buildDropdown<int?>(
                 value: _employmentStatus,
                 label: 'حالة توظيف المعيل',
                 icon: Icons.work_outline,
@@ -1532,11 +1541,12 @@ class _AddBeneficiaryPageEnhancedState
       padding: rv.padding,
       child: Column(
         children: [
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'الحالة الصحية',
             icon: Icons.health_and_safety,
             children: [
-              _buildDropdown<String>(
+              buildDropdown<String>(
                 value: _healthStatus,
                 label: 'الحالة الصحية العامة',
                 icon: Icons.favorite,
@@ -1578,7 +1588,7 @@ class _AddBeneficiaryPageEnhancedState
               Row(
                 children: [
                   Expanded(
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _chronicDiseasesCountController,
                       label: 'عدد المصابين بأمراض مزمنة',
                       icon: Icons.medication,
@@ -1588,7 +1598,7 @@ class _AddBeneficiaryPageEnhancedState
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildTextField(
+                    child: buildTextField(
                       controller: _specialNeedsCountController,
                       label: 'عدد ذوي الاحتياجات الخاصة',
                       icon: Icons.accessibility_new,
@@ -1601,11 +1611,12 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'حالة الطلب',
             icon: Icons.assignment,
             children: [
-              _buildDropdown<int?>(
+              buildDropdown<int?>(
                 value: _requestStatus,
                 label: 'حالة الطلب',
                 icon: Icons.pending_actions,
@@ -1621,11 +1632,12 @@ class _AddBeneficiaryPageEnhancedState
             ],
           ),
           SizedBox(height: rv.spacing15),
-          _buildSectionCard(
+          buildSectionCard(
+            context: context,
             title: 'ملاحظات',
             icon: Icons.notes,
             children: [
-              _buildTextField(
+              buildTextField(
                 controller: _notesController,
                 label: 'ملاحظات إضافية',
                 icon: Icons.note_alt,
@@ -1648,65 +1660,6 @@ class _AddBeneficiaryPageEnhancedState
         beneficiaryId: widget.beneficiaryId ?? 'temp_${const Uuid().v4()}',
         loadFromDatabase: widget.beneficiaryId != null,
       ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return buildSectionCard(
-      context: context,
-      title: title,
-      icon: icon,
-      children: children,
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? hint,
-    TextInputType? keyboardType,
-    List<TextInputFormatter>? inputFormatters,
-    int maxLines = 1,
-    bool readOnly = false,
-    VoidCallback? onTap,
-    Widget? suffix,
-    ValueChanged<String>? onChanged,
-    TextInputAction? textInputAction,
-  }) {
-    return buildTextField(
-      controller: controller,
-      label: label,
-      icon: icon,
-      hint: hint,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      maxLines: maxLines,
-      readOnly: readOnly,
-      onTap: onTap,
-      suffix: suffix,
-      onChanged: onChanged,
-      textInputAction: textInputAction,
-    );
-  }
-
-  Widget _buildDropdown<T>({
-    required T? value,
-    required String label,
-    required IconData icon,
-    required List<DropdownMenuItem<T>> items,
-    required ValueChanged<T?> onChanged,
-  }) {
-    return buildDropdown<T>(
-      value: value,
-      label: label,
-      icon: icon,
-      items: items,
-      onChanged: onChanged,
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/field_configs.dart';
 
 /// ✨ Reusable Form Field Builders
 /// Widgets مشتركة لبناء الحقول بشكل موحد
@@ -43,6 +44,30 @@ Widget buildTextField({
   );
 }
 
+/// بناء TextField من FieldConfig ✨ جديد
+Widget buildTextFieldFromConfig({
+  required TextEditingController controller,
+  required FieldConfig config,
+  VoidCallback? onTap,
+  Widget? suffix,
+  ValueChanged<String>? onChanged,
+}) {
+  return buildTextField(
+    controller: controller,
+    label: config.displayLabel,
+    icon: config.icon,
+    hint: config.hint,
+    keyboardType: config.keyboardType,
+    inputFormatters: config.inputFormatters,
+    maxLines: config.maxLines,
+    readOnly: config.readOnly,
+    onTap: onTap ?? config.onTap,
+    suffix: suffix ?? config.suffix,
+    onChanged: onChanged ?? config.onChanged,
+    textInputAction: config.textInputAction,
+  );
+}
+
 /// بناء Dropdown موحد
 Widget buildDropdown<T>({
   required T? value,
@@ -60,6 +85,21 @@ Widget buildDropdown<T>({
       filled: true,
     ),
     items: items,
+    onChanged: onChanged,
+  );
+}
+
+/// بناء Dropdown من DropdownConfig ✨ جديد
+Widget buildDropdownFromConfig<T>({
+  required T? value,
+  required DropdownConfig<T> config,
+  required ValueChanged<T?> onChanged,
+}) {
+  return buildDropdown<T>(
+    value: value,
+    label: config.displayLabel,
+    icon: config.icon,
+    items: config.items,
     onChanged: onChanged,
   );
 }
