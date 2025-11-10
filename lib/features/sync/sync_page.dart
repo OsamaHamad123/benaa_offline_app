@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
+import 'sync_settings_page.dart';
+import 'sync_test_guide_page.dart';
 
 class SyncPage extends ConsumerStatefulWidget {
   const SyncPage({super.key});
@@ -77,6 +79,32 @@ class _SyncPageState extends ConsumerState<SyncPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('المزامنة'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SyncTestGuidePage(),
+                ),
+              );
+            },
+            tooltip: 'دليل التجربة',
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SyncSettingsPage(),
+                ),
+              );
+            },
+            tooltip: 'إعدادات المزامنة',
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -104,12 +132,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
                           children: [
                             Text(
                               _isSyncing ? 'جاري المزامنة...' : 'حالة المزامنة',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             if (_syncMessage != null)
                               Text(
@@ -150,12 +174,8 @@ class _SyncPageState extends ConsumerState<SyncPage> {
                     children: [
                       Text(
                         'العناصر بانتظار المزامنة',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -190,9 +210,9 @@ class _SyncPageState extends ConsumerState<SyncPage> {
           // Sync Settings
           Text(
             'إعدادات المزامنة',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Card(
@@ -209,8 +229,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
                 const Divider(height: 1),
                 SwitchListTile(
                   title: const Text('استخدام Wi-Fi فقط'),
-                  subtitle:
-                      const Text('المزامنة عند الاتصال بشبكة Wi-Fi فقط'),
+                  subtitle: const Text('المزامنة عند الاتصال بشبكة Wi-Fi فقط'),
                   value: false,
                   onChanged: (value) {
                     // TODO: Implement WiFi only setting
@@ -279,13 +298,7 @@ class _InfoCard extends StatelessWidget {
               color: color,
             ),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );

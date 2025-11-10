@@ -1644,20 +1644,9 @@ class _AddBeneficiaryPageEnhancedState
 
     return SingleChildScrollView(
       padding: rv.padding,
-      child: Column(
-        children: [
-          _buildSectionCard(
-            title: 'المرفقات',
-            icon: Icons.attach_file,
-            children: [
-              AttachmentsSection(
-                beneficiaryId:
-                    widget.beneficiaryId ?? 'temp_${const Uuid().v4()}',
-                loadFromDatabase: widget.beneficiaryId != null,
-              ),
-            ],
-          ),
-        ],
+      child: AttachmentsSection(
+        beneficiaryId: widget.beneficiaryId ?? 'temp_${const Uuid().v4()}',
+        loadFromDatabase: widget.beneficiaryId != null,
       ),
     );
   }
