@@ -5,6 +5,10 @@ import '../utils/field_configs.dart';
 /// ✨ Reusable Form Field Builders
 /// Widgets مشتركة لبناء الحقول بشكل موحد
 
+// Cached border radius للأداء
+const _kBorderRadius = BorderRadius.all(Radius.circular(12));
+const _kOutlineBorder = OutlineInputBorder(borderRadius: _kBorderRadius);
+
 /// بناء TextField موحد
 Widget buildTextField({
   required TextEditingController controller,
@@ -28,8 +32,10 @@ Widget buildTextField({
       hintText: hint,
       prefixIcon: Icon(icon),
       suffixIcon: suffix,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      border: _kOutlineBorder,
       filled: true,
+      // تحسين الأداء
+      isDense: true,
     ),
     keyboardType: keyboardType,
     inputFormatters: inputFormatters,
@@ -41,6 +47,8 @@ Widget buildTextField({
         textInputAction ??
         (maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
     onEditingComplete: onEditingComplete,
+    // تحسين الأداء - تقليل rebuilds
+    enableInteractiveSelection: true,
   );
 }
 
@@ -81,11 +89,15 @@ Widget buildDropdown<T>({
     decoration: InputDecoration(
       labelText: label,
       prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      border: _kOutlineBorder,
       filled: true,
+      isDense: true, // تحسين الأداء
     ),
     items: items,
     onChanged: onChanged,
+    isExpanded: true,
+    // تحسين الأداء
+    isDense: true,
   );
 }
 

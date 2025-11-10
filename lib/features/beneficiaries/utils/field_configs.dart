@@ -291,4 +291,52 @@ class CommonDropdownConfigs {
       DropdownMenuItem(value: 'poor', child: Text('ضعيفة')),
     ],
   );
+
+  static const displacementStatus = DropdownConfig<int?>(
+    label: 'حالة النزوح',
+    icon: Icons.info,
+    items: [
+      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(value: 0, child: Text('غير نازح')),
+      DropdownMenuItem(value: 1, child: Text('نازح')),
+      DropdownMenuItem(value: 2, child: Text('عائد')),
+    ],
+  );
+
+  static const housingStatus = DropdownConfig<int?>(
+    label: 'حالة السكن',
+    icon: Icons.home_work,
+    items: [
+      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(value: 0, child: Text('ملك')),
+      DropdownMenuItem(value: 1, child: Text('إيجار')),
+      DropdownMenuItem(value: 2, child: Text('مع العائلة')),
+      DropdownMenuItem(value: 3, child: Text('مخيم')),
+    ],
+  );
+
+  static const housingType = DropdownConfig<int?>(
+    label: 'نوع السكن',
+    icon: Icons.house,
+    items: [
+      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(value: 0, child: Text('بيت')),
+      DropdownMenuItem(value: 1, child: Text('شقة')),
+      DropdownMenuItem(value: 2, child: Text('كرفان')),
+      DropdownMenuItem(value: 3, child: Text('خيمة')),
+    ],
+  );
+
+  static const employmentStatus = DropdownConfig<int?>(
+    label: 'حالة التوظيف',
+    icon: Icons.work_outline,
+    items: [
+      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(value: 0, child: Text('موظف')),
+      DropdownMenuItem(value: 1, child: Text('عاطل')),
+      DropdownMenuItem(value: 2, child: Text('متقاعد')),
+      DropdownMenuItem(value: 3, child: Text('طالب')),
+      DropdownMenuItem(value: 4, child: Text('أعمال حرة')),
+    ],
+  );
 }

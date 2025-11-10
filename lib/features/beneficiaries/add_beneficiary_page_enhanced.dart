@@ -15,6 +15,7 @@ import 'widgets/attachments_section.dart';
 import 'utils/auto_save_manager.dart';
 import 'utils/tab_progress_calculator.dart';
 import 'utils/smart_validators.dart';
+import 'utils/field_configs.dart';
 
 /// صفحة إضافة/تعديل مستفيد - تصميم فخم وشامل
 /// ✨ Material Design 3 with Gradient Headers
@@ -1160,91 +1161,72 @@ class _AddBeneficiaryPageEnhancedState
             title: 'البيانات الشخصية',
             icon: Icons.badge,
             children: [
-              buildTextField(
-                controller: _fullNameController,
-                label: 'الاسم الكامل *',
-                icon: Icons.person,
-                hint: 'الاسم الثلاثي أو الرباعي',
-              ),
-              SizedBox(height: rv.spacing),
-              Row(
+              SeparatedColumn(
+                spacing: rv.spacing,
                 children: [
-                  Expanded(
-                    flex: 3,
-                    child: buildTextField(
-                      controller: _nationalIdController,
-                      label: 'الرقم الوطني *',
-                      icon: Icons.credit_card,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: _onNationalIdChanged,
-                    ),
+                  buildTextFieldFromConfig(
+                    controller: _fullNameController,
+                    config: CommonFieldConfigs.fullName,
                   ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _scanNationalIdQR,
-                    icon: const Icon(Icons.qr_code_scanner),
-                    tooltip: 'مسح QR Code',
-                    style: IconButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    flex: 2,
-                    child: buildTextField(
-                      controller: _fileNoController,
-                      label: 'رقم الملف *',
-                      icon: Icons.folder,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _birthDateController,
-                label: 'تاريخ الميلاد',
-                icon: Icons.cake,
-                readOnly: true,
-                onTap: _selectDate,
-                suffix: IconButton(
-                  icon: const Icon(Icons.calendar_today, size: 20),
-                  onPressed: _selectDate,
-                ),
-              ),
-              SizedBox(height: rv.spacing),
-              Row(
-                children: [
-                  Expanded(
-                    child: buildDropdown<String>(
-                      value: _gender,
-                      label: 'الجنس *',
-                      icon: Icons.wc,
-                      items: const [
-                        DropdownMenuItem(value: 'male', child: Text('ذكر')),
-                        DropdownMenuItem(value: 'female', child: Text('أنثى')),
-                      ],
-                      onChanged: (v) => setState(() => _gender = v!),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: buildDropdown<String>(
-                      value: _category,
-                      label: 'الفئة *',
-                      icon: Icons.category,
-                      items: const [
-                        DropdownMenuItem(value: 'orphan', child: Text('يتيم')),
-                        DropdownMenuItem(value: 'widow', child: Text('أرملة')),
-                        DropdownMenuItem(value: 'poor', child: Text('فقير')),
-                        DropdownMenuItem(
-                          value: 'disabled',
-                          child: Text('معاق'),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: buildTextFieldFromConfig(
+                          controller: _nationalIdController,
+                          config: CommonFieldConfigs.nationalId,
+                          onChanged: _onNationalIdChanged,
                         ),
-                      ],
-                      onChanged: (v) => setState(() => _category = v!),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: _scanNationalIdQR,
+                        icon: const Icon(Icons.qr_code_scanner),
+                        tooltip: 'مسح QR Code',
+                        style: IconButton.styleFrom(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        flex: 2,
+                        child: buildTextFieldFromConfig(
+                          controller: _fileNoController,
+                          config: CommonFieldConfigs.fileNo,
+                        ),
+                      ),
+                    ],
+                  ),
+                  buildTextFieldFromConfig(
+                    controller: _birthDateController,
+                    config: CommonFieldConfigs.birthDate,
+                    onTap: _selectDate,
+                    suffix: IconButton(
+                      icon: const Icon(Icons.calendar_today, size: 20),
+                      onPressed: _selectDate,
                     ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: buildDropdownFromConfig<String>(
+                          value: _gender,
+                          config: CommonDropdownConfigs.gender,
+                          onChanged: (v) => setState(() => _gender = v!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: buildDropdownFromConfig<String>(
+                          value: _category,
+                          config: CommonDropdownConfigs.category,
+                          onChanged: (v) => setState(() => _category = v!),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1256,41 +1238,24 @@ class _AddBeneficiaryPageEnhancedState
             title: 'معلومات إضافية',
             icon: Icons.info_outline,
             children: [
-              buildTextField(
-                controller: _associationNameController,
-                label: 'اسم الجمعية',
-                icon: Icons.business,
-              ),
-              SizedBox(height: rv.spacing),
-              buildDropdown<String?>(
-                value: _maritalStatus,
-                label: 'الحالة الاجتماعية',
-                icon: Icons.family_restroom,
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('اختر...')),
-                  DropdownMenuItem(value: 'single', child: Text('أعزب')),
-                  DropdownMenuItem(value: 'married', child: Text('متزوج')),
-                  DropdownMenuItem(value: 'divorced', child: Text('مطلق')),
-                  DropdownMenuItem(value: 'widow', child: Text('أرمل')),
+              SeparatedColumn(
+                spacing: rv.spacing,
+                children: [
+                  buildTextFieldFromConfig(
+                    controller: _associationNameController,
+                    config: CommonFieldConfigs.associationName,
+                  ),
+                  buildDropdownFromConfig<String?>(
+                    value: _maritalStatus,
+                    config: CommonDropdownConfigs.maritalStatus,
+                    onChanged: (v) => setState(() => _maritalStatus = v),
+                  ),
+                  buildDropdownFromConfig<String?>(
+                    value: _educationLevel,
+                    config: CommonDropdownConfigs.educationLevel,
+                    onChanged: (v) => setState(() => _educationLevel = v),
+                  ),
                 ],
-                onChanged: (v) => setState(() => _maritalStatus = v),
-              ),
-              SizedBox(height: rv.spacing),
-              buildDropdown<String?>(
-                value: _educationLevel,
-                label: 'المستوى التعليمي',
-                icon: Icons.school,
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('اختر...')),
-                  DropdownMenuItem(value: 'illiterate', child: Text('أمي')),
-                  DropdownMenuItem(value: 'primary', child: Text('ابتدائي')),
-                  DropdownMenuItem(value: 'intermediate', child: Text('متوسط')),
-                  DropdownMenuItem(value: 'secondary', child: Text('ثانوي')),
-                  DropdownMenuItem(value: 'bachelor', child: Text('بكالوريوس')),
-                  DropdownMenuItem(value: 'master', child: Text('ماجستير')),
-                  DropdownMenuItem(value: 'phd', child: Text('دكتوراه')),
-                ],
-                onChanged: (v) => setState(() => _educationLevel = v),
               ),
             ],
           ),
@@ -1311,34 +1276,33 @@ class _AddBeneficiaryPageEnhancedState
             title: 'أفراد العائلة',
             icon: Icons.people,
             children: [
-              buildTextField(
-                controller: _motherNameController,
-                label: 'اسم الأم',
-                icon: Icons.person,
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _fatherNameController,
-                label: 'اسم الأب',
-                icon: Icons.person,
-              ),
-              SizedBox(height: rv.spacing),
-              Row(
+              SeparatedColumn(
+                spacing: rv.spacing,
                 children: [
-                  Expanded(
-                    child: buildTextField(
-                      controller: _grandFatherNameController,
-                      label: 'اسم الجد',
-                      icon: Icons.person,
-                    ),
+                  buildTextFieldFromConfig(
+                    controller: _motherNameController,
+                    config: CommonFieldConfigs.motherName,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: buildTextField(
-                      controller: _familyNameController,
-                      label: 'اسم العائلة',
-                      icon: Icons.people_alt,
-                    ),
+                  buildTextFieldFromConfig(
+                    controller: _fatherNameController,
+                    config: CommonFieldConfigs.fatherName,
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: buildTextFieldFromConfig(
+                          controller: _grandFatherNameController,
+                          config: CommonFieldConfigs.grandFatherName,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: buildTextFieldFromConfig(
+                          controller: _familyNameController,
+                          config: CommonFieldConfigs.familyName,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1350,39 +1314,34 @@ class _AddBeneficiaryPageEnhancedState
             title: 'تفاصيل الأسرة',
             icon: Icons.family_restroom,
             children: [
-              buildTextField(
-                controller: _familySizeController,
-                label: 'عدد أفراد الأسرة',
-                icon: Icons.group,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: _validateFamilySize,
-              ),
-              SizedBox(height: rv.spacing),
-              Row(
+              SeparatedColumn(
+                spacing: rv.spacing,
                 children: [
-                  Expanded(
-                    child: buildTextField(
-                      controller: _numberOfMalesController,
-                      label: 'عدد الذكور',
-                      icon: Icons.male,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (_) =>
-                          _validateFamilySize(_familySizeController.text),
-                    ),
+                  buildTextFieldFromConfig(
+                    controller: _familySizeController,
+                    config: CommonFieldConfigs.familySize,
+                    onChanged: _validateFamilySize,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: buildTextField(
-                      controller: _numberOfFemalesController,
-                      label: 'عدد الإناث',
-                      icon: Icons.female,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (_) =>
-                          _validateFamilySize(_familySizeController.text),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: buildTextFieldFromConfig(
+                          controller: _numberOfMalesController,
+                          config: CommonFieldConfigs.numberOfMales,
+                          onChanged: (_) =>
+                              _validateFamilySize(_familySizeController.text),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: buildTextFieldFromConfig(
+                          controller: _numberOfFemalesController,
+                          config: CommonFieldConfigs.numberOfFemales,
+                          onChanged: (_) =>
+                              _validateFamilySize(_familySizeController.text),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1405,18 +1364,18 @@ class _AddBeneficiaryPageEnhancedState
             title: 'معلومات الاتصال',
             icon: Icons.contact_phone,
             children: [
-              buildTextField(
-                controller: _phoneNumberController,
-                label: 'رقم الهاتف',
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _altPhoneNumberController,
-                label: 'رقم هاتف بديل',
-                icon: Icons.phone_android,
-                keyboardType: TextInputType.phone,
+              SeparatedColumn(
+                spacing: rv.spacing,
+                children: [
+                  buildTextFieldFromConfig(
+                    controller: _phoneNumberController,
+                    config: CommonFieldConfigs.phoneNumber,
+                  ),
+                  buildTextFieldFromConfig(
+                    controller: _altPhoneNumberController,
+                    config: CommonFieldConfigs.altPhoneNumber,
+                  ),
+                ],
               ),
             ],
           ),
@@ -1426,30 +1385,26 @@ class _AddBeneficiaryPageEnhancedState
             title: 'الموقع الحالي',
             icon: Icons.location_city,
             children: [
-              buildTextField(
-                controller: _governorateController,
-                label: 'المحافظة *',
-                icon: Icons.location_on,
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _districtController,
-                label: 'القضاء',
-                icon: Icons.place,
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _currentAddressController,
-                label: 'العنوان الحالي',
-                icon: Icons.home,
-                maxLines: 2,
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _addressController,
-                label: 'العنوان التفصيلي',
-                icon: Icons.map,
-                maxLines: 3,
+              SeparatedColumn(
+                spacing: rv.spacing,
+                children: [
+                  buildTextFieldFromConfig(
+                    controller: _governorateController,
+                    config: CommonFieldConfigs.governorate,
+                  ),
+                  buildTextFieldFromConfig(
+                    controller: _districtController,
+                    config: CommonFieldConfigs.district,
+                  ),
+                  buildTextFieldFromConfig(
+                    controller: _currentAddressController,
+                    config: CommonFieldConfigs.currentAddress,
+                  ),
+                  buildTextFieldFromConfig(
+                    controller: _addressController,
+                    config: CommonFieldConfigs.address,
+                  ),
+                ],
               ),
             ],
           ),
@@ -1459,24 +1414,19 @@ class _AddBeneficiaryPageEnhancedState
             title: 'معلومات النزوح',
             icon: Icons.move_to_inbox,
             children: [
-              buildDropdown<int?>(
-                value: _displacementStatus,
-                label: 'حالة النزوح',
-                icon: Icons.info,
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('اختر...')),
-                  DropdownMenuItem(value: 0, child: Text('غير نازح')),
-                  DropdownMenuItem(value: 1, child: Text('نازح')),
-                  DropdownMenuItem(value: 2, child: Text('عائد')),
+              SeparatedColumn(
+                spacing: rv.spacing,
+                children: [
+                  buildDropdownFromConfig<int?>(
+                    value: _displacementStatus,
+                    config: CommonDropdownConfigs.displacementStatus,
+                    onChanged: (v) => setState(() => _displacementStatus = v),
+                  ),
+                  buildTextFieldFromConfig(
+                    controller: _addressBeforeDisplacementController,
+                    config: CommonFieldConfigs.addressBeforeDisplacement,
+                  ),
                 ],
-                onChanged: (v) => setState(() => _displacementStatus = v),
-              ),
-              SizedBox(height: rv.spacing),
-              buildTextField(
-                controller: _addressBeforeDisplacementController,
-                label: 'العنوان قبل النزوح',
-                icon: Icons.history,
-                maxLines: 2,
               ),
             ],
           ),
@@ -1486,46 +1436,25 @@ class _AddBeneficiaryPageEnhancedState
             title: 'السكن والتوظيف',
             icon: Icons.work,
             children: [
-              buildDropdown<int?>(
-                value: _housingStatus,
-                label: 'حالة السكن',
-                icon: Icons.home_work,
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('اختر...')),
-                  DropdownMenuItem(value: 0, child: Text('ملك')),
-                  DropdownMenuItem(value: 1, child: Text('إيجار')),
-                  DropdownMenuItem(value: 2, child: Text('مع العائلة')),
-                  DropdownMenuItem(value: 3, child: Text('مخيم')),
+              SeparatedColumn(
+                spacing: rv.spacing,
+                children: [
+                  buildDropdownFromConfig<int?>(
+                    value: _housingStatus,
+                    config: CommonDropdownConfigs.housingStatus,
+                    onChanged: (v) => setState(() => _housingStatus = v),
+                  ),
+                  buildDropdownFromConfig<int?>(
+                    value: _housingType,
+                    config: CommonDropdownConfigs.housingType,
+                    onChanged: (v) => setState(() => _housingType = v),
+                  ),
+                  buildDropdownFromConfig<int?>(
+                    value: _employmentStatus,
+                    config: CommonDropdownConfigs.employmentStatus,
+                    onChanged: (v) => setState(() => _employmentStatus = v),
+                  ),
                 ],
-                onChanged: (v) => setState(() => _housingStatus = v),
-              ),
-              SizedBox(height: rv.spacing),
-              buildDropdown<int?>(
-                value: _housingType,
-                label: 'نوع السكن',
-                icon: Icons.house,
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('اختر...')),
-                  DropdownMenuItem(value: 0, child: Text('بيت')),
-                  DropdownMenuItem(value: 1, child: Text('شقة')),
-                  DropdownMenuItem(value: 2, child: Text('كرفان')),
-                  DropdownMenuItem(value: 3, child: Text('خيمة')),
-                ],
-                onChanged: (v) => setState(() => _housingType = v),
-              ),
-              SizedBox(height: rv.spacing),
-              buildDropdown<int?>(
-                value: _employmentStatus,
-                label: 'حالة توظيف المعيل',
-                icon: Icons.work_outline,
-                items: const [
-                  DropdownMenuItem(value: null, child: Text('اختر...')),
-                  DropdownMenuItem(value: 0, child: Text('عاطل')),
-                  DropdownMenuItem(value: 1, child: Text('موظف')),
-                  DropdownMenuItem(value: 2, child: Text('أعمال حرة')),
-                  DropdownMenuItem(value: 3, child: Text('متقاعد')),
-                ],
-                onChanged: (v) => setState(() => _employmentStatus = v),
               ),
             ],
           ),

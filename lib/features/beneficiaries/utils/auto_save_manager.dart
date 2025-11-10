@@ -12,9 +12,9 @@ class AutoSaveManager {
   void startAutoSave(String draftId, Map<String, dynamic> Function() getData) {
     _autoSaveTimer?.cancel();
 
-    // حفظ كل 30 ثانية
+    // حفظ كل دقيقة بدلاً من 30 ثانية (تقليل الضغط)
     _autoSaveTimer = Timer.periodic(
-      const Duration(seconds: 30),
+      const Duration(seconds: 60),
       (_) async => await saveDraft(draftId, getData()),
     );
   }
