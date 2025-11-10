@@ -50,6 +50,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.24
   path_provider: ^2.1.5
   path: ^1.9.0
+  shared_preferences: ^2.3.3
 
   # Security & Encryption
   flutter_secure_storage: ^9.2.2
@@ -78,6 +79,14 @@ dependencies:
   logger: ^2.5.0
   json_annotation: ^4.9.0
   csv: ^6.0.0
+
+  # UI Enhancements
+  fl_chart: ^0.69.0
+  timeline_tile: ^2.0.0
+  shimmer: ^3.0.0
+  pull_to_refresh: ^2.0.0
+  flutter_speed_dial: ^7.0.0
+  badges: ^3.1.2
 
 dev_dependencies:
   flutter_test:
