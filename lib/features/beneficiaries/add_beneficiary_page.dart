@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../../core/providers/providers.dart';
 import '../../core/services/taxonomy_service.dart';
+import '../../core/services/activity_logger.dart';
 import '../../data/db/drift_database.dart';
 import '../../core/utils/responsive_utils.dart';
 
@@ -190,11 +191,11 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
       final database = ref.read(databaseProvider);
       final now = DateTime.now();
       final fullName = _fullNameController.text.trim();
+      final isEdit = widget.beneficiaryId != null;
+      final beneficiaryId = isEdit ? widget.beneficiaryId! : const Uuid().v4();
 
       final beneficiary = BeneficiariesCompanion(
-        id: widget.beneficiaryId != null
-            ? drift.Value(widget.beneficiaryId!)
-            : drift.Value(const Uuid().v4()),
+        id: drift.Value(beneficiaryId),
         fullName: drift.Value(fullName),
         fullNameNorm: drift.Value(fullName.toLowerCase()),
         nationalId: drift.Value(_nationalIdController.text.trim()),
@@ -250,10 +251,19 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
           .into(database.beneficiaries)
           .insertOnConflictUpdate(beneficiary);
 
+      // Log activity
+      if (isEdit) {
+        await ActivityLogger.logEdit(beneficiaryId, fullName);
+      } else {
+        await ActivityLogger.logAdd(beneficiaryId, fullName);
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حفظ البيانات بنجاح'),
+          SnackBar(
+            content: Text(
+              isEdit ? 'تم تحديث البيانات بنجاح' : 'تم إضافة المستفيد بنجاح',
+            ),
             backgroundColor: Colors.green,
           ),
         );

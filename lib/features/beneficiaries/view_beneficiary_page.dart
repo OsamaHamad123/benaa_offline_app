@@ -17,8 +17,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
       future: database.getBeneficiaryById(beneficiaryId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            appBar: AppBar(title: const Text('تفاصيل المستفيد')),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 
@@ -26,23 +27,83 @@ class ViewBeneficiaryPage extends ConsumerWidget {
         if (beneficiary == null) {
           return Scaffold(
             appBar: AppBar(title: const Text('خطأ')),
-            body: const Center(child: Text('لم يتم العثور على المستفيد')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 80, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text('لم يتم العثور على المستفيد'),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('رجوع'),
+                  ),
+                ],
+              ),
+            ),
           );
         }
+
+        final categoryColor = _getCategoryColor(beneficiary.category);
 
         return Scaffold(
           appBar: AppBar(
             title: const Text('تفاصيل المستفيد'),
+            backgroundColor: categoryColor.withOpacity(0.1),
             actions: [
               IconButton(
+                icon: const Icon(Icons.share),
+                tooltip: 'مشاركة',
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('سيتم إضافة المشاركة قريباً')),
+                  );
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.edit),
+                tooltip: 'تعديل',
                 onPressed: () {
                   context.push('/beneficiaries/add?id=$beneficiaryId');
                 },
               ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => _showDeleteDialog(context, database),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _showDeleteDialog(context, database);
+                  } else if (value == 'print') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('سيتم إضافة الطباعة قريباً'),
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'print',
+                    child: Row(
+                      children: [
+                        Icon(Icons.print, size: 20),
+                        SizedBox(width: 8),
+                        Text('طباعة'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 20, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('حذف', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -51,21 +112,35 @@ class ViewBeneficiaryPage extends ConsumerWidget {
             children: [
               // Header Card
               Card(
-                child: Padding(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: categoryColor.withOpacity(0.5),
+                    width: 2,
+                  ),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      colors: [categoryColor.withOpacity(0.1), Colors.white],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
                       CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.1),
+                        radius: 50,
+                        backgroundColor: categoryColor.withOpacity(0.2),
                         child: Icon(
                           beneficiary.gender == 'male'
                               ? Icons.person
                               : Icons.person_outline,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.primary,
+                          size: 60,
+                          color: categoryColor,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -75,8 +150,46 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             ?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
+                      Text(
+                        'رقم الملف: ${beneficiary.fileNo}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                      const SizedBox(height: 12),
                       _SyncStatusBadge(syncState: beneficiary.syncState),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: categoryColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: categoryColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.category,
+                              color: categoryColor,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _getCategoryLabel(beneficiary.category),
+                              style: TextStyle(
+                                color: categoryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -489,6 +602,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   ),
                 ],
               ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
             ],
           ),
         );
@@ -504,6 +618,21 @@ class ViewBeneficiaryPage extends ConsumerWidget {
         color: Theme.of(context).colorScheme.primary,
       ),
     );
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'orphan':
+        return Colors.blue;
+      case 'widow':
+        return Colors.purple;
+      case 'poor':
+        return Colors.orange;
+      case 'disabled':
+        return Colors.teal;
+      default:
+        return Colors.grey;
+    }
   }
 
   String _getCategoryLabel(String category) {

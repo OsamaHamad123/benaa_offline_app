@@ -372,6 +372,15 @@ class AppDatabase extends _$AppDatabase {
     return result.read<int>('count');
   }
 
+  Future<int> countIncompleteBeneficiaries() async {
+    // حساب البيانات الناقصة: beneficiaries بدون phone أو address
+    final result = await customSelect(
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE phone_number IS NULL OR phone_number = \'\' OR address IS NULL OR address = \'\'',
+      readsFrom: {beneficiaries},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
   Future<int> countBeneficiariesByGovernorate(String governorate) async {
     final result = await customSelect(
       'SELECT COUNT(*) as count FROM beneficiaries WHERE governorate = ?',

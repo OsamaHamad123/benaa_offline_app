@@ -56,6 +56,41 @@ class BeneficiariesGrowthChart extends ConsumerWidget {
 
                 final total = snapshot.data!;
 
+                // Empty State
+                if (total == 0) {
+                  return SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'لا توجد بيانات لعرضها',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'قم بإضافة مستفيدين لعرض الإحصائيات',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 return SizedBox(
                   height: 200,
                   child: LineChart(
@@ -248,10 +283,38 @@ class CategoryDistributionChart extends ConsumerWidget {
                 final data = snapshot.data!;
                 final total = data.reduce((a, b) => a + b);
 
+                // Empty State
                 if (total == 0) {
-                  return const SizedBox(
+                  return SizedBox(
                     height: 250,
-                    child: Center(child: Text('لا توجد بيانات')),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.pie_chart_outline,
+                            size: 48,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'لا توجد بيانات لعرضها',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'قم بإضافة مستفيدين لعرض التوزيع',
+                            style: TextStyle(
+                              color: Colors.grey[500],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 

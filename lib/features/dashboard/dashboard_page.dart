@@ -74,13 +74,29 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     // AppBar مخصص حسب الصفحة الحالية
     if (_selectedIndex == 0) {
       // Dashboard AppBar مع Notifications
+      final notificationsAsync = ref.watch(notificationsCountProvider);
+
       return DashboardAppBar(
         title: 'منظومة بناء',
-        notificationCount: 0, // TODO: Get from provider
+        notificationCount: notificationsAsync.maybeWhen(
+          data: (count) => count,
+          orElse: () => 0,
+        ),
         onNotificationTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('لا توجد إشعارات جديدة')),
+          final count = notificationsAsync.maybeWhen(
+            data: (count) => count,
+            orElse: () => 0,
           );
+
+          if (count == 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('لا توجد إشعارات جديدة')),
+            );
+          } else {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text('لديك $count إشعار')));
+          }
         },
         onSyncTap: () {
           setState(() => _selectedIndex = 1); // Navigate to Sync tab
@@ -115,8 +131,22 @@ class _DashboardHome extends ConsumerWidget {
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  // TODO: Refresh data
-                  await Future.delayed(const Duration(seconds: 1));
+                  // إعادة تحميل كل البيانات
+                  ref.invalidate(statisticsProvider);
+                  ref.invalidate(notificationsCountProvider);
+
+                  // انتظار التحديث
+                  await Future.wait([
+                    ref.read(statisticsProvider.future),
+                    ref.read(notificationsCountProvider.future),
+                  ]);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم تحديث البيانات'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
                 },
                 child: ListView(
                   padding: padding,

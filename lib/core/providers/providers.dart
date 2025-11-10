@@ -76,6 +76,21 @@ final statisticsProvider = FutureProvider.autoDispose<Statistics>((ref) async {
   );
 });
 
+// Notifications Count Provider
+final notificationsCountProvider = FutureProvider.autoDispose<int>((ref) async {
+  final db = ref.watch(databaseProvider);
+
+  // حساب عدد الإشعارات:
+  // 1. عدد البيانات المعلقة للمزامنة
+  // 2. عدد البيانات الناقصة (incomplete)
+  final results = await Future.wait([
+    db.countPendingSync(),
+    db.countIncompleteBeneficiaries(),
+  ]);
+
+  return results[0] + results[1];
+});
+
 // Single Beneficiary Provider
 final beneficiaryProvider = FutureProvider.family
     .autoDispose<Beneficiary?, String>((ref, id) async {
