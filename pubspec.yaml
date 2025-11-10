@@ -41,6 +41,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
   hooks_riverpod: ^2.6.1
   flutter_hooks: ^0.20.5
+  flutter_bloc: ^8.1.6
   go_router: ^14.6.2
 
   # Database & Storage
@@ -78,6 +79,7 @@ dependencies:
   collection: ^1.18.0
   logger: ^2.5.0
   json_annotation: ^4.9.0
+  equatable: ^2.0.7
   csv: ^6.0.0
 
   # UI Enhancements

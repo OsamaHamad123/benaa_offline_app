@@ -287,19 +287,81 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
+    super.build(context);
 
-    // ⚡ Performance: حساب القيم مرة واحدة فقط
     final rv = ResponsiveUtils.getValues(context);
+    final isEdit = widget.beneficiaryId != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.beneficiaryId != null ? 'تعديل مستفيد' : 'إضافة مستفيد جديد',
-        ),
+        title: Text(isEdit ? 'تعديل مستفيد' : 'إضافة مستفيد جديد'),
+        actions: [
+          if (isEdit)
+            IconButton(
+              icon: const Icon(Icons.visibility),
+              tooltip: 'عرض التفاصيل',
+              onPressed: () =>
+                  context.push('/beneficiaries/${widget.beneficiaryId}'),
+            ),
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'مساعدة',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('نصائح الإدخال'),
+                  content: const SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '📝 الحقول المطلوبة:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '• الاسم الكامل\n• الرقم الوطني\n• رقم الملف\n• المحافظة',
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          '💡 نصائح:',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '• تأكد من صحة البيانات قبل الحفظ\n• يمكنك التعديل لاحقاً\n• البيانات تُحفظ محلياً أولاً',
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('فهمت'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    isEdit ? 'جاري تحميل البيانات...' : 'جاري الحفظ...',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            )
           : SingleChildScrollView(
               padding: rv.padding,
               // تحسين الأداء
@@ -320,10 +382,14 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                       decoration: const InputDecoration(
                         labelText: 'الاسم الكامل *',
                         prefixIcon: Icon(Icons.person),
+                        helperText: 'الاسم الثلاثي أو الرباعي',
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'الرجاء إدخال الاسم الكامل';
+                        }
+                        if (value.trim().split(' ').length < 2) {
+                          return 'الرجاء إدخال اسمين على الأقل';
                         }
                         return null;
                       },
@@ -983,19 +1049,27 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                     // Save Button
                     SizedBox(
                       height: 56,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: _isLoading ? null : _saveBeneficiary,
-                        child: _isLoading
+                        icon: _isLoading
                             ? const SizedBox(
-                                height: 24,
-                                width: 24,
+                                height: 20,
+                                width: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
                                 ),
                               )
-                            : const Text('حفظ البيانات'),
+                            : const Icon(Icons.save),
+                        label: Text(
+                          widget.beneficiaryId != null
+                              ? 'تحديث البيانات'
+                              : 'حفظ البيانات',
+                        ),
                       ),
+                    ),
+                    SizedBox(
+                      height: MediaQuery.of(context).padding.bottom + 16,
                     ),
                   ],
                 ),

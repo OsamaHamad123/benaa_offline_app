@@ -154,6 +154,43 @@ class CivilRegistry extends Table {
   Set<Column> get primaryKey => {nationalId};
 }
 
+// Activities table - سجل الأنشطة والتعديلات
+class Activities extends Table {
+  TextColumn get id => text()();
+  TextColumn get beneficiaryId => text()();
+  TextColumn get userId => text()(); // معرف المستخدم الذي قام بالنشاط
+  TextColumn get activityType =>
+      text()(); // 'create', 'update', 'delete', 'visit', 'attachment'
+  TextColumn get description => text()(); // وصف النشاط
+  TextColumn get changes => text().nullable()(); // JSON للتغييرات
+  DateTimeColumn get createdAt => dateTime()();
+  TextColumn get syncState => text().withDefault(const Constant('pending'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// Data Requests table - طلبات البيانات/المساعدات
+class DataRequests extends Table {
+  TextColumn get id => text()();
+  TextColumn get beneficiaryId => text()();
+  TextColumn get requestType => text()(); // نوع الطلب
+  TextColumn get status =>
+      text()(); // 'pending', 'approved', 'rejected', 'completed'
+  TextColumn get details => text().nullable()(); // تفاصيل الطلب JSON
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  DateTimeColumn get requestDate => dateTime()();
+  DateTimeColumn get responseDate => dateTime().nullable()();
+  TextColumn get respondedBy => text().nullable()(); // من قام بالرد
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  TextColumn get syncState => text().withDefault(const Constant('pending'))();
+  TextColumn get serverId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     Beneficiaries,
@@ -162,13 +199,15 @@ class CivilRegistry extends Table {
     Taxonomies,
     SyncQueue,
     CivilRegistry,
+    Activities,
+    DataRequests,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -184,7 +223,30 @@ class AppDatabase extends _$AppDatabase {
         if (from < 3) {
           await _upgradeToV3(m);
         }
+        if (from < 4) {
+          await _upgradeToV4(m);
+        }
       },
+    );
+  }
+
+  // Migration إلى النسخة 4
+  Future<void> _upgradeToV4(Migrator m) async {
+    await m.createTable(activities);
+    await m.createTable(dataRequests);
+
+    // إنشاء indexes للجداول الجديدة
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_activity_beneficiary ON activities(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_activity_type ON activities(activity_type);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_request_beneficiary ON data_requests(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_request_status ON data_requests(status);',
     );
   }
 

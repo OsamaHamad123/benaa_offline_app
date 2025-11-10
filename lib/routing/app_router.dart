@@ -4,7 +4,7 @@ import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/dashboard/dashboard_page.dart';
 import '../features/beneficiaries/beneficiaries_list_page.dart';
-import '../features/beneficiaries/add_beneficiary_page.dart';
+import '../features/beneficiaries/add_beneficiary_page_v2.dart';
 import '../features/beneficiaries/view_beneficiary_page.dart';
 import '../features/search/civil_search_page.dart';
 import '../features/sync/sync_page.dart';
@@ -53,7 +53,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/beneficiaries/add',
-        builder: (context, state) => const AddBeneficiaryPage(),
+        builder: (context, state) => const AddBeneficiaryPageV2(),
+      ),
+      GoRoute(
+        path: '/beneficiaries/:id/edit',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return AddBeneficiaryPageV2(beneficiaryId: id);
+        },
       ),
       GoRoute(
         path: '/beneficiaries/:id',

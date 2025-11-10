@@ -146,6 +146,10 @@ class DataQualityScore extends ConsumerWidget {
         }
 
         final total = snapshot.data!;
+        if (total == 0) {
+          return const SizedBox.shrink();
+        }
+
         // TODO: حساب البيانات الناقصة من قاعدة البيانات
         final completeData = (total * 0.85).round();
         final score = (completeData / total * 100).round();
