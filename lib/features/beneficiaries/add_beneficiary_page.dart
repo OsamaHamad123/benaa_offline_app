@@ -209,7 +209,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
   @override
   Widget build(BuildContext context) {
     super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
-    final padding = ResponsiveUtils.getResponsivePadding(context);
+
+    // ⚡ Performance: حساب القيم مرة واحدة فقط
+    final rv = ResponsiveUtils.getValues(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -220,7 +222,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: padding,
+              padding: rv.padding,
               // تحسين الأداء
               physics: const BouncingScrollPhysics(),
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -231,9 +233,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _buildSectionTitle('المعلومات الأساسية'),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Full Name
                     TextFormField(
@@ -250,9 +250,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                       },
                       textInputAction: TextInputAction.next,
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // National ID & File No in row
                     ResponsiveBuilder(
@@ -273,11 +271,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                             },
                             textInputAction: TextInputAction.next,
                           ),
-                          SizedBox(
-                            height: ResponsiveUtils.getResponsiveSpacing(
-                              context,
-                            ),
-                          ),
+                          SizedBox(height: rv.spacing),
                           TextFormField(
                             controller: _fileNoController,
                             decoration: const InputDecoration(
@@ -333,15 +327,10 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                         ],
                       ),
                     ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 1.5,
-                    ),
+                    SizedBox(height: rv.spacing15),
 
                     _buildSectionTitle('التصنيف'),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Governorate
                     DropdownButtonFormField<String>(
@@ -394,15 +383,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                           child: Text('السليمانية'),
                         ),
                       ],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedGovernorate = value!;
-                        });
-                      },
+                      onChanged: (value) => _selectedGovernorate = value!,
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Gender & Category in row
                     Row(
@@ -424,11 +407,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                                 child: Text('أنثى'),
                               ),
                             ],
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedGender = value!;
-                              });
-                            },
+                            onChanged: (value) => _selectedGender = value!,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -457,18 +436,12 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                                 child: Text('معاق'),
                               ),
                             ],
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedCategory = value!;
-                              });
-                            },
+                            onChanged: (value) => _selectedCategory = value!,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Birth Date
                     InkWell(
@@ -488,15 +461,10 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 1.5,
-                    ),
+                    SizedBox(height: rv.spacing15),
 
                     _buildSectionTitle('معلومات التواصل'),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Phone Number
                     TextFormField(
@@ -517,11 +485,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                         return null;
                       },
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
-                    // District
+                    // Address
                     TextFormField(
                       controller: _districtController,
                       decoration: const InputDecoration(
@@ -545,15 +511,10 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                       maxLines: 2,
                       textInputAction: TextInputAction.next,
                     ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 1.5,
-                    ),
+                    SizedBox(height: rv.spacing15),
 
                     _buildSectionTitle('معلومات العائلة'),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Father & Mother Name in row
                     ResponsiveBuilder(
@@ -567,11 +528,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                             ),
                             textInputAction: TextInputAction.next,
                           ),
-                          SizedBox(
-                            height: ResponsiveUtils.getResponsiveSpacing(
-                              context,
-                            ),
-                          ),
+                          SizedBox(height: rv.spacing),
                           TextFormField(
                             controller: _motherNameController,
                             decoration: const InputDecoration(
@@ -624,11 +581,8 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                             ),
                             keyboardType: TextInputType.number,
                             textInputAction: TextInputAction.next,
-                            onChanged: (value) {
-                              setState(() {
-                                _familySize = int.tryParse(value) ?? 1;
-                              });
-                            },
+                            onChanged: (value) =>
+                                _familySize = int.tryParse(value) ?? 1,
                             validator: (value) {
                               if (value != null && value.trim().isNotEmpty) {
                                 final num = int.tryParse(value);
@@ -666,24 +620,15 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                                 child: Text('أرمل'),
                               ),
                             ],
-                            onChanged: (value) {
-                              setState(() {
-                                _maritalStatus = value!;
-                              });
-                            },
+                            onChanged: (value) => _maritalStatus = value!,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 1.5,
-                    ),
+                    SizedBox(height: rv.spacing15),
 
                     _buildSectionTitle('المستوى التعليمي والصحي'),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Education & Health Status
                     Row(
@@ -713,11 +658,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                                 child: Text('جامعي'),
                               ),
                             ],
-                            onChanged: (value) {
-                              setState(() {
-                                _educationLevel = value!;
-                              });
-                            },
+                            onChanged: (value) => _educationLevel = value!,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -746,27 +687,17 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                                 child: Text('مرض مزمن'),
                               ),
                             ],
-                            onChanged: (value) {
-                              setState(() {
-                                _healthStatus = value!;
-                              });
-                            },
+                            onChanged: (value) => _healthStatus = value!,
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Disability Checkbox
                     CheckboxListTile(
                       value: _hasDisability,
-                      onChanged: (value) {
-                        setState(() {
-                          _hasDisability = value ?? false;
-                        });
-                      },
+                      onChanged: (value) => _hasDisability = value ?? false,
                       title: const Text('لديه إعاقة'),
                       subtitle: const Text(
                         'حدد إذا كان المستفيد لديه أي نوع من الإعاقة',
@@ -774,15 +705,10 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                       controlAffinity: ListTileControlAffinity.leading,
                       contentPadding: EdgeInsets.zero,
                     ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 1.5,
-                    ),
+                    SizedBox(height: rv.spacing15),
 
                     _buildSectionTitle('ملاحظات'),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
+                    SizedBox(height: rv.spacing),
 
                     // Notes
                     TextFormField(
@@ -795,9 +721,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
                       maxLines: 4,
                       textInputAction: TextInputAction.done,
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context) * 2,
-                    ),
+                    SizedBox(height: rv.spacing * 2),
 
                     // Save Button
                     SizedBox(

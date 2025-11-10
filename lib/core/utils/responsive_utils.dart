@@ -7,20 +7,30 @@ class ResponsiveUtils {
   static const double tabletBreakpoint = 900;
   static const double desktopBreakpoint = 1200;
 
+  // ⚡ Performance: Cache للقيم المحسوبة
+  static final Map<int, bool> _isMobileCache = {};
+  static final Map<int, bool> _isTabletCache = {};
+  static final Map<int, bool> _isDesktopCache = {};
+
   /// Check if the screen is mobile size
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < mobileBreakpoint;
+    final width = MediaQuery.of(context).size.width.toInt();
+    return _isMobileCache.putIfAbsent(width, () => width < mobileBreakpoint);
   }
 
   /// Check if the screen is tablet size
   static bool isTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return width >= mobileBreakpoint && width < desktopBreakpoint;
+    final width = MediaQuery.of(context).size.width.toInt();
+    return _isTabletCache.putIfAbsent(
+      width,
+      () => width >= mobileBreakpoint && width < desktopBreakpoint,
+    );
   }
 
   /// Check if the screen is desktop size
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= desktopBreakpoint;
+    final width = MediaQuery.of(context).size.width.toInt();
+    return _isDesktopCache.putIfAbsent(width, () => width >= desktopBreakpoint);
   }
 
   /// Get responsive value based on screen size
@@ -74,6 +84,49 @@ class ResponsiveUtils {
   static double getFontScale(BuildContext context) {
     return getResponsiveValue(context, mobile: 1.0, tablet: 1.1, desktop: 1.2);
   }
+
+  /// ⚡ Performance: احصل على كل القيم المحسوبة مرة واحدة
+  static ResponsiveValues getValues(BuildContext context) {
+    return ResponsiveValues(context);
+  }
+}
+
+/// ⚡ Class لتخزين القيم المحسوبة مرة واحدة
+class ResponsiveValues {
+  final EdgeInsets padding;
+  final double spacing;
+  final double spacing15;
+  final double fontScale;
+
+  ResponsiveValues(BuildContext context)
+    : padding = EdgeInsets.all(
+        ResponsiveUtils.getResponsiveValue(
+          context,
+          mobile: 12.0,
+          tablet: 16.0,
+          desktop: 24.0,
+        ),
+      ),
+      spacing = ResponsiveUtils.getResponsiveValue(
+        context,
+        mobile: 12.0,
+        tablet: 16.0,
+        desktop: 20.0,
+      ),
+      spacing15 =
+          ResponsiveUtils.getResponsiveValue(
+            context,
+            mobile: 12.0,
+            tablet: 16.0,
+            desktop: 20.0,
+          ) *
+          1.5,
+      fontScale = ResponsiveUtils.getResponsiveValue(
+        context,
+        mobile: 1.0,
+        tablet: 1.1,
+        desktop: 1.2,
+      );
 }
 
 /// Responsive Builder Widget
