@@ -866,6 +866,172 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ============================================================================
+  // URGENT CASES QUERIES - استعلامات الحالات الطارئة
+  // ============================================================================
+
+  /// Count beneficiaries with no visits in the last X days
+  Future<int> countBeneficiariesWithNoRecentVisits(int days) async {
+    final cutoffDate = DateTime.now().subtract(Duration(days: days));
+    final result = await customSelect(
+      '''
+      SELECT COUNT(DISTINCT b.id) as count 
+      FROM beneficiaries b
+      LEFT JOIN visits v ON b.id = v.beneficiary_id AND v.visit_date >= ?
+      WHERE v.id IS NULL
+      ''',
+      variables: [Variable.withDateTime(cutoffDate)],
+      readsFrom: {beneficiaries, visits},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
+  /// Get beneficiaries with no visits in the last X days
+  Future<List<Beneficiary>> getBeneficiariesWithNoRecentVisits(
+    int days, {
+    int limit = 10,
+  }) async {
+    final cutoffDate = DateTime.now().subtract(Duration(days: days));
+    final result = await customSelect(
+      '''
+      SELECT b.* 
+      FROM beneficiaries b
+      LEFT JOIN visits v ON b.id = v.beneficiary_id AND v.visit_date >= ?
+      WHERE v.id IS NULL
+      ORDER BY b.created_at ASC
+      LIMIT ?
+      ''',
+      variables: [Variable.withDateTime(cutoffDate), Variable.withInt(limit)],
+      readsFrom: {beneficiaries, visits},
+    ).get();
+
+    return result.map((row) => beneficiaries.map(row.data)).toList();
+  }
+
+  /// Count beneficiaries with poor health status
+  Future<int> countBeneficiariesWithPoorHealth() async {
+    final result = await customSelect(
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE health_status = ?',
+      variables: [Variable.withString('poor')],
+      readsFrom: {beneficiaries},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
+  /// Get beneficiaries with poor health status
+  Future<List<Beneficiary>> getBeneficiariesWithPoorHealth({
+    int limit = 10,
+  }) async {
+    return await (select(beneficiaries)
+          ..where((b) => b.healthStatus.equals('poor'))
+          ..orderBy([(b) => OrderingTerm.desc(b.updatedAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  /// Count beneficiaries with disabilities
+  Future<int> countBeneficiariesWithDisabilities() async {
+    final result = await customSelect(
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE has_disability = 1',
+      readsFrom: {beneficiaries},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
+  /// Get beneficiaries with disabilities
+  Future<List<Beneficiary>> getBeneficiariesWithDisabilities({
+    int limit = 10,
+  }) async {
+    return await (select(beneficiaries)
+          ..where((b) => b.hasDisability.equals(true))
+          ..orderBy([(b) => OrderingTerm.desc(b.updatedAt)])
+          ..limit(limit))
+        .get();
+  }
+
+  // ============================================================================
+  // GEOGRAPHIC DISTRIBUTION QUERIES - استعلامات التوزيع الجغرافي
+  // ============================================================================
+
+  /// Get count of beneficiaries grouped by governorate
+  Future<Map<String, int>> getBeneficiariesCountByGovernorate() async {
+    final result = await customSelect(
+      '''
+      SELECT governorate, COUNT(*) as count 
+      FROM beneficiaries 
+      GROUP BY governorate 
+      ORDER BY count DESC
+      ''',
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return Map.fromEntries(
+      result.map(
+        (row) =>
+            MapEntry(row.read<String>('governorate'), row.read<int>('count')),
+      ),
+    );
+  }
+
+  // ============================================================================
+  // DAILY PERFORMANCE QUERIES - استعلامات الأداء اليومي
+  // ============================================================================
+
+  /// Count visits completed today
+  Future<int> countVisitsToday() async {
+    final todayStart = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final result = await customSelect(
+      '''
+      SELECT COUNT(*) as count 
+      FROM visits 
+      WHERE visit_date >= ? AND is_submitted = 1
+      ''',
+      variables: [Variable.withDateTime(todayStart)],
+      readsFrom: {visits},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
+  /// Count new beneficiaries added today
+  Future<int> countNewBeneficiariesToday() async {
+    final todayStart = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final result = await customSelect(
+      '''
+      SELECT COUNT(*) as count 
+      FROM beneficiaries 
+      WHERE created_at >= ?
+      ''',
+      variables: [Variable.withDateTime(todayStart)],
+      readsFrom: {beneficiaries},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
+  /// Get average visits per day for the last X days
+  Future<double> getAverageVisitsPerDay(int days) async {
+    final cutoffDate = DateTime.now().subtract(Duration(days: days));
+    final result = await customSelect(
+      '''
+      SELECT COUNT(*) as total_visits 
+      FROM visits 
+      WHERE visit_date >= ? AND is_submitted = 1
+      ''',
+      variables: [Variable.withDateTime(cutoffDate)],
+      readsFrom: {visits},
+    ).getSingle();
+
+    final totalVisits = result.read<int>('total_visits');
+    return totalVisits / days;
+  }
+
+  // ============================================================================
   // UTILITY FUNCTIONS - دوال مساعدة
   // ============================================================================
 

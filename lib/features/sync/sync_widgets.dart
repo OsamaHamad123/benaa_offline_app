@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/sync/sync_manager.dart';
 
 /// شريط عرض حالة المزامنة
@@ -17,22 +18,22 @@ class SyncStatusBar extends ConsumerWidget {
         }
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
           color: status.lastError != null
               ? Colors.red.shade100
               : Colors.blue.shade100,
           child: Row(
             children: [
               if (status.isSyncing)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                SizedBox(
+                  width: 16.w,
+                  height: 16.h,
+                  child: CircularProgressIndicator(strokeWidth: 2.w),
                 )
               else if (status.lastError != null)
-                const Icon(Icons.error, color: Colors.red, size: 20),
+                Icon(Icons.error, color: Colors.red, size: 20.sp),
 
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
 
               Expanded(
                 child: Column(
@@ -57,14 +58,14 @@ class SyncStatusBar extends ConsumerWidget {
                       Text(
                         '${status.completedItems} من ${status.totalItems}',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: Colors.grey.shade700,
                         ),
                       )
                     else if (status.lastError != null)
                       Text(
                         status.lastError!,
-                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                        style: TextStyle(fontSize: 12.sp, color: Colors.red),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -73,9 +74,9 @@ class SyncStatusBar extends ConsumerWidget {
               ),
 
               if (status.isSyncing) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 SizedBox(
-                  width: 60,
+                  width: 60.w,
                   child: LinearProgressIndicator(value: status.progress),
                 ),
               ],

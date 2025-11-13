@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 📝 Notes Tab Widget
 ///
@@ -14,18 +15,18 @@ class NotesTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.note, color: colorScheme.primary),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               Text(
                 'ملاحظات',
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
                   color: colorScheme.primary,
                 ),

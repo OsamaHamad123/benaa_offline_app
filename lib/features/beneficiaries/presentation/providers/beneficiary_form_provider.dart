@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/usecases/beneficiary_usecases.dart';
-import 'beneficiary_dependencies.dart';
+import 'beneficiary_dependencies_provider.dart';
 
 /// 🎯 Beneficiary Form State
 class BeneficiaryFormState {
@@ -62,7 +62,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final beneficiary = await _getUseCase(id);
+      final beneficiary = await _getUseCase.execute(id);
       state = state.copyWith(
         beneficiary: beneficiary,
         isLoading: false,
@@ -98,7 +98,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final data = await _loadFromCivilRegistry(nationalId);
+      final data = await _loadFromCivilRegistry.execute(nationalId);
 
       if (data == null) {
         state = state.copyWith(
@@ -157,7 +157,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
       if (state.isNew) {
         // Create new
-        final created = await _createUseCase(
+        final created = await _createUseCase.execute(
           beneficiary.copyWith(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             createdAt: now,
@@ -172,7 +172,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         );
       } else {
         // Update existing
-        final updated = await _updateUseCase(
+        final updated = await _updateUseCase.execute(
           beneficiary.copyWith(updatedAt: now),
         );
         state = state.copyWith(
@@ -225,10 +225,11 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 /// Provider for beneficiary form
 final beneficiaryFormProvider =
     StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
+      final dependencies = ref.watch(beneficiaryDependenciesProvider);
       return BeneficiaryFormNotifier(
-        ref.watch(createBeneficiaryUseCaseProvider),
-        ref.watch(updateBeneficiaryUseCaseProvider),
-        ref.watch(getBeneficiaryUseCaseProvider),
-        ref.watch(loadFromCivilRegistryUseCaseProvider),
+        dependencies.createUseCase,
+        dependencies.updateUseCase,
+        dependencies.getUseCase,
+        dependencies.loadFromCivilRegistryUseCase,
       );
     });

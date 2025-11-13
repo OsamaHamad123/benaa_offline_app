@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 🎨 Form Widgets - نظام موحد لجميع widgets النماذج
 ///
@@ -12,8 +13,8 @@ import 'package:flutter/services.dart';
 /// - AlertCard: تنبيهات
 
 // ==================== Constants ====================
-const _kBorderRadius = BorderRadius.all(Radius.circular(12));
-const _kOutlineBorder = OutlineInputBorder(borderRadius: _kBorderRadius);
+final _kBorderRadius = BorderRadius.all(Radius.circular(12.r));
+final _kOutlineBorder = OutlineInputBorder(borderRadius: _kBorderRadius);
 
 // ==================== CustomTextField ====================
 
@@ -181,16 +182,16 @@ class StatCard extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         side: BorderSide(color: color.withOpacity(0.2)),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20.r),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(20.r),
             gradient: LinearGradient(
               colors: [color.withOpacity(0.05), color.withOpacity(0.02)],
               begin: Alignment.topLeft,
@@ -204,12 +205,12 @@ class StatCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: EdgeInsets.all(12.r),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: Icon(icon, color: color, size: 24),
+                    child: Icon(icon, color: color, size: 24.sp),
                   ),
                   if (trailing != null) trailing!,
                 ],
@@ -222,7 +223,7 @@ class StatCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 title,
                 style: Theme.of(context).textTheme.bodyMedium,
@@ -273,12 +274,12 @@ class InfoCard extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
             color: effectiveColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: Icon(icon, color: effectiveColor, size: 24),
+          child: Icon(icon, color: effectiveColor, size: 24.sp),
         ),
         title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
         subtitle: Text(
@@ -318,25 +319,25 @@ class EmptyStateCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(40.r),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(24.r),
               decoration: BoxDecoration(
                 color: primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 64, color: primaryColor),
+              child: Icon(icon, size: 64.sp, color: primaryColor),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24.h),
             Text(
               title,
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -345,7 +346,7 @@ class EmptyStateCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (actionText != null && onAction != null) ...[
-              const SizedBox(height: 24),
+              SizedBox(height: 24.h),
               ElevatedButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.add),
@@ -414,16 +415,16 @@ class AlertCard extends StatelessWidget {
     return Card(
       color: color.withOpacity(0.05),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         side: BorderSide(color: color.withOpacity(0.3)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(_icon, color: color, size: 24),
-            const SizedBox(width: 12),
+            Icon(_icon, color: color, size: 24.sp),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,10 +436,10 @@ class AlertCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4.h),
                   Text(message, style: Theme.of(context).textTheme.bodySmall),
                   if (actionText != null && onAction != null) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12.h),
                     TextButton(
                       onPressed: onAction,
                       style: TextButton.styleFrom(
@@ -453,7 +454,7 @@ class AlertCard extends StatelessWidget {
             ),
             if (onDismiss != null)
               IconButton(
-                icon: const Icon(Icons.close, size: 20),
+                icon: Icon(Icons.close, size: 20.sp),
                 onPressed: onDismiss,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
@@ -490,14 +491,14 @@ class ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
             gradient: LinearGradient(
               colors: [color, color.withOpacity(0.8)],
               begin: Alignment.topLeft,
@@ -508,14 +509,14 @@ class ActionCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16.r),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: Colors.white, size: 32),
+                child: Icon(icon, color: Colors.white, size: 32.sp),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 title,
                 textAlign: TextAlign.center,

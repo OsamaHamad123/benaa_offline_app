@@ -86,6 +86,7 @@ dependencies:
   csv: ^6.0.0
 
   # UI Enhancements
+  flutter_screenutil: ^5.9.3
   fl_chart: ^0.69.0
   timeline_tile: ^2.0.0
   shimmer: ^3.0.0

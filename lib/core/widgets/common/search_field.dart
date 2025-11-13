@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
 /// حقل بحث قابل لإعادة الاستخدام مع Debouncing
@@ -60,17 +61,17 @@ class _SearchFieldState extends State<SearchField> {
       controller: widget.controller,
       onChanged: _onChanged,
       autofocus: widget.autofocus,
-      style: TextStyle(fontSize: isMobile ? 14 : 16),
+      style: TextStyle(fontSize: (isMobile ? 14 : 16).sp),
       decoration: InputDecoration(
         hintText: widget.hint,
         hintStyle: TextStyle(
           color: theme.colorScheme.onSurface.withOpacity(0.5),
-          fontSize: isMobile ? 14 : 16,
+          fontSize: (isMobile ? 14 : 16).sp,
         ),
         prefixIcon: Icon(
           widget.prefixIcon,
           color: theme.colorScheme.primary,
-          size: isMobile ? 20 : 24,
+          size: (isMobile ? 20 : 24).sp,
         ),
         suffixIcon: widget.controller.text.isNotEmpty
             ? IconButton(
@@ -85,19 +86,19 @@ class _SearchFieldState extends State<SearchField> {
         filled: true,
         fillColor: theme.colorScheme.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+          borderRadius: BorderRadius.circular((isMobile ? 10 : 12).r),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+          borderRadius: BorderRadius.circular((isMobile ? 10 : 12).r),
           borderSide: BorderSide(
             color: theme.colorScheme.outline.withOpacity(0.2),
-            width: 1,
+            width: 1.w,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
-          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+          borderRadius: BorderRadius.circular((isMobile ? 10 : 12).r),
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.w),
         ),
         contentPadding: EdgeInsets.symmetric(
           horizontal: isMobile ? 12 : 16,

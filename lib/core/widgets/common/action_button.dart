@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// زر إجراء قابل لإعادة الاستخدام
 ///
@@ -94,11 +95,11 @@ class ActionButton extends StatelessWidget {
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 24,
-        vertical: isMobile ? 12 : 14,
+        horizontal: (isMobile ? 20 : 24).w,
+        vertical: (isMobile ? 12 : 14).h,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isMobile ? 10 : 12),
+        borderRadius: BorderRadius.circular((isMobile ? 10 : 12).r),
       ),
     );
   }
@@ -106,13 +107,13 @@ class ActionButton extends StatelessWidget {
   Widget _buildChild(bool isMobile) {
     if (isLoading) {
       return SizedBox(
-        height: isMobile ? 18 : 20,
-        width: isMobile ? 18 : 20,
+        height: (isMobile ? 18 : 20).h,
+        width: (isMobile ? 18 : 20).w,
         child: const CircularProgressIndicator(strokeWidth: 2),
       );
     }
 
-    return Text(label, style: TextStyle(fontSize: isMobile ? 14 : 16));
+    return Text(label, style: TextStyle(fontSize: (isMobile ? 14 : 16).sp));
   }
 }
 
@@ -144,7 +145,7 @@ class ActionButtonRow extends StatelessWidget {
         children: buttons
             .map(
               (btn) => Padding(
-                padding: EdgeInsets.only(bottom: spacing),
+                padding: EdgeInsets.only(bottom: spacing.h),
                 child: ActionButton(
                   label: btn.label,
                   onPressed: btn.onPressed,
@@ -166,7 +167,7 @@ class ActionButtonRow extends StatelessWidget {
       children: buttons
           .map(
             (btn) => Padding(
-              padding: EdgeInsets.only(left: spacing),
+              padding: EdgeInsets.only(left: spacing.w),
               child: btn,
             ),
           )

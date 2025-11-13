@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 🎨 Common Reusable Widgets
 /// مجموعة من الـ widgets المشتركة القابلة لإعادة الاستخدام
@@ -37,7 +38,7 @@ class SectionCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,22 +53,20 @@ class SectionCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
             ),
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
                     color: effectiveColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  child: Icon(icon, color: effectiveColor, size: 20),
+                  child: Icon(icon, color: effectiveColor, size: 20.sp),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Text(
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
@@ -79,7 +78,7 @@ class SectionCard extends StatelessWidget {
             ),
           ),
           // Content
-          Padding(padding: padding ?? const EdgeInsets.all(16), child: child),
+          Padding(padding: padding ?? EdgeInsets.all(16.r), child: child),
         ],
       ),
     );
@@ -102,13 +101,13 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 8),
+            Icon(icon, size: 16.sp, color: Colors.grey[600]),
+            SizedBox(width: 8.w),
           ],
           Expanded(
             flex: 2,
@@ -151,35 +150,35 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.w),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (isGlowing)
             Container(
-              width: 8,
-              height: 8,
+              width: 8.w,
+              height: 8.h,
               decoration: BoxDecoration(
                 color: color,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: color, blurRadius: 4, spreadRadius: 1),
+                  BoxShadow(color: color, blurRadius: 4.r, spreadRadius: 1.r),
                 ],
               ),
             ),
-          if (icon != null && !isGlowing) Icon(icon, size: 14, color: color),
-          if (icon != null || isGlowing) const SizedBox(width: 6),
+          if (icon != null && !isGlowing) Icon(icon, size: 14.sp, color: color),
+          if (icon != null || isGlowing) SizedBox(width: 6.w),
           Text(
             label,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.bold,
-              fontSize: 12,
+              fontSize: 12.sp,
             ),
           ),
         ],
@@ -209,12 +208,12 @@ class EmptyStateWidget extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 80, color: Colors.grey[300]),
-            const SizedBox(height: 24),
+            Icon(icon, size: 80.sp, color: Colors.grey[300]),
+            SizedBox(height: 24.h),
             Text(
               title,
               style: theme.textTheme.titleLarge?.copyWith(
@@ -223,7 +222,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.h),
             Text(
               message,
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -231,7 +230,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (action != null) ...[const SizedBox(height: 24), action!],
+            if (action != null) ...[SizedBox(height: 24.h), action!],
           ],
         ),
       ),
@@ -252,14 +251,14 @@ class LoadingOverlay extends StatelessWidget {
       child: Center(
         child: Card(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.r),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const CircularProgressIndicator(),
                 if (message != null) ...[
-                  const SizedBox(height: 16),
-                  Text(message!, style: const TextStyle(fontSize: 16)),
+                  SizedBox(height: 16.h),
+                  Text(message!, style: TextStyle(fontSize: 16.sp)),
                 ],
               ],
             ),
@@ -293,14 +292,14 @@ class StatCard extends StatelessWidget {
 
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             gradient: LinearGradient(
               colors: [
                 color.withValues(alpha: 0.1),
@@ -314,14 +313,14 @@ class StatCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: color, size: 24.sp),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Text(
                 value,
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -329,7 +328,7 @@ class StatCard extends StatelessWidget {
                   color: color,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -365,38 +364,41 @@ class ActionButtonCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(icon, color: color, size: 28),
+                child: Icon(icon, color: color, size: 28.sp),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Text(
                       subtitle,
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
@@ -428,7 +430,7 @@ Future<bool> showConfirmationDialog({
             isDangerous ? Icons.warning_rounded : Icons.info_rounded,
             color: isDangerous ? Colors.red : Colors.blue,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(child: Text(title)),
         ],
       ),
@@ -458,13 +460,13 @@ void showSuccessSnackBar(BuildContext context, String message) {
       content: Row(
         children: [
           const Icon(Icons.check_circle, color: Colors.white),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(child: Text(message)),
         ],
       ),
       backgroundColor: Colors.green,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
     ),
   );
 }
@@ -475,13 +477,13 @@ void showErrorSnackBar(BuildContext context, String message) {
       content: Row(
         children: [
           const Icon(Icons.error, color: Colors.white),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(child: Text(message)),
         ],
       ),
       backgroundColor: Colors.red,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
       duration: const Duration(seconds: 4),
     ),
   );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// بطاقة معلومات قابلة لإعادة الاستخدام
 ///
@@ -34,15 +35,15 @@ class InfoCard extends StatelessWidget {
     return Card(
       elevation: isCompact ? 1 : 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        borderRadius: BorderRadius.circular((isCompact ? 12 : 16).r),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+        borderRadius: BorderRadius.circular((isCompact ? 12 : 16).r),
         child: Container(
-          padding: EdgeInsets.all(isCompact ? 12 : 16),
+          padding: EdgeInsets.all((isCompact ? 12 : 16).r),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(isCompact ? 12 : 16),
+            borderRadius: BorderRadius.circular((isCompact ? 12 : 16).r),
             gradient: LinearGradient(
               colors: [cardColor.withOpacity(0.1), cardColor.withOpacity(0.05)],
               begin: Alignment.topLeft,
@@ -56,41 +57,43 @@ class InfoCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(isCompact ? 8 : 12),
+                    padding: EdgeInsets.all((isCompact ? 8 : 12).r),
                     decoration: BoxDecoration(
                       color: cardColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(isCompact ? 8 : 12),
+                      borderRadius: BorderRadius.circular(
+                        (isCompact ? 8 : 12).r,
+                      ),
                     ),
                     child: Icon(
                       icon,
                       color: cardColor,
-                      size: isCompact ? 20 : 24,
+                      size: (isCompact ? 20 : 24).sp,
                     ),
                   ),
                   if (!isCompact) const Spacer(),
                   if (!isCompact && onTap != null)
                     Icon(
                       Icons.arrow_forward_ios,
-                      size: 16,
+                      size: 16.sp,
                       color: theme.colorScheme.onSurface.withOpacity(0.3),
                     ),
                 ],
               ),
-              SizedBox(height: isCompact ? 8 : 12),
+              SizedBox(height: (isCompact ? 8 : 12).h),
               Text(
                 value,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: isCompact ? 20 : (isMobile ? 22 : 28),
+                  fontSize: (isCompact ? 20 : (isMobile ? 22 : 28)).sp,
                   color: cardColor,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4.h),
               Text(
                 title,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: isCompact ? 12 : 14,
+                  fontSize: (isCompact ? 12 : 14).sp,
                 ),
               ),
             ],
@@ -122,30 +125,30 @@ class InfoCardCompact extends StatelessWidget {
     final cardColor = color ?? theme.colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: cardColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: cardColor),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16.sp, color: cardColor),
+          SizedBox(width: 6.w),
           Text(
             value,
             style: TextStyle(
               color: cardColor,
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 14.sp,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: 4.w),
           Text(
             label,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
-              fontSize: 12,
+              fontSize: 12.sp,
             ),
           ),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../data/db/drift_database.dart';
@@ -17,11 +18,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('التقارير والإحصائيات')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         children: [
           // Summary Statistics
           const _SummaryStatistics(),
-          const SizedBox(height: 24),
+          SizedBox(height: 24.h),
 
           // Report Categories
           Text(
@@ -30,7 +31,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
 
           _ReportCard(
             title: 'تقرير حسب المحافظة',

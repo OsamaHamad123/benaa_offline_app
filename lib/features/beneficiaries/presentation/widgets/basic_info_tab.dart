@@ -1,5 +1,6 @@
 import 'package:benaa_offline_app/features/beneficiaries/domain/entities/beneficiary.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 📋 Basic Info Tab Widget
 ///
@@ -40,7 +41,7 @@ class BasicInfoTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,12 +53,12 @@ class BasicInfoTab extends StatelessWidget {
               hintText: 'أدخل الاسم الرباعي',
               prefixIcon: const Icon(Icons.person),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
             ),
             textDirection: TextDirection.rtl,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
 
           // الرقم الوطني مع QR Scanner
           TextField(
@@ -72,22 +73,22 @@ class BasicInfoTab extends StatelessWidget {
                 tooltip: 'مسح QR Code',
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12.r),
               ),
             ),
             keyboardType: TextInputType.number,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
 
           // الجنس والفئة في صف واحد
           Row(
             children: [
               Expanded(child: _buildGenderSelector(colorScheme)),
-              const SizedBox(width: 16),
+              SizedBox(width: 16.w),
               Expanded(child: _buildCategorySelector(colorScheme)),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.h),
 
           // تاريخ الميلاد
           TextField(

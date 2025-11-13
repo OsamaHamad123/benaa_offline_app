@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// عنوان قسم قابل لإعادة الاستخدام
 ///
@@ -39,9 +40,9 @@ class SectionHeader extends StatelessWidget {
               Icon(
                 icon,
                 color: color ?? theme.colorScheme.primary,
-                size: isMobile ? 20 : 24,
+                size: (isMobile ? 20 : 24).sp,
               ),
-              SizedBox(width: isMobile ? 8 : 12),
+              SizedBox(width: (isMobile ? 8 : 12).w),
             ],
             Expanded(
               child: Column(
@@ -52,16 +53,16 @@ class SectionHeader extends StatelessWidget {
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: color,
-                      fontSize: isMobile ? 18 : 20,
+                      fontSize: (isMobile ? 18 : 20).sp,
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4.h),
                     Text(
                       subtitle!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        fontSize: isMobile ? 12 : 13,
+                        fontSize: (isMobile ? 12 : 13).sp,
                       ),
                     ),
                   ],
@@ -72,7 +73,7 @@ class SectionHeader extends StatelessWidget {
           ],
         ),
         if (showDivider) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: 12.h),
           Divider(
             color: (color ?? theme.colorScheme.primary).withOpacity(0.3),
             thickness: 2,
@@ -95,7 +96,7 @@ class SectionHeaderCompact extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.symmetric(vertical: 8.h),
       child: Row(
         children: [
           Expanded(

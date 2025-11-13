@@ -6,7 +6,7 @@ class CreateBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const CreateBeneficiaryUseCase(this.repository);
 
-  Future<Beneficiary> call(Beneficiary beneficiary) async {
+  Future<Beneficiary> execute(Beneficiary beneficiary) async {
     // Business validation
     if (beneficiary.fullName.trim().isEmpty) {
       throw Exception('الاسم الكامل مطلوب');
@@ -24,7 +24,7 @@ class UpdateBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const UpdateBeneficiaryUseCase(this.repository);
 
-  Future<Beneficiary> call(Beneficiary beneficiary) async {
+  Future<Beneficiary> execute(Beneficiary beneficiary) async {
     return await repository.update(beneficiary);
   }
 }
@@ -34,7 +34,7 @@ class GetBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const GetBeneficiaryUseCase(this.repository);
 
-  Future<Beneficiary?> call(String id) async {
+  Future<Beneficiary?> execute(String id) async {
     return await repository.getById(id);
   }
 }
@@ -44,7 +44,7 @@ class DeleteBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const DeleteBeneficiaryUseCase(this.repository);
 
-  Future<void> call(String id) async {
+  Future<void> execute(String id) async {
     await repository.delete(id);
   }
 }
@@ -54,7 +54,7 @@ class ListBeneficiariesUseCase {
   final BeneficiaryRepository repository;
   const ListBeneficiariesUseCase(this.repository);
 
-  Future<List<Beneficiary>> call({
+  Future<List<Beneficiary>> execute({
     String? searchQuery,
     BeneficiaryCategory? category,
     Gender? gender,
@@ -71,12 +71,25 @@ class ListBeneficiariesUseCase {
   }
 }
 
+/// Get Beneficiary Statistics Use Case
+class GetBeneficiaryStatisticsUseCase {
+  final BeneficiaryRepository repository;
+  const GetBeneficiaryStatisticsUseCase(this.repository);
+
+  Future<Map<String, int>> execute() async {
+    final total = await repository.count();
+    final pending = await repository.count(); // TODO: Add pendingSync filter
+
+    return {'total': total, 'pending': pending};
+  }
+}
+
 /// Load From Civil Registry Use Case
 class LoadFromCivilRegistryUseCase {
   final BeneficiaryRepository repository;
   const LoadFromCivilRegistryUseCase(this.repository);
 
-  Future<Map<String, dynamic>?> call(String nationalId) async {
+  Future<Map<String, dynamic>?> execute(String nationalId) async {
     // Validate national ID format
     final cleaned = nationalId.replaceAll(RegExp(r'[^\d]'), '');
     if (cleaned.length < 8) {

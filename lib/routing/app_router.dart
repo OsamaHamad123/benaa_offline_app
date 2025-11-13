@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
-import '../features/dashboard/dashboard_page.dart';
+import '../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../features/beneficiaries/beneficiaries_list_page.dart';
-import '../features/beneficiaries/add_beneficiary_page.dart';
+import '../features/beneficiaries/presentation/pages/beneficiary_form_page.dart';
 import '../features/beneficiaries/view_beneficiary_page.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
 import '../features/civil_registry/civil_registry_test_page.dart';
@@ -54,13 +54,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/beneficiaries/add',
-        builder: (context, state) => const AddBeneficiaryPage(),
+        builder: (context, state) => const BeneficiaryFormPage(),
       ),
       GoRoute(
         path: '/beneficiaries/:id/edit',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return AddBeneficiaryPage(beneficiaryId: id);
+          return BeneficiaryFormPage(beneficiaryId: id);
         },
       ),
       GoRoute(

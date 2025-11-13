@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../data/db/drift_database.dart';
@@ -67,8 +68,8 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
             if (_sortBy != 'name')
               Text(
                 'مرتب حسب: $_sortLabel ${_sortAscending ? '↑' : '↓'}',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.normal,
                 ),
               ),
@@ -84,18 +85,15 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
               ),
               if (_sortBy != 'name')
                 Positioned(
-                  right: 8,
-                  top: 8,
+                  right: 8.w,
+                  top: 8.h,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(4.r),
                     decoration: const BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 8,
-                      minHeight: 8,
-                    ),
+                    constraints: BoxConstraints(minWidth: 8.w, minHeight: 8.h),
                   ),
                 ),
             ],
@@ -144,7 +142,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
 
           // Search Bar
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -162,7 +160,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                       )
                     : null,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
                 filled: true,
                 fillColor: Colors.grey[50],
@@ -188,7 +186,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                 ),
               ),
               child: Wrap(
-                spacing: 8,
+                spacing: 8.w,
                 children: [
                   if (_selectedCategory != 'all')
                     Chip(
@@ -228,14 +226,14 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.error_outline,
-                          size: 64,
+                          size: 64.sp,
                           color: Colors.red,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.h),
                         Text('حدث خطأ: ${snapshot.error}'),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.h),
                         ElevatedButton.icon(
                           onPressed: () => setState(() {}),
                           icon: const Icon(Icons.refresh),
@@ -256,9 +254,9 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                   children: [
                     // Results Count Header
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 12.h,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.grey[100],
@@ -271,7 +269,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                           Text(
                             'عدد النتائج: ${beneficiaries.length}',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.bold,
                               color: Colors.grey[700],
                             ),
@@ -281,7 +279,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                             Text(
                               '$_sortLabel ${_sortAscending ? '↑' : '↓'}',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.sp,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -299,7 +297,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                         },
                         child: ListView.builder(
                           itemCount: beneficiaries.length,
-                          padding: const EdgeInsets.all(16),
+                          padding: EdgeInsets.all(16.r),
                           itemBuilder: (context, index) {
                             final beneficiary = beneficiaries[index];
                             return Dismissible(
@@ -307,16 +305,16 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                               direction: DismissDirection.endToStart,
                               background: Container(
                                 alignment: Alignment.centerLeft,
-                                padding: const EdgeInsets.only(left: 20),
-                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: EdgeInsets.only(left: 20.w),
+                                margin: EdgeInsets.only(bottom: 12.h),
                                 decoration: BoxDecoration(
                                   color: Colors.red,
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16.r),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.delete,
                                   color: Colors.white,
-                                  size: 32,
+                                  size: 32.sp,
                                 ),
                               ),
                               confirmDismiss: (direction) async {
@@ -433,8 +431,8 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
         final pending = stats['pending'] ?? 0;
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(16),
+          margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+          padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -442,7 +440,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                 AppColors.secondary.withOpacity(0.05),
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(color: AppColors.primary.withOpacity(0.2)),
           ),
           child: Row(
@@ -455,7 +453,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                   color: AppColors.primary,
                 ),
               ),
-              Container(width: 1, height: 40, color: Colors.grey[300]),
+              Container(width: 1.w, height: 40.h, color: Colors.grey[300]),
               Expanded(
                 child: _StatItem(
                   icon: Icons.sync,
@@ -484,16 +482,16 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.r),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'ترتيب حسب',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             ListTile(
               leading: const Icon(Icons.sort_by_alpha),
               title: const Text('الاسم'),
@@ -552,7 +550,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
               },
             ),
             // مسافة للـ handle bar
-            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16.h),
           ],
         ),
       ),
@@ -597,7 +595,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8,
+                spacing: 8.w,
                 children: [
                   FilterChip(
                     label: const Text('الكل'),
@@ -689,7 +687,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                   setModalState(() {});
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -698,7 +696,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                 ),
               ),
               // مسافة للـ handle bar
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 16.h),
             ],
           ),
         ),
@@ -713,12 +711,12 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
 
     return ListView.builder(
       itemCount: 5,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16.r),
       itemBuilder: (context, index) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 12.h),
         child: Container(
-          height: heights[index],
-          padding: const EdgeInsets.all(16),
+          height: heights[index].h,
+          padding: EdgeInsets.all(16.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -726,14 +724,14 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                 children: [
                   // Avatar shimmer
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 40.w,
+                    height: 40.h,
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -893,22 +891,22 @@ class _StatItem extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 8),
+        Icon(icon, color: color, size: 20.sp),
+        SizedBox(width: 8.w),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               value,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
             Text(
               label,
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
             ),
           ],
         ),
@@ -948,17 +946,17 @@ class _BeneficiaryCard extends StatelessWidget {
     final categoryColor = _getCategoryColor(beneficiary.category);
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12.h),
       elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: categoryColor.withOpacity(0.3), width: 2),
+        borderRadius: BorderRadius.circular(16.r),
+        side: BorderSide(color: categoryColor.withOpacity(0.3), width: 2.w),
       ),
       child: InkWell(
         onTap: () => context.push('/beneficiaries/${beneficiary.id}'),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16.r),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -973,23 +971,23 @@ class _BeneficiaryCard extends StatelessWidget {
                       color: categoryColor,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           beneficiary.fullName,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4.h),
                         Text(
                           'رقم الملف: ${beneficiary.fileNo}',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 14.sp,
                             color: Colors.grey[600],
                           ),
                         ),
@@ -1027,43 +1025,43 @@ class _BeneficiaryCard extends StatelessWidget {
                       }
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'view',
                         child: Row(
                           children: [
-                            Icon(Icons.visibility, size: 20),
-                            SizedBox(width: 8),
+                            Icon(Icons.visibility, size: 20.sp),
+                            SizedBox(width: 8.w),
                             Text('عرض التفاصيل'),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
+                            Icon(Icons.edit, size: 20.sp),
+                            SizedBox(width: 8.w),
                             Text('تعديل'),
                           ],
                         ),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'share',
                         child: Row(
                           children: [
-                            Icon(Icons.share, size: 20),
-                            SizedBox(width: 8),
+                            Icon(Icons.share, size: 20.sp),
+                            SizedBox(width: 8.w),
                             Text('مشاركة'),
                           ],
                         ),
                       ),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete, size: 20, color: Colors.red),
-                            SizedBox(width: 8),
+                            Icon(Icons.delete, size: 20.sp, color: Colors.red),
+                            SizedBox(width: 8.w),
                             Text('حذف', style: TextStyle(color: Colors.red)),
                           ],
                         ),
@@ -1072,10 +1070,10 @@ class _BeneficiaryCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.h),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: 8.w,
+                runSpacing: 8.h,
                 children: [
                   _InfoChip(
                     icon: Icons.location_on_outlined,
@@ -1151,10 +1149,10 @@ class _InfoChip extends StatelessWidget {
     final backgroundColor = color?.withOpacity(0.1) ?? Colors.grey[100]!;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20.r),
         border: color != null
             ? Border.all(color: color!.withOpacity(0.3))
             : null,
@@ -1162,12 +1160,12 @@ class _InfoChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: chipColor),
-          const SizedBox(width: 4),
+          Icon(icon, size: 16.sp, color: chipColor),
+          SizedBox(width: 4.w),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.sp,
               color: chipColor,
               fontWeight: color != null ? FontWeight.bold : FontWeight.normal,
             ),
@@ -1202,6 +1200,6 @@ class _SyncStatusBadge extends StatelessWidget {
         icon = Icons.sync;
     }
 
-    return Icon(icon, color: color, size: 20);
+    return Icon(icon, color: color, size: 20.sp);
   }
 }

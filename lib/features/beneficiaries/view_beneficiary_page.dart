@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/common_widgets.dart';
@@ -33,10 +34,10 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 80, color: Colors.red),
-                  const SizedBox(height: 16),
+                  Icon(Icons.error_outline, size: 80.sp, color: Colors.red),
+                  SizedBox(height: 16.h),
                   const Text('لم يتم العثور على المستفيد'),
-                  const SizedBox(height: 24),
+                  SizedBox(height: 24.h),
                   ElevatedButton.icon(
                     onPressed: () => context.pop(),
                     icon: const Icon(Icons.arrow_back),
@@ -84,24 +85,24 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   }
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'print',
                     child: Row(
                       children: [
-                        Icon(Icons.print, size: 20),
-                        SizedBox(width: 8),
-                        Text('طباعة'),
+                        Icon(Icons.print, size: 20.sp),
+                        SizedBox(width: 8.w),
+                        const Text('طباعة'),
                       ],
                     ),
                   ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'delete',
                     child: Row(
                       children: [
-                        Icon(Icons.delete, size: 20, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('حذف', style: TextStyle(color: Colors.red)),
+                        Icon(Icons.delete, size: 20.sp, color: Colors.red),
+                        SizedBox(width: 8.w),
+                        const Text('حذف', style: TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
@@ -110,64 +111,67 @@ class ViewBeneficiaryPage extends ConsumerWidget {
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16.r),
             children: [
               // Header Card
               Card(
                 elevation: 4,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                   side: BorderSide(
                     color: categoryColor.withOpacity(0.5),
-                    width: 2,
+                    width: 2.w,
                   ),
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16.r),
                     gradient: LinearGradient(
                       colors: [categoryColor.withOpacity(0.1), Colors.white],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
                   ),
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(20.r),
                   child: Column(
                     children: [
                       CircleAvatar(
-                        radius: 50,
+                        radius: 50.r,
                         backgroundColor: categoryColor.withOpacity(0.2),
                         child: Icon(
                           beneficiary.gender == 'male'
                               ? Icons.person
                               : Icons.person_outline,
-                          size: 60,
+                          size: 60.sp,
                           color: categoryColor,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16.h),
                       Text(
                         beneficiary.fullName,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.h),
                       Text(
                         'رقم الملف: ${beneficiary.fileNo}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14.sp,
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       _SyncStatusBadge(syncState: beneficiary.syncState),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12.h),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 10,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20.w,
+                          vertical: 10.h,
                         ),
                         decoration: BoxDecoration(
                           color: categoryColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(20.r),
                           border: Border.all(
                             color: categoryColor.withOpacity(0.3),
                           ),
@@ -178,15 +182,15 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             Icon(
                               Icons.category,
                               color: categoryColor,
-                              size: 18,
+                              size: 18.sp,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8.w),
                             Text(
                               _getCategoryLabel(beneficiary.category),
                               style: TextStyle(
                                 color: categoryColor,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                                fontSize: 16.sp,
                               ),
                             ),
                           ],
@@ -196,11 +200,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               // Basic Info Section
               _buildSectionTitle(context, 'المعلومات الأساسية'),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Card(
                 child: Column(
                   children: [
@@ -308,7 +312,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
               ],
 
               // Family Info Section
@@ -527,7 +531,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
               ],
 
               // Additional Contact Info
@@ -548,14 +552,14 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               // Notes Section
               if (beneficiary.notes.isNotEmpty) ...[
                 _buildSectionTitle(context, 'الملاحظات'),
-                const SizedBox(height: 8),
+                SizedBox(height: 8.h),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16.r),
                     child: Text(beneficiary.notes),
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.h),
               ],
 
               // Metadata Section
@@ -582,17 +586,17 @@ class ViewBeneficiaryPage extends ConsumerWidget {
 
               // Attachments Section
               _buildSectionTitle(context, 'المرفقات'),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.h),
               Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.r),
                   child: AttachmentsSection(
                     beneficiaryId: beneficiaryId,
                     loadFromDatabase: true,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.h),
 
               // Action Buttons
               Row(

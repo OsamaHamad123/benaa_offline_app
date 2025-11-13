@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Widget لعرض الأخطاء
 ///
@@ -28,46 +29,46 @@ class ErrorDisplay extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(isCompact ? 16 : 24),
+        padding: EdgeInsets.all((isCompact ? 16 : 24).r),
         child: Card(
           elevation: isCompact ? 1 : 2,
           color: theme.colorScheme.errorContainer,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(16.r),
           ),
           child: Padding(
-            padding: EdgeInsets.all(isCompact ? 16 : 24),
+            padding: EdgeInsets.all((isCompact ? 16 : 24).r),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.error_outline,
-                  size: isCompact ? 40 : (isMobile ? 48 : 56),
+                  size: (isCompact ? 40 : (isMobile ? 48 : 56)).sp,
                   color: theme.colorScheme.error,
                 ),
-                SizedBox(height: isCompact ? 12 : 16),
+                SizedBox(height: (isCompact ? 12 : 16).h),
                 Text(
                   title ?? 'حدث خطأ',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onErrorContainer,
-                    fontSize: isCompact ? 16 : 18,
+                    fontSize: (isCompact ? 16 : 18).sp,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: isCompact ? 8 : 12),
+                SizedBox(height: (isCompact ? 8 : 12).h),
                 Text(
                   error,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onErrorContainer.withOpacity(0.8),
-                    fontSize: isCompact ? 13 : 14,
+                    fontSize: (isCompact ? 13 : 14).sp,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (onRetry != null) ...[
-                  SizedBox(height: isCompact ? 16 : 20),
+                  SizedBox(height: (isCompact ? 16 : 20).h),
                   ElevatedButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.refresh),
@@ -76,8 +77,8 @@ class ErrorDisplay extends StatelessWidget {
                       backgroundColor: theme.colorScheme.error,
                       foregroundColor: theme.colorScheme.onError,
                       padding: EdgeInsets.symmetric(
-                        horizontal: isCompact ? 16 : 20,
-                        vertical: isCompact ? 10 : 12,
+                        horizontal: (isCompact ? 16 : 20).w,
+                        vertical: (isCompact ? 10 : 12).h,
                       ),
                     ),
                   ),
@@ -104,20 +105,24 @@ class ErrorBanner extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
         border: Border(
           bottom: BorderSide(
             color: theme.colorScheme.error.withOpacity(0.3),
-            width: 2,
+            width: 2.h,
           ),
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: theme.colorScheme.error, size: 20),
-          const SizedBox(width: 12),
+          Icon(
+            Icons.error_outline,
+            color: theme.colorScheme.error,
+            size: 20.sp,
+          ),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               message,

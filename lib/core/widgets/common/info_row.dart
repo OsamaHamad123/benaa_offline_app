@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// صف معلومات قابل لإعادة الاستخدام
 ///
@@ -35,10 +36,10 @@ class InfoRow extends StatelessWidget {
       children: [
         Icon(
           icon,
-          size: isMobile ? 18 : 20,
+          size: (isMobile ? 18 : 20).sp,
           color: iconColor ?? theme.colorScheme.primary,
         ),
-        SizedBox(width: isMobile ? 10 : 12),
+        SizedBox(width: (isMobile ? 10 : 12).w),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,15 +48,15 @@ class InfoRow extends StatelessWidget {
                 label,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.6),
-                  fontSize: isMobile ? 11 : 12,
+                  fontSize: (isMobile ? 11 : 12).sp,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2.h),
               Text(
                 value,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
-                  fontSize: isMobile ? 13 : 14,
+                  fontSize: (isMobile ? 13 : 14).sp,
                 ),
               ),
             ],
@@ -64,7 +65,7 @@ class InfoRow extends StatelessWidget {
         if (onTap != null)
           Icon(
             Icons.chevron_right,
-            size: 20,
+            size: 20.sp,
             color: theme.colorScheme.onSurface.withOpacity(0.3),
           ),
       ],
@@ -73,16 +74,16 @@ class InfoRow extends StatelessWidget {
     if (onTap != null) {
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8.r),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 4.w),
           child: content,
         ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 4.w),
       child: content,
     );
   }
@@ -107,22 +108,22 @@ class InfoChip extends StatelessWidget {
     final chipColor = color ?? theme.colorScheme.primary;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
         color: chipColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: chipColor.withOpacity(0.3), width: 1),
+        borderRadius: BorderRadius.circular(6.r),
+        border: Border.all(color: chipColor.withOpacity(0.3), width: 1.w),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: chipColor),
-          const SizedBox(width: 4),
+          Icon(icon, size: 14.sp, color: chipColor),
+          SizedBox(width: 4.w),
           Text(
             label,
             style: TextStyle(
               color: chipColor,
-              fontSize: 12,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w500,
             ),
           ),

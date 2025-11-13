@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../theme/app_colors.dart';
 
 /// Custom AppBar مخصص وجذاب - قابل لإعادة الاستخدام
@@ -41,8 +42,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               boxShadow: [
                 BoxShadow(
                   color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  blurRadius: 8.r,
+                  offset: Offset(0, 2.h),
                 ),
               ],
             )
@@ -56,8 +57,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         leading: _buildLeading(context),
         actions: actions,
         bottom: bottom,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20.r)),
         ),
       ),
     );
@@ -68,23 +69,23 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8.r),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.apartment_rounded,
             color: Colors.white,
-            size: 20,
+            size: 20.sp,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
         Flexible(
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 20,
+            style: TextStyle(
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: Colors.white,
               letterSpacing: 0.5,
@@ -102,15 +103,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (showBackButton) {
       return IconButton(
         icon: Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8.r),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.arrow_back_ios_new_rounded,
             color: Colors.white,
-            size: 18,
+            size: 18.sp,
           ),
         ),
         onPressed: () {
@@ -153,7 +154,7 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: showBackButton
           ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+              icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.sp),
               onPressed: () {
                 if (onBackPressed != null) {
                   onBackPressed!();
@@ -200,15 +201,15 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
           onTap: onSyncTap,
           tooltip: 'المزامنة',
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: 8.w),
 
         // Notifications Button with Badge
         _buildNotificationButton(context),
-        const SizedBox(width: 8),
+        SizedBox(width: 8.w),
 
         // Profile Button
         _buildProfileButton(context),
-        const SizedBox(width: 12),
+        SizedBox(width: 12.w),
       ],
     );
   }
@@ -222,14 +223,14 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10.r),
         child: Container(
-          padding: const EdgeInsets.all(10),
+          padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: Icon(icon, color: Colors.white, size: 22),
+          child: Icon(icon, color: Colors.white, size: 22.sp),
         ),
       ),
     );
@@ -245,36 +246,33 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
           clipBehavior: Clip.none,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10.r),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.notifications_rounded,
                 color: Colors.white,
-                size: 22,
+                size: 22.sp,
               ),
             ),
             if (notificationCount > 0)
               Positioned(
-                top: -4,
-                right: -4,
+                top: -4.h,
+                right: -4.w,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(4.r),
                   decoration: const BoxDecoration(
                     color: AppColors.error,
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
+                  constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
                   child: Text(
                     notificationCount > 9 ? '9+' : '$notificationCount',
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 10.sp,
                       fontWeight: FontWeight.bold,
                     ),
                     textAlign: TextAlign.center,
@@ -292,20 +290,20 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
       message: 'الملف الشخصي',
       child: InkWell(
         onTap: onProfileTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10.r),
         child: Container(
-          padding: const EdgeInsets.all(2),
+          padding: EdgeInsets.all(2.r),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-          child: const CircleAvatar(
-            radius: 16,
+          child: CircleAvatar(
+            radius: 16.r,
             backgroundColor: Colors.white,
             child: Icon(
               Icons.person_rounded,
               color: AppColors.primary,
-              size: 18,
+              size: 18.sp,
             ),
           ),
         ),
@@ -339,7 +337,7 @@ class SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+        icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20.sp),
         onPressed: () {
           if (onBackPressed != null) {
             onBackPressed!();
@@ -357,7 +355,7 @@ class SearchAppBar extends StatelessWidget implements PreferredSizeWidget {
           border: InputBorder.none,
           hintStyle: TextStyle(color: Colors.grey[400]),
         ),
-        style: const TextStyle(fontSize: 16),
+        style: TextStyle(fontSize: 16.sp),
       ),
       actions: [
         if (controller?.text.isNotEmpty ?? false)

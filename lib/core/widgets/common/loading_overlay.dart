@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Overlay للتحميل
 ///
@@ -32,16 +33,16 @@ class LoadingOverlay extends StatelessWidget {
               child: Card(
                 elevation: 8,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(24.r),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const CircularProgressIndicator(),
                       if (message != null) ...[
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16.h),
                         Text(
                           message!,
                           style: Theme.of(context).textTheme.bodyMedium,
@@ -73,12 +74,12 @@ class LoadingIndicator extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: size ?? 40,
-            height: size ?? 40,
+            width: (size ?? 40).w,
+            height: (size ?? 40).h,
             child: const CircularProgressIndicator(),
           ),
           if (message != null) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: 16.h),
             Text(
               message!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -138,7 +139,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
           width: widget.width,
           height: widget.height,
           decoration: BoxDecoration(
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
+            borderRadius: widget.borderRadius ?? BorderRadius.circular(8.r),
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
