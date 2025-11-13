@@ -1032,6 +1032,69 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ============================================================================
+  // VISITS QUERIES - استعلامات الزيارات
+  // ============================================================================
+
+  /// Insert a new visit
+  Future<void> insertVisit(VisitsCompanion visit) async {
+    await into(visits).insert(visit);
+  }
+
+  /// Get all visits for a beneficiary
+  Future<List<Visit>> getBeneficiaryVisits(String beneficiaryId) async {
+    return await (select(visits)
+          ..where((v) => v.beneficiaryId.equals(beneficiaryId))
+          ..orderBy([(v) => OrderingTerm.desc(v.visitDate)]))
+        .get();
+  }
+
+  /// Get visit by ID
+  Future<Visit?> getVisitById(String id) async {
+    return await (select(
+      visits,
+    )..where((v) => v.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Update visit
+  Future<void> updateVisit(Visit visit) async {
+    await update(visits).replace(visit);
+  }
+
+  /// Delete visit
+  Future<void> deleteVisit(String id) async {
+    await (delete(visits)..where((v) => v.id.equals(id))).go();
+  }
+
+  /// Count total visits for a beneficiary
+  Future<int> countBeneficiaryVisits(String beneficiaryId) async {
+    final result = await customSelect(
+      'SELECT COUNT(*) as count FROM visits WHERE beneficiary_id = ?',
+      variables: [Variable.withString(beneficiaryId)],
+      readsFrom: {visits},
+    ).getSingle();
+    return result.read<int>('count');
+  }
+
+  /// Get last visit date for a beneficiary
+  Future<DateTime?> getLastVisitDate(String beneficiaryId) async {
+    final result =
+        await (select(visits)
+              ..where((v) => v.beneficiaryId.equals(beneficiaryId))
+              ..orderBy([(v) => OrderingTerm.desc(v.visitDate)])
+              ..limit(1))
+            .getSingleOrNull();
+    return result?.visitDate;
+  }
+
+  /// Get recent visits (for activity feed)
+  Future<List<Visit>> getRecentVisits({int limit = 20}) async {
+    return await (select(visits)
+          ..orderBy([(v) => OrderingTerm.desc(v.visitDate)])
+          ..limit(limit))
+        .get();
+  }
+
+  // ============================================================================
   // UTILITY FUNCTIONS - دوال مساعدة
   // ============================================================================
 

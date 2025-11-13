@@ -850,6 +850,20 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
             newBeneficiaryId,
           );
         }
+
+        // تسجيل زيارة أولية عند إضافة مستفيد جديد
+        await db.insertVisit(
+          VisitsCompanion.insert(
+            id: const Uuid().v4(),
+            beneficiaryId: newBeneficiaryId,
+            visitDate: now,
+            staffName: 'النظام', // يمكن استبدالها باسم المستخدم الحالي
+            notes: const drift.Value('تسجيل أولي للمستفيد'),
+            isSubmitted: const drift.Value(true),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
       }
 
       if (mounted) {

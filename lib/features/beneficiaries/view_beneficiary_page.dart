@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/providers/providers.dart';
+import '../../core/providers/providers.dart' as core_providers;
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/beneficiary/visit_card.dart';
 import '../../data/db/drift_database.dart';
+import '../../features/visits/presentation/pages/record_visit_page_clean.dart';
+import '../../features/visits/presentation/providers/visit_providers.dart';
 import 'widgets/attachments_section.dart';
 
 class ViewBeneficiaryPage extends ConsumerWidget {
@@ -14,7 +17,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.watch(databaseProvider);
+    final database = ref.watch(core_providers.databaseProvider);
 
     return FutureBuilder<Beneficiary?>(
       future: database.getBeneficiaryById(beneficiaryId),
@@ -598,6 +601,15 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               ),
               SizedBox(height: 16.h),
 
+              // Visits Section
+              _buildSectionTitle(context, 'سجل الزيارات'),
+              SizedBox(height: 8.h),
+              _VisitsSection(
+                beneficiaryId: beneficiaryId,
+                beneficiary: beneficiary,
+              ),
+              SizedBox(height: 16.h),
+
               // Action Buttons
               Row(
                 children: [
@@ -613,8 +625,20 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        // TODO: Add visit
+                      onPressed: () async {
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                RecordVisitPageClean(beneficiary: beneficiary),
+                          ),
+                        );
+                        if (result == true) {
+                          // Reload visits after successful creation
+                          ref
+                              .read(visitNotifierProvider.notifier)
+                              .loadBeneficiaryVisits(beneficiaryId);
+                        }
                       },
                       icon: const Icon(Icons.add),
                       label: const Text('إضافة زيارة'),
@@ -768,6 +792,148 @@ class ViewBeneficiaryPage extends ConsumerWidget {
         }
       }
     }
+  }
+}
+
+// Visits Section Widget using Clean Architecture
+class _VisitsSection extends ConsumerStatefulWidget {
+  final String beneficiaryId;
+  final Beneficiary beneficiary;
+
+  const _VisitsSection({
+    required this.beneficiaryId,
+    required this.beneficiary,
+  });
+
+  @override
+  ConsumerState<_VisitsSection> createState() => _VisitsSectionState();
+}
+
+class _VisitsSectionState extends ConsumerState<_VisitsSection> {
+  @override
+  void initState() {
+    super.initState();
+    // Load visits when widget is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(visitNotifierProvider.notifier)
+          .loadBeneficiaryVisits(widget.beneficiaryId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visitState = ref.watch(visitNotifierProvider);
+
+    if (visitState.isLoading) {
+      return Card(
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (visitState.errorMessage != null) {
+      return Card(
+        child: Padding(
+          padding: EdgeInsets.all(24.r),
+          child: Column(
+            children: [
+              Icon(Icons.error_outline, size: 48.sp, color: Colors.red[400]),
+              SizedBox(height: 12.h),
+              Text(
+                visitState.errorMessage!,
+                style: TextStyle(fontSize: 14.sp, color: Colors.red[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final visits = visitState.visits;
+
+    if (visits.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: EdgeInsets.all(24.r),
+          child: Column(
+            children: [
+              Icon(Icons.event_busy, size: 48.sp, color: Colors.grey[400]),
+              SizedBox(height: 12.h),
+              Text(
+                'لا توجد زيارات مسجلة',
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      child: Column(
+        children: [
+          // Visits Summary
+          Container(
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.05),
+              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.event_available, color: Colors.blue, size: 20.sp),
+                SizedBox(width: 8.w),
+                Text(
+                  'عدد الزيارات: ${visits.length}',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                ),
+                const Spacer(),
+                if (visits.isNotEmpty)
+                  Text(
+                    'آخر زيارة: ${_formatDateShort(visits.first.visitDate)}',
+                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+                  ),
+              ],
+            ),
+          ),
+          // Visits List (show last 3) using VisitCard widget
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: visits.length > 3 ? 3 : visits.length,
+            separatorBuilder: (_, __) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final visit = visits[index];
+              return VisitCard(
+                visit: visit,
+                onTap: () {
+                  // TODO: Navigate to visit details page
+                },
+              );
+            },
+          ),
+          if (visits.length > 3)
+            TextButton(
+              onPressed: () {
+                // TODO: Show all visits page
+              },
+              child: Text('عرض جميع الزيارات (${visits.length})'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateShort(DateTime dateTime) {
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
   }
 }
 
