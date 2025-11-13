@@ -80,48 +80,39 @@ class LastSyncStatus extends StatelessWidget {
     // TODO: Get real sync data from provider
     final lastSyncTime = '3 ساعات';
     final syncedCount = 42;
-    final isSuccess = true;
 
     return Card(
       elevation: 0,
-      color: isSuccess ? Colors.green[50] : Colors.red[50],
+      color: Colors.green[50],
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isSuccess ? Colors.green[200]! : Colors.red[200]!,
-          width: 1,
-        ),
+        side: BorderSide(color: Colors.green[200]!, width: 1),
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isSuccess ? Colors.green[100] : Colors.red[100],
+            color: Colors.green[100],
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
-            color: isSuccess ? Colors.green : Colors.red,
+          child: const Icon(
+            Icons.check_circle_rounded,
+            color: Colors.green,
             size: 24,
           ),
         ),
         title: Text(
-          isSuccess ? 'آخر مزامنة ناجحة' : 'فشلت آخر مزامنة',
+          'آخر مزامنة ناجحة',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isSuccess ? Colors.green[900] : Colors.red[900],
+            color: Colors.green[900],
           ),
         ),
         subtitle: Text(
           'منذ $lastSyncTime - $syncedCount سجل',
-          style: TextStyle(
-            color: isSuccess ? Colors.green[700] : Colors.red[700],
-          ),
+          style: TextStyle(color: Colors.green[700]),
         ),
-        trailing: Icon(
-          Icons.chevron_right,
-          color: isSuccess ? Colors.green[700] : Colors.red[700],
-        ),
+        trailing: Icon(Icons.chevron_right, color: Colors.green[700]),
         onTap: () {
           // TODO: Navigate to sync details
         },

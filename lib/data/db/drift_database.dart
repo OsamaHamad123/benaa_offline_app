@@ -32,7 +32,6 @@ class Beneficiaries extends Table {
   TextColumn get healthStatus => text().nullable()(); // الحالة الصحية
   BoolColumn get hasDisability =>
       boolean().withDefault(const Constant(false))(); // لديه إعاقة
-
   // حقول إضافية من Backend
   IntColumn get displacementStatus => integer().nullable()(); // حالة النزوح
   TextColumn get addressBeforeDisplacement =>

@@ -4,9 +4,10 @@ import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/dashboard/dashboard_page.dart';
 import '../features/beneficiaries/beneficiaries_list_page.dart';
-import '../features/beneficiaries/add_beneficiary_page_enhanced.dart';
+import '../features/beneficiaries/add_beneficiary_page.dart';
 import '../features/beneficiaries/view_beneficiary_page.dart';
-import '../features/search/civil_search_page_enhanced.dart';
+import '../features/search/presentation/pages/civil_search_page.dart';
+import '../features/civil_registry/civil_registry_test_page.dart';
 import '../features/sync/sync_page.dart';
 import '../features/sync/import_test_data_page.dart';
 import '../features/sync/test_sync_page.dart';
@@ -53,13 +54,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/beneficiaries/add',
-        builder: (context, state) => const AddBeneficiaryPageEnhanced(),
+        builder: (context, state) => const AddBeneficiaryPage(),
       ),
       GoRoute(
         path: '/beneficiaries/:id/edit',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return AddBeneficiaryPageEnhanced(beneficiaryId: id);
+          return AddBeneficiaryPage(beneficiaryId: id);
         },
       ),
       GoRoute(
@@ -71,7 +72,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/search',
-        builder: (context, state) => const CivilSearchPageEnhanced(),
+        builder: (context, state) => const CivilSearchPage(),
+      ),
+      GoRoute(
+        path: '/civil-test',
+        builder: (context, state) => const CivilRegistryTestPage(),
       ),
       GoRoute(
         path: '/attachments/:beneficiaryId',

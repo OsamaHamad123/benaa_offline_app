@@ -5,6 +5,7 @@ import '../../core/providers/providers.dart';
 import '../../data/db/drift_database.dart';
 import '../../core/utils/responsive_utils.dart';
 import '../../theme/app_colors.dart';
+import '../../core/widgets/common_widgets.dart';
 
 class BeneficiariesListPage extends ConsumerStatefulWidget {
   const BeneficiariesListPage({super.key});
@@ -795,49 +796,18 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _searchQuery.isEmpty ? Icons.people_outline : Icons.search_off,
-            size: 80,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            _searchQuery.isEmpty
-                ? 'لا يوجد مستفيدين بعد'
-                : 'لا توجد نتائج للبحث',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _searchQuery.isEmpty
-                ? 'ابدأ بإضافة مستفيدين جدد'
-                : 'جرب تغيير كلمات البحث',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-          ),
-          if (_searchQuery.isEmpty) ...[
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/beneficiaries/add'),
-              icon: const Icon(Icons.person_add),
-              label: const Text('إضافة مستفيد جديد'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+    return EmptyState(
+      icon: _searchQuery.isEmpty ? Icons.people_outline : Icons.search_off,
+      title: _searchQuery.isEmpty
+          ? 'لا يوجد مستفيدين بعد'
+          : 'لا توجد نتائج للبحث',
+      message: _searchQuery.isEmpty
+          ? 'ابدأ بإضافة مستفيدين جدد'
+          : 'جرب تغيير كلمات البحث',
+      actionLabel: _searchQuery.isEmpty ? 'إضافة مستفيد جديد' : null,
+      onAction: _searchQuery.isEmpty
+          ? () => context.push('/beneficiaries/add')
+          : null,
     );
   }
 

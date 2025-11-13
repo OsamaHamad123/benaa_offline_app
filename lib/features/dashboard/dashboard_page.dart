@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../core/utils/responsive_utils.dart';
+import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/custom_app_bar.dart';
 import '../../core/services/activity_logger.dart';
 import '../../data/models/activity_log.dart';
@@ -122,166 +123,142 @@ class _DashboardHome extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final padding = ResponsiveUtils.getResponsivePadding(context);
 
-    return Stack(
+    return Column(
       children: [
-        Column(
-          children: [
-            const ConnectionStatusBar(isOnline: true),
-            const SyncStatusBar(), // شريط حالة المزامنة
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  // إعادة تحميل كل البيانات
-                  ref.invalidate(statisticsProvider);
-                  ref.invalidate(notificationsCountProvider);
+        const ConnectionStatusBar(isOnline: true),
+        const SyncStatusBar(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              // إعادة تحميل كل البيانات
+              ref.invalidate(statisticsProvider);
+              ref.invalidate(notificationsCountProvider);
 
-                  // انتظار التحديث
-                  await Future.wait([
-                    ref.read(statisticsProvider.future),
-                    ref.read(notificationsCountProvider.future),
-                  ]);
+              // انتظار التحديث
+              await Future.wait([
+                ref.read(statisticsProvider.future),
+                ref.read(notificationsCountProvider.future),
+              ]);
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('تم تحديث البيانات'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-                child: ListView(
-                  padding: padding,
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم تحديث البيانات'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+            child: ListView(
+              padding: padding,
+              children: [
+                // Welcome Header
+                _WelcomeHeader(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Statistics Cards
+                const _StatisticsSection(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+                const SizedBox(height: 12),
+                const LastSyncStatus(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Statistics Cards
+                const _StatisticsSection(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Charts Row
+                if (ResponsiveUtils.isTablet(context) ||
+                    ResponsiveUtils.isDesktop(context))
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Expanded(child: BeneficiariesGrowthChart()),
+                      SizedBox(
+                        width: ResponsiveUtils.getResponsiveSpacing(context),
+                      ),
+                      const Expanded(child: CategoryDistributionChart()),
+                    ],
+                  )
+                else ...[
+                  const BeneficiariesGrowthChart(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(context),
+                  ),
+                  const CategoryDistributionChart(),
+                ],
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Performance & Quality
+                if (ResponsiveUtils.isTablet(context) ||
+                    ResponsiveUtils.isDesktop(context))
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Expanded(child: PerformanceMetricsCard()),
+                      SizedBox(
+                        width: ResponsiveUtils.getResponsiveSpacing(context),
+                      ),
+                      const Expanded(child: DataQualityScore()),
+                    ],
+                  )
+                else ...[
+                  const PerformanceMetricsCard(),
+                  SizedBox(
+                    height: ResponsiveUtils.getResponsiveSpacing(context),
+                  ),
+                  const DataQualityScore(),
+                ],
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Quick Actions
+                Text(
+                  'الإجراءات السريعة',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(
+                  height: ResponsiveUtils.getResponsiveSpacing(context) * 0.75,
+                ),
+                const _QuickActionsGrid(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Export Actions
+                const ExportActionsRow(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Today's Stats Summary
+                const _TodayStatsSummary(),
+                SizedBox(height: ResponsiveUtils.getResponsiveSpacing(context)),
+
+                // Recent Activity
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Welcome Header
-                    _WelcomeHeader(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Alerts & Insights
-                    const PendingSyncAlert(),
-                    const SizedBox(height: 12),
-                    const LastSyncStatus(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Statistics Cards
-                    const _StatisticsSection(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Charts Row
-                    if (ResponsiveUtils.isTablet(context) ||
-                        ResponsiveUtils.isDesktop(context))
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Expanded(child: BeneficiariesGrowthChart()),
-                          SizedBox(
-                            width: ResponsiveUtils.getResponsiveSpacing(
-                              context,
-                            ),
-                          ),
-                          const Expanded(child: CategoryDistributionChart()),
-                        ],
-                      )
-                    else ...[
-                      const BeneficiariesGrowthChart(),
-                      SizedBox(
-                        height: ResponsiveUtils.getResponsiveSpacing(context),
-                      ),
-                      const CategoryDistributionChart(),
-                    ],
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Performance & Quality
-                    if (ResponsiveUtils.isTablet(context) ||
-                        ResponsiveUtils.isDesktop(context))
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Expanded(child: PerformanceMetricsCard()),
-                          SizedBox(
-                            width: ResponsiveUtils.getResponsiveSpacing(
-                              context,
-                            ),
-                          ),
-                          const Expanded(child: DataQualityScore()),
-                        ],
-                      )
-                    else ...[
-                      const PerformanceMetricsCard(),
-                      SizedBox(
-                        height: ResponsiveUtils.getResponsiveSpacing(context),
-                      ),
-                      const DataQualityScore(),
-                    ],
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Quick Actions
                     Text(
-                      'الإجراءات السريعة',
+                      'النشاط الأخير',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 0.75,
+                    TextButton(
+                      onPressed: () {
+                        // TODO: View all activity
+                      },
+                      child: const Text('عرض الكل'),
                     ),
-                    const _QuickActionsGrid(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Export Actions
-                    const ExportActionsRow(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Today's Stats Summary
-                    const _TodayStatsSummary(),
-                    SizedBox(
-                      height: ResponsiveUtils.getResponsiveSpacing(context),
-                    ),
-
-                    // Recent Activity
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'النشاط الأخير',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            // TODO: View all activity
-                          },
-                          child: const Text('عرض الكل'),
-                        ),
-                      ],
-                    ),
-                    SizedBox(
-                      height:
-                          ResponsiveUtils.getResponsiveSpacing(context) * 0.75,
-                    ),
-                    const _RecentActivityList(),
-                    const SizedBox(height: 100), // Space for FAB
                   ],
                 ),
-              ),
+                SizedBox(
+                  height: ResponsiveUtils.getResponsiveSpacing(context) * 0.75,
+                ),
+                const _RecentActivityList(),
+                const SizedBox(height: 100), // Space for FAB
+              ],
             ),
-          ],
+          ),
         ),
-        // Speed Dial FAB
-        const Positioned(bottom: 16, left: 16, child: DashboardSpeedDial()),
       ],
     );
   }
@@ -329,26 +306,9 @@ class _WelcomeHeader extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      greetingColor.withOpacity(0.2),
-                      greetingColor.withOpacity(0.4),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: greetingColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: greetingColor.withOpacity(0.2),
                 child: Icon(greetingIcon, size: 32, color: greetingColor),
               ),
               const SizedBox(width: 16),
@@ -365,54 +325,10 @@ class _WelcomeHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'مرحباً بك في منظومة بناء',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.green.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.green,
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    const Text(
-                      'متصل',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
+                      'لوحة التحكم',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -466,25 +382,25 @@ class _StatisticsSection extends ConsumerWidget {
             desktop: 1.4,
           ),
           children: [
-            _StatCard(
+            InfoCard(
               title: 'إجمالي المستفيدين',
               value: '${stats[0]}',
               icon: Icons.people,
               color: Colors.blue,
             ),
-            _StatCard(
+            InfoCard(
               title: 'بانتظار المزامنة',
               value: '${stats[1]}',
               icon: Icons.sync,
               color: Colors.orange,
             ),
-            _StatCard(
+            InfoCard(
               title: 'أيتام',
               value: '${stats[2]}',
               icon: Icons.child_care,
               color: Colors.purple,
             ),
-            _StatCard(
+            InfoCard(
               title: 'فقراء',
               value: '${stats[3]}',
               icon: Icons.volunteer_activism,
@@ -497,147 +413,7 @@ class _StatisticsSection extends ConsumerWidget {
   }
 }
 
-class _StatCard extends StatefulWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  State<_StatCard> createState() => _StatCardState();
-}
-
-class _StatCardState extends State<_StatCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 600),
-      vsync: this,
-    );
-
-    _scaleAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutBack,
-    );
-
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-
-    // Start animation with delay based on position
-    Future.delayed(Duration(milliseconds: widget.value.hashCode % 300), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isSmallScreen = ResponsiveUtils.isMobile(context);
-    final padding = ResponsiveUtils.getResponsiveValue(
-      context,
-      mobile: 12.0,
-      tablet: 16.0,
-      desktop: 20.0,
-    );
-
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  widget.color.withOpacity(0.05),
-                  widget.color.withOpacity(0.15),
-                ],
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(padding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w600,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
-                        decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.color.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          widget.icon,
-                          color: widget.color,
-                          size: isSmallScreen ? 20 : 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.value,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: widget.color,
-                      fontSize: isSmallScreen ? 28 : 32,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+// ✅ تم استبدالها بـ InfoCard من common_widgets
 
 // Today's Stats Summary Widget
 class _TodayStatsSummary extends StatelessWidget {
@@ -1025,7 +801,12 @@ class _RecentActivityList extends StatelessWidget {
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _EmptyActivityCard();
+          return const EmptyState(
+            icon: Icons.history_rounded,
+            title: 'لا توجد نشاطات بعد',
+            message: 'ابدأ بإضافة مستفيدين أو إجراء مزامنة',
+            isCompact: true,
+          );
         }
 
         final activities = snapshot.data!;
@@ -1089,52 +870,7 @@ class _RecentActivityList extends StatelessWidget {
 }
 
 // Empty State Card for activities
-class _EmptyActivityCard extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey[300]!, width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.history_rounded,
-                size: 48,
-                color: Colors.grey[400],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'لا توجد نشاطات بعد',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'ابدأ بإضافة مستفيدين أو إجراء مزامنة',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// ✅ تم استبدالها بـ EmptyState من common_widgets
 
 class _Activity extends StatelessWidget {
   final String title;

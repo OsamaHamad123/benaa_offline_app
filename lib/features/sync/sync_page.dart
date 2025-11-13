@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
+import '../../core/widgets/common_widgets.dart';
 
 class SyncPage extends ConsumerStatefulWidget {
   const SyncPage({super.key});
@@ -165,19 +166,19 @@ class _SyncPageState extends ConsumerState<SyncPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: _InfoCard(
+                            child: InfoCard(
                               icon: Icons.people,
-                              label: 'مستفيدين',
-                              count: pendingCount,
+                              title: 'مستفيدين',
+                              value: pendingCount.toString(),
                               color: Colors.blue,
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _InfoCard(
+                            child: InfoCard(
                               icon: Icons.attach_file,
-                              label: 'مرفقات',
-                              count: 0,
+                              title: 'مرفقات',
+                              value: '0',
                               color: Colors.orange,
                             ),
                           ),
@@ -243,46 +244,6 @@ class _SyncPageState extends ConsumerState<SyncPage> {
               label: Text(_isSyncing ? 'جاري المزامنة...' : 'بدء المزامنة'),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int count;
-  final Color color;
-
-  const _InfoCard({
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
         ],
       ),
     );

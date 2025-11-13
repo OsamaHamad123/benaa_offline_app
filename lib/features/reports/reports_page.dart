@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
+import '../../core/widgets/common_widgets.dart';
 import '../../data/db/drift_database.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -742,24 +743,24 @@ class _SyncReportSheet extends ConsumerWidget {
                       controller: scrollController,
                       padding: const EdgeInsets.all(16),
                       children: [
-                        _SyncStatCard(
+                        InfoCard(
                           icon: Icons.check_circle,
-                          label: 'تمت المزامنة',
-                          count: synced,
+                          title: 'تمت المزامنة',
+                          value: synced.toString(),
                           color: Colors.green,
                         ),
                         const SizedBox(height: 12),
-                        _SyncStatCard(
+                        InfoCard(
                           icon: Icons.sync,
-                          label: 'بانتظار المزامنة',
-                          count: pending,
+                          title: 'بانتظار المزامنة',
+                          value: pending.toString(),
                           color: Colors.orange,
                         ),
                         const SizedBox(height: 12),
-                        _SyncStatCard(
+                        InfoCard(
                           icon: Icons.error,
-                          label: 'فشلت المزامنة',
-                          count: failed,
+                          title: 'فشلت المزامنة',
+                          value: failed.toString(),
                           color: Colors.red,
                         ),
                       ],
@@ -771,59 +772,6 @@ class _SyncReportSheet extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _SyncStatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final int count;
-  final Color color;
-
-  const _SyncStatCard({
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 32),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Text(
-              '$count',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

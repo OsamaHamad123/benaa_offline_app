@@ -11,32 +11,37 @@
 class ArabicNormalizer {
   /// تطبيع النص العربي للبحث الأمثل
   static String normalize(String text) {
-    if (text.isEmpty) return '';
+    try {
+      if (text.isEmpty) return '';
 
-    String normalized = text;
+      String normalized = text;
 
-    // تحويل إلى lowercase
-    normalized = normalized.toLowerCase();
+      // تحويل إلى lowercase
+      normalized = normalized.toLowerCase();
 
-    // إزالة التشكيل
-    normalized = _removeDiacritics(normalized);
+      // إزالة التشكيل
+      normalized = _removeDiacritics(normalized);
 
-    // توحيد الهمزات
-    normalized = _normalizeHamza(normalized);
+      // توحيد الهمزات
+      normalized = _normalizeHamza(normalized);
 
-    // توحيد الألفات
-    normalized = _normalizeAlef(normalized);
+      // توحيد الألفات
+      normalized = _normalizeAlef(normalized);
 
-    // توحيد التاء
-    normalized = _normalizeTa(normalized);
+      // توحيد التاء
+      normalized = _normalizeTa(normalized);
 
-    // توحيد الياء
-    normalized = _normalizeYa(normalized);
+      // توحيد الياء
+      normalized = _normalizeYa(normalized);
 
-    // إزالة المسافات الزائدة
-    normalized = normalized.trim().replaceAll(RegExp(r'\s+'), ' ');
+      // إزالة المسافات الزائدة
+      normalized = normalized.trim().replaceAll(RegExp(r'\s+'), ' ');
 
-    return normalized;
+      return normalized;
+    } catch (e) {
+      print('⚠️ خطأ في تطبيع النص: $e');
+      return text.trim();
+    }
   }
 
   /// إزالة التشكيل والحركات
