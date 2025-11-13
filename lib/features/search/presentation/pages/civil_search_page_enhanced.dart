@@ -90,11 +90,26 @@ class _CivilSearchPageEnhancedState
             ),
             child: Stack(
               children: [
-                // Background pattern (simplified for performance)
+                // Background pattern with logo
                 Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.05,
-                    child: CustomPaint(painter: _GridPainter()),
+                  child: Stack(
+                    children: [
+                      // Grid pattern
+                      Opacity(
+                        opacity: 0.05,
+                        child: CustomPaint(painter: _GridPainter()),
+                      ),
+                      // Logo/Icon
+                      Positioned(
+                        top: 60.h,
+                        left: 20.w,
+                        child: Icon(
+                          Icons.account_balance,
+                          size: 40.sp,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 // Statistics
@@ -203,7 +218,7 @@ class _CivilSearchPageEnhancedState
             Text(
               'ابحث عن مواطن',
               style: TextStyle(
-                fontSize: rv.fontSize + 2,
+                fontSize: 18.sp,
                 fontWeight: FontWeight.bold,
                 color: Colors.grey.shade800,
               ),
@@ -281,7 +296,7 @@ class _CivilSearchPageEnhancedState
                   child: Text(
                     'الفلاتر النشطة',
                     style: TextStyle(
-                      fontSize: rv.fontSize - 2,
+                      fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
                       color: Colors.amber.shade900,
                     ),

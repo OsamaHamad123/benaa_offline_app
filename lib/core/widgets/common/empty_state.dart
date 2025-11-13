@@ -34,7 +34,7 @@ class EmptyState extends StatelessWidget {
     final isMobile = mediaQuery.size.width < 600;
 
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all((isCompact ? 24 : 32).r),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

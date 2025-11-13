@@ -1,24 +1,26 @@
+import '../datasources/civil_registry_database.dart';
 import '../../domain/entities/civil_person.dart';
 import '../../domain/entities/search_entities.dart';
 import '../../domain/repositories/civil_search_repository.dart';
-import '../datasources/civil_registry_local_datasource.dart';
 
-/// 📦 Civil Search Repository Implementation
+/// 📦 Civil Search Repository Implementation - Direct SQLite 🚀
 ///
-/// Implements the repository interface using local data source.
+/// ✅ Uses CivilRegistryDatabase with direct SQLite access
+/// ⚡ Performance: Fast searches on downloaded civil_registry.db
+/// 🔥 Optimized with indexes
 class CivilSearchRepositoryImpl implements CivilSearchRepository {
-  final CivilRegistryLocalDataSource dataSource;
+  final CivilRegistryDatabase database;
 
-  const CivilSearchRepositoryImpl(this.dataSource);
+  const CivilSearchRepositoryImpl(this.database);
 
   @override
   Future<void> initialize() async {
-    await dataSource.initialize();
+    // Database initializes on first access
   }
 
   @override
   Future<CivilPerson?> searchByNationalId(String nationalId) async {
-    return await dataSource.searchByNationalId(nationalId);
+    return await database.searchByNationalId(nationalId);
   }
 
   @override
@@ -32,10 +34,10 @@ class CivilSearchRepositoryImpl implements CivilSearchRepository {
     final offset = (page - 1) * pageSize;
 
     // Get one extra result to check if there are more
-    final results = await dataSource.searchByName(
-      query: query,
+    final results = await database.searchByName(
+      query,
+      governorate: filter.governorate,
       genderCode: filter.gender?.code,
-      city: filter.governorate,
       limit: pageSize + 1,
       offset: offset,
     );
@@ -48,10 +50,10 @@ class CivilSearchRepositoryImpl implements CivilSearchRepository {
     int totalResults = persons.length;
     if (page == 1 && persons.isNotEmpty) {
       // Only count on first page to avoid overhead
-      totalResults = await dataSource.getSearchCount(
-        query: query,
+      totalResults = await database.getSearchCount(
+        query,
+        governorate: filter.governorate,
         genderCode: filter.gender?.code,
-        city: filter.governorate,
       );
     }
 
@@ -65,7 +67,7 @@ class CivilSearchRepositoryImpl implements CivilSearchRepository {
 
   @override
   Future<SearchStatistics> getStatistics() async {
-    final stats = await dataSource.getStatistics();
+    final stats = await database.getStatistics();
 
     return SearchStatistics(
       totalPersons: stats['total'] as int? ?? 0,
@@ -80,6 +82,6 @@ class CivilSearchRepositoryImpl implements CivilSearchRepository {
 
   @override
   Future<void> dispose() async {
-    await dataSource.dispose();
+    // Database will be closed when app terminates
   }
 }

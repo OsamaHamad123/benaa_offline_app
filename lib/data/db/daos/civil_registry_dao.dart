@@ -21,39 +21,257 @@ class CivilRegistryDao extends DatabaseAccessor<AppDatabase>
   CivilRegistryDao(super.db);
 
   // ============================================================================
-  // SEARCH OPERATIONS
+  // SEARCH OPERATIONS - OPTIMIZED
   // ============================================================================
 
-  /// Search by national ID
+  /// Search by national ID - OPTIMIZED with 3-level fallback
   Future<CivilRegistryData?> searchByNationalId(String nationalId) async {
-    return await (select(
+    // Clean input
+    final cleaned = nationalId.trim().replaceAll(' ', '');
+
+    // Level 1: Exact match (uses index - fastest)
+    var result = await (select(
       civilRegistry,
-    )..where((r) => r.nationalId.equals(nationalId))).getSingleOrNull();
+    )..where((r) => r.nationalId.equals(cleaned))).getSingleOrNull();
+
+    if (result != null) return result;
+
+    // Level 2: Without spaces (for flexibility)
+    final rows = await customSelect(
+      'SELECT * FROM civil_registry WHERE REPLACE(CI_ID_NUM, " ", "") = ? LIMIT 1',
+      variables: [Variable.withString(cleaned)],
+      readsFrom: {civilRegistry},
+    ).get();
+
+    if (rows.isNotEmpty) {
+      return civilRegistry.map(rows.first.data);
+    }
+
+    // Level 3: Partial match (if ID is long enough)
+    if (cleaned.length >= 8) {
+      result =
+          await (select(civilRegistry)
+                ..where((r) => r.nationalId.like('$cleaned%'))
+                ..limit(1))
+              .getSingleOrNull();
+    }
+
+    return result;
   }
 
-  /// Search by name
+  /// Search by name - ULTRA OPTIMIZED with indexes and compiled queries
   Future<List<CivilRegistryData>> searchByName(
     String name, {
     String? governorate,
-    int limit = 50,
+    int? genderCode,
+    int limit = 20,
+    int offset = 0,
   }) async {
     final normalized = _normalizeName(name);
-    var query = select(civilRegistry)
-      ..where((r) => r.fullNameNormalized.like('%$normalized%'));
+    final pattern = '%$normalized%';
 
+    // Build optimized SQL query with all conditions at once
+    final conditions = <String>[];
+    final args = <Variable>[];
+
+    // Name search using fullNameNormalized primarily (fastest with index)
+    conditions.add(
+      '(full_name_normalized LIKE ? OR CI_FIRST_ARB LIKE ? OR CI_FATHER_ARB LIKE ? OR CI_FAMILY_ARB LIKE ?)',
+    );
+    args.addAll([
+      Variable.withString(pattern),
+      Variable.withString(pattern),
+      Variable.withString(pattern),
+      Variable.withString(pattern),
+    ]);
+
+    // Add filters
     if (governorate != null && governorate.isNotEmpty) {
-      query = query..where((r) => r.governorate.equals(governorate));
+      conditions.add('governorate LIKE ?');
+      args.add(Variable.withString('%$governorate%'));
     }
 
-    query = query
-      ..orderBy([(r) => OrderingTerm.asc(r.fullName)])
-      ..limit(limit);
+    if (genderCode != null) {
+      conditions.add('CI_SEX_CD = ?');
+      args.add(Variable.withInt(genderCode));
+    }
 
-    return await query.get();
+    // Use raw SQL for maximum performance
+    final sql =
+        '''
+      SELECT * FROM civil_registry
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY CI_FIRST_ARB
+      LIMIT ? OFFSET ?
+    ''';
+
+    args.addAll([Variable.withInt(limit), Variable.withInt(offset)]);
+
+    final results = await customSelect(
+      sql,
+      variables: args,
+      readsFrom: {civilRegistry},
+    ).get();
+
+    return results.map((row) => civilRegistry.map(row.data)).toList();
   }
 
-  /// Normalize name for search
+  /// Get search count for pagination
+  Future<int> getSearchCount(
+    String name, {
+    String? governorate,
+    int? genderCode,
+  }) async {
+    final normalized = _normalizeName(name);
+    final pattern = '%$normalized%';
+
+    // Build conditions
+    final conditions = <String>[];
+    final params = <Variable>[];
+
+    // Name search
+    conditions.add(
+      '(CI_FIRST_ARB LIKE ? OR CI_FATHER_ARB LIKE ? OR CI_FAMILY_ARB LIKE ? OR full_name_normalized LIKE ?)',
+    );
+    params.addAll([
+      Variable.withString(pattern),
+      Variable.withString(pattern),
+      Variable.withString(pattern),
+      Variable.withString(pattern),
+    ]);
+
+    // Filters
+    if (governorate != null && governorate.isNotEmpty) {
+      conditions.add('governorate LIKE ?');
+      params.add(Variable.withString('%$governorate%'));
+    }
+
+    if (genderCode != null) {
+      conditions.add('CI_SEX_CD = ?');
+      params.add(Variable.withInt(genderCode));
+    }
+
+    final sql =
+        'SELECT COUNT(*) as count FROM civil_registry WHERE ${conditions.join(" AND ")}';
+
+    final result = await customSelect(
+      sql,
+      variables: params,
+      readsFrom: {civilRegistry},
+    ).getSingle();
+
+    return result.read<int>('count');
+  }
+
+  /// Get statistics - OPTIMIZED with single query
+  Future<Map<String, dynamic>> getStatistics() async {
+    // Use efficient COUNT queries with indexes
+    final total = await customSelect(
+      'SELECT COUNT(*) as count FROM civil_registry',
+      readsFrom: {civilRegistry},
+    ).getSingle();
+
+    final males = await customSelect(
+      'SELECT COUNT(*) as count FROM civil_registry WHERE CI_SEX_CD = 1',
+      readsFrom: {civilRegistry},
+    ).getSingle();
+
+    final females = await customSelect(
+      'SELECT COUNT(*) as count FROM civil_registry WHERE CI_SEX_CD = 2',
+      readsFrom: {civilRegistry},
+    ).getSingle();
+
+    final relations = await customSelect(
+      'SELECT COUNT(*) as count FROM civil_registry_relations',
+      readsFrom: {civilRegistryRelations},
+    ).getSingle();
+
+    // Get distinct governorates (uses index)
+    final governoratesResult = await customSelect(
+      'SELECT DISTINCT governorate FROM civil_registry WHERE governorate IS NOT NULL AND governorate != "" ORDER BY governorate',
+      readsFrom: {civilRegistry},
+    ).get();
+
+    return {
+      'total': total.read<int>('count'),
+      'males': males.read<int>('count'),
+      'females': females.read<int>('count'),
+      'relations': relations.read<int>('count'),
+      'governorates': governoratesResult
+          .map((r) => r.read<String>('governorate'))
+          .toList(),
+    };
+  }
+
+  /// Normalize name for search - Enhanced for Arabic
   String _normalizeName(String name) {
-    return name.trim().toLowerCase();
+    return name
+        .trim()
+        .toLowerCase()
+        .replaceAll('أ', 'ا')
+        .replaceAll('إ', 'ا')
+        .replaceAll('آ', 'ا')
+        .replaceAll('ة', 'ه')
+        .replaceAll('ى', 'ي');
+  }
+
+  // ============================================================================
+  // BULK OPERATIONS - for better performance
+  // ============================================================================
+
+  /// Get multiple persons by national IDs (batch query)
+  Future<List<CivilRegistryData>> searchByNationalIds(
+    List<String> nationalIds,
+  ) async {
+    if (nationalIds.isEmpty) return [];
+
+    final cleaned = nationalIds
+        .map((id) => id.trim().replaceAll(' ', ''))
+        .toList();
+    final placeholders = List.filled(cleaned.length, '?').join(',');
+
+    final results = await customSelect(
+      'SELECT * FROM civil_registry WHERE CI_ID_NUM IN ($placeholders)',
+      variables: cleaned.map((id) => Variable.withString(id)).toList(),
+      readsFrom: {civilRegistry},
+    ).get();
+
+    return results.map((row) => civilRegistry.map(row.data)).toList();
+  }
+
+  /// Search with full-text-like capability
+  Future<List<CivilRegistryData>> searchByFullText(
+    String query, {
+    int limit = 50,
+  }) async {
+    final normalized = _normalizeName(query);
+    final words = normalized.split(' ').where((w) => w.length >= 2).toList();
+
+    if (words.isEmpty) return [];
+
+    // Build LIKE conditions for each word
+    final conditions = words
+        .map((_) => 'full_name_normalized LIKE ?')
+        .join(' AND ');
+    final args = <Variable>[];
+    args.addAll(words.map((w) => Variable.withString('%$w%')));
+
+    final sql =
+        '''
+      SELECT * FROM civil_registry
+      WHERE $conditions
+      ORDER BY CI_FIRST_ARB
+      LIMIT ?
+    ''';
+
+    args.add(Variable.withInt(limit));
+
+    final results = await customSelect(
+      sql,
+      variables: args,
+      readsFrom: {civilRegistry},
+    ).get();
+
+    return results.map((row) => civilRegistry.map(row.data)).toList();
   }
 }

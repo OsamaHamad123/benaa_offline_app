@@ -1,36 +1,36 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../data/datasources/civil_registry_local_datasource.dart';
+import '../../data/datasources/civil_registry_database.dart';
 import '../../data/repositories/civil_search_repository_impl.dart';
 import '../../domain/repositories/civil_search_repository.dart';
 import '../../domain/usecases/get_statistics.dart';
 import '../../domain/usecases/search_by_name.dart';
 import '../../domain/usecases/search_by_national_id.dart';
 
-/// 🏗️ Dependency Injection Providers
+/// 🏗️ Dependency Injection Providers - Direct SQLite Access 🚀
 ///
 /// Following Clean Architecture principles:
-/// Data Source → Repository → Use Cases → State
+/// CivilRegistryDatabase (SQLite) → Repository → Use Cases → State
+/// ⚡ Performance: Direct access to downloaded civil_registry.db
 
-// Data Layer
-final civilRegistryDataSourceProvider = Provider<CivilRegistryLocalDataSource>((
-  ref,
-) {
-  final dataSource = CivilRegistryLocalDataSource();
-  // Initialize on first access
-  dataSource.initialize();
+// ============================================================================
+// DATA ACCESS LAYER (Database)
+// ============================================================================
 
-  // Clean up when no longer needed
-  ref.onDispose(() {
-    dataSource.dispose();
-  });
-
-  return dataSource;
+/// Provides CivilRegistryDatabase instance
+/// Direct SQLite access to downloaded civil_registry.db file
+final civilRegistryDatabaseProvider = Provider<CivilRegistryDatabase>((ref) {
+  return CivilRegistryDatabase.instance;
 });
 
-// Repository Layer
+// ============================================================================
+// REPOSITORY LAYER
+// ============================================================================
+
+/// Provides CivilSearchRepository implementation
+/// 🔥 Fast searches with direct SQLite access
 final civilSearchRepositoryProvider = Provider<CivilSearchRepository>((ref) {
-  final dataSource = ref.watch(civilRegistryDataSourceProvider);
-  return CivilSearchRepositoryImpl(dataSource);
+  final database = ref.watch(civilRegistryDatabaseProvider);
+  return CivilSearchRepositoryImpl(database);
 });
 
 // Use Cases Layer

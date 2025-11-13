@@ -8,6 +8,8 @@ import '../features/beneficiaries/presentation/pages/beneficiary_form_page.dart'
 import '../features/beneficiaries/view_beneficiary_page.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
 import '../features/civil_registry/civil_registry_test_page.dart';
+import '../features/civil_db_download/presentation/pages/welcome_page.dart';
+import '../features/civil_db_download/presentation/pages/download_civil_db_page.dart';
 import '../features/sync/sync_page.dart';
 import '../features/sync/import_test_data_page.dart';
 import '../features/sync/test_sync_page.dart';
@@ -17,14 +19,16 @@ import '../core/storage/secure_store.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: '/init',
+    initialLocation: '/welcome',
     redirect: (context, state) async {
       final isGoingToInit = state.matchedLocation == '/init';
+      final isGoingToWelcome = state.matchedLocation == '/welcome';
+      final isGoingToDownload = state.matchedLocation == '/download-civil-db';
       final isAuth = await SecureStore.isAuthenticated();
       final isGoingToLogin = state.matchedLocation == '/login';
 
-      // السماح بالذهاب لصفحة التهيئة
-      if (isGoingToInit) {
+      // السماح بالذهاب لصفحات التهيئة والتحميل
+      if (isGoingToInit || isGoingToWelcome || isGoingToDownload) {
         return null;
       }
 
@@ -42,6 +46,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/init',
         builder: (context, state) => const InitializationPage(),
+      ),
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomePage(),
+      ),
+      GoRoute(
+        path: '/download-civil-db',
+        builder: (context, state) => const DownloadCivilDbPage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
