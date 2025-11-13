@@ -251,9 +251,10 @@ class DailyPerformanceSection extends ConsumerWidget {
   }
 
   Future<Map<String, dynamic>> _loadPerformanceData(database) async {
-    final visitsToday = await database.countVisitsToday();
-    final newBeneficiariesToday = await database.countNewBeneficiariesToday();
-    final avgVisitsPerDay = await database.getAverageVisitsPerDay(7);
+    final visitsToday = await database.visitsDao.countVisitsToday();
+    final newBeneficiariesToday = await database.beneficiariesDao
+        .countNewBeneficiariesToday();
+    final avgVisitsPerDay = await database.visitsDao.getAverageVisitsPerDay(7);
 
     return {
       'visitsToday': visitsToday,

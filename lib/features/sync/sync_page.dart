@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/common_widgets.dart';
 
@@ -148,7 +147,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
 
           // Pending Items
           FutureBuilder<int>(
-            future: database.countPendingSync(),
+            future: database.beneficiariesDao.countPendingSync(),
             builder: (context, snapshot) {
               final pendingCount = snapshot.data ?? 0;
 

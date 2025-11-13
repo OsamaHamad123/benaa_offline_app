@@ -324,7 +324,7 @@ class AttachmentsManager {
 
     if (attachment != null) {
       // حفظ في قاعدة البيانات
-      await database.addAttachment(
+      await database.attachmentsDao.addAttachment(
         AttachmentsCompanion(
           id: drift.Value(const Uuid().v4()),
           beneficiaryId: drift.Value(beneficiaryId),
@@ -351,7 +351,7 @@ class AttachmentsManager {
 
     if (success) {
       // حذف من قاعدة البيانات
-      await database.deleteAttachment(attachment.id);
+      await database.attachmentsDao.deleteAttachment(attachment.id);
     }
 
     return success;
@@ -362,9 +362,8 @@ class AttachmentsManager {
     required String beneficiaryId,
     required AppDatabase database,
   }) async {
-    final dbAttachments = await database.getBeneficiaryAttachments(
-      beneficiaryId,
-    );
+    final dbAttachments = await database.attachmentsDao
+        .getBeneficiaryAttachments(beneficiaryId);
 
     return dbAttachments
         .map(

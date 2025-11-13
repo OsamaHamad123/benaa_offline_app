@@ -381,7 +381,9 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
     }
 
     try {
-      var beneficiaries = await database.searchBeneficiaries(_searchQuery);
+      var beneficiaries = await database.beneficiariesDao.searchBeneficiaries(
+        _searchQuery,
+      );
 
       if (_selectedCategory != 'all') {
         beneficiaries = beneficiaries
@@ -471,8 +473,8 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
 
   Future<Map<String, int>> _getStatistics(AppDatabase database) async {
     final results = await Future.wait([
-      database.countBeneficiaries(),
-      database.countPendingSync(),
+      database.beneficiariesDao.countBeneficiaries(),
+      database.beneficiariesDao.countPendingSync(),
     ]);
 
     return {'total': results[0], 'pending': results[1]};
@@ -832,7 +834,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
     if (confirmed == true && mounted) {
       try {
         final database = ref.read(databaseProvider);
-        await database.deleteBeneficiary(beneficiary.id);
+        await database.beneficiariesDao.deleteBeneficiary(beneficiary.id);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

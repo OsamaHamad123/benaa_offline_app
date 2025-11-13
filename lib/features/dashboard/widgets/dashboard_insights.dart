@@ -12,7 +12,7 @@ class PendingSyncAlert extends ConsumerWidget {
     final database = ref.watch(databaseProvider);
 
     return FutureBuilder<int>(
-      future: database.countPendingSync(),
+      future: database.beneficiariesDao.countPendingSync(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data == 0) {
           return const SizedBox.shrink();
@@ -130,7 +130,7 @@ class DataQualityScore extends ConsumerWidget {
     final database = ref.watch(databaseProvider);
 
     return FutureBuilder<int>(
-      future: database.countBeneficiaries(),
+      future: database.beneficiariesDao.countBeneficiaries(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox.shrink();

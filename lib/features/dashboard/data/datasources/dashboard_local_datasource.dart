@@ -14,7 +14,6 @@ class DashboardLocalDataSource {
   // Cache keys
   static const String _statsCacheKey = 'dashboard_stats_v2';
   static const String _todayStatsCacheKey = 'today_stats_v2';
-  static const String _cacheTimeKey = 'dashboard_cache_time';
 
   // Cache duration: 5 minutes for full stats, 2 minutes for today stats
   static const Duration _fullStatsCacheDuration = Duration(minutes: 5);
@@ -76,9 +75,9 @@ class DashboardLocalDataSource {
 
     // Fetch from database with parallel queries for performance
     final results = await Future.wait([
-      database.countBeneficiaries(),
+      database.beneficiariesDao.countBeneficiaries(),
       _getActiveBeneficiariesCount(),
-      database.countPendingSync(),
+      database.beneficiariesDao.countPendingSync(),
       _getCompletedVisitstodayCount(),
       _getCategoryCounts(),
       _getGrowthData(),
@@ -121,15 +120,15 @@ class DashboardLocalDataSource {
     final results = await Future.wait([
       _getNewBeneficiariesToday(startOfDay),
       _getCompletedVisitstodayCount(),
-      database.countPendingSync(),
+      database.beneficiariesDao.countPendingSync(),
       _getSyncedRecordsToday(startOfDay),
     ]);
 
     final stats = TodayStatsModel(
-      newBeneficiaries: results[0] as int,
-      completedVisits: results[1] as int,
-      pendingTasks: results[2] as int,
-      syncedRecords: results[3] as int,
+      newBeneficiaries: results[0],
+      completedVisits: results[1],
+      pendingTasks: results[2],
+      syncedRecords: results[3],
     );
 
     await _cacheData(_todayStatsCacheKey, stats.toJson());
@@ -234,7 +233,9 @@ class DashboardLocalDataSource {
   Future<Map<String, int>> _getCategoryCounts() async {
     final categories = ['orphan', 'widow', 'poor', 'disabled'];
     final counts = await Future.wait(
-      categories.map((cat) => database.countBeneficiariesByCategory(cat)),
+      categories.map(
+        (cat) => database.beneficiariesDao.countBeneficiariesByCategory(cat),
+      ),
     );
 
     return Map.fromIterables(categories, counts);

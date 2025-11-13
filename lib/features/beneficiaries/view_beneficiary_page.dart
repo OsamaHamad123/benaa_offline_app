@@ -20,7 +20,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     final database = ref.watch(core_providers.databaseProvider);
 
     return FutureBuilder<Beneficiary?>(
-      future: database.getBeneficiaryById(beneficiaryId),
+      future: database.beneficiariesDao.getBeneficiaryById(beneficiaryId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
@@ -771,7 +771,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
 
     if (confirmed == true && context.mounted) {
       try {
-        await database.deleteBeneficiary(beneficiaryId);
+        await database.beneficiariesDao.deleteBeneficiary(beneficiaryId);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

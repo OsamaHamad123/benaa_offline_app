@@ -4174,7 +4174,7 @@ class TaxonomiesCompanion extends UpdateCompanion<Taxonomy> {
 }
 
 class $SyncQueueTable extends SyncQueue
-    with TableInfo<$SyncQueueTable, SyncQueueData> {
+    with TableInfo<$SyncQueueTable, SyncQueueItem> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -4307,7 +4307,7 @@ class $SyncQueueTable extends SyncQueue
   static const String $name = 'sync_queue';
   @override
   VerificationContext validateIntegrity(
-    Insertable<SyncQueueData> instance, {
+    Insertable<SyncQueueItem> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -4390,9 +4390,9 @@ class $SyncQueueTable extends SyncQueue
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  SyncQueueData map(Map<String, dynamic> data, {String? tablePrefix}) {
+  SyncQueueItem map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SyncQueueData(
+    return SyncQueueItem(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -4442,7 +4442,7 @@ class $SyncQueueTable extends SyncQueue
   }
 }
 
-class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
+class SyncQueueItem extends DataClass implements Insertable<SyncQueueItem> {
   final String id;
   final String entity;
   final String entityId;
@@ -4453,7 +4453,7 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
   final String? lastError;
   final DateTime createdAt;
   final DateTime? scheduledAt;
-  const SyncQueueData({
+  const SyncQueueItem({
     required this.id,
     required this.entity,
     required this.entityId,
@@ -4504,12 +4504,12 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
     );
   }
 
-  factory SyncQueueData.fromJson(
+  factory SyncQueueItem.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SyncQueueData(
+    return SyncQueueItem(
       id: serializer.fromJson<String>(json['id']),
       entity: serializer.fromJson<String>(json['entity']),
       entityId: serializer.fromJson<String>(json['entityId']),
@@ -4539,7 +4539,7 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
     };
   }
 
-  SyncQueueData copyWith({
+  SyncQueueItem copyWith({
     String? id,
     String? entity,
     String? entityId,
@@ -4550,7 +4550,7 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
     Value<String?> lastError = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> scheduledAt = const Value.absent(),
-  }) => SyncQueueData(
+  }) => SyncQueueItem(
     id: id ?? this.id,
     entity: entity ?? this.entity,
     entityId: entityId ?? this.entityId,
@@ -4562,8 +4562,8 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
     createdAt: createdAt ?? this.createdAt,
     scheduledAt: scheduledAt.present ? scheduledAt.value : this.scheduledAt,
   );
-  SyncQueueData copyWithCompanion(SyncQueueCompanion data) {
-    return SyncQueueData(
+  SyncQueueItem copyWithCompanion(SyncQueueCompanion data) {
+    return SyncQueueItem(
       id: data.id.present ? data.id.value : this.id,
       entity: data.entity.present ? data.entity.value : this.entity,
       entityId: data.entityId.present ? data.entityId.value : this.entityId,
@@ -4581,7 +4581,7 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
 
   @override
   String toString() {
-    return (StringBuffer('SyncQueueData(')
+    return (StringBuffer('SyncQueueItem(')
           ..write('id: $id, ')
           ..write('entity: $entity, ')
           ..write('entityId: $entityId, ')
@@ -4612,7 +4612,7 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is SyncQueueData &&
+      (other is SyncQueueItem &&
           other.id == this.id &&
           other.entity == this.entity &&
           other.entityId == this.entityId &&
@@ -4625,7 +4625,7 @@ class SyncQueueData extends DataClass implements Insertable<SyncQueueData> {
           other.scheduledAt == this.scheduledAt);
 }
 
-class SyncQueueCompanion extends UpdateCompanion<SyncQueueData> {
+class SyncQueueCompanion extends UpdateCompanion<SyncQueueItem> {
   final Value<String> id;
   final Value<String> entity;
   final Value<String> entityId;
@@ -4668,7 +4668,7 @@ class SyncQueueCompanion extends UpdateCompanion<SyncQueueData> {
        operation = Value(operation),
        payload = Value(payload),
        createdAt = Value(createdAt);
-  static Insertable<SyncQueueData> custom({
+  static Insertable<SyncQueueItem> custom({
     Expression<String>? id,
     Expression<String>? entity,
     Expression<String>? entityId,
@@ -9247,6 +9247,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CivilRegistryPersonalCodeTable(this);
   late final $ActivitiesTable activities = $ActivitiesTable(this);
   late final $DataRequestsTable dataRequests = $DataRequestsTable(this);
+  late final BeneficiariesDao beneficiariesDao = BeneficiariesDao(
+    this as AppDatabase,
+  );
+  late final VisitsDao visitsDao = VisitsDao(this as AppDatabase);
+  late final AttachmentsDao attachmentsDao = AttachmentsDao(
+    this as AppDatabase,
+  );
+  late final CivilRegistryDao civilRegistryDao = CivilRegistryDao(
+    this as AppDatabase,
+  );
+  late final SyncDao syncDao = SyncDao(this as AppDatabase);
+  late final TrackingDao trackingDao = TrackingDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11306,17 +11318,17 @@ class $$SyncQueueTableTableManager
         RootTableManager<
           _$AppDatabase,
           $SyncQueueTable,
-          SyncQueueData,
+          SyncQueueItem,
           $$SyncQueueTableFilterComposer,
           $$SyncQueueTableOrderingComposer,
           $$SyncQueueTableAnnotationComposer,
           $$SyncQueueTableCreateCompanionBuilder,
           $$SyncQueueTableUpdateCompanionBuilder,
           (
-            SyncQueueData,
-            BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueData>,
+            SyncQueueItem,
+            BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueItem>,
           ),
-          SyncQueueData,
+          SyncQueueItem,
           PrefetchHooks Function()
         > {
   $$SyncQueueTableTableManager(_$AppDatabase db, $SyncQueueTable table)
@@ -11394,17 +11406,17 @@ typedef $$SyncQueueTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $SyncQueueTable,
-      SyncQueueData,
+      SyncQueueItem,
       $$SyncQueueTableFilterComposer,
       $$SyncQueueTableOrderingComposer,
       $$SyncQueueTableAnnotationComposer,
       $$SyncQueueTableCreateCompanionBuilder,
       $$SyncQueueTableUpdateCompanionBuilder,
       (
-        SyncQueueData,
-        BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueData>,
+        SyncQueueItem,
+        BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueItem>,
       ),
-      SyncQueueData,
+      SyncQueueItem,
       PrefetchHooks Function()
     >;
 typedef $$CivilRegistryTableCreateCompanionBuilder =

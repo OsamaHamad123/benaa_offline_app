@@ -5,311 +5,18 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../core/storage/secure_store.dart';
 
+// Import all table definitions
+import 'tables/tables.dart';
+
+// Import all DAOs
+import 'daos/beneficiaries_dao.dart';
+import 'daos/visits_dao.dart';
+import 'daos/attachments_dao.dart';
+import 'daos/civil_registry_dao.dart';
+import 'daos/sync_dao.dart';
+import 'daos/tracking_dao.dart';
+
 part 'drift_database.g.dart';
-
-// Beneficiaries table - المستفيدين
-class Beneficiaries extends Table {
-  TextColumn get id => text()(); // Local UUID
-  TextColumn get fullName => text()();
-  TextColumn get fullNameNorm => text()(); // للبحث المحلي
-  TextColumn get nationalId => text()();
-  TextColumn get fileNo => text()();
-  TextColumn get governorate => text()();
-  TextColumn get district => text().nullable()(); // القضاء
-  TextColumn get address => text().nullable()(); // العنوان الكامل
-  TextColumn get phoneNumber => text().nullable()(); // رقم الهاتف
-  TextColumn get motherName => text().nullable()(); // اسم الأم
-  TextColumn get fatherName => text().nullable()(); // اسم الأب
-  TextColumn get grandFatherName => text().nullable()(); // اسم الجد
-  TextColumn get familyName => text().nullable()(); // اسم العائلة
-  TextColumn get altPhoneNumber => text().nullable()(); // رقم هاتف بديل
-  IntColumn get familySize => integer().nullable()(); // عدد أفراد الأسرة
-  TextColumn get gender => text()(); // 'male', 'female'
-  TextColumn get category => text()();
-  DateTimeColumn get birthDate => dateTime().nullable()();
-  TextColumn get maritalStatus => text().nullable()(); // الحالة الاجتماعية
-  TextColumn get educationLevel => text().nullable()(); // المستوى التعليمي
-  TextColumn get healthStatus => text().nullable()(); // الحالة الصحية
-  BoolColumn get hasDisability =>
-      boolean().withDefault(const Constant(false))(); // لديه إعاقة
-  // حقول إضافية من Backend
-  IntColumn get displacementStatus => integer().nullable()(); // حالة النزوح
-  TextColumn get addressBeforeDisplacement =>
-      text().nullable()(); // عنوان قبل النزوح
-  TextColumn get currentAddress => text().nullable()(); // العنوان الحالي
-  IntColumn get numberOfMales => integer().nullable()(); // عدد الذكور
-  IntColumn get numberOfFemales => integer().nullable()(); // عدد الإناث
-  IntColumn get chronicDiseasesCount =>
-      integer().nullable()(); // عدد المصابين بأمراض مزمنة
-  IntColumn get specialNeedsCount =>
-      integer().nullable()(); // عدد ذوي الاحتياجات الخاصة
-  IntColumn get employmentStatus => integer().nullable()(); // حالة توظيف المعيل
-  IntColumn get housingStatus => integer().nullable()(); // حالة السكن
-  IntColumn get housingType => integer().nullable()(); // نوع السكن
-  IntColumn get requestStatus => integer().nullable()(); // حالة الطلب
-
-  TextColumn get notes => text().withDefault(const Constant(''))();
-  TextColumn get associationName => text().nullable()();
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState => text().withDefault(
-    const Constant('pending'),
-  )(); // 'pending', 'synced', 'failed', 'syncing'
-  TextColumn get serverId => text().nullable()(); // ID من السيرفر بعد المزامنة
-  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Visits table - الزيارات
-class Visits extends Table {
-  TextColumn get id => text()();
-  TextColumn get beneficiaryId => text()();
-  DateTimeColumn get visitDate => dateTime()();
-  TextColumn get staffName => text()();
-  TextColumn get notes => text().withDefault(const Constant(''))();
-  BoolColumn get isSubmitted => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState => text().withDefault(const Constant('pending'))();
-  TextColumn get serverId => text().nullable()(); // ID من السيرفر بعد المزامنة
-  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Attachments table - المرفقات
-class Attachments extends Table {
-  TextColumn get id => text()();
-  TextColumn get beneficiaryId => text()();
-  TextColumn get visitId => text().nullable()();
-  TextColumn get fileName => text()(); // اسم الملف
-  TextColumn get filePath => text()(); // المسار الكامل
-  TextColumn get type => text()(); // 'image', 'pdf', 'other'
-  IntColumn get fileSize => integer()(); // حجم الملف بالبايت
-  TextColumn get thumbnailPath => text().nullable()(); // مسار الصورة المصغرة
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState => text().withDefault(const Constant('pending'))();
-  TextColumn get serverUrl => text().nullable()(); // URL على السيرفر بعد الرفع
-  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Taxonomies table - التصنيفات (governorates, categories, etc.)
-class Taxonomies extends Table {
-  TextColumn get id => text()();
-  TextColumn get group => text()(); // 'governorate', 'category', 'gender'
-  TextColumn get code => text()();
-  TextColumn get label => text()();
-  TextColumn get parentId => text().nullable()(); // للتصنيفات الهرمية
-  IntColumn get sortOrder =>
-      integer().withDefault(const Constant(0))(); // ترتيب العرض
-  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Sync queue table - طابور المزامنة
-class SyncQueue extends Table {
-  TextColumn get id => text()();
-  TextColumn get entity => text()(); // 'beneficiary', 'visit', 'attachment'
-  TextColumn get entityId => text()();
-  TextColumn get operation =>
-      text()(); // 'create', 'update', 'delete', 'upload'
-  TextColumn get payload => text()(); // JSON
-  IntColumn get priority => integer().withDefault(
-    const Constant(0),
-  )(); // 10=Auth, 9=Beneficiary, 8=Visit, 7=Attachment
-  IntColumn get attempts => integer().withDefault(const Constant(0))();
-  TextColumn get lastError => text().nullable()();
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get scheduledAt =>
-      dateTime().nullable()(); // لإعادة المحاولة لاحقاً
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Civil Registry table - السجل المدني (read-only, من قاعدة البيانات الرئيسية)
-// Schema من: civilregistry.persons + civilregistry.ci_birth_cd + civilregistry.city + etc.
-class CivilRegistry extends Table {
-  // من جدول persons - معلومات شخصية أساسية
-  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
-  TextColumn get nationalId =>
-      text().named('CI_ID_NUM')(); // bigint(20) - الرقم الوطني
-  TextColumn get firstName =>
-      text().named('CI_FIRST_ARB')(); // varchar(255) - الاسم الأول
-  TextColumn get fatherName =>
-      text().named('CI_FATHER_ARB')(); // varchar(255) - اسم الأب
-  TextColumn get grandFatherName =>
-      text().named('CI_GRAND_FATHER_ARB')(); // varchar(255) - اسم الجد
-  TextColumn get familyName =>
-      text().named('CI_FAMILY_ARB')(); // varchar(255) - اسم العائلة
-
-  // معلومات الولادة - من ci_birth_cd و ci_birth_tb_cd
-  IntColumn get birthCertificateId =>
-      integer().nullable().named('CI_BIRTH_TB_CD')(); // bigint(20)
-  IntColumn get birthCodeId =>
-      integer().nullable().named('CI_BIRTH_CD')(); // bigint(20)
-  DateTimeColumn get birthDate =>
-      dateTime().nullable().named('CI_BIRTH_DT')(); // date
-  IntColumn get sexCode =>
-      integer().nullable().named('CI_SEX_CD')(); // int(11) - 1=ذكر, 2=أنثى
-
-  // المعلومات الشخصية - من ci_personal_cd
-  IntColumn get personalCodeId =>
-      integer().nullable().named('CI_PERSONAL_CD')(); // bigint(20)
-  IntColumn get deadDate =>
-      integer().nullable().named('CI_DEAD_DT')(); // bigint(20) - تاريخ الوفاة
-
-  // اسم الأم
-  TextColumn get motherName =>
-      text().nullable().named('MOTHER_NAME1')(); // varchar(255)
-
-  // معلومات العنوان - من city
-  IntColumn get cityId => integer().nullable().named('CITY')(); // bigint(20)
-  TextColumn get cityName => text().nullable()(); // من جدول city
-  TextColumn get street => text().nullable().named('STREET')(); // varchar(255)
-  TextColumn get houseNo =>
-      text().nullable().named('HOUSE_NO')(); // varchar(255)
-
-  // العلاقات - من relations و category_of_relations
-  IntColumn get relationId =>
-      integer().nullable().named('CF_ID_NUM')(); // bigint(20) - ID العلاقة
-  IntColumn get relativeCodeId => integer().nullable().named(
-    'CF_RELATIVE_CD',
-  )(); // bigint(20) - نوع العلاقة
-  IntColumn get relativeId => integer().nullable().named(
-    'CF_ID_RELATIVE',
-  )(); // bigint(20) - ID الشخص المرتبط
-
-  // حقول إضافية للبحث والفهرسة المحلية
-  TextColumn get fullName => text().nullable()(); // الاسم الكامل المجمّع
-  TextColumn get fullNameNormalized => text().nullable()(); // للبحث
-  TextColumn get governorate =>
-      text().nullable()(); // المحافظة (مستخرج من city)
-  TextColumn get district => text().nullable()(); // القضاء (مستخرج من city)
-
-  // حقول المزامنة
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-
-  @override
-  List<Set<Column>> get uniqueKeys => [
-    {nationalId}, // الرقم الوطني فريد
-  ];
-}
-
-// City table - جدول المدن والمحافظات من قاعدة البيانات الرئيسية
-class CivilRegistryCity extends Table {
-  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
-  TextColumn get city =>
-      text().named('city')(); // varchar(255) - اسم المدينة/القضاء
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Relations table - جدول العلاقات العائلية
-class CivilRegistryRelations extends Table {
-  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
-  IntColumn get personId =>
-      integer().named('CF_ID_NUM')(); // bigint(20) - الشخص
-  IntColumn get relativeId =>
-      integer().named('CF_ID_RELATIVE')(); // bigint(20) - القريب
-  IntColumn get relativeCodeId =>
-      integer().named('CF_RELATIVE_CD')(); // bigint(20) - نوع العلاقة
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Category of Relations table - أنواع العلاقات (أب، أم، أخ، الخ)
-class CivilRegistryRelationCategories extends Table {
-  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
-  TextColumn get attribute =>
-      text()(); // varchar(255) - نوع العلاقة (father, mother, etc.)
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Birth Code table - رموز شهادات الميلاد
-class CivilRegistryBirthCode extends Table {
-  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
-  TextColumn get birthCode => text().named('CI_BIRTH_TB_CD')(); // varchar(255)
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Personal Code table - الأكواد الشخصية
-class CivilRegistryPersonalCode extends Table {
-  IntColumn get id => integer()(); // bigint(20) unsigned - primary key
-  TextColumn get personalCode =>
-      text().named('CI_PERSONAL_CD')(); // varchar(255)
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Activities table - سجل الأنشطة والتعديلات
-class Activities extends Table {
-  TextColumn get id => text()();
-  TextColumn get beneficiaryId => text()();
-  TextColumn get userId => text()(); // معرف المستخدم الذي قام بالنشاط
-  TextColumn get activityType =>
-      text()(); // 'create', 'update', 'delete', 'visit', 'attachment'
-  TextColumn get description => text()(); // وصف النشاط
-  TextColumn get changes => text().nullable()(); // JSON للتغييرات
-  DateTimeColumn get createdAt => dateTime()();
-  TextColumn get syncState => text().withDefault(const Constant('pending'))();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// Data Requests table - طلبات البيانات/المساعدات
-class DataRequests extends Table {
-  TextColumn get id => text()();
-  TextColumn get beneficiaryId => text()();
-  TextColumn get requestType => text()(); // نوع الطلب
-  TextColumn get status =>
-      text()(); // 'pending', 'approved', 'rejected', 'completed'
-  TextColumn get details => text().nullable()(); // تفاصيل الطلب JSON
-  TextColumn get notes => text().withDefault(const Constant(''))();
-  DateTimeColumn get requestDate => dateTime()();
-  DateTimeColumn get responseDate => dateTime().nullable()();
-  TextColumn get respondedBy => text().nullable()(); // من قام بالرد
-  DateTimeColumn get createdAt => dateTime()();
-  DateTimeColumn get updatedAt => dateTime()();
-  TextColumn get syncState => text().withDefault(const Constant('pending'))();
-  TextColumn get serverId => text().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
 
 @DriftDatabase(
   tables: [
@@ -327,12 +34,27 @@ class DataRequests extends Table {
     Activities,
     DataRequests,
   ],
+  daos: [
+    BeneficiariesDao,
+    VisitsDao,
+    AttachmentsDao,
+    CivilRegistryDao,
+    SyncDao,
+    TrackingDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(QueryExecutor e) : super(e);
 
+  // DAOs are automatically available as getters after generation:
+  // - beneficiariesDao: All beneficiary operations
+  // - visitsDao: All visit operations
+  // - attachmentsDao: All attachment operations
+  // - civilRegistryDao: Civil registry search
+  // - syncDao: Sync queue and taxonomies
+
   @override
-  int get schemaVersion => 5; // زيادة رقم الإصدار للتعديلات الجديدة
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -360,10 +82,8 @@ class AppDatabase extends _$AppDatabase {
 
   // Migration إلى النسخة 5 - تحديث السجل المدني
   Future<void> _upgradeToV5(Migrator m) async {
-    // حذف الجدول القديم
     await customStatement('DROP TABLE IF EXISTS civil_registry;');
 
-    // إنشاء الجداول الجديدة
     await m.createTable(civilRegistry);
     await m.createTable($CivilRegistryCityTable(attachedDatabase));
     await m.createTable($CivilRegistryRelationsTable(attachedDatabase));
@@ -373,7 +93,6 @@ class AppDatabase extends _$AppDatabase {
     await m.createTable($CivilRegistryBirthCodeTable(attachedDatabase));
     await m.createTable($CivilRegistryPersonalCodeTable(attachedDatabase));
 
-    // إنشاء indexes لجدول CivilRegistry
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_civil_national_id ON civil_registry(CI_ID_NUM);',
     );
@@ -393,7 +112,6 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_civil_governorate ON civil_registry(governorate);',
     );
 
-    // indexes للعلاقات
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_relations_person ON civil_registry_relations(CF_ID_NUM);',
     );
@@ -407,7 +125,6 @@ class AppDatabase extends _$AppDatabase {
     await m.createTable(activities);
     await m.createTable(dataRequests);
 
-    // إنشاء indexes للجداول الجديدة
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_activity_beneficiary ON activities(beneficiary_id);',
     );
@@ -420,6 +137,40 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_request_status ON data_requests(status);',
     );
+  }
+
+  // Migration إلى النسخة 3
+  Future<void> _upgradeToV3(Migrator m) async {
+    await m.addColumn(beneficiaries, beneficiaries.district);
+    await m.addColumn(beneficiaries, beneficiaries.address);
+    await m.addColumn(beneficiaries, beneficiaries.phoneNumber);
+    await m.addColumn(beneficiaries, beneficiaries.motherName);
+    await m.addColumn(beneficiaries, beneficiaries.fatherName);
+    await m.addColumn(beneficiaries, beneficiaries.familySize);
+    await m.addColumn(beneficiaries, beneficiaries.maritalStatus);
+    await m.addColumn(beneficiaries, beneficiaries.educationLevel);
+    await m.addColumn(beneficiaries, beneficiaries.healthStatus);
+    await m.addColumn(beneficiaries, beneficiaries.hasDisability);
+  }
+
+  // Migration إلى النسخة 2
+  Future<void> _upgradeToV2(Migrator m) async {
+    await m.addColumn(beneficiaries, beneficiaries.serverId);
+    await m.addColumn(beneficiaries, beneficiaries.lastSyncedAt);
+
+    await m.addColumn(visits, visits.serverId);
+    await m.addColumn(visits, visits.lastSyncedAt);
+
+    await m.addColumn(attachments, attachments.serverUrl);
+    await m.addColumn(attachments, attachments.lastSyncedAt);
+
+    await m.addColumn(taxonomies, taxonomies.parentId);
+    await m.addColumn(taxonomies, taxonomies.sortOrder);
+
+    await m.addColumn(syncQueue, syncQueue.priority);
+    await m.addColumn(syncQueue, syncQueue.scheduledAt);
+
+    await _createIndexes();
   }
 
   // إنشاء indexes للأداء
@@ -470,7 +221,7 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity, entity_id);',
     );
 
-    // Civil Registry indexes - مهمة جداً للبحث السريع
+    // Civil Registry indexes
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_civil_national ON civil_registry(CI_ID_NUM);',
     );
@@ -518,595 +269,13 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  // Upgrade من النسخة 1 إلى 2
-  Future<void> _upgradeToV2(Migrator m) async {
-    // إضافة أعمدة المزامنة للمستفيدين
-    await m.addColumn(beneficiaries, beneficiaries.serverId);
-    await m.addColumn(beneficiaries, beneficiaries.lastSyncedAt);
-
-    // إضافة أعمدة المزامنة للزيارات
-    await m.addColumn(visits, visits.serverId);
-    await m.addColumn(visits, visits.lastSyncedAt);
-
-    // إضافة أعمدة المزامنة للمرفقات
-    await m.addColumn(attachments, attachments.serverUrl);
-    await m.addColumn(attachments, attachments.lastSyncedAt);
-
-    // إضافة أعمدة التصنيفات الهرمية
-    await m.addColumn(taxonomies, taxonomies.parentId);
-    await m.addColumn(taxonomies, taxonomies.sortOrder);
-
-    // إضافة أعمدة طابور المزامنة
-    await m.addColumn(syncQueue, syncQueue.priority);
-    await m.addColumn(syncQueue, syncQueue.scheduledAt);
-
-    // ملاحظة: السجل المدني سيتم إعادة بنائه بالكامل في V5
-    // لذلك لا نضيف أعمدة هنا
-
-    // إعادة إنشاء indexes
-    await _createIndexes();
-  }
-
-  // Upgrade من النسخة 2 إلى 3
-  Future<void> _upgradeToV3(Migrator m) async {
-    // إضافة حقول المستفيد الإضافية
-    await m.addColumn(beneficiaries, beneficiaries.district);
-    await m.addColumn(beneficiaries, beneficiaries.address);
-    await m.addColumn(beneficiaries, beneficiaries.phoneNumber);
-    await m.addColumn(beneficiaries, beneficiaries.motherName);
-    await m.addColumn(beneficiaries, beneficiaries.fatherName);
-    await m.addColumn(beneficiaries, beneficiaries.familySize);
-    await m.addColumn(beneficiaries, beneficiaries.maritalStatus);
-    await m.addColumn(beneficiaries, beneficiaries.educationLevel);
-    await m.addColumn(beneficiaries, beneficiaries.healthStatus);
-    await m.addColumn(beneficiaries, beneficiaries.hasDisability);
-  }
-
-  // Attach civil registry database (read-only)
+  // Civil registry database operations
   Future<void> attachCivilRegistry(String dbPath) async {
     await customStatement("ATTACH DATABASE ? AS civil_registry", [dbPath]);
   }
 
-  // Detach civil registry
   Future<void> detachCivilRegistry() async {
     await customStatement("DETACH DATABASE civil_registry");
-  }
-
-  // Helper methods for statistics
-  Future<int> countBeneficiaries() async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries',
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  Future<int> countPendingSync() async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE sync_state = ?',
-      variables: [Variable.withString('pending')],
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  Future<int> countBeneficiariesByCategory(String category) async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE category = ?',
-      variables: [Variable.withString(category)],
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  Future<int> countIncompleteBeneficiaries() async {
-    // حساب البيانات الناقصة: beneficiaries بدون phone أو address
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE phone_number IS NULL OR phone_number = \'\' OR address IS NULL OR address = \'\'',
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  Future<int> countBeneficiariesByGovernorate(String governorate) async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE governorate = ?',
-      variables: [Variable.withString(governorate)],
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  // Get all beneficiaries
-  Future<List<Beneficiary>> getAllBeneficiaries() async {
-    return await select(beneficiaries).get();
-  }
-
-  // Search beneficiaries
-  Future<List<Beneficiary>> searchBeneficiaries(String query) async {
-    if (query.isEmpty) {
-      return await getAllBeneficiaries();
-    }
-
-    final normalized = query.trim().toLowerCase();
-    return await (select(beneficiaries)..where(
-          (b) =>
-              b.fullNameNorm.like('%$normalized%') |
-              b.nationalId.like('%$normalized%') |
-              b.fileNo.like('%$normalized%'),
-        ))
-        .get();
-  }
-
-  // Search beneficiaries with filters (OPTIMIZED) - محسّنة للأداء
-  Future<List<Beneficiary>> searchBeneficiariesFiltered({
-    String query = '',
-    String? category,
-    String? governorate,
-    int limit = 50,
-    int offset = 0,
-  }) async {
-    final normalized = query.trim().toLowerCase();
-
-    // Build query with all filters in SQL (faster than Dart filtering)
-    var selectQuery = select(beneficiaries);
-
-    // Apply filters
-    selectQuery = selectQuery
-      ..where((b) {
-        Expression<bool> condition = const Constant(true);
-
-        // Search filter
-        if (normalized.isNotEmpty) {
-          condition =
-              condition &
-              (b.fullNameNorm.like('%$normalized%') |
-                  b.nationalId.like('%$normalized%') |
-                  b.fileNo.like('%$normalized%'));
-        }
-
-        // Category filter
-        if (category != null && category != 'all') {
-          condition = condition & b.category.equals(category);
-        }
-
-        // Governorate filter
-        if (governorate != null && governorate != 'all') {
-          condition = condition & b.governorate.equals(governorate);
-        }
-
-        return condition;
-      });
-
-    // Apply pagination
-    selectQuery = selectQuery
-      ..orderBy([(b) => OrderingTerm.asc(b.fullName)])
-      ..limit(limit, offset: offset);
-
-    return await selectQuery.get();
-  }
-
-  // Get beneficiary by ID
-  Future<Beneficiary?> getBeneficiaryById(String id) async {
-    return await (select(
-      beneficiaries,
-    )..where((b) => b.id.equals(id))).getSingleOrNull();
-  }
-
-  // Get beneficiary by server ID
-  Future<Beneficiary?> getBeneficiaryByServerId(String serverId) async {
-    return await (select(
-      beneficiaries,
-    )..where((b) => b.serverId.equals(serverId))).getSingleOrNull();
-  }
-
-  // Insert beneficiary
-  Future<void> insertBeneficiary(BeneficiariesCompanion beneficiary) async {
-    await into(beneficiaries).insert(beneficiary);
-  }
-
-  // Update beneficiary (using Companion)
-  Future<void> updateBeneficiaryCompanion(
-    String id,
-    BeneficiariesCompanion beneficiary,
-  ) async {
-    await (update(
-      beneficiaries,
-    )..where((b) => b.id.equals(id))).write(beneficiary);
-  }
-
-  // Update beneficiary
-  Future<void> updateBeneficiary(Beneficiary beneficiary) async {
-    await update(beneficiaries).replace(beneficiary);
-  }
-
-  // Delete beneficiary
-  Future<void> deleteBeneficiary(String id) async {
-    await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
-  }
-
-  // ============================================================================
-  // ATTACHMENTS QUERIES - المرفقات
-  // ============================================================================
-
-  // Get all attachments for a beneficiary
-  Future<List<Attachment>> getBeneficiaryAttachments(
-    String beneficiaryId,
-  ) async {
-    return await (select(attachments)
-          ..where((a) => a.beneficiaryId.equals(beneficiaryId))
-          ..orderBy([(a) => OrderingTerm.desc(a.createdAt)]))
-        .get();
-  }
-
-  // Add attachment
-  Future<void> addAttachment(AttachmentsCompanion attachment) async {
-    await into(attachments).insert(attachment);
-  }
-
-  // Delete attachment
-  Future<void> deleteAttachment(String id) async {
-    await (delete(attachments)..where((a) => a.id.equals(id))).go();
-  }
-
-  // Delete all attachments for a beneficiary
-  Future<void> deleteBeneficiaryAttachments(String beneficiaryId) async {
-    await (delete(
-      attachments,
-    )..where((a) => a.beneficiaryId.equals(beneficiaryId))).go();
-  }
-
-  // Get attachment by ID
-  Future<Attachment?> getAttachment(String id) async {
-    return await (select(
-      attachments,
-    )..where((a) => a.id.equals(id))).getSingleOrNull();
-  }
-
-  // Update attachment sync state
-  Future<void> updateAttachmentSyncState(
-    String id,
-    String syncState, {
-    String? serverUrl,
-  }) async {
-    await (update(attachments)..where((a) => a.id.equals(id))).write(
-      AttachmentsCompanion(
-        syncState: Value(syncState),
-        serverUrl: Value(serverUrl),
-        lastSyncedAt: Value(DateTime.now()),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
-  }
-
-  // ============================================================================
-  // CIVIL REGISTRY QUERIES - السجل المدني
-  // ============================================================================
-
-  // Search by national ID
-  Future<CivilRegistryData?> searchCivilByNationalId(String nationalId) async {
-    return await (select(
-      civilRegistry,
-    )..where((r) => r.nationalId.equals(nationalId))).getSingleOrNull();
-  }
-
-  // Search by name
-  Future<List<CivilRegistryData>> searchCivilByName(
-    String name, {
-    String? governorate,
-    int limit = 50,
-  }) async {
-    final normalized = _normalizeName(name);
-    var query = select(civilRegistry)
-      ..where((r) => r.fullNameNormalized.like('%$normalized%'));
-
-    if (governorate != null) {
-      query = query..where((r) => r.governorate.equals(governorate));
-    }
-
-    return await (query
-          ..limit(limit)
-          ..orderBy([(r) => OrderingTerm.asc(r.fullNameNormalized)]))
-        .get();
-  }
-
-  // ============================================================================
-  // SYNC QUEUE QUERIES - طابور المزامنة
-  // ============================================================================
-
-  // Add to sync queue
-  Future<void> addToSyncQueue(SyncQueueCompanion item) async {
-    await into(syncQueue).insert(item, mode: InsertMode.insertOrReplace);
-  }
-
-  // Get sync queue items
-  Future<List<SyncQueueData>> getSyncQueue({int limit = 100}) async {
-    return await (select(syncQueue)
-          ..orderBy([
-            (q) => OrderingTerm.desc(q.priority),
-            (q) => OrderingTerm.asc(q.createdAt),
-          ])
-          ..limit(limit))
-        .get();
-  }
-
-  // Remove from sync queue
-  Future<void> removeFromSyncQueue(String id) async {
-    await (delete(syncQueue)..where((q) => q.id.equals(id))).go();
-  }
-
-  // Update sync queue error
-  Future<void> updateSyncQueueError(
-    String id,
-    String error,
-    int attempts,
-  ) async {
-    await (update(syncQueue)..where((q) => q.id.equals(id))).write(
-      SyncQueueCompanion(lastError: Value(error), attempts: Value(attempts)),
-    );
-  }
-
-  // ============================================================================
-  // TAXONOMIES QUERIES - التصنيفات
-  // ============================================================================
-
-  // Get taxonomies by group
-  Future<List<Taxonomy>> getTaxonomiesByGroup(String group) async {
-    return await (select(taxonomies)
-          ..where((t) => t.group.equals(group) & t.isActive.equals(true))
-          ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]))
-        .get();
-  }
-
-  // Sync taxonomies from server
-  Future<void> syncTaxonomies(List<TaxonomiesCompanion> items) async {
-    await batch((batch) {
-      batch.insertAll(taxonomies, items, mode: InsertMode.insertOrReplace);
-    });
-  }
-
-  // ============================================================================
-  // URGENT CASES QUERIES - استعلامات الحالات الطارئة
-  // ============================================================================
-
-  /// Count beneficiaries with no visits in the last X days
-  Future<int> countBeneficiariesWithNoRecentVisits(int days) async {
-    final cutoffDate = DateTime.now().subtract(Duration(days: days));
-    final result = await customSelect(
-      '''
-      SELECT COUNT(DISTINCT b.id) as count 
-      FROM beneficiaries b
-      LEFT JOIN visits v ON b.id = v.beneficiary_id AND v.visit_date >= ?
-      WHERE v.id IS NULL
-      ''',
-      variables: [Variable.withDateTime(cutoffDate)],
-      readsFrom: {beneficiaries, visits},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  /// Get beneficiaries with no visits in the last X days
-  Future<List<Beneficiary>> getBeneficiariesWithNoRecentVisits(
-    int days, {
-    int limit = 10,
-  }) async {
-    final cutoffDate = DateTime.now().subtract(Duration(days: days));
-    final result = await customSelect(
-      '''
-      SELECT b.* 
-      FROM beneficiaries b
-      LEFT JOIN visits v ON b.id = v.beneficiary_id AND v.visit_date >= ?
-      WHERE v.id IS NULL
-      ORDER BY b.created_at ASC
-      LIMIT ?
-      ''',
-      variables: [Variable.withDateTime(cutoffDate), Variable.withInt(limit)],
-      readsFrom: {beneficiaries, visits},
-    ).get();
-
-    return result.map((row) => beneficiaries.map(row.data)).toList();
-  }
-
-  /// Count beneficiaries with poor health status
-  Future<int> countBeneficiariesWithPoorHealth() async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE health_status = ?',
-      variables: [Variable.withString('poor')],
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  /// Get beneficiaries with poor health status
-  Future<List<Beneficiary>> getBeneficiariesWithPoorHealth({
-    int limit = 10,
-  }) async {
-    return await (select(beneficiaries)
-          ..where((b) => b.healthStatus.equals('poor'))
-          ..orderBy([(b) => OrderingTerm.desc(b.updatedAt)])
-          ..limit(limit))
-        .get();
-  }
-
-  /// Count beneficiaries with disabilities
-  Future<int> countBeneficiariesWithDisabilities() async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE has_disability = 1',
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  /// Get beneficiaries with disabilities
-  Future<List<Beneficiary>> getBeneficiariesWithDisabilities({
-    int limit = 10,
-  }) async {
-    return await (select(beneficiaries)
-          ..where((b) => b.hasDisability.equals(true))
-          ..orderBy([(b) => OrderingTerm.desc(b.updatedAt)])
-          ..limit(limit))
-        .get();
-  }
-
-  // ============================================================================
-  // GEOGRAPHIC DISTRIBUTION QUERIES - استعلامات التوزيع الجغرافي
-  // ============================================================================
-
-  /// Get count of beneficiaries grouped by governorate
-  Future<Map<String, int>> getBeneficiariesCountByGovernorate() async {
-    final result = await customSelect(
-      '''
-      SELECT governorate, COUNT(*) as count 
-      FROM beneficiaries 
-      GROUP BY governorate 
-      ORDER BY count DESC
-      ''',
-      readsFrom: {beneficiaries},
-    ).get();
-
-    return Map.fromEntries(
-      result.map(
-        (row) =>
-            MapEntry(row.read<String>('governorate'), row.read<int>('count')),
-      ),
-    );
-  }
-
-  // ============================================================================
-  // DAILY PERFORMANCE QUERIES - استعلامات الأداء اليومي
-  // ============================================================================
-
-  /// Count visits completed today
-  Future<int> countVisitsToday() async {
-    final todayStart = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
-    final result = await customSelect(
-      '''
-      SELECT COUNT(*) as count 
-      FROM visits 
-      WHERE visit_date >= ? AND is_submitted = 1
-      ''',
-      variables: [Variable.withDateTime(todayStart)],
-      readsFrom: {visits},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  /// Count new beneficiaries added today
-  Future<int> countNewBeneficiariesToday() async {
-    final todayStart = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
-    final result = await customSelect(
-      '''
-      SELECT COUNT(*) as count 
-      FROM beneficiaries 
-      WHERE created_at >= ?
-      ''',
-      variables: [Variable.withDateTime(todayStart)],
-      readsFrom: {beneficiaries},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  /// Get average visits per day for the last X days
-  Future<double> getAverageVisitsPerDay(int days) async {
-    final cutoffDate = DateTime.now().subtract(Duration(days: days));
-    final result = await customSelect(
-      '''
-      SELECT COUNT(*) as total_visits 
-      FROM visits 
-      WHERE visit_date >= ? AND is_submitted = 1
-      ''',
-      variables: [Variable.withDateTime(cutoffDate)],
-      readsFrom: {visits},
-    ).getSingle();
-
-    final totalVisits = result.read<int>('total_visits');
-    return totalVisits / days;
-  }
-
-  // ============================================================================
-  // VISITS QUERIES - استعلامات الزيارات
-  // ============================================================================
-
-  /// Insert a new visit
-  Future<void> insertVisit(VisitsCompanion visit) async {
-    await into(visits).insert(visit);
-  }
-
-  /// Get all visits for a beneficiary
-  Future<List<Visit>> getBeneficiaryVisits(String beneficiaryId) async {
-    return await (select(visits)
-          ..where((v) => v.beneficiaryId.equals(beneficiaryId))
-          ..orderBy([(v) => OrderingTerm.desc(v.visitDate)]))
-        .get();
-  }
-
-  /// Get visit by ID
-  Future<Visit?> getVisitById(String id) async {
-    return await (select(
-      visits,
-    )..where((v) => v.id.equals(id))).getSingleOrNull();
-  }
-
-  /// Update visit
-  Future<void> updateVisit(Visit visit) async {
-    await update(visits).replace(visit);
-  }
-
-  /// Delete visit
-  Future<void> deleteVisit(String id) async {
-    await (delete(visits)..where((v) => v.id.equals(id))).go();
-  }
-
-  /// Count total visits for a beneficiary
-  Future<int> countBeneficiaryVisits(String beneficiaryId) async {
-    final result = await customSelect(
-      'SELECT COUNT(*) as count FROM visits WHERE beneficiary_id = ?',
-      variables: [Variable.withString(beneficiaryId)],
-      readsFrom: {visits},
-    ).getSingle();
-    return result.read<int>('count');
-  }
-
-  /// Get last visit date for a beneficiary
-  Future<DateTime?> getLastVisitDate(String beneficiaryId) async {
-    final result =
-        await (select(visits)
-              ..where((v) => v.beneficiaryId.equals(beneficiaryId))
-              ..orderBy([(v) => OrderingTerm.desc(v.visitDate)])
-              ..limit(1))
-            .getSingleOrNull();
-    return result?.visitDate;
-  }
-
-  /// Get recent visits (for activity feed)
-  Future<List<Visit>> getRecentVisits({int limit = 20}) async {
-    return await (select(visits)
-          ..orderBy([(v) => OrderingTerm.desc(v.visitDate)])
-          ..limit(limit))
-        .get();
-  }
-
-  // ============================================================================
-  // UTILITY FUNCTIONS - دوال مساعدة
-  // ============================================================================
-
-  // تطبيع الأسماء للبحث
-  String _normalizeName(String name) {
-    return name
-        .toLowerCase()
-        .trim()
-        .replaceAll(RegExp(r'[\u064B-\u065F]'), '') // إزالة الحركات
-        .replaceAll(RegExp(r'[إأآ]'), 'ا') // توحيد الهمزات
-        .replaceAll('ة', 'ه')
-        .replaceAll(RegExp(r'\s+'), ' ');
   }
 }
 
@@ -1127,10 +296,8 @@ extension BeneficiaryExtension on Beneficiary {
 // Database connection factory
 LazyDatabase openEncryptedDb() {
   return LazyDatabase(() async {
-    // Initialize sqlite3 for Flutter
     if (Platform.isAndroid) {
       // Apply workaround for older Android versions if needed
-      // await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
     }
 
     final dbFolder = await getApplicationDocumentsDirectory();

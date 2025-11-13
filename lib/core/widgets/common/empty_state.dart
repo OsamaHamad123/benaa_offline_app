@@ -14,6 +14,7 @@ class EmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final bool isCompact;
+  final Color? iconColor;
 
   const EmptyState({
     super.key,
@@ -23,6 +24,7 @@ class EmptyState extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.isCompact = false,
+    this.iconColor,
   });
 
   @override
@@ -41,13 +43,17 @@ class EmptyState extends StatelessWidget {
             Container(
               padding: EdgeInsets.all((isCompact ? 20 : 24).r),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
+                color: (iconColor ?? theme.colorScheme.primary).withOpacity(
+                  0.1,
+                ),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: (isCompact ? 48 : (isMobile ? 56 : 64)).sp,
-                color: theme.colorScheme.primary.withOpacity(0.5),
+                color: (iconColor ?? theme.colorScheme.primary).withOpacity(
+                  0.7,
+                ),
               ),
             ),
             SizedBox(height: (isCompact ? 16 : 24).h),

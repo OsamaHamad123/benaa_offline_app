@@ -122,7 +122,8 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'بدون زيارات منذ 30+ يوم',
-                      database.getBeneficiariesWithNoRecentVisits(30),
+                      database.beneficiariesDao
+                          .getBeneficiariesWithNoRecentVisits(30),
                     ),
                   ),
 
@@ -137,7 +138,8 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'حالة صحية سيئة',
-                      database.getBeneficiariesWithPoorHealth(),
+                      database.beneficiariesDao
+                          .getBeneficiariesWithPoorHealth(),
                     ),
                   ),
                 ],
@@ -153,7 +155,8 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'ذوو إعاقة',
-                      database.getBeneficiariesWithDisabilities(),
+                      database.beneficiariesDao
+                          .getBeneficiariesWithDisabilities(),
                     ),
                   ),
                 ],
@@ -202,9 +205,9 @@ class UrgentCasesSection extends ConsumerWidget {
     AppDatabase database,
   ) async {
     final results = await Future.wait([
-      database.countBeneficiariesWithNoRecentVisits(30),
-      database.countBeneficiariesWithPoorHealth(),
-      database.countBeneficiariesWithDisabilities(),
+      database.beneficiariesDao.countBeneficiariesWithNoRecentVisits(30),
+      database.beneficiariesDao.countBeneficiariesWithPoorHealth(),
+      database.beneficiariesDao.countBeneficiariesWithDisabilities(),
     ]);
 
     return {
@@ -242,7 +245,8 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'بدون زيارات منذ 30+ يوم',
-                    database.getBeneficiariesWithNoRecentVisits(30),
+                    database.beneficiariesDao
+                        .getBeneficiariesWithNoRecentVisits(30),
                   );
                 },
               ),
@@ -260,7 +264,7 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'حالة صحية سيئة',
-                    database.getBeneficiariesWithPoorHealth(),
+                    database.beneficiariesDao.getBeneficiariesWithPoorHealth(),
                   );
                 },
               ),
@@ -278,7 +282,8 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'ذوو إعاقة',
-                    database.getBeneficiariesWithDisabilities(),
+                    database.beneficiariesDao
+                        .getBeneficiariesWithDisabilities(),
                   );
                 },
               ),

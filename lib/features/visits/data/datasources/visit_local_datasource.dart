@@ -9,54 +9,56 @@ class VisitLocalDataSource {
 
   /// Insert a new visit
   Future<void> insertVisit(VisitsCompanion visit) async {
-    await _database.insertVisit(visit);
+    await _database.visitsDao.insertVisit(visit);
   }
 
   /// Get all visits for a beneficiary
   Future<List<VisitModel>> getBeneficiaryVisits(String beneficiaryId) async {
-    final visits = await _database.getBeneficiaryVisits(beneficiaryId);
+    final visits = await _database.visitsDao.getBeneficiaryVisits(
+      beneficiaryId,
+    );
     return visits.map((v) => VisitModel.fromDrift(v)).toList();
   }
 
   /// Get visit by ID
   Future<VisitModel?> getVisitById(String id) async {
-    final visit = await _database.getVisitById(id);
+    final visit = await _database.visitsDao.getVisitById(id);
     return visit != null ? VisitModel.fromDrift(visit) : null;
   }
 
   /// Update visit
   Future<void> updateVisit(Visit visit) async {
-    await _database.updateVisit(visit);
+    await _database.visitsDao.updateVisit(visit);
   }
 
   /// Delete visit
   Future<void> deleteVisit(String id) async {
-    await _database.deleteVisit(id);
+    await _database.visitsDao.deleteVisit(id);
   }
 
   /// Count visits for a beneficiary
   Future<int> countBeneficiaryVisits(String beneficiaryId) async {
-    return await _database.countBeneficiaryVisits(beneficiaryId);
+    return await _database.visitsDao.countBeneficiaryVisits(beneficiaryId);
   }
 
   /// Get last visit date for a beneficiary
   Future<DateTime?> getLastVisitDate(String beneficiaryId) async {
-    return await _database.getLastVisitDate(beneficiaryId);
+    return await _database.visitsDao.getLastVisitDate(beneficiaryId);
   }
 
   /// Get recent visits
   Future<List<VisitModel>> getRecentVisits({int limit = 20}) async {
-    final visits = await _database.getRecentVisits(limit: limit);
+    final visits = await _database.visitsDao.getRecentVisits(limit: limit);
     return visits.map((v) => VisitModel.fromDrift(v)).toList();
   }
 
   /// Count visits today
   Future<int> countVisitsToday() async {
-    return await _database.countVisitsToday();
+    return await _database.visitsDao.countVisitsToday();
   }
 
   /// Get average visits per day
   Future<double> getAverageVisitsPerDay(int days) async {
-    return await _database.getAverageVisitsPerDay(days);
+    return await _database.visitsDao.getAverageVisitsPerDay(days);
   }
 }

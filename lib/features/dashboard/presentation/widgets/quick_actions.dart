@@ -57,6 +57,7 @@ class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onSearchTap;
   final VoidCallback? onSyncTap;
   final VoidCallback? onReportsTap;
+  final VoidCallback? onCivilRegistryTap;
 
   const QuickActionsGrid({
     super.key,
@@ -64,6 +65,7 @@ class QuickActionsGrid extends StatelessWidget {
     this.onSearchTap,
     this.onSyncTap,
     this.onReportsTap,
+    this.onCivilRegistryTap,
   });
 
   @override
@@ -115,6 +117,12 @@ class QuickActionsGrid extends StatelessWidget {
           icon: Icons.bar_chart,
           color: Colors.purple,
           onTap: onReportsTap ?? () {},
+        ),
+        QuickActionButton(
+          label: 'السجل المدني',
+          icon: Icons.account_balance,
+          color: Colors.teal,
+          onTap: onCivilRegistryTap ?? () {},
         ),
       ],
     );

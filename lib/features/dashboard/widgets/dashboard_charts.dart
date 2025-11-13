@@ -45,7 +45,7 @@ class BeneficiariesGrowthChart extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             FutureBuilder<int>(
-              future: database.countBeneficiaries(),
+              future: database.beneficiariesDao.countBeneficiaries(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
                   return const SizedBox(
@@ -267,10 +267,14 @@ class CategoryDistributionChart extends ConsumerWidget {
             const SizedBox(height: 24),
             FutureBuilder<List<int>>(
               future: Future.wait([
-                database.countBeneficiariesByCategory('orphan'),
-                database.countBeneficiariesByCategory('widow'),
-                database.countBeneficiariesByCategory('poor'),
-                database.countBeneficiariesByCategory('disabled'),
+                database.beneficiariesDao.countBeneficiariesByCategory(
+                  'orphan',
+                ),
+                database.beneficiariesDao.countBeneficiariesByCategory('widow'),
+                database.beneficiariesDao.countBeneficiariesByCategory('poor'),
+                database.beneficiariesDao.countBeneficiariesByCategory(
+                  'disabled',
+                ),
               ]),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {

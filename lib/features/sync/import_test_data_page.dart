@@ -57,7 +57,7 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
           final beneficiaryCompanion = BeneficiaryMapper.fromBackend(row);
 
           // حفظ في قاعدة البيانات
-          await db.insertBeneficiary(beneficiaryCompanion);
+          await db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
 
           setState(() {
             _importedRecords = i + 1;
@@ -115,10 +115,10 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
 
     try {
       final db = ref.read(databaseProvider);
-      final beneficiaries = await db.getAllBeneficiaries();
+      final beneficiaries = await db.beneficiariesDao.getAllBeneficiaries();
 
       for (final beneficiary in beneficiaries) {
-        await db.deleteBeneficiary(beneficiary.id);
+        await db.beneficiariesDao.deleteBeneficiary(beneficiary.id);
       }
 
       setState(() {
@@ -143,8 +143,8 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
 
     try {
       final db = ref.read(databaseProvider);
-      final count = await db.countBeneficiaries();
-      final beneficiaries = await db.getAllBeneficiaries();
+      final count = await db.beneficiariesDao.countBeneficiaries();
+      final beneficiaries = await db.beneficiariesDao.getAllBeneficiaries();
 
       if (beneficiaries.isNotEmpty) {
         final sample = beneficiaries.first;

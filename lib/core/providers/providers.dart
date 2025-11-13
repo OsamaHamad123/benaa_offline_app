@@ -48,7 +48,7 @@ final databaseReadyProvider = FutureProvider<bool>((ref) async {
 final beneficiariesSearchProvider = FutureProvider.family
     .autoDispose<List<Beneficiary>, BeneficiariesFilter>((ref, filter) async {
       final db = ref.watch(databaseProvider);
-      return await db.searchBeneficiariesFiltered(
+      return await db.beneficiariesDao.searchBeneficiariesFiltered(
         query: filter.searchQuery,
         category: filter.category,
         governorate: filter.governorate,
@@ -62,10 +62,10 @@ final statisticsProvider = FutureProvider.autoDispose<Statistics>((ref) async {
   final db = ref.watch(databaseProvider);
 
   final results = await Future.wait([
-    db.countBeneficiaries(),
-    db.countPendingSync(),
-    db.countBeneficiariesByCategory('orphan'),
-    db.countBeneficiariesByCategory('poor'),
+    db.beneficiariesDao.countBeneficiaries(),
+    db.beneficiariesDao.countPendingSync(),
+    db.beneficiariesDao.countBeneficiariesByCategory('orphan'),
+    db.beneficiariesDao.countBeneficiariesByCategory('poor'),
   ]);
 
   return Statistics(
@@ -84,8 +84,8 @@ final notificationsCountProvider = FutureProvider.autoDispose<int>((ref) async {
   // 1. عدد البيانات المعلقة للمزامنة
   // 2. عدد البيانات الناقصة (incomplete)
   final results = await Future.wait([
-    db.countPendingSync(),
-    db.countIncompleteBeneficiaries(),
+    db.beneficiariesDao.countPendingSync(),
+    db.beneficiariesDao.countIncompleteBeneficiaries(),
   ]);
 
   return results[0] + results[1];
@@ -95,7 +95,7 @@ final notificationsCountProvider = FutureProvider.autoDispose<int>((ref) async {
 final beneficiaryProvider = FutureProvider.family
     .autoDispose<Beneficiary?, String>((ref, id) async {
       final db = ref.watch(databaseProvider);
-      return await db.getBeneficiaryById(id);
+      return await db.beneficiariesDao.getBeneficiaryById(id);
     });
 
 // ============================================================================

@@ -113,7 +113,7 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    await _db.addToSyncQueue(
+    await _db.syncDao.addToSyncQueue(
       SyncQueueCompanion(
         id: drift.Value(_uuid.v4()),
         entity: const drift.Value('beneficiary'),
@@ -132,7 +132,7 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    await _db.addToSyncQueue(
+    await _db.syncDao.addToSyncQueue(
       SyncQueueCompanion(
         id: drift.Value(_uuid.v4()),
         entity: const drift.Value('visit'),
@@ -151,7 +151,7 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    await _db.addToSyncQueue(
+    await _db.syncDao.addToSyncQueue(
       SyncQueueCompanion(
         id: drift.Value(_uuid.v4()),
         entity: const drift.Value('attachment'),
@@ -183,7 +183,7 @@ class SyncManager {
 
     try {
       // جلب قائمة المزامنة مرتبة حسب الأولوية
-      final items = await _db.getSyncQueue(limit: 100);
+      final items = await _db.syncDao.getSyncQueue(limit: 100);
 
       _updateStatus(
         _currentStatus.copyWith(totalItems: items.length, completedItems: 0),
@@ -204,17 +204,17 @@ class SyncManager {
           await _syncItem(item);
 
           // حذف من الطابور بعد النجاح
-          await _db.removeFromSyncQueue(item.id);
+          await _db.syncDao.removeFromSyncQueue(item.id);
         } catch (e) {
           // تحديث عدد المحاولات والخطأ
-          await _db.updateSyncQueueError(
+          await _db.syncDao.updateSyncQueueError(
             item.id,
             e.toString(),
             item.attempts + 1,
           );
 
           // إعادة جدولة للمحاولة لاحقاً (backoff exponential)
-          final delay = Duration(minutes: 5 * (item.attempts + 1));
+          final delay = Duration(minutes: (5 * (item.attempts + 1)).toInt());
           await _db.customStatement(
             'UPDATE sync_queue SET scheduled_at = ? WHERE id = ?',
             [
@@ -236,7 +236,7 @@ class SyncManager {
   }
 
   // مزامنة عنصر واحد
-  Future<void> _syncItem(SyncQueueData item) async {
+  Future<void> _syncItem(SyncQueueItem item) async {
     final data = jsonDecode(item.payload) as Map<String, dynamic>;
 
     switch (item.entity) {
@@ -266,7 +266,7 @@ class SyncManager {
 
     try {
       // Convert local data to backend format
-      final beneficiary = await _db.getBeneficiaryById(id);
+      final beneficiary = await _db.beneficiariesDao.getBeneficiaryById(id);
       if (beneficiary == null) {
         throw Exception('Beneficiary not found: $id');
       }
@@ -346,22 +346,25 @@ class SyncManager {
           // البحث عن مستفيد موجود بنفس الـ serverId
           final serverId = item['id']?.toString();
           if (serverId != null) {
-            final existing = await _db.getBeneficiaryByServerId(serverId);
+            final existing = await _db.beneficiariesDao
+                .getBeneficiaryByServerId(serverId);
 
             if (existing != null) {
               // تحديث الموجود
-              await _db.updateBeneficiaryCompanion(
+              await _db.beneficiariesDao.updateBeneficiaryCompanion(
                 existing.id,
                 beneficiaryCompanion,
               );
             } else {
               // إدراج جديد
-              await _db.insertBeneficiary(beneficiaryCompanion);
+              await _db.beneficiariesDao.insertBeneficiary(
+                beneficiaryCompanion,
+              );
               insertedCount++;
             }
           } else {
             // إدراج جديد (بدون serverId)
-            await _db.insertBeneficiary(beneficiaryCompanion);
+            await _db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
             insertedCount++;
           }
         } catch (e) {

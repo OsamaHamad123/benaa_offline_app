@@ -12,7 +12,7 @@ class GeographicDistributionSection extends ConsumerWidget {
     final database = ref.watch(databaseProvider);
 
     return FutureBuilder<Map<String, int>>(
-      future: database.getBeneficiariesCountByGovernorate(),
+      future: database.beneficiariesDao.getBeneficiariesCountByGovernorate(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());

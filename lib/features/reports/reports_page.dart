@@ -121,10 +121,10 @@ class _SummaryStatistics extends ConsumerWidget {
 
     return FutureBuilder<List<int>>(
       future: Future.wait([
-        database.countBeneficiaries(),
-        database.countBeneficiariesByCategory('orphan'),
-        database.countBeneficiariesByCategory('poor'),
-        database.countPendingSync(),
+        database.beneficiariesDao.countBeneficiaries(),
+        database.beneficiariesDao.countBeneficiariesByCategory('orphan'),
+        database.beneficiariesDao.countBeneficiariesByCategory('poor'),
+        database.beneficiariesDao.countPendingSync(),
       ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -303,7 +303,7 @@ class _GovernorateReportSheet extends ConsumerWidget {
               ),
               Expanded(
                 child: FutureBuilder<List<Beneficiary>>(
-                  future: database.getAllBeneficiaries(),
+                  future: database.beneficiariesDao.getAllBeneficiaries(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
@@ -420,10 +420,18 @@ class _CategoryReportSheet extends ConsumerWidget {
               Expanded(
                 child: FutureBuilder<List<int>>(
                   future: Future.wait([
-                    database.countBeneficiariesByCategory('orphan'),
-                    database.countBeneficiariesByCategory('poor'),
-                    database.countBeneficiariesByCategory('widow'),
-                    database.countBeneficiariesByCategory('disabled'),
+                    database.beneficiariesDao.countBeneficiariesByCategory(
+                      'orphan',
+                    ),
+                    database.beneficiariesDao.countBeneficiariesByCategory(
+                      'poor',
+                    ),
+                    database.beneficiariesDao.countBeneficiariesByCategory(
+                      'widow',
+                    ),
+                    database.beneficiariesDao.countBeneficiariesByCategory(
+                      'disabled',
+                    ),
                   ]),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
@@ -560,7 +568,7 @@ class _GenderReportSheet extends ConsumerWidget {
               const SizedBox(height: 16),
               Expanded(
                 child: FutureBuilder<List<Beneficiary>>(
-                  future: database.getAllBeneficiaries(),
+                  future: database.beneficiariesDao.getAllBeneficiaries(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());
@@ -723,7 +731,7 @@ class _SyncReportSheet extends ConsumerWidget {
               ),
               Expanded(
                 child: FutureBuilder<List<Beneficiary>>(
-                  future: database.getAllBeneficiaries(),
+                  future: database.beneficiariesDao.getAllBeneficiaries(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
                       return const Center(child: CircularProgressIndicator());

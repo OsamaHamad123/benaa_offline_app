@@ -84,7 +84,7 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
       final database = ref.read(databaseProvider);
       final now = DateTime.now();
 
-      await database.insertVisit(
+      await database.visitsDao.insertVisit(
         VisitsCompanion.insert(
           id: const Uuid().v4(),
           beneficiaryId: widget.beneficiaryId,

@@ -231,6 +231,7 @@ class _DashboardHome extends ConsumerWidget {
             onSearchTap: () => context.push('/beneficiaries'),
             onSyncTap: () => context.push('/sync'),
             onReportsTap: () => context.push('/reports'),
+            onCivilRegistryTap: () => context.push('/search'),
           ),
 
           SizedBox(height: 24.h),

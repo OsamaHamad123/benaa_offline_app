@@ -97,9 +97,16 @@ class ResponsiveValues {
   final double spacing;
   final double spacing15;
   final double fontScale;
+  final double fontSize;
+  final bool isMobile;
+  final bool isTablet;
+  final bool isDesktop;
 
   ResponsiveValues(BuildContext context)
-    : padding = EdgeInsets.all(
+    : isMobile = ResponsiveUtils.isMobile(context),
+      isTablet = ResponsiveUtils.isTablet(context),
+      isDesktop = ResponsiveUtils.isDesktop(context),
+      padding = EdgeInsets.all(
         ResponsiveUtils.getResponsiveValue(
           context,
           mobile: 12.0,
@@ -126,6 +133,12 @@ class ResponsiveValues {
         mobile: 1.0,
         tablet: 1.1,
         desktop: 1.2,
+      ),
+      fontSize = ResponsiveUtils.getResponsiveValue(
+        context,
+        mobile: 14.0,
+        tablet: 15.0,
+        desktop: 16.0,
       );
 }
 

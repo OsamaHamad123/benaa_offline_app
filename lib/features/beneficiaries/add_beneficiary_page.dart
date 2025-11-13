@@ -383,7 +383,8 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
       final database = ref.read(databaseProvider);
 
       // Query all beneficiaries and search manually
-      final allBeneficiaries = await database.getAllBeneficiaries();
+      final allBeneficiaries = await database.beneficiariesDao
+          .getAllBeneficiaries();
       final existing = allBeneficiaries.firstWhere(
         (b) => b.nationalId == nationalId,
         orElse: () => throw StateError('Not found'),
@@ -593,7 +594,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
 
     try {
       final db = ref.read(databaseProvider);
-      final beneficiary = await db.getBeneficiaryById(widget.beneficiaryId!);
+      final beneficiary = await db.beneficiariesDao.getBeneficiaryById(
+        widget.beneficiaryId!,
+      );
 
       if (beneficiary != null && mounted) {
         // المعلومات الأساسية
@@ -724,7 +727,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
 
       if (isEdit) {
         // Update
-        await db.updateBeneficiaryCompanion(
+        await db.beneficiariesDao.updateBeneficiaryCompanion(
           widget.beneficiaryId!,
           BeneficiariesCompanion(
             fullName: drift.Value(_fullNameController.text.trim()),
@@ -784,7 +787,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
       } else {
         // Insert
         final newBeneficiaryId = const Uuid().v4();
-        await db.insertBeneficiary(
+        await db.beneficiariesDao.insertBeneficiary(
           BeneficiariesCompanion.insert(
             id: newBeneficiaryId,
             fullName: _fullNameController.text.trim(),
@@ -852,7 +855,7 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
         }
 
         // تسجيل زيارة أولية عند إضافة مستفيد جديد
-        await db.insertVisit(
+        await db.visitsDao.insertVisit(
           VisitsCompanion.insert(
             id: const Uuid().v4(),
             beneficiaryId: newBeneficiaryId,
@@ -894,7 +897,9 @@ class _AddBeneficiaryPageState extends ConsumerState<AddBeneficiaryPage>
     String newBeneficiaryId,
   ) async {
     try {
-      final attachments = await db.getBeneficiaryAttachments(oldBeneficiaryId);
+      final attachments = await db.attachmentsDao.getBeneficiaryAttachments(
+        oldBeneficiaryId,
+      );
       debugPrint(
         '📎 Updating ${attachments.length} attachments from $oldBeneficiaryId to $newBeneficiaryId',
       );

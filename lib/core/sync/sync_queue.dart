@@ -30,7 +30,7 @@ class SyncQueueService {
         );
   }
 
-  Future<List<SyncQueueData>> getPending({int limit = 200}) async {
+  Future<List<SyncQueueItem>> getPending({int limit = 200}) async {
     return (db.select(db.syncQueue)
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)])
           ..limit(limit))
