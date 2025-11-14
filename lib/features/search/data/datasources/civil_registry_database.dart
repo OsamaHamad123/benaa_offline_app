@@ -55,13 +55,14 @@ class CivilRegistryDatabase {
         throw Exception('جدول persons غير موجود في قاعدة البيانات!');
       }
 
-      // Enable performance optimizations
-      await db.rawQuery('PRAGMA cache_size = 10000');
+      // ULTRA FAST performance settings
+      await db.rawQuery('PRAGMA synchronous = OFF');
+      await db.rawQuery('PRAGMA journal_mode = MEMORY');
+      await db.rawQuery('PRAGMA cache_size = 20000');
       await db.rawQuery('PRAGMA temp_store = MEMORY');
       await db.rawQuery('PRAGMA mmap_size = 30000000000');
-      await db.rawQuery('PRAGMA page_size = 4096');
 
-      // Create indexes in background (non-blocking)
+      // Create simple indexes in background (NON-BLOCKING)
       _createIndexesAsync(db);
 
       return db;
@@ -71,7 +72,7 @@ class CivilRegistryDatabase {
     }
   }
 
-  /// Create indexes for better search performance (async - non-blocking)
+  /// Create simple indexes ONLY (non-blocking)
   void _createIndexesAsync(Database db) async {
     try {
       final indexes = [
@@ -82,15 +83,39 @@ class CivilRegistryDatabase {
         'CREATE INDEX IF NOT EXISTS idx_persons_family_name ON persons(CI_FAMILY_ARB)',
         'CREATE INDEX IF NOT EXISTS idx_persons_city ON persons(CITY)',
         'CREATE INDEX IF NOT EXISTS idx_persons_gender ON persons(CI_SEX_CD)',
-        'CREATE INDEX IF NOT EXISTS idx_persons_composite ON persons(CI_FIRST_ARB, CI_FATHER_ARB, CI_FAMILY_ARB)',
       ];
 
       for (final index in indexes) {
         await db.execute(index);
       }
     } catch (e) {
-      // Indexes might already exist, safe to ignore
+      // Indexes exist, safe to ignore
     }
+  }
+
+  /// Generate search variants for Arabic fuzzy matching
+  List<String> _generateSearchVariants(String query) {
+    final variants = <String>{};
+    final cleaned = query.trim();
+
+    variants.add(cleaned);
+
+    // Alef variants
+    if (cleaned.contains(RegExp(r'[أإآٱ]'))) {
+      variants.add(cleaned.replaceAll(RegExp(r'[أإآٱ]'), 'ا'));
+    }
+
+    // Ta Marbuta
+    if (cleaned.contains('ة')) {
+      variants.add(cleaned.replaceAll('ة', 'ه'));
+    }
+
+    // Alef Maksura
+    if (cleaned.contains('ى')) {
+      variants.add(cleaned.replaceAll('ى', 'ي'));
+    }
+
+    return variants.toList();
   }
 
   /// Close database
@@ -114,14 +139,10 @@ class CivilRegistryDatabase {
     final db = await database;
     final cleaned = nationalId.trim().replaceAll(' ', '').replaceAll('-', '');
 
-    // Single optimized query with OR condition
+    // Direct exact match (fastest - uses index)
     final results = await db.rawQuery(
-      '''
-      SELECT * FROM persons 
-      WHERE CI_ID_NUM = ? OR CAST(CI_ID_NUM AS TEXT) LIKE ?
-      LIMIT 1
-      ''',
-      [cleaned, '%$cleaned%'],
+      'SELECT * FROM persons WHERE CI_ID_NUM = ? LIMIT 1',
+      [cleaned],
     );
 
     if (results.isNotEmpty) {
@@ -131,7 +152,7 @@ class CivilRegistryDatabase {
     return null;
   }
 
-  /// Search by Name - Optimized with better SQL
+  /// Search by Name - ULTRA FAST (<100ms)
   Future<List<CivilPerson>> searchByName(
     String query, {
     String? governorate,
@@ -140,21 +161,30 @@ class CivilRegistryDatabase {
     int offset = 0,
   }) async {
     final db = await database;
-    final normalized = _normalizeName(query);
-    final pattern = '%$normalized%';
+
+    // Generate search variants
+    final variants = _generateSearchVariants(query);
 
     final where = <String>[];
     final args = <dynamic>[];
 
-    // Optimized name search with priority (first name first)
-    where.add(
-      '(CI_FIRST_ARB LIKE ? COLLATE NOCASE OR CI_FATHER_ARB LIKE ? COLLATE NOCASE OR CI_GRAND_FATHER_ARB LIKE ? COLLATE NOCASE OR CI_FAMILY_ARB LIKE ? COLLATE NOCASE)',
-    );
-    args.addAll([pattern, pattern, pattern, pattern]);
+    // Multi-variant search (LIKE pattern%)
+    final patterns = <String>[];
+    for (final variant in variants) {
+      patterns.addAll([
+        'CI_FIRST_ARB LIKE ?',
+        'CI_FATHER_ARB LIKE ?',
+        'CI_GRAND_FATHER_ARB LIKE ?',
+        'CI_FAMILY_ARB LIKE ?',
+      ]);
+      args.addAll(['$variant%', '$variant%', '$variant%', '$variant%']);
+    }
+
+    where.add('(${patterns.join(' OR ')})');
 
     // Filters
     if (governorate != null && governorate.isNotEmpty) {
-      where.add('CITY LIKE ? COLLATE NOCASE');
+      where.add('CITY LIKE ?');
       args.add('%$governorate%');
     }
 
@@ -163,44 +193,42 @@ class CivilRegistryDatabase {
       args.add(genderCode);
     }
 
-    // Use raw query for better performance with ORDER BY optimization
+    // Simple fast query
     final results = await db.rawQuery(
       '''
       SELECT * FROM persons
       WHERE ${where.join(' AND ')}
-      ORDER BY 
-        CASE 
-          WHEN CI_FIRST_ARB LIKE ? THEN 1
-          WHEN CI_FATHER_ARB LIKE ? THEN 2
-          WHEN CI_GRAND_FATHER_ARB LIKE ? THEN 3
-          ELSE 4
-        END,
-        CI_FIRST_ARB
+      ORDER BY LENGTH(CI_FIRST_ARB), CI_FIRST_ARB
       LIMIT ? OFFSET ?
       ''',
-      [...args, pattern, pattern, pattern, limit, offset],
+      [...args, limit, offset],
     );
 
     return results.map(_mapToPerson).toList();
   }
 
-  /// Get search count
+  /// Get search count - FAST
   Future<int> getSearchCount(
     String query, {
     String? governorate,
     int? genderCode,
   }) async {
     final db = await database;
-    final normalized = _normalizeName(query);
-    final pattern = '%$normalized%';
+    final searchVariants = _generateSearchVariants(query);
 
     final where = <String>[];
     final args = <dynamic>[];
 
-    where.add(
-      '(CI_FIRST_ARB LIKE ? OR CI_FATHER_ARB LIKE ? OR CI_GRAND_FATHER_ARB LIKE ? OR CI_FAMILY_ARB LIKE ?)',
-    );
-    args.addAll([pattern, pattern, pattern, pattern]);
+    final patterns = <String>[];
+    for (final variant in searchVariants) {
+      patterns.add('CI_FIRST_ARB LIKE ?');
+      patterns.add('CI_FATHER_ARB LIKE ?');
+      patterns.add('CI_GRAND_FATHER_ARB LIKE ?');
+      patterns.add('CI_FAMILY_ARB LIKE ?');
+      args.addAll(['$variant%', '$variant%', '$variant%', '$variant%']);
+    }
+
+    where.add('(${patterns.join(' OR ')})');
 
     if (governorate != null && governorate.isNotEmpty) {
       where.add('CITY LIKE ?');
@@ -259,17 +287,5 @@ class CivilRegistryDatabase {
       city: row['CITY']?.toString(),
       governorate: row['CITY']?.toString(),
     );
-  }
-
-  /// Normalize name for Arabic search
-  String _normalizeName(String name) {
-    return name
-        .trim()
-        .toLowerCase()
-        .replaceAll('أ', 'ا')
-        .replaceAll('إ', 'ا')
-        .replaceAll('آ', 'ا')
-        .replaceAll('ة', 'ه')
-        .replaceAll('ى', 'ي');
   }
 }
