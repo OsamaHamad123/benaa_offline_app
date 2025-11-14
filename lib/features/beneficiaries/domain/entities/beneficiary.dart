@@ -276,25 +276,34 @@ enum Gender {
 
 /// 📋 Beneficiary Category
 enum BeneficiaryCategory {
-  orphan('يتيم', 'orphan'),
-  poor('فقير', 'poor'),
-  displaced('نازح', 'displaced'),
-  disabled('ذوي احتياجات خاصة', 'disabled'),
-  elderly('مسن', 'elderly'),
-  widow('أرملة', 'widow'),
-  divorced('مطلقة', 'divorced'),
-  prisoner('أسير', 'prisoner'),
-  injured('جريح', 'injured'),
-  martyr('شهيد', 'martyr'),
-  other('أخرى', 'other');
+  orphan('يتيم', 'orphan', 2),
+  poor('فقير', 'poor', 1),
+  displaced('نازح', 'displaced', 4),
+  disabled('ذوي احتياجات خاصة', 'disabled', 5),
+  elderly('مسن', 'elderly', 6),
+  widow('أرملة', 'widow', 3),
+  divorced('مطلقة', 'divorced', 7),
+  prisoner('أسير', 'prisoner', 8),
+  injured('جريح', 'injured', 9),
+  martyr('شهيد', 'martyr', 10),
+  other('أخرى', 'other', 99);
 
   final String arabicLabel;
   final String englishValue;
-  const BeneficiaryCategory(this.arabicLabel, this.englishValue);
+  final int code; // Backend code
+  const BeneficiaryCategory(this.arabicLabel, this.englishValue, this.code);
 
   static BeneficiaryCategory fromString(String value) {
     return BeneficiaryCategory.values.firstWhere(
       (c) => c.englishValue == value || c.arabicLabel == value,
+      orElse: () => BeneficiaryCategory.other,
+    );
+  }
+
+  static BeneficiaryCategory fromCode(int? code) {
+    if (code == null) return BeneficiaryCategory.other;
+    return BeneficiaryCategory.values.firstWhere(
+      (c) => c.code == code,
       orElse: () => BeneficiaryCategory.other,
     );
   }

@@ -68,7 +68,7 @@ class _RecordVisitPageCleanState extends ConsumerState<RecordVisitPageClean> {
 
     final visit = VisitEntity(
       id: '', // Will be auto-generated
-      beneficiaryId: widget.beneficiary.id,
+      beneficiaryId: widget.beneficiary.id.toString(),
       visitDate: _selectedDateTime,
       staffName: _staffNameController.text.trim(),
       notes: _notesController.text.trim(),

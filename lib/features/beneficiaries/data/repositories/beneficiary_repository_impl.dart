@@ -99,19 +99,25 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       needsSync: beneficiary.needsSync,
     ).toDrift();
 
-    await localDataSource.update(beneficiary.id, companion);
+    final id = int.tryParse(beneficiary.id);
+    if (id == null) throw Exception('Invalid beneficiary ID');
+    await localDataSource.update(id, companion);
     return beneficiary;
   }
 
   @override
   Future<Beneficiary?> getById(String id) async {
-    final result = await localDataSource.getById(id);
+    final intId = int.tryParse(id);
+    if (intId == null) return null;
+    final result = await localDataSource.getById(intId);
     return result as Beneficiary?;
   }
 
   @override
   Future<void> delete(String id) async {
-    await localDataSource.delete(id);
+    final intId = int.tryParse(id);
+    if (intId == null) throw Exception('Invalid beneficiary ID');
+    await localDataSource.delete(intId);
   }
 
   @override
@@ -124,8 +130,12 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
   }) async {
     final results = await localDataSource.list(
       searchQuery: searchQuery,
-      category: category?.name,
-      gender: gender?.name,
+      category: category?.code,
+      gender: gender == Gender.male
+          ? 1
+          : gender == Gender.female
+          ? 2
+          : null,
       limit: limit,
       offset: offset,
     );
@@ -134,7 +144,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
 
   @override
   Future<int> count({BeneficiaryCategory? category}) async {
-    return await localDataSource.count(category: category?.name);
+    return await localDataSource.count(category: category?.code);
   }
 
   @override

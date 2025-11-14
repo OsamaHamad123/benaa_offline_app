@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/mappers/beneficiary_mapper.dart';
+import '../beneficiaries/data/models/beneficiary_data_model.dart';
 import '../../core/providers/providers.dart';
 
 /// صفحة استيراد بيانات التجربة من backend_schema.json
@@ -53,11 +53,12 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
         try {
           final row = rows[i] as Map<String, dynamic>;
 
-          // تحويل البيانات باستخدام Mapper
-          final beneficiaryCompanion = BeneficiaryMapper.fromBackend(row);
+          // تحويل البيانات مباشرة إلى Companion للحفظ
+          final dataModel = BeneficiaryDataModel.fromJson(row);
+          final companion = dataModel.toDriftCompanion(isNew: true);
 
           // حفظ في قاعدة البيانات
-          await db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
+          await db.beneficiariesDao.insertBeneficiary(companion);
 
           setState(() {
             _importedRecords = i + 1;
@@ -156,10 +157,10 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
 
 مثال على أول مستفيد:
 - الاسم: ${sample.fullName}
-- الرقم الوطني: ${sample.nationalId}
-- الجنس: ${sample.gender}
-- المحافظة: ${sample.governorate}
-- الفئة: ${sample.category}
+- الرقم الوطني: ${sample.idNumber}
+- الجنس: ${sample.gender == 1 ? 'ذكر' : 'أنثى'}
+- المحافظة: ${sample.province}
+- الفئة: ${sample.sectionId}
 ${sample.serverId != null ? '- Server ID: ${sample.serverId}' : ''}
           ''';
         });

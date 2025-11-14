@@ -61,11 +61,13 @@ final beneficiariesSearchProvider = FutureProvider.family
 final statisticsProvider = FutureProvider.autoDispose<Statistics>((ref) async {
   final db = ref.watch(databaseProvider);
 
+  // TODO: Update to use actual category codes from backend
+  // For now, using placeholder values (orphan=1, poor=2)
   final results = await Future.wait([
     db.beneficiariesDao.countBeneficiaries(),
     db.beneficiariesDao.countPendingSync(),
-    db.beneficiariesDao.countBeneficiariesByCategory('orphan'),
-    db.beneficiariesDao.countBeneficiariesByCategory('poor'),
+    db.beneficiariesDao.countBeneficiariesByCategory(1), // orphan code
+    db.beneficiariesDao.countBeneficiariesByCategory(2), // poor code
   ]);
 
   return Statistics(
@@ -93,7 +95,7 @@ final notificationsCountProvider = FutureProvider.autoDispose<int>((ref) async {
 
 // Single Beneficiary Provider
 final beneficiaryProvider = FutureProvider.family
-    .autoDispose<Beneficiary?, String>((ref, id) async {
+    .autoDispose<Beneficiary?, int>((ref, id) async {
       final db = ref.watch(databaseProvider);
       return await db.beneficiariesDao.getBeneficiaryById(id);
     });
@@ -104,8 +106,8 @@ final beneficiaryProvider = FutureProvider.family
 
 class BeneficiariesFilter {
   final String searchQuery;
-  final String? category;
-  final String? governorate;
+  final int? category;
+  final int? governorate;
   final int limit;
   final int offset;
 
@@ -119,8 +121,8 @@ class BeneficiariesFilter {
 
   BeneficiariesFilter copyWith({
     String? searchQuery,
-    String? category,
-    String? governorate,
+    int? category,
+    int? governorate,
     int? limit,
     int? offset,
   }) {

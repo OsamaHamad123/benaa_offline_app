@@ -198,7 +198,7 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
                               ),
                               SizedBox(height: 4.h),
                               Text(
-                                'رقم الملف: ${widget.beneficiary.fileNo}',
+                                'رقم الملف: ${widget.beneficiary.fileIdNumber ?? "غير محدد"}',
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: Colors.grey[600],
@@ -219,16 +219,15 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
                         ),
                         SizedBox(width: 4.w),
                         Text(
-                          widget.beneficiary.governorate,
+                          widget.beneficiary.province?.toString() ?? 'غير محدد',
                           style: TextStyle(
                             fontSize: 12.sp,
                             color: Colors.grey[700],
                           ),
                         ),
-                        if (widget.beneficiary.district != null &&
-                            widget.beneficiary.district!.isNotEmpty) ...[
+                        if (widget.beneficiary.city != null) ...[
                           Text(
-                            ' - ${widget.beneficiary.district}',
+                            ' - ${widget.beneficiary.city}',
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: Colors.grey[700],

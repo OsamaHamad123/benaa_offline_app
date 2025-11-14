@@ -468,14 +468,14 @@ class _BeneficiaryCard extends StatelessWidget {
               CircleAvatar(
                 radius: 24.r,
                 backgroundColor: _getCategoryColor(
-                  beneficiary.category,
+                  beneficiary.sectionId,
                 ).withOpacity(0.2),
                 child: Text(
                   beneficiary.fullName.substring(0, 1),
                   style: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
-                    color: _getCategoryColor(beneficiary.category),
+                    color: _getCategoryColor(beneficiary.sectionId),
                   ),
                 ),
               ),
@@ -499,7 +499,7 @@ class _BeneficiaryCard extends StatelessWidget {
                         Icon(Icons.badge, size: 12.sp, color: Colors.grey[600]),
                         SizedBox(width: 4.w),
                         Text(
-                          beneficiary.fileNo,
+                          beneficiary.fileIdNumber ?? '',
                           style: TextStyle(
                             fontSize: 11.sp,
                             color: Colors.grey[600],
@@ -514,7 +514,7 @@ class _BeneficiaryCard extends StatelessWidget {
                         SizedBox(width: 4.w),
                         Expanded(
                           child: Text(
-                            beneficiary.governorate,
+                            beneficiary.province?.toString() ?? '',
                             style: TextStyle(
                               fontSize: 11.sp,
                               color: Colors.grey[600],
@@ -540,15 +540,15 @@ class _BeneficiaryCard extends StatelessWidget {
     );
   }
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'orphan':
+  Color _getCategoryColor(int? sectionId) {
+    switch (sectionId) {
+      case 1: // orphan
         return Colors.blue;
-      case 'widow':
+      case 3: // widow
         return Colors.purple;
-      case 'poor':
+      case 2: // poor
         return Colors.orange;
-      case 'disabled':
+      case 4: // disabled
         return Colors.teal;
       default:
         return Colors.grey;

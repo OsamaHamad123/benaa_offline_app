@@ -15,7 +15,7 @@ class BeneficiaryInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categoryColor = _getCategoryColor(beneficiary.category);
+    final categoryColor = _getCategoryColor(beneficiary.sectionId);
 
     return Card(
       elevation: 2,
@@ -56,7 +56,7 @@ class BeneficiaryInfoCard extends StatelessWidget {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        'رقم الملف: ${beneficiary.fileNo}',
+                        'رقم الملف: ${beneficiary.fileIdNumber ?? "غير محدد"}',
                         style: TextStyle(
                           fontSize: compact ? 11.sp : 12.sp,
                           color: Colors.grey[600],
@@ -74,13 +74,12 @@ class BeneficiaryInfoCard extends StatelessWidget {
                   Icon(Icons.location_on, size: 16.sp, color: Colors.grey[600]),
                   SizedBox(width: 4.w),
                   Text(
-                    beneficiary.governorate,
+                    _getProvinceName(beneficiary.province),
                     style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
                   ),
-                  if (beneficiary.district != null &&
-                      beneficiary.district!.isNotEmpty) ...[
+                  if (beneficiary.city != null) ...[
                     Text(
-                      ' - ${beneficiary.district}',
+                      ' - ${_getCityName(beneficiary.city)}',
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: Colors.grey[700],
@@ -96,18 +95,29 @@ class BeneficiaryInfoCard extends StatelessWidget {
     );
   }
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'orphan':
+  Color _getCategoryColor(int? sectionId) {
+    // TODO: Map section IDs to colors based on actual backend codes
+    switch (sectionId) {
+      case 1: // Example: orphan
         return Colors.blue;
-      case 'widow':
+      case 2: // Example: widow
         return Colors.purple;
-      case 'poor':
+      case 3: // Example: poor
         return Colors.orange;
-      case 'disabled':
+      case 4: // Example: disabled
         return Colors.teal;
       default:
         return Colors.grey;
     }
+  }
+
+  String _getProvinceName(int? province) {
+    // TODO: Map province codes to names
+    return province?.toString() ?? 'غير محدد';
+  }
+
+  String _getCityName(int? city) {
+    // TODO: Map city codes to names
+    return city?.toString() ?? 'غير محدد';
   }
 }

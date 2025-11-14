@@ -11,105 +11,79 @@ class $BeneficiariesTable extends Beneficiaries
   $BeneficiariesTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
     'id',
     aliasedName,
     false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
   );
-  static const VerificationMeta _fullNameMeta = const VerificationMeta(
-    'fullName',
-  );
-  @override
-  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
-    'full_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _fullNameNormMeta = const VerificationMeta(
-    'fullNameNorm',
+  static const VerificationMeta _fileIdNumberMeta = const VerificationMeta(
+    'fileIdNumber',
   );
   @override
-  late final GeneratedColumn<String> fullNameNorm = GeneratedColumn<String>(
-    'full_name_norm',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nationalIdMeta = const VerificationMeta(
-    'nationalId',
-  );
-  @override
-  late final GeneratedColumn<String> nationalId = GeneratedColumn<String>(
-    'national_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _fileNoMeta = const VerificationMeta('fileNo');
-  @override
-  late final GeneratedColumn<String> fileNo = GeneratedColumn<String>(
-    'file_no',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _governorateMeta = const VerificationMeta(
-    'governorate',
-  );
-  @override
-  late final GeneratedColumn<String> governorate = GeneratedColumn<String>(
-    'governorate',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _districtMeta = const VerificationMeta(
-    'district',
-  );
-  @override
-  late final GeneratedColumn<String> district = GeneratedColumn<String>(
-    'district',
+  late final GeneratedColumn<String> fileIdNumber = GeneratedColumn<String>(
+    'file_id_number',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _addressMeta = const VerificationMeta(
-    'address',
+  static const VerificationMeta _originalFileIdFromExcelMeta =
+      const VerificationMeta('originalFileIdFromExcel');
+  @override
+  late final GeneratedColumn<String> originalFileIdFromExcel =
+      GeneratedColumn<String>(
+        'original_file_id_from_excel',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sectionIdMeta = const VerificationMeta(
+    'sectionId',
   );
   @override
-  late final GeneratedColumn<String> address = GeneratedColumn<String>(
-    'address',
+  late final GeneratedColumn<int> sectionId = GeneratedColumn<int>(
+    'section_id',
     aliasedName,
     true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _phoneNumberMeta = const VerificationMeta(
-    'phoneNumber',
+  static const VerificationMeta _requestStatusMeta = const VerificationMeta(
+    'requestStatus',
   );
   @override
-  late final GeneratedColumn<String> phoneNumber = GeneratedColumn<String>(
-    'phone_number',
+  late final GeneratedColumn<int> requestStatus = GeneratedColumn<int>(
+    'request_status',
     aliasedName,
-    true,
-    type: DriftSqlType.string,
+    false,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
+    defaultValue: const Constant(1),
   );
-  static const VerificationMeta _motherNameMeta = const VerificationMeta(
-    'motherName',
+  static const VerificationMeta _idNumberMeta = const VerificationMeta(
+    'idNumber',
   );
   @override
-  late final GeneratedColumn<String> motherName = GeneratedColumn<String>(
-    'mother_name',
+  late final GeneratedColumn<int> idNumber = GeneratedColumn<int>(
+    'id_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firstNameMeta = const VerificationMeta(
+    'firstName',
+  );
+  @override
+  late final GeneratedColumn<String> firstName = GeneratedColumn<String>(
+    'first_name',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -148,47 +122,16 @@ class $BeneficiariesTable extends Beneficiaries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _altPhoneNumberMeta = const VerificationMeta(
-    'altPhoneNumber',
+  static const VerificationMeta _relationshipMeta = const VerificationMeta(
+    'relationship',
   );
   @override
-  late final GeneratedColumn<String> altPhoneNumber = GeneratedColumn<String>(
-    'alt_phone_number',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _familySizeMeta = const VerificationMeta(
-    'familySize',
-  );
-  @override
-  late final GeneratedColumn<int> familySize = GeneratedColumn<int>(
-    'family_size',
+  late final GeneratedColumn<int> relationship = GeneratedColumn<int>(
+    'relationship',
     aliasedName,
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-  );
-  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
-  @override
-  late final GeneratedColumn<String> gender = GeneratedColumn<String>(
-    'gender',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _categoryMeta = const VerificationMeta(
-    'category',
-  );
-  @override
-  late final GeneratedColumn<String> category = GeneratedColumn<String>(
-    'category',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
   );
   static const VerificationMeta _birthDateMeta = const VerificationMeta(
     'birthDate',
@@ -201,54 +144,101 @@ class $BeneficiariesTable extends Beneficiaries
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
+  @override
+  late final GeneratedColumn<int> gender = GeneratedColumn<int>(
+    'gender',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _phoneNumberMeta = const VerificationMeta(
+    'phoneNumber',
+  );
+  @override
+  late final GeneratedColumn<int> phoneNumber = GeneratedColumn<int>(
+    'phone_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _altPhoneNumberMeta = const VerificationMeta(
+    'altPhoneNumber',
+  );
+  @override
+  late final GeneratedColumn<int> altPhoneNumber = GeneratedColumn<int>(
+    'alt_phone_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _numberOfIndividualsMeta =
+      const VerificationMeta('numberOfIndividuals');
+  @override
+  late final GeneratedColumn<int> numberOfIndividuals = GeneratedColumn<int>(
+    'number_of_individuals',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _maritalStatusMeta = const VerificationMeta(
     'maritalStatus',
   );
   @override
-  late final GeneratedColumn<String> maritalStatus = GeneratedColumn<String>(
+  late final GeneratedColumn<int> maritalStatus = GeneratedColumn<int>(
     'marital_status',
     aliasedName,
     true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _educationLevelMeta = const VerificationMeta(
-    'educationLevel',
+  static const VerificationMeta _numberOfMalesMeta = const VerificationMeta(
+    'numberOfMales',
   );
   @override
-  late final GeneratedColumn<String> educationLevel = GeneratedColumn<String>(
-    'education_level',
+  late final GeneratedColumn<int> numberOfMales = GeneratedColumn<int>(
+    'number_of_males',
     aliasedName,
     true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _healthStatusMeta = const VerificationMeta(
-    'healthStatus',
+  static const VerificationMeta _numberOfFemalesMeta = const VerificationMeta(
+    'numberOfFemales',
   );
   @override
-  late final GeneratedColumn<String> healthStatus = GeneratedColumn<String>(
-    'health_status',
+  late final GeneratedColumn<int> numberOfFemales = GeneratedColumn<int>(
+    'number_of_females',
     aliasedName,
     true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _hasDisabilityMeta = const VerificationMeta(
-    'hasDisability',
-  );
+  static const VerificationMeta _academicQualificationMeta =
+      const VerificationMeta('academicQualification');
   @override
-  late final GeneratedColumn<bool> hasDisability = GeneratedColumn<bool>(
-    'has_disability',
+  late final GeneratedColumn<int> academicQualification = GeneratedColumn<int>(
+    'academic_qualification',
     aliasedName,
-    false,
-    type: DriftSqlType.bool,
+    true,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("has_disability" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
   );
+  static const VerificationMeta _employmentStatusBreadwinnerMeta =
+      const VerificationMeta('employmentStatusBreadwinner');
+  @override
+  late final GeneratedColumn<int> employmentStatusBreadwinner =
+      GeneratedColumn<int>(
+        'employment_status_breadwinner',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _displacementStatusMeta =
       const VerificationMeta('displacementStatus');
   @override
@@ -281,60 +271,59 @@ class $BeneficiariesTable extends Beneficiaries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _numberOfMalesMeta = const VerificationMeta(
-    'numberOfMales',
-  );
+  static const VerificationMeta _cityMeta = const VerificationMeta('city');
   @override
-  late final GeneratedColumn<int> numberOfMales = GeneratedColumn<int>(
-    'number_of_males',
+  late final GeneratedColumn<int> city = GeneratedColumn<int>(
+    'city',
     aliasedName,
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _numberOfFemalesMeta = const VerificationMeta(
-    'numberOfFemales',
+  static const VerificationMeta _provinceMeta = const VerificationMeta(
+    'province',
   );
   @override
-  late final GeneratedColumn<int> numberOfFemales = GeneratedColumn<int>(
-    'number_of_females',
+  late final GeneratedColumn<int> province = GeneratedColumn<int>(
+    'province',
     aliasedName,
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _chronicDiseasesCountMeta =
-      const VerificationMeta('chronicDiseasesCount');
+  static const VerificationMeta _healthStatusMeta = const VerificationMeta(
+    'healthStatus',
+  );
   @override
-  late final GeneratedColumn<int> chronicDiseasesCount = GeneratedColumn<int>(
-    'chronic_diseases_count',
+  late final GeneratedColumn<int> healthStatus = GeneratedColumn<int>(
+    'health_status',
     aliasedName,
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _specialNeedsCountMeta = const VerificationMeta(
-    'specialNeedsCount',
-  );
+  static const VerificationMeta _numberOfIndividualsWithChronicDiseasesMeta =
+      const VerificationMeta('numberOfIndividualsWithChronicDiseases');
   @override
-  late final GeneratedColumn<int> specialNeedsCount = GeneratedColumn<int>(
-    'special_needs_count',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _employmentStatusMeta = const VerificationMeta(
-    'employmentStatus',
-  );
+  late final GeneratedColumn<int> numberOfIndividualsWithChronicDiseases =
+      GeneratedColumn<int>(
+        'number_of_individuals_with_chronic_diseases',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _numberOfPeopleWithSpecialNeedsMeta =
+      const VerificationMeta('numberOfPeopleWithSpecialNeeds');
   @override
-  late final GeneratedColumn<int> employmentStatus = GeneratedColumn<int>(
-    'employment_status',
-    aliasedName,
-    true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
+  late final GeneratedColumn<int> numberOfPeopleWithSpecialNeeds =
+      GeneratedColumn<int>(
+        'number_of_people_with_special_needs',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _housingStatusMeta = const VerificationMeta(
     'housingStatus',
   );
@@ -346,44 +335,33 @@ class $BeneficiariesTable extends Beneficiaries
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _housingTypeMeta = const VerificationMeta(
-    'housingType',
-  );
+  static const VerificationMeta _currentHousingTypeMeta =
+      const VerificationMeta('currentHousingType');
   @override
-  late final GeneratedColumn<int> housingType = GeneratedColumn<int>(
-    'housing_type',
+  late final GeneratedColumn<int> currentHousingType = GeneratedColumn<int>(
+    'current_housing_type',
     aliasedName,
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _requestStatusMeta = const VerificationMeta(
-    'requestStatus',
+  static const VerificationMeta _descriptionNeedsMeta = const VerificationMeta(
+    'descriptionNeeds',
   );
   @override
-  late final GeneratedColumn<int> requestStatus = GeneratedColumn<int>(
-    'request_status',
+  late final GeneratedColumn<String> descriptionNeeds = GeneratedColumn<String>(
+    'description_needs',
     aliasedName,
     true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
-  @override
-  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-    'notes',
-    aliasedName,
-    false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-    defaultValue: const Constant(''),
   );
-  static const VerificationMeta _associationNameMeta = const VerificationMeta(
-    'associationName',
+  static const VerificationMeta _userInsertDataMeta = const VerificationMeta(
+    'userInsertData',
   );
   @override
-  late final GeneratedColumn<String> associationName = GeneratedColumn<String>(
-    'association_name',
+  late final GeneratedColumn<String> userInsertData = GeneratedColumn<String>(
+    'user_insert_data',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -396,9 +374,9 @@ class $BeneficiariesTable extends Beneficiaries
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
     'created_at',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
@@ -407,9 +385,9 @@ class $BeneficiariesTable extends Beneficiaries
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
     'updated_at',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _syncStateMeta = const VerificationMeta(
     'syncState',
@@ -427,11 +405,11 @@ class $BeneficiariesTable extends Beneficiaries
     'serverId',
   );
   @override
-  late final GeneratedColumn<String> serverId = GeneratedColumn<String>(
+  late final GeneratedColumn<int> serverId = GeneratedColumn<int>(
     'server_id',
     aliasedName,
     true,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
@@ -445,48 +423,80 @@ class $BeneficiariesTable extends Beneficiaries
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fullNameMeta = const VerificationMeta(
+    'fullName',
+  );
+  @override
+  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
+    'full_name',
+    aliasedName,
+    false,
+    generatedAs: GeneratedAs(
+      firstName +
+          const Constant(' ') +
+          fatherName +
+          const Constant(' ') +
+          grandFatherName +
+          const Constant(' ') +
+          familyName,
+      true,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fullNameNormMeta = const VerificationMeta(
+    'fullNameNorm',
+  );
+  @override
+  late final GeneratedColumn<String> fullNameNorm = GeneratedColumn<String>(
+    'full_name_norm',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    fullName,
-    fullNameNorm,
-    nationalId,
-    fileNo,
-    governorate,
-    district,
-    address,
-    phoneNumber,
-    motherName,
+    fileIdNumber,
+    originalFileIdFromExcel,
+    sectionId,
+    requestStatus,
+    idNumber,
+    firstName,
     fatherName,
     grandFatherName,
     familyName,
-    altPhoneNumber,
-    familySize,
-    gender,
-    category,
+    relationship,
     birthDate,
+    gender,
+    phoneNumber,
+    altPhoneNumber,
+    numberOfIndividuals,
     maritalStatus,
-    educationLevel,
-    healthStatus,
-    hasDisability,
+    numberOfMales,
+    numberOfFemales,
+    academicQualification,
+    employmentStatusBreadwinner,
     displacementStatus,
     addressBeforeDisplacement,
     currentAddress,
-    numberOfMales,
-    numberOfFemales,
-    chronicDiseasesCount,
-    specialNeedsCount,
-    employmentStatus,
+    city,
+    province,
+    healthStatus,
+    numberOfIndividualsWithChronicDiseases,
+    numberOfPeopleWithSpecialNeeds,
     housingStatus,
-    housingType,
-    requestStatus,
-    notes,
-    associationName,
+    currentHousingType,
+    descriptionNeeds,
+    userInsertData,
     createdAt,
     updatedAt,
     syncState,
     serverId,
     lastSyncedAt,
+    fullName,
+    fullNameNorm,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -502,80 +512,52 @@ class $BeneficiariesTable extends Beneficiaries
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
     }
-    if (data.containsKey('full_name')) {
+    if (data.containsKey('file_id_number')) {
       context.handle(
-        _fullNameMeta,
-        fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_fullNameMeta);
-    }
-    if (data.containsKey('full_name_norm')) {
-      context.handle(
-        _fullNameNormMeta,
-        fullNameNorm.isAcceptableOrUnknown(
-          data['full_name_norm']!,
-          _fullNameNormMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_fullNameNormMeta);
-    }
-    if (data.containsKey('national_id')) {
-      context.handle(
-        _nationalIdMeta,
-        nationalId.isAcceptableOrUnknown(data['national_id']!, _nationalIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_nationalIdMeta);
-    }
-    if (data.containsKey('file_no')) {
-      context.handle(
-        _fileNoMeta,
-        fileNo.isAcceptableOrUnknown(data['file_no']!, _fileNoMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_fileNoMeta);
-    }
-    if (data.containsKey('governorate')) {
-      context.handle(
-        _governorateMeta,
-        governorate.isAcceptableOrUnknown(
-          data['governorate']!,
-          _governorateMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_governorateMeta);
-    }
-    if (data.containsKey('district')) {
-      context.handle(
-        _districtMeta,
-        district.isAcceptableOrUnknown(data['district']!, _districtMeta),
-      );
-    }
-    if (data.containsKey('address')) {
-      context.handle(
-        _addressMeta,
-        address.isAcceptableOrUnknown(data['address']!, _addressMeta),
-      );
-    }
-    if (data.containsKey('phone_number')) {
-      context.handle(
-        _phoneNumberMeta,
-        phoneNumber.isAcceptableOrUnknown(
-          data['phone_number']!,
-          _phoneNumberMeta,
+        _fileIdNumberMeta,
+        fileIdNumber.isAcceptableOrUnknown(
+          data['file_id_number']!,
+          _fileIdNumberMeta,
         ),
       );
     }
-    if (data.containsKey('mother_name')) {
+    if (data.containsKey('original_file_id_from_excel')) {
       context.handle(
-        _motherNameMeta,
-        motherName.isAcceptableOrUnknown(data['mother_name']!, _motherNameMeta),
+        _originalFileIdFromExcelMeta,
+        originalFileIdFromExcel.isAcceptableOrUnknown(
+          data['original_file_id_from_excel']!,
+          _originalFileIdFromExcelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('section_id')) {
+      context.handle(
+        _sectionIdMeta,
+        sectionId.isAcceptableOrUnknown(data['section_id']!, _sectionIdMeta),
+      );
+    }
+    if (data.containsKey('request_status')) {
+      context.handle(
+        _requestStatusMeta,
+        requestStatus.isAcceptableOrUnknown(
+          data['request_status']!,
+          _requestStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('id_number')) {
+      context.handle(
+        _idNumberMeta,
+        idNumber.isAcceptableOrUnknown(data['id_number']!, _idNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_idNumberMeta);
+    }
+    if (data.containsKey('first_name')) {
+      context.handle(
+        _firstNameMeta,
+        firstName.isAcceptableOrUnknown(data['first_name']!, _firstNameMeta),
       );
     }
     if (data.containsKey('father_name')) {
@@ -599,6 +581,38 @@ class $BeneficiariesTable extends Beneficiaries
         familyName.isAcceptableOrUnknown(data['family_name']!, _familyNameMeta),
       );
     }
+    if (data.containsKey('relationship')) {
+      context.handle(
+        _relationshipMeta,
+        relationship.isAcceptableOrUnknown(
+          data['relationship']!,
+          _relationshipMeta,
+        ),
+      );
+    }
+    if (data.containsKey('birth_date')) {
+      context.handle(
+        _birthDateMeta,
+        birthDate.isAcceptableOrUnknown(data['birth_date']!, _birthDateMeta),
+      );
+    }
+    if (data.containsKey('gender')) {
+      context.handle(
+        _genderMeta,
+        gender.isAcceptableOrUnknown(data['gender']!, _genderMeta),
+      );
+    }
+    if (data.containsKey('phone_number')) {
+      context.handle(
+        _phoneNumberMeta,
+        phoneNumber.isAcceptableOrUnknown(
+          data['phone_number']!,
+          _phoneNumberMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_phoneNumberMeta);
+    }
     if (data.containsKey('alt_phone_number')) {
       context.handle(
         _altPhoneNumberMeta,
@@ -607,33 +621,16 @@ class $BeneficiariesTable extends Beneficiaries
           _altPhoneNumberMeta,
         ),
       );
-    }
-    if (data.containsKey('family_size')) {
-      context.handle(
-        _familySizeMeta,
-        familySize.isAcceptableOrUnknown(data['family_size']!, _familySizeMeta),
-      );
-    }
-    if (data.containsKey('gender')) {
-      context.handle(
-        _genderMeta,
-        gender.isAcceptableOrUnknown(data['gender']!, _genderMeta),
-      );
     } else if (isInserting) {
-      context.missing(_genderMeta);
+      context.missing(_altPhoneNumberMeta);
     }
-    if (data.containsKey('category')) {
+    if (data.containsKey('number_of_individuals')) {
       context.handle(
-        _categoryMeta,
-        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_categoryMeta);
-    }
-    if (data.containsKey('birth_date')) {
-      context.handle(
-        _birthDateMeta,
-        birthDate.isAcceptableOrUnknown(data['birth_date']!, _birthDateMeta),
+        _numberOfIndividualsMeta,
+        numberOfIndividuals.isAcceptableOrUnknown(
+          data['number_of_individuals']!,
+          _numberOfIndividualsMeta,
+        ),
       );
     }
     if (data.containsKey('marital_status')) {
@@ -645,30 +642,39 @@ class $BeneficiariesTable extends Beneficiaries
         ),
       );
     }
-    if (data.containsKey('education_level')) {
+    if (data.containsKey('number_of_males')) {
       context.handle(
-        _educationLevelMeta,
-        educationLevel.isAcceptableOrUnknown(
-          data['education_level']!,
-          _educationLevelMeta,
+        _numberOfMalesMeta,
+        numberOfMales.isAcceptableOrUnknown(
+          data['number_of_males']!,
+          _numberOfMalesMeta,
         ),
       );
     }
-    if (data.containsKey('health_status')) {
+    if (data.containsKey('number_of_females')) {
       context.handle(
-        _healthStatusMeta,
-        healthStatus.isAcceptableOrUnknown(
-          data['health_status']!,
-          _healthStatusMeta,
+        _numberOfFemalesMeta,
+        numberOfFemales.isAcceptableOrUnknown(
+          data['number_of_females']!,
+          _numberOfFemalesMeta,
         ),
       );
     }
-    if (data.containsKey('has_disability')) {
+    if (data.containsKey('academic_qualification')) {
       context.handle(
-        _hasDisabilityMeta,
-        hasDisability.isAcceptableOrUnknown(
-          data['has_disability']!,
-          _hasDisabilityMeta,
+        _academicQualificationMeta,
+        academicQualification.isAcceptableOrUnknown(
+          data['academic_qualification']!,
+          _academicQualificationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('employment_status_breadwinner')) {
+      context.handle(
+        _employmentStatusBreadwinnerMeta,
+        employmentStatusBreadwinner.isAcceptableOrUnknown(
+          data['employment_status_breadwinner']!,
+          _employmentStatusBreadwinnerMeta,
         ),
       );
     }
@@ -699,48 +705,42 @@ class $BeneficiariesTable extends Beneficiaries
         ),
       );
     }
-    if (data.containsKey('number_of_males')) {
+    if (data.containsKey('city')) {
       context.handle(
-        _numberOfMalesMeta,
-        numberOfMales.isAcceptableOrUnknown(
-          data['number_of_males']!,
-          _numberOfMalesMeta,
+        _cityMeta,
+        city.isAcceptableOrUnknown(data['city']!, _cityMeta),
+      );
+    }
+    if (data.containsKey('province')) {
+      context.handle(
+        _provinceMeta,
+        province.isAcceptableOrUnknown(data['province']!, _provinceMeta),
+      );
+    }
+    if (data.containsKey('health_status')) {
+      context.handle(
+        _healthStatusMeta,
+        healthStatus.isAcceptableOrUnknown(
+          data['health_status']!,
+          _healthStatusMeta,
         ),
       );
     }
-    if (data.containsKey('number_of_females')) {
+    if (data.containsKey('number_of_individuals_with_chronic_diseases')) {
       context.handle(
-        _numberOfFemalesMeta,
-        numberOfFemales.isAcceptableOrUnknown(
-          data['number_of_females']!,
-          _numberOfFemalesMeta,
+        _numberOfIndividualsWithChronicDiseasesMeta,
+        numberOfIndividualsWithChronicDiseases.isAcceptableOrUnknown(
+          data['number_of_individuals_with_chronic_diseases']!,
+          _numberOfIndividualsWithChronicDiseasesMeta,
         ),
       );
     }
-    if (data.containsKey('chronic_diseases_count')) {
+    if (data.containsKey('number_of_people_with_special_needs')) {
       context.handle(
-        _chronicDiseasesCountMeta,
-        chronicDiseasesCount.isAcceptableOrUnknown(
-          data['chronic_diseases_count']!,
-          _chronicDiseasesCountMeta,
-        ),
-      );
-    }
-    if (data.containsKey('special_needs_count')) {
-      context.handle(
-        _specialNeedsCountMeta,
-        specialNeedsCount.isAcceptableOrUnknown(
-          data['special_needs_count']!,
-          _specialNeedsCountMeta,
-        ),
-      );
-    }
-    if (data.containsKey('employment_status')) {
-      context.handle(
-        _employmentStatusMeta,
-        employmentStatus.isAcceptableOrUnknown(
-          data['employment_status']!,
-          _employmentStatusMeta,
+        _numberOfPeopleWithSpecialNeedsMeta,
+        numberOfPeopleWithSpecialNeeds.isAcceptableOrUnknown(
+          data['number_of_people_with_special_needs']!,
+          _numberOfPeopleWithSpecialNeedsMeta,
         ),
       );
     }
@@ -753,36 +753,30 @@ class $BeneficiariesTable extends Beneficiaries
         ),
       );
     }
-    if (data.containsKey('housing_type')) {
+    if (data.containsKey('current_housing_type')) {
       context.handle(
-        _housingTypeMeta,
-        housingType.isAcceptableOrUnknown(
-          data['housing_type']!,
-          _housingTypeMeta,
+        _currentHousingTypeMeta,
+        currentHousingType.isAcceptableOrUnknown(
+          data['current_housing_type']!,
+          _currentHousingTypeMeta,
         ),
       );
     }
-    if (data.containsKey('request_status')) {
+    if (data.containsKey('description_needs')) {
       context.handle(
-        _requestStatusMeta,
-        requestStatus.isAcceptableOrUnknown(
-          data['request_status']!,
-          _requestStatusMeta,
+        _descriptionNeedsMeta,
+        descriptionNeeds.isAcceptableOrUnknown(
+          data['description_needs']!,
+          _descriptionNeedsMeta,
         ),
       );
     }
-    if (data.containsKey('notes')) {
+    if (data.containsKey('user_insert_data')) {
       context.handle(
-        _notesMeta,
-        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
-      );
-    }
-    if (data.containsKey('association_name')) {
-      context.handle(
-        _associationNameMeta,
-        associationName.isAcceptableOrUnknown(
-          data['association_name']!,
-          _associationNameMeta,
+        _userInsertDataMeta,
+        userInsertData.isAcceptableOrUnknown(
+          data['user_insert_data']!,
+          _userInsertDataMeta,
         ),
       );
     }
@@ -791,16 +785,12 @@ class $BeneficiariesTable extends Beneficiaries
         _createdAtMeta,
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
     }
     if (data.containsKey('sync_state')) {
       context.handle(
@@ -823,54 +813,61 @@ class $BeneficiariesTable extends Beneficiaries
         ),
       );
     }
+    if (data.containsKey('full_name')) {
+      context.handle(
+        _fullNameMeta,
+        fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta),
+      );
+    }
+    if (data.containsKey('full_name_norm')) {
+      context.handle(
+        _fullNameNormMeta,
+        fullNameNorm.isAcceptableOrUnknown(
+          data['full_name_norm']!,
+          _fullNameNormMeta,
+        ),
+      );
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {idNumber},
+  ];
+  @override
   Beneficiary map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Beneficiary(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
+        DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      fullName: attachedDatabase.typeMapping.read(
+      fileIdNumber: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}full_name'],
-      )!,
-      fullNameNorm: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}full_name_norm'],
-      )!,
-      nationalId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}national_id'],
-      )!,
-      fileNo: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}file_no'],
-      )!,
-      governorate: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}governorate'],
-      )!,
-      district: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}district'],
+        data['${effectivePrefix}file_id_number'],
       ),
-      address: attachedDatabase.typeMapping.read(
+      originalFileIdFromExcel: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}address'],
+        data['${effectivePrefix}original_file_id_from_excel'],
       ),
-      phoneNumber: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}phone_number'],
+      sectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}section_id'],
       ),
-      motherName: attachedDatabase.typeMapping.read(
+      requestStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}request_status'],
+      )!,
+      idNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id_number'],
+      )!,
+      firstName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}mother_name'],
+        data['${effectivePrefix}first_name'],
       ),
       fatherName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -884,42 +881,50 @@ class $BeneficiariesTable extends Beneficiaries
         DriftSqlType.string,
         data['${effectivePrefix}family_name'],
       ),
-      altPhoneNumber: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}alt_phone_number'],
-      ),
-      familySize: attachedDatabase.typeMapping.read(
+      relationship: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}family_size'],
+        data['${effectivePrefix}relationship'],
       ),
-      gender: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}gender'],
-      )!,
-      category: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}category'],
-      )!,
       birthDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}birth_date'],
       ),
+      gender: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}gender'],
+      ),
+      phoneNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}phone_number'],
+      )!,
+      altPhoneNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}alt_phone_number'],
+      )!,
+      numberOfIndividuals: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number_of_individuals'],
+      ),
       maritalStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
+        DriftSqlType.int,
         data['${effectivePrefix}marital_status'],
       ),
-      educationLevel: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}education_level'],
+      numberOfMales: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number_of_males'],
       ),
-      healthStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}health_status'],
+      numberOfFemales: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}number_of_females'],
       ),
-      hasDisability: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}has_disability'],
-      )!,
+      academicQualification: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}academic_qualification'],
+      ),
+      employmentStatusBreadwinner: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}employment_status_breadwinner'],
+      ),
       displacementStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}displacement_status'],
@@ -932,65 +937,69 @@ class $BeneficiariesTable extends Beneficiaries
         DriftSqlType.string,
         data['${effectivePrefix}current_address'],
       ),
-      numberOfMales: attachedDatabase.typeMapping.read(
+      city: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}number_of_males'],
+        data['${effectivePrefix}city'],
       ),
-      numberOfFemales: attachedDatabase.typeMapping.read(
+      province: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}number_of_females'],
+        data['${effectivePrefix}province'],
       ),
-      chronicDiseasesCount: attachedDatabase.typeMapping.read(
+      healthStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}chronic_diseases_count'],
+        data['${effectivePrefix}health_status'],
       ),
-      specialNeedsCount: attachedDatabase.typeMapping.read(
+      numberOfIndividualsWithChronicDiseases: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}special_needs_count'],
+        data['${effectivePrefix}number_of_individuals_with_chronic_diseases'],
       ),
-      employmentStatus: attachedDatabase.typeMapping.read(
+      numberOfPeopleWithSpecialNeeds: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}employment_status'],
+        data['${effectivePrefix}number_of_people_with_special_needs'],
       ),
       housingStatus: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}housing_status'],
       ),
-      housingType: attachedDatabase.typeMapping.read(
+      currentHousingType: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}housing_type'],
+        data['${effectivePrefix}current_housing_type'],
       ),
-      requestStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}request_status'],
+      descriptionNeeds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description_needs'],
       ),
-      notes: attachedDatabase.typeMapping.read(
+      userInsertData: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}notes'],
-      )!,
-      associationName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}association_name'],
+        data['${effectivePrefix}user_insert_data'],
       ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
-      )!,
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}updated_at'],
-      )!,
+      ),
       syncState: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sync_state'],
       )!,
       serverId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
+        DriftSqlType.int,
         data['${effectivePrefix}server_id'],
       ),
       lastSyncedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_synced_at'],
+      ),
+      fullName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}full_name'],
+      )!,
+      fullNameNorm: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}full_name_norm'],
       ),
     );
   }
@@ -1002,108 +1011,107 @@ class $BeneficiariesTable extends Beneficiaries
 }
 
 class Beneficiary extends DataClass implements Insertable<Beneficiary> {
-  final String id;
-  final String fullName;
-  final String fullNameNorm;
-  final String nationalId;
-  final String fileNo;
-  final String governorate;
-  final String? district;
-  final String? address;
-  final String? phoneNumber;
-  final String? motherName;
+  final int id;
+  final String? fileIdNumber;
+  final String? originalFileIdFromExcel;
+  final int? sectionId;
+  final int requestStatus;
+  final int idNumber;
+  final String? firstName;
   final String? fatherName;
   final String? grandFatherName;
   final String? familyName;
-  final String? altPhoneNumber;
-  final int? familySize;
-  final String gender;
-  final String category;
+  final int? relationship;
   final DateTime? birthDate;
-  final String? maritalStatus;
-  final String? educationLevel;
-  final String? healthStatus;
-  final bool hasDisability;
+  final int? gender;
+  final int phoneNumber;
+  final int altPhoneNumber;
+  final int? numberOfIndividuals;
+  final int? maritalStatus;
+  final int? numberOfMales;
+  final int? numberOfFemales;
+  final int? academicQualification;
+  final int? employmentStatusBreadwinner;
   final int? displacementStatus;
   final String? addressBeforeDisplacement;
   final String? currentAddress;
-  final int? numberOfMales;
-  final int? numberOfFemales;
-  final int? chronicDiseasesCount;
-  final int? specialNeedsCount;
-  final int? employmentStatus;
+  final int? city;
+  final int? province;
+  final int? healthStatus;
+  final int? numberOfIndividualsWithChronicDiseases;
+  final int? numberOfPeopleWithSpecialNeeds;
   final int? housingStatus;
-  final int? housingType;
-  final int? requestStatus;
-  final String notes;
-  final String? associationName;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final int? currentHousingType;
+  final String? descriptionNeeds;
+  final String? userInsertData;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
   final String syncState;
-  final String? serverId;
+  final int? serverId;
   final DateTime? lastSyncedAt;
+  final String fullName;
+  final String? fullNameNorm;
   const Beneficiary({
     required this.id,
-    required this.fullName,
-    required this.fullNameNorm,
-    required this.nationalId,
-    required this.fileNo,
-    required this.governorate,
-    this.district,
-    this.address,
-    this.phoneNumber,
-    this.motherName,
+    this.fileIdNumber,
+    this.originalFileIdFromExcel,
+    this.sectionId,
+    required this.requestStatus,
+    required this.idNumber,
+    this.firstName,
     this.fatherName,
     this.grandFatherName,
     this.familyName,
-    this.altPhoneNumber,
-    this.familySize,
-    required this.gender,
-    required this.category,
+    this.relationship,
     this.birthDate,
+    this.gender,
+    required this.phoneNumber,
+    required this.altPhoneNumber,
+    this.numberOfIndividuals,
     this.maritalStatus,
-    this.educationLevel,
-    this.healthStatus,
-    required this.hasDisability,
+    this.numberOfMales,
+    this.numberOfFemales,
+    this.academicQualification,
+    this.employmentStatusBreadwinner,
     this.displacementStatus,
     this.addressBeforeDisplacement,
     this.currentAddress,
-    this.numberOfMales,
-    this.numberOfFemales,
-    this.chronicDiseasesCount,
-    this.specialNeedsCount,
-    this.employmentStatus,
+    this.city,
+    this.province,
+    this.healthStatus,
+    this.numberOfIndividualsWithChronicDiseases,
+    this.numberOfPeopleWithSpecialNeeds,
     this.housingStatus,
-    this.housingType,
-    this.requestStatus,
-    required this.notes,
-    this.associationName,
-    required this.createdAt,
-    required this.updatedAt,
+    this.currentHousingType,
+    this.descriptionNeeds,
+    this.userInsertData,
+    this.createdAt,
+    this.updatedAt,
     required this.syncState,
     this.serverId,
     this.lastSyncedAt,
+    required this.fullName,
+    this.fullNameNorm,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['full_name'] = Variable<String>(fullName);
-    map['full_name_norm'] = Variable<String>(fullNameNorm);
-    map['national_id'] = Variable<String>(nationalId);
-    map['file_no'] = Variable<String>(fileNo);
-    map['governorate'] = Variable<String>(governorate);
-    if (!nullToAbsent || district != null) {
-      map['district'] = Variable<String>(district);
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || fileIdNumber != null) {
+      map['file_id_number'] = Variable<String>(fileIdNumber);
     }
-    if (!nullToAbsent || address != null) {
-      map['address'] = Variable<String>(address);
+    if (!nullToAbsent || originalFileIdFromExcel != null) {
+      map['original_file_id_from_excel'] = Variable<String>(
+        originalFileIdFromExcel,
+      );
     }
-    if (!nullToAbsent || phoneNumber != null) {
-      map['phone_number'] = Variable<String>(phoneNumber);
+    if (!nullToAbsent || sectionId != null) {
+      map['section_id'] = Variable<int>(sectionId);
     }
-    if (!nullToAbsent || motherName != null) {
-      map['mother_name'] = Variable<String>(motherName);
+    map['request_status'] = Variable<int>(requestStatus);
+    map['id_number'] = Variable<int>(idNumber);
+    if (!nullToAbsent || firstName != null) {
+      map['first_name'] = Variable<String>(firstName);
     }
     if (!nullToAbsent || fatherName != null) {
       map['father_name'] = Variable<String>(fatherName);
@@ -1114,27 +1122,37 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
     if (!nullToAbsent || familyName != null) {
       map['family_name'] = Variable<String>(familyName);
     }
-    if (!nullToAbsent || altPhoneNumber != null) {
-      map['alt_phone_number'] = Variable<String>(altPhoneNumber);
+    if (!nullToAbsent || relationship != null) {
+      map['relationship'] = Variable<int>(relationship);
     }
-    if (!nullToAbsent || familySize != null) {
-      map['family_size'] = Variable<int>(familySize);
-    }
-    map['gender'] = Variable<String>(gender);
-    map['category'] = Variable<String>(category);
     if (!nullToAbsent || birthDate != null) {
       map['birth_date'] = Variable<DateTime>(birthDate);
     }
+    if (!nullToAbsent || gender != null) {
+      map['gender'] = Variable<int>(gender);
+    }
+    map['phone_number'] = Variable<int>(phoneNumber);
+    map['alt_phone_number'] = Variable<int>(altPhoneNumber);
+    if (!nullToAbsent || numberOfIndividuals != null) {
+      map['number_of_individuals'] = Variable<int>(numberOfIndividuals);
+    }
     if (!nullToAbsent || maritalStatus != null) {
-      map['marital_status'] = Variable<String>(maritalStatus);
+      map['marital_status'] = Variable<int>(maritalStatus);
     }
-    if (!nullToAbsent || educationLevel != null) {
-      map['education_level'] = Variable<String>(educationLevel);
+    if (!nullToAbsent || numberOfMales != null) {
+      map['number_of_males'] = Variable<int>(numberOfMales);
     }
-    if (!nullToAbsent || healthStatus != null) {
-      map['health_status'] = Variable<String>(healthStatus);
+    if (!nullToAbsent || numberOfFemales != null) {
+      map['number_of_females'] = Variable<int>(numberOfFemales);
     }
-    map['has_disability'] = Variable<bool>(hasDisability);
+    if (!nullToAbsent || academicQualification != null) {
+      map['academic_qualification'] = Variable<int>(academicQualification);
+    }
+    if (!nullToAbsent || employmentStatusBreadwinner != null) {
+      map['employment_status_breadwinner'] = Variable<int>(
+        employmentStatusBreadwinner,
+      );
+    }
     if (!nullToAbsent || displacementStatus != null) {
       map['displacement_status'] = Variable<int>(displacementStatus);
     }
@@ -1146,42 +1164,52 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
     if (!nullToAbsent || currentAddress != null) {
       map['current_address'] = Variable<String>(currentAddress);
     }
-    if (!nullToAbsent || numberOfMales != null) {
-      map['number_of_males'] = Variable<int>(numberOfMales);
+    if (!nullToAbsent || city != null) {
+      map['city'] = Variable<int>(city);
     }
-    if (!nullToAbsent || numberOfFemales != null) {
-      map['number_of_females'] = Variable<int>(numberOfFemales);
+    if (!nullToAbsent || province != null) {
+      map['province'] = Variable<int>(province);
     }
-    if (!nullToAbsent || chronicDiseasesCount != null) {
-      map['chronic_diseases_count'] = Variable<int>(chronicDiseasesCount);
+    if (!nullToAbsent || healthStatus != null) {
+      map['health_status'] = Variable<int>(healthStatus);
     }
-    if (!nullToAbsent || specialNeedsCount != null) {
-      map['special_needs_count'] = Variable<int>(specialNeedsCount);
+    if (!nullToAbsent || numberOfIndividualsWithChronicDiseases != null) {
+      map['number_of_individuals_with_chronic_diseases'] = Variable<int>(
+        numberOfIndividualsWithChronicDiseases,
+      );
     }
-    if (!nullToAbsent || employmentStatus != null) {
-      map['employment_status'] = Variable<int>(employmentStatus);
+    if (!nullToAbsent || numberOfPeopleWithSpecialNeeds != null) {
+      map['number_of_people_with_special_needs'] = Variable<int>(
+        numberOfPeopleWithSpecialNeeds,
+      );
     }
     if (!nullToAbsent || housingStatus != null) {
       map['housing_status'] = Variable<int>(housingStatus);
     }
-    if (!nullToAbsent || housingType != null) {
-      map['housing_type'] = Variable<int>(housingType);
+    if (!nullToAbsent || currentHousingType != null) {
+      map['current_housing_type'] = Variable<int>(currentHousingType);
     }
-    if (!nullToAbsent || requestStatus != null) {
-      map['request_status'] = Variable<int>(requestStatus);
+    if (!nullToAbsent || descriptionNeeds != null) {
+      map['description_needs'] = Variable<String>(descriptionNeeds);
     }
-    map['notes'] = Variable<String>(notes);
-    if (!nullToAbsent || associationName != null) {
-      map['association_name'] = Variable<String>(associationName);
+    if (!nullToAbsent || userInsertData != null) {
+      map['user_insert_data'] = Variable<String>(userInsertData);
     }
-    map['created_at'] = Variable<DateTime>(createdAt);
-    map['updated_at'] = Variable<DateTime>(updatedAt);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
     map['sync_state'] = Variable<String>(syncState);
     if (!nullToAbsent || serverId != null) {
-      map['server_id'] = Variable<String>(serverId);
+      map['server_id'] = Variable<int>(serverId);
     }
     if (!nullToAbsent || lastSyncedAt != null) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
+    if (!nullToAbsent || fullNameNorm != null) {
+      map['full_name_norm'] = Variable<String>(fullNameNorm);
     }
     return map;
   }
@@ -1189,23 +1217,20 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
   BeneficiariesCompanion toCompanion(bool nullToAbsent) {
     return BeneficiariesCompanion(
       id: Value(id),
-      fullName: Value(fullName),
-      fullNameNorm: Value(fullNameNorm),
-      nationalId: Value(nationalId),
-      fileNo: Value(fileNo),
-      governorate: Value(governorate),
-      district: district == null && nullToAbsent
+      fileIdNumber: fileIdNumber == null && nullToAbsent
           ? const Value.absent()
-          : Value(district),
-      address: address == null && nullToAbsent
+          : Value(fileIdNumber),
+      originalFileIdFromExcel: originalFileIdFromExcel == null && nullToAbsent
           ? const Value.absent()
-          : Value(address),
-      phoneNumber: phoneNumber == null && nullToAbsent
+          : Value(originalFileIdFromExcel),
+      sectionId: sectionId == null && nullToAbsent
           ? const Value.absent()
-          : Value(phoneNumber),
-      motherName: motherName == null && nullToAbsent
+          : Value(sectionId),
+      requestStatus: Value(requestStatus),
+      idNumber: Value(idNumber),
+      firstName: firstName == null && nullToAbsent
           ? const Value.absent()
-          : Value(motherName),
+          : Value(firstName),
       fatherName: fatherName == null && nullToAbsent
           ? const Value.absent()
           : Value(fatherName),
@@ -1215,27 +1240,36 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
       familyName: familyName == null && nullToAbsent
           ? const Value.absent()
           : Value(familyName),
-      altPhoneNumber: altPhoneNumber == null && nullToAbsent
+      relationship: relationship == null && nullToAbsent
           ? const Value.absent()
-          : Value(altPhoneNumber),
-      familySize: familySize == null && nullToAbsent
-          ? const Value.absent()
-          : Value(familySize),
-      gender: Value(gender),
-      category: Value(category),
+          : Value(relationship),
       birthDate: birthDate == null && nullToAbsent
           ? const Value.absent()
           : Value(birthDate),
+      gender: gender == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gender),
+      phoneNumber: Value(phoneNumber),
+      altPhoneNumber: Value(altPhoneNumber),
+      numberOfIndividuals: numberOfIndividuals == null && nullToAbsent
+          ? const Value.absent()
+          : Value(numberOfIndividuals),
       maritalStatus: maritalStatus == null && nullToAbsent
           ? const Value.absent()
           : Value(maritalStatus),
-      educationLevel: educationLevel == null && nullToAbsent
+      numberOfMales: numberOfMales == null && nullToAbsent
           ? const Value.absent()
-          : Value(educationLevel),
-      healthStatus: healthStatus == null && nullToAbsent
+          : Value(numberOfMales),
+      numberOfFemales: numberOfFemales == null && nullToAbsent
           ? const Value.absent()
-          : Value(healthStatus),
-      hasDisability: Value(hasDisability),
+          : Value(numberOfFemales),
+      academicQualification: academicQualification == null && nullToAbsent
+          ? const Value.absent()
+          : Value(academicQualification),
+      employmentStatusBreadwinner:
+          employmentStatusBreadwinner == null && nullToAbsent
+          ? const Value.absent()
+          : Value(employmentStatusBreadwinner),
       displacementStatus: displacementStatus == null && nullToAbsent
           ? const Value.absent()
           : Value(displacementStatus),
@@ -1246,36 +1280,39 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
       currentAddress: currentAddress == null && nullToAbsent
           ? const Value.absent()
           : Value(currentAddress),
-      numberOfMales: numberOfMales == null && nullToAbsent
+      city: city == null && nullToAbsent ? const Value.absent() : Value(city),
+      province: province == null && nullToAbsent
           ? const Value.absent()
-          : Value(numberOfMales),
-      numberOfFemales: numberOfFemales == null && nullToAbsent
+          : Value(province),
+      healthStatus: healthStatus == null && nullToAbsent
           ? const Value.absent()
-          : Value(numberOfFemales),
-      chronicDiseasesCount: chronicDiseasesCount == null && nullToAbsent
+          : Value(healthStatus),
+      numberOfIndividualsWithChronicDiseases:
+          numberOfIndividualsWithChronicDiseases == null && nullToAbsent
           ? const Value.absent()
-          : Value(chronicDiseasesCount),
-      specialNeedsCount: specialNeedsCount == null && nullToAbsent
+          : Value(numberOfIndividualsWithChronicDiseases),
+      numberOfPeopleWithSpecialNeeds:
+          numberOfPeopleWithSpecialNeeds == null && nullToAbsent
           ? const Value.absent()
-          : Value(specialNeedsCount),
-      employmentStatus: employmentStatus == null && nullToAbsent
-          ? const Value.absent()
-          : Value(employmentStatus),
+          : Value(numberOfPeopleWithSpecialNeeds),
       housingStatus: housingStatus == null && nullToAbsent
           ? const Value.absent()
           : Value(housingStatus),
-      housingType: housingType == null && nullToAbsent
+      currentHousingType: currentHousingType == null && nullToAbsent
           ? const Value.absent()
-          : Value(housingType),
-      requestStatus: requestStatus == null && nullToAbsent
+          : Value(currentHousingType),
+      descriptionNeeds: descriptionNeeds == null && nullToAbsent
           ? const Value.absent()
-          : Value(requestStatus),
-      notes: Value(notes),
-      associationName: associationName == null && nullToAbsent
+          : Value(descriptionNeeds),
+      userInsertData: userInsertData == null && nullToAbsent
           ? const Value.absent()
-          : Value(associationName),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
+          : Value(userInsertData),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
       syncState: Value(syncState),
       serverId: serverId == null && nullToAbsent
           ? const Value.absent()
@@ -1283,6 +1320,9 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
       lastSyncedAt: lastSyncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastSyncedAt),
+      fullNameNorm: fullNameNorm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fullNameNorm),
     );
   }
 
@@ -1292,173 +1332,198 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Beneficiary(
-      id: serializer.fromJson<String>(json['id']),
-      fullName: serializer.fromJson<String>(json['fullName']),
-      fullNameNorm: serializer.fromJson<String>(json['fullNameNorm']),
-      nationalId: serializer.fromJson<String>(json['nationalId']),
-      fileNo: serializer.fromJson<String>(json['fileNo']),
-      governorate: serializer.fromJson<String>(json['governorate']),
-      district: serializer.fromJson<String?>(json['district']),
-      address: serializer.fromJson<String?>(json['address']),
-      phoneNumber: serializer.fromJson<String?>(json['phoneNumber']),
-      motherName: serializer.fromJson<String?>(json['motherName']),
+      id: serializer.fromJson<int>(json['id']),
+      fileIdNumber: serializer.fromJson<String?>(json['fileIdNumber']),
+      originalFileIdFromExcel: serializer.fromJson<String?>(
+        json['originalFileIdFromExcel'],
+      ),
+      sectionId: serializer.fromJson<int?>(json['sectionId']),
+      requestStatus: serializer.fromJson<int>(json['requestStatus']),
+      idNumber: serializer.fromJson<int>(json['idNumber']),
+      firstName: serializer.fromJson<String?>(json['firstName']),
       fatherName: serializer.fromJson<String?>(json['fatherName']),
       grandFatherName: serializer.fromJson<String?>(json['grandFatherName']),
       familyName: serializer.fromJson<String?>(json['familyName']),
-      altPhoneNumber: serializer.fromJson<String?>(json['altPhoneNumber']),
-      familySize: serializer.fromJson<int?>(json['familySize']),
-      gender: serializer.fromJson<String>(json['gender']),
-      category: serializer.fromJson<String>(json['category']),
+      relationship: serializer.fromJson<int?>(json['relationship']),
       birthDate: serializer.fromJson<DateTime?>(json['birthDate']),
-      maritalStatus: serializer.fromJson<String?>(json['maritalStatus']),
-      educationLevel: serializer.fromJson<String?>(json['educationLevel']),
-      healthStatus: serializer.fromJson<String?>(json['healthStatus']),
-      hasDisability: serializer.fromJson<bool>(json['hasDisability']),
+      gender: serializer.fromJson<int?>(json['gender']),
+      phoneNumber: serializer.fromJson<int>(json['phoneNumber']),
+      altPhoneNumber: serializer.fromJson<int>(json['altPhoneNumber']),
+      numberOfIndividuals: serializer.fromJson<int?>(
+        json['numberOfIndividuals'],
+      ),
+      maritalStatus: serializer.fromJson<int?>(json['maritalStatus']),
+      numberOfMales: serializer.fromJson<int?>(json['numberOfMales']),
+      numberOfFemales: serializer.fromJson<int?>(json['numberOfFemales']),
+      academicQualification: serializer.fromJson<int?>(
+        json['academicQualification'],
+      ),
+      employmentStatusBreadwinner: serializer.fromJson<int?>(
+        json['employmentStatusBreadwinner'],
+      ),
       displacementStatus: serializer.fromJson<int?>(json['displacementStatus']),
       addressBeforeDisplacement: serializer.fromJson<String?>(
         json['addressBeforeDisplacement'],
       ),
       currentAddress: serializer.fromJson<String?>(json['currentAddress']),
-      numberOfMales: serializer.fromJson<int?>(json['numberOfMales']),
-      numberOfFemales: serializer.fromJson<int?>(json['numberOfFemales']),
-      chronicDiseasesCount: serializer.fromJson<int?>(
-        json['chronicDiseasesCount'],
+      city: serializer.fromJson<int?>(json['city']),
+      province: serializer.fromJson<int?>(json['province']),
+      healthStatus: serializer.fromJson<int?>(json['healthStatus']),
+      numberOfIndividualsWithChronicDiseases: serializer.fromJson<int?>(
+        json['numberOfIndividualsWithChronicDiseases'],
       ),
-      specialNeedsCount: serializer.fromJson<int?>(json['specialNeedsCount']),
-      employmentStatus: serializer.fromJson<int?>(json['employmentStatus']),
+      numberOfPeopleWithSpecialNeeds: serializer.fromJson<int?>(
+        json['numberOfPeopleWithSpecialNeeds'],
+      ),
       housingStatus: serializer.fromJson<int?>(json['housingStatus']),
-      housingType: serializer.fromJson<int?>(json['housingType']),
-      requestStatus: serializer.fromJson<int?>(json['requestStatus']),
-      notes: serializer.fromJson<String>(json['notes']),
-      associationName: serializer.fromJson<String?>(json['associationName']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      currentHousingType: serializer.fromJson<int?>(json['currentHousingType']),
+      descriptionNeeds: serializer.fromJson<String?>(json['descriptionNeeds']),
+      userInsertData: serializer.fromJson<String?>(json['userInsertData']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       syncState: serializer.fromJson<String>(json['syncState']),
-      serverId: serializer.fromJson<String?>(json['serverId']),
+      serverId: serializer.fromJson<int?>(json['serverId']),
       lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+      fullName: serializer.fromJson<String>(json['fullName']),
+      fullNameNorm: serializer.fromJson<String?>(json['fullNameNorm']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'fullName': serializer.toJson<String>(fullName),
-      'fullNameNorm': serializer.toJson<String>(fullNameNorm),
-      'nationalId': serializer.toJson<String>(nationalId),
-      'fileNo': serializer.toJson<String>(fileNo),
-      'governorate': serializer.toJson<String>(governorate),
-      'district': serializer.toJson<String?>(district),
-      'address': serializer.toJson<String?>(address),
-      'phoneNumber': serializer.toJson<String?>(phoneNumber),
-      'motherName': serializer.toJson<String?>(motherName),
+      'id': serializer.toJson<int>(id),
+      'fileIdNumber': serializer.toJson<String?>(fileIdNumber),
+      'originalFileIdFromExcel': serializer.toJson<String?>(
+        originalFileIdFromExcel,
+      ),
+      'sectionId': serializer.toJson<int?>(sectionId),
+      'requestStatus': serializer.toJson<int>(requestStatus),
+      'idNumber': serializer.toJson<int>(idNumber),
+      'firstName': serializer.toJson<String?>(firstName),
       'fatherName': serializer.toJson<String?>(fatherName),
       'grandFatherName': serializer.toJson<String?>(grandFatherName),
       'familyName': serializer.toJson<String?>(familyName),
-      'altPhoneNumber': serializer.toJson<String?>(altPhoneNumber),
-      'familySize': serializer.toJson<int?>(familySize),
-      'gender': serializer.toJson<String>(gender),
-      'category': serializer.toJson<String>(category),
+      'relationship': serializer.toJson<int?>(relationship),
       'birthDate': serializer.toJson<DateTime?>(birthDate),
-      'maritalStatus': serializer.toJson<String?>(maritalStatus),
-      'educationLevel': serializer.toJson<String?>(educationLevel),
-      'healthStatus': serializer.toJson<String?>(healthStatus),
-      'hasDisability': serializer.toJson<bool>(hasDisability),
+      'gender': serializer.toJson<int?>(gender),
+      'phoneNumber': serializer.toJson<int>(phoneNumber),
+      'altPhoneNumber': serializer.toJson<int>(altPhoneNumber),
+      'numberOfIndividuals': serializer.toJson<int?>(numberOfIndividuals),
+      'maritalStatus': serializer.toJson<int?>(maritalStatus),
+      'numberOfMales': serializer.toJson<int?>(numberOfMales),
+      'numberOfFemales': serializer.toJson<int?>(numberOfFemales),
+      'academicQualification': serializer.toJson<int?>(academicQualification),
+      'employmentStatusBreadwinner': serializer.toJson<int?>(
+        employmentStatusBreadwinner,
+      ),
       'displacementStatus': serializer.toJson<int?>(displacementStatus),
       'addressBeforeDisplacement': serializer.toJson<String?>(
         addressBeforeDisplacement,
       ),
       'currentAddress': serializer.toJson<String?>(currentAddress),
-      'numberOfMales': serializer.toJson<int?>(numberOfMales),
-      'numberOfFemales': serializer.toJson<int?>(numberOfFemales),
-      'chronicDiseasesCount': serializer.toJson<int?>(chronicDiseasesCount),
-      'specialNeedsCount': serializer.toJson<int?>(specialNeedsCount),
-      'employmentStatus': serializer.toJson<int?>(employmentStatus),
+      'city': serializer.toJson<int?>(city),
+      'province': serializer.toJson<int?>(province),
+      'healthStatus': serializer.toJson<int?>(healthStatus),
+      'numberOfIndividualsWithChronicDiseases': serializer.toJson<int?>(
+        numberOfIndividualsWithChronicDiseases,
+      ),
+      'numberOfPeopleWithSpecialNeeds': serializer.toJson<int?>(
+        numberOfPeopleWithSpecialNeeds,
+      ),
       'housingStatus': serializer.toJson<int?>(housingStatus),
-      'housingType': serializer.toJson<int?>(housingType),
-      'requestStatus': serializer.toJson<int?>(requestStatus),
-      'notes': serializer.toJson<String>(notes),
-      'associationName': serializer.toJson<String?>(associationName),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'currentHousingType': serializer.toJson<int?>(currentHousingType),
+      'descriptionNeeds': serializer.toJson<String?>(descriptionNeeds),
+      'userInsertData': serializer.toJson<String?>(userInsertData),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'syncState': serializer.toJson<String>(syncState),
-      'serverId': serializer.toJson<String?>(serverId),
+      'serverId': serializer.toJson<int?>(serverId),
       'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+      'fullName': serializer.toJson<String>(fullName),
+      'fullNameNorm': serializer.toJson<String?>(fullNameNorm),
     };
   }
 
   Beneficiary copyWith({
-    String? id,
-    String? fullName,
-    String? fullNameNorm,
-    String? nationalId,
-    String? fileNo,
-    String? governorate,
-    Value<String?> district = const Value.absent(),
-    Value<String?> address = const Value.absent(),
-    Value<String?> phoneNumber = const Value.absent(),
-    Value<String?> motherName = const Value.absent(),
+    int? id,
+    Value<String?> fileIdNumber = const Value.absent(),
+    Value<String?> originalFileIdFromExcel = const Value.absent(),
+    Value<int?> sectionId = const Value.absent(),
+    int? requestStatus,
+    int? idNumber,
+    Value<String?> firstName = const Value.absent(),
     Value<String?> fatherName = const Value.absent(),
     Value<String?> grandFatherName = const Value.absent(),
     Value<String?> familyName = const Value.absent(),
-    Value<String?> altPhoneNumber = const Value.absent(),
-    Value<int?> familySize = const Value.absent(),
-    String? gender,
-    String? category,
+    Value<int?> relationship = const Value.absent(),
     Value<DateTime?> birthDate = const Value.absent(),
-    Value<String?> maritalStatus = const Value.absent(),
-    Value<String?> educationLevel = const Value.absent(),
-    Value<String?> healthStatus = const Value.absent(),
-    bool? hasDisability,
+    Value<int?> gender = const Value.absent(),
+    int? phoneNumber,
+    int? altPhoneNumber,
+    Value<int?> numberOfIndividuals = const Value.absent(),
+    Value<int?> maritalStatus = const Value.absent(),
+    Value<int?> numberOfMales = const Value.absent(),
+    Value<int?> numberOfFemales = const Value.absent(),
+    Value<int?> academicQualification = const Value.absent(),
+    Value<int?> employmentStatusBreadwinner = const Value.absent(),
     Value<int?> displacementStatus = const Value.absent(),
     Value<String?> addressBeforeDisplacement = const Value.absent(),
     Value<String?> currentAddress = const Value.absent(),
-    Value<int?> numberOfMales = const Value.absent(),
-    Value<int?> numberOfFemales = const Value.absent(),
-    Value<int?> chronicDiseasesCount = const Value.absent(),
-    Value<int?> specialNeedsCount = const Value.absent(),
-    Value<int?> employmentStatus = const Value.absent(),
+    Value<int?> city = const Value.absent(),
+    Value<int?> province = const Value.absent(),
+    Value<int?> healthStatus = const Value.absent(),
+    Value<int?> numberOfIndividualsWithChronicDiseases = const Value.absent(),
+    Value<int?> numberOfPeopleWithSpecialNeeds = const Value.absent(),
     Value<int?> housingStatus = const Value.absent(),
-    Value<int?> housingType = const Value.absent(),
-    Value<int?> requestStatus = const Value.absent(),
-    String? notes,
-    Value<String?> associationName = const Value.absent(),
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    Value<int?> currentHousingType = const Value.absent(),
+    Value<String?> descriptionNeeds = const Value.absent(),
+    Value<String?> userInsertData = const Value.absent(),
+    Value<DateTime?> createdAt = const Value.absent(),
+    Value<DateTime?> updatedAt = const Value.absent(),
     String? syncState,
-    Value<String?> serverId = const Value.absent(),
+    Value<int?> serverId = const Value.absent(),
     Value<DateTime?> lastSyncedAt = const Value.absent(),
+    String? fullName,
+    Value<String?> fullNameNorm = const Value.absent(),
   }) => Beneficiary(
     id: id ?? this.id,
-    fullName: fullName ?? this.fullName,
-    fullNameNorm: fullNameNorm ?? this.fullNameNorm,
-    nationalId: nationalId ?? this.nationalId,
-    fileNo: fileNo ?? this.fileNo,
-    governorate: governorate ?? this.governorate,
-    district: district.present ? district.value : this.district,
-    address: address.present ? address.value : this.address,
-    phoneNumber: phoneNumber.present ? phoneNumber.value : this.phoneNumber,
-    motherName: motherName.present ? motherName.value : this.motherName,
+    fileIdNumber: fileIdNumber.present ? fileIdNumber.value : this.fileIdNumber,
+    originalFileIdFromExcel: originalFileIdFromExcel.present
+        ? originalFileIdFromExcel.value
+        : this.originalFileIdFromExcel,
+    sectionId: sectionId.present ? sectionId.value : this.sectionId,
+    requestStatus: requestStatus ?? this.requestStatus,
+    idNumber: idNumber ?? this.idNumber,
+    firstName: firstName.present ? firstName.value : this.firstName,
     fatherName: fatherName.present ? fatherName.value : this.fatherName,
     grandFatherName: grandFatherName.present
         ? grandFatherName.value
         : this.grandFatherName,
     familyName: familyName.present ? familyName.value : this.familyName,
-    altPhoneNumber: altPhoneNumber.present
-        ? altPhoneNumber.value
-        : this.altPhoneNumber,
-    familySize: familySize.present ? familySize.value : this.familySize,
-    gender: gender ?? this.gender,
-    category: category ?? this.category,
+    relationship: relationship.present ? relationship.value : this.relationship,
     birthDate: birthDate.present ? birthDate.value : this.birthDate,
+    gender: gender.present ? gender.value : this.gender,
+    phoneNumber: phoneNumber ?? this.phoneNumber,
+    altPhoneNumber: altPhoneNumber ?? this.altPhoneNumber,
+    numberOfIndividuals: numberOfIndividuals.present
+        ? numberOfIndividuals.value
+        : this.numberOfIndividuals,
     maritalStatus: maritalStatus.present
         ? maritalStatus.value
         : this.maritalStatus,
-    educationLevel: educationLevel.present
-        ? educationLevel.value
-        : this.educationLevel,
-    healthStatus: healthStatus.present ? healthStatus.value : this.healthStatus,
-    hasDisability: hasDisability ?? this.hasDisability,
+    numberOfMales: numberOfMales.present
+        ? numberOfMales.value
+        : this.numberOfMales,
+    numberOfFemales: numberOfFemales.present
+        ? numberOfFemales.value
+        : this.numberOfFemales,
+    academicQualification: academicQualification.present
+        ? academicQualification.value
+        : this.academicQualification,
+    employmentStatusBreadwinner: employmentStatusBreadwinner.present
+        ? employmentStatusBreadwinner.value
+        : this.employmentStatusBreadwinner,
     displacementStatus: displacementStatus.present
         ? displacementStatus.value
         : this.displacementStatus,
@@ -1468,180 +1533,83 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
     currentAddress: currentAddress.present
         ? currentAddress.value
         : this.currentAddress,
-    numberOfMales: numberOfMales.present
-        ? numberOfMales.value
-        : this.numberOfMales,
-    numberOfFemales: numberOfFemales.present
-        ? numberOfFemales.value
-        : this.numberOfFemales,
-    chronicDiseasesCount: chronicDiseasesCount.present
-        ? chronicDiseasesCount.value
-        : this.chronicDiseasesCount,
-    specialNeedsCount: specialNeedsCount.present
-        ? specialNeedsCount.value
-        : this.specialNeedsCount,
-    employmentStatus: employmentStatus.present
-        ? employmentStatus.value
-        : this.employmentStatus,
+    city: city.present ? city.value : this.city,
+    province: province.present ? province.value : this.province,
+    healthStatus: healthStatus.present ? healthStatus.value : this.healthStatus,
+    numberOfIndividualsWithChronicDiseases:
+        numberOfIndividualsWithChronicDiseases.present
+        ? numberOfIndividualsWithChronicDiseases.value
+        : this.numberOfIndividualsWithChronicDiseases,
+    numberOfPeopleWithSpecialNeeds: numberOfPeopleWithSpecialNeeds.present
+        ? numberOfPeopleWithSpecialNeeds.value
+        : this.numberOfPeopleWithSpecialNeeds,
     housingStatus: housingStatus.present
         ? housingStatus.value
         : this.housingStatus,
-    housingType: housingType.present ? housingType.value : this.housingType,
-    requestStatus: requestStatus.present
-        ? requestStatus.value
-        : this.requestStatus,
-    notes: notes ?? this.notes,
-    associationName: associationName.present
-        ? associationName.value
-        : this.associationName,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
+    currentHousingType: currentHousingType.present
+        ? currentHousingType.value
+        : this.currentHousingType,
+    descriptionNeeds: descriptionNeeds.present
+        ? descriptionNeeds.value
+        : this.descriptionNeeds,
+    userInsertData: userInsertData.present
+        ? userInsertData.value
+        : this.userInsertData,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     syncState: syncState ?? this.syncState,
     serverId: serverId.present ? serverId.value : this.serverId,
     lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    fullName: fullName ?? this.fullName,
+    fullNameNorm: fullNameNorm.present ? fullNameNorm.value : this.fullNameNorm,
   );
-  Beneficiary copyWithCompanion(BeneficiariesCompanion data) {
-    return Beneficiary(
-      id: data.id.present ? data.id.value : this.id,
-      fullName: data.fullName.present ? data.fullName.value : this.fullName,
-      fullNameNorm: data.fullNameNorm.present
-          ? data.fullNameNorm.value
-          : this.fullNameNorm,
-      nationalId: data.nationalId.present
-          ? data.nationalId.value
-          : this.nationalId,
-      fileNo: data.fileNo.present ? data.fileNo.value : this.fileNo,
-      governorate: data.governorate.present
-          ? data.governorate.value
-          : this.governorate,
-      district: data.district.present ? data.district.value : this.district,
-      address: data.address.present ? data.address.value : this.address,
-      phoneNumber: data.phoneNumber.present
-          ? data.phoneNumber.value
-          : this.phoneNumber,
-      motherName: data.motherName.present
-          ? data.motherName.value
-          : this.motherName,
-      fatherName: data.fatherName.present
-          ? data.fatherName.value
-          : this.fatherName,
-      grandFatherName: data.grandFatherName.present
-          ? data.grandFatherName.value
-          : this.grandFatherName,
-      familyName: data.familyName.present
-          ? data.familyName.value
-          : this.familyName,
-      altPhoneNumber: data.altPhoneNumber.present
-          ? data.altPhoneNumber.value
-          : this.altPhoneNumber,
-      familySize: data.familySize.present
-          ? data.familySize.value
-          : this.familySize,
-      gender: data.gender.present ? data.gender.value : this.gender,
-      category: data.category.present ? data.category.value : this.category,
-      birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
-      maritalStatus: data.maritalStatus.present
-          ? data.maritalStatus.value
-          : this.maritalStatus,
-      educationLevel: data.educationLevel.present
-          ? data.educationLevel.value
-          : this.educationLevel,
-      healthStatus: data.healthStatus.present
-          ? data.healthStatus.value
-          : this.healthStatus,
-      hasDisability: data.hasDisability.present
-          ? data.hasDisability.value
-          : this.hasDisability,
-      displacementStatus: data.displacementStatus.present
-          ? data.displacementStatus.value
-          : this.displacementStatus,
-      addressBeforeDisplacement: data.addressBeforeDisplacement.present
-          ? data.addressBeforeDisplacement.value
-          : this.addressBeforeDisplacement,
-      currentAddress: data.currentAddress.present
-          ? data.currentAddress.value
-          : this.currentAddress,
-      numberOfMales: data.numberOfMales.present
-          ? data.numberOfMales.value
-          : this.numberOfMales,
-      numberOfFemales: data.numberOfFemales.present
-          ? data.numberOfFemales.value
-          : this.numberOfFemales,
-      chronicDiseasesCount: data.chronicDiseasesCount.present
-          ? data.chronicDiseasesCount.value
-          : this.chronicDiseasesCount,
-      specialNeedsCount: data.specialNeedsCount.present
-          ? data.specialNeedsCount.value
-          : this.specialNeedsCount,
-      employmentStatus: data.employmentStatus.present
-          ? data.employmentStatus.value
-          : this.employmentStatus,
-      housingStatus: data.housingStatus.present
-          ? data.housingStatus.value
-          : this.housingStatus,
-      housingType: data.housingType.present
-          ? data.housingType.value
-          : this.housingType,
-      requestStatus: data.requestStatus.present
-          ? data.requestStatus.value
-          : this.requestStatus,
-      notes: data.notes.present ? data.notes.value : this.notes,
-      associationName: data.associationName.present
-          ? data.associationName.value
-          : this.associationName,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      syncState: data.syncState.present ? data.syncState.value : this.syncState,
-      serverId: data.serverId.present ? data.serverId.value : this.serverId,
-      lastSyncedAt: data.lastSyncedAt.present
-          ? data.lastSyncedAt.value
-          : this.lastSyncedAt,
-    );
-  }
-
   @override
   String toString() {
     return (StringBuffer('Beneficiary(')
           ..write('id: $id, ')
-          ..write('fullName: $fullName, ')
-          ..write('fullNameNorm: $fullNameNorm, ')
-          ..write('nationalId: $nationalId, ')
-          ..write('fileNo: $fileNo, ')
-          ..write('governorate: $governorate, ')
-          ..write('district: $district, ')
-          ..write('address: $address, ')
-          ..write('phoneNumber: $phoneNumber, ')
-          ..write('motherName: $motherName, ')
+          ..write('fileIdNumber: $fileIdNumber, ')
+          ..write('originalFileIdFromExcel: $originalFileIdFromExcel, ')
+          ..write('sectionId: $sectionId, ')
+          ..write('requestStatus: $requestStatus, ')
+          ..write('idNumber: $idNumber, ')
+          ..write('firstName: $firstName, ')
           ..write('fatherName: $fatherName, ')
           ..write('grandFatherName: $grandFatherName, ')
           ..write('familyName: $familyName, ')
-          ..write('altPhoneNumber: $altPhoneNumber, ')
-          ..write('familySize: $familySize, ')
-          ..write('gender: $gender, ')
-          ..write('category: $category, ')
+          ..write('relationship: $relationship, ')
           ..write('birthDate: $birthDate, ')
+          ..write('gender: $gender, ')
+          ..write('phoneNumber: $phoneNumber, ')
+          ..write('altPhoneNumber: $altPhoneNumber, ')
+          ..write('numberOfIndividuals: $numberOfIndividuals, ')
           ..write('maritalStatus: $maritalStatus, ')
-          ..write('educationLevel: $educationLevel, ')
-          ..write('healthStatus: $healthStatus, ')
-          ..write('hasDisability: $hasDisability, ')
+          ..write('numberOfMales: $numberOfMales, ')
+          ..write('numberOfFemales: $numberOfFemales, ')
+          ..write('academicQualification: $academicQualification, ')
+          ..write('employmentStatusBreadwinner: $employmentStatusBreadwinner, ')
           ..write('displacementStatus: $displacementStatus, ')
           ..write('addressBeforeDisplacement: $addressBeforeDisplacement, ')
           ..write('currentAddress: $currentAddress, ')
-          ..write('numberOfMales: $numberOfMales, ')
-          ..write('numberOfFemales: $numberOfFemales, ')
-          ..write('chronicDiseasesCount: $chronicDiseasesCount, ')
-          ..write('specialNeedsCount: $specialNeedsCount, ')
-          ..write('employmentStatus: $employmentStatus, ')
+          ..write('city: $city, ')
+          ..write('province: $province, ')
+          ..write('healthStatus: $healthStatus, ')
+          ..write(
+            'numberOfIndividualsWithChronicDiseases: $numberOfIndividualsWithChronicDiseases, ',
+          )
+          ..write(
+            'numberOfPeopleWithSpecialNeeds: $numberOfPeopleWithSpecialNeeds, ',
+          )
           ..write('housingStatus: $housingStatus, ')
-          ..write('housingType: $housingType, ')
-          ..write('requestStatus: $requestStatus, ')
-          ..write('notes: $notes, ')
-          ..write('associationName: $associationName, ')
+          ..write('currentHousingType: $currentHousingType, ')
+          ..write('descriptionNeeds: $descriptionNeeds, ')
+          ..write('userInsertData: $userInsertData, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
           ..write('serverId: $serverId, ')
-          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('fullName: $fullName, ')
+          ..write('fullNameNorm: $fullNameNorm')
           ..write(')'))
         .toString();
   }
@@ -1649,405 +1617,400 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
   @override
   int get hashCode => Object.hashAll([
     id,
-    fullName,
-    fullNameNorm,
-    nationalId,
-    fileNo,
-    governorate,
-    district,
-    address,
-    phoneNumber,
-    motherName,
+    fileIdNumber,
+    originalFileIdFromExcel,
+    sectionId,
+    requestStatus,
+    idNumber,
+    firstName,
     fatherName,
     grandFatherName,
     familyName,
-    altPhoneNumber,
-    familySize,
-    gender,
-    category,
+    relationship,
     birthDate,
+    gender,
+    phoneNumber,
+    altPhoneNumber,
+    numberOfIndividuals,
     maritalStatus,
-    educationLevel,
-    healthStatus,
-    hasDisability,
+    numberOfMales,
+    numberOfFemales,
+    academicQualification,
+    employmentStatusBreadwinner,
     displacementStatus,
     addressBeforeDisplacement,
     currentAddress,
-    numberOfMales,
-    numberOfFemales,
-    chronicDiseasesCount,
-    specialNeedsCount,
-    employmentStatus,
+    city,
+    province,
+    healthStatus,
+    numberOfIndividualsWithChronicDiseases,
+    numberOfPeopleWithSpecialNeeds,
     housingStatus,
-    housingType,
-    requestStatus,
-    notes,
-    associationName,
+    currentHousingType,
+    descriptionNeeds,
+    userInsertData,
     createdAt,
     updatedAt,
     syncState,
     serverId,
     lastSyncedAt,
+    fullName,
+    fullNameNorm,
   ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Beneficiary &&
           other.id == this.id &&
-          other.fullName == this.fullName &&
-          other.fullNameNorm == this.fullNameNorm &&
-          other.nationalId == this.nationalId &&
-          other.fileNo == this.fileNo &&
-          other.governorate == this.governorate &&
-          other.district == this.district &&
-          other.address == this.address &&
-          other.phoneNumber == this.phoneNumber &&
-          other.motherName == this.motherName &&
+          other.fileIdNumber == this.fileIdNumber &&
+          other.originalFileIdFromExcel == this.originalFileIdFromExcel &&
+          other.sectionId == this.sectionId &&
+          other.requestStatus == this.requestStatus &&
+          other.idNumber == this.idNumber &&
+          other.firstName == this.firstName &&
           other.fatherName == this.fatherName &&
           other.grandFatherName == this.grandFatherName &&
           other.familyName == this.familyName &&
-          other.altPhoneNumber == this.altPhoneNumber &&
-          other.familySize == this.familySize &&
-          other.gender == this.gender &&
-          other.category == this.category &&
+          other.relationship == this.relationship &&
           other.birthDate == this.birthDate &&
+          other.gender == this.gender &&
+          other.phoneNumber == this.phoneNumber &&
+          other.altPhoneNumber == this.altPhoneNumber &&
+          other.numberOfIndividuals == this.numberOfIndividuals &&
           other.maritalStatus == this.maritalStatus &&
-          other.educationLevel == this.educationLevel &&
-          other.healthStatus == this.healthStatus &&
-          other.hasDisability == this.hasDisability &&
+          other.numberOfMales == this.numberOfMales &&
+          other.numberOfFemales == this.numberOfFemales &&
+          other.academicQualification == this.academicQualification &&
+          other.employmentStatusBreadwinner ==
+              this.employmentStatusBreadwinner &&
           other.displacementStatus == this.displacementStatus &&
           other.addressBeforeDisplacement == this.addressBeforeDisplacement &&
           other.currentAddress == this.currentAddress &&
-          other.numberOfMales == this.numberOfMales &&
-          other.numberOfFemales == this.numberOfFemales &&
-          other.chronicDiseasesCount == this.chronicDiseasesCount &&
-          other.specialNeedsCount == this.specialNeedsCount &&
-          other.employmentStatus == this.employmentStatus &&
+          other.city == this.city &&
+          other.province == this.province &&
+          other.healthStatus == this.healthStatus &&
+          other.numberOfIndividualsWithChronicDiseases ==
+              this.numberOfIndividualsWithChronicDiseases &&
+          other.numberOfPeopleWithSpecialNeeds ==
+              this.numberOfPeopleWithSpecialNeeds &&
           other.housingStatus == this.housingStatus &&
-          other.housingType == this.housingType &&
-          other.requestStatus == this.requestStatus &&
-          other.notes == this.notes &&
-          other.associationName == this.associationName &&
+          other.currentHousingType == this.currentHousingType &&
+          other.descriptionNeeds == this.descriptionNeeds &&
+          other.userInsertData == this.userInsertData &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncState == this.syncState &&
           other.serverId == this.serverId &&
-          other.lastSyncedAt == this.lastSyncedAt);
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.fullName == this.fullName &&
+          other.fullNameNorm == this.fullNameNorm);
 }
 
 class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
-  final Value<String> id;
-  final Value<String> fullName;
-  final Value<String> fullNameNorm;
-  final Value<String> nationalId;
-  final Value<String> fileNo;
-  final Value<String> governorate;
-  final Value<String?> district;
-  final Value<String?> address;
-  final Value<String?> phoneNumber;
-  final Value<String?> motherName;
+  final Value<int> id;
+  final Value<String?> fileIdNumber;
+  final Value<String?> originalFileIdFromExcel;
+  final Value<int?> sectionId;
+  final Value<int> requestStatus;
+  final Value<int> idNumber;
+  final Value<String?> firstName;
   final Value<String?> fatherName;
   final Value<String?> grandFatherName;
   final Value<String?> familyName;
-  final Value<String?> altPhoneNumber;
-  final Value<int?> familySize;
-  final Value<String> gender;
-  final Value<String> category;
+  final Value<int?> relationship;
   final Value<DateTime?> birthDate;
-  final Value<String?> maritalStatus;
-  final Value<String?> educationLevel;
-  final Value<String?> healthStatus;
-  final Value<bool> hasDisability;
+  final Value<int?> gender;
+  final Value<int> phoneNumber;
+  final Value<int> altPhoneNumber;
+  final Value<int?> numberOfIndividuals;
+  final Value<int?> maritalStatus;
+  final Value<int?> numberOfMales;
+  final Value<int?> numberOfFemales;
+  final Value<int?> academicQualification;
+  final Value<int?> employmentStatusBreadwinner;
   final Value<int?> displacementStatus;
   final Value<String?> addressBeforeDisplacement;
   final Value<String?> currentAddress;
-  final Value<int?> numberOfMales;
-  final Value<int?> numberOfFemales;
-  final Value<int?> chronicDiseasesCount;
-  final Value<int?> specialNeedsCount;
-  final Value<int?> employmentStatus;
+  final Value<int?> city;
+  final Value<int?> province;
+  final Value<int?> healthStatus;
+  final Value<int?> numberOfIndividualsWithChronicDiseases;
+  final Value<int?> numberOfPeopleWithSpecialNeeds;
   final Value<int?> housingStatus;
-  final Value<int?> housingType;
-  final Value<int?> requestStatus;
-  final Value<String> notes;
-  final Value<String?> associationName;
-  final Value<DateTime> createdAt;
-  final Value<DateTime> updatedAt;
+  final Value<int?> currentHousingType;
+  final Value<String?> descriptionNeeds;
+  final Value<String?> userInsertData;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
   final Value<String> syncState;
-  final Value<String?> serverId;
+  final Value<int?> serverId;
   final Value<DateTime?> lastSyncedAt;
-  final Value<int> rowid;
+  final Value<String?> fullNameNorm;
   const BeneficiariesCompanion({
     this.id = const Value.absent(),
-    this.fullName = const Value.absent(),
-    this.fullNameNorm = const Value.absent(),
-    this.nationalId = const Value.absent(),
-    this.fileNo = const Value.absent(),
-    this.governorate = const Value.absent(),
-    this.district = const Value.absent(),
-    this.address = const Value.absent(),
-    this.phoneNumber = const Value.absent(),
-    this.motherName = const Value.absent(),
+    this.fileIdNumber = const Value.absent(),
+    this.originalFileIdFromExcel = const Value.absent(),
+    this.sectionId = const Value.absent(),
+    this.requestStatus = const Value.absent(),
+    this.idNumber = const Value.absent(),
+    this.firstName = const Value.absent(),
     this.fatherName = const Value.absent(),
     this.grandFatherName = const Value.absent(),
     this.familyName = const Value.absent(),
-    this.altPhoneNumber = const Value.absent(),
-    this.familySize = const Value.absent(),
-    this.gender = const Value.absent(),
-    this.category = const Value.absent(),
+    this.relationship = const Value.absent(),
     this.birthDate = const Value.absent(),
+    this.gender = const Value.absent(),
+    this.phoneNumber = const Value.absent(),
+    this.altPhoneNumber = const Value.absent(),
+    this.numberOfIndividuals = const Value.absent(),
     this.maritalStatus = const Value.absent(),
-    this.educationLevel = const Value.absent(),
-    this.healthStatus = const Value.absent(),
-    this.hasDisability = const Value.absent(),
+    this.numberOfMales = const Value.absent(),
+    this.numberOfFemales = const Value.absent(),
+    this.academicQualification = const Value.absent(),
+    this.employmentStatusBreadwinner = const Value.absent(),
     this.displacementStatus = const Value.absent(),
     this.addressBeforeDisplacement = const Value.absent(),
     this.currentAddress = const Value.absent(),
-    this.numberOfMales = const Value.absent(),
-    this.numberOfFemales = const Value.absent(),
-    this.chronicDiseasesCount = const Value.absent(),
-    this.specialNeedsCount = const Value.absent(),
-    this.employmentStatus = const Value.absent(),
+    this.city = const Value.absent(),
+    this.province = const Value.absent(),
+    this.healthStatus = const Value.absent(),
+    this.numberOfIndividualsWithChronicDiseases = const Value.absent(),
+    this.numberOfPeopleWithSpecialNeeds = const Value.absent(),
     this.housingStatus = const Value.absent(),
-    this.housingType = const Value.absent(),
-    this.requestStatus = const Value.absent(),
-    this.notes = const Value.absent(),
-    this.associationName = const Value.absent(),
+    this.currentHousingType = const Value.absent(),
+    this.descriptionNeeds = const Value.absent(),
+    this.userInsertData = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncState = const Value.absent(),
     this.serverId = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.fullNameNorm = const Value.absent(),
   });
   BeneficiariesCompanion.insert({
-    required String id,
-    required String fullName,
-    required String fullNameNorm,
-    required String nationalId,
-    required String fileNo,
-    required String governorate,
-    this.district = const Value.absent(),
-    this.address = const Value.absent(),
-    this.phoneNumber = const Value.absent(),
-    this.motherName = const Value.absent(),
+    this.id = const Value.absent(),
+    this.fileIdNumber = const Value.absent(),
+    this.originalFileIdFromExcel = const Value.absent(),
+    this.sectionId = const Value.absent(),
+    this.requestStatus = const Value.absent(),
+    required int idNumber,
+    this.firstName = const Value.absent(),
     this.fatherName = const Value.absent(),
     this.grandFatherName = const Value.absent(),
     this.familyName = const Value.absent(),
-    this.altPhoneNumber = const Value.absent(),
-    this.familySize = const Value.absent(),
-    required String gender,
-    required String category,
+    this.relationship = const Value.absent(),
     this.birthDate = const Value.absent(),
+    this.gender = const Value.absent(),
+    required int phoneNumber,
+    required int altPhoneNumber,
+    this.numberOfIndividuals = const Value.absent(),
     this.maritalStatus = const Value.absent(),
-    this.educationLevel = const Value.absent(),
-    this.healthStatus = const Value.absent(),
-    this.hasDisability = const Value.absent(),
+    this.numberOfMales = const Value.absent(),
+    this.numberOfFemales = const Value.absent(),
+    this.academicQualification = const Value.absent(),
+    this.employmentStatusBreadwinner = const Value.absent(),
     this.displacementStatus = const Value.absent(),
     this.addressBeforeDisplacement = const Value.absent(),
     this.currentAddress = const Value.absent(),
-    this.numberOfMales = const Value.absent(),
-    this.numberOfFemales = const Value.absent(),
-    this.chronicDiseasesCount = const Value.absent(),
-    this.specialNeedsCount = const Value.absent(),
-    this.employmentStatus = const Value.absent(),
+    this.city = const Value.absent(),
+    this.province = const Value.absent(),
+    this.healthStatus = const Value.absent(),
+    this.numberOfIndividualsWithChronicDiseases = const Value.absent(),
+    this.numberOfPeopleWithSpecialNeeds = const Value.absent(),
     this.housingStatus = const Value.absent(),
-    this.housingType = const Value.absent(),
-    this.requestStatus = const Value.absent(),
-    this.notes = const Value.absent(),
-    this.associationName = const Value.absent(),
-    required DateTime createdAt,
-    required DateTime updatedAt,
+    this.currentHousingType = const Value.absent(),
+    this.descriptionNeeds = const Value.absent(),
+    this.userInsertData = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.syncState = const Value.absent(),
     this.serverId = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       fullName = Value(fullName),
-       fullNameNorm = Value(fullNameNorm),
-       nationalId = Value(nationalId),
-       fileNo = Value(fileNo),
-       governorate = Value(governorate),
-       gender = Value(gender),
-       category = Value(category),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt);
+    this.fullNameNorm = const Value.absent(),
+  }) : idNumber = Value(idNumber),
+       phoneNumber = Value(phoneNumber),
+       altPhoneNumber = Value(altPhoneNumber);
   static Insertable<Beneficiary> custom({
-    Expression<String>? id,
-    Expression<String>? fullName,
-    Expression<String>? fullNameNorm,
-    Expression<String>? nationalId,
-    Expression<String>? fileNo,
-    Expression<String>? governorate,
-    Expression<String>? district,
-    Expression<String>? address,
-    Expression<String>? phoneNumber,
-    Expression<String>? motherName,
+    Expression<int>? id,
+    Expression<String>? fileIdNumber,
+    Expression<String>? originalFileIdFromExcel,
+    Expression<int>? sectionId,
+    Expression<int>? requestStatus,
+    Expression<int>? idNumber,
+    Expression<String>? firstName,
     Expression<String>? fatherName,
     Expression<String>? grandFatherName,
     Expression<String>? familyName,
-    Expression<String>? altPhoneNumber,
-    Expression<int>? familySize,
-    Expression<String>? gender,
-    Expression<String>? category,
+    Expression<int>? relationship,
     Expression<DateTime>? birthDate,
-    Expression<String>? maritalStatus,
-    Expression<String>? educationLevel,
-    Expression<String>? healthStatus,
-    Expression<bool>? hasDisability,
+    Expression<int>? gender,
+    Expression<int>? phoneNumber,
+    Expression<int>? altPhoneNumber,
+    Expression<int>? numberOfIndividuals,
+    Expression<int>? maritalStatus,
+    Expression<int>? numberOfMales,
+    Expression<int>? numberOfFemales,
+    Expression<int>? academicQualification,
+    Expression<int>? employmentStatusBreadwinner,
     Expression<int>? displacementStatus,
     Expression<String>? addressBeforeDisplacement,
     Expression<String>? currentAddress,
-    Expression<int>? numberOfMales,
-    Expression<int>? numberOfFemales,
-    Expression<int>? chronicDiseasesCount,
-    Expression<int>? specialNeedsCount,
-    Expression<int>? employmentStatus,
+    Expression<int>? city,
+    Expression<int>? province,
+    Expression<int>? healthStatus,
+    Expression<int>? numberOfIndividualsWithChronicDiseases,
+    Expression<int>? numberOfPeopleWithSpecialNeeds,
     Expression<int>? housingStatus,
-    Expression<int>? housingType,
-    Expression<int>? requestStatus,
-    Expression<String>? notes,
-    Expression<String>? associationName,
+    Expression<int>? currentHousingType,
+    Expression<String>? descriptionNeeds,
+    Expression<String>? userInsertData,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncState,
-    Expression<String>? serverId,
+    Expression<int>? serverId,
     Expression<DateTime>? lastSyncedAt,
-    Expression<int>? rowid,
+    Expression<String>? fullNameNorm,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (fullName != null) 'full_name': fullName,
-      if (fullNameNorm != null) 'full_name_norm': fullNameNorm,
-      if (nationalId != null) 'national_id': nationalId,
-      if (fileNo != null) 'file_no': fileNo,
-      if (governorate != null) 'governorate': governorate,
-      if (district != null) 'district': district,
-      if (address != null) 'address': address,
-      if (phoneNumber != null) 'phone_number': phoneNumber,
-      if (motherName != null) 'mother_name': motherName,
+      if (fileIdNumber != null) 'file_id_number': fileIdNumber,
+      if (originalFileIdFromExcel != null)
+        'original_file_id_from_excel': originalFileIdFromExcel,
+      if (sectionId != null) 'section_id': sectionId,
+      if (requestStatus != null) 'request_status': requestStatus,
+      if (idNumber != null) 'id_number': idNumber,
+      if (firstName != null) 'first_name': firstName,
       if (fatherName != null) 'father_name': fatherName,
       if (grandFatherName != null) 'grand_father_name': grandFatherName,
       if (familyName != null) 'family_name': familyName,
-      if (altPhoneNumber != null) 'alt_phone_number': altPhoneNumber,
-      if (familySize != null) 'family_size': familySize,
-      if (gender != null) 'gender': gender,
-      if (category != null) 'category': category,
+      if (relationship != null) 'relationship': relationship,
       if (birthDate != null) 'birth_date': birthDate,
+      if (gender != null) 'gender': gender,
+      if (phoneNumber != null) 'phone_number': phoneNumber,
+      if (altPhoneNumber != null) 'alt_phone_number': altPhoneNumber,
+      if (numberOfIndividuals != null)
+        'number_of_individuals': numberOfIndividuals,
       if (maritalStatus != null) 'marital_status': maritalStatus,
-      if (educationLevel != null) 'education_level': educationLevel,
-      if (healthStatus != null) 'health_status': healthStatus,
-      if (hasDisability != null) 'has_disability': hasDisability,
+      if (numberOfMales != null) 'number_of_males': numberOfMales,
+      if (numberOfFemales != null) 'number_of_females': numberOfFemales,
+      if (academicQualification != null)
+        'academic_qualification': academicQualification,
+      if (employmentStatusBreadwinner != null)
+        'employment_status_breadwinner': employmentStatusBreadwinner,
       if (displacementStatus != null) 'displacement_status': displacementStatus,
       if (addressBeforeDisplacement != null)
         'address_before_displacement': addressBeforeDisplacement,
       if (currentAddress != null) 'current_address': currentAddress,
-      if (numberOfMales != null) 'number_of_males': numberOfMales,
-      if (numberOfFemales != null) 'number_of_females': numberOfFemales,
-      if (chronicDiseasesCount != null)
-        'chronic_diseases_count': chronicDiseasesCount,
-      if (specialNeedsCount != null) 'special_needs_count': specialNeedsCount,
-      if (employmentStatus != null) 'employment_status': employmentStatus,
+      if (city != null) 'city': city,
+      if (province != null) 'province': province,
+      if (healthStatus != null) 'health_status': healthStatus,
+      if (numberOfIndividualsWithChronicDiseases != null)
+        'number_of_individuals_with_chronic_diseases':
+            numberOfIndividualsWithChronicDiseases,
+      if (numberOfPeopleWithSpecialNeeds != null)
+        'number_of_people_with_special_needs': numberOfPeopleWithSpecialNeeds,
       if (housingStatus != null) 'housing_status': housingStatus,
-      if (housingType != null) 'housing_type': housingType,
-      if (requestStatus != null) 'request_status': requestStatus,
-      if (notes != null) 'notes': notes,
-      if (associationName != null) 'association_name': associationName,
+      if (currentHousingType != null)
+        'current_housing_type': currentHousingType,
+      if (descriptionNeeds != null) 'description_needs': descriptionNeeds,
+      if (userInsertData != null) 'user_insert_data': userInsertData,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncState != null) 'sync_state': syncState,
       if (serverId != null) 'server_id': serverId,
       if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
-      if (rowid != null) 'rowid': rowid,
+      if (fullNameNorm != null) 'full_name_norm': fullNameNorm,
     });
   }
 
   BeneficiariesCompanion copyWith({
-    Value<String>? id,
-    Value<String>? fullName,
-    Value<String>? fullNameNorm,
-    Value<String>? nationalId,
-    Value<String>? fileNo,
-    Value<String>? governorate,
-    Value<String?>? district,
-    Value<String?>? address,
-    Value<String?>? phoneNumber,
-    Value<String?>? motherName,
+    Value<int>? id,
+    Value<String?>? fileIdNumber,
+    Value<String?>? originalFileIdFromExcel,
+    Value<int?>? sectionId,
+    Value<int>? requestStatus,
+    Value<int>? idNumber,
+    Value<String?>? firstName,
     Value<String?>? fatherName,
     Value<String?>? grandFatherName,
     Value<String?>? familyName,
-    Value<String?>? altPhoneNumber,
-    Value<int?>? familySize,
-    Value<String>? gender,
-    Value<String>? category,
+    Value<int?>? relationship,
     Value<DateTime?>? birthDate,
-    Value<String?>? maritalStatus,
-    Value<String?>? educationLevel,
-    Value<String?>? healthStatus,
-    Value<bool>? hasDisability,
+    Value<int?>? gender,
+    Value<int>? phoneNumber,
+    Value<int>? altPhoneNumber,
+    Value<int?>? numberOfIndividuals,
+    Value<int?>? maritalStatus,
+    Value<int?>? numberOfMales,
+    Value<int?>? numberOfFemales,
+    Value<int?>? academicQualification,
+    Value<int?>? employmentStatusBreadwinner,
     Value<int?>? displacementStatus,
     Value<String?>? addressBeforeDisplacement,
     Value<String?>? currentAddress,
-    Value<int?>? numberOfMales,
-    Value<int?>? numberOfFemales,
-    Value<int?>? chronicDiseasesCount,
-    Value<int?>? specialNeedsCount,
-    Value<int?>? employmentStatus,
+    Value<int?>? city,
+    Value<int?>? province,
+    Value<int?>? healthStatus,
+    Value<int?>? numberOfIndividualsWithChronicDiseases,
+    Value<int?>? numberOfPeopleWithSpecialNeeds,
     Value<int?>? housingStatus,
-    Value<int?>? housingType,
-    Value<int?>? requestStatus,
-    Value<String>? notes,
-    Value<String?>? associationName,
-    Value<DateTime>? createdAt,
-    Value<DateTime>? updatedAt,
+    Value<int?>? currentHousingType,
+    Value<String?>? descriptionNeeds,
+    Value<String?>? userInsertData,
+    Value<DateTime?>? createdAt,
+    Value<DateTime?>? updatedAt,
     Value<String>? syncState,
-    Value<String?>? serverId,
+    Value<int?>? serverId,
     Value<DateTime?>? lastSyncedAt,
-    Value<int>? rowid,
+    Value<String?>? fullNameNorm,
   }) {
     return BeneficiariesCompanion(
       id: id ?? this.id,
-      fullName: fullName ?? this.fullName,
-      fullNameNorm: fullNameNorm ?? this.fullNameNorm,
-      nationalId: nationalId ?? this.nationalId,
-      fileNo: fileNo ?? this.fileNo,
-      governorate: governorate ?? this.governorate,
-      district: district ?? this.district,
-      address: address ?? this.address,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      motherName: motherName ?? this.motherName,
+      fileIdNumber: fileIdNumber ?? this.fileIdNumber,
+      originalFileIdFromExcel:
+          originalFileIdFromExcel ?? this.originalFileIdFromExcel,
+      sectionId: sectionId ?? this.sectionId,
+      requestStatus: requestStatus ?? this.requestStatus,
+      idNumber: idNumber ?? this.idNumber,
+      firstName: firstName ?? this.firstName,
       fatherName: fatherName ?? this.fatherName,
       grandFatherName: grandFatherName ?? this.grandFatherName,
       familyName: familyName ?? this.familyName,
-      altPhoneNumber: altPhoneNumber ?? this.altPhoneNumber,
-      familySize: familySize ?? this.familySize,
-      gender: gender ?? this.gender,
-      category: category ?? this.category,
+      relationship: relationship ?? this.relationship,
       birthDate: birthDate ?? this.birthDate,
+      gender: gender ?? this.gender,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      altPhoneNumber: altPhoneNumber ?? this.altPhoneNumber,
+      numberOfIndividuals: numberOfIndividuals ?? this.numberOfIndividuals,
       maritalStatus: maritalStatus ?? this.maritalStatus,
-      educationLevel: educationLevel ?? this.educationLevel,
-      healthStatus: healthStatus ?? this.healthStatus,
-      hasDisability: hasDisability ?? this.hasDisability,
+      numberOfMales: numberOfMales ?? this.numberOfMales,
+      numberOfFemales: numberOfFemales ?? this.numberOfFemales,
+      academicQualification:
+          academicQualification ?? this.academicQualification,
+      employmentStatusBreadwinner:
+          employmentStatusBreadwinner ?? this.employmentStatusBreadwinner,
       displacementStatus: displacementStatus ?? this.displacementStatus,
       addressBeforeDisplacement:
           addressBeforeDisplacement ?? this.addressBeforeDisplacement,
       currentAddress: currentAddress ?? this.currentAddress,
-      numberOfMales: numberOfMales ?? this.numberOfMales,
-      numberOfFemales: numberOfFemales ?? this.numberOfFemales,
-      chronicDiseasesCount: chronicDiseasesCount ?? this.chronicDiseasesCount,
-      specialNeedsCount: specialNeedsCount ?? this.specialNeedsCount,
-      employmentStatus: employmentStatus ?? this.employmentStatus,
+      city: city ?? this.city,
+      province: province ?? this.province,
+      healthStatus: healthStatus ?? this.healthStatus,
+      numberOfIndividualsWithChronicDiseases:
+          numberOfIndividualsWithChronicDiseases ??
+          this.numberOfIndividualsWithChronicDiseases,
+      numberOfPeopleWithSpecialNeeds:
+          numberOfPeopleWithSpecialNeeds ?? this.numberOfPeopleWithSpecialNeeds,
       housingStatus: housingStatus ?? this.housingStatus,
-      housingType: housingType ?? this.housingType,
-      requestStatus: requestStatus ?? this.requestStatus,
-      notes: notes ?? this.notes,
-      associationName: associationName ?? this.associationName,
+      currentHousingType: currentHousingType ?? this.currentHousingType,
+      descriptionNeeds: descriptionNeeds ?? this.descriptionNeeds,
+      userInsertData: userInsertData ?? this.userInsertData,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncState: syncState ?? this.syncState,
       serverId: serverId ?? this.serverId,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
-      rowid: rowid ?? this.rowid,
+      fullNameNorm: fullNameNorm ?? this.fullNameNorm,
     );
   }
 
@@ -2055,34 +2018,27 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<String>(id.value);
+      map['id'] = Variable<int>(id.value);
     }
-    if (fullName.present) {
-      map['full_name'] = Variable<String>(fullName.value);
+    if (fileIdNumber.present) {
+      map['file_id_number'] = Variable<String>(fileIdNumber.value);
     }
-    if (fullNameNorm.present) {
-      map['full_name_norm'] = Variable<String>(fullNameNorm.value);
+    if (originalFileIdFromExcel.present) {
+      map['original_file_id_from_excel'] = Variable<String>(
+        originalFileIdFromExcel.value,
+      );
     }
-    if (nationalId.present) {
-      map['national_id'] = Variable<String>(nationalId.value);
+    if (sectionId.present) {
+      map['section_id'] = Variable<int>(sectionId.value);
     }
-    if (fileNo.present) {
-      map['file_no'] = Variable<String>(fileNo.value);
+    if (requestStatus.present) {
+      map['request_status'] = Variable<int>(requestStatus.value);
     }
-    if (governorate.present) {
-      map['governorate'] = Variable<String>(governorate.value);
+    if (idNumber.present) {
+      map['id_number'] = Variable<int>(idNumber.value);
     }
-    if (district.present) {
-      map['district'] = Variable<String>(district.value);
-    }
-    if (address.present) {
-      map['address'] = Variable<String>(address.value);
-    }
-    if (phoneNumber.present) {
-      map['phone_number'] = Variable<String>(phoneNumber.value);
-    }
-    if (motherName.present) {
-      map['mother_name'] = Variable<String>(motherName.value);
+    if (firstName.present) {
+      map['first_name'] = Variable<String>(firstName.value);
     }
     if (fatherName.present) {
       map['father_name'] = Variable<String>(fatherName.value);
@@ -2093,32 +2049,42 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
     if (familyName.present) {
       map['family_name'] = Variable<String>(familyName.value);
     }
-    if (altPhoneNumber.present) {
-      map['alt_phone_number'] = Variable<String>(altPhoneNumber.value);
-    }
-    if (familySize.present) {
-      map['family_size'] = Variable<int>(familySize.value);
-    }
-    if (gender.present) {
-      map['gender'] = Variable<String>(gender.value);
-    }
-    if (category.present) {
-      map['category'] = Variable<String>(category.value);
+    if (relationship.present) {
+      map['relationship'] = Variable<int>(relationship.value);
     }
     if (birthDate.present) {
       map['birth_date'] = Variable<DateTime>(birthDate.value);
     }
+    if (gender.present) {
+      map['gender'] = Variable<int>(gender.value);
+    }
+    if (phoneNumber.present) {
+      map['phone_number'] = Variable<int>(phoneNumber.value);
+    }
+    if (altPhoneNumber.present) {
+      map['alt_phone_number'] = Variable<int>(altPhoneNumber.value);
+    }
+    if (numberOfIndividuals.present) {
+      map['number_of_individuals'] = Variable<int>(numberOfIndividuals.value);
+    }
     if (maritalStatus.present) {
-      map['marital_status'] = Variable<String>(maritalStatus.value);
+      map['marital_status'] = Variable<int>(maritalStatus.value);
     }
-    if (educationLevel.present) {
-      map['education_level'] = Variable<String>(educationLevel.value);
+    if (numberOfMales.present) {
+      map['number_of_males'] = Variable<int>(numberOfMales.value);
     }
-    if (healthStatus.present) {
-      map['health_status'] = Variable<String>(healthStatus.value);
+    if (numberOfFemales.present) {
+      map['number_of_females'] = Variable<int>(numberOfFemales.value);
     }
-    if (hasDisability.present) {
-      map['has_disability'] = Variable<bool>(hasDisability.value);
+    if (academicQualification.present) {
+      map['academic_qualification'] = Variable<int>(
+        academicQualification.value,
+      );
+    }
+    if (employmentStatusBreadwinner.present) {
+      map['employment_status_breadwinner'] = Variable<int>(
+        employmentStatusBreadwinner.value,
+      );
     }
     if (displacementStatus.present) {
       map['displacement_status'] = Variable<int>(displacementStatus.value);
@@ -2131,35 +2097,36 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
     if (currentAddress.present) {
       map['current_address'] = Variable<String>(currentAddress.value);
     }
-    if (numberOfMales.present) {
-      map['number_of_males'] = Variable<int>(numberOfMales.value);
+    if (city.present) {
+      map['city'] = Variable<int>(city.value);
     }
-    if (numberOfFemales.present) {
-      map['number_of_females'] = Variable<int>(numberOfFemales.value);
+    if (province.present) {
+      map['province'] = Variable<int>(province.value);
     }
-    if (chronicDiseasesCount.present) {
-      map['chronic_diseases_count'] = Variable<int>(chronicDiseasesCount.value);
+    if (healthStatus.present) {
+      map['health_status'] = Variable<int>(healthStatus.value);
     }
-    if (specialNeedsCount.present) {
-      map['special_needs_count'] = Variable<int>(specialNeedsCount.value);
+    if (numberOfIndividualsWithChronicDiseases.present) {
+      map['number_of_individuals_with_chronic_diseases'] = Variable<int>(
+        numberOfIndividualsWithChronicDiseases.value,
+      );
     }
-    if (employmentStatus.present) {
-      map['employment_status'] = Variable<int>(employmentStatus.value);
+    if (numberOfPeopleWithSpecialNeeds.present) {
+      map['number_of_people_with_special_needs'] = Variable<int>(
+        numberOfPeopleWithSpecialNeeds.value,
+      );
     }
     if (housingStatus.present) {
       map['housing_status'] = Variable<int>(housingStatus.value);
     }
-    if (housingType.present) {
-      map['housing_type'] = Variable<int>(housingType.value);
+    if (currentHousingType.present) {
+      map['current_housing_type'] = Variable<int>(currentHousingType.value);
     }
-    if (requestStatus.present) {
-      map['request_status'] = Variable<int>(requestStatus.value);
+    if (descriptionNeeds.present) {
+      map['description_needs'] = Variable<String>(descriptionNeeds.value);
     }
-    if (notes.present) {
-      map['notes'] = Variable<String>(notes.value);
-    }
-    if (associationName.present) {
-      map['association_name'] = Variable<String>(associationName.value);
+    if (userInsertData.present) {
+      map['user_insert_data'] = Variable<String>(userInsertData.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2171,13 +2138,13 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
       map['sync_state'] = Variable<String>(syncState.value);
     }
     if (serverId.present) {
-      map['server_id'] = Variable<String>(serverId.value);
+      map['server_id'] = Variable<int>(serverId.value);
     }
     if (lastSyncedAt.present) {
       map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
     }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+    if (fullNameNorm.present) {
+      map['full_name_norm'] = Variable<String>(fullNameNorm.value);
     }
     return map;
   }
@@ -2186,46 +2153,48 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
   String toString() {
     return (StringBuffer('BeneficiariesCompanion(')
           ..write('id: $id, ')
-          ..write('fullName: $fullName, ')
-          ..write('fullNameNorm: $fullNameNorm, ')
-          ..write('nationalId: $nationalId, ')
-          ..write('fileNo: $fileNo, ')
-          ..write('governorate: $governorate, ')
-          ..write('district: $district, ')
-          ..write('address: $address, ')
-          ..write('phoneNumber: $phoneNumber, ')
-          ..write('motherName: $motherName, ')
+          ..write('fileIdNumber: $fileIdNumber, ')
+          ..write('originalFileIdFromExcel: $originalFileIdFromExcel, ')
+          ..write('sectionId: $sectionId, ')
+          ..write('requestStatus: $requestStatus, ')
+          ..write('idNumber: $idNumber, ')
+          ..write('firstName: $firstName, ')
           ..write('fatherName: $fatherName, ')
           ..write('grandFatherName: $grandFatherName, ')
           ..write('familyName: $familyName, ')
-          ..write('altPhoneNumber: $altPhoneNumber, ')
-          ..write('familySize: $familySize, ')
-          ..write('gender: $gender, ')
-          ..write('category: $category, ')
+          ..write('relationship: $relationship, ')
           ..write('birthDate: $birthDate, ')
+          ..write('gender: $gender, ')
+          ..write('phoneNumber: $phoneNumber, ')
+          ..write('altPhoneNumber: $altPhoneNumber, ')
+          ..write('numberOfIndividuals: $numberOfIndividuals, ')
           ..write('maritalStatus: $maritalStatus, ')
-          ..write('educationLevel: $educationLevel, ')
-          ..write('healthStatus: $healthStatus, ')
-          ..write('hasDisability: $hasDisability, ')
+          ..write('numberOfMales: $numberOfMales, ')
+          ..write('numberOfFemales: $numberOfFemales, ')
+          ..write('academicQualification: $academicQualification, ')
+          ..write('employmentStatusBreadwinner: $employmentStatusBreadwinner, ')
           ..write('displacementStatus: $displacementStatus, ')
           ..write('addressBeforeDisplacement: $addressBeforeDisplacement, ')
           ..write('currentAddress: $currentAddress, ')
-          ..write('numberOfMales: $numberOfMales, ')
-          ..write('numberOfFemales: $numberOfFemales, ')
-          ..write('chronicDiseasesCount: $chronicDiseasesCount, ')
-          ..write('specialNeedsCount: $specialNeedsCount, ')
-          ..write('employmentStatus: $employmentStatus, ')
+          ..write('city: $city, ')
+          ..write('province: $province, ')
+          ..write('healthStatus: $healthStatus, ')
+          ..write(
+            'numberOfIndividualsWithChronicDiseases: $numberOfIndividualsWithChronicDiseases, ',
+          )
+          ..write(
+            'numberOfPeopleWithSpecialNeeds: $numberOfPeopleWithSpecialNeeds, ',
+          )
           ..write('housingStatus: $housingStatus, ')
-          ..write('housingType: $housingType, ')
-          ..write('requestStatus: $requestStatus, ')
-          ..write('notes: $notes, ')
-          ..write('associationName: $associationName, ')
+          ..write('currentHousingType: $currentHousingType, ')
+          ..write('descriptionNeeds: $descriptionNeeds, ')
+          ..write('userInsertData: $userInsertData, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
           ..write('serverId: $serverId, ')
           ..write('lastSyncedAt: $lastSyncedAt, ')
-          ..write('rowid: $rowid')
+          ..write('fullNameNorm: $fullNameNorm')
           ..write(')'))
         .toString();
   }
@@ -9282,91 +9251,87 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$BeneficiariesTableCreateCompanionBuilder =
     BeneficiariesCompanion Function({
-      required String id,
-      required String fullName,
-      required String fullNameNorm,
-      required String nationalId,
-      required String fileNo,
-      required String governorate,
-      Value<String?> district,
-      Value<String?> address,
-      Value<String?> phoneNumber,
-      Value<String?> motherName,
+      Value<int> id,
+      Value<String?> fileIdNumber,
+      Value<String?> originalFileIdFromExcel,
+      Value<int?> sectionId,
+      Value<int> requestStatus,
+      required int idNumber,
+      Value<String?> firstName,
       Value<String?> fatherName,
       Value<String?> grandFatherName,
       Value<String?> familyName,
-      Value<String?> altPhoneNumber,
-      Value<int?> familySize,
-      required String gender,
-      required String category,
+      Value<int?> relationship,
       Value<DateTime?> birthDate,
-      Value<String?> maritalStatus,
-      Value<String?> educationLevel,
-      Value<String?> healthStatus,
-      Value<bool> hasDisability,
+      Value<int?> gender,
+      required int phoneNumber,
+      required int altPhoneNumber,
+      Value<int?> numberOfIndividuals,
+      Value<int?> maritalStatus,
+      Value<int?> numberOfMales,
+      Value<int?> numberOfFemales,
+      Value<int?> academicQualification,
+      Value<int?> employmentStatusBreadwinner,
       Value<int?> displacementStatus,
       Value<String?> addressBeforeDisplacement,
       Value<String?> currentAddress,
-      Value<int?> numberOfMales,
-      Value<int?> numberOfFemales,
-      Value<int?> chronicDiseasesCount,
-      Value<int?> specialNeedsCount,
-      Value<int?> employmentStatus,
+      Value<int?> city,
+      Value<int?> province,
+      Value<int?> healthStatus,
+      Value<int?> numberOfIndividualsWithChronicDiseases,
+      Value<int?> numberOfPeopleWithSpecialNeeds,
       Value<int?> housingStatus,
-      Value<int?> housingType,
-      Value<int?> requestStatus,
-      Value<String> notes,
-      Value<String?> associationName,
-      required DateTime createdAt,
-      required DateTime updatedAt,
+      Value<int?> currentHousingType,
+      Value<String?> descriptionNeeds,
+      Value<String?> userInsertData,
+      Value<DateTime?> createdAt,
+      Value<DateTime?> updatedAt,
       Value<String> syncState,
-      Value<String?> serverId,
+      Value<int?> serverId,
       Value<DateTime?> lastSyncedAt,
-      Value<int> rowid,
+      Value<String?> fullNameNorm,
     });
 typedef $$BeneficiariesTableUpdateCompanionBuilder =
     BeneficiariesCompanion Function({
-      Value<String> id,
-      Value<String> fullName,
-      Value<String> fullNameNorm,
-      Value<String> nationalId,
-      Value<String> fileNo,
-      Value<String> governorate,
-      Value<String?> district,
-      Value<String?> address,
-      Value<String?> phoneNumber,
-      Value<String?> motherName,
+      Value<int> id,
+      Value<String?> fileIdNumber,
+      Value<String?> originalFileIdFromExcel,
+      Value<int?> sectionId,
+      Value<int> requestStatus,
+      Value<int> idNumber,
+      Value<String?> firstName,
       Value<String?> fatherName,
       Value<String?> grandFatherName,
       Value<String?> familyName,
-      Value<String?> altPhoneNumber,
-      Value<int?> familySize,
-      Value<String> gender,
-      Value<String> category,
+      Value<int?> relationship,
       Value<DateTime?> birthDate,
-      Value<String?> maritalStatus,
-      Value<String?> educationLevel,
-      Value<String?> healthStatus,
-      Value<bool> hasDisability,
+      Value<int?> gender,
+      Value<int> phoneNumber,
+      Value<int> altPhoneNumber,
+      Value<int?> numberOfIndividuals,
+      Value<int?> maritalStatus,
+      Value<int?> numberOfMales,
+      Value<int?> numberOfFemales,
+      Value<int?> academicQualification,
+      Value<int?> employmentStatusBreadwinner,
       Value<int?> displacementStatus,
       Value<String?> addressBeforeDisplacement,
       Value<String?> currentAddress,
-      Value<int?> numberOfMales,
-      Value<int?> numberOfFemales,
-      Value<int?> chronicDiseasesCount,
-      Value<int?> specialNeedsCount,
-      Value<int?> employmentStatus,
+      Value<int?> city,
+      Value<int?> province,
+      Value<int?> healthStatus,
+      Value<int?> numberOfIndividualsWithChronicDiseases,
+      Value<int?> numberOfPeopleWithSpecialNeeds,
       Value<int?> housingStatus,
-      Value<int?> housingType,
-      Value<int?> requestStatus,
-      Value<String> notes,
-      Value<String?> associationName,
-      Value<DateTime> createdAt,
-      Value<DateTime> updatedAt,
+      Value<int?> currentHousingType,
+      Value<String?> descriptionNeeds,
+      Value<String?> userInsertData,
+      Value<DateTime?> createdAt,
+      Value<DateTime?> updatedAt,
       Value<String> syncState,
-      Value<String?> serverId,
+      Value<int?> serverId,
       Value<DateTime?> lastSyncedAt,
-      Value<int> rowid,
+      Value<String?> fullNameNorm,
     });
 
 class $$BeneficiariesTableFilterComposer
@@ -9378,53 +9343,38 @@ class $$BeneficiariesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<String> get id => $composableBuilder(
+  ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fullName => $composableBuilder(
-    column: $table.fullName,
+  ColumnFilters<String> get fileIdNumber => $composableBuilder(
+    column: $table.fileIdNumber,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fullNameNorm => $composableBuilder(
-    column: $table.fullNameNorm,
+  ColumnFilters<String> get originalFileIdFromExcel => $composableBuilder(
+    column: $table.originalFileIdFromExcel,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get nationalId => $composableBuilder(
-    column: $table.nationalId,
+  ColumnFilters<int> get sectionId => $composableBuilder(
+    column: $table.sectionId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fileNo => $composableBuilder(
-    column: $table.fileNo,
+  ColumnFilters<int> get requestStatus => $composableBuilder(
+    column: $table.requestStatus,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get governorate => $composableBuilder(
-    column: $table.governorate,
+  ColumnFilters<int> get idNumber => $composableBuilder(
+    column: $table.idNumber,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get district => $composableBuilder(
-    column: $table.district,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get phoneNumber => $composableBuilder(
-    column: $table.phoneNumber,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get motherName => $composableBuilder(
-    column: $table.motherName,
+  ColumnFilters<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9443,23 +9393,8 @@ class $$BeneficiariesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get altPhoneNumber => $composableBuilder(
-    column: $table.altPhoneNumber,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get familySize => $composableBuilder(
-    column: $table.familySize,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get gender => $composableBuilder(
-    column: $table.gender,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get category => $composableBuilder(
-    column: $table.category,
+  ColumnFilters<int> get relationship => $composableBuilder(
+    column: $table.relationship,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9468,23 +9403,48 @@ class $$BeneficiariesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get maritalStatus => $composableBuilder(
+  ColumnFilters<int> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get phoneNumber => $composableBuilder(
+    column: $table.phoneNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get altPhoneNumber => $composableBuilder(
+    column: $table.altPhoneNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get numberOfIndividuals => $composableBuilder(
+    column: $table.numberOfIndividuals,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get maritalStatus => $composableBuilder(
     column: $table.maritalStatus,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get educationLevel => $composableBuilder(
-    column: $table.educationLevel,
+  ColumnFilters<int> get numberOfMales => $composableBuilder(
+    column: $table.numberOfMales,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get healthStatus => $composableBuilder(
-    column: $table.healthStatus,
+  ColumnFilters<int> get numberOfFemales => $composableBuilder(
+    column: $table.numberOfFemales,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get hasDisability => $composableBuilder(
-    column: $table.hasDisability,
+  ColumnFilters<int> get academicQualification => $composableBuilder(
+    column: $table.academicQualification,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get employmentStatusBreadwinner => $composableBuilder(
+    column: $table.employmentStatusBreadwinner,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9503,28 +9463,29 @@ class $$BeneficiariesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get numberOfMales => $composableBuilder(
-    column: $table.numberOfMales,
+  ColumnFilters<int> get city => $composableBuilder(
+    column: $table.city,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get numberOfFemales => $composableBuilder(
-    column: $table.numberOfFemales,
+  ColumnFilters<int> get province => $composableBuilder(
+    column: $table.province,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get chronicDiseasesCount => $composableBuilder(
-    column: $table.chronicDiseasesCount,
+  ColumnFilters<int> get healthStatus => $composableBuilder(
+    column: $table.healthStatus,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get specialNeedsCount => $composableBuilder(
-    column: $table.specialNeedsCount,
-    builder: (column) => ColumnFilters(column),
-  );
+  ColumnFilters<int> get numberOfIndividualsWithChronicDiseases =>
+      $composableBuilder(
+        column: $table.numberOfIndividualsWithChronicDiseases,
+        builder: (column) => ColumnFilters(column),
+      );
 
-  ColumnFilters<int> get employmentStatus => $composableBuilder(
-    column: $table.employmentStatus,
+  ColumnFilters<int> get numberOfPeopleWithSpecialNeeds => $composableBuilder(
+    column: $table.numberOfPeopleWithSpecialNeeds,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9533,23 +9494,18 @@ class $$BeneficiariesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get housingType => $composableBuilder(
-    column: $table.housingType,
+  ColumnFilters<int> get currentHousingType => $composableBuilder(
+    column: $table.currentHousingType,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get requestStatus => $composableBuilder(
-    column: $table.requestStatus,
+  ColumnFilters<String> get descriptionNeeds => $composableBuilder(
+    column: $table.descriptionNeeds,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get notes => $composableBuilder(
-    column: $table.notes,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get associationName => $composableBuilder(
-    column: $table.associationName,
+  ColumnFilters<String> get userInsertData => $composableBuilder(
+    column: $table.userInsertData,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9568,13 +9524,23 @@ class $$BeneficiariesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get serverId => $composableBuilder(
+  ColumnFilters<int> get serverId => $composableBuilder(
     column: $table.serverId,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
     column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fullName => $composableBuilder(
+    column: $table.fullName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fullNameNorm => $composableBuilder(
+    column: $table.fullNameNorm,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9588,53 +9554,38 @@ class $$BeneficiariesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<String> get id => $composableBuilder(
+  ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fullName => $composableBuilder(
-    column: $table.fullName,
+  ColumnOrderings<String> get fileIdNumber => $composableBuilder(
+    column: $table.fileIdNumber,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fullNameNorm => $composableBuilder(
-    column: $table.fullNameNorm,
+  ColumnOrderings<String> get originalFileIdFromExcel => $composableBuilder(
+    column: $table.originalFileIdFromExcel,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get nationalId => $composableBuilder(
-    column: $table.nationalId,
+  ColumnOrderings<int> get sectionId => $composableBuilder(
+    column: $table.sectionId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fileNo => $composableBuilder(
-    column: $table.fileNo,
+  ColumnOrderings<int> get requestStatus => $composableBuilder(
+    column: $table.requestStatus,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get governorate => $composableBuilder(
-    column: $table.governorate,
+  ColumnOrderings<int> get idNumber => $composableBuilder(
+    column: $table.idNumber,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get district => $composableBuilder(
-    column: $table.district,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get address => $composableBuilder(
-    column: $table.address,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get phoneNumber => $composableBuilder(
-    column: $table.phoneNumber,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get motherName => $composableBuilder(
-    column: $table.motherName,
+  ColumnOrderings<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9653,23 +9604,8 @@ class $$BeneficiariesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get altPhoneNumber => $composableBuilder(
-    column: $table.altPhoneNumber,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get familySize => $composableBuilder(
-    column: $table.familySize,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get gender => $composableBuilder(
-    column: $table.gender,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get category => $composableBuilder(
-    column: $table.category,
+  ColumnOrderings<int> get relationship => $composableBuilder(
+    column: $table.relationship,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9678,23 +9614,48 @@ class $$BeneficiariesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get maritalStatus => $composableBuilder(
+  ColumnOrderings<int> get gender => $composableBuilder(
+    column: $table.gender,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get phoneNumber => $composableBuilder(
+    column: $table.phoneNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get altPhoneNumber => $composableBuilder(
+    column: $table.altPhoneNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get numberOfIndividuals => $composableBuilder(
+    column: $table.numberOfIndividuals,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get maritalStatus => $composableBuilder(
     column: $table.maritalStatus,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get educationLevel => $composableBuilder(
-    column: $table.educationLevel,
+  ColumnOrderings<int> get numberOfMales => $composableBuilder(
+    column: $table.numberOfMales,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get healthStatus => $composableBuilder(
-    column: $table.healthStatus,
+  ColumnOrderings<int> get numberOfFemales => $composableBuilder(
+    column: $table.numberOfFemales,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get hasDisability => $composableBuilder(
-    column: $table.hasDisability,
+  ColumnOrderings<int> get academicQualification => $composableBuilder(
+    column: $table.academicQualification,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get employmentStatusBreadwinner => $composableBuilder(
+    column: $table.employmentStatusBreadwinner,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9713,28 +9674,29 @@ class $$BeneficiariesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get numberOfMales => $composableBuilder(
-    column: $table.numberOfMales,
+  ColumnOrderings<int> get city => $composableBuilder(
+    column: $table.city,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get numberOfFemales => $composableBuilder(
-    column: $table.numberOfFemales,
+  ColumnOrderings<int> get province => $composableBuilder(
+    column: $table.province,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get chronicDiseasesCount => $composableBuilder(
-    column: $table.chronicDiseasesCount,
+  ColumnOrderings<int> get healthStatus => $composableBuilder(
+    column: $table.healthStatus,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get specialNeedsCount => $composableBuilder(
-    column: $table.specialNeedsCount,
-    builder: (column) => ColumnOrderings(column),
-  );
+  ColumnOrderings<int> get numberOfIndividualsWithChronicDiseases =>
+      $composableBuilder(
+        column: $table.numberOfIndividualsWithChronicDiseases,
+        builder: (column) => ColumnOrderings(column),
+      );
 
-  ColumnOrderings<int> get employmentStatus => $composableBuilder(
-    column: $table.employmentStatus,
+  ColumnOrderings<int> get numberOfPeopleWithSpecialNeeds => $composableBuilder(
+    column: $table.numberOfPeopleWithSpecialNeeds,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9743,23 +9705,18 @@ class $$BeneficiariesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get housingType => $composableBuilder(
-    column: $table.housingType,
+  ColumnOrderings<int> get currentHousingType => $composableBuilder(
+    column: $table.currentHousingType,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get requestStatus => $composableBuilder(
-    column: $table.requestStatus,
+  ColumnOrderings<String> get descriptionNeeds => $composableBuilder(
+    column: $table.descriptionNeeds,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get notes => $composableBuilder(
-    column: $table.notes,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get associationName => $composableBuilder(
-    column: $table.associationName,
+  ColumnOrderings<String> get userInsertData => $composableBuilder(
+    column: $table.userInsertData,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9778,13 +9735,23 @@ class $$BeneficiariesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get serverId => $composableBuilder(
+  ColumnOrderings<int> get serverId => $composableBuilder(
     column: $table.serverId,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
     column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fullName => $composableBuilder(
+    column: $table.fullName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fullNameNorm => $composableBuilder(
+    column: $table.fullNameNorm,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -9798,45 +9765,32 @@ class $$BeneficiariesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<String> get id =>
+  GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get fullName =>
-      $composableBuilder(column: $table.fullName, builder: (column) => column);
-
-  GeneratedColumn<String> get fullNameNorm => $composableBuilder(
-    column: $table.fullNameNorm,
+  GeneratedColumn<String> get fileIdNumber => $composableBuilder(
+    column: $table.fileIdNumber,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get nationalId => $composableBuilder(
-    column: $table.nationalId,
+  GeneratedColumn<String> get originalFileIdFromExcel => $composableBuilder(
+    column: $table.originalFileIdFromExcel,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get fileNo =>
-      $composableBuilder(column: $table.fileNo, builder: (column) => column);
+  GeneratedColumn<int> get sectionId =>
+      $composableBuilder(column: $table.sectionId, builder: (column) => column);
 
-  GeneratedColumn<String> get governorate => $composableBuilder(
-    column: $table.governorate,
+  GeneratedColumn<int> get requestStatus => $composableBuilder(
+    column: $table.requestStatus,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get district =>
-      $composableBuilder(column: $table.district, builder: (column) => column);
+  GeneratedColumn<int> get idNumber =>
+      $composableBuilder(column: $table.idNumber, builder: (column) => column);
 
-  GeneratedColumn<String> get address =>
-      $composableBuilder(column: $table.address, builder: (column) => column);
-
-  GeneratedColumn<String> get phoneNumber => $composableBuilder(
-    column: $table.phoneNumber,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get motherName => $composableBuilder(
-    column: $table.motherName,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get firstName =>
+      $composableBuilder(column: $table.firstName, builder: (column) => column);
 
   GeneratedColumn<String> get fatherName => $composableBuilder(
     column: $table.fatherName,
@@ -9853,42 +9807,54 @@ class $$BeneficiariesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get altPhoneNumber => $composableBuilder(
-    column: $table.altPhoneNumber,
+  GeneratedColumn<int> get relationship => $composableBuilder(
+    column: $table.relationship,
     builder: (column) => column,
   );
-
-  GeneratedColumn<int> get familySize => $composableBuilder(
-    column: $table.familySize,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get gender =>
-      $composableBuilder(column: $table.gender, builder: (column) => column);
-
-  GeneratedColumn<String> get category =>
-      $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<DateTime> get birthDate =>
       $composableBuilder(column: $table.birthDate, builder: (column) => column);
 
-  GeneratedColumn<String> get maritalStatus => $composableBuilder(
+  GeneratedColumn<int> get gender =>
+      $composableBuilder(column: $table.gender, builder: (column) => column);
+
+  GeneratedColumn<int> get phoneNumber => $composableBuilder(
+    column: $table.phoneNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get altPhoneNumber => $composableBuilder(
+    column: $table.altPhoneNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get numberOfIndividuals => $composableBuilder(
+    column: $table.numberOfIndividuals,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get maritalStatus => $composableBuilder(
     column: $table.maritalStatus,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get educationLevel => $composableBuilder(
-    column: $table.educationLevel,
+  GeneratedColumn<int> get numberOfMales => $composableBuilder(
+    column: $table.numberOfMales,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get healthStatus => $composableBuilder(
-    column: $table.healthStatus,
+  GeneratedColumn<int> get numberOfFemales => $composableBuilder(
+    column: $table.numberOfFemales,
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get hasDisability => $composableBuilder(
-    column: $table.hasDisability,
+  GeneratedColumn<int> get academicQualification => $composableBuilder(
+    column: $table.academicQualification,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get employmentStatusBreadwinner => $composableBuilder(
+    column: $table.employmentStatusBreadwinner,
     builder: (column) => column,
   );
 
@@ -9907,28 +9873,25 @@ class $$BeneficiariesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get numberOfMales => $composableBuilder(
-    column: $table.numberOfMales,
+  GeneratedColumn<int> get city =>
+      $composableBuilder(column: $table.city, builder: (column) => column);
+
+  GeneratedColumn<int> get province =>
+      $composableBuilder(column: $table.province, builder: (column) => column);
+
+  GeneratedColumn<int> get healthStatus => $composableBuilder(
+    column: $table.healthStatus,
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get numberOfFemales => $composableBuilder(
-    column: $table.numberOfFemales,
-    builder: (column) => column,
-  );
+  GeneratedColumn<int> get numberOfIndividualsWithChronicDiseases =>
+      $composableBuilder(
+        column: $table.numberOfIndividualsWithChronicDiseases,
+        builder: (column) => column,
+      );
 
-  GeneratedColumn<int> get chronicDiseasesCount => $composableBuilder(
-    column: $table.chronicDiseasesCount,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get specialNeedsCount => $composableBuilder(
-    column: $table.specialNeedsCount,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get employmentStatus => $composableBuilder(
-    column: $table.employmentStatus,
+  GeneratedColumn<int> get numberOfPeopleWithSpecialNeeds => $composableBuilder(
+    column: $table.numberOfPeopleWithSpecialNeeds,
     builder: (column) => column,
   );
 
@@ -9937,21 +9900,18 @@ class $$BeneficiariesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get housingType => $composableBuilder(
-    column: $table.housingType,
+  GeneratedColumn<int> get currentHousingType => $composableBuilder(
+    column: $table.currentHousingType,
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get requestStatus => $composableBuilder(
-    column: $table.requestStatus,
+  GeneratedColumn<String> get descriptionNeeds => $composableBuilder(
+    column: $table.descriptionNeeds,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get notes =>
-      $composableBuilder(column: $table.notes, builder: (column) => column);
-
-  GeneratedColumn<String> get associationName => $composableBuilder(
-    column: $table.associationName,
+  GeneratedColumn<String> get userInsertData => $composableBuilder(
+    column: $table.userInsertData,
     builder: (column) => column,
   );
 
@@ -9964,11 +9924,19 @@ class $$BeneficiariesTableAnnotationComposer
   GeneratedColumn<String> get syncState =>
       $composableBuilder(column: $table.syncState, builder: (column) => column);
 
-  GeneratedColumn<String> get serverId =>
+  GeneratedColumn<int> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
     column: $table.lastSyncedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fullName =>
+      $composableBuilder(column: $table.fullName, builder: (column) => column);
+
+  GeneratedColumn<String> get fullNameNorm => $composableBuilder(
+    column: $table.fullNameNorm,
     builder: (column) => column,
   );
 }
@@ -10004,175 +9972,173 @@ class $$BeneficiariesTableTableManager
               $$BeneficiariesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> id = const Value.absent(),
-                Value<String> fullName = const Value.absent(),
-                Value<String> fullNameNorm = const Value.absent(),
-                Value<String> nationalId = const Value.absent(),
-                Value<String> fileNo = const Value.absent(),
-                Value<String> governorate = const Value.absent(),
-                Value<String?> district = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<String?> phoneNumber = const Value.absent(),
-                Value<String?> motherName = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<String?> fileIdNumber = const Value.absent(),
+                Value<String?> originalFileIdFromExcel = const Value.absent(),
+                Value<int?> sectionId = const Value.absent(),
+                Value<int> requestStatus = const Value.absent(),
+                Value<int> idNumber = const Value.absent(),
+                Value<String?> firstName = const Value.absent(),
                 Value<String?> fatherName = const Value.absent(),
                 Value<String?> grandFatherName = const Value.absent(),
                 Value<String?> familyName = const Value.absent(),
-                Value<String?> altPhoneNumber = const Value.absent(),
-                Value<int?> familySize = const Value.absent(),
-                Value<String> gender = const Value.absent(),
-                Value<String> category = const Value.absent(),
+                Value<int?> relationship = const Value.absent(),
                 Value<DateTime?> birthDate = const Value.absent(),
-                Value<String?> maritalStatus = const Value.absent(),
-                Value<String?> educationLevel = const Value.absent(),
-                Value<String?> healthStatus = const Value.absent(),
-                Value<bool> hasDisability = const Value.absent(),
+                Value<int?> gender = const Value.absent(),
+                Value<int> phoneNumber = const Value.absent(),
+                Value<int> altPhoneNumber = const Value.absent(),
+                Value<int?> numberOfIndividuals = const Value.absent(),
+                Value<int?> maritalStatus = const Value.absent(),
+                Value<int?> numberOfMales = const Value.absent(),
+                Value<int?> numberOfFemales = const Value.absent(),
+                Value<int?> academicQualification = const Value.absent(),
+                Value<int?> employmentStatusBreadwinner = const Value.absent(),
                 Value<int?> displacementStatus = const Value.absent(),
                 Value<String?> addressBeforeDisplacement = const Value.absent(),
                 Value<String?> currentAddress = const Value.absent(),
-                Value<int?> numberOfMales = const Value.absent(),
-                Value<int?> numberOfFemales = const Value.absent(),
-                Value<int?> chronicDiseasesCount = const Value.absent(),
-                Value<int?> specialNeedsCount = const Value.absent(),
-                Value<int?> employmentStatus = const Value.absent(),
+                Value<int?> city = const Value.absent(),
+                Value<int?> province = const Value.absent(),
+                Value<int?> healthStatus = const Value.absent(),
+                Value<int?> numberOfIndividualsWithChronicDiseases =
+                    const Value.absent(),
+                Value<int?> numberOfPeopleWithSpecialNeeds =
+                    const Value.absent(),
                 Value<int?> housingStatus = const Value.absent(),
-                Value<int?> housingType = const Value.absent(),
-                Value<int?> requestStatus = const Value.absent(),
-                Value<String> notes = const Value.absent(),
-                Value<String?> associationName = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int?> currentHousingType = const Value.absent(),
+                Value<String?> descriptionNeeds = const Value.absent(),
+                Value<String?> userInsertData = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
-                Value<String?> serverId = const Value.absent(),
+                Value<int?> serverId = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<String?> fullNameNorm = const Value.absent(),
               }) => BeneficiariesCompanion(
                 id: id,
-                fullName: fullName,
-                fullNameNorm: fullNameNorm,
-                nationalId: nationalId,
-                fileNo: fileNo,
-                governorate: governorate,
-                district: district,
-                address: address,
-                phoneNumber: phoneNumber,
-                motherName: motherName,
+                fileIdNumber: fileIdNumber,
+                originalFileIdFromExcel: originalFileIdFromExcel,
+                sectionId: sectionId,
+                requestStatus: requestStatus,
+                idNumber: idNumber,
+                firstName: firstName,
                 fatherName: fatherName,
                 grandFatherName: grandFatherName,
                 familyName: familyName,
-                altPhoneNumber: altPhoneNumber,
-                familySize: familySize,
-                gender: gender,
-                category: category,
+                relationship: relationship,
                 birthDate: birthDate,
+                gender: gender,
+                phoneNumber: phoneNumber,
+                altPhoneNumber: altPhoneNumber,
+                numberOfIndividuals: numberOfIndividuals,
                 maritalStatus: maritalStatus,
-                educationLevel: educationLevel,
-                healthStatus: healthStatus,
-                hasDisability: hasDisability,
+                numberOfMales: numberOfMales,
+                numberOfFemales: numberOfFemales,
+                academicQualification: academicQualification,
+                employmentStatusBreadwinner: employmentStatusBreadwinner,
                 displacementStatus: displacementStatus,
                 addressBeforeDisplacement: addressBeforeDisplacement,
                 currentAddress: currentAddress,
-                numberOfMales: numberOfMales,
-                numberOfFemales: numberOfFemales,
-                chronicDiseasesCount: chronicDiseasesCount,
-                specialNeedsCount: specialNeedsCount,
-                employmentStatus: employmentStatus,
+                city: city,
+                province: province,
+                healthStatus: healthStatus,
+                numberOfIndividualsWithChronicDiseases:
+                    numberOfIndividualsWithChronicDiseases,
+                numberOfPeopleWithSpecialNeeds: numberOfPeopleWithSpecialNeeds,
                 housingStatus: housingStatus,
-                housingType: housingType,
-                requestStatus: requestStatus,
-                notes: notes,
-                associationName: associationName,
+                currentHousingType: currentHousingType,
+                descriptionNeeds: descriptionNeeds,
+                userInsertData: userInsertData,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncState: syncState,
                 serverId: serverId,
                 lastSyncedAt: lastSyncedAt,
-                rowid: rowid,
+                fullNameNorm: fullNameNorm,
               ),
           createCompanionCallback:
               ({
-                required String id,
-                required String fullName,
-                required String fullNameNorm,
-                required String nationalId,
-                required String fileNo,
-                required String governorate,
-                Value<String?> district = const Value.absent(),
-                Value<String?> address = const Value.absent(),
-                Value<String?> phoneNumber = const Value.absent(),
-                Value<String?> motherName = const Value.absent(),
+                Value<int> id = const Value.absent(),
+                Value<String?> fileIdNumber = const Value.absent(),
+                Value<String?> originalFileIdFromExcel = const Value.absent(),
+                Value<int?> sectionId = const Value.absent(),
+                Value<int> requestStatus = const Value.absent(),
+                required int idNumber,
+                Value<String?> firstName = const Value.absent(),
                 Value<String?> fatherName = const Value.absent(),
                 Value<String?> grandFatherName = const Value.absent(),
                 Value<String?> familyName = const Value.absent(),
-                Value<String?> altPhoneNumber = const Value.absent(),
-                Value<int?> familySize = const Value.absent(),
-                required String gender,
-                required String category,
+                Value<int?> relationship = const Value.absent(),
                 Value<DateTime?> birthDate = const Value.absent(),
-                Value<String?> maritalStatus = const Value.absent(),
-                Value<String?> educationLevel = const Value.absent(),
-                Value<String?> healthStatus = const Value.absent(),
-                Value<bool> hasDisability = const Value.absent(),
+                Value<int?> gender = const Value.absent(),
+                required int phoneNumber,
+                required int altPhoneNumber,
+                Value<int?> numberOfIndividuals = const Value.absent(),
+                Value<int?> maritalStatus = const Value.absent(),
+                Value<int?> numberOfMales = const Value.absent(),
+                Value<int?> numberOfFemales = const Value.absent(),
+                Value<int?> academicQualification = const Value.absent(),
+                Value<int?> employmentStatusBreadwinner = const Value.absent(),
                 Value<int?> displacementStatus = const Value.absent(),
                 Value<String?> addressBeforeDisplacement = const Value.absent(),
                 Value<String?> currentAddress = const Value.absent(),
-                Value<int?> numberOfMales = const Value.absent(),
-                Value<int?> numberOfFemales = const Value.absent(),
-                Value<int?> chronicDiseasesCount = const Value.absent(),
-                Value<int?> specialNeedsCount = const Value.absent(),
-                Value<int?> employmentStatus = const Value.absent(),
+                Value<int?> city = const Value.absent(),
+                Value<int?> province = const Value.absent(),
+                Value<int?> healthStatus = const Value.absent(),
+                Value<int?> numberOfIndividualsWithChronicDiseases =
+                    const Value.absent(),
+                Value<int?> numberOfPeopleWithSpecialNeeds =
+                    const Value.absent(),
                 Value<int?> housingStatus = const Value.absent(),
-                Value<int?> housingType = const Value.absent(),
-                Value<int?> requestStatus = const Value.absent(),
-                Value<String> notes = const Value.absent(),
-                Value<String?> associationName = const Value.absent(),
-                required DateTime createdAt,
-                required DateTime updatedAt,
+                Value<int?> currentHousingType = const Value.absent(),
+                Value<String?> descriptionNeeds = const Value.absent(),
+                Value<String?> userInsertData = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
-                Value<String?> serverId = const Value.absent(),
+                Value<int?> serverId = const Value.absent(),
                 Value<DateTime?> lastSyncedAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<String?> fullNameNorm = const Value.absent(),
               }) => BeneficiariesCompanion.insert(
                 id: id,
-                fullName: fullName,
-                fullNameNorm: fullNameNorm,
-                nationalId: nationalId,
-                fileNo: fileNo,
-                governorate: governorate,
-                district: district,
-                address: address,
-                phoneNumber: phoneNumber,
-                motherName: motherName,
+                fileIdNumber: fileIdNumber,
+                originalFileIdFromExcel: originalFileIdFromExcel,
+                sectionId: sectionId,
+                requestStatus: requestStatus,
+                idNumber: idNumber,
+                firstName: firstName,
                 fatherName: fatherName,
                 grandFatherName: grandFatherName,
                 familyName: familyName,
-                altPhoneNumber: altPhoneNumber,
-                familySize: familySize,
-                gender: gender,
-                category: category,
+                relationship: relationship,
                 birthDate: birthDate,
+                gender: gender,
+                phoneNumber: phoneNumber,
+                altPhoneNumber: altPhoneNumber,
+                numberOfIndividuals: numberOfIndividuals,
                 maritalStatus: maritalStatus,
-                educationLevel: educationLevel,
-                healthStatus: healthStatus,
-                hasDisability: hasDisability,
+                numberOfMales: numberOfMales,
+                numberOfFemales: numberOfFemales,
+                academicQualification: academicQualification,
+                employmentStatusBreadwinner: employmentStatusBreadwinner,
                 displacementStatus: displacementStatus,
                 addressBeforeDisplacement: addressBeforeDisplacement,
                 currentAddress: currentAddress,
-                numberOfMales: numberOfMales,
-                numberOfFemales: numberOfFemales,
-                chronicDiseasesCount: chronicDiseasesCount,
-                specialNeedsCount: specialNeedsCount,
-                employmentStatus: employmentStatus,
+                city: city,
+                province: province,
+                healthStatus: healthStatus,
+                numberOfIndividualsWithChronicDiseases:
+                    numberOfIndividualsWithChronicDiseases,
+                numberOfPeopleWithSpecialNeeds: numberOfPeopleWithSpecialNeeds,
                 housingStatus: housingStatus,
-                housingType: housingType,
-                requestStatus: requestStatus,
-                notes: notes,
-                associationName: associationName,
+                currentHousingType: currentHousingType,
+                descriptionNeeds: descriptionNeeds,
+                userInsertData: userInsertData,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncState: syncState,
                 serverId: serverId,
                 lastSyncedAt: lastSyncedAt,
-                rowid: rowid,
+                fullNameNorm: fullNameNorm,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

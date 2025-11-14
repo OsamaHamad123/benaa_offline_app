@@ -34,14 +34,31 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     return result.read<int>('count');
   }
 
-  /// Count beneficiaries by category
-  Future<int> countBeneficiariesByCategory(String category) async {
+  /// Count beneficiaries by category (section_id)
+  Future<int> countBeneficiariesByCategory(int sectionId) async {
     final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE category = ?',
-      variables: [Variable.withString(category)],
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE section_id = ?',
+      variables: [Variable.withInt(sectionId)],
       readsFrom: {beneficiaries},
     ).getSingle();
     return result.read<int>('count');
+  }
+
+  /// Get beneficiaries count by province (governorate)
+  Future<Map<String, int>> getBeneficiariesCountByGovernorate() async {
+    final results = await customSelect(
+      'SELECT province, COUNT(*) as count FROM beneficiaries WHERE province IS NOT NULL GROUP BY province',
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return Map.fromEntries(
+      results.map(
+        (row) => MapEntry(
+          row.read<int>('province').toString(),
+          row.read<int>('count'),
+        ),
+      ),
+    );
   }
 
   /// Count incomplete beneficiaries (missing phone or address)
@@ -55,30 +72,30 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     return result.read<int>('count');
   }
 
-  /// Count beneficiaries by governorate
-  Future<int> countBeneficiariesByGovernorate(String governorate) async {
+  /// Count beneficiaries by governorate (province)
+  Future<int> countBeneficiariesByProvince(int province) async {
     final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE governorate = ?',
-      variables: [Variable.withString(governorate)],
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE province = ?',
+      variables: [Variable.withInt(province)],
       readsFrom: {beneficiaries},
     ).getSingle();
     return result.read<int>('count');
   }
 
-  /// Get beneficiaries count by governorate (for geographic distribution)
-  Future<Map<String, int>> getBeneficiariesCountByGovernorate() async {
+  /// Get beneficiaries count by governorate (province - for geographic distribution)
+  Future<Map<int, int>> getBeneficiariesCountByProvince() async {
     final results = await customSelect(
-      '''SELECT governorate, COUNT(*) as count 
+      '''SELECT province, COUNT(*) as count 
          FROM beneficiaries 
-         WHERE governorate IS NOT NULL AND governorate != \'\'
-         GROUP BY governorate 
+         WHERE province IS NOT NULL
+         GROUP BY province 
          ORDER BY count DESC''',
       readsFrom: {beneficiaries},
     ).get();
 
     return {
       for (final row in results)
-        row.read<String>('governorate'): row.read<int>('count'),
+        row.read<int>('province'): row.read<int>('count'),
     };
   }
 
@@ -105,14 +122,14 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get beneficiary by ID
-  Future<Beneficiary?> getBeneficiaryById(String id) async {
+  Future<Beneficiary?> getBeneficiaryById(int id) async {
     return await (select(
       beneficiaries,
     )..where((b) => b.id.equals(id))).getSingleOrNull();
   }
 
   /// Get beneficiary by server ID
-  Future<Beneficiary?> getBeneficiaryByServerId(String serverId) async {
+  Future<Beneficiary?> getBeneficiaryByServerId(int serverId) async {
     return await (select(
       beneficiaries,
     )..where((b) => b.serverId.equals(serverId))).getSingleOrNull();
@@ -125,7 +142,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
 
   /// Update beneficiary using Companion
   Future<void> updateBeneficiaryCompanion(
-    String id,
+    int id,
     BeneficiariesCompanion beneficiary,
   ) async {
     await (update(
@@ -139,7 +156,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Delete beneficiary
-  Future<void> deleteBeneficiary(String id) async {
+  Future<void> deleteBeneficiary(int id) async {
     await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
   }
 
@@ -157,8 +174,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     return await (select(beneficiaries)..where(
           (b) =>
               b.fullNameNorm.like('%$normalized%') |
-              b.nationalId.like('%$normalized%') |
-              b.fileNo.like('%$normalized%'),
+              b.fileIdNumber.like('%$normalized%'),
         ))
         .get();
   }
@@ -166,8 +182,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   /// Advanced search with filters
   Future<List<Beneficiary>> searchBeneficiariesFiltered({
     String query = '',
-    String? category,
-    String? governorate,
+    int? category,
+    int? governorate,
     int limit = 50,
     int offset = 0,
   }) async {
@@ -179,25 +195,21 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
       ..where((b) {
         Expression<bool> condition = const Constant(true);
 
-        // Search filter
+        // Search filter (search in fullName and fileIdNumber)
         if (normalized.isNotEmpty) {
           condition =
               condition &
               (b.fullNameNorm.like('%$normalized%') |
-                  b.nationalId.like('%$normalized%') |
-                  b.fileNo.like('%$normalized%'));
+                  b.fileIdNumber.like('%$normalized%'));
         }
 
-        // Category filter
-        if (category != null && category != 'all') {
-          condition = condition & b.category.equals(category);
+        // Category filter (section_id)
+        if (category != null) {
+          condition = condition & b.sectionId.equals(category);
+        } // Province filter
+        if (governorate != null) {
+          condition = condition & b.province.equals(governorate);
         }
-
-        // Governorate filter
-        if (governorate != null && governorate != 'all') {
-          condition = condition & b.governorate.equals(governorate);
-        }
-
         return condition;
       });
 
@@ -253,41 +265,46 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     return results.map((row) => beneficiaries.map(row.data)).toList();
   }
 
-  /// Count beneficiaries with poor health status
+  /// Count beneficiaries with poor health status (code 5)
   Future<int> countBeneficiariesWithPoorHealth() async {
     final result = await customSelect(
       'SELECT COUNT(*) as count FROM beneficiaries WHERE health_status = ?',
-      variables: [Variable.withString('poor')],
+      variables: [Variable.withInt(5)], // 5 = poor health
       readsFrom: {beneficiaries},
     ).getSingle();
     return result.read<int>('count');
   }
 
-  /// Get beneficiaries with poor health
+  /// Get beneficiaries with poor health (health_status code 5 = poor)
   Future<List<Beneficiary>> getBeneficiariesWithPoorHealth({
     int limit = 50,
   }) async {
     return await (select(beneficiaries)
-          ..where((b) => b.healthStatus.equals('poor'))
+          ..where((b) => b.healthStatus.equals(5)) // 5 = poor health
           ..limit(limit))
         .get();
   }
 
-  /// Count beneficiaries with disabilities
-  Future<int> countBeneficiariesWithDisabilities() async {
+  /// Count beneficiaries with disabilities (special needs > 0)
+  Future<int> countDisabledBeneficiaries() async {
     final result = await customSelect(
-      'SELECT COUNT(*) as count FROM beneficiaries WHERE has_disability = 1',
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE number_of_people_with_special_needs > 0',
       readsFrom: {beneficiaries},
     ).getSingle();
     return result.read<int>('count');
   }
 
-  /// Get beneficiaries with disabilities
+  /// Alias for countDisabledBeneficiaries (used by dashboard)
+  Future<int> countBeneficiariesWithDisabilities() async {
+    return countDisabledBeneficiaries();
+  }
+
+  /// Get beneficiaries with disabilities (special needs > 0)
   Future<List<Beneficiary>> getBeneficiariesWithDisabilities({
     int limit = 50,
   }) async {
     return await (select(beneficiaries)
-          ..where((b) => b.hasDisability.equals(true))
+          ..where((b) => b.numberOfPeopleWithSpecialNeeds.isBiggerThanValue(0))
           ..limit(limit))
         .get();
   }

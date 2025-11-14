@@ -12,16 +12,16 @@ class BeneficiaryLocalDataSource {
 
   /// Create new beneficiary
   Future<BeneficiaryModel> create(BeneficiariesCompanion companion) async {
-    await db.into(db.beneficiaries).insert(companion);
+    final id = await db.into(db.beneficiaries).insert(companion);
     final data = await (db.select(
       db.beneficiaries,
-    )..where((b) => b.id.equals(companion.id.value))).getSingle();
+    )..where((b) => b.id.equals(id))).getSingle();
     return BeneficiaryModel.fromDrift(data);
   }
 
   /// Update beneficiary
   Future<BeneficiaryModel> update(
-    String id,
+    int id,
     BeneficiariesCompanion companion,
   ) async {
     await (db.update(
@@ -34,22 +34,22 @@ class BeneficiaryLocalDataSource {
   }
 
   /// Get beneficiary by ID
-  Future<BeneficiaryModel?> getById(String id) async {
+  Future<BeneficiaryModel?> getById(int id) async {
     final query = db.select(db.beneficiaries)..where((b) => b.id.equals(id));
     final data = await query.getSingleOrNull();
     return data != null ? BeneficiaryModel.fromDrift(data) : null;
   }
 
   /// Delete beneficiary
-  Future<void> delete(String id) async {
+  Future<void> delete(int id) async {
     await (db.delete(db.beneficiaries)..where((b) => b.id.equals(id))).go();
   }
 
   /// List beneficiaries with filters
   Future<List<BeneficiaryModel>> list({
     String? searchQuery,
-    String? category,
-    String? gender,
+    int? category,
+    int? gender,
     int? limit,
     int? offset,
   }) async {
@@ -61,16 +61,15 @@ class BeneficiaryLocalDataSource {
       query.where(
         (b) =>
             b.fullNameNorm.like('%$normalized%') |
-            b.nationalId.like('%$searchQuery%') |
-            b.phoneNumber.like('%$searchQuery%'),
+            b.fileIdNumber.like('%$searchQuery%'),
       );
     }
 
-    if (category != null && category.isNotEmpty) {
-      query.where((b) => b.category.equals(category));
+    if (category != null) {
+      query.where((b) => b.sectionId.equals(category));
     }
 
-    if (gender != null && gender.isNotEmpty) {
+    if (gender != null) {
       query.where((b) => b.gender.equals(gender));
     }
 
@@ -84,13 +83,13 @@ class BeneficiaryLocalDataSource {
   }
 
   /// Count beneficiaries
-  Future<int> count({String? category}) async {
+  Future<int> count({int? category}) async {
     final countExpr = db.beneficiaries.id.count();
 
     var query = db.selectOnly(db.beneficiaries)..addColumns([countExpr]);
 
-    if (category != null && category.isNotEmpty) {
-      query.where(db.beneficiaries.category.equals(category));
+    if (category != null) {
+      query.where(db.beneficiaries.sectionId.equals(category));
     }
 
     final result = await query.getSingle();
@@ -100,15 +99,15 @@ class BeneficiaryLocalDataSource {
   /// Get statistics
   Future<Map<String, int>> getStatistics() async {
     final total = await count();
-    final orphans = await count(category: 'orphan');
-    final poor = await count(category: 'poor');
-    final displaced = await count(category: 'displaced');
+    final orphans = await count(category: 1); // TODO: Use actual category codes
+    final poor = await count(category: 2);
+    final displaced = await count(category: 3);
 
     // Count by gender
     final countExpr = db.beneficiaries.id.count();
     final malesQuery = db.selectOnly(db.beneficiaries)
       ..addColumns([countExpr])
-      ..where(db.beneficiaries.gender.equals('male'));
+      ..where(db.beneficiaries.gender.equals(1)); // 1 = male
     final malesResult = await malesQuery.getSingle();
     final males = malesResult.read(countExpr) ?? 0;
 

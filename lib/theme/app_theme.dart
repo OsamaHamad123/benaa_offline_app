@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:io';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 /// نظام الثيمات للتطبيق (Material 3 + Cupertino Adaptive)
@@ -15,6 +16,28 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: GoogleFonts.cairo().fontFamily,
+
+      // Text Theme with Cairo font
+      textTheme: GoogleFonts.cairoTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400),
+          displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
+          displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.w400),
+          headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
+          headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
+          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+          titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+          bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+          bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+          labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+        ),
+      ),
 
       colorScheme: ColorScheme.light(
         primary: AppColors.primary,
@@ -44,13 +67,13 @@ class AppTheme {
       ),
 
       scaffoldBackgroundColor: AppColors.background,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 2,
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.cairo(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: Colors.white,
@@ -95,7 +118,10 @@ class AppTheme {
           elevation: 2,
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: GoogleFonts.cairo(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -133,6 +159,88 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamily: GoogleFonts.cairo().fontFamily,
+
+      // Text Theme with Cairo font for dark mode
+      textTheme: GoogleFonts.cairoTextTheme(
+        const TextTheme(
+          displayLarge: TextStyle(
+            fontSize: 57,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimaryDark,
+          ),
+          displayMedium: TextStyle(
+            fontSize: 45,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimaryDark,
+          ),
+          displaySmall: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimaryDark,
+          ),
+          headlineLarge: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimaryDark,
+          ),
+          headlineMedium: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          headlineSmall: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          titleLarge: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          titleMedium: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          titleSmall: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimaryDark,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textPrimaryDark,
+          ),
+          bodySmall: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: AppColors.textSecondaryDark,
+          ),
+          labelLarge: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          labelMedium: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimaryDark,
+          ),
+          labelSmall: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondaryDark,
+          ),
+        ),
+      ),
 
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primaryLight,
@@ -160,13 +268,13 @@ class AppTheme {
       ),
 
       scaffoldBackgroundColor: AppColors.backgroundDark,
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 2,
         backgroundColor: AppColors.surfaceDark,
         foregroundColor: AppColors.textPrimaryDark,
-        titleTextStyle: TextStyle(
+        titleTextStyle: GoogleFonts.cairo(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimaryDark,

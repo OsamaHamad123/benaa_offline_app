@@ -6,7 +6,7 @@ import '../../data/db/drift_database.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../providers/providers.dart';
-import '../mappers/beneficiary_mapper.dart';
+import '../../features/beneficiaries/data/models/beneficiary_data_model.dart';
 import '../network/api_client.dart';
 
 // Provider للـ SyncManager
@@ -265,13 +265,21 @@ class SyncManager {
     }
 
     try {
+      // Convert String id to int for database lookup
+      final intId = int.tryParse(id);
+      if (intId == null) {
+        throw Exception('Invalid beneficiary ID: $id');
+      }
+
       // Convert local data to backend format
-      final beneficiary = await _db.beneficiariesDao.getBeneficiaryById(id);
+      final beneficiary = await _db.beneficiariesDao.getBeneficiaryById(intId);
       if (beneficiary == null) {
         throw Exception('Beneficiary not found: $id');
       }
 
-      final backendData = BeneficiaryMapper.toBackend(beneficiary);
+      // استخدام BeneficiaryDataModel للتحويل
+      final dataModel = BeneficiaryDataModel.fromDrift(beneficiary);
+      final backendData = dataModel.toJson();
 
       // Send to backend
       final response = await _apiClient.syncBeneficiaries([backendData]);
@@ -338,13 +346,14 @@ class SyncManager {
       // تحويل وحفظ كل مستفيد
       for (final item in beneficiariesData) {
         try {
-          // تحويل من Backend إلى Local باستخدام Mapper
-          final beneficiaryCompanion = BeneficiaryMapper.fromBackend(
+          // تحويل من Backend JSON إلى Data Model ثم إلى Drift Companion
+          final dataModel = BeneficiaryDataModel.fromJson(
             item as Map<String, dynamic>,
           );
+          final beneficiaryCompanion = dataModel.toDriftCompanion();
 
           // البحث عن مستفيد موجود بنفس الـ serverId
-          final serverId = item['id']?.toString();
+          final serverId = item['id'] as int?;
           if (serverId != null) {
             final existing = await _db.beneficiariesDao
                 .getBeneficiaryByServerId(serverId);

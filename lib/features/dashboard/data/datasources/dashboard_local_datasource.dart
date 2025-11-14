@@ -231,14 +231,16 @@ class DashboardLocalDataSource {
   }
 
   Future<Map<String, int>> _getCategoryCounts() async {
-    final categories = ['orphan', 'widow', 'poor', 'disabled'];
+    // Category codes: 1=orphan, 2=poor, 3=widow, 4=disabled
+    final categoryCodes = [1, 2, 3, 4];
+    final categoryNames = ['orphan', 'widow', 'poor', 'disabled'];
     final counts = await Future.wait(
-      categories.map(
-        (cat) => database.beneficiariesDao.countBeneficiariesByCategory(cat),
+      categoryCodes.map(
+        (code) => database.beneficiariesDao.countBeneficiariesByCategory(code),
       ),
     );
 
-    return Map.fromIterables(categories, counts);
+    return Map.fromIterables(categoryNames, counts);
   }
 
   Future<List<GrowthDataPointModel>> _getGrowthData() async {

@@ -190,7 +190,9 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                 children: [
                   if (_selectedCategory != 'all')
                     Chip(
-                      label: Text(_getCategoryLabel(_selectedCategory)),
+                      label: Text(
+                        _getCategoryLabel(int.tryParse(_selectedCategory)),
+                      ),
                       onDeleted: () {
                         setState(() {
                           _selectedCategory = 'all';
@@ -386,15 +388,21 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
       );
 
       if (_selectedCategory != 'all') {
-        beneficiaries = beneficiaries
-            .where((b) => b.category == _selectedCategory)
-            .toList();
+        final categoryId = int.tryParse(_selectedCategory);
+        if (categoryId != null) {
+          beneficiaries = beneficiaries
+              .where((b) => b.sectionId == categoryId)
+              .toList();
+        }
       }
 
       if (_selectedGovernorate != 'all') {
-        beneficiaries = beneficiaries
-            .where((b) => b.governorate == _selectedGovernorate)
-            .toList();
+        final provinceId = int.tryParse(_selectedGovernorate);
+        if (provinceId != null) {
+          beneficiaries = beneficiaries
+              .where((b) => b.province == provinceId)
+              .toList();
+        }
       }
 
       beneficiaries.sort((a, b) {
@@ -403,9 +411,13 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
           case 'name':
             comparison = a.fullName.compareTo(b.fullName);
           case 'date':
-            comparison = a.createdAt.compareTo(b.createdAt);
+            comparison = (a.createdAt ?? DateTime.now()).compareTo(
+              b.createdAt ?? DateTime.now(),
+            );
           case 'fileNo':
-            comparison = a.fileNo.compareTo(b.fileNo);
+            final aFile = a.fileIdNumber ?? '';
+            final bFile = b.fileIdNumber ?? '';
+            comparison = aFile.compareTo(bFile);
           default:
             comparison = 0;
         }
@@ -858,19 +870,45 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
     }
   }
 
-  String _getCategoryLabel(String category) {
-    switch (category) {
-      case 'orphan':
+  String _getCategoryLabel(int? sectionId) {
+    // TODO: Map actual category codes from backend
+    switch (sectionId) {
+      case 1:
         return 'أيتام';
-      case 'widow':
+      case 2:
         return 'أرامل';
-      case 'poor':
+      case 3:
         return 'فقراء';
-      case 'disabled':
+      case 4:
         return 'معاقين';
       default:
-        return category;
+        return sectionId?.toString() ?? 'غير محدد';
     }
+  }
+
+  Color _getCategoryColor(int? sectionId) {
+    switch (sectionId) {
+      case 1:
+        return Colors.blue;
+      case 2:
+        return Colors.purple;
+      case 3:
+        return Colors.orange;
+      case 4:
+        return Colors.teal;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getProvinceName(int? province) {
+    // TODO: Map province codes to names
+    return province?.toString() ?? 'غير محدد';
+  }
+
+  String _getCityName(int? city) {
+    // TODO: Map city codes to names
+    return city?.toString() ?? 'غير محدد';
   }
 }
 
@@ -928,24 +966,32 @@ class _BeneficiaryCard extends StatelessWidget {
     this.onEdit,
   });
 
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'orphan':
+  Color _getCategoryColor(int? sectionId) {
+    switch (sectionId) {
+      case 1:
         return Colors.blue;
-      case 'widow':
+      case 2:
         return Colors.purple;
-      case 'poor':
+      case 3:
         return Colors.orange;
-      case 'disabled':
+      case 4:
         return Colors.teal;
       default:
         return Colors.grey;
     }
   }
 
+  String _getProvinceName(int? province) {
+    return province?.toString() ?? 'غير محدد';
+  }
+
+  String _getCityName(int? city) {
+    return city?.toString() ?? 'غير محدد';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final categoryColor = _getCategoryColor(beneficiary.category);
+    final categoryColor = _getCategoryColor(beneficiary.sectionId);
 
     return Card(
       margin: EdgeInsets.only(bottom: 12.h),
@@ -987,7 +1033,7 @@ class _BeneficiaryCard extends StatelessWidget {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          'رقم الملف: ${beneficiary.fileNo}',
+                          'رقم الملف: ${beneficiary.fileIdNumber ?? "غير محدد"}',
                           style: TextStyle(
                             fontSize: 14.sp,
                             color: Colors.grey[600],
@@ -1079,12 +1125,12 @@ class _BeneficiaryCard extends StatelessWidget {
                 children: [
                   _InfoChip(
                     icon: Icons.location_on_outlined,
-                    label: beneficiary.governorate,
+                    label: _getProvinceName(beneficiary.province),
                     color: Colors.grey[700]!,
                   ),
                   _InfoChip(
                     icon: Icons.category_outlined,
-                    label: _getCategoryLabel(beneficiary.category),
+                    label: _getCategoryLabel(beneficiary.sectionId),
                     color: categoryColor,
                   ),
                   if (beneficiary.age != null)
@@ -1093,24 +1139,23 @@ class _BeneficiaryCard extends StatelessWidget {
                       label: '${beneficiary.age} سنة',
                       color: Colors.grey[700]!,
                     ),
-                  if (beneficiary.phoneNumber != null &&
-                      beneficiary.phoneNumber!.isNotEmpty)
-                    _InfoChip(
-                      icon: Icons.phone_outlined,
-                      label: beneficiary.phoneNumber!,
-                      color: Colors.grey[700]!,
-                    ),
-                  if (beneficiary.district != null &&
-                      beneficiary.district!.isNotEmpty)
+                  _InfoChip(
+                    icon: Icons.phone_outlined,
+                    label: beneficiary.phoneNumber.toString(),
+                    color: Colors.grey[700]!,
+                  ),
+                  if (beneficiary.city != null)
                     _InfoChip(
                       icon: Icons.location_city_outlined,
-                      label: beneficiary.district!,
+                      label: _getCityName(beneficiary.city),
                       color: Colors.grey[700]!,
                     ),
-                  if (beneficiary.familySize != null)
+                  if (beneficiary.numberOfMales != null ||
+                      beneficiary.numberOfFemales != null)
                     _InfoChip(
                       icon: Icons.family_restroom_outlined,
-                      label: '${beneficiary.familySize} أفراد',
+                      label:
+                          '${(beneficiary.numberOfMales ?? 0) + (beneficiary.numberOfFemales ?? 0)} أفراد',
                       color: Colors.grey[700]!,
                     ),
                 ],
@@ -1122,18 +1167,18 @@ class _BeneficiaryCard extends StatelessWidget {
     );
   }
 
-  String _getCategoryLabel(String category) {
-    switch (category) {
-      case 'orphan':
+  String _getCategoryLabel(int? sectionId) {
+    switch (sectionId) {
+      case 1:
         return 'يتيم';
-      case 'widow':
+      case 2:
         return 'أرملة';
-      case 'poor':
+      case 3:
         return 'فقير';
-      case 'disabled':
+      case 4:
         return 'معاق';
       default:
-        return category;
+        return sectionId?.toString() ?? 'غير محدد';
     }
   }
 }

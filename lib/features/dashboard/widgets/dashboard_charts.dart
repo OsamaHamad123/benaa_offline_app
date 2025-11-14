@@ -268,12 +268,16 @@ class CategoryDistributionChart extends ConsumerWidget {
             FutureBuilder<List<int>>(
               future: Future.wait([
                 database.beneficiariesDao.countBeneficiariesByCategory(
-                  'orphan',
+                  1, // orphan
                 ),
-                database.beneficiariesDao.countBeneficiariesByCategory('widow'),
-                database.beneficiariesDao.countBeneficiariesByCategory('poor'),
                 database.beneficiariesDao.countBeneficiariesByCategory(
-                  'disabled',
+                  3,
+                ), // widow
+                database.beneficiariesDao.countBeneficiariesByCategory(
+                  2,
+                ), // poor
+                database.beneficiariesDao.countBeneficiariesByCategory(
+                  4, // disabled
                 ),
               ]),
               builder: (context, snapshot) {

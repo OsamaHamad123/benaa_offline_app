@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6; // تحديث بسبب إعادة هيكلة جدول Beneficiaries
 
   @override
   MigrationStrategy get migration {
@@ -75,6 +75,9 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 5) {
           await _upgradeToV5(m);
+        }
+        if (from < 6) {
+          await _upgradeToV6(m);
         }
       },
     );
@@ -120,6 +123,154 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  // Migration إلى النسخة 6 - إعادة هيكلة جدول المستفيدين ليطابق Backend
+  Future<void> _upgradeToV6(Migrator m) async {
+    // نسخ البيانات القديمة
+    await customStatement(
+      'CREATE TABLE beneficiaries_backup AS SELECT * FROM beneficiaries;',
+    );
+
+    // حذف الجدول القديم
+    await m.deleteTable('beneficiaries');
+
+    // إنشاء الجدول الجديد بالهيكل المتطابق مع Backend
+    await m.createTable(beneficiaries);
+
+    // نقل البيانات من Backup مع التحويل
+    await customStatement('''
+      INSERT INTO beneficiaries (
+        id,
+        file_id_number,
+        original_file_id_from_excel,
+        section_id,
+        request_status,
+        id_number,
+        first_name,
+        father_name,
+        grand_father_name,
+        family_name,
+        relationship,
+        birth_date,
+        gender,
+        phone_number,
+        alt_phone_number,
+        number_of_individuals,
+        marital_status,
+        number_of_males,
+        number_of_females,
+        academic_qualification,
+        employment_status_breadwinner,
+        displacement_status,
+        address_before_displacement,
+        current_address,
+        city,
+        province,
+        health_status,
+        description_needs,
+        number_of_individuals_with_chronic_diseases,
+        number_of_people_with_special_needs,
+        housing_status,
+        current_housing_type,
+        user_insert_data,
+        created_at,
+        updated_at,
+        sync_state,
+        server_id,
+        last_synced_at
+      )
+      SELECT
+        CAST(id AS INTEGER),
+        file_no,
+        NULL,
+        CASE category
+          WHEN 'poor' THEN 1
+          WHEN 'orphan' THEN 2
+          WHEN 'widow' THEN 3
+          ELSE NULL
+        END,
+        COALESCE(request_status, 1),
+        CAST(national_id AS INTEGER),
+        SUBSTR(full_name, 1, INSTR(full_name || ' ', ' ') - 1),
+        father_name,
+        grand_father_name,
+        family_name,
+        NULL,
+        birth_date,
+        CASE gender
+          WHEN 'male' THEN 1
+          WHEN 'female' THEN 2
+          ELSE NULL
+        END,
+        CAST(REPLACE(REPLACE(REPLACE(phone_number, '-', ''), ' ', ''), '+', '') AS INTEGER),
+        CAST(REPLACE(REPLACE(REPLACE(COALESCE(alt_phone_number, '0'), '-', ''), ' ', ''), '+', '') AS INTEGER),
+        family_size,
+        CASE marital_status
+          WHEN 'single' THEN 1
+          WHEN 'married' THEN 2
+          WHEN 'divorced' THEN 3
+          WHEN 'widowed' THEN 4
+          ELSE NULL
+        END,
+        number_of_males,
+        number_of_females,
+        CASE education_level
+          WHEN 'none' THEN 1
+          WHEN 'primary' THEN 2
+          WHEN 'intermediate' THEN 3
+          WHEN 'secondary' THEN 4
+          WHEN 'bachelor' THEN 5
+          WHEN 'master' THEN 6
+          ELSE NULL
+        END,
+        employment_status,
+        displacement_status,
+        address_before_displacement,
+        current_address,
+        NULL,
+        NULL,
+        CASE health_status
+          WHEN 'good' THEN 1
+          WHEN 'fair' THEN 2
+          WHEN 'chronic' THEN 3
+          WHEN 'disability' THEN 4
+          WHEN 'poor' THEN 5
+          ELSE NULL
+        END,
+        notes,
+        chronic_diseases_count,
+        special_needs_count,
+        housing_status,
+        housing_type,
+        NULL,
+        created_at,
+        updated_at,
+        sync_state,
+        CAST(server_id AS INTEGER),
+        last_synced_at
+      FROM beneficiaries_backup;
+    ''');
+
+    // حذف الـ Backup
+    await customStatement('DROP TABLE beneficiaries_backup;');
+
+    // إنشاء الـ indexes
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_id_number ON beneficiaries(id_number);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_file_id ON beneficiaries(file_id_number);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_sync ON beneficiaries(sync_state);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_server ON beneficiaries(server_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_section ON beneficiaries(section_id);',
+    );
+  }
+
   // Migration إلى النسخة 4
   Future<void> _upgradeToV4(Migrator m) async {
     await m.createTable(activities);
@@ -139,18 +290,10 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  // Migration إلى النسخة 3
+  // Migration إلى النسخة 3 - NO LONGER USED (legacy migration)
   Future<void> _upgradeToV3(Migrator m) async {
-    await m.addColumn(beneficiaries, beneficiaries.district);
-    await m.addColumn(beneficiaries, beneficiaries.address);
-    await m.addColumn(beneficiaries, beneficiaries.phoneNumber);
-    await m.addColumn(beneficiaries, beneficiaries.motherName);
-    await m.addColumn(beneficiaries, beneficiaries.fatherName);
-    await m.addColumn(beneficiaries, beneficiaries.familySize);
-    await m.addColumn(beneficiaries, beneficiaries.maritalStatus);
-    await m.addColumn(beneficiaries, beneficiaries.educationLevel);
-    await m.addColumn(beneficiaries, beneficiaries.healthStatus);
-    await m.addColumn(beneficiaries, beneficiaries.hasDisability);
+    // This migration is skipped when upgrading from old versions
+    // Users will go directly from v5 to v6 with full table recreation
   }
 
   // Migration إلى النسخة 2

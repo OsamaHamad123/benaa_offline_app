@@ -46,123 +46,239 @@ class BeneficiaryModel extends domain.Beneficiary {
     super.needsSync = false,
   });
 
-  /// Create from Drift database row
+  /// Create from Drift database row (NEW SCHEMA)
   factory BeneficiaryModel.fromDrift(Beneficiary data) {
+    // Build full name from parts
+    final fullName = _buildFullName(
+      data.firstName,
+      data.fatherName,
+      data.grandFatherName,
+      data.familyName,
+    );
+
     return BeneficiaryModel(
-      id: data.id,
-      fullName: data.fullName,
-      nationalId: data.nationalId,
-      gender: domain.Gender.fromString(data.gender),
-      category: domain.BeneficiaryCategory.fromString(data.category),
+      id: data.id.toString(),
+      fullName: fullName,
+      nationalId: data.idNumber.toString(),
+      gender: data.gender == 1 ? domain.Gender.male : domain.Gender.female,
+      category: domain.BeneficiaryCategory.fromCode(data.sectionId),
       birthDate: data.birthDate,
-      motherName: data.motherName,
+      motherName: null, // Not in new schema
       fatherName: data.fatherName,
       grandFatherName: data.grandFatherName,
       familyName: data.familyName,
-      phoneNumber: data.phoneNumber,
-      altPhoneNumber: data.altPhoneNumber,
-      governorate: data.governorate,
-      district: data.district,
-      address: data.address,
+      phoneNumber: data.phoneNumber.toString(),
+      altPhoneNumber: data.altPhoneNumber != 0
+          ? data.altPhoneNumber.toString()
+          : null,
+      governorate: data.province?.toString(),
+      district: data.city?.toString(),
+      address: null, // Not directly in new schema
       currentAddress: data.currentAddress,
       addressBeforeDisplacement: data.addressBeforeDisplacement,
-      fileNo: data.fileNo,
-      associationName: data.associationName,
-      maritalStatus: data.maritalStatus != null
-          ? _parseMaritalStatus(data.maritalStatus!)
-          : null,
-      educationLevel: data.educationLevel != null
-          ? _parseEducationLevel(data.educationLevel!)
-          : null,
-      healthStatus: data.healthStatus != null
-          ? domain.HealthStatus.fromString(data.healthStatus!)
-          : domain.HealthStatus.good,
-      hasDisability: data.hasDisability,
-      familySize: data.familySize,
+      fileNo: data.fileIdNumber,
+      associationName: null, // Not in new schema
+      maritalStatus: _codeToMaritalStatus(data.maritalStatus),
+      educationLevel: _codeToEducationLevel(data.academicQualification),
+      healthStatus: _codeToHealthStatus(data.healthStatus),
+      hasDisability: (data.numberOfPeopleWithSpecialNeeds ?? 0) > 0,
+      familySize: data.numberOfIndividuals,
       numberOfMales: data.numberOfMales,
       numberOfFemales: data.numberOfFemales,
-      chronicDiseasesCount: data.chronicDiseasesCount,
-      specialNeedsCount: data.specialNeedsCount,
+      chronicDiseasesCount: data.numberOfIndividualsWithChronicDiseases,
+      specialNeedsCount: data.numberOfPeopleWithSpecialNeeds,
       displacementStatus: domain.DisplacementStatus.fromCode(
         data.displacementStatus,
       ),
-      employmentStatus: domain.EmploymentStatus.fromCode(data.employmentStatus),
+      employmentStatus: domain.EmploymentStatus.fromCode(
+        data.employmentStatusBreadwinner,
+      ),
       housingStatus: domain.HousingStatus.fromCode(data.housingStatus),
-      housingType: domain.HousingType.fromCode(data.housingType),
+      housingType: domain.HousingType.fromCode(data.currentHousingType),
       requestStatus: domain.RequestStatus.fromCode(data.requestStatus),
-      notes: data.notes.isEmpty ? null : data.notes,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
+      notes: data.descriptionNeeds,
+      createdAt: data.createdAt ?? DateTime.now(),
+      updatedAt: data.updatedAt ?? DateTime.now(),
       needsSync: data.syncState == 'pending',
     );
   }
 
-  /// Convert to Drift companion for insert/update
+  /// Build full name from parts
+  static String _buildFullName(
+    String? firstName,
+    String? fatherName,
+    String? grandFatherName,
+    String? familyName,
+  ) {
+    return [
+      firstName,
+      fatherName,
+      grandFatherName,
+      familyName,
+    ].where((part) => part != null && part.isNotEmpty).join(' ').trim();
+  }
+
+  /// Convert to Drift companion for insert/update (NEW SCHEMA)
   BeneficiariesCompanion toDrift() {
-    return BeneficiariesCompanion(
-      id: drift.Value(id),
-      fullName: drift.Value(fullName),
-      fullNameNorm: drift.Value(_normalizeArabic(fullName)),
-      nationalId: drift.Value(nationalId),
-      fileNo: drift.Value(fileNo ?? ''),
-      governorate: drift.Value(governorate ?? ''),
-      district: drift.Value(district),
-      address: drift.Value(address),
-      phoneNumber: drift.Value(phoneNumber),
-      motherName: drift.Value(motherName),
+    // Split full name into parts (simple approach)
+    final nameParts = fullName.split(' ');
+    final firstName = nameParts.isNotEmpty ? nameParts[0] : null;
+    final fatherName = nameParts.length > 1 ? nameParts[1] : this.fatherName;
+    final grandFatherName = nameParts.length > 2
+        ? nameParts[2]
+        : this.grandFatherName;
+    final familyName = nameParts.length > 3
+        ? nameParts.sublist(3).join(' ')
+        : this.familyName;
+
+    return BeneficiariesCompanion.insert(
+      idNumber: int.tryParse(nationalId) ?? 0,
+      phoneNumber:
+          int.tryParse(phoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ?? 0,
+      altPhoneNumber:
+          int.tryParse(altPhoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ??
+          0,
+      fileIdNumber: drift.Value(fileNo),
+      sectionId: drift.Value(category.code),
+      requestStatus: drift.Value(requestStatus?.code ?? 1),
+      firstName: drift.Value(firstName),
       fatherName: drift.Value(fatherName),
       grandFatherName: drift.Value(grandFatherName),
       familyName: drift.Value(familyName),
-      altPhoneNumber: drift.Value(altPhoneNumber),
-      familySize: drift.Value(familySize),
-      gender: drift.Value(gender.englishValue),
-      category: drift.Value(category.englishValue),
       birthDate: drift.Value(birthDate),
-      maritalStatus: drift.Value(maritalStatus?.arabicLabel),
-      educationLevel: drift.Value(educationLevel?.arabicLabel),
-      healthStatus: drift.Value(healthStatus.arabicLabel),
-      hasDisability: drift.Value(hasDisability),
+      gender: drift.Value(gender == domain.Gender.male ? 1 : 2),
+      numberOfIndividuals: drift.Value(familySize),
+      maritalStatus: drift.Value(_maritalStatusToCode(maritalStatus)),
+      numberOfMales: drift.Value(numberOfMales),
+      numberOfFemales: drift.Value(numberOfFemales),
+      academicQualification: drift.Value(_educationLevelToCode(educationLevel)),
+      employmentStatusBreadwinner: drift.Value(employmentStatus?.code),
       displacementStatus: drift.Value(displacementStatus?.code),
       addressBeforeDisplacement: drift.Value(addressBeforeDisplacement),
       currentAddress: drift.Value(currentAddress),
-      numberOfMales: drift.Value(numberOfMales),
-      numberOfFemales: drift.Value(numberOfFemales),
-      chronicDiseasesCount: drift.Value(chronicDiseasesCount),
-      specialNeedsCount: drift.Value(specialNeedsCount),
-      employmentStatus: drift.Value(employmentStatus?.code),
+      city: drift.Value(int.tryParse(district ?? '0')),
+      province: drift.Value(int.tryParse(governorate ?? '0')),
+      healthStatus: drift.Value(_healthStatusToCode(healthStatus)),
+      numberOfIndividualsWithChronicDiseases: drift.Value(chronicDiseasesCount),
+      numberOfPeopleWithSpecialNeeds: drift.Value(specialNeedsCount),
       housingStatus: drift.Value(housingStatus?.code),
-      housingType: drift.Value(housingType?.code),
-      requestStatus: drift.Value(requestStatus?.code),
-      associationName: drift.Value(associationName),
-      notes: drift.Value(notes ?? ''),
+      currentHousingType: drift.Value(housingType?.code),
+      descriptionNeeds: drift.Value(notes),
       createdAt: drift.Value(createdAt),
       updatedAt: drift.Value(updatedAt),
       syncState: drift.Value(needsSync ? 'pending' : 'synced'),
     );
   }
 
-  /// Normalize Arabic text for search
-  static String _normalizeArabic(String text) {
-    return text
-        .replaceAll('أ', 'ا')
-        .replaceAll('إ', 'ا')
-        .replaceAll('آ', 'ا')
-        .replaceAll('ة', 'ه')
-        .replaceAll('ى', 'ي')
-        .toLowerCase();
+  // ========================================================================
+  // Helper Methods for Code Conversion
+  // ========================================================================
+
+  /// Convert MaritalStatus enum to integer code
+  static int? _maritalStatusToCode(domain.MaritalStatus? status) {
+    if (status == null) return null;
+    switch (status) {
+      case domain.MaritalStatus.single:
+        return 1;
+      case domain.MaritalStatus.married:
+        return 2;
+      case domain.MaritalStatus.divorced:
+        return 3;
+      case domain.MaritalStatus.widowed:
+        return 4;
+    }
   }
 
-  /// Parse marital status from string
-  static domain.MaritalStatus? _parseMaritalStatus(String value) {
-    return domain.MaritalStatus.values
-        .where((s) => s.arabicLabel == value)
-        .firstOrNull;
+  /// Convert integer code to MaritalStatus enum
+  static domain.MaritalStatus? _codeToMaritalStatus(int? code) {
+    if (code == null) return null;
+    switch (code) {
+      case 1:
+        return domain.MaritalStatus.single;
+      case 2:
+        return domain.MaritalStatus.married;
+      case 3:
+        return domain.MaritalStatus.divorced;
+      case 4:
+        return domain.MaritalStatus.widowed;
+      default:
+        return null;
+    }
   }
 
-  /// Parse education level from string
-  static domain.EducationLevel? _parseEducationLevel(String value) {
-    return domain.EducationLevel.values
-        .where((e) => e.arabicLabel == value)
-        .firstOrNull;
+  /// Convert EducationLevel enum to integer code
+  static int? _educationLevelToCode(domain.EducationLevel? level) {
+    if (level == null) return null;
+    switch (level) {
+      case domain.EducationLevel.none:
+      case domain.EducationLevel.illiterate:
+        return 1;
+      case domain.EducationLevel.primary:
+        return 2;
+      case domain.EducationLevel.intermediate:
+        return 3;
+      case domain.EducationLevel.secondary:
+        return 4;
+      case domain.EducationLevel.diploma:
+      case domain.EducationLevel.bachelor:
+        return 5;
+      case domain.EducationLevel.master:
+      case domain.EducationLevel.phd:
+        return 6;
+    }
+  }
+
+  /// Convert integer code to EducationLevel enum
+  static domain.EducationLevel? _codeToEducationLevel(int? code) {
+    if (code == null) return null;
+    switch (code) {
+      case 1:
+        return domain.EducationLevel.none;
+      case 2:
+        return domain.EducationLevel.primary;
+      case 3:
+        return domain.EducationLevel.intermediate;
+      case 4:
+        return domain.EducationLevel.secondary;
+      case 5:
+        return domain.EducationLevel.bachelor;
+      case 6:
+        return domain.EducationLevel.master;
+      default:
+        return null;
+    }
+  }
+
+  /// Convert HealthStatus enum to integer code
+  static int? _healthStatusToCode(domain.HealthStatus? status) {
+    if (status == null) return 1; // Default: good
+    switch (status) {
+      case domain.HealthStatus.good:
+        return 1;
+      case domain.HealthStatus.fair:
+        return 2;
+      case domain.HealthStatus.chronicDisease:
+        return 3;
+      case domain.HealthStatus.disability:
+        return 4;
+      case domain.HealthStatus.poor:
+        return 5;
+    }
+  }
+
+  /// Convert integer code to HealthStatus enum
+  static domain.HealthStatus _codeToHealthStatus(int? code) {
+    switch (code) {
+      case 2:
+        return domain.HealthStatus.fair;
+      case 3:
+        return domain.HealthStatus.chronicDisease;
+      case 4:
+        return domain.HealthStatus.disability;
+      case 5:
+        return domain.HealthStatus.poor;
+      default:
+        return domain.HealthStatus.good;
+    }
   }
 }

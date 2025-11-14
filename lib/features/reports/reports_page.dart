@@ -122,8 +122,8 @@ class _SummaryStatistics extends ConsumerWidget {
     return FutureBuilder<List<int>>(
       future: Future.wait([
         database.beneficiariesDao.countBeneficiaries(),
-        database.beneficiariesDao.countBeneficiariesByCategory('orphan'),
-        database.beneficiariesDao.countBeneficiariesByCategory('poor'),
+        database.beneficiariesDao.countBeneficiariesByCategory(1), // orphan
+        database.beneficiariesDao.countBeneficiariesByCategory(2), // poor
         database.beneficiariesDao.countPendingSync(),
       ]),
       builder: (context, snapshot) {
@@ -313,8 +313,9 @@ class _GovernorateReportSheet extends ConsumerWidget {
                     final governorateCounts = <String, int>{};
 
                     for (var b in beneficiaries) {
-                      governorateCounts[b.governorate] =
-                          (governorateCounts[b.governorate] ?? 0) + 1;
+                      final provinceKey = b.province?.toString() ?? 'غير محدد';
+                      governorateCounts[provinceKey] =
+                          (governorateCounts[provinceKey] ?? 0) + 1;
                     }
 
                     final sortedEntries = governorateCounts.entries.toList()
@@ -421,16 +422,16 @@ class _CategoryReportSheet extends ConsumerWidget {
                 child: FutureBuilder<List<int>>(
                   future: Future.wait([
                     database.beneficiariesDao.countBeneficiariesByCategory(
-                      'orphan',
+                      1, // orphan
                     ),
                     database.beneficiariesDao.countBeneficiariesByCategory(
-                      'poor',
+                      2, // poor
                     ),
                     database.beneficiariesDao.countBeneficiariesByCategory(
-                      'widow',
+                      3, // widow
                     ),
                     database.beneficiariesDao.countBeneficiariesByCategory(
-                      'disabled',
+                      4, // disabled
                     ),
                   ]),
                   builder: (context, snapshot) {
