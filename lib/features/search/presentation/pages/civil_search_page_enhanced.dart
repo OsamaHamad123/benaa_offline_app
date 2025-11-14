@@ -38,6 +38,23 @@ class _CivilSearchPageEnhancedState
     super.dispose();
   }
 
+  void _onSearchChanged(String query) {
+    _debounceTimer?.cancel();
+    final notifier = ref.read(searchProvider.notifier);
+
+    if (query.trim().isEmpty) {
+      notifier.clearSearch();
+      return;
+    }
+
+    notifier.setQuery(query);
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (query.trim().length >= 2) {
+        notifier.search(reset: true);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(searchProvider);
@@ -90,14 +107,23 @@ class _CivilSearchPageEnhancedState
             ),
             child: Stack(
               children: [
-                // Background pattern with logo
+                // Simplified background for better performance
                 Positioned.fill(
                   child: Stack(
                     children: [
-                      // Grid pattern
-                      Opacity(
-                        opacity: 0.05,
-                        child: CustomPaint(painter: _GridPainter()),
+                      // Removed Grid pattern for performance
+                      // Simple overlay instead
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.white.withOpacity(0.05),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
                       ),
                       // Logo/Icon
                       Positioned(
@@ -398,24 +424,7 @@ class _CivilSearchPageEnhancedState
     );
   }
 
-  /// Event Handlers
-
-  void _onSearchChanged(String value) {
-    final notifier = ref.read(searchProvider.notifier);
-    _debounceTimer?.cancel();
-
-    if (value.trim().isEmpty) {
-      notifier.clearSearch();
-      return;
-    }
-
-    notifier.setQuery(value);
-    // Optimized debounce: 400ms for better performance
-    _debounceTimer = Timer(
-      const Duration(milliseconds: 400),
-      () => notifier.search(reset: true),
-    );
-  }
+  /// Event Handlers - Optimized for performance
 
   void _clearSearch() {
     _searchController.clear();
@@ -514,36 +523,4 @@ class _StatChip extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Grid Painter for background pattern
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-
-    const gridSize = 30.0;
-
-    for (var i = 0; i < size.width; i += gridSize.toInt()) {
-      canvas.drawLine(
-        Offset(i.toDouble(), 0),
-        Offset(i.toDouble(), size.height),
-        paint,
-      );
-    }
-
-    for (var i = 0; i < size.height; i += gridSize.toInt()) {
-      canvas.drawLine(
-        Offset(0, i.toDouble()),
-        Offset(size.width, i.toDouble()),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

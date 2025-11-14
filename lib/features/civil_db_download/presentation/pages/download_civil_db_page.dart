@@ -25,7 +25,7 @@ class _DownloadCivilDbPageState extends ConsumerState<DownloadCivilDbPage>
   // 🔧 Development: Will copy from Assets (see CivilDbManager.isDevelopmentMode)
   // 🌐 Production: Replace with your actual download URL
   static const String _downloadUrl =
-      'https://your-server.com/downloads/civil_registry.db';
+      'https://your-server.com/downloads/persons.db';
 
   @override
   void initState() {

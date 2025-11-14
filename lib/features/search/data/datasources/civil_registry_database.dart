@@ -6,7 +6,7 @@ import '../../domain/entities/civil_person.dart';
 
 /// 📂 Civil Registry Database - Direct SQLite Access
 ///
-/// Reads from downloaded civil_registry.db file
+/// Reads from downloaded persons.db file
 /// This is a SEPARATE database from AppDatabase (app.db)
 class CivilRegistryDatabase {
   static CivilRegistryDatabase? _instance;
@@ -28,72 +28,68 @@ class CivilRegistryDatabase {
 
   /// Initialize database
   Future<Database> _initDatabase() async {
-    final appDir = await getApplicationDocumentsDirectory();
-    final dbPath = p.join(appDir.path, 'civil_registry.db');
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final dbPath = p.join(appDir.path, 'persons.db');
 
-    print('📂 Looking for database at: $dbPath');
+      final file = File(dbPath);
+      final exists = await file.exists();
 
-    final file = File(dbPath);
-    final exists = await file.exists();
-    print('📊 Database exists: $exists');
+      if (!exists) {
+        throw Exception(
+          'قاعدة بيانات السجل المدني غير موجودة.\n'
+          'الرجاء الذهاب إلى صفحة "تنزيل قاعدة بيانات السجل المدني" أولاً.\n'
+          'سيتم نسخ القاعدة تلقائياً من الملفات.',
+        );
+      }
 
-    if (!exists) {
-      throw Exception(
-        'قاعدة بيانات السجل المدني غير موجودة. قم بتنزيلها أولاً.',
+      // Open database WITHOUT version (existing database with data)
+      final db = await openDatabase(dbPath);
+
+      // Verify table exists
+      final tables = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='persons'",
       );
+
+      if (tables.isEmpty) {
+        throw Exception('جدول persons غير موجود في قاعدة البيانات!');
+      }
+
+      // Enable performance optimizations
+      await db.rawQuery('PRAGMA cache_size = 10000');
+      await db.rawQuery('PRAGMA temp_store = MEMORY');
+      await db.rawQuery('PRAGMA mmap_size = 30000000000');
+      await db.rawQuery('PRAGMA page_size = 4096');
+
+      // Create indexes in background (non-blocking)
+      _createIndexesAsync(db);
+
+      return db;
+    } catch (e) {
+      print('❌ Database error: $e');
+      rethrow;
     }
-
-    print('🔓 Opening database...');
-    final db = await openDatabase(
-      dbPath,
-      readOnly: false,
-      singleInstance: true,
-      version: 1,
-      onCreate: (db, version) async {
-        // This won't be called for existing databases
-        await _createIndexes(db);
-      },
-    );
-
-    print('✅ Database opened successfully');
-
-    // Create indexes if they don't exist (for existing databases)
-    await _createIndexes(db);
-
-    // Test query
-    final count = await db.rawQuery('SELECT COUNT(*) as count FROM persons');
-    print('📊 Total persons in database: ${Sqflite.firstIntValue(count)}');
-
-    return db;
   }
 
-  /// Create indexes for better search performance
-  Future<void> _createIndexes(Database db) async {
+  /// Create indexes for better search performance (async - non-blocking)
+  void _createIndexesAsync(Database db) async {
     try {
-      await db.execute(
+      final indexes = [
         'CREATE INDEX IF NOT EXISTS idx_persons_national_id ON persons(CI_ID_NUM)',
-      );
-      await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_persons_first_name ON persons(CI_FIRST_ARB)',
-      );
-      await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_persons_father_name ON persons(CI_FATHER_ARB)',
-      );
-      await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_persons_grand_father ON persons(CI_GRAND_FATHER_ARB)',
-      );
-      await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_persons_family_name ON persons(CI_FAMILY_ARB)',
-      );
-      await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_persons_city ON persons(CITY)',
-      );
-      await db.execute(
         'CREATE INDEX IF NOT EXISTS idx_persons_gender ON persons(CI_SEX_CD)',
-      );
+        'CREATE INDEX IF NOT EXISTS idx_persons_composite ON persons(CI_FIRST_ARB, CI_FATHER_ARB, CI_FAMILY_ARB)',
+      ];
+
+      for (final index in indexes) {
+        await db.execute(index);
+      }
     } catch (e) {
-      // Indexes might already exist
-      print('⚠️ Warning: Could not create all indexes: $e');
+      // Indexes might already exist, safe to ignore
     }
   }
 
@@ -103,30 +99,29 @@ class CivilRegistryDatabase {
     if (db != null) {
       await db.close();
       _database = null;
+      _instance = null;
     }
   }
 
-  /// Search by National ID
+  /// Reset instance (for testing)
+  static void reset() {
+    _instance = null;
+    _database = null;
+  }
+
+  /// Search by National ID - Optimized
   Future<CivilPerson?> searchByNationalId(String nationalId) async {
     final db = await database;
-    final cleaned = nationalId.trim().replaceAll(' ', '');
+    final cleaned = nationalId.trim().replaceAll(' ', '').replaceAll('-', '');
 
-    // Level 1: Exact match
-    var results = await db.query(
-      'persons',
-      where: 'CI_ID_NUM = ?',
-      whereArgs: [cleaned],
-      limit: 1,
-    );
-
-    if (results.isNotEmpty) {
-      return _mapToPerson(results.first);
-    }
-
-    // Level 2: LIKE search for flexibility
-    results = await db.rawQuery(
-      'SELECT * FROM persons WHERE CAST(CI_ID_NUM AS TEXT) LIKE ? LIMIT 1',
-      ['%$cleaned%'],
+    // Single optimized query with OR condition
+    final results = await db.rawQuery(
+      '''
+      SELECT * FROM persons 
+      WHERE CI_ID_NUM = ? OR CAST(CI_ID_NUM AS TEXT) LIKE ?
+      LIMIT 1
+      ''',
+      [cleaned, '%$cleaned%'],
     );
 
     if (results.isNotEmpty) {
@@ -136,7 +131,7 @@ class CivilRegistryDatabase {
     return null;
   }
 
-  /// Search by Name
+  /// Search by Name - Optimized with better SQL
   Future<List<CivilPerson>> searchByName(
     String query, {
     String? governorate,
@@ -151,15 +146,15 @@ class CivilRegistryDatabase {
     final where = <String>[];
     final args = <dynamic>[];
 
-    // Name search (no full_name_normalized column, search individual names)
+    // Optimized name search with priority (first name first)
     where.add(
-      '(CI_FIRST_ARB LIKE ? OR CI_FATHER_ARB LIKE ? OR CI_GRAND_FATHER_ARB LIKE ? OR CI_FAMILY_ARB LIKE ?)',
+      '(CI_FIRST_ARB LIKE ? COLLATE NOCASE OR CI_FATHER_ARB LIKE ? COLLATE NOCASE OR CI_GRAND_FATHER_ARB LIKE ? COLLATE NOCASE OR CI_FAMILY_ARB LIKE ? COLLATE NOCASE)',
     );
     args.addAll([pattern, pattern, pattern, pattern]);
 
     // Filters
     if (governorate != null && governorate.isNotEmpty) {
-      where.add('CITY LIKE ?');
+      where.add('CITY LIKE ? COLLATE NOCASE');
       args.add('%$governorate%');
     }
 
@@ -168,13 +163,22 @@ class CivilRegistryDatabase {
       args.add(genderCode);
     }
 
-    final results = await db.query(
-      'persons',
-      where: where.join(' AND '),
-      whereArgs: args,
-      orderBy: 'CI_FIRST_ARB',
-      limit: limit,
-      offset: offset,
+    // Use raw query for better performance with ORDER BY optimization
+    final results = await db.rawQuery(
+      '''
+      SELECT * FROM persons
+      WHERE ${where.join(' AND ')}
+      ORDER BY 
+        CASE 
+          WHEN CI_FIRST_ARB LIKE ? THEN 1
+          WHEN CI_FATHER_ARB LIKE ? THEN 2
+          WHEN CI_GRAND_FATHER_ARB LIKE ? THEN 3
+          ELSE 4
+        END,
+        CI_FIRST_ARB
+      LIMIT ? OFFSET ?
+      ''',
+      [...args, pattern, pattern, pattern, limit, offset],
     );
 
     return results.map(_mapToPerson).toList();

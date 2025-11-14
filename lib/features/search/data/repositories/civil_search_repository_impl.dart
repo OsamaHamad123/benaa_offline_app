@@ -6,7 +6,7 @@ import '../../domain/repositories/civil_search_repository.dart';
 /// 📦 Civil Search Repository Implementation - Direct SQLite 🚀
 ///
 /// ✅ Uses CivilRegistryDatabase with direct SQLite access
-/// ⚡ Performance: Fast searches on downloaded civil_registry.db
+/// ⚡ Performance: Fast searches on downloaded persons.db
 /// 🔥 Optimized with indexes
 class CivilSearchRepositoryImpl implements CivilSearchRepository {
   final CivilRegistryDatabase database;

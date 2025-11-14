@@ -4,9 +4,9 @@
 
 ### كيف تستخدمه:
 
-1. **ضع ملف `civil_registry.db` في هذا المجلد**
+1. **ضع ملف `persons.db` في هذا المجلد**
    ```
-   assets/database/civil_registry.db
+   assets/database/persons.db
    ```
 
 2. **تأكد من تفعيل وضع التطوير:**

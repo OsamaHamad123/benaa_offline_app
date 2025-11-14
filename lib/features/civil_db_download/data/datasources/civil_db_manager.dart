@@ -10,13 +10,13 @@ import '../../domain/entities/civil_db_status.dart';
 /// Manages downloading and storing civil registry database
 /// Supports both Development (copy from Assets) and Production (download from URL)
 class CivilDbManager {
-  static const String _dbFileName = 'civil_registry.db';
-  static const String _tempFileName = 'civil_registry.db.downloading';
+  static const String _dbFileName = 'persons.db';
+  static const String _tempFileName = 'persons.db.downloading';
 
   // 🔧 Development Mode Configuration
   // Set to true to copy from Assets instead of downloading
   static const bool isDevelopmentMode = true; // ⚠️ Set to false for production!
-  static const String assetDbPath = 'assets/database/civil_registry.db';
+  static const String assetDbPath = 'assets/database/persons.db';
 
   final Dio _dio;
   CancelToken? _cancelToken;

@@ -146,7 +146,16 @@ class SearchNotifier extends StateNotifier<SearchState> {
         await _searchByName(reset);
       }
     } catch (e) {
-      state = state.copyWith(isSearching: false, error: 'خطأ في البحث: $e');
+      // Check if it's a database not found error
+      String errorMessage = 'خطأ في البحث: $e';
+      if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
+        errorMessage =
+            '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
+            'الرجاء الذهاب إلى:\n'
+            '"تنزيل قاعدة بيانات السجل المدني"\n'
+            'من القائمة الرئيسية أولاً.';
+      }
+      state = state.copyWith(isSearching: false, error: errorMessage);
     }
   }
 
@@ -174,7 +183,15 @@ class SearchNotifier extends StateNotifier<SearchState> {
         );
       }
     } catch (e) {
-      state = state.copyWith(isSearching: false, error: 'خطأ في البحث: $e');
+      String errorMessage = 'خطأ في البحث: $e';
+      if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
+        errorMessage =
+            '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
+            'الرجاء الذهاب إلى:\n'
+            '"تنزيل قاعدة بيانات السجل المدني"\n'
+            'من القائمة الرئيسية أولاً.';
+      }
+      state = state.copyWith(isSearching: false, error: errorMessage);
     }
   }
 
@@ -212,7 +229,15 @@ class SearchNotifier extends StateNotifier<SearchState> {
         state = state.copyWith(error: 'لم يتم العثور على نتائج');
       }
     } catch (e) {
-      state = state.copyWith(isSearching: false, error: 'خطأ في البحث: $e');
+      String errorMessage = 'خطأ في البحث: $e';
+      if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
+        errorMessage =
+            '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
+            'الرجاء الذهاب إلى:\n'
+            '"تنزيل قاعدة بيانات السجل المدني"\n'
+            'من القائمة الرئيسية أولاً.';
+      }
+      state = state.copyWith(isSearching: false, error: errorMessage);
     }
   }
 
