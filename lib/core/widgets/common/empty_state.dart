@@ -13,6 +13,7 @@ class EmptyState extends StatelessWidget {
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? action; // ⚡ Custom action widget
   final bool isCompact;
   final Color? iconColor;
 
@@ -23,6 +24,7 @@ class EmptyState extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.action, // ⚡ Custom action widget
     this.isCompact = false,
     this.iconColor,
   });
@@ -75,7 +77,10 @@ class EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 3,
             ),
-            if (actionLabel != null && onAction != null) ...[
+            if (action != null) ...[
+              SizedBox(height: (isCompact ? 20 : 24).h),
+              action!, // ⚡ Custom action widget
+            ] else if (actionLabel != null && onAction != null) ...[
               SizedBox(height: (isCompact ? 20 : 24).h),
               ElevatedButton.icon(
                 onPressed: onAction,

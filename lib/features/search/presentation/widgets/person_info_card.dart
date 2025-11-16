@@ -40,36 +40,26 @@ class PersonInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         side: BorderSide(color: Colors.blue.withOpacity(0.1), width: 1.5),
       ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, Colors.blue.withOpacity(0.02)],
-          ),
-        ),
-        child: InkWell(
-          onTap: onAddAsBeneficiary,
-          borderRadius: BorderRadius.circular(16.r),
-          child: Padding(
-            padding: rv.padding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
+      child: InkWell(
+        onTap: onAddAsBeneficiary,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Padding(
+          padding: rv.padding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              SizedBox(height: 16.h),
+              _buildDivider(),
+              SizedBox(height: 16.h),
+              _buildPersonDetails(context),
+              if (expanded) ...[
                 SizedBox(height: 16.h),
-                _buildDivider(),
-                SizedBox(height: 16.h),
-                _buildPersonDetails(context),
-                if (expanded) ...[
-                  SizedBox(height: 16.h),
-                  _buildAdditionalInfo(context),
-                ],
-                SizedBox(height: 16.h),
-                _buildActions(context, rv),
+                _buildAdditionalInfo(context),
               ],
-            ),
+              SizedBox(height: 16.h),
+              _buildActions(context, rv),
+            ],
           ),
         ),
       ),
@@ -115,25 +105,18 @@ class PersonInfoCard extends StatelessWidget {
             color: Colors.blue.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12.r),
           ),
-          child: Icon(Icons.person, color: Colors.blue, size: 32.sp),
+          child: const Icon(Icons.person, color: Colors.blue, size: 32),
         ),
       ],
     );
   }
 
-  /// Divider with gradient
+  /// Divider - simple and fast
   Widget _buildDivider() {
-    return Container(
+    return Divider(
       height: 1.5.h,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue.withOpacity(0.0),
-            Colors.blue.withOpacity(0.3),
-            Colors.blue.withOpacity(0.0),
-          ],
-        ),
-      ),
+      thickness: 1.5,
+      color: Colors.blue.withOpacity(0.2),
     );
   }
 

@@ -33,13 +33,38 @@ class _CivilSearchPageEnhancedState
   bool get wantKeepAlive => true;
 
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // ⚡ Auto-scroll listener for infinite scroll
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  /// Auto-load more when scrolled to 80% of the list
+  void _onScroll() {
+    if (!mounted) return;
+
+    final searchState = ref.read(searchProvider);
+    if (searchState.isSearching || !searchState.hasMore) return;
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final threshold = maxScroll * 0.8; // Load at 80%
+
+    if (currentScroll >= threshold) {
+      ref.read(searchProvider.notifier).loadMore();
+    }
   }
 
   void _onSearchChanged(String query) {
@@ -69,14 +94,26 @@ class _CivilSearchPageEnhancedState
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       resizeToAvoidBottomInset: true,
-      body: CustomScrollView(
-        slivers: [
-          _buildModernAppBar(statsAsync, rv),
-          _buildSearchSection(searchState, rv),
-          if (searchState.query.isNotEmpty)
-            _buildFiltersSection(searchState, statsAsync, rv),
-          _buildResultsSection(searchState, rv),
-        ],
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // ⚡ Pull to refresh functionality
+          if (searchState.query.isNotEmpty) {
+            ref.read(searchProvider.notifier).search(reset: true);
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+        },
+        child: CustomScrollView(
+          controller: _scrollController, // ⚡ Auto-scroll controller
+          physics:
+              const AlwaysScrollableScrollPhysics(), // Enable pull-to-refresh
+          slivers: [
+            _buildModernAppBar(statsAsync, rv),
+            _buildSearchSection(searchState, rv),
+            if (searchState.query.isNotEmpty)
+              _buildFiltersSection(searchState, statsAsync, rv),
+            _buildResultsSection(searchState, rv),
+          ],
+        ),
       ),
     );
   }
@@ -85,72 +122,42 @@ class _CivilSearchPageEnhancedState
   Widget _buildModernAppBar(AsyncValue statsAsync, ResponsiveValues rv) {
     return statsAsync.when(
       data: (stats) => SliverAppBar(
-        expandedHeight: rv.isMobile ? 200.h : 220.h,
+        expandedHeight: rv.isMobile ? 160.h : 180.h, // ⚡ Reduced to fix overlap
         floating: false,
         pinned: true,
         elevation: 0,
         flexibleSpace: FlexibleSpaceBar(
-          titlePadding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 70.h),
+          titlePadding: EdgeInsets.only(
+            left: 16.w,
+            right: 16.w,
+            bottom: 50.h,
+          ), // ⚡ Adjusted
           title: Text(
             'السجل المدني',
             style: TextStyle(
-              fontSize: rv.fontSize + 4,
+              fontSize: rv.fontSize + 2, // ⚡ Reduced font size
               fontWeight: FontWeight.bold,
             ),
           ),
           background: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Colors.blue.shade700,
-                  Colors.blue.shade500,
-                  Colors.cyan.shade400,
-                ],
+                colors: [Colors.blue.shade700, Colors.blue.shade500],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
             child: Stack(
               children: [
-                // Simplified background for better performance
-                Positioned.fill(
-                  child: Stack(
-                    children: [
-                      // Removed Grid pattern for performance
-                      // Simple overlay instead
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white.withOpacity(0.05),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                      // Logo/Icon
-                      Positioned(
-                        top: 60.h,
-                        left: 20.w,
-                        child: Icon(
-                          Icons.account_balance,
-                          size: 40.sp,
-                          color: Colors.white.withOpacity(0.3),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // ⚡ Simplified for performance - removed nested gradients
                 // Statistics
                 Positioned(
-                  bottom: 16.h,
+                  bottom: 12.h, // ⚡ Reduced bottom padding
                   left: rv.padding.left,
                   right: rv.padding.right,
                   child: Wrap(
-                    spacing: rv.spacing,
-                    runSpacing: rv.spacing / 2,
+                    spacing: rv.spacing / 2, // ⚡ Reduced spacing
+                    runSpacing: rv.spacing / 3,
                     children: [
                       _StatChip(
                         value: '${stats.totalPersons}',
@@ -185,20 +192,11 @@ class _CivilSearchPageEnhancedState
       expandedHeight: rv.isMobile ? 180.h : 200.h,
       floating: false,
       pinned: true,
+      backgroundColor:
+          Colors.grey.shade400, // ⚡ Simple color instead of gradient
       flexibleSpace: FlexibleSpaceBar(
         title: Text('السجل المدني', style: TextStyle(fontSize: rv.fontSize)),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.grey.shade400, Colors.grey.shade300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
-        ),
+        centerTitle: true,
       ),
     );
   }
@@ -208,20 +206,11 @@ class _CivilSearchPageEnhancedState
       expandedHeight: rv.isMobile ? 180.h : 200.h,
       floating: false,
       pinned: true,
+      backgroundColor:
+          Colors.red.shade400, // ⚡ Simple color instead of gradient
       flexibleSpace: FlexibleSpaceBar(
         title: Text('السجل المدني', style: TextStyle(fontSize: rv.fontSize)),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.red.shade400, Colors.red.shade300],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: const Center(
-            child: Icon(Icons.error_outline, color: Colors.white, size: 48),
-          ),
-        ),
+        centerTitle: true,
       ),
     );
   }
@@ -235,13 +224,8 @@ class _CivilSearchPageEnhancedState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+          // ⚡ Removed BoxShadow for better performance
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +248,11 @@ class _CivilSearchPageEnhancedState
                 suffixIcon: searchState.isSearching
                     ? Padding(
                         padding: EdgeInsets.all(12.w),
-                        child: CircularProgressIndicator(strokeWidth: 2.w),
+                        child: SizedBox(
+                          width: 20.w,
+                          height: 20.h,
+                          child: CircularProgressIndicator(strokeWidth: 2.w),
+                        ),
                       )
                     : searchState.query.isNotEmpty
                     ? IconButton(
@@ -368,12 +356,25 @@ class _CivilSearchPageEnhancedState
     // Empty state - no results
     if (searchState.isEmpty && !searchState.isSearching) {
       return SliverFillRemaining(
-        child: EmptyState(
-          icon: Icons.search_off,
-          title: 'لا توجد نتائج',
-          message: searchState.error ?? 'لم يتم العثور على نتائج مطابقة',
-          iconColor: Colors.orange,
-        ),
+        child: searchState.error != null
+            ? EmptyState(
+                icon: Icons.error_outline,
+                title: 'حدث خطأ',
+                message: searchState.error!,
+                iconColor: Colors.red,
+                action: ElevatedButton.icon(
+                  onPressed: () =>
+                      ref.read(searchProvider.notifier).search(reset: true),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة المحاولة'),
+                ),
+              )
+            : const EmptyState(
+                icon: Icons.search_off,
+                title: 'لا توجد نتائج',
+                message: 'لم يتم العثور على نتائج مطابقة',
+                iconColor: Colors.orange,
+              ),
       );
     }
 
@@ -383,18 +384,105 @@ class _CivilSearchPageEnhancedState
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
+            // ⚡ Performance indicator at the top
+            if (index == 0 && searchState.searchDurationMs != null) {
+              return Padding(
+                padding: EdgeInsets.only(bottom: rv.spacing),
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: searchState.searchDurationMs! < 50
+                        ? Colors.green.shade50
+                        : searchState.searchDurationMs! < 100
+                        ? Colors.orange.shade50
+                        : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: searchState.searchDurationMs! < 50
+                          ? Colors.green.shade300
+                          : searchState.searchDurationMs! < 100
+                          ? Colors.orange.shade300
+                          : Colors.red.shade300,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        searchState.searchDurationMs! < 50
+                            ? Icons.flash_on
+                            : searchState.searchDurationMs! < 100
+                            ? Icons.speed
+                            : Icons.schedule,
+                        size: 16.sp,
+                        color: searchState.searchDurationMs! < 50
+                            ? Colors.green.shade700
+                            : searchState.searchDurationMs! < 100
+                            ? Colors.orange.shade700
+                            : Colors.red.shade700,
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        'سرعة البحث: ${searchState.searchDurationMs}ms',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: searchState.searchDurationMs! < 50
+                              ? Colors.green.shade900
+                              : searchState.searchDurationMs! < 100
+                              ? Colors.orange.shade900
+                              : Colors.red.shade900,
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Text(
+                        searchState.searchDurationMs! < 50
+                            ? '⚡ سريع جداً'
+                            : searchState.searchDurationMs! < 100
+                            ? '✓ جيد'
+                            : '⚠️ بطيء',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Adjust index for results
+            final resultIndex = searchState.searchDurationMs != null
+                ? index - 1
+                : index;
+
             // Results
-            if (index < searchState.results.length) {
-              final person = searchState.results[index];
-              return ResultCard(
-                person: person,
-                onCopy: () => _copyToClipboard(person),
-                onAddAsBeneficiary: () => _addAsBeneficiary(person),
+            if (resultIndex >= 0 && resultIndex < searchState.results.length) {
+              final person = searchState.results[resultIndex];
+              return RepaintBoundary(
+                key: ValueKey(
+                  'repaint_${person.nationalId}',
+                ), // ⚡ Unique key for reuse
+                // ⚡ Performance: Isolate repaints
+                child: ResultCard(
+                  key: ValueKey(
+                    person.nationalId,
+                  ), // ⚡ Unique key for each card
+                  person: person,
+                  onCopy: () => _copyToClipboard(person),
+                  onAddAsBeneficiary: () => _addAsBeneficiary(person),
+                ),
               );
             }
 
             // Load more button
-            if (index == searchState.results.length && searchState.hasMore) {
+            if (resultIndex == searchState.results.length &&
+                searchState.hasMore) {
               return Padding(
                 padding: EdgeInsets.symmetric(vertical: rv.spacing),
                 child: Center(
@@ -423,7 +511,17 @@ class _CivilSearchPageEnhancedState
             return const SizedBox.shrink();
           },
           childCount:
-              searchState.results.length + (searchState.hasMore ? 1 : 0),
+              searchState.results.length +
+              (searchState.hasMore ? 1 : 0) +
+              (searchState.searchDurationMs != null
+                  ? 1
+                  : 0), // ⚡ +1 for performance indicator
+          // ⚡ Performance optimizations
+          addAutomaticKeepAlives:
+              false, // Don't keep state of scrolled-away items
+          addRepaintBoundaries: true, // Each child paints independently
+          addSemanticIndexes:
+              false, // Reduce overhead for assistive technologies
         ),
       ),
     );
@@ -481,7 +579,7 @@ ${person.motherName != null ? 'اسم الأم: ${person.motherName}\n' : ''}${p
   }
 }
 
-/// Statistics Chip Widget
+/// Statistics Chip Widget - const optimized
 class _StatChip extends StatelessWidget {
   final String value;
   final String label;

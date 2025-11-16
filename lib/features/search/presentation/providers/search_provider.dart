@@ -16,6 +16,7 @@ class SearchState {
   final SearchFilter filter;
   final String? error;
   final int totalResults;
+  final int? searchDurationMs; // ⚡ Performance tracking
 
   const SearchState({
     this.query = '',
@@ -26,6 +27,7 @@ class SearchState {
     this.filter = const SearchFilter(),
     this.error,
     this.totalResults = 0,
+    this.searchDurationMs,
   });
 
   SearchState copyWith({
@@ -37,6 +39,7 @@ class SearchState {
     SearchFilter? filter,
     String? error,
     int? totalResults,
+    int? searchDurationMs,
   }) {
     return SearchState(
       query: query ?? this.query,
@@ -47,6 +50,7 @@ class SearchState {
       filter: filter ?? this.filter,
       error: error,
       totalResults: totalResults ?? this.totalResults,
+      searchDurationMs: searchDurationMs ?? this.searchDurationMs,
     );
   }
 
@@ -75,7 +79,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
     required this.searchByNameUseCase,
   }) : super(const SearchState());
 
-  static const int _pageSize = 20;
+  // ⚡ Performance: Reduced to 6 for ultra-smooth scrolling (no lag!)
+  static const int _pageSize = 6;
 
   @override
   void dispose() {
@@ -186,18 +191,23 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
     if (state.isSearching && !reset) return;
 
+    // ⚡ Start timing
+    final stopwatch = Stopwatch()..start();
+
     // Increment request ID to cancel previous requests
     final currentRequestId = ++_requestId;
 
     // Check cache first
     final cacheKey = _getCacheKey(state.query, state.filter);
     if (_cache.containsKey(cacheKey) && reset) {
+      stopwatch.stop();
       state = state.copyWith(
         results: _cache[cacheKey]!,
         currentPage: 1,
         hasMore: false,
         isSearching: false,
         error: null,
+        searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
       );
       return;
     }
@@ -211,6 +221,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
         hasMore: false,
         error: null,
         totalResults: 0,
+        searchDurationMs: null,
       );
     } else {
       state = state.copyWith(isSearching: true, error: null);
@@ -224,15 +235,16 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
       if (isNationalId) {
         // Search by national ID
-        await _searchByNationalId(reset, currentRequestId);
+        await _searchByNationalId(reset, currentRequestId, stopwatch);
       } else {
         // Search by name
-        await _searchByName(reset, currentRequestId);
+        await _searchByName(reset, currentRequestId, stopwatch);
       }
     } catch (e) {
       // Only update state if this is still the current request
       if (currentRequestId != _requestId) return;
 
+      stopwatch.stop();
       // Check if it's a database not found error
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
@@ -242,18 +254,27 @@ class SearchNotifier extends StateNotifier<SearchState> {
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
       }
-      state = state.copyWith(isSearching: false, error: errorMessage);
+      state = state.copyWith(
+        isSearching: false,
+        error: errorMessage,
+        searchDurationMs: stopwatch.elapsedMilliseconds,
+      );
     }
   }
 
   /// Search by national ID with cancellation
-  Future<void> _searchByNationalId(bool reset, int requestId) async {
+  Future<void> _searchByNationalId(
+    bool reset,
+    int requestId,
+    Stopwatch stopwatch,
+  ) async {
     try {
       final person = await searchByNationalIdUseCase(state.query);
 
       // Check if request is still valid
       if (requestId != _requestId) return;
 
+      stopwatch.stop();
       if (person != null) {
         state = state.copyWith(
           results: [person],
@@ -261,6 +282,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
           currentPage: 1,
           isSearching: false,
           totalResults: 1,
+          searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
         );
       } else {
         state = state.copyWith(
@@ -270,11 +292,13 @@ class SearchNotifier extends StateNotifier<SearchState> {
           isSearching: false,
           error: 'لم يتم العثور على الرقم الوطني',
           totalResults: 0,
+          searchDurationMs: stopwatch.elapsedMilliseconds,
         );
       }
     } catch (e) {
       if (requestId != _requestId) return;
 
+      stopwatch.stop();
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
         errorMessage =
@@ -283,12 +307,20 @@ class SearchNotifier extends StateNotifier<SearchState> {
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
       }
-      state = state.copyWith(isSearching: false, error: errorMessage);
+      state = state.copyWith(
+        isSearching: false,
+        error: errorMessage,
+        searchDurationMs: stopwatch.elapsedMilliseconds,
+      );
     }
   }
 
   /// Search by name with filters and caching
-  Future<void> _searchByName(bool reset, int requestId) async {
+  Future<void> _searchByName(
+    bool reset,
+    int requestId,
+    Stopwatch stopwatch,
+  ) async {
     try {
       final page = reset ? 1 : state.currentPage + 1;
 
@@ -301,6 +333,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
       // Check if request is still valid
       if (requestId != _requestId) return;
+
+      stopwatch.stop();
 
       // Cache results for first page
       if (reset && result.persons.isNotEmpty) {
@@ -315,6 +349,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
           currentPage: page,
           isSearching: false,
           totalResults: result.totalResults,
+          searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
         );
       } else {
         state = state.copyWith(
@@ -327,11 +362,15 @@ class SearchNotifier extends StateNotifier<SearchState> {
       }
 
       if (state.results.isEmpty && reset) {
-        state = state.copyWith(error: 'لم يتم العثور على نتائج');
+        state = state.copyWith(
+          error: 'لم يتم العثور على نتائج',
+          searchDurationMs: stopwatch.elapsedMilliseconds,
+        );
       }
     } catch (e) {
       if (requestId != _requestId) return;
 
+      stopwatch.stop();
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
         errorMessage =
@@ -340,7 +379,11 @@ class SearchNotifier extends StateNotifier<SearchState> {
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
       }
-      state = state.copyWith(isSearching: false, error: errorMessage);
+      state = state.copyWith(
+        isSearching: false,
+        error: errorMessage,
+        searchDurationMs: stopwatch.elapsedMilliseconds,
+      );
     }
   }
 
