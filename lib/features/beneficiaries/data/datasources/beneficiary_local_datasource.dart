@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import '../../../../data/db/drift_database.dart';
 import '../models/beneficiary_model.dart';
 
@@ -16,6 +17,14 @@ class BeneficiaryLocalDataSource {
     final data = await (db.select(
       db.beneficiaries,
     )..where((b) => b.id.equals(id))).getSingle();
+
+    // Log activity
+    await _logActivity(
+      beneficiaryId: id.toString(),
+      activityType: 'create',
+      description: 'تم إضافة مستفيد جديد: ${data.fullName}',
+    );
+
     return BeneficiaryModel.fromDrift(data);
   }
 
@@ -30,6 +39,14 @@ class BeneficiaryLocalDataSource {
     final data = await (db.select(
       db.beneficiaries,
     )..where((b) => b.id.equals(id))).getSingle();
+
+    // Log activity
+    await _logActivity(
+      beneficiaryId: id.toString(),
+      activityType: 'update',
+      description: 'تم تحديث بيانات المستفيد: ${data.fullName}',
+    );
+
     return BeneficiaryModel.fromDrift(data);
   }
 
@@ -130,5 +147,24 @@ class BeneficiaryLocalDataSource {
         .replaceAll('ة', 'ه')
         .replaceAll('ى', 'ي')
         .toLowerCase();
+  }
+
+  /// Log activity helper
+  Future<void> _logActivity({
+    required String beneficiaryId,
+    required String activityType,
+    required String description,
+  }) async {
+    const uuid = Uuid();
+    await db.trackingDao.addActivity(
+      ActivitiesCompanion.insert(
+        id: uuid.v4(),
+        beneficiaryId: beneficiaryId,
+        userId: 'current_user', // TODO: Get from auth
+        activityType: activityType,
+        description: description,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 }

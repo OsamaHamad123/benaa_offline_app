@@ -61,6 +61,39 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Get beneficiaries with pagination (Performance optimized)
+  Future<List<Beneficiary>> getBeneficiariesPaginated({
+    int limit = 50,
+    int offset = 0,
+    String? searchQuery,
+    int? sectionId,
+    int? gender,
+  }) async {
+    var query = select(beneficiaries)
+      ..orderBy([(b) => OrderingTerm.desc(b.createdAt)])
+      ..limit(limit, offset: offset);
+
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      final normalized = searchQuery.toLowerCase();
+      query.where(
+        (b) =>
+            b.fullName.lower().contains(normalized) |
+            b.idNumber.cast<String>().contains(searchQuery) |
+            (b.fileIdNumber.isNotNull() & b.fileIdNumber.contains(searchQuery)),
+      );
+    }
+
+    if (sectionId != null) {
+      query.where((b) => b.sectionId.equals(sectionId));
+    }
+
+    if (gender != null) {
+      query.where((b) => b.gender.equals(gender));
+    }
+
+    return query.get();
+  }
+
   /// Count incomplete beneficiaries (missing phone or address)
   Future<int> countIncompleteBeneficiaries() async {
     final result = await customSelect(

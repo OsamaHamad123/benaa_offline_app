@@ -54,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 6; // تحديث بسبب إعادة هيكلة جدول Beneficiaries
+  int get schemaVersion => 7; // تحديث لإصلاح indexes القديمة
 
   @override
   MigrationStrategy get migration {
@@ -64,21 +64,12 @@ class AppDatabase extends _$AppDatabase {
         await _createIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from < 2) {
-          await _upgradeToV2(m);
+        // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
+        for (final table in allTables) {
+          await m.deleteTable(table.actualTableName);
         }
-        if (from < 3) {
-          await _upgradeToV3(m);
-        }
-        if (from < 4) {
-          await _upgradeToV4(m);
-        }
-        if (from < 5) {
-          await _upgradeToV5(m);
-        }
-        if (from < 6) {
-          await _upgradeToV6(m);
-        }
+        await m.createAll();
+        await _createIndexes();
       },
     );
   }
@@ -125,6 +116,12 @@ class AppDatabase extends _$AppDatabase {
 
   // Migration إلى النسخة 6 - إعادة هيكلة جدول المستفيدين ليطابق Backend
   Future<void> _upgradeToV6(Migrator m) async {
+    // حذف الـ indexes القديمة أولاً (إذا كانت موجودة)
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_national_id;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_file;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_category;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_governorate;');
+
     // نسخ البيانات القديمة
     await customStatement(
       'CREATE TABLE beneficiaries_backup AS SELECT * FROM beneficiaries;',
@@ -271,6 +268,34 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  // Migration إلى النسخة 7 - حذف indexes القديمة المتعارضة
+  Future<void> _upgradeToV7(Migrator m) async {
+    // حذف أي indexes قديمة من النسخ السابقة
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_national_id;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_file;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_category;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_governorate;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_district;');
+    await customStatement('DROP INDEX IF EXISTS idx_beneficiary_gender;');
+
+    // إعادة إنشاء الـ indexes الصحيحة (في حال لم تكن موجودة)
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_id_number ON beneficiaries(id_number);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_file_id ON beneficiaries(file_id_number);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_sync ON beneficiaries(sync_state);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_server ON beneficiaries(server_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_section ON beneficiaries(section_id);',
+    );
+  }
+
   // Migration إلى النسخة 4
   Future<void> _upgradeToV4(Migrator m) async {
     await m.createTable(activities);
@@ -318,18 +343,21 @@ class AppDatabase extends _$AppDatabase {
 
   // إنشاء indexes للأداء
   Future<void> _createIndexes() async {
-    // Beneficiaries indexes
+    // Beneficiaries indexes - NEW SCHEMA
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_national ON beneficiaries(national_id);',
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_id_number ON beneficiaries(id_number);',
     );
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_file ON beneficiaries(file_no);',
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_file_id ON beneficiaries(file_id_number);',
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_beneficiary_sync ON beneficiaries(sync_state);',
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_beneficiary_server ON beneficiaries(server_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiary_section ON beneficiaries(section_id);',
     );
 
     // Visits indexes

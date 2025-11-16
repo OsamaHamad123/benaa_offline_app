@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/civil_person.dart';
 import '../../domain/entities/search_entities.dart';
@@ -53,10 +54,21 @@ class SearchState {
   bool get isNotEmpty => results.isNotEmpty;
 }
 
-/// 🎯 Search State Notifier - Clean Architecture
+/// 🎯 Search State Notifier - Clean Architecture with Performance Optimizations
 class SearchNotifier extends StateNotifier<SearchState> {
   final SearchByNationalIdUseCase searchByNationalIdUseCase;
   final SearchByNameUseCase searchByNameUseCase;
+
+  // ⚡ Aggressive debouncing to eliminate lag
+  Timer? _debounceTimer;
+  static const Duration _debounceDuration = Duration(milliseconds: 400);
+
+  // 🚫 Request cancellation token
+  int _requestId = 0;
+
+  // 💾 Smart cache for instant results (LRU-style)
+  final Map<String, List<CivilPerson>> _cache = {};
+  static const int _maxCacheSize = 50;
 
   SearchNotifier({
     required this.searchByNationalIdUseCase,
@@ -65,9 +77,27 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
   static const int _pageSize = 20;
 
-  /// Update query
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _cache.clear();
+    super.dispose();
+  }
+
+  /// Update query with instant feedback
   void setQuery(String query) {
     state = state.copyWith(query: query);
+
+    // Instant clear if query is empty
+    if (query.trim().isEmpty) {
+      _debounceTimer?.cancel();
+      state = state.copyWith(
+        results: [],
+        currentPage: 0,
+        totalResults: 0,
+        error: null,
+      );
+    }
   }
 
   /// Update filter - Governorate
@@ -77,6 +107,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
         : state.filter.copyWith(governorate: governorate);
 
     state = state.copyWith(filter: newFilter, currentPage: 0, results: []);
+    _cache.clear(); // Clear cache when filter changes
   }
 
   /// Update filter - Gender
@@ -93,6 +124,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
         : state.filter.copyWith(gender: gender);
 
     state = state.copyWith(filter: newFilter, currentPage: 0, results: []);
+    _cache.clear(); // Clear cache when filter changes
   }
 
   /// Clear all filters
@@ -102,21 +134,73 @@ class SearchNotifier extends StateNotifier<SearchState> {
       currentPage: 0,
       results: [],
     );
+    _cache.clear();
   }
 
   /// Clear search
   void clearSearch() {
+    _debounceTimer?.cancel();
+    _cache.clear();
     state = const SearchState();
   }
 
-  /// Perform search (unified method)
+  /// ⚡ Search with aggressive debouncing (400ms) - ELIMINATES LAG
+  void searchDebounced({bool reset = true}) {
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
+    // Instant clear for empty query
+    if (state.query.trim().isEmpty) {
+      state = state.copyWith(results: [], currentPage: 0, error: null);
+      return;
+    }
+
+    // Check cache first for instant results
+    final cacheKey = _getCacheKey(state.query, state.filter);
+    if (_cache.containsKey(cacheKey)) {
+      state = state.copyWith(
+        results: _cache[cacheKey]!,
+        currentPage: 1,
+        hasMore: false,
+        isSearching: false,
+        error: null,
+      );
+      return;
+    }
+
+    // Show searching state immediately
+    state = state.copyWith(isSearching: true, error: null);
+
+    // Debounce the actual search
+    _debounceTimer = Timer(_debounceDuration, () {
+      search(reset: reset);
+    });
+  }
+
+  /// Perform search (unified method) with request cancellation
   Future<void> search({bool reset = false}) async {
     if (state.query.trim().isEmpty) {
       state = state.copyWith(results: [], currentPage: 0);
       return;
     }
 
-    if (state.isSearching) return;
+    if (state.isSearching && !reset) return;
+
+    // Increment request ID to cancel previous requests
+    final currentRequestId = ++_requestId;
+
+    // Check cache first
+    final cacheKey = _getCacheKey(state.query, state.filter);
+    if (_cache.containsKey(cacheKey) && reset) {
+      state = state.copyWith(
+        results: _cache[cacheKey]!,
+        currentPage: 1,
+        hasMore: false,
+        isSearching: false,
+        error: null,
+      );
+      return;
+    }
 
     // Reset or continue pagination
     if (reset) {
@@ -140,12 +224,15 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
       if (isNationalId) {
         // Search by national ID
-        await _searchByNationalId(reset);
+        await _searchByNationalId(reset, currentRequestId);
       } else {
         // Search by name
-        await _searchByName(reset);
+        await _searchByName(reset, currentRequestId);
       }
     } catch (e) {
+      // Only update state if this is still the current request
+      if (currentRequestId != _requestId) return;
+
       // Check if it's a database not found error
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
@@ -159,10 +246,13 @@ class SearchNotifier extends StateNotifier<SearchState> {
     }
   }
 
-  /// Search by national ID
-  Future<void> _searchByNationalId(bool reset) async {
+  /// Search by national ID with cancellation
+  Future<void> _searchByNationalId(bool reset, int requestId) async {
     try {
       final person = await searchByNationalIdUseCase(state.query);
+
+      // Check if request is still valid
+      if (requestId != _requestId) return;
 
       if (person != null) {
         state = state.copyWith(
@@ -183,6 +273,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
         );
       }
     } catch (e) {
+      if (requestId != _requestId) return;
+
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
         errorMessage =
@@ -195,8 +287,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
     }
   }
 
-  /// Search by name with filters
-  Future<void> _searchByName(bool reset) async {
+  /// Search by name with filters and caching
+  Future<void> _searchByName(bool reset, int requestId) async {
     try {
       final page = reset ? 1 : state.currentPage + 1;
 
@@ -206,6 +298,15 @@ class SearchNotifier extends StateNotifier<SearchState> {
         page: page,
         pageSize: _pageSize,
       );
+
+      // Check if request is still valid
+      if (requestId != _requestId) return;
+
+      // Cache results for first page
+      if (reset && result.persons.isNotEmpty) {
+        final cacheKey = _getCacheKey(state.query, state.filter);
+        _addToCache(cacheKey, result.persons);
+      }
 
       if (reset) {
         state = state.copyWith(
@@ -229,6 +330,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
         state = state.copyWith(error: 'لم يتم العثور على نتائج');
       }
     } catch (e) {
+      if (requestId != _requestId) return;
+
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
         errorMessage =
@@ -239,6 +342,22 @@ class SearchNotifier extends StateNotifier<SearchState> {
       }
       state = state.copyWith(isSearching: false, error: errorMessage);
     }
+  }
+
+  // ============================================================================
+  // CACHE HELPERS
+  // ============================================================================
+
+  String _getCacheKey(String query, SearchFilter filter) {
+    return '${query}_${filter.governorate}_${filter.gender}';
+  }
+
+  void _addToCache(String key, List<CivilPerson> results) {
+    // Simple LRU: remove oldest if cache is full
+    if (_cache.length >= _maxCacheSize) {
+      _cache.remove(_cache.keys.first);
+    }
+    _cache[key] = results;
   }
 
   /// Load more results (pagination)
@@ -261,8 +380,23 @@ final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
   );
 });
 
-/// Statistics Provider (cached)
-final statisticsProvider = FutureProvider<SearchStatistics>((ref) async {
+/// Statistics Provider with caching (10 minutes TTL)
+final statisticsProvider = FutureProvider.autoDispose<SearchStatistics>((
+  ref,
+) async {
+  // Keep provider alive for 10 minutes (stats don't change often)
+  final link = ref.keepAlive();
+  Timer? timer;
+
+  ref.onDispose(() {
+    timer?.cancel();
+  });
+
+  // Invalidate cache after 10 minutes
+  timer = Timer(const Duration(minutes: 10), () {
+    link.close();
+  });
+
   final useCase = ref.watch(getStatisticsUseCaseProvider);
   return await useCase();
 });

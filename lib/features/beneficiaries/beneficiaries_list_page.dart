@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -26,10 +27,49 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
   List<Beneficiary>? _cachedBeneficiaries;
   String _cacheKey = '';
 
+  // Performance: Pagination
+  final int _pageSize = 50;
+  int _currentPage = 0;
+  bool _hasMore = true;
+  final _scrollController = ScrollController();
+
+  // Performance: Search debouncing
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
+      if (_hasMore) {
+        setState(() {
+          _currentPage++;
+        });
+      }
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchQuery = value;
+        _currentPage = 0;
+        _hasMore = true;
+      });
+    });
   }
 
   String get _currentCacheKey =>
@@ -152,10 +192,8 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
-                          setState(() {
-                            _searchController.clear();
-                            _searchQuery = '';
-                          });
+                          _searchController.clear();
+                          _onSearchChanged('');
                         },
                       )
                     : null,
@@ -165,12 +203,7 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                 filled: true,
                 fillColor: Colors.grey[50],
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                  _cachedBeneficiaries = null;
-                });
-              },
+              onChanged: _onSearchChanged,
             ),
           ),
 
@@ -298,8 +331,10 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                           );
                         },
                         child: ListView.builder(
+                          controller: _scrollController,
                           itemCount: beneficiaries.length,
                           padding: EdgeInsets.all(16.r),
+                          physics: const AlwaysScrollableScrollPhysics(),
                           itemBuilder: (context, index) {
                             final beneficiary = beneficiaries[index];
                             return Dismissible(
@@ -349,11 +384,14 @@ class _BeneficiariesListPageState extends ConsumerState<BeneficiariesListPage> {
                               onDismissed: (direction) {
                                 _deleteBeneficiary(beneficiary);
                               },
-                              child: _BeneficiaryCard(
-                                beneficiary: beneficiary,
-                                onDelete: () => _deleteBeneficiary(beneficiary),
-                                onEdit: () => context.push(
-                                  '/beneficiaries/edit/${beneficiary.id}',
+                              child: RepaintBoundary(
+                                child: _BeneficiaryCard(
+                                  beneficiary: beneficiary,
+                                  onDelete: () =>
+                                      _deleteBeneficiary(beneficiary),
+                                  onEdit: () => context.push(
+                                    '/beneficiaries/edit/${beneficiary.id}',
+                                  ),
                                 ),
                               ),
                             );

@@ -137,12 +137,11 @@ class DashboardLocalDataSource {
   }
 
   /// Get recent activities with pagination
-  /// Using SyncQueue as activity log
   Future<List<ActivityModel>> getRecentActivities({
     int limit = 10,
     int offset = 0,
   }) async {
-    final query = database.select(database.syncQueue)
+    final query = database.select(database.activities)
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
       ..limit(limit, offset: offset);
 
@@ -151,12 +150,12 @@ class DashboardLocalDataSource {
     return activities.map((item) {
       return ActivityModel(
         id: item.id,
-        type: item.operation,
-        description: _getActivityDescription(item),
+        type: item.activityType,
+        description: item.description,
         timestamp: item.createdAt,
-        beneficiaryId: item.entity == 'beneficiary' ? item.entityId : null,
-        beneficiaryName: null, // TODO: Join with beneficiaries table if needed
-        metadata: {'entity': item.entity, 'priority': item.priority},
+        beneficiaryId: item.beneficiaryId,
+        beneficiaryName: null, // TODO: Join with beneficiaries if needed
+        metadata: {'userId': item.userId},
       );
     }).toList();
   }

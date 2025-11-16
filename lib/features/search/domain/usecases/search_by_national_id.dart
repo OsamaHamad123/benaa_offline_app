@@ -35,7 +35,7 @@ class SearchByNationalIdUseCase {
   /// Check if string could be a national ID
   static bool isNationalIdFormat(String query) {
     final cleaned = query.replaceAll(RegExp(r'[^\d]'), '');
-    // Accept IDs between 8-15 digits (flexible)
-    return cleaned.length >= 8 && cleaned.length <= 15;
+    // Accept IDs between 6-15 digits (more flexible for partial IDs)
+    return cleaned.length >= 6 && cleaned.length <= 15;
   }
 }

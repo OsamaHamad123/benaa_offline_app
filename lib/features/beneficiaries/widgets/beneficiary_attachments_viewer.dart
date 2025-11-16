@@ -312,6 +312,16 @@ class _BeneficiaryAttachmentsViewerState
                                     fit: BoxFit.cover,
                                     width: double.infinity,
                                     height: double.infinity,
+                                    cacheWidth: 300,
+                                    cacheHeight: 300,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
                                   )
                                 : Center(
                                     child: Icon(
@@ -403,7 +413,31 @@ class _AttachmentViewerPage extends StatelessWidget {
       ),
       body: Center(
         child: attachment.isImage
-            ? InteractiveViewer(child: Image.file(File(attachment.filePath)))
+            ? InteractiveViewer(
+                child: Image.file(
+                  File(attachment.filePath),
+                  errorBuilder: (context, error, stackTrace) {
+                    return Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.broken_image,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          'خطأ في تحميل الصورة',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              )
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

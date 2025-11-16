@@ -27,7 +27,11 @@ class CivilSearchPageEnhanced extends ConsumerStatefulWidget {
 }
 
 class _CivilSearchPageEnhancedState
-    extends ConsumerState<CivilSearchPageEnhanced> {
+    extends ConsumerState<CivilSearchPageEnhanced>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   final _searchController = TextEditingController();
   Timer? _debounceTimer;
 
@@ -57,6 +61,7 @@ class _CivilSearchPageEnhancedState
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final searchState = ref.watch(searchProvider);
     final statsAsync = ref.watch(statisticsProvider);
     final rv = ResponsiveUtils.getValues(context);

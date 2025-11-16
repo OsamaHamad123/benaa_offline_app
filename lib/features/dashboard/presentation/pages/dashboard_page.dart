@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
+import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../sync/sync_page.dart';
 import '../providers.dart';
 import '../widgets/dashboard_app_bar.dart' as dashboard_widgets;
@@ -107,6 +108,29 @@ class _DashboardHome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Wait for SharedPreferences to load first
+    final prefsAsync = ref.watch(core_providers.sharedPreferencesProvider);
+
+    return prefsAsync.when(
+      data: (prefs) => _buildDashboard(context, ref),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64.sp, color: Colors.red),
+            SizedBox(height: 16.h),
+            Text(
+              'خطأ في تحميل الإعدادات',
+              style: TextStyle(fontSize: 16.sp, color: Colors.red),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboard(BuildContext context, WidgetRef ref) {
     final state = ref.watch(dashboardProvider);
     final notifier = ref.read(dashboardProvider.notifier);
     final padding = ResponsiveUtils.getResponsivePadding(context);

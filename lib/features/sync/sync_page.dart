@@ -10,7 +10,11 @@ class SyncPage extends ConsumerStatefulWidget {
   ConsumerState<SyncPage> createState() => _SyncPageState();
 }
 
-class _SyncPageState extends ConsumerState<SyncPage> {
+class _SyncPageState extends ConsumerState<SyncPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   bool _isSyncing = false;
   String? _syncMessage;
   double _syncProgress = 0.0;
@@ -73,6 +77,7 @@ class _SyncPageState extends ConsumerState<SyncPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final database = ref.watch(databaseProvider);
 
     return Scaffold(

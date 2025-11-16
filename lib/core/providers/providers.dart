@@ -1,17 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/db/drift_database.dart';
 import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../security/crypto_box.dart';
+import '../services/database_maintenance_service.dart';
 
 // App Config Provider
 final appConfigProvider = FutureProvider<AppConfig>((ref) async {
   return await AppConfig.load();
 });
 
-// Database Provider
+// Database Provider (Singleton)
 final databaseProvider = Provider<AppDatabase>((ref) {
-  return AppDatabase(openEncryptedDb());
+  final db = AppDatabase(openEncryptedDb());
+  ref.onDispose(() {
+    db.close();
+  });
+  return db;
 });
 
 // API Client Provider
@@ -26,6 +32,23 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 // Crypto Box Provider
 final cryptoBoxProvider = FutureProvider<CryptoBox>((ref) async {
   return await CryptoBox.create();
+});
+
+// SharedPreferences Provider
+final sharedPreferencesProvider = FutureProvider<SharedPreferences>((
+  ref,
+) async {
+  return await SharedPreferences.getInstance();
+});
+
+// Database Maintenance Service Provider
+final databaseMaintenanceProvider = Provider<DatabaseMaintenanceService>((ref) {
+  final db = ref.watch(databaseProvider);
+  final prefs = ref.watch(sharedPreferencesProvider).value;
+  if (prefs == null) {
+    throw Exception('SharedPreferences not loaded');
+  }
+  return DatabaseMaintenanceService(database: db, prefs: prefs);
 });
 
 // Database ready provider - waits for database to be initialized

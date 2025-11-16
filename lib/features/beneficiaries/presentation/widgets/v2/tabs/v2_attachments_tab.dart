@@ -292,7 +292,20 @@ class _V2AttachmentsTabState extends State<V2AttachmentsTab> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12.r),
                           child: isImage
-                              ? Image.file(file, fit: BoxFit.cover)
+                              ? Image.file(
+                                  file,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 300,
+                                  cacheHeight: 300,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
+                                )
                               : Center(
                                   child: Icon(
                                     Icons.picture_as_pdf_rounded,
@@ -365,6 +378,16 @@ class _V2AttachmentsTabState extends State<V2AttachmentsTab> {
                               ? Image.file(
                                   File(attachment.thumbnailPath!),
                                   fit: BoxFit.cover,
+                                  cacheWidth: 300,
+                                  cacheHeight: 300,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Center(
+                                      child: Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
                                 )
                               : Center(
                                   child: Icon(

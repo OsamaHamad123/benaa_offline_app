@@ -1,7 +1,6 @@
 import 'package:benaa_offline_app/features/dashboard/domain/entities/dashboard_statistics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/providers/providers.dart';
+import '../../../core/providers/providers.dart' as core_providers;
 import '../data/datasources/dashboard_local_datasource.dart';
 import '../data/repositories/dashboard_repository_impl.dart';
 import '../domain/repositories/dashboard_repository.dart';
@@ -12,14 +11,6 @@ import 'state/dashboard_state.dart';
 import 'state/dashboard_notifier.dart';
 
 // ============================================================================
-// SHARED PREFERENCES PROVIDER
-// ============================================================================
-
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('SharedPreferences must be overridden');
-});
-
-// ============================================================================
 // DATA LAYER PROVIDERS
 // ============================================================================
 
@@ -27,10 +18,14 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 final dashboardLocalDataSourceProvider = Provider<DashboardLocalDataSource>((
   ref,
 ) {
-  final database = ref.watch(databaseProvider);
-  final prefs = ref.watch(sharedPreferencesProvider);
+  final database = ref.watch(core_providers.databaseProvider);
+  final prefsAsync = ref.watch(core_providers.sharedPreferencesProvider);
 
-  return DashboardLocalDataSource(database: database, prefs: prefs);
+  return prefsAsync.when(
+    data: (prefs) => DashboardLocalDataSource(database: database, prefs: prefs),
+    loading: () => throw Exception('SharedPreferences loading...'),
+    error: (error, stack) => throw error,
+  );
 });
 
 /// Dashboard Repository

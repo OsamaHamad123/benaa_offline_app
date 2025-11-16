@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../core/providers/providers.dart' as core_providers;
 import '../providers.dart';
 
 /// Dashboard AppBar - Clean Architecture Version
@@ -21,7 +22,16 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notificationCount = ref.watch(notificationsCountProvider);
+    // Wait for SharedPreferences to load before accessing dashboard state
+    final prefsAsync = ref.watch(core_providers.sharedPreferencesProvider);
+
+    final notificationCount = prefsAsync.maybeWhen(
+      data: (_) {
+        final state = ref.watch(dashboardProvider);
+        return state.todayStats?.pendingTasks ?? 0;
+      },
+      orElse: () => 0,
+    );
 
     return AppBar(
       title: Text(title),
