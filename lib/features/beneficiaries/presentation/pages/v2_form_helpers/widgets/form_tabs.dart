@@ -187,11 +187,10 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
     return V2AttachmentsTab(
       key: const ValueKey('attachments_tab'),
       beneficiaryId: widget.beneficiaryId,
-      initialAttachments: widget.formControllers.attachments,
-      onAttachmentsChanged: (attachments) =>
-          widget.formControllers.updateAttachments(attachments.cast()),
-      onPendingFilesChanged: (files) =>
-          widget.formControllers.updatePendingFiles(files.cast()),
+      pendingFiles: widget.formControllers.pendingAttachmentFiles,
+      onPendingFilesChanged: (files) {
+        widget.formControllers.pendingAttachmentFiles = files;
+      },
     );
   }
 }

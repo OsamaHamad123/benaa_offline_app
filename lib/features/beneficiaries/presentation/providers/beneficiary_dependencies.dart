@@ -12,12 +12,18 @@ import '../../domain/usecases/autofill_from_civil_registry.dart';
 import '../../data/datasources/civil_registry_local_datasource.dart';
 import '../../data/repositories/civil_registry_repository_impl.dart';
 import 'civil_registry_provider.dart';
+import '../../../search/data/datasources/civil_registry_database.dart';
 
 /// 🔌 Dependency Injection Setup for Beneficiaries Feature
 
 // Database dependency (from main app)
 final databaseProvider = Provider<AppDatabase>((ref) {
   throw UnimplementedError('Database provider must be overridden');
+});
+
+// 🆕 Civil Registry Database Provider (persons.db)
+final civilRegistryDatabaseProvider = Provider<CivilRegistryDatabase>((ref) {
+  return CivilRegistryDatabase.instance;
 });
 
 // Data Source
@@ -73,8 +79,8 @@ final loadFromCivilRegistryUseCaseProvider = Provider((ref) {
 final civilRegistryDataSourceProvider = Provider<CivilRegistryLocalDataSource>((
   ref,
 ) {
-  final db = ref.watch(databaseProvider);
-  return CivilRegistryLocalDataSource(db.civilRegistryDao);
+  final civilDb = ref.watch(civilRegistryDatabaseProvider);
+  return CivilRegistryLocalDataSource(civilDb);
 });
 
 // Civil Registry Repository

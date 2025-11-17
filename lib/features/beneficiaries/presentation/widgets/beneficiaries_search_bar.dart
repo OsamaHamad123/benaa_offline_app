@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 
 /// 🔍 Search bar widget مع debounce - Reusable component
 ///
@@ -6,13 +7,14 @@ import 'package:flutter/material.dart';
 /// - حقل بحث مع أيقونة
 /// - زر مسح
 /// - دعم الـ RTL
-/// - دعم الـ debounce من الـ provider
+/// - ⚡ Debounce 300ms لتحسين الأداء
 class BeneficiariesSearchBar extends StatefulWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback? onClear;
   final String hintText;
   final EdgeInsetsGeometry? padding;
+  final Duration debounceDuration;
 
   const BeneficiariesSearchBar({
     super.key,
@@ -21,6 +23,7 @@ class BeneficiariesSearchBar extends StatefulWidget {
     this.onClear,
     this.hintText = 'بحث عن مستفيد...',
     this.padding,
+    this.debounceDuration = const Duration(milliseconds: 300),
   });
 
   @override
@@ -28,16 +31,34 @@ class BeneficiariesSearchBar extends StatefulWidget {
 }
 
 class _BeneficiariesSearchBarState extends State<BeneficiariesSearchBar> {
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    // Cancel previous timer
+    _debounce?.cancel();
+
+    // Update UI immediately for clear button
+    setState(() {});
+
+    // Debounce the actual search
+    _debounce = Timer(widget.debounceDuration, () {
+      widget.onChanged(value);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 16),
       child: TextField(
         controller: widget.controller,
-        onChanged: (value) {
-          setState(() {}); // Update UI to show/hide clear button
-          widget.onChanged(value);
-        },
+        onChanged: _onSearchChanged,
         textDirection: TextDirection.rtl,
         decoration: InputDecoration(
           hintText: widget.hintText,
@@ -48,6 +69,7 @@ class _BeneficiariesSearchBarState extends State<BeneficiariesSearchBar> {
                   icon: const Icon(Icons.clear),
                   onPressed: () {
                     widget.controller.clear();
+                    _debounce?.cancel();
                     setState(() {});
                     widget.onChanged('');
                     widget.onClear?.call();

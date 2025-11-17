@@ -21,7 +21,8 @@ import 'widgets/sync_status_badge.dart';
 /// - Uses BeneficiaryHelpers for data formatting
 /// - Uses PhoneLauncherService for external actions
 /// - Uses reusable widgets (InfoChip, SyncStatusBadge)
-class BeneficiaryCardV2 extends ConsumerWidget {
+/// - ⚡ AutomaticKeepAliveClientMixin for scroll performance
+class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -40,41 +41,54 @@ class BeneficiaryCardV2 extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BeneficiaryCardV2> createState() => _BeneficiaryCardV2State();
+}
+
+class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true; // Keep card alive during scroll
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // MUST call super for AutomaticKeepAliveClientMixin
+
     final theme = Theme.of(context);
     final rv = ResponsiveUtils.getValues(context);
     final categoryColor = BeneficiaryHelpers.getCategoryColor(
-      beneficiary.sectionId,
+      widget.beneficiary.sectionId,
     );
 
     return RepaintBoundary(
-      key: ValueKey('beneficiary_${beneficiary.id}'),
+      key: ValueKey('beneficiary_${widget.beneficiary.id}'),
       child: Card(
-        elevation: isSelected ? 8 : 2,
+        elevation: widget.isSelected ? 8 : 2,
         margin: EdgeInsets.only(bottom: rv.spacing),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: isSelected
+          side: widget.isSelected
               ? BorderSide(color: theme.colorScheme.primary, width: 3)
               : BorderSide.none,
         ),
         child: InkWell(
-          onTap: isSelectionMode
+          onTap: widget.isSelectionMode
               ? () {
                   HapticFeedback.lightImpact();
                   ref
                       .read(selectionProvider.notifier)
-                      .toggleItem(beneficiary.id);
+                      .toggleItem(widget.beneficiary.id);
                 }
-              : (onTap ??
-                    () => context.push('/beneficiaries/${beneficiary.id}')),
+              : (widget.onTap ??
+                    () => context.push(
+                      '/beneficiaries/${widget.beneficiary.id}',
+                    )),
           onLongPress:
-              onLongPress ??
+              widget.onLongPress ??
               () {
                 HapticFeedback.mediumImpact();
                 ref
                     .read(selectionProvider.notifier)
-                    .startSelectionWith(beneficiary.id);
+                    .startSelectionWith(widget.beneficiary.id);
               },
           borderRadius: BorderRadius.circular(16),
           child: Container(
@@ -86,7 +100,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
                 _buildHeader(context, ref, theme, categoryColor, rv),
                 SizedBox(height: rv.spacing),
                 _buildInfoChips(categoryColor, rv),
-                if (BeneficiaryHelpers.isPending(beneficiary.syncState))
+                if (BeneficiaryHelpers.isPending(widget.beneficiary.syncState))
                   _buildOfflineIndicator(rv),
               ],
             ),
@@ -107,7 +121,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
     return Row(
       children: [
         // Selection Checkbox
-        if (isSelectionMode) _buildSelectionCheckbox(theme, rv),
+        if (widget.isSelectionMode) _buildSelectionCheckbox(theme, rv),
 
         // Avatar
         _buildAvatar(categoryColor, rv),
@@ -117,7 +131,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
         Expanded(child: _buildNameSection(rv)),
 
         // Sync Status & Quick Actions
-        if (!isSelectionMode) _buildActionsColumn(context, rv),
+        if (!widget.isSelectionMode) _buildActionsColumn(context, rv),
       ],
     );
   }
@@ -130,14 +144,16 @@ class BeneficiaryCardV2 extends ConsumerWidget {
       height: size,
       margin: EdgeInsets.only(left: rv.spacing),
       decoration: BoxDecoration(
-        color: isSelected ? theme.colorScheme.primary : Colors.transparent,
+        color: widget.isSelected
+            ? theme.colorScheme.primary
+            : Colors.transparent,
         border: Border.all(
-          color: isSelected ? theme.colorScheme.primary : Colors.grey,
+          color: widget.isSelected ? theme.colorScheme.primary : Colors.grey,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: isSelected
+      child: widget.isSelected
           ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20)
           : null,
     );
@@ -146,10 +162,10 @@ class BeneficiaryCardV2 extends ConsumerWidget {
   /// Avatar with Gradient + Hero Animation
   Widget _buildAvatar(Color categoryColor, ResponsiveValues rv) {
     return Hero(
-      tag: 'beneficiary_avatar_${beneficiary.id}',
+      tag: 'beneficiary_avatar_${widget.beneficiary.id}',
       child: CachedAvatar(
         imageUrl: null, // TODO: Add photo URL when available
-        initials: BeneficiaryHelpers.getInitials(beneficiary.fullName),
+        initials: BeneficiaryHelpers.getInitials(widget.beneficiary.fullName),
         color: categoryColor,
         size: rv.isTablet ? 64 : 56,
       ),
@@ -162,7 +178,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          beneficiary.fullName,
+          widget.beneficiary.fullName,
           style: TextStyle(
             fontSize: rv.isTablet ? 18 : 17,
             fontWeight: FontWeight.bold,
@@ -180,7 +196,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
             ),
             SizedBox(width: 4),
             Text(
-              beneficiary.fileIdNumber ?? 'لا يوجد',
+              widget.beneficiary.fileIdNumber ?? 'لا يوجد',
               style: TextStyle(
                 fontSize: rv.isTablet ? 14 : 13,
                 color: Colors.grey[600],
@@ -196,9 +212,12 @@ class BeneficiaryCardV2 extends ConsumerWidget {
   Widget _buildActionsColumn(BuildContext context, ResponsiveValues rv) {
     return Column(
       children: [
-        SyncStatusBadge(syncState: beneficiary.syncState),
+        SyncStatusBadge(syncState: widget.beneficiary.syncState),
         SizedBox(height: 8),
-        _QuickActionsButton(beneficiary: beneficiary, onDelete: onDelete),
+        _QuickActionsButton(
+          beneficiary: widget.beneficiary,
+          onDelete: widget.onDelete,
+        ),
       ],
     );
   }
@@ -212,25 +231,29 @@ class BeneficiaryCardV2 extends ConsumerWidget {
         // Category Chip
         InfoChip(
           icon: Icons.category_outlined,
-          label: BeneficiaryHelpers.getCategoryLabel(beneficiary.sectionId),
+          label: BeneficiaryHelpers.getCategoryLabel(
+            widget.beneficiary.sectionId,
+          ),
           color: categoryColor,
           bold: true,
         ),
 
         // Location Chip
-        if (beneficiary.province != null)
+        if (widget.beneficiary.province != null)
           InfoChip(
             icon: Icons.location_on_outlined,
-            label: BeneficiaryHelpers.getProvinceName(beneficiary.province),
+            label: BeneficiaryHelpers.getProvinceName(
+              widget.beneficiary.province,
+            ),
             color: Colors.blue,
           ),
 
         // Age Chip (calculated from birthDate)
-        if (beneficiary.birthDate != null)
+        if (widget.beneficiary.birthDate != null)
           InfoChip(
             icon: Icons.cake_outlined,
             label: BeneficiaryHelpers.formatAge(
-              BeneficiaryHelpers.calculateAge(beneficiary.birthDate),
+              BeneficiaryHelpers.calculateAge(widget.beneficiary.birthDate),
             ),
             color: Colors.orange,
           ),
@@ -238,7 +261,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
         // Phone Chip
         InfoChip(
           icon: Icons.phone_outlined,
-          label: beneficiary.phoneNumber.toString(),
+          label: widget.beneficiary.phoneNumber.toString(),
           color: Colors.green,
         ),
       ],

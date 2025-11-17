@@ -1,27 +1,26 @@
-import 'package:benaa_offline_app/data/db/daos/civil_registry_dao.dart';
-import 'package:benaa_offline_app/data/db/drift_database.dart';
+import '../../../search/data/datasources/civil_registry_database.dart';
 import '../models/civil_registry_person_model.dart';
 import '../../domain/repositories/civil_registry_repository.dart';
 
 /// 💾 Civil Registry Local Data Source
 ///
 /// Handles database operations for civil registry data.
-/// Works with the existing CivilRegistryDao from Drift.
+/// Uses the same CivilRegistryDatabase as the search page (persons.db)
 class CivilRegistryLocalDataSource {
-  final CivilRegistryDao dao;
+  final CivilRegistryDatabase database;
 
-  const CivilRegistryLocalDataSource(this.dao);
+  const CivilRegistryLocalDataSource(this.database);
 
   /// Fetch person by national ID
   Future<CivilRegistryPersonModel?> getByNationalId(String nationalId) async {
     try {
-      final result = await dao.searchByNationalId(nationalId);
+      final result = await database.searchByNationalId(nationalId);
 
       if (result == null) {
         return null;
       }
 
-      return _mapToModel(result);
+      return _mapFromCivilPerson(result);
     } catch (e) {
       throw CivilRegistryException(
         'خطأ في قاعدة البيانات: ${e.toString()}',
@@ -38,14 +37,14 @@ class CivilRegistryLocalDataSource {
     int limit = 20,
   }) async {
     try {
-      final results = await dao.searchByName(
+      final results = await database.searchByName(
         name,
         governorate: governorate,
         genderCode: genderCode,
         limit: limit,
       );
 
-      return results.map((r) => _mapToModel(r)).toList();
+      return results.map((r) => _mapFromCivilPerson(r)).toList();
     } catch (e) {
       throw CivilRegistryException(
         'خطأ في البحث: ${e.toString()}',
@@ -57,52 +56,41 @@ class CivilRegistryLocalDataSource {
   /// Check if national ID exists (lightweight)
   Future<bool> exists(String nationalId) async {
     try {
-      final result = await dao.searchByNationalId(nationalId);
+      final result = await database.searchByNationalId(nationalId);
       return result != null;
     } catch (e) {
       return false;
     }
   }
 
-  /// Map database result to model
-  CivilRegistryPersonModel _mapToModel(CivilRegistryData data) {
+  /// Map CivilPerson (from search database) to CivilRegistryPersonModel
+  CivilRegistryPersonModel _mapFromCivilPerson(dynamic civilPerson) {
     return CivilRegistryPersonModel(
-      nationalId: data.nationalId,
-      firstName: data.firstName,
-      fatherName: data.fatherName,
-      grandfatherName: data.grandFatherName,
-      lastName: data.familyName,
-      motherName: data.motherName,
-      birthDate: data.birthDate,
-      gender: _mapGender(data.sexCode),
-      birthPlace: data.cityName,
-      address: _buildAddress(data),
-      province: data.cityName, // Adjust based on your schema
-      city: data.cityName,
-      registrationDate: null, // Not in current schema
-      status: _mapStatus(data.deadDate),
+      nationalId: civilPerson.nationalId,
+      firstName: civilPerson.firstName,
+      fatherName: civilPerson.fatherName,
+      grandfatherName: civilPerson.grandFatherName,
+      lastName: civilPerson.familyName,
+      motherName: civilPerson.motherName,
+      birthDate: civilPerson.birthDate != null
+          ? DateTime.tryParse(civilPerson.birthDate!)
+          : null,
+      gender: civilPerson.gender.arabicLabel, // 'ذكر' or 'أنثى'
+      birthPlace: civilPerson.city,
+      address: _buildAddress(civilPerson),
+      province: civilPerson.governorate,
+      city: civilPerson.city,
+      registrationDate: null, // Not in search database
+      status: 'active', // Search database only has active records
     );
   }
 
-  /// Map gender code to string
-  String? _mapGender(int? code) {
-    if (code == null) return null;
-    return code == 1 ? 'ذكر' : 'أنثى';
-  }
-
-  /// Map status code to string
-  String? _mapStatus(int? deadDate) {
-    if (deadDate == null) return 'active';
-    return 'deceased';
-  }
-
   /// Build address from available fields
-  String? _buildAddress(CivilRegistryData data) {
+  String? _buildAddress(dynamic civilPerson) {
     final parts = <String>[];
 
-    if (data.street != null) parts.add(data.street!);
-    if (data.houseNo != null) parts.add('رقم ${data.houseNo}');
-    if (data.cityName != null) parts.add(data.cityName!);
+    if (civilPerson.city != null) parts.add(civilPerson.city!);
+    if (civilPerson.governorate != null) parts.add(civilPerson.governorate!);
 
     return parts.isEmpty ? null : parts.join(', ');
   }

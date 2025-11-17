@@ -116,48 +116,15 @@ class _BeneficiariesListPageV2State
     final filters = ref.watch(filtersProvider);
     final selection = ref.watch(selectionProvider);
 
+    // ⚡ Cache ResponsiveUtils to avoid rebuilds
+    final rv = ResponsiveUtils.getValues(context);
+
     return Scaffold(
       appBar: ListAppBar(
         isSelectionMode: selection.isSelectionMode,
         selectedCount: selection.selectedCount,
         normalTitle: 'قائمة المستفيدين',
-        normalActions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                tooltip: 'فلاتر',
-                onPressed: () => _showFilters(context),
-              ),
-              if (filters.hasActiveFilters)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${filters.activeFiltersCount}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
+        normalActions: [_buildFilterButton(filters)],
         onSelectAll: () {
           final allIds = state.items.map((b) => b.id).toList();
           ref.read(selectionProvider.notifier).selectAll(allIds);
@@ -181,7 +148,7 @@ class _BeneficiariesListPageV2State
           const SizedBox(height: 16),
 
           // List
-          Expanded(child: _buildList(state, selection)),
+          Expanded(child: _buildList(state, selection, rv)),
         ],
       ),
       floatingActionButton: selection.isSelectionMode
@@ -202,7 +169,43 @@ class _BeneficiariesListPageV2State
     );
   }
 
-  Widget _buildList(state, selection) {
+  /// ⚡ Build filter button with badge (memoized)
+  Widget _buildFilterButton(FiltersState filters) {
+    return Stack(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.filter_list),
+          tooltip: 'فلاتر',
+          onPressed: () => _showFilters(context),
+        ),
+        if (filters.hasActiveFilters)
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Center(
+                child: Text(
+                  '${filters.activeFiltersCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildList(state, selection, ResponsiveValues rv) {
     if (state.isLoading) {
       return const BeneficiariesLoadingShimmer();
     }
@@ -219,8 +222,6 @@ class _BeneficiariesListPageV2State
     if (state.isEmpty) {
       return const BeneficiariesEmptyState(actionText: 'إضافة مستفيد');
     }
-
-    final rv = ResponsiveUtils.getValues(context);
 
     return RefreshIndicator(
       onRefresh: () async {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
 
 /// ⚡ Battery & Performance Monitor for Field Devices
 ///
@@ -237,10 +236,6 @@ class DataSyncProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final percentage = totalRecords > 0
-        ? (syncedRecords / totalRecords * 100).clamp(0, 100).toInt()
-        : 0;
-
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(

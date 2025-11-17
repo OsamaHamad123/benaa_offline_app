@@ -5,7 +5,7 @@ import '../features/initialization/initialization_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../features/beneficiaries/presentation/pages/beneficiaries_list_page_v2.dart';
 import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v2.dart';
-import '../features/beneficiaries/view_beneficiary_page.dart';
+import '../features/beneficiaries/presentation/pages/beneficiary_details_page_v2.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
 import '../features/civil_registry/civil_registry_test_page.dart';
 import '../features/civil_db_download/presentation/pages/welcome_page.dart';
@@ -80,7 +80,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/beneficiaries/:id',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return ViewBeneficiaryPage(beneficiaryId: id);
+          return BeneficiaryDetailsPageV2(beneficiaryId: id);
         },
       ),
       GoRoute(

@@ -66,6 +66,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
   void dispose() {
     widget.nationalIdController.removeListener(_onNationalIdChanged);
     _debounceTimer?.cancel();
+    _debounceTimer = null; // Prevent memory leak
     super.dispose();
   }
 

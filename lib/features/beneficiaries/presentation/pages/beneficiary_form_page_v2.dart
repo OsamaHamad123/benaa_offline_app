@@ -103,6 +103,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     setState(() => _isLoading = true);
 
     if (widget.beneficiaryId != null) {
+      // Edit mode - load existing data
       await ref
           .read(beneficiaryFormProvider.notifier)
           .loadBeneficiary(widget.beneficiaryId!);
@@ -113,7 +114,11 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
         _populateControllers(beneficiary);
       }
     } else {
+      // 🆕 Add mode - CLEAR all controllers first
+      _clearAllControllers();
+
       ref.read(beneficiaryFormProvider.notifier).createNew();
+
       // Auto-focus on first field for new beneficiary
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -123,6 +128,55 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     }
 
     setState(() => _isLoading = false);
+  }
+
+  /// 🧹 Clear all form controllers (for new beneficiary)
+  void _clearAllControllers() {
+    // Basic Info
+    _controllers.firstNameController.clear();
+    _controllers.fatherNameController.clear();
+    _controllers.grandfatherNameController.clear();
+    _controllers.lastNameController.clear();
+    _controllers.motherNameController.clear();
+    _controllers.nationalIdController.clear();
+    _controllers.birthDateController.clear();
+
+    // Contact Info
+    _controllers.phoneController.clear();
+    _controllers.altPhoneController.clear();
+    _controllers.addressController.clear();
+    _controllers.neighborhoodController.clear();
+
+    // Additional Info
+    _controllers.notesController.clear();
+    _controllers.numberOfDependentsController.clear();
+    _controllers.numberOfMalesController.clear();
+    _controllers.numberOfFemalesController.clear();
+    _controllers.chronicDiseasesController.clear();
+    _controllers.addressBeforeDisplacementController.clear();
+
+    // Reset dropdowns to default
+    _controllers.selectedGender = null;
+    _controllers.selectedCategory = null;
+    _controllers.selectedMaritalStatus = null;
+    _controllers.selectedEducationLevel = null;
+    _controllers.selectedEmploymentStatus = null;
+    _controllers.selectedRelationship = null;
+    _controllers.selectedCity = null;
+    _controllers.selectedProvince = null;
+    _controllers.selectedDisplacementStatus = null;
+    _controllers.selectedHealthStatus = null;
+    _controllers.selectedHousingStatus = null;
+    _controllers.selectedHousingType = null;
+
+    // Reset booleans
+    _controllers.hasDisability = false;
+
+    // Clear pending attachment files
+    _controllers.updatePendingFiles([]);
+
+    // 🆕 Also reset civil registry state
+    ref.read(civilRegistryProvider.notifier).reset();
   }
 
   void _populateControllers(Beneficiary beneficiary) {
@@ -218,11 +272,29 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     final success = await ref.read(beneficiaryFormProvider.notifier).save();
 
     if (success && mounted) {
-      // 🆕 Save attachments using helper
-      await SaveOperationsHelper.saveAttachments(
+      // 🆕 Get the saved beneficiary with correct ID
+      final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
+      if (savedBeneficiary == null) {
+        setState(() => _isSaving = false);
+        return;
+      }
+
+      // 🆕 Save attachments using helper with CORRECT beneficiaryId
+      debugPrint(
+        '💾 [FormPage] Saving attachments for beneficiary: ${savedBeneficiary.id}',
+      );
+      debugPrint(
+        '💾 [FormPage] Pending files count: ${_controllers.pendingAttachmentFiles.length}',
+      );
+
+      final attachmentResult = await SaveOperationsHelper.saveAttachments(
         database: ref.read(databaseProvider),
-        beneficiaryId: beneficiary.id,
+        beneficiaryId: savedBeneficiary.id,
         pendingFiles: _controllers.pendingAttachmentFiles,
+      );
+
+      debugPrint(
+        '💾 [FormPage] Attachment save result - Saved: ${attachmentResult.savedCount}, Failed: ${attachmentResult.failedCount}',
       );
       _controllers.pendingAttachmentFiles.clear();
 

@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
-import '../../../utils/attachments_manager.dart'; // Import BeneficiaryAttachment
 
 /// 🎯 Form Controllers & State Variables with ChangeNotifier
 ///
@@ -154,39 +153,42 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     }
   }
 
-  // Attachments with helper methods
-  final List<BeneficiaryAttachment> _attachments = [];
-  List<BeneficiaryAttachment> get attachments => _attachments;
-
+  // Pending attachment files (for form submission)
   final List<File> _pendingAttachmentFiles = [];
   List<File> get pendingAttachmentFiles => _pendingAttachmentFiles;
 
-  /// Update attachments (batch operation)
-  void updateAttachments(List<BeneficiaryAttachment> newAttachments) {
-    _attachments.clear();
-    _attachments.addAll(newAttachments);
+  /// Setter for pending files (used by PendingAttachmentsSection callback)
+  set pendingAttachmentFiles(List<File> files) {
+    _pendingAttachmentFiles.clear();
+    _pendingAttachmentFiles.addAll(files);
+    debugPrint(
+      '📋 [FormControllers] Updated pending files via setter. Count: ${_pendingAttachmentFiles.length}',
+    );
     _notifyAndScheduleAutoSave();
-  }
-
-  /// Add single attachment
-  void addAttachment(BeneficiaryAttachment attachment) {
-    _attachments.add(attachment);
-    _notifyAndScheduleAutoSave();
-  }
-
-  /// Remove attachment by index
-  void removeAttachment(int index) {
-    if (index >= 0 && index < _attachments.length) {
-      _attachments.removeAt(index);
-      _notifyAndScheduleAutoSave();
-    }
   }
 
   /// Update pending files (batch operation)
   void updatePendingFiles(List<File> newFiles) {
     _pendingAttachmentFiles.clear();
     _pendingAttachmentFiles.addAll(newFiles);
+    debugPrint(
+      '📋 [FormControllers] Updated pending files. Count: ${_pendingAttachmentFiles.length}',
+    );
     _notifyAndScheduleAutoSave();
+  }
+
+  /// Add single pending file
+  void addPendingFile(File file) {
+    _pendingAttachmentFiles.add(file);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Remove pending file by index
+  void removePendingFile(int index) {
+    if (index >= 0 && index < _pendingAttachmentFiles.length) {
+      _pendingAttachmentFiles.removeAt(index);
+      _notifyAndScheduleAutoSave();
+    }
   }
 
   /// Smart notification with auto-save scheduling

@@ -1,0 +1,172 @@
+import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/providers/providers.dart';
+import '../../domain/entities/attachment.dart';
+import '../../domain/usecases/get_beneficiary_attachments_usecase.dart';
+import '../../domain/usecases/add_attachment_usecase.dart';
+import '../../domain/usecases/delete_attachment_usecase.dart';
+import '../../data/datasources/attachment_datasource.dart';
+import '../../data/repositories/attachment_repository_impl.dart';
+
+// ============================================================================
+// PROVIDERS
+// ============================================================================
+
+/// Attachment Data Source Provider
+final attachmentDataSourceProvider = Provider<AttachmentDataSource>((ref) {
+  final database = ref.watch(databaseProvider);
+  return AttachmentDataSource(database);
+});
+
+/// Attachment Repository Provider
+final attachmentRepositoryProvider = Provider((ref) {
+  final dataSource = ref.watch(attachmentDataSourceProvider);
+  return AttachmentRepositoryImpl(dataSource);
+});
+
+/// Get Beneficiary Attachments Use Case Provider
+final getBeneficiaryAttachmentsUseCaseProvider = Provider((ref) {
+  final repository = ref.watch(attachmentRepositoryProvider);
+  return GetBeneficiaryAttachmentsUseCase(repository);
+});
+
+/// Add Attachment Use Case Provider
+final addAttachmentUseCaseProvider = Provider((ref) {
+  final repository = ref.watch(attachmentRepositoryProvider);
+  return AddAttachmentUseCase(repository);
+});
+
+/// Delete Attachment Use Case Provider
+final deleteAttachmentUseCaseProvider = Provider((ref) {
+  final repository = ref.watch(attachmentRepositoryProvider);
+  return DeleteAttachmentUseCase(repository);
+});
+
+// ============================================================================
+// STATE NOTIFIER
+// ============================================================================
+
+/// Attachments State
+class AttachmentsState {
+  final List<Attachment> attachments;
+  final bool isLoading;
+  final String? errorMessage;
+
+  const AttachmentsState({
+    this.attachments = const [],
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  AttachmentsState copyWith({
+    List<Attachment>? attachments,
+    bool? isLoading,
+    String? errorMessage,
+  }) {
+    return AttachmentsState(
+      attachments: attachments ?? this.attachments,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: errorMessage,
+    );
+  }
+}
+
+/// Attachments Notifier
+class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
+  final GetBeneficiaryAttachmentsUseCase _getAttachmentsUseCase;
+  final AddAttachmentUseCase _addAttachmentUseCase;
+  final DeleteAttachmentUseCase _deleteAttachmentUseCase;
+
+  AttachmentsNotifier(
+    this._getAttachmentsUseCase,
+    this._addAttachmentUseCase,
+    this._deleteAttachmentUseCase,
+  ) : super(const AttachmentsState());
+
+  /// Load attachments for beneficiary
+  Future<void> loadAttachments(String beneficiaryId) async {
+    print('🔍 [AttachmentsProvider] Loading attachments for: $beneficiaryId');
+    state = state.copyWith(isLoading: true, errorMessage: null);
+
+    try {
+      final attachments = await _getAttachmentsUseCase.execute(beneficiaryId);
+      print('✅ [AttachmentsProvider] Loaded ${attachments.length} attachments');
+      state = state.copyWith(attachments: attachments, isLoading: false);
+    } catch (e, stackTrace) {
+      print('❌ [AttachmentsProvider] Error loading attachments: $e');
+      print('Stack trace: $stackTrace');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'خطأ في تحميل المرفقات: $e',
+      );
+    }
+  }
+
+  /// Add new attachment
+  Future<bool> addAttachment({
+    required String beneficiaryId,
+    String? visitId,
+    required File sourceFile,
+  }) async {
+    try {
+      final attachment = await _addAttachmentUseCase.execute(
+        beneficiaryId: beneficiaryId,
+        visitId: visitId,
+        sourceFile: sourceFile,
+      );
+
+      state = state.copyWith(attachments: [...state.attachments, attachment]);
+
+      return true;
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'خطأ في إضافة المرفق: $e');
+      return false;
+    }
+  }
+
+  /// Delete attachment
+  Future<bool> deleteAttachment(String attachmentId) async {
+    try {
+      final success = await _deleteAttachmentUseCase.execute(attachmentId);
+
+      if (success) {
+        state = state.copyWith(
+          attachments: state.attachments
+              .where((a) => a.id != attachmentId)
+              .toList(),
+        );
+      }
+
+      return success;
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'خطأ في حذف المرفق: $e');
+      return false;
+    }
+  }
+
+  /// Clear error message
+  void clearError() {
+    state = state.copyWith(errorMessage: null);
+  }
+}
+
+/// Attachments Provider
+final attachmentsProvider =
+    StateNotifierProvider.family<AttachmentsNotifier, AttachmentsState, String>(
+      (ref, beneficiaryId) {
+        final getUseCase = ref.watch(getBeneficiaryAttachmentsUseCaseProvider);
+        final addUseCase = ref.watch(addAttachmentUseCaseProvider);
+        final deleteUseCase = ref.watch(deleteAttachmentUseCaseProvider);
+
+        final notifier = AttachmentsNotifier(
+          getUseCase,
+          addUseCase,
+          deleteUseCase,
+        );
+
+        // Auto-load attachments
+        Future.microtask(() => notifier.loadAttachments(beneficiaryId));
+
+        return notifier;
+      },
+    );

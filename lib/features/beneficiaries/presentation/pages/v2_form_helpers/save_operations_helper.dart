@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:io';
 import '../../../domain/repositories/beneficiary_repository.dart';
-import '../../../utils/attachments_manager.dart';
 import '../../../../../data/db/drift_database.dart';
+import '../../../../attachments/data/datasources/attachment_datasource.dart';
 
 /// 💾 Save Operations Helper
 ///
@@ -50,27 +50,43 @@ class SaveOperationsHelper {
     required String beneficiaryId,
     required List<File> pendingFiles,
   }) async {
+    debugPrint('💾 [SaveOperationsHelper] Starting to save attachments');
+    debugPrint('💾 [SaveOperationsHelper] Beneficiary ID: $beneficiaryId');
+    debugPrint(
+      '💾 [SaveOperationsHelper] Number of files: ${pendingFiles.length}',
+    );
+
     int savedCount = 0;
     int failedCount = 0;
 
     try {
+      final datasource = AttachmentDataSource(database);
+
       for (final file in pendingFiles) {
         try {
-          await AttachmentsManager.addAttachmentWithDb(
-            database: database,
+          debugPrint('💾 [SaveOperationsHelper] Saving file: ${file.path}');
+          await datasource.addAttachment(
             beneficiaryId: beneficiaryId,
             sourceFile: file,
           );
           savedCount++;
+          debugPrint(
+            '💾 [SaveOperationsHelper] ✅ File saved successfully. Total: $savedCount',
+          );
         } catch (e) {
-          debugPrint('Error saving attachment: $e');
+          debugPrint('💾 [SaveOperationsHelper] ❌ Error saving attachment: $e');
           failedCount++;
         }
       }
     } catch (e) {
-      debugPrint('Error saving attachments: $e');
+      debugPrint(
+        '💾 [SaveOperationsHelper] ❌❌ Fatal error saving attachments: $e',
+      );
     }
 
+    debugPrint(
+      '💾 [SaveOperationsHelper] ✅ Finished. Saved: $savedCount, Failed: $failedCount',
+    );
     return AttachmentSaveResult(
       savedCount: savedCount,
       failedCount: failedCount,

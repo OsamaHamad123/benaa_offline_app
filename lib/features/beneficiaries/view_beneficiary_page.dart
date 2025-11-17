@@ -8,7 +8,7 @@ import '../../core/widgets/beneficiary/visit_card.dart';
 import '../../data/db/drift_database.dart';
 import '../../features/visits/presentation/pages/record_visit_page_clean.dart';
 import '../../features/visits/presentation/providers/visit_providers.dart';
-import 'widgets/attachments_section.dart';
+import '../attachments/presentation/widgets/attachments_section_enhanced.dart';
 
 class ViewBeneficiaryPage extends ConsumerWidget {
   final String beneficiaryId;
@@ -222,7 +222,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                     InfoRow(
                       icon: Icons.badge,
                       label: 'الرقم الوطني',
-                      value: beneficiary.idNumber?.toString() ?? 'غير محدد',
+                      value: beneficiary.idNumber.toString(),
                     ),
                     const Divider(height: 1),
                     InfoRow(
@@ -520,9 +520,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               Card(
                 child: Padding(
                   padding: EdgeInsets.all(16.r),
-                  child: AttachmentsSection(
+                  child: AttachmentsSectionEnhanced(
                     beneficiaryId: beneficiaryId,
-                    loadFromDatabase: true,
+                    readOnly: false,
                   ),
                 ),
               ),
