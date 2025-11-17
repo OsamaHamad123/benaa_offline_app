@@ -274,44 +274,162 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
   }
 
   Future<void> _addImageFromCamera() async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(
-      source: ImageSource.camera,
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
 
-    if (image != null) {
-      await _addFile(File(image.path));
+      if (image != null) {
+        await _addFile(File(image.path));
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20.sp),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    e.toString().contains('camera_access_denied')
+                        ? 'لا يوجد صلاحية للوصول إلى الكاميرا'
+                        : e.toString().contains('already_active')
+                        ? 'الكاميرا مشغولة بالفعل، أغلق التطبيق الآخر أولاً'
+                        : 'فشل فتح الكاميرا: ${e.toString()}',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20.sp),
+                SizedBox(width: 12.w),
+                Expanded(child: Text('خطأ غير متوقع: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _addImageFromGallery() async {
-    final picker = ImagePicker();
-    final images = await picker.pickMultiImage(
-      maxWidth: 1920,
-      maxHeight: 1920,
-      imageQuality: 85,
-    );
+    try {
+      final picker = ImagePicker();
+      final images = await picker.pickMultiImage(
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
 
-    for (final image in images) {
-      await _addFile(File(image.path));
+      if (images.isEmpty) return;
+
+      for (final image in images) {
+        await _addFile(File(image.path));
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20.sp),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    e.toString().contains('photo_access_denied')
+                        ? 'لا يوجد صلاحية للوصول إلى المعرض'
+                        : 'فشل فتح المعرض: ${e.toString()}',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20.sp),
+                SizedBox(width: 12.w),
+                Expanded(child: Text('خطأ غير متوقع: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _addPdfFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      allowMultiple: true,
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+      );
 
-    if (result != null) {
-      for (final file in result.files) {
-        if (file.path != null) {
-          await _addFile(File(file.path!));
+      if (result != null && result.files.isNotEmpty) {
+        for (final file in result.files) {
+          if (file.path != null) {
+            await _addFile(File(file.path!));
+          }
         }
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20.sp),
+                SizedBox(width: 12.w),
+                Expanded(child: Text('فشل اختيار الملف: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white, size: 20.sp),
+                SizedBox(width: 12.w),
+                Expanded(child: Text('خطأ غير متوقع: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
