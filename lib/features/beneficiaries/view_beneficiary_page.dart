@@ -6,7 +6,7 @@ import '../../core/providers/providers.dart' as core_providers;
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/beneficiary/visit_card.dart';
 import '../../data/db/drift_database.dart';
-import '../../features/visits/presentation/pages/record_visit_page_clean.dart';
+import '../../features/visits/presentation/pages/record_visit_page_enhanced.dart';
 import '../../features/visits/presentation/providers/visit_providers.dart';
 import '../attachments/presentation/widgets/attachments_section_enhanced.dart';
 
@@ -556,8 +556,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                RecordVisitPageClean(beneficiary: beneficiary),
+                            builder: (context) => RecordVisitPageEnhanced(
+                              beneficiary: beneficiary,
+                            ),
                           ),
                         );
                         if (result == true) {

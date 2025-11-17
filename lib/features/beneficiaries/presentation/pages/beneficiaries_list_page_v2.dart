@@ -155,11 +155,12 @@ class _BeneficiariesListPageV2State
           ? null
           : FloatingActionButton.extended(
               onPressed: () async {
-                // 🔄 Auto-refresh بعد الرجوع
+                // 🔄 Navigate to add page
                 final result = await context.push('/beneficiaries/add');
                 if (result == true && mounted) {
-                  // تم إضافة مستفيد - refresh
-                  ref.read(beneficiariesListProvider.notifier).refresh();
+                  // تم إضافة مستفيد - clear cache and refresh
+                  ref.read(beneficiariesListProvider.notifier).clearCache();
+                  await ref.read(beneficiariesListProvider.notifier).refresh();
                 }
               },
               icon: const Icon(Icons.person_add),
