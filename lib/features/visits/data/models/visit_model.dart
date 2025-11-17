@@ -14,6 +14,8 @@ class VisitModel extends VisitEntity {
     required super.createdAt,
     required super.updatedAt,
     required super.syncState,
+    super.serverId,
+    super.lastSyncedAt,
   });
 
   /// Convert from Drift Visit to VisitModel
@@ -28,6 +30,8 @@ class VisitModel extends VisitEntity {
       createdAt: visit.createdAt,
       updatedAt: visit.updatedAt,
       syncState: visit.syncState,
+      serverId: visit.serverId,
+      lastSyncedAt: visit.lastSyncedAt,
     );
   }
 
@@ -43,6 +47,8 @@ class VisitModel extends VisitEntity {
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
       syncState: Value(entity.syncState),
+      serverId: Value(entity.serverId),
+      lastSyncedAt: Value(entity.lastSyncedAt),
     );
   }
 

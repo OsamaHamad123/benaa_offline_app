@@ -148,16 +148,22 @@ class _RecordVisitPageEnhancedState
         fullNotes = '$fullNotes\n\nالفئات: ${_selectedCategories.join(', ')}';
       }
 
+      // Generate unique ID for the visit
+      final now = DateTime.now();
+      final visitId = '${widget.beneficiary.id}_${now.millisecondsSinceEpoch}';
+
       final visit = VisitEntity(
-        id: '', // Will be auto-generated
+        id: visitId,
         beneficiaryId: widget.beneficiary.id.toString(),
         visitDate: _selectedDateTime,
         staffName: _staffNameController.text.trim(),
         notes: fullNotes,
-        isSubmitted: false, // Always false for new visits
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        isSubmitted: false,
+        createdAt: now,
+        updatedAt: now,
         syncState: 'pending',
+        serverId: null,
+        lastSyncedAt: null,
       );
 
       final success = await ref
