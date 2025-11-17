@@ -107,6 +107,8 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
       selectedCategory: widget.formControllers.selectedCategory,
       onCategoryChanged: (value) =>
           widget.formControllers.selectedCategory = value,
+      formControllers:
+          widget.formControllers, // 🆕 Pass controllers for autofill
     );
   }
 

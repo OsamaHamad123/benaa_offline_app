@@ -121,6 +121,8 @@ class BulkActionsBar extends ConsumerWidget {
 
     if (confirmed == true) {
       try {
+        HapticFeedback.mediumImpact();
+
         await ref
             .read(beneficiariesListProvider.notifier)
             .bulkDelete(selection.selectedIds);
@@ -128,19 +130,28 @@ class BulkActionsBar extends ConsumerWidget {
         ref.read(selectionProvider.notifier).deselectAll();
 
         if (context.mounted) {
+          HapticFeedback.lightImpact();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('تم حذف ${selection.selectedCount} مستفيد بنجاح'),
               backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
             ),
           );
         }
       } catch (e) {
         if (context.mounted) {
+          HapticFeedback.heavyImpact();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('فشل الحذف: ${e.toString()}'),
               backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'إعادة المحاولة',
+                textColor: Colors.white,
+                onPressed: () => _showDeleteConfirmation(context, ref),
+              ),
+              duration: const Duration(seconds: 4),
             ),
           );
         }

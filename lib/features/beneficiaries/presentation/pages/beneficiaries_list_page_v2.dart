@@ -1,10 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shimmer/shimmer.dart';
 import '../providers/list/beneficiaries_list_provider.dart';
 import '../providers/list/beneficiaries_list_state.dart';
 import '../providers/list/filters_provider.dart';
@@ -13,6 +10,11 @@ import 'list_widgets/beneficiary_card_v2.dart';
 import 'list_widgets/statistics_dashboard.dart';
 import 'list_widgets/filters_bottom_sheet.dart';
 import 'list_widgets/bulk_actions_bar.dart';
+import '../widgets/animated_list_item.dart';
+import '../widgets/beneficiaries_search_bar.dart';
+import '../widgets/list_app_bar.dart';
+import '../widgets/beneficiaries_loading_shimmer.dart';
+import '../widgets/beneficiaries_states.dart';
 import '../../../../core/utils/responsive_utils.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
@@ -28,7 +30,6 @@ class _BeneficiariesListPageV2State
     extends ConsumerState<BeneficiariesListPageV2> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
-  Timer? _debounce;
 
   @override
   void initState() {
@@ -38,7 +39,6 @@ class _BeneficiariesListPageV2State
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -51,12 +51,63 @@ class _BeneficiariesListPageV2State
     }
   }
 
+  /// 📐 Dynamic grid columns based on screen width
+  int _getGridColumns(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width > 1400) return 4; // Desktop large
+    if (width > 1024) return 3; // Desktop/Tablet landscape
+    if (width > 600) return 2; // Tablet portrait
+    return 1; // Mobile
+  }
+
+  /// 📐 Dynamic child aspect ratio
+  double _getChildAspectRatio(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width > 1400) return 3.0; // More width for desktop
+    if (width > 1024) return 2.8;
+    if (width > 600) return 2.5;
+    return 2.2; // Slightly taller for mobile
+  }
+
   void _onSearchChanged(String value) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      ref.read(filtersProvider.notifier).setSearchQuery(value);
-      ref.read(beneficiariesListProvider.notifier).refresh();
-    });
+    // الـ debounce موجود في searchProvider (300ms)
+    ref.read(filtersProvider.notifier).setSearchQuery(value);
+    ref.read(beneficiariesListProvider.notifier).refresh();
+  }
+
+  /// 🗑️ Optimistic Delete with rollback
+  Future<void> _handleDelete(int id) async {
+    try {
+      HapticFeedback.mediumImpact();
+      await ref.read(beneficiariesListProvider.notifier).deleteBeneficiary(id);
+
+      if (mounted) {
+        HapticFeedback.lightImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم الحذف بنجاح'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        HapticFeedback.heavyImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل الحذف: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'إعادة المحاولة',
+              textColor: Colors.white,
+              onPressed: () => _handleDelete(id),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -66,65 +117,54 @@ class _BeneficiariesListPageV2State
     final selection = ref.watch(selectionProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: selection.isSelectionMode
-            ? Text('${selection.selectedCount} محدد')
-            : const Text('قائمة المستفيدين'),
-        actions: selection.isSelectionMode
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.select_all),
-                  tooltip: 'تحديد الكل',
-                  onPressed: () {
-                    final allIds = state.items.map((b) => b.id).toList();
-                    ref.read(selectionProvider.notifier).selectAll(allIds);
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: 'إلغاء',
-                  onPressed: () {
-                    ref.read(selectionProvider.notifier).deselectAll();
-                  },
-                ),
-              ]
-            : [
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.filter_list),
-                      tooltip: 'فلاتر',
-                      onPressed: () => _showFilters(context),
+      appBar: ListAppBar(
+        isSelectionMode: selection.isSelectionMode,
+        selectedCount: selection.selectedCount,
+        normalTitle: 'قائمة المستفيدين',
+        normalActions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                tooltip: 'فلاتر',
+                onPressed: () => _showFilters(context),
+              ),
+              if (filters.hasActiveFilters)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
                     ),
-                    if (filters.hasActiveFilters)
-                      Positioned(
-                        right: 8.w,
-                        top: 8.h,
-                        child: Container(
-                          padding: EdgeInsets.all(4.r),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: BoxConstraints(
-                            minWidth: 16.w,
-                            minHeight: 16.h,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '${filters.activeFiltersCount}',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${filters.activeFiltersCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                  ],
+                    ),
+                  ),
                 ),
-              ],
+            ],
+          ),
+        ],
+        onSelectAll: () {
+          final allIds = state.items.map((b) => b.id).toList();
+          ref.read(selectionProvider.notifier).selectAll(allIds);
+        },
+        onDeselectAll: () {
+          ref.read(selectionProvider.notifier).deselectAll();
+        },
       ),
       body: Column(
         children: [
@@ -132,37 +172,13 @@ class _BeneficiariesListPageV2State
           const StatisticsDashboard(),
 
           // Search Bar
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'ابحث بالاسم، الرقم الوطني، أو رقم الملف...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: filters.searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _onSearchChanged('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                filled: true,
-                fillColor: Colors.grey[50],
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16.w,
-                  vertical: 14.h,
-                ),
-              ),
-              onChanged: _onSearchChanged,
-            ),
+          BeneficiariesSearchBar(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            hintText: 'ابحث بالاسم، الرقم الوطني، أو رقم الملف...',
           ),
 
-          SizedBox(height: 16.h),
+          const SizedBox(height: 16),
 
           // List
           Expanded(child: _buildList(state, selection)),
@@ -171,7 +187,14 @@ class _BeneficiariesListPageV2State
       floatingActionButton: selection.isSelectionMode
           ? null
           : FloatingActionButton.extended(
-              onPressed: () => context.push('/beneficiaries/add'),
+              onPressed: () async {
+                // 🔄 Auto-refresh بعد الرجوع
+                final result = await context.push('/beneficiaries/add');
+                if (result == true && mounted) {
+                  // تم إضافة مستفيد - refresh
+                  ref.read(beneficiariesListProvider.notifier).refresh();
+                }
+              },
               icon: const Icon(Icons.person_add),
               label: const Text('إضافة'),
             ),
@@ -181,50 +204,20 @@ class _BeneficiariesListPageV2State
 
   Widget _buildList(state, selection) {
     if (state.isLoading) {
-      return _buildLoadingShimmer();
+      return const BeneficiariesLoadingShimmer();
     }
 
     if (state.error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64.sp, color: Colors.red),
-            SizedBox(height: 16.h),
-            Text('خطأ: ${state.error}'),
-            SizedBox(height: 16.h),
-            ElevatedButton.icon(
-              onPressed: () {
-                ref.read(beneficiariesListProvider.notifier).refresh();
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('إعادة المحاولة'),
-            ),
-          ],
-        ),
+      return BeneficiariesErrorState(
+        error: state.error ?? 'خطأ غير معروف',
+        onRetry: () {
+          ref.read(beneficiariesListProvider.notifier).refresh();
+        },
       );
     }
 
     if (state.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 80.sp, color: Colors.grey),
-            SizedBox(height: 16.h),
-            Text(
-              'لا يوجد مستفيدين',
-              style: TextStyle(fontSize: 18.sp, color: Colors.grey),
-            ),
-            SizedBox(height: 24.h),
-            ElevatedButton.icon(
-              onPressed: () => context.push('/beneficiaries/add'),
-              icon: const Icon(Icons.person_add),
-              label: const Text('إضافة مستفيد'),
-            ),
-          ],
-        ),
-      );
+      return const BeneficiariesEmptyState(actionText: 'إضافة مستفيد');
     }
 
     final rv = ResponsiveUtils.getValues(context);
@@ -233,14 +226,20 @@ class _BeneficiariesListPageV2State
       onRefresh: () async {
         HapticFeedback.mediumImpact();
         await ref.read(beneficiariesListProvider.notifier).refresh();
+        if (context.mounted) {
+          HapticFeedback.lightImpact();
+        }
       },
+      color: Theme.of(context).colorScheme.primary,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      strokeWidth: 3.0,
       child: rv.isTablet
           ? _buildGridView(state, selection, rv)
           : _buildListView(state, selection, rv),
     );
   }
 
-  /// بناء ListView للموبايل
+  /// بناء ListView للموبايل - OPTIMIZED
   Widget _buildListView(
     BeneficiariesListState state,
     SelectionState selection,
@@ -248,14 +247,19 @@ class _BeneficiariesListPageV2State
   ) {
     return ListView.builder(
       controller: _scrollController,
-      padding: EdgeInsets.all(16.r),
+      padding: const EdgeInsets.all(16),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      // ⚡ Performance optimizations
+      addAutomaticKeepAlives: false, // Don't keep offscreen items alive
+      addRepaintBoundaries: true, // Each item has repaint boundary
+      cacheExtent: 500, // Pre-cache 500px ahead/behind
       itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == state.items.length) {
-          return Center(
+          return const Center(
             child: Padding(
-              padding: EdgeInsets.all(16.r),
-              child: const CircularProgressIndicator(),
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
             ),
           );
         }
@@ -263,16 +267,24 @@ class _BeneficiariesListPageV2State
         final beneficiary = state.items[index];
         final isSelected = selection.isSelected(beneficiary.id);
 
-        return BeneficiaryCardV2(
-          beneficiary: beneficiary,
-          isSelectionMode: selection.isSelectionMode,
-          isSelected: isSelected,
+        // ✨ Staggered slide animation
+        return RepaintBoundary(
+          child: AnimatedListItem(
+            index: index,
+            type: AnimationType.slide,
+            child: BeneficiaryCardV2(
+              beneficiary: beneficiary,
+              isSelectionMode: selection.isSelectionMode,
+              isSelected: isSelected,
+              onDelete: () => _handleDelete(beneficiary.id),
+            ),
+          ),
         );
       },
     );
   }
 
-  /// بناء GridView للتابلت (عمودين)
+  /// بناء GridView للتابلت - DYNAMIC COLUMNS
   Widget _buildGridView(
     BeneficiariesListState state,
     SelectionState selection,
@@ -281,11 +293,16 @@ class _BeneficiariesListPageV2State
     return GridView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      // ⚡ Performance optimizations
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
+      cacheExtent: 500,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: _getGridColumns(context),
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 2.5, // عرض أكبر من الطول للبطاقة
+        childAspectRatio: _getChildAspectRatio(context),
       ),
       itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
@@ -301,92 +318,22 @@ class _BeneficiariesListPageV2State
         final beneficiary = state.items[index];
         final isSelected = selection.isSelected(beneficiary.id);
 
-        return BeneficiaryCardV2(
-          beneficiary: beneficiary,
-          isSelectionMode: selection.isSelectionMode,
-          isSelected: isSelected,
-        );
-      },
-    );
-  }
-
-  Widget _buildLoadingShimmer() {
-    return ListView.builder(
-      itemCount: 5,
-      padding: EdgeInsets.all(16.r),
-      itemBuilder: (context, index) => Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
-        period: const Duration(milliseconds: 1500),
-        child: Card(
-          margin: EdgeInsets.only(bottom: 16.h),
-          child: Container(
-            height: 160.h,
-            padding: EdgeInsets.all(16.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 150,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: 100,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: Row(
-                    children: List.generate(
-                      4,
-                      (i) => Container(
-                        width: 60 + (i * 8).toDouble(),
-                        height: 24,
-                        margin: const EdgeInsets.only(right: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+        // ✨ Staggered scale animation
+        return RepaintBoundary(
+          child: AnimatedListItem(
+            index: index,
+            type: AnimationType.scale,
+            delay: 25,
+            duration: const Duration(milliseconds: 250),
+            child: BeneficiaryCardV2(
+              beneficiary: beneficiary,
+              isSelectionMode: selection.isSelectionMode,
+              isSelected: isSelected,
+              onDelete: () => _handleDelete(beneficiary.id),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'beneficiaries_list_state.dart';
+import 'selection_persistence.dart';
 
 /// ☑️ Selection Provider
 final selectionProvider =
@@ -32,6 +33,7 @@ class SelectionNotifier extends StateNotifier<SelectionState> {
     }
 
     state = state.copyWith(selectedIds: newSelectedIds);
+    SelectionPersistence.saveSelection(newSelectedIds);
 
     // إلغاء وضع التحديد إذا لم يبقَ أي عنصر محدد
     if (newSelectedIds.isEmpty) {
@@ -45,11 +47,13 @@ class SelectionNotifier extends StateNotifier<SelectionState> {
       isSelectionMode: true,
       selectedIds: Set<int>.from(allIds),
     );
+    SelectionPersistence.saveSelection(state.selectedIds);
   }
 
   /// إلغاء تحديد الكل
   void deselectAll() {
     state = const SelectionState();
+    SelectionPersistence.clearSavedSelection();
   }
 
   /// مسح التحديدات فقط مع بقاء الوضع نشط
@@ -60,5 +64,13 @@ class SelectionNotifier extends StateNotifier<SelectionState> {
   /// بدء التحديد من عنصر معين
   void startSelectionWith(int id) {
     state = SelectionState(isSelectionMode: true, selectedIds: {id});
+  }
+
+  /// 🔄 Restore saved selection
+  void restoreSelection() {
+    final saved = SelectionPersistence.restoreSelection();
+    if (saved != null && saved.isNotEmpty) {
+      state = state.copyWith(isSelectionMode: true, selectedIds: saved);
+    }
   }
 }

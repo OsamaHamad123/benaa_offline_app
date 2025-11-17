@@ -143,13 +143,16 @@ class BeneficiaryCardV2 extends ConsumerWidget {
     );
   }
 
-  /// Avatar with Gradient
+  /// Avatar with Gradient + Hero Animation
   Widget _buildAvatar(Color categoryColor, ResponsiveValues rv) {
-    return CachedAvatar(
-      imageUrl: null, // TODO: Add photo URL when available
-      initials: BeneficiaryHelpers.getInitials(beneficiary.fullName),
-      color: categoryColor,
-      size: rv.isTablet ? 64 : 56,
+    return Hero(
+      tag: 'beneficiary_avatar_${beneficiary.id}',
+      child: CachedAvatar(
+        imageUrl: null, // TODO: Add photo URL when available
+        initials: BeneficiaryHelpers.getInitials(beneficiary.fullName),
+        color: categoryColor,
+        size: rv.isTablet ? 64 : 56,
+      ),
     );
   }
 

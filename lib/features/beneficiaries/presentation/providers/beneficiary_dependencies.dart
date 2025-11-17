@@ -5,6 +5,14 @@ import '../../domain/usecases/beneficiary_usecases.dart';
 import '../../data/datasources/beneficiary_local_datasource.dart';
 import '../../data/repositories/beneficiary_repository_impl.dart';
 
+// 🆕 Civil Registry Imports
+import '../../domain/repositories/civil_registry_repository.dart';
+import '../../domain/usecases/fetch_civil_registry_data.dart';
+import '../../domain/usecases/autofill_from_civil_registry.dart';
+import '../../data/datasources/civil_registry_local_datasource.dart';
+import '../../data/repositories/civil_registry_repository_impl.dart';
+import 'civil_registry_provider.dart';
+
 /// 🔌 Dependency Injection Setup for Beneficiaries Feature
 
 // Database dependency (from main app)
@@ -56,3 +64,47 @@ final loadFromCivilRegistryUseCaseProvider = Provider((ref) {
   final repository = ref.watch(beneficiaryRepositoryProvider);
   return LoadFromCivilRegistryUseCase(repository);
 });
+
+// ============================================================================
+// 🆕 CIVIL REGISTRY PROVIDERS
+// ============================================================================
+
+// Civil Registry Data Source
+final civilRegistryDataSourceProvider = Provider<CivilRegistryLocalDataSource>((
+  ref,
+) {
+  final db = ref.watch(databaseProvider);
+  return CivilRegistryLocalDataSource(db.civilRegistryDao);
+});
+
+// Civil Registry Repository
+final civilRegistryRepositoryProvider = Provider<CivilRegistryRepository>((
+  ref,
+) {
+  final dataSource = ref.watch(civilRegistryDataSourceProvider);
+  return CivilRegistryRepositoryImpl(dataSource);
+});
+
+// Civil Registry Use Cases
+final fetchCivilRegistryDataUseCaseProvider = Provider((ref) {
+  final repository = ref.watch(civilRegistryRepositoryProvider);
+  return FetchCivilRegistryDataUseCase(repository);
+});
+
+final autofillFromCivilRegistryUseCaseProvider = Provider((ref) {
+  return AutofillFromCivilRegistryUseCase();
+});
+
+// Civil Registry State Provider
+final civilRegistryProvider =
+    StateNotifierProvider<CivilRegistryNotifier, CivilRegistryState>((ref) {
+      final fetchUseCase = ref.watch(fetchCivilRegistryDataUseCaseProvider);
+      final autofillUseCase = ref.watch(
+        autofillFromCivilRegistryUseCaseProvider,
+      );
+
+      return CivilRegistryNotifier(
+        fetchUseCase: fetchUseCase,
+        autofillUseCase: autofillUseCase,
+      );
+    });

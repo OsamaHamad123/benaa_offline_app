@@ -404,6 +404,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
                       Expanded(
                         child: Form(
                           key: _formKey,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
                           child: Column(
                             children: [
                               // Error Banner (inside form, before tabs) - with max height

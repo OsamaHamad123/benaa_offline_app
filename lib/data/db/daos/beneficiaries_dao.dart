@@ -243,6 +243,97 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Advanced search with filters - OPTIMIZED SQL (no Dart filtering)
+  Future<List<Beneficiary>> searchBeneficiariesAdvanced({
+    String query = '',
+    int? categoryId,
+    int? governorateId,
+    int? cityId,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    String sortBy = 'full_name',
+    bool sortDesc = false,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final normalized = query.trim().toLowerCase();
+    final isNumeric = int.tryParse(query.trim()) != null;
+
+    var selectQuery = select(beneficiaries);
+
+    selectQuery = selectQuery
+      ..where((b) {
+        Expression<bool> condition = const Constant(true);
+
+        // 🔍 Search filter
+        if (normalized.isNotEmpty) {
+          var searchCondition =
+              b.fullNameNorm.like('%$normalized%') |
+              b.fileIdNumber.like('%$normalized%');
+
+          if (isNumeric) {
+            searchCondition =
+                searchCondition |
+                b.idNumber.cast<String>().contains(query.trim());
+          }
+
+          condition = condition & searchCondition;
+        }
+
+        // 🏷️ Category filter (SQL WHERE)
+        if (categoryId != null) {
+          condition = condition & b.sectionId.equals(categoryId);
+        }
+
+        // 🌍 Governorate filter (SQL WHERE)
+        if (governorateId != null) {
+          condition = condition & b.province.equals(governorateId);
+        }
+
+        // 🏙️ City filter (SQL WHERE)
+        if (cityId != null) {
+          condition = condition & b.city.equals(cityId);
+        }
+
+        // 📅 Date range filter (SQL WHERE)
+        if (dateFrom != null) {
+          condition = condition & b.createdAt.isBiggerOrEqualValue(dateFrom);
+        }
+        if (dateTo != null) {
+          condition = condition & b.createdAt.isSmallerOrEqualValue(dateTo);
+        }
+
+        return condition;
+      });
+
+    // 📊 Sorting (SQL ORDER BY)
+    selectQuery = selectQuery
+      ..orderBy([
+        (b) {
+          Expression<Object> sortColumn;
+          switch (sortBy) {
+            case 'created_at':
+              sortColumn = b.createdAt;
+              break;
+            case 'updated_at':
+              sortColumn = b.updatedAt;
+              break;
+            case 'id_number':
+              sortColumn = b.idNumber;
+              break;
+            default:
+              sortColumn = b.fullName;
+          }
+          return sortDesc
+              ? OrderingTerm.desc(sortColumn)
+              : OrderingTerm.asc(sortColumn);
+        },
+      ])
+      ..limit(limit, offset: offset);
+
+    return await selectQuery.get();
+  }
+
   /// Advanced search with filters
   Future<List<Beneficiary>> searchBeneficiariesFiltered({
     String query = '',

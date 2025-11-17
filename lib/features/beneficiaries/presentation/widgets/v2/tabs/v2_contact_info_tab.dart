@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
@@ -47,7 +48,21 @@ class V2ContactInfoTab extends StatelessWidget {
               label: 'رقم الهاتف',
               prefixIcon: Icons.smartphone_rounded,
               keyboardType: TextInputType.phone,
-              hint: 'مثال: 0912345678',
+              hint: 'مثال: 0595735352',
+              maxLength: 10,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              validator: (value) {
+                if (value == null || value.isEmpty)
+                  return null; // Optional field
+                // Palية يجيب البيانات من السجل المدني ويعبيهم بالحقو estinian phone format: 059XXXXXXX or 056XXXXXXX (10 digits)
+                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(value)) {
+                  return 'رقم غير صحيح (مثال: 0595735352 أو 0565735352)';
+                }
+                return null;
+              },
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -56,6 +71,20 @@ class V2ContactInfoTab extends StatelessWidget {
               prefixIcon: Icons.phone_android_rounded,
               keyboardType: TextInputType.phone,
               hint: 'اختياري',
+              maxLength: 10,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              validator: (value) {
+                if (value == null || value.isEmpty)
+                  return null; // Optional field
+                // Palestinian phone format: 059XXXXXXX or 056XXXXXXX (10 digits)
+                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(value)) {
+                  return 'رقم غير صحيح (مثال: 0595735352 أو 0565735352)';
+                }
+                return null;
+              },
             ),
           ],
         ),
@@ -69,9 +98,9 @@ class V2ContactInfoTab extends StatelessWidget {
               prefixIcon: Icons.map_rounded,
               onChanged: onProvinceChanged,
               items: const [
-                DropdownMenuItem(value: 'damascus', child: Text('دمشق')),
-                DropdownMenuItem(value: 'aleppo', child: Text('حلب')),
-                DropdownMenuItem(value: 'homs', child: Text('حمص')),
+                DropdownMenuItem(value: 'damascus', child: Text('رفح')),
+                DropdownMenuItem(value: 'aleppo', child: Text('خانيونس')),
+                DropdownMenuItem(value: 'homs', child: Text('القرارة')),
                 DropdownMenuItem(value: 'hama', child: Text('حماة')),
                 DropdownMenuItem(value: 'latakia', child: Text('اللاذقية')),
                 DropdownMenuItem(value: 'tartus', child: Text('طرطوس')),

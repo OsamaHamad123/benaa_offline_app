@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../data/db/drift_database.dart';
 import '../../../../../core/providers/providers.dart';
+import '../../../../../core/utils/app_logger.dart';
 import 'beneficiaries_list_state.dart';
 import 'filters_provider.dart';
+import 'cache_manager.dart';
 
 /// 📊 Beneficiaries List Provider
 final beneficiariesListProvider =
@@ -34,8 +36,10 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       final filters = _filters;
       final cacheKey = filters.cacheKey;
 
-      // استخدام Cache إذا كان المفتاح نفسه
-      if (_lastCacheKey == cacheKey && _cachedData != null) {
+      // ✅ تحقق من الـ cache فقط إذا لم يكن في بحث نشط
+      if (_lastCacheKey == cacheKey &&
+          _cachedData != null &&
+          filters.searchQuery.isEmpty) {
         state = state.copyWith(
           items: _cachedData!,
           isLoading: false,
@@ -51,6 +55,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
       _cachedData = items;
       _lastCacheKey = cacheKey;
+      CacheManager.updateCacheTime();
 
       state = state.copyWith(
         items: items,
@@ -95,60 +100,34 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     }
   }
 
-  /// 🔍 جلب البيانات من Database
+  /// 🔍 جلب البيانات من Database - OPTIMIZED (SQL filtering)
   Future<List<Beneficiary>> _fetchBeneficiaries(
     FiltersState filters,
     int page,
   ) async {
-    var items = await _db.beneficiariesDao.searchBeneficiaries(
-      filters.searchQuery,
+    // ✅ كل الفلترة في SQL - performance++
+    final items = await _db.beneficiariesDao.searchBeneficiariesAdvanced(
+      query: filters.searchQuery,
+      categoryId: filters.categoryId,
+      governorateId: filters.governorateId,
+      cityId: filters.cityId,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      sortBy: _getSortField(filters.sortBy),
+      sortDesc: !filters.sortAscending, // inverted
+      limit: state.pageSize,
+      offset: page * state.pageSize,
     );
 
-    // تطبيق الفلاتر
-    items = _applyFilters(items, filters);
-
-    // الترتيب
-    items = _applySorting(items, filters);
-
-    // Pagination
-    final offset = page * state.pageSize;
-    return items.skip(offset).take(state.pageSize).toList();
+    // فلاتر معقدة تحتاج Dart (age, sync state, etc)
+    return _applyDartOnlyFilters(items, filters);
   }
 
-  /// 🎯 تطبيق الفلاتر
-  List<Beneficiary> _applyFilters(
+  /// 🎯 فلاتر تحتاج Dart فقط (calculated fields)
+  List<Beneficiary> _applyDartOnlyFilters(
     List<Beneficiary> items,
     FiltersState filters,
   ) {
-    // Category Filter
-    if (filters.categoryId != null) {
-      items = items.where((b) => b.sectionId == filters.categoryId).toList();
-    }
-
-    // Governorate Filter
-    if (filters.governorateId != null) {
-      items = items.where((b) => b.province == filters.governorateId).toList();
-    }
-
-    // City Filter
-    if (filters.cityId != null) {
-      items = items.where((b) => b.city == filters.cityId).toList();
-    }
-
-    // Date Range Filter
-    if (filters.dateFrom != null) {
-      items = items.where((b) {
-        final date = b.createdAt;
-        return date != null && date.isAfter(filters.dateFrom!);
-      }).toList();
-    }
-    if (filters.dateTo != null) {
-      items = items.where((b) {
-        final date = b.createdAt;
-        return date != null && date.isBefore(filters.dateTo!);
-      }).toList();
-    }
-
     // Age Range Filter (calculated from birthDate)
     if (filters.ageFrom != null) {
       items = items.where((b) {
@@ -175,43 +154,20 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       items = items.where((b) => b.phoneNumber != 0).toList();
     }
 
-    // Location Filter - TODO: Add location fields to database if needed
-    // if (filters.onlyWithLocation) {
-    //   items = items.where((b) => b.hasLocation).toList();
-    // }
-
     return items;
   }
 
-  /// 📊 تطبيق الترتيب
-  List<Beneficiary> _applySorting(
-    List<Beneficiary> items,
-    FiltersState filters,
-  ) {
-    items.sort((a, b) {
-      int comparison;
-      switch (filters.sortBy) {
-        case SortBy.name:
-          comparison = a.fullName.compareTo(b.fullName);
-        case SortBy.date:
-          comparison = (a.createdAt ?? DateTime(1900)).compareTo(
-            b.createdAt ?? DateTime(1900),
-          );
-        case SortBy.fileNo:
-          comparison = (a.fileIdNumber ?? '').compareTo(b.fileIdNumber ?? '');
-        case SortBy.age:
-          final ageA = a.birthDate != null ? _calculateAge(a.birthDate!) : 0;
-          final ageB = b.birthDate != null ? _calculateAge(b.birthDate!) : 0;
-          comparison = ageA.compareTo(ageB);
-        case SortBy.lastModified:
-          comparison = (a.updatedAt ?? DateTime(1900)).compareTo(
-            b.updatedAt ?? DateTime(1900),
-          );
-      }
-      return filters.sortAscending ? comparison : -comparison;
-    });
-
-    return items;
+  /// Helper: تحويل SortBy إلى SQL field name
+  String _getSortField(SortBy sortBy) {
+    switch (sortBy) {
+      case SortBy.date:
+        return 'created_at';
+      case SortBy.fileNo:
+        return 'file_id_number';
+      case SortBy.name:
+      default:
+        return 'full_name';
+    }
   }
 
   /// 📈 تحديث الإحصائيات
@@ -238,8 +194,18 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     await loadInitialData();
   }
 
+  /// 🗑️ Clear cache
+  void clearCache() {
+    _cachedData = null;
+    _lastCacheKey = null;
+    CacheManager.clearCache();
+    state = const BeneficiariesListState();
+  }
+
   /// ✅ Optimistic Delete
   Future<void> deleteBeneficiary(int id) async {
+    AppLogger.info('Delete beneficiary #$id');
+
     // حفظ النسخة القديمة
     final oldItems = state.items;
     final oldCachedData = _cachedData;
@@ -249,12 +215,24 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     state = state.copyWith(items: newItems);
     _cachedData = newItems;
 
+    final stopwatch = Stopwatch()..start();
     try {
       // حذف من Database
       await _db.beneficiariesDao.deleteBeneficiary(id);
       await _updateStatistics();
-    } catch (e) {
+      stopwatch.stop();
+      AppLogger.logPerformance(
+        operation: 'Delete beneficiary #$id',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stackTrace) {
       // استرجاع في حالة الخطأ
+      stopwatch.stop();
+      AppLogger.error(
+        'Failed to delete beneficiary #$id',
+        error: e,
+        stackTrace: stackTrace,
+      );
       state = state.copyWith(items: oldItems, error: e.toString());
       _cachedData = oldCachedData;
       rethrow;
@@ -263,6 +241,8 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
   /// ✅ Bulk Delete
   Future<void> bulkDelete(Set<int> ids) async {
+    AppLogger.info('Bulk delete ${ids.length} beneficiaries');
+
     final oldItems = state.items;
     final oldCachedData = _cachedData;
 
@@ -271,11 +251,19 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     state = state.copyWith(items: newItems);
     _cachedData = newItems;
 
+    final stopwatch = Stopwatch()..start();
     try {
       // استخدام batch delete للسرعة
       await _db.beneficiariesDao.batchDeleteBeneficiaries(ids.toList());
       await _updateStatistics();
-    } catch (e) {
+      stopwatch.stop();
+      AppLogger.logPerformance(
+        operation: 'Bulk delete ${ids.length} items',
+        durationMs: stopwatch.elapsedMilliseconds,
+      );
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      AppLogger.error('Bulk delete failed', error: e, stackTrace: stackTrace);
       state = state.copyWith(items: oldItems, error: e.toString());
       _cachedData = oldCachedData;
       rethrow;
