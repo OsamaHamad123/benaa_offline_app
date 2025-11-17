@@ -114,6 +114,14 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
   }
 
   @override
+  Future<Beneficiary?> getByNationalId(String nationalId) async {
+    final intNationalId = int.tryParse(nationalId);
+    if (intNationalId == null) return null;
+    final result = await localDataSource.getByNationalId(intNationalId);
+    return result as Beneficiary?;
+  }
+
+  @override
   Future<void> delete(String id) async {
     final intId = int.tryParse(id);
     if (intId == null) throw Exception('Invalid beneficiary ID');

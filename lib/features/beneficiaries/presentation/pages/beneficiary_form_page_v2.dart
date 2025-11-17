@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✨ Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
 
 import '../providers/beneficiary_form_provider.dart';
+import '../providers/beneficiary_dependencies.dart';
 import '../widgets/v2/v2_widgets.dart';
-import '../../utils/attachments_manager.dart';
 import '../../domain/entities/beneficiary.dart';
+
+// 🆕 Helper Classes
+import 'v2_form_helpers/form_controllers.dart';
+import 'v2_form_helpers/form_data_handler.dart';
+import 'v2_form_helpers/beneficiary_builder.dart';
+import 'v2_form_helpers/save_operations_helper.dart';
+
+// 🆕 Reusable Widgets
+import 'v2_form_helpers/widgets/tab_navigation_bar.dart';
+import 'v2_form_helpers/widgets/tab_navigation_buttons.dart';
+import 'v2_form_helpers/widgets/loading_overlay.dart';
+import 'v2_form_helpers/widgets/form_tabs.dart';
+import 'v2_form_helpers/widgets/enhanced_snackbar.dart'; // ✨
 
 /// 🎨 Beneficiary Form Page V2 - Ultra Responsive & Performant
 ///
@@ -31,50 +46,62 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
-  // Attachments
-  final List<BeneficiaryAttachment> _attachments = [];
+  // 🆕 Use helper class for all controllers (with ChangeNotifier)
+  late final BeneficiaryFormControllers _controllers;
 
-  // Text Controllers
-  final _firstNameController = TextEditingController();
-  final _fatherNameController = TextEditingController();
-  final _grandfatherNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _motherNameController = TextEditingController();
-  final _nationalIdController = TextEditingController();
-  final _birthDateController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _altPhoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _neighborhoodController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _numberOfDependentsController = TextEditingController();
-  final _numberOfMalesController = TextEditingController();
-  final _numberOfFemalesController = TextEditingController();
-  final _notesController = TextEditingController();
+  // Loading states
+  bool _isSaving = false;
+  bool _isDeleting = false;
+  bool _isLoading = false;
 
-  // Dropdown values
-  String? _selectedGender;
-  String? _selectedMaritalStatus;
-  String? _selectedEducationLevel;
-  String? _selectedEmploymentStatus;
-
-  // Boolean switches
-  bool _hasDisability = false;
-
+  // Focus node for auto-focus
+  final FocusNode _firstFieldFocusNode = FocusNode();
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+
+    // 🆕 Initialize controllers with auto-save callback
+    _controllers = BeneficiaryFormControllers(onAutoSave: _performAutoSave);
+
     _tabController = TabController(length: 6, vsync: this);
+
+    // ✅ No need for TabController listener - ListenableBuilder handles it
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForm();
     });
   }
 
+  /// Performs auto-save if there are changes
+  Future<void> _performAutoSave() async {
+    // Don't auto-save if already saving or if no changes
+    if (_isSaving || _isDeleting || _isLoading) return;
+
+    // Check if there are any changes
+    final hasChanges =
+        _controllers.firstNameController.text.isNotEmpty ||
+        _controllers.fatherNameController.text.isNotEmpty ||
+        _controllers.nationalIdController.text.isNotEmpty;
+
+    if (!hasChanges) return;
+
+    // Don't auto-save if validation fails (basic required fields)
+    if (_controllers.firstNameController.text.trim().isEmpty ||
+        _controllers.nationalIdController.text.trim().isEmpty ||
+        _controllers.nationalIdController.text.trim().length != 11) {
+      return;
+    }
+
+    // Save silently in background (reuse existing save logic)
+    await _handleSave(isAutoSave: true);
+  }
+
   void _initializeForm() async {
+    setState(() => _isLoading = true);
+
     if (widget.beneficiaryId != null) {
       await ref
           .read(beneficiaryFormProvider.notifier)
@@ -87,65 +114,65 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
       }
     } else {
       ref.read(beneficiaryFormProvider.notifier).createNew();
+      // Auto-focus on first field for new beneficiary
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          _firstFieldFocusNode.requestFocus();
+        }
+      });
     }
+
+    setState(() => _isLoading = false);
   }
 
   void _populateControllers(Beneficiary beneficiary) {
-    // Parse full name
-    _firstNameController.text = beneficiary.fatherName ?? '';
-    _fatherNameController.text = beneficiary.fatherName ?? '';
-    _grandfatherNameController.text = beneficiary.grandFatherName ?? '';
-    _lastNameController.text = beneficiary.familyName ?? '';
-    _motherNameController.text = beneficiary.motherName ?? '';
-
-    _nationalIdController.text = beneficiary.nationalId;
-    _birthDateController.text =
-        beneficiary.birthDate?.toString().split(' ')[0] ?? '';
-    _phoneController.text = beneficiary.phoneNumber ?? '';
-    _altPhoneController.text = beneficiary.altPhoneNumber ?? '';
-    _addressController.text = beneficiary.address ?? '';
-    _neighborhoodController.text = beneficiary.district ?? '';
-    _cityController.text = beneficiary.governorate ?? '';
-    _numberOfDependentsController.text =
-        beneficiary.familySize?.toString() ?? '';
-    _numberOfMalesController.text = beneficiary.numberOfMales?.toString() ?? '';
-    _numberOfFemalesController.text =
-        beneficiary.numberOfFemales?.toString() ?? '';
-    _notesController.text = beneficiary.notes ?? '';
-
-    setState(() {
-      _selectedGender = beneficiary.gender.name;
-      _selectedMaritalStatus = beneficiary.maritalStatus?.name;
-      _selectedEducationLevel = beneficiary.educationLevel?.name;
-      _selectedEmploymentStatus = beneficiary.employmentStatus?.name;
-      _hasDisability = beneficiary.hasDisability;
-    });
+    // 🆕 Use helper class (no setState needed - ChangeNotifier handles it)
+    BeneficiaryFormDataHandler.populateControllers(
+      _controllers,
+      beneficiary,
+      (fn) => fn(), // Dummy setState - ChangeNotifier will notify
+    );
   }
 
   @override
   void dispose() {
+    // 🆕 Dispose controllers (includes auto-save timer)
+    _controllers.dispose();
     _tabController.dispose();
-    _firstNameController.dispose();
-    _fatherNameController.dispose();
-    _grandfatherNameController.dispose();
-    _lastNameController.dispose();
-    _motherNameController.dispose();
-    _nationalIdController.dispose();
-    _birthDateController.dispose();
-    _phoneController.dispose();
-    _altPhoneController.dispose();
-    _addressController.dispose();
-    _neighborhoodController.dispose();
-    _cityController.dispose();
-    _numberOfDependentsController.dispose();
-    _numberOfMalesController.dispose();
-    _numberOfFemalesController.dispose();
-    _notesController.dispose();
+    _firstFieldFocusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSave() async {
+  /// Scrolls to the first field with validation error
+  void _scrollToFirstError() {
+    // Find the tab with error by validating form
+    // Tab 0: Basic Info - required fields
+    final hasBasicInfoError =
+        _controllers.firstNameController.text.trim().isEmpty ||
+        _controllers.nationalIdController.text.trim().isEmpty ||
+        _controllers.nationalIdController.text.trim().length != 9;
+
+    if (hasBasicInfoError && _tabController.index != 0) {
+      // Switch to Basic Info tab
+      _tabController.animateTo(0);
+
+      // Wait for tab animation, then focus first field
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_firstFieldFocusNode.canRequestFocus) {
+          _firstFieldFocusNode.requestFocus();
+        }
+      });
+    }
+  }
+
+  Future<void> _handleSave({bool isAutoSave = false}) async {
     if (!_formKey.currentState!.validate()) {
+      // Don't show errors for auto-save
+      if (isAutoSave) return;
+
+      // Scroll to first error field
+      _scrollToFirstError();
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('يرجى إكمال الحقول المطلوبة'),
@@ -159,92 +186,31 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
       return;
     }
 
-    // Build full name
-    final fullName = [
-      _firstNameController.text.trim(),
-      _fatherNameController.text.trim(),
-      _grandfatherNameController.text.trim(),
-      _lastNameController.text.trim(),
-    ].where((s) => s.isNotEmpty).join(' ');
+    setState(() => _isSaving = true);
 
-    // Parse gender
-    final gender = _selectedGender == 'ذكر' ? Gender.male : Gender.female;
-
-    // Create/Update beneficiary
-    final now = DateTime.now();
-    final beneficiary = Beneficiary(
-      id: widget.beneficiaryId ?? '',
-      fullName: fullName,
-      nationalId: _nationalIdController.text.trim(),
-      gender: gender,
-      category: BeneficiaryCategory.poor, // Default
-      birthDate: _birthDateController.text.isNotEmpty
-          ? DateTime.tryParse(_birthDateController.text)
-          : null,
-      motherName: _motherNameController.text.trim().isEmpty
-          ? null
-          : _motherNameController.text.trim(),
-      fatherName: _fatherNameController.text.trim().isEmpty
-          ? null
-          : _fatherNameController.text.trim(),
-      grandFatherName: _grandfatherNameController.text.trim().isEmpty
-          ? null
-          : _grandfatherNameController.text.trim(),
-      familyName: _lastNameController.text.trim().isEmpty
-          ? null
-          : _lastNameController.text.trim(),
-      phoneNumber: _phoneController.text.trim().isEmpty
-          ? null
-          : _phoneController.text.trim(),
-      altPhoneNumber: _altPhoneController.text.trim().isEmpty
-          ? null
-          : _altPhoneController.text.trim(),
-      address: _addressController.text.trim().isEmpty
-          ? null
-          : _addressController.text.trim(),
-      district: _neighborhoodController.text.trim().isEmpty
-          ? null
-          : _neighborhoodController.text.trim(),
-      governorate: _cityController.text.trim().isEmpty
-          ? null
-          : _cityController.text.trim(),
-      maritalStatus: _selectedMaritalStatus != null
-          ? MaritalStatus.values.firstWhere(
-              (e) => e.name == _selectedMaritalStatus,
-              orElse: () => MaritalStatus.single,
-            )
-          : null,
-      educationLevel: _selectedEducationLevel != null
-          ? EducationLevel.values.firstWhere(
-              (e) => e.name == _selectedEducationLevel,
-              orElse: () => EducationLevel.none,
-            )
-          : null,
-      employmentStatus: _selectedEmploymentStatus != null
-          ? EmploymentStatus.values.firstWhere(
-              (e) => e.name == _selectedEmploymentStatus,
-              orElse: () => EmploymentStatus.unemployed,
-            )
-          : null,
-      hasDisability: _hasDisability,
-      familySize: _numberOfDependentsController.text.trim().isEmpty
-          ? null
-          : int.tryParse(_numberOfDependentsController.text.trim()),
-      numberOfMales: _numberOfMalesController.text.trim().isEmpty
-          ? null
-          : int.tryParse(_numberOfMalesController.text.trim()),
-      numberOfFemales: _numberOfFemalesController.text.trim().isEmpty
-          ? null
-          : int.tryParse(_numberOfFemalesController.text.trim()),
-      notes: _notesController.text.trim().isEmpty
-          ? null
-          : _notesController.text.trim(),
-      createdAt: widget.beneficiaryId != null
-          ? (ref.read(beneficiaryFormProvider).beneficiary?.createdAt ?? now)
-          : now,
-      updatedAt: now,
-      healthStatus: HealthStatus.good,
+    // 🆕 Build beneficiary using helper
+    final currentBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
+    final beneficiary = BeneficiaryEntityBuilder.build(
+      controllers: _controllers,
+      existingId: widget.beneficiaryId,
+      existingFileNo: currentBeneficiary?.fileNo,
+      existingCreatedAt: currentBeneficiary?.createdAt,
     );
+
+    // 🆕 Check for duplicate using helper
+    final repository = ref.read(beneficiaryRepositoryProvider);
+
+    final hasDuplicate = await SaveOperationsHelper.checkDuplicate(
+      context: context,
+      repository: repository,
+      nationalId: _controllers.nationalIdController.text.trim(),
+      isNewBeneficiary: widget.beneficiaryId == null,
+    );
+
+    if (hasDuplicate) {
+      setState(() => _isSaving = false);
+      return;
+    }
 
     // Update provider with new beneficiary
     ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
@@ -252,44 +218,78 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     final success = await ref.read(beneficiaryFormProvider.notifier).save();
 
     if (success && mounted) {
-      // Save attachments if any
-      // TODO: Implement attachment saving
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 20.sp),
-              SizedBox(width: 8.w),
-              const Text('تم الحفظ بنجاح'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.r),
-          ),
-        ),
+      // 🆕 Save attachments using helper
+      await SaveOperationsHelper.saveAttachments(
+        database: ref.read(databaseProvider),
+        beneficiaryId: beneficiary.id,
+        pendingFiles: _controllers.pendingAttachmentFiles,
       );
-      context.pop(true);
+      _controllers.pendingAttachmentFiles.clear();
+
+      // Don't show snackbar or pop for auto-save
+      if (!isAutoSave) {
+        // ✨ Haptic feedback for success
+        HapticFeedback.mediumImpact();
+
+        // ✨ Enhanced snackbar
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: 'تم الحفظ بنجاح',
+          duration: const Duration(seconds: 2),
+        );
+
+        setState(() => _isSaving = false);
+
+        // Success animation - delay before pop (only for manual save)
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (mounted) {
+          context.pop(true);
+        }
+      } else {
+        // Auto-save: just update state silently
+        setState(() => _isSaving = false);
+      }
+    } else {
+      setState(() => _isSaving = false);
+
+      // ✨ Show error with haptic feedback
+      if (!isAutoSave && mounted) {
+        HapticFeedback.heavyImpact();
+        EnhancedSnackbar.showError(
+          context,
+          message: 'فشل في حفظ البيانات. يرجى المحاولة مرة أخرى',
+          onRetry: () => _handleSave(),
+        );
+      }
     }
   }
 
-  void _handleCancel() {
-    final hasChanges = ref.read(beneficiaryFormProvider).hasUnsavedChanges;
+  void _handleCancel() async {
+    // Check if any field has data (unsaved changes)
+    final hasChanges =
+        _controllers.firstNameController.text.isNotEmpty ||
+        _controllers.fatherNameController.text.isNotEmpty ||
+        _controllers.nationalIdController.text.isNotEmpty ||
+        _controllers.phoneController.text.isNotEmpty;
 
     if (hasChanges) {
-      showDialog(
+      final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => V2ConfirmDialog(
           title: 'تحذير',
-          message: 'لديك تغييرات غير محفوظة. هل تريد المتابعة؟',
-          confirmText: 'متابعة',
+          message: 'لديك تغييرات غير محفوظة. هل تريد الخروج بدون حفظ؟',
+          confirmText: 'خروج',
           cancelText: 'إلغاء',
           isDangerous: true,
-          onConfirm: () => context.pop(),
+          icon: Icons.warning_rounded,
+          onConfirm: () {},
         ),
       );
+
+      if (confirmed == true && mounted) {
+        context.pop();
+      }
     } else {
       context.pop();
     }
@@ -298,6 +298,9 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
   Future<void> _handleDelete() async {
     final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
     if (beneficiary == null) return;
+
+    // Haptic feedback on delete attempt
+    HapticFeedback.mediumImpact();
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -313,8 +316,37 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     );
 
     if (confirmed == true && mounted) {
-      // TODO: Implement delete
-      context.pop();
+      setState(() => _isDeleting = true);
+
+      try {
+        // Delete beneficiary using use case
+        final deleteUseCase = ref.read(deleteBeneficiaryUseCaseProvider);
+        await deleteUseCase.execute(beneficiary.id);
+
+        if (mounted) {
+          setState(() => _isDeleting = false);
+
+          // Haptic feedback on successful delete
+          HapticFeedback.lightImpact();
+
+          EnhancedSnackbar.showSuccess(context, message: 'تم الحذف بنجاح');
+
+          context.pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isDeleting = false);
+
+          // Haptic feedback on delete error
+          HapticFeedback.heavyImpact();
+
+          EnhancedSnackbar.showError(
+            context,
+            message: 'فشل الحذف: $e',
+            onRetry: _handleDelete,
+          );
+        }
+      }
     }
   }
 
@@ -324,149 +356,136 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     final state = ref.watch(beneficiaryFormProvider);
     final notifier = ref.read(beneficiaryFormProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: V2BeneficiaryAppBar(
-        title: widget.beneficiaryId == null ? 'إضافة مستفيد' : 'تعديل مستفيد',
-        canSave: !state.isSaving,
-        isSaving: state.isSaving,
-        onSave: _handleSave,
-        onDelete: widget.beneficiaryId != null ? _handleDelete : null,
-      ),
-      body: state.isLoading
-          ? const V2LoadingIndicator(message: 'جاري التحميل...')
-          : Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  // Error Banner
-                  if (state.errorMessage != null)
-                    V2ErrorBanner(
-                      message: state.errorMessage!,
-                      onDismiss: () => notifier.clearError(),
-                    ),
+    return PopScope(
+      canPop: !state.hasUnsavedChanges,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
 
-                  // Tab Bar
-                  Material(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    child: TabBar(
-                      controller: _tabController,
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      labelColor: Theme.of(context).colorScheme.primary,
-                      unselectedLabelColor: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant,
-                      indicatorColor: Theme.of(context).colorScheme.primary,
-                      indicatorWeight: 3,
-                      labelStyle: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
+        final shouldPop = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('تحذير'),
+            content: const Text(
+              'لديك تغييرات غير محفوظة. هل تريد المغادرة دون حفظ؟',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('البقاء'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('المغادرة'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldPop == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        appBar: V2BeneficiaryAppBar(
+          title: widget.beneficiaryId == null ? 'إضافة مستفيد' : 'تعديل مستفيد',
+          canSave: !_isSaving && !_isDeleting,
+          isSaving: _isSaving,
+          onSave: _handleSave,
+          onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+        ),
+        body: _isLoading
+            ? const V2LoadingIndicator(message: 'جاري التحميل...')
+            : Stack(
+                children: [
+                  Column(
+                    children: [
+                      // Form with TabBar and Content
+                      Expanded(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              // Error Banner (inside form, before tabs) - with max height
+                              if (state.errorMessage != null)
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(maxHeight: 80.h),
+                                  child: SingleChildScrollView(
+                                    child: V2ErrorBanner(
+                                      message: state.errorMessage!,
+                                      onDismiss: () => notifier.clearError(),
+                                    ),
+                                  ),
+                                ),
+
+                              // 🆕 Tab Bar with Progress Indicator (wrapped in ListenableBuilder)
+                              ListenableBuilder(
+                                listenable: _tabController,
+                                builder: (context, child) {
+                                  return RepaintBoundary(
+                                    child: TabNavigationBar(
+                                      controller: _tabController,
+                                      currentIndex: _tabController.index,
+                                      totalTabs: 6,
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              // 🆕 Tab Content (wrapped in ListenableBuilder for ChangeNotifier)
+                              Expanded(
+                                child: ListenableBuilder(
+                                  listenable: _controllers,
+                                  builder: (context, child) {
+                                    return RepaintBoundary(
+                                      child: BeneficiaryFormTabs(
+                                        controller: _tabController,
+                                        formControllers: _controllers,
+                                        onBirthDateTap: () =>
+                                            _selectDate(context),
+                                        firstFieldFocusNode:
+                                            _firstFieldFocusNode,
+                                        beneficiaryId: widget.beneficiaryId,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              // 🆕 Previous/Next Navigation (wrapped in AnimatedBuilder)
+                              AnimatedBuilder(
+                                animation: _tabController,
+                                builder: (context, child) {
+                                  return RepaintBoundary(
+                                    child: TabNavigationButtons(
+                                      controller: _tabController,
+                                      currentIndex: _tabController.index,
+                                      totalTabs: 6,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      tabs: [
-                        Tab(
-                          icon: Icon(Icons.person_rounded, size: 20.sp),
-                          text: 'أساسي',
-                        ),
-                        Tab(
-                          icon: Icon(
-                            Icons.family_restroom_rounded,
-                            size: 20.sp,
-                          ),
-                          text: 'العائلة',
-                        ),
-                        Tab(
-                          icon: Icon(Icons.contact_phone_rounded, size: 20.sp),
-                          text: 'التواصل',
-                        ),
-                        Tab(
-                          icon: Icon(
-                            Icons.dashboard_customize_rounded,
-                            size: 20.sp,
-                          ),
-                          text: 'إضافي',
-                        ),
-                        Tab(
-                          icon: Icon(Icons.sticky_note_2_rounded, size: 20.sp),
-                          text: 'ملاحظات',
-                        ),
-                        Tab(
-                          icon: Icon(Icons.attach_file_rounded, size: 20.sp),
-                          text: 'مرفقات',
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
 
-                  // Tab Content
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        V2BasicInfoTab(
-                          firstNameController: _firstNameController,
-                          fatherNameController: _fatherNameController,
-                          grandfatherNameController: _grandfatherNameController,
-                          lastNameController: _lastNameController,
-                          motherNameController: _motherNameController,
-                          nationalIdController: _nationalIdController,
-                          birthDateController: _birthDateController,
-                          selectedGender: _selectedGender,
-                          onGenderChanged: (value) =>
-                              setState(() => _selectedGender = value),
-                          onBirthDateTap: () => _selectDate(context),
-                        ),
-                        V2FamilyInfoTab(
-                          selectedMaritalStatus: _selectedMaritalStatus,
-                          onMaritalStatusChanged: (value) =>
-                              setState(() => _selectedMaritalStatus = value),
-                          numberOfDependentsController:
-                              _numberOfDependentsController,
-                          numberOfMalesController: _numberOfMalesController,
-                          numberOfFemalesController: _numberOfFemalesController,
-                        ),
-                        V2ContactInfoTab(
-                          phoneController: _phoneController,
-                          altPhoneController: _altPhoneController,
-                          addressController: _addressController,
-                          neighborhoodController: _neighborhoodController,
-                          cityController: _cityController,
-                        ),
-                        V2AdditionalInfoTab(
-                          selectedEducationLevel: _selectedEducationLevel,
-                          onEducationLevelChanged: (value) =>
-                              setState(() => _selectedEducationLevel = value),
-                          selectedEmploymentStatus: _selectedEmploymentStatus,
-                          onEmploymentStatusChanged: (value) =>
-                              setState(() => _selectedEmploymentStatus = value),
-                          hasDisability: _hasDisability,
-                          onDisabilityChanged: (value) =>
-                              setState(() => _hasDisability = value),
-                        ),
-                        V2NotesTab(notesController: _notesController),
-                        V2AttachmentsTab(
-                          beneficiaryId: widget.beneficiaryId,
-                          initialAttachments: _attachments,
-                          onAttachmentsChanged: (attachments) {
-                            setState(() {
-                              _attachments.clear();
-                              _attachments.addAll(attachments);
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+                  // 🆕 Loading overlay (extracted widget)
+                  LoadingOverlay(
+                    isVisible: _isSaving || _isDeleting,
+                    message: _isSaving ? 'جاري الحفظ...' : 'جاري الحذف...',
                   ),
                 ],
               ),
-            ),
-      bottomNavigationBar: V2FormActions(
-        canSave: !state.isSaving,
-        isSaving: state.isSaving,
-        onSave: _handleSave,
-        onCancel: _handleCancel,
-        onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+        bottomNavigationBar: V2FormActions(
+          canSave: !_isSaving && !_isDeleting,
+          isSaving: _isSaving,
+          onSave: _handleSave,
+          onCancel: _handleCancel,
+          onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+        ),
       ),
     );
   }
@@ -493,7 +512,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
 
     if (picked != null) {
       setState(() {
-        _birthDateController.text =
+        _controllers.birthDateController.text =
             '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
       });
     }

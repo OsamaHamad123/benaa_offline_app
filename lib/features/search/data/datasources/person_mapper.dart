@@ -24,4 +24,28 @@ class PersonMapper {
   static List<CivilPerson> fromDatabaseList(List<Map<String, dynamic>> rows) {
     return rows.map(fromDatabase).toList();
   }
+
+  /// 🚀 ULTRA FAST: Pre-allocated list + direct mapping (no intermediate allocations)
+  static List<CivilPerson> fromDatabaseListFast(
+    List<Map<String, dynamic>> rows,
+  ) {
+    if (rows.isEmpty) return [];
+
+    // Use List.generate for proper pre-allocation
+    return List.generate(rows.length, (i) {
+      final row = rows[i];
+      return CivilPerson(
+        nationalId: row['CI_ID_NUM']?.toString() ?? '',
+        firstName: row['CI_FIRST_ARB'] as String? ?? '',
+        fatherName: row['CI_FATHER_ARB'] as String? ?? '',
+        grandFatherName: row['CI_GRAND_FATHER_ARB'] as String? ?? '',
+        familyName: row['CI_FAMILY_ARB'] as String? ?? '',
+        motherName: row['MOTHER_NAME1'] as String?,
+        gender: Gender.fromCode(row['CI_SEX_CD'] as int?),
+        birthDate: row['CI_BIRTH_DT'] as String?,
+        city: row['CITY']?.toString(),
+        governorate: row['CITY']?.toString(),
+      );
+    }, growable: false);
+  }
 }

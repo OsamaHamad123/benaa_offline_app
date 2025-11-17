@@ -72,9 +72,17 @@ class CivilRegistryDatabase {
       // Apply performance PRAGMA settings
       await _applyPragmaSettings(db);
 
-      // Create indexes and run migrations in background (non-blocking)
+      // 🚀 Run ANALYZE immediately for better query plans
+      try {
+        await db.rawQuery('ANALYZE');
+      } catch (e) {
+        print('⚠️ ANALYZE failed: $e');
+      }
+
+      // ⚡ FTS4 is TOO SLOW with millions of rows - DISABLED for now
+      // Create indexes and other migrations in background (non-blocking)
       DatabaseMigrationsService.createIndexesAsync(db);
-      DatabaseMigrationsService.runMigrationsAsync(db);
+      DatabaseMigrationsService.runOtherMigrationsAsync(db);
 
       return db;
     } catch (e) {
@@ -83,49 +91,58 @@ class CivilRegistryDatabase {
     }
   }
 
-  /// Apply PRAGMA settings - SQLite Best Practices for Read-Heavy Workload
+  /// Apply PRAGMA settings - EXTREME PERFORMANCE MODE ⚡
   Future<void> _applyPragmaSettings(Database db) async {
-    // 1. MASSIVE cache for extreme speed (512MB for huge datasets)
-    await db.rawQuery('PRAGMA cache_size = -524288');
+    // ⚡ CRITICAL: Disable synchronous for MAXIMUM SPEED (read-only DB is safe)
+    await db.rawQuery('PRAGMA synchronous = OFF');
 
-    // 2. All temp operations in memory
+    // ⚡ MASSIVE cache (1GB for extreme speed)
+    await db.rawQuery('PRAGMA cache_size = -1048576');
+
+    // All temp operations in memory
     await db.rawQuery('PRAGMA temp_store = MEMORY');
 
-    // 3. Fast synchronous mode (safe for read-heavy apps)
-    await db.rawQuery('PRAGMA synchronous = NORMAL');
-
-    // 4. WAL mode - allows concurrent reads (critical!)
+    // WAL mode - allows concurrent reads (critical!)
     await db.rawQuery('PRAGMA journal_mode = WAL');
 
-    // 5. Optimal page size for modern systems
+    // Optimal page size for modern systems
     await db.rawQuery('PRAGMA page_size = 4096');
 
-    // 6. EXTREME memory-mapped I/O (2GB for ultra speed)
-    await db.rawQuery('PRAGMA mmap_size = 2147483648');
+    // ⚡ EXTREME memory-mapped I/O (4GB for ultra speed)
+    await db.rawQuery('PRAGMA mmap_size = 4294967296');
 
-    // 7. Keep connection persistent
-    await db.rawQuery('PRAGMA locking_mode = NORMAL');
+    // ⚡ EXCLUSIVE lock for single-user app (faster)
+    await db.rawQuery('PRAGMA locking_mode = EXCLUSIVE');
 
-    // 8. Dirty reads OK for search (huge performance boost)
+    // Dirty reads OK for search (huge performance boost)
     await db.rawQuery('PRAGMA read_uncommitted = 1');
 
-    // 9. Auto-vacuum off for speed (data is read-only)
+    // Auto-vacuum off for speed (data is read-only)
     await db.rawQuery('PRAGMA auto_vacuum = NONE');
 
-    // 10. Disable foreign keys (not used, save overhead)
+    // Disable foreign keys (not used, save overhead)
     await db.rawQuery('PRAGMA foreign_keys = OFF');
 
-    // 11. Optimize query planner
+    // ⚡ NEW: Disable secure delete for speed
+    await db.rawQuery('PRAGMA secure_delete = OFF');
+
+    // ⚡ NEW: Disable cell size check for speed
+    await db.rawQuery('PRAGMA cell_size_check = OFF');
+
+    // Optimize query planner
     await db.rawQuery('PRAGMA optimize');
 
-    // 12. Analyze statistics for better query plans
+    // Analyze statistics for better query plans
     await db.rawQuery('ANALYZE');
 
-    // 13. Increase WAL checkpoint threshold (less frequent checkpoints)
+    // Increase WAL checkpoint threshold (less frequent checkpoints)
     await db.rawQuery('PRAGMA wal_autocheckpoint = 10000');
 
-    // 14. Disable query_only mode for flexibility
+    // Disable query_only mode for flexibility
     await db.rawQuery('PRAGMA query_only = OFF');
+
+    // ⚡ NEW: Disable cell size check for speed
+    await db.rawQuery('PRAGMA cell_size_check = OFF');
   }
 
   /// Search by National ID

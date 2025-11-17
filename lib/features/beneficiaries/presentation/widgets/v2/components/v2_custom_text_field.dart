@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Custom text field with validation and responsive design
@@ -17,6 +18,9 @@ class V2CustomTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final Function(String)? onChanged;
   final bool isRequired;
+  final List<TextInputFormatter>? inputFormatters;
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
 
   const V2CustomTextField({
     super.key,
@@ -34,6 +38,9 @@ class V2CustomTextField extends StatelessWidget {
     this.onTap,
     this.onChanged,
     this.isRequired = false,
+    this.inputFormatters,
+    this.focusNode,
+    this.textInputAction,
   });
 
   @override
@@ -50,6 +57,10 @@ class V2CustomTextField extends StatelessWidget {
       maxLength: maxLength,
       onTap: onTap,
       onChanged: onChanged,
+      inputFormatters: inputFormatters,
+      focusNode: focusNode,
+      textInputAction:
+          textInputAction ?? (readOnly ? null : TextInputAction.next),
       style: TextStyle(fontSize: 15.sp),
       decoration: InputDecoration(
         labelText: isRequired ? '$label *' : label,

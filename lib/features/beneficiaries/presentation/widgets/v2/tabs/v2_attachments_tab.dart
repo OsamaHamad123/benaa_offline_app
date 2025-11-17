@@ -11,12 +11,14 @@ class V2AttachmentsTab extends StatefulWidget {
   final String? beneficiaryId;
   final List<BeneficiaryAttachment> initialAttachments;
   final Function(List<BeneficiaryAttachment>) onAttachmentsChanged;
+  final Function(List<File>)? onPendingFilesChanged;
 
   const V2AttachmentsTab({
     super.key,
     this.beneficiaryId,
     this.initialAttachments = const [],
     required this.onAttachmentsChanged,
+    this.onPendingFilesChanged,
   });
 
   @override
@@ -85,6 +87,7 @@ class _V2AttachmentsTabState extends State<V2AttachmentsTab> {
       // Add to pending files
       _pendingFiles.add(file);
       widget.onAttachmentsChanged(_attachments);
+      widget.onPendingFilesChanged?.call(_pendingFiles);
 
       setState(() => _isUploading = false);
 
@@ -122,6 +125,7 @@ class _V2AttachmentsTabState extends State<V2AttachmentsTab> {
   void _removePendingFile(int index) {
     setState(() {
       _pendingFiles.removeAt(index);
+      widget.onPendingFilesChanged?.call(_pendingFiles);
     });
   }
 

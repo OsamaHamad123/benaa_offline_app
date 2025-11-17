@@ -54,23 +54,84 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 7; // تحديث لإصلاح indexes القديمة
+  int get schemaVersion => 8; // ⚡ Database Indexing للأداء
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
-        await _createIndexes();
+        await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
-        for (final table in allTables) {
-          await m.deleteTable(table.actualTableName);
+        if (to == 8) {
+          // إضافة indexes للأداء
+          await _createPerformanceIndexes();
+        } else {
+          // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
+          for (final table in allTables) {
+            await m.deleteTable(table.actualTableName);
+          }
+          await m.createAll();
+          await _createPerformanceIndexes();
         }
-        await m.createAll();
-        await _createIndexes();
       },
+    );
+  }
+
+  /// ⚡ إنشاء Indexes للبحث السريع
+  Future<void> _createPerformanceIndexes() async {
+    // Beneficiaries indexes
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_search ON beneficiaries(full_name, phone_number);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_location ON beneficiaries(province, city);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_section ON beneficiaries(section_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_sync ON beneficiaries(sync_state);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_birth_date ON beneficiaries(birth_date);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_created ON beneficiaries(created_at);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_updated ON beneficiaries(updated_at);',
+    );
+
+    // Civil Registry indexes (existing)
+    await _createIndexes();
+  }
+
+  Future<void> _createIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_national_id ON civil_registry(CI_ID_NUM);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_first_name ON civil_registry(CI_FIRST_ARB);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_family_name ON civil_registry(CI_FAMILY_ARB);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_full_name_norm ON civil_registry(full_name_normalized);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_city ON civil_registry(CITY);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_civil_governorate ON civil_registry(governorate);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_relations_person ON civil_registry_relations(CF_ID_NUM);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_relations_relative ON civil_registry_relations(CF_ID_RELATIVE);',
     );
   }
 
@@ -338,106 +399,7 @@ class AppDatabase extends _$AppDatabase {
     await m.addColumn(syncQueue, syncQueue.priority);
     await m.addColumn(syncQueue, syncQueue.scheduledAt);
 
-    await _createIndexes();
-  }
-
-  // إنشاء indexes للأداء
-  Future<void> _createIndexes() async {
-    // Beneficiaries indexes - NEW SCHEMA
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_id_number ON beneficiaries(id_number);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_file_id ON beneficiaries(file_id_number);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_sync ON beneficiaries(sync_state);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_server ON beneficiaries(server_id);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiary_section ON beneficiaries(section_id);',
-    );
-
-    // Visits indexes
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_visit_beneficiary ON visits(beneficiary_id);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_visit_sync ON visits(sync_state);',
-    );
-
-    // Attachments indexes
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_attachment_beneficiary ON attachments(beneficiary_id);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_attachment_sync ON attachments(sync_state);',
-    );
-
-    // Taxonomies indexes
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_taxonomy_group ON taxonomies("group", code);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_taxonomy_active ON taxonomies("group", is_active);',
-    );
-
-    // Sync Queue indexes
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_sync_queue_priority ON sync_queue(priority DESC, created_at ASC);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity, entity_id);',
-    );
-
-    // Civil Registry indexes
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_national ON civil_registry(CI_ID_NUM);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_name_normalized ON civil_registry(full_name_normalized);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_governorate ON civil_registry(governorate);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_composite ON civil_registry(governorate, full_name_normalized);',
-    );
-
-    // FTS5 for beneficiaries search
-    await customStatement(
-      '''CREATE VIRTUAL TABLE IF NOT EXISTS beneficiaries_fts USING fts5(
-        full_name_norm,
-        content='beneficiaries',
-        content_rowid='rowid'
-      );''',
-    );
-
-    // Triggers to keep FTS in sync
-    await customStatement(
-      '''CREATE TRIGGER IF NOT EXISTS beneficiaries_ai AFTER INSERT ON beneficiaries BEGIN
-        INSERT INTO beneficiaries_fts(rowid, full_name_norm)
-        VALUES (new.rowid, new.full_name_norm);
-      END;''',
-    );
-
-    await customStatement(
-      '''CREATE TRIGGER IF NOT EXISTS beneficiaries_ad AFTER DELETE ON beneficiaries BEGIN
-        INSERT INTO beneficiaries_fts(beneficiaries_fts, rowid, full_name_norm)
-        VALUES ('delete', old.rowid, old.full_name_norm);
-      END;''',
-    );
-
-    await customStatement(
-      '''CREATE TRIGGER IF NOT EXISTS beneficiaries_au AFTER UPDATE ON beneficiaries BEGIN
-        INSERT INTO beneficiaries_fts(beneficiaries_fts, rowid, full_name_norm)
-        VALUES ('delete', old.rowid, old.full_name_norm);
-        INSERT INTO beneficiaries_fts(rowid, full_name_norm)
-        VALUES (new.rowid, new.full_name_norm);
-      END;''',
-    );
+    await _createPerformanceIndexes();
   }
 
   // Civil registry database operations

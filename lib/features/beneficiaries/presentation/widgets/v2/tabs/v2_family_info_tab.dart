@@ -11,6 +11,8 @@ class V2FamilyInfoTab extends StatelessWidget {
   final TextEditingController numberOfDependentsController;
   final TextEditingController numberOfMalesController;
   final TextEditingController numberOfFemalesController;
+  final String? selectedRelationship;
+  final Function(String?) onRelationshipChanged;
 
   const V2FamilyInfoTab({
     super.key,
@@ -19,6 +21,8 @@ class V2FamilyInfoTab extends StatelessWidget {
     required this.numberOfDependentsController,
     required this.numberOfMalesController,
     required this.numberOfFemalesController,
+    this.selectedRelationship,
+    required this.onRelationshipChanged,
   });
 
   @override
@@ -40,6 +44,20 @@ class V2FamilyInfoTab extends StatelessWidget {
                 DropdownMenuItem(value: 'married', child: Text('متزوج')),
                 DropdownMenuItem(value: 'widowed', child: Text('أرمل')),
                 DropdownMenuItem(value: 'divorced', child: Text('مطلق')),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            V2DropdownField<String>(
+              value: selectedRelationship,
+              label: 'العلاقة بعائل الأسرة',
+              prefixIcon: Icons.people_outline_rounded,
+              onChanged: onRelationshipChanged,
+              items: const [
+                DropdownMenuItem(value: 'head', child: Text('رب الأسرة')),
+                DropdownMenuItem(value: 'widow', child: Text('أرملة')),
+                DropdownMenuItem(value: 'son', child: Text('ابن')),
+                DropdownMenuItem(value: 'daughter', child: Text('ابنة')),
+                DropdownMenuItem(value: 'other', child: Text('أخرى')),
               ],
             ),
           ],

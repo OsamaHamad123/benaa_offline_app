@@ -6,11 +6,15 @@ import 'core/providers/providers.dart' as core_providers;
 import 'core/services/database_maintenance_service.dart';
 import 'features/visits/presentation/providers/visit_providers.dart'
     as visit_providers;
+import 'features/search/presentation/providers/search_dependencies.dart'
+    as search_providers;
+import 'features/beneficiaries/presentation/providers/beneficiary_dependencies.dart'
+    as beneficiary_providers;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize SharedPreferences for dashboard caching
+  // Initialize SharedPreferences for dashboard caching & recent searches
   final sharedPreferences = await SharedPreferences.getInstance();
 
   runApp(
@@ -19,6 +23,14 @@ void main() async {
         // Override database provider for visits feature
         visit_providers.databaseProvider.overrideWith(
           (ref) => ref.watch(core_providers.databaseProvider),
+        ),
+        // Override database provider for beneficiaries feature
+        beneficiary_providers.databaseProvider.overrideWith(
+          (ref) => ref.watch(core_providers.databaseProvider),
+        ),
+        // Override SharedPreferences for search feature (recent searches)
+        search_providers.sharedPreferencesProvider.overrideWithValue(
+          sharedPreferences,
         ),
       ],
       child: const BenaaApp(),

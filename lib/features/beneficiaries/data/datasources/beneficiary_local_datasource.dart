@@ -57,6 +57,14 @@ class BeneficiaryLocalDataSource {
     return data != null ? BeneficiaryModel.fromDrift(data) : null;
   }
 
+  /// Get beneficiary by National ID
+  Future<BeneficiaryModel?> getByNationalId(int nationalId) async {
+    final query = db.select(db.beneficiaries)
+      ..where((b) => b.idNumber.equals(nationalId));
+    final data = await query.getSingleOrNull();
+    return data != null ? BeneficiaryModel.fromDrift(data) : null;
+  }
+
   /// Delete beneficiary
   Future<void> delete(int id) async {
     await (db.delete(db.beneficiaries)..where((b) => b.id.equals(id))).go();

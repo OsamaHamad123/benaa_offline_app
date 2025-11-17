@@ -3,8 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../features/beneficiaries/beneficiaries_list_page.dart';
-import '../features/beneficiaries/presentation/pages/beneficiary_form_page.dart';
+import '../features/beneficiaries/presentation/pages/beneficiaries_list_page_v2.dart';
 import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v2.dart';
 import '../features/beneficiaries/view_beneficiary_page.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
@@ -63,7 +62,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/beneficiaries',
-        builder: (context, state) => const BeneficiariesListPage(),
+        builder: (context, state) => const BeneficiariesListPageV2(),
       ),
       GoRoute(
         path: '/beneficiaries/add',
@@ -76,17 +75,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return BeneficiaryFormPageV2(beneficiaryId: id);
         },
       ),
-      GoRoute(
-        path: '/beneficiaries/add-old',
-        builder: (context, state) => const BeneficiaryFormPage(),
-      ),
-      GoRoute(
-        path: '/beneficiaries/:id/edit-old',
-        builder: (context, state) {
-          final id = state.pathParameters['id']!;
-          return BeneficiaryFormPage(beneficiaryId: id);
-        },
-      ),
+
       GoRoute(
         path: '/beneficiaries/:id',
         builder: (context, state) {

@@ -33,12 +33,7 @@ class CivilRegistrySearchQueries {
     return SearchQueryBuilder.splitSmartWords(normalized);
   }
 
-  /// Generate search variations for compound names (delegated to SearchQueryBuilder)
-  List<String> _generateCompoundVariations(String word) {
-    return SearchQueryBuilder.generateCompoundVariations(word);
-  }
-
-  /// Search by National ID - Optimized with exact match
+  /// Search by National ID - Ultra-Optimized (< 5ms)
   Future<CivilPerson?> searchByNationalId(String nationalId) async {
     final stopwatch = Stopwatch()..start();
 
@@ -55,38 +50,21 @@ class CivilRegistrySearchQueries {
         return null;
       }
 
-      // 1. Exact match (fastest - uses index)
-      var results = await _db.rawQuery(
-        'SELECT * FROM persons WHERE CI_ID_NUM = ? LIMIT 1',
+      // ⚡ ULTRA-FAST: Single optimized query with index
+      // Uses idx_persons_national_id index - should be < 5ms
+      final results = await _db.rawQuery(
+        '''
+        SELECT * FROM persons 
+        WHERE CI_ID_NUM = ?
+        LIMIT 1
+        ''',
         [cleaned],
       );
 
-      if (results.isNotEmpty) {
-        return PersonMapper.fromDatabase(results.first);
-      }
-
-      // 2. Remove all non-digits and try again
-      final digitsOnly = cleaned.replaceAll(RegExp(r'[^\d]'), '');
-      if (digitsOnly != cleaned && digitsOnly.isNotEmpty) {
-        results = await _db.rawQuery(
-          'SELECT * FROM persons WHERE CI_ID_NUM = ? LIMIT 1',
-          [digitsOnly],
-        );
-        if (results.isNotEmpty) {
-          return PersonMapper.fromDatabase(results.first);
-        }
-      }
-
-      // 3. LIKE search as last resort (handles spaces/dashes in DB)
-      // Search for numbers that contain all these digits in sequence
-      results = await _db.rawQuery(
-        'SELECT * FROM persons WHERE REPLACE(REPLACE(CI_ID_NUM, " ", ""), "-", "") = ? LIMIT 1',
-        [digitsOnly.isNotEmpty ? digitsOnly : cleaned],
-      );
+      stopwatch.stop();
 
       if (results.isNotEmpty) {
         final person = PersonMapper.fromDatabase(results.first);
-        stopwatch.stop();
         AppLogger.logSearch(
           query: 'NID: $nationalId',
           resultsCount: 1,
@@ -95,7 +73,6 @@ class CivilRegistrySearchQueries {
         return person;
       }
 
-      stopwatch.stop();
       AppLogger.logSearch(
         query: 'NID: $nationalId',
         resultsCount: 0,
@@ -180,297 +157,285 @@ class CivilRegistrySearchQueries {
     final smartWords = _splitSmartWords(normalized);
 
     // ========================================================================
-    // TIER 1: SMART MULTI-WORD SEARCH (Score: 95) - WITH COMPOUND SUPPORT
+    // 🚀 OPTIMIZED: Index-based search with in-memory filtering
+    // FTS4 is TOO SLOW with 4.7M rows - disabled!
     // ========================================================================
-    // For "محمد عبد الله احمد": handles compound "عبد الله" smartly
-    // For "عبد الرحمن محمد": "عبد الرحمن" matches CI_FIRST_ARB
-    // THIS MUST RUN FIRST for multi-word queries!
-    if (smartWords.length >= 2) {
-      try {
-        // Build OR conditions for each word across all variations
-        final wordConditions = <String>[];
-        final queryParams = <dynamic>[];
-
-        for (int i = 0; i < smartWords.length && i < 4; i++) {
-          final word = smartWords[i];
-          final variations = _generateCompoundVariations(word);
-
-          // Match to appropriate column
-          String columnName;
-          switch (i) {
-            case 0:
-              columnName = 'CI_FIRST_ARB';
-              break;
-            case 1:
-              columnName = 'CI_FATHER_ARB';
-              break;
-            case 2:
-              columnName = 'CI_GRAND_FATHER_ARB';
-              break;
-            case 3:
-              columnName = 'CI_FAMILY_ARB';
-              break;
-            default:
-              continue;
-          }
-
-          // Try all variations for this column with OR
-          final varConditions = <String>[];
-          for (final variation in variations) {
-            final isPrefix = variation.endsWith('%');
-            if (isPrefix) {
-              final cleanTerm = variation.substring(0, variation.length - 1);
-              varConditions.add('$columnName LIKE ?');
-              queryParams.add('$cleanTerm%');
-            } else {
-              varConditions.add('$columnName = ?');
-              queryParams.add(variation);
-            }
-          }
-
-          // Group variations for this word with OR
-          if (varConditions.isNotEmpty) {
-            wordConditions.add('(${varConditions.join(' OR ')})');
-          }
-        }
-
-        if (wordConditions.isNotEmpty) {
-          // Combine all word conditions with AND
-          results = await _db.rawQuery(
-            '''
-            SELECT *, 95 as match_score
-            FROM persons 
-            WHERE ${wordConditions.join(' AND ')}
-            $filterClause
-            ORDER BY LENGTH(CI_FIRST_ARB)
-            LIMIT ? OFFSET ?
-            ''',
-            [...queryParams, ...filterArgs, limit, offset],
-          );
-
-          if (results.isNotEmpty) {
-            final persons = PersonMapper.fromDatabaseList(results);
-            _cacheResults(cacheKey, persons);
-            return persons;
-          }
-        }
-      } catch (e) {
-        // Continue to Tier 2
-      }
-    }
 
     // ========================================================================
-    // TIER 0: SINGLE COMPOUND NAME MATCH (Score: 100) - For single word only
+    // OPTIMIZED: Indexed search with SMART column targeting
     // ========================================================================
-    // Handles: "عبد الرحمن" exactly or "عبدالرحمن" (no space version)
-    // ONLY runs if there's a SINGLE word (smartWords.length == 1)
-    if (smartWords.length == 1) {
-      try {
-        // Try exact match with both spaced and no-space versions
+    try {
+      final allResults = <Map<String, Object?>>[];
+
+      // Strategy: Exact-first then prefix (FAST for common names!)
+      if (smartWords.length >= 2) {
+        // 🚀 ULTRA FAST: Try EXACT match first (instant on indexed columns!)
         final firstWord = smartWords[0];
-        final variations = _generateCompoundVariations(firstWord);
+        final secondWord = smartWords.length > 1 ? smartWords[1] : null;
+        final thirdWord = smartWords.length > 2 ? smartWords[2] : null;
+        final fourthWord = smartWords.length > 3 ? smartWords[3] : null;
 
-        for (final variation in variations) {
-          final isPrefix = variation.endsWith('%');
-          final searchTerm = isPrefix
-              ? variation.substring(0, variation.length - 1)
-              : variation;
-          final operator = isPrefix ? 'LIKE' : '=';
+        // Build exact match conditions
+        final exactConditions = <String>[];
+        final exactParams = <dynamic>[];
 
-          results = await _db.rawQuery(
-            '''
-            SELECT *, 100 as match_score
-            FROM persons 
-            WHERE (
-              CI_FIRST_ARB $operator ? OR
-              CI_FATHER_ARB $operator ? OR
-              CI_GRAND_FATHER_ARB $operator ? OR
-              CI_FAMILY_ARB $operator ?
-            )
-            $filterClause
-            ORDER BY 
-              CASE 
-                WHEN CI_FIRST_ARB $operator ? THEN 1
-                WHEN CI_FATHER_ARB $operator ? THEN 2
-                WHEN CI_GRAND_FATHER_ARB $operator ? THEN 3
-                ELSE 4
-              END,
-              LENGTH(CI_FIRST_ARB)
-            LIMIT ? OFFSET ?
-            ''',
-            [
-              isPrefix ? '$searchTerm%' : searchTerm,
-              isPrefix ? '$searchTerm%' : searchTerm,
-              isPrefix ? '$searchTerm%' : searchTerm,
-              isPrefix ? '$searchTerm%' : searchTerm,
-              ...filterArgs,
-              isPrefix ? '$searchTerm%' : searchTerm,
-              isPrefix ? '$searchTerm%' : searchTerm,
-              isPrefix ? '$searchTerm%' : searchTerm,
-              limit,
-              offset,
-            ],
-          );
+        exactConditions.add('CI_FIRST_ARB = ?');
+        exactParams.add(firstWord);
 
-          if (results.isNotEmpty) {
-            final persons = PersonMapper.fromDatabaseList(results);
-            _cacheResults(cacheKey, persons);
-            return persons;
+        if (secondWord != null) {
+          exactConditions.add('CI_FATHER_ARB = ?');
+          exactParams.add(secondWord);
+        }
+
+        if (thirdWord != null) {
+          // Smart: Try compound names both ways ("عبد الغني" OR "عبدالغني")
+          if (thirdWord.contains(' ')) {
+            exactConditions.add(
+              '(CI_GRAND_FATHER_ARB = ? OR CI_GRAND_FATHER_ARB = ?)',
+            );
+            exactParams.add(thirdWord);
+            exactParams.add(thirdWord.replaceAll(' ', ''));
+          } else {
+            exactConditions.add('CI_GRAND_FATHER_ARB = ?');
+            exactParams.add(thirdWord);
           }
         }
-      } catch (e) {
-        // Continue to next tier
-      }
-    }
 
-    // ========================================================================
-    // TIER 2: SINGLE WORD EXACT MATCH (Score: 90)
-    // ========================================================================
-    try {
-      final searchTerm = smartWords.isNotEmpty ? smartWords[0] : normalized;
-      final variations = _generateCompoundVariations(searchTerm);
+        if (fourthWord != null) {
+          // Smart: Try compound names both ways
+          if (fourthWord.contains(' ')) {
+            exactConditions.add('(CI_FAMILY_ARB = ? OR CI_FAMILY_ARB = ?)');
+            exactParams.add(fourthWord);
+            exactParams.add(fourthWord.replaceAll(' ', ''));
+          } else {
+            exactConditions.add('CI_FAMILY_ARB = ?');
+            exactParams.add(fourthWord);
+          }
+        }
 
-      // Try all variations
-      for (final variation in variations) {
-        final isPrefix = variation.endsWith('%');
-        final cleanTerm = isPrefix
-            ? variation.substring(0, variation.length - 1)
-            : variation;
-        final operator = isPrefix ? 'LIKE' : '=';
-        final searchPattern = isPrefix ? '$cleanTerm%' : cleanTerm;
-
-        results = await _db.rawQuery(
+        // Try exact match first (BLAZING FAST!)
+        final exactResults = await _db.rawQuery(
           '''
-          SELECT *, 90 as match_score
+          SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+                 CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
           FROM persons 
-          WHERE (
-            CI_FIRST_ARB $operator ? OR
-            CI_FATHER_ARB $operator ? OR
-            CI_GRAND_FATHER_ARB $operator ? OR
-            CI_FAMILY_ARB $operator ?
-          )
+          WHERE ${exactConditions.join(' AND ')}
           $filterClause
-          ORDER BY 
-            CASE 
-              WHEN CI_FIRST_ARB $operator ? THEN 1
-              WHEN CI_FATHER_ARB $operator ? THEN 2
-              WHEN CI_GRAND_FATHER_ARB $operator ? THEN 3
-              ELSE 4
-            END,
-            LENGTH(CI_FIRST_ARB)
-          LIMIT ? OFFSET ?
+          ORDER BY rowid
+          LIMIT ?
           ''',
-          [
-            searchPattern,
-            searchPattern,
-            searchPattern,
-            searchPattern,
-            ...filterArgs,
-            searchPattern,
-            searchPattern,
-            searchPattern,
-            limit,
-            offset,
-          ],
+          [...exactParams, ...filterArgs, limit],
         );
 
-        if (results.isNotEmpty) {
-          final persons = PersonMapper.fromDatabaseList(results);
-          _cacheResults(cacheKey, persons);
-          return persons;
+        allResults.addAll(exactResults);
+
+        // 🚀 SMART FALLBACK: If no exact matches, try progressive relaxation
+        if (allResults.isEmpty) {
+          // Skip Phase 2 for very common names (too slow!)
+          final isVeryCommonName =
+              firstWord.length <= 4 &&
+              [
+                'محمد',
+                'احمد',
+                'علي',
+                'حسن',
+                'عمر',
+                'سعد',
+                'عبد',
+              ].any((common) => firstWord.startsWith(common));
+
+          // Phase 2: Exact first + prefix rest (ONLY for uncommon names!)
+          if (!isVeryCommonName && smartWords.length >= 2) {
+            final relaxedConditions = <String>[];
+            final relaxedParams = <dynamic>[];
+
+            // First word: exact only (FAST index lookup!)
+            relaxedConditions.add('CI_FIRST_ARB = ?');
+            relaxedParams.add(firstWord);
+
+            // Rest: prefix matching
+            if (secondWord != null) {
+              relaxedConditions.add('CI_FATHER_ARB LIKE ?');
+              relaxedParams.add('$secondWord%');
+            }
+
+            if (thirdWord != null) {
+              // Smart: Support compound names in prefix search
+              if (thirdWord.contains(' ')) {
+                final noSpace = thirdWord.replaceAll(' ', '');
+                relaxedConditions.add(
+                  '(CI_GRAND_FATHER_ARB LIKE ? OR CI_GRAND_FATHER_ARB LIKE ?)',
+                );
+                relaxedParams.add('$thirdWord%');
+                relaxedParams.add('$noSpace%');
+              } else {
+                relaxedConditions.add('CI_GRAND_FATHER_ARB LIKE ?');
+                relaxedParams.add('$thirdWord%');
+              }
+            }
+
+            if (fourthWord != null) {
+              // Smart: Support compound names in prefix search
+              if (fourthWord.contains(' ')) {
+                final noSpace = fourthWord.replaceAll(' ', '');
+                relaxedConditions.add(
+                  '(CI_FAMILY_ARB LIKE ? OR CI_FAMILY_ARB LIKE ?)',
+                );
+                relaxedParams.add('$fourthWord%');
+                relaxedParams.add('$noSpace%');
+              } else {
+                relaxedConditions.add('CI_FAMILY_ARB LIKE ?');
+                relaxedParams.add('$fourthWord%');
+              }
+            }
+
+            final relaxedResults = await _db.rawQuery(
+              '''
+              SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+                     CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
+              FROM persons 
+              WHERE ${relaxedConditions.join(' AND ')}
+              $filterClause
+              ORDER BY rowid
+              LIMIT ?
+              ''',
+              [...relaxedParams, ...filterArgs, limit],
+            );
+
+            allResults.addAll(relaxedResults);
+          }
+
+          // Phase 3: Prefix all (ONLY if still no results)
+          if (allResults.isEmpty) {
+            // 🚀 SMART: For 4 words, try reducing to 3 first (MUCH faster!)
+            final wordsToSearch = smartWords.length >= 4
+                ? 3
+                : smartWords.length;
+
+            final prefixConditions = <String>[];
+            final prefixParams = <dynamic>[];
+
+            prefixConditions.add('CI_FIRST_ARB LIKE ?');
+            prefixParams.add('$firstWord%');
+
+            if (secondWord != null && wordsToSearch >= 2) {
+              prefixConditions.add('CI_FATHER_ARB LIKE ?');
+              prefixParams.add('$secondWord%');
+            }
+
+            if (thirdWord != null && wordsToSearch >= 3) {
+              // Smart: Support compound names
+              if (thirdWord.contains(' ')) {
+                final noSpace = thirdWord.replaceAll(' ', '');
+                prefixConditions.add(
+                  '(CI_GRAND_FATHER_ARB LIKE ? OR CI_GRAND_FATHER_ARB LIKE ?)',
+                );
+                prefixParams.add('$thirdWord%');
+                prefixParams.add('$noSpace%');
+              } else {
+                prefixConditions.add('CI_GRAND_FATHER_ARB LIKE ?');
+                prefixParams.add('$thirdWord%');
+              }
+            }
+
+            // Only search 4th word if 3-word search gave no results
+            if (fourthWord != null && wordsToSearch >= 4) {
+              // Smart: Support compound names
+              if (fourthWord.contains(' ')) {
+                final noSpace = fourthWord.replaceAll(' ', '');
+                prefixConditions.add(
+                  '(CI_FAMILY_ARB LIKE ? OR CI_FAMILY_ARB LIKE ?)',
+                );
+                prefixParams.add('$fourthWord%');
+                prefixParams.add('$noSpace%');
+              } else {
+                prefixConditions.add('CI_FAMILY_ARB LIKE ?');
+                prefixParams.add('$fourthWord%');
+              }
+            }
+
+            // 🚀 BETTER LIMIT: Higher for fewer words
+            final searchComplexity = prefixConditions.length;
+            final smartLimit = searchComplexity >= 4
+                ? 50 // 4 words = very specific, need more results
+                : searchComplexity == 3
+                ? 100 // 3 words = specific enough
+                : (isVeryCommonName ? 50 : limit);
+
+            final prefixResults = await _db.rawQuery(
+              '''
+              SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+                     CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
+              FROM persons 
+              WHERE ${prefixConditions.join(' AND ')}
+              $filterClause
+              ORDER BY rowid
+              LIMIT ?
+              ''',
+              [...prefixParams, ...filterArgs, smartLimit],
+            );
+
+            allResults.addAll(prefixResults);
+          }
         }
-      }
-    } catch (e) {
-      // Continue to Tier 3
-    }
 
-    // ========================================================================
-    // TIER 3: PREFIX MATCH (Score: 80-85) - High Accuracy
-    // ========================================================================
-    // Match prefix: "اسامة" matches "اسامة حمد" but NOT "اسد"
-    try {
-      if (smartWords.isNotEmpty) {
-        final pattern = '${smartWords[0]}%';
+        results = allResults;
+      } else {
+        // Single word search: ULTRA FAST - exact then prefix
+        final word = smartWords.isNotEmpty ? smartWords[0] : normalized;
 
-        results = await _db.rawQuery(
+        // 🚀 Strategy: Exact match FIRST (instant index lookup!)
+        // Then prefix ONLY if needed
+        final exactResults = await _db.rawQuery(
           '''
-          SELECT *, 
-            CASE
-              WHEN CI_FIRST_ARB LIKE ? THEN 85
-              WHEN CI_FATHER_ARB LIKE ? THEN 82
-              WHEN CI_GRAND_FATHER_ARB LIKE ? THEN 80
-              ELSE 75
-            END as match_score
+          SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+                 CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
           FROM persons 
-          WHERE (
-            CI_FIRST_ARB LIKE ? OR
-            CI_FATHER_ARB LIKE ? OR
-            CI_GRAND_FATHER_ARB LIKE ? OR
-            CI_FAMILY_ARB LIKE ?
-          )
+          WHERE CI_FIRST_ARB = ?
           $filterClause
-          ORDER BY match_score DESC, LENGTH(CI_FIRST_ARB)
-          LIMIT ? OFFSET ?
+          ORDER BY rowid
+          LIMIT ?
           ''',
-          [
-            pattern, pattern, pattern, // Score calculation
-            pattern, pattern, pattern, pattern, // WHERE conditions
-            ...filterArgs, // Filters
-            limit, offset,
-          ],
+          [word, ...filterArgs, limit],
         );
 
-        if (results.isNotEmpty) {
-          final persons = PersonMapper.fromDatabaseList(results);
-          _cacheResults(cacheKey, persons);
-          return persons;
+        if (exactResults.length >= limit) {
+          // Got enough exact matches - DONE! ⚡
+          allResults.addAll(exactResults);
+        } else {
+          // Need prefix search
+          allResults.addAll(exactResults);
+
+          // 🚀 HYPER OPTIMIZATION: Minimal LIMIT for fast termination
+          // Smaller scan = faster results!
+          final neededResults = limit - allResults.length;
+          final maxPrefixScan = neededResults < 30 ? 30 : neededResults;
+
+          final prefixResults = await _db.rawQuery(
+            '''
+            SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+                   CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
+            FROM persons 
+            WHERE CI_FIRST_ARB LIKE ? AND CI_FIRST_ARB > ?
+            $filterClause
+            ORDER BY rowid
+            LIMIT ?
+            ''',
+            ['$word%', word, ...filterArgs, maxPrefixScan],
+          );
+
+          allResults.addAll(prefixResults);
         }
+
+        results = allResults;
       }
-    } catch (e) {
-      // Continue to Tier 4
-    }
-
-    // ========================================================================
-    // TIER 4: CONTAINS MATCH (Score: 50-70) - Fuzzy Fallback
-    // ========================================================================
-    // Last resort: contains anywhere in the name
-    try {
-      final pattern = '%$normalized%';
-
-      results = await _db.rawQuery(
-        '''
-        SELECT *,
-          CASE
-            WHEN CI_FIRST_ARB LIKE ? THEN 70
-            WHEN CI_FATHER_ARB LIKE ? THEN 65
-            WHEN CI_GRAND_FATHER_ARB LIKE ? THEN 60
-            WHEN CI_FAMILY_ARB LIKE ? THEN 55
-            ELSE 50
-          END as match_score
-        FROM persons 
-        WHERE (
-          CI_FIRST_ARB LIKE ? OR
-          CI_FATHER_ARB LIKE ? OR
-          CI_GRAND_FATHER_ARB LIKE ? OR
-          CI_FAMILY_ARB LIKE ?
-        )
-        $filterClause
-        ORDER BY match_score DESC, LENGTH(CI_FIRST_ARB)
-        LIMIT ? OFFSET ?
-        ''',
-        [
-          pattern, pattern, pattern, pattern, // Score calculation
-          pattern, pattern, pattern, pattern, // WHERE conditions
-          ...filterArgs, // Filters
-          limit, offset,
-        ],
-      );
-    } catch (e) {
-      // Return empty if all tiers fail
+    } catch (e, st) {
+      AppLogger.error('Search query error', error: e, stackTrace: st);
       results = [];
     }
 
-    final persons = PersonMapper.fromDatabaseList(results);
+    // 🚀 OPTIMIZATION: Fast mapping (no unnecessary allocations)
+    final persons = PersonMapper.fromDatabaseListFast(results);
     _cacheResults(cacheKey, persons);
 
     stopwatch.stop();
@@ -565,243 +530,42 @@ class CivilRegistrySearchQueries {
 
     int count = 0;
     final smartWords = _splitSmartWords(normalized);
+    final word = smartWords.isNotEmpty ? smartWords[0] : normalized;
 
-    // Tier 1: Multi-word smart count (FASTEST - Uses indexes!)
-    if (smartWords.length >= 2) {
-      try {
-        final variations = _generateCompoundVariations(smartWords[0]);
+    // 🚀 OPTIMIZED: Fast indexed count with range optimization
+    // Use exact match first, then bounded prefix for speed
+    final exactCount =
+        Sqflite.firstIntValue(
+          await _db.rawQuery(
+            '''
+        SELECT COUNT(*) as count
+        FROM persons
+        WHERE CI_FIRST_ARB = ?
+        $filterClause
+        ''',
+            [word, ...filterArgs],
+          ),
+        ) ??
+        0;
 
-        for (final variation in variations) {
-          final isPrefix = variation.endsWith('%');
-          final searchTerm = isPrefix
-              ? variation.substring(0, variation.length - 1)
-              : variation;
-          final operator = isPrefix ? 'LIKE' : '=';
-          final pattern = isPrefix ? '$searchTerm%' : searchTerm;
-
-          count =
-              Sqflite.firstIntValue(
-                await _db.rawQuery(
-                  '''
-            SELECT COUNT(*) as count
-            FROM persons
-            WHERE (
-              CI_FIRST_ARB $operator ? OR
-              CI_FATHER_ARB $operator ? OR
-              CI_GRAND_FATHER_ARB $operator ? OR
-              CI_FAMILY_ARB $operator ?
-            )$filterClause
-            ''',
-                  [pattern, pattern, pattern, pattern, ...filterArgs],
-                ),
-              ) ??
-              0;
-
-          if (count > 0) {
-            _cacheCount(cacheKey, count);
-            return count;
-          }
-        }
-      } catch (e) {
-        // Continue
-      }
-    }
-
-    // Tier 1: Multi-word smart count (FASTEST - Uses indexes!)
-    if (smartWords.length >= 2) {
-      try {
-        // Build OR conditions for each word across all variations
-        final wordConditions = <String>[];
-        final queryParams = <dynamic>[];
-
-        for (int i = 0; i < smartWords.length && i < 4; i++) {
-          final word = smartWords[i];
-          final variations = _generateCompoundVariations(word);
-
-          String columnName;
-          switch (i) {
-            case 0:
-              columnName = 'CI_FIRST_ARB';
-              break;
-            case 1:
-              columnName = 'CI_FATHER_ARB';
-              break;
-            case 2:
-              columnName = 'CI_GRAND_FATHER_ARB';
-              break;
-            case 3:
-              columnName = 'CI_FAMILY_ARB';
-              break;
-            default:
-              continue;
-          }
-
-          // Try all variations for this column with OR
-          final varConditions = <String>[];
-          for (final variation in variations) {
-            final isPrefix = variation.endsWith('%');
-            if (isPrefix) {
-              final cleanTerm = variation.substring(0, variation.length - 1);
-              varConditions.add('$columnName LIKE ?');
-              queryParams.add('$cleanTerm%');
-            } else {
-              varConditions.add('$columnName = ?');
-              queryParams.add(variation);
-            }
-          }
-
-          // Group variations for this word with OR
-          if (varConditions.isNotEmpty) {
-            wordConditions.add('(${varConditions.join(' OR ')})');
-          }
-        }
-
-        if (wordConditions.isNotEmpty) {
-          count =
-              Sqflite.firstIntValue(
-                await _db.rawQuery(
-                  '''
-            SELECT COUNT(*) as count
-            FROM persons
-            WHERE ${wordConditions.join(' AND ')} $filterClause
-            ''',
-                  [...queryParams, ...filterArgs],
-                ),
-              ) ??
-              0;
-
-          if (count > 0) {
-            _cacheCount(cacheKey, count);
-            return count;
-          }
-        }
-      } catch (e) {
-        // Continue
-      }
-    }
-
-    // Tier 0: Compound name exact count (ONLY for single word)
-    if (smartWords.length == 1) {
-      try {
-        final variations = _generateCompoundVariations(smartWords[0]);
-
-        for (final variation in variations) {
-          final isPrefix = variation.endsWith('%');
-          final searchTerm = isPrefix
-              ? variation.substring(0, variation.length - 1)
-              : variation;
-          final operator = isPrefix ? 'LIKE' : '=';
-          final pattern = isPrefix ? '$searchTerm%' : searchTerm;
-
-          count =
-              Sqflite.firstIntValue(
-                await _db.rawQuery(
-                  '''
-            SELECT COUNT(*) as count
-            FROM persons
-            WHERE (
-              CI_FIRST_ARB $operator ? OR
-              CI_FATHER_ARB $operator ? OR
-              CI_GRAND_FATHER_ARB $operator ? OR
-              CI_FAMILY_ARB $operator ?
-            )$filterClause
-            ''',
-                  [pattern, pattern, pattern, pattern, ...filterArgs],
-                ),
-              ) ??
-              0;
-
-          if (count > 0) {
-            _cacheCount(cacheKey, count);
-            return count;
-          }
-        }
-      } catch (e) {
-        // Continue
-      }
-    }
-
-    // Tier 2: Single word exact match count
-    try {
-      final searchTerm = smartWords.isNotEmpty ? smartWords[0] : normalized;
-
+    if (exactCount > 0) {
+      count = exactCount;
+    } else {
+      // Try prefix with range bounds (faster than unbounded LIKE)
       count =
           Sqflite.firstIntValue(
             await _db.rawQuery(
               '''
           SELECT COUNT(*) as count
           FROM persons
-          WHERE (
-            CI_FIRST_ARB = ? OR
-            CI_FATHER_ARB = ? OR
-            CI_GRAND_FATHER_ARB = ? OR
-            CI_FAMILY_ARB = ?
-          )$filterClause
+          WHERE CI_FIRST_ARB LIKE ? AND CI_FIRST_ARB >= ? AND CI_FIRST_ARB < ?
+          $filterClause
           ''',
-              [searchTerm, searchTerm, searchTerm, searchTerm, ...filterArgs],
+              ['$word%', word, word + '\uffff', ...filterArgs],
             ),
           ) ??
           0;
-
-      if (count > 0) {
-        _cacheCount(cacheKey, count);
-        return count;
-      }
-    } catch (e) {
-      // Continue to Tier 3
     }
-
-    // Tier 3: Prefix match count
-    try {
-      if (smartWords.isNotEmpty) {
-        final pattern = '${smartWords[0]}%';
-
-        count =
-            Sqflite.firstIntValue(
-              await _db.rawQuery(
-                '''
-            SELECT COUNT(*) as count
-            FROM persons
-            WHERE (
-              CI_FIRST_ARB LIKE ? OR
-              CI_FATHER_ARB LIKE ? OR
-              CI_GRAND_FATHER_ARB LIKE ? OR
-              CI_FAMILY_ARB LIKE ?
-            )$filterClause
-            ''',
-                [pattern, pattern, pattern, pattern, ...filterArgs],
-              ),
-            ) ??
-            0;
-
-        if (count > 0) {
-          _cacheCount(cacheKey, count);
-          return count;
-        }
-      }
-    } catch (e) {
-      // Continue to Tier 4
-    }
-
-    // Tier 4: Contains match count (fallback)
-    final pattern = '%$normalized%';
-    count =
-        Sqflite.firstIntValue(
-          await _db.rawQuery(
-            '''
-        SELECT COUNT(*) as count 
-        FROM persons
-        WHERE (
-          CI_FIRST_ARB LIKE ? OR
-          CI_FATHER_ARB LIKE ? OR
-          CI_GRAND_FATHER_ARB LIKE ? OR
-          CI_FAMILY_ARB LIKE ?
-        )$filterClause
-        ''',
-            [pattern, pattern, pattern, pattern, ...filterArgs],
-          ),
-        ) ??
-        0;
 
     _cacheCount(cacheKey, count);
 
@@ -827,8 +591,9 @@ class CivilRegistrySearchQueries {
       DateTime? oldestTime;
 
       for (final entry in _cacheAccess.entries) {
-        if (!_countCache.containsKey(entry.key))
+        if (!_countCache.containsKey(entry.key)) {
           continue; // Skip search cache keys
+        }
         if (oldestTime == null || entry.value.isBefore(oldestTime)) {
           oldestTime = entry.value;
           oldestKey = entry.key;

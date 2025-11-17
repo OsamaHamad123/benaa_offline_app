@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
@@ -16,6 +17,9 @@ class V2BasicInfoTab extends StatelessWidget {
   final String? selectedGender;
   final Function(String?) onGenderChanged;
   final VoidCallback onBirthDateTap;
+  final FocusNode? firstFieldFocusNode;
+  final String? selectedCategory;
+  final Function(String?) onCategoryChanged;
 
   const V2BasicInfoTab({
     super.key,
@@ -29,6 +33,9 @@ class V2BasicInfoTab extends StatelessWidget {
     this.selectedGender,
     required this.onGenderChanged,
     required this.onBirthDateTap,
+    this.firstFieldFocusNode,
+    this.selectedCategory,
+    required this.onCategoryChanged,
   });
 
   @override
@@ -45,6 +52,7 @@ class V2BasicInfoTab extends StatelessWidget {
               label: 'الاسم الأول',
               prefixIcon: Icons.badge_rounded,
               isRequired: true,
+              focusNode: firstFieldFocusNode,
               validator: (value) =>
                   value?.isEmpty ?? true ? 'الحقل مطلوب' : null,
             ),
@@ -89,11 +97,15 @@ class V2BasicInfoTab extends StatelessWidget {
               label: 'الرقم الوطني',
               prefixIcon: Icons.credit_card_rounded,
               keyboardType: TextInputType.number,
-              maxLength: 11,
+              maxLength: 9,
               isRequired: true,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly, // أرقام فقط
+              ],
               validator: (value) {
                 if (value?.isEmpty ?? true) return 'الحقل مطلوب';
-                if (value!.length != 11) return 'يجب أن يكون 11 رقم';
+                if (value!.length != 9) return 'يجب أن يكون 9 أرقام';
+                if (!RegExp(r'^\d{9}$').hasMatch(value)) return 'أرقام فقط';
                 return null;
               },
             ),
@@ -118,8 +130,28 @@ class V2BasicInfoTab extends StatelessWidget {
               onChanged: onGenderChanged,
               validator: (value) => value == null ? 'الحقل مطلوب' : null,
               items: const [
-                DropdownMenuItem(value: 'male', child: Text('ذكر')),
-                DropdownMenuItem(value: 'female', child: Text('أنثى')),
+                DropdownMenuItem(value: 'ذكر', child: Text('ذكر')),
+                DropdownMenuItem(value: 'أنثى', child: Text('أنثى')),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            V2DropdownField<String>(
+              value: selectedCategory,
+              label: 'فئة المستفيد',
+              prefixIcon: Icons.category_rounded,
+              isRequired: true,
+              onChanged: onCategoryChanged,
+              validator: (value) => value == null ? 'الحقل مطلوب' : null,
+              items: const [
+                DropdownMenuItem(value: 'orphan', child: Text('يتيم')),
+                DropdownMenuItem(value: 'poor', child: Text('فقير')),
+                DropdownMenuItem(value: 'displaced', child: Text('نازح')),
+                DropdownMenuItem(value: 'widow', child: Text('أرملة')),
+                DropdownMenuItem(
+                  value: 'disabled',
+                  child: Text('من ذوي الإعاقة'),
+                ),
+                DropdownMenuItem(value: 'other', child: Text('أخرى')),
               ],
             ),
           ],

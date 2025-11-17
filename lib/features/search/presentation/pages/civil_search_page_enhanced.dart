@@ -8,6 +8,8 @@ import '../../../../core/utils/responsive_utils.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../domain/entities/civil_person.dart';
 import '../providers/search_provider.dart';
+import '../providers/recent_searches_provider.dart';
+import '../providers/search_dependencies.dart';
 import '../widgets/widgets.dart';
 
 /// 🔍 Civil Search Page - Enhanced Clean Architecture
@@ -77,7 +79,12 @@ class _CivilSearchPageEnhancedState
     }
 
     notifier.setQuery(query);
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+
+    // 🚀 SMART DEBOUNCE: Fast for numbers, slower for names
+    final isNumeric = RegExp(r'^\d+$').hasMatch(query.trim());
+    final debounceMs = isNumeric ? 100 : 400; // 100ms for ID, 400ms for names
+
+    _debounceTimer = Timer(Duration(milliseconds: debounceMs), () {
       if (query.trim().length >= 2) {
         notifier.search(reset: true);
       }
@@ -242,9 +249,19 @@ class _CivilSearchPageEnhancedState
             TextField(
               controller: _searchController,
               onChanged: _onSearchChanged,
+              textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'الاسم أو الرقم الوطني',
-                prefixIcon: const Icon(Icons.search, color: Colors.blue),
+                hintText: 'مثال: محمد أحمد أو 1234567890',
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 14.sp,
+                ),
+                helperText: '💡 اكتب اسم كامل أو جزء من الرقم الوطني',
+                helperStyle: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12.sp,
+                ),
+                prefixIcon: Icon(Icons.search, color: Colors.blue, size: 24.w),
                 suffixIcon: searchState.isSearching
                     ? Padding(
                         padding: EdgeInsets.all(12.w),
@@ -261,24 +278,201 @@ class _CivilSearchPageEnhancedState
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.grey.shade50,
+                fillColor: Colors.white,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(16.r),
+                  borderSide: BorderSide.none,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(16.r),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade200,
+                    width: 1.5,
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: const BorderSide(color: Colors.blue, width: 2),
+                  borderRadius: BorderRadius.circular(16.r),
+                  borderSide: const BorderSide(color: Colors.blue, width: 2.5),
                 ),
               ),
             ),
+            // 🚀 LIVE SEARCH FEEDBACK
+            if (searchState.query.isNotEmpty && !searchState.isSearching)
+              Padding(
+                padding: EdgeInsets.only(top: 12.h),
+                child: Row(
+                  children: [
+                    // Result count
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 6.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: searchState.results.isEmpty
+                            ? Colors.orange.shade50
+                            : Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: searchState.results.isEmpty
+                              ? Colors.orange.shade200
+                              : Colors.blue.shade200,
+                        ),
+                      ),
+                      child: Text(
+                        '${searchState.results.length} نتيجة',
+                        style: TextStyle(
+                          color: searchState.results.isEmpty
+                              ? Colors.orange.shade700
+                              : Colors.blue.shade700,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    // Speed indicator
+                    if (searchState.searchDurationMs != null) ...[
+                      SizedBox(width: 8.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getSpeedColor(
+                            searchState.searchDurationMs!,
+                          ).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: _getSpeedColor(
+                              searchState.searchDurationMs!,
+                            ).withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${searchState.searchDurationMs}ms',
+                              style: TextStyle(
+                                color: _getSpeedColor(
+                                  searchState.searchDurationMs!,
+                                ),
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            SizedBox(width: 4.w),
+                            Icon(
+                              _getSpeedIcon(searchState.searchDurationMs!),
+                              size: 16.w,
+                              color: _getSpeedColor(
+                                searchState.searchDurationMs!,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            // 🔍 RECENT SEARCHES (only when search bar is empty)
+            if (searchState.query.isEmpty) _buildRecentSearches(rv),
           ],
         ),
       ),
+    );
+  }
+
+  /// Recent searches section
+  Widget _buildRecentSearches(ResponsiveValues rv) {
+    final recentSearchesAsync = ref.watch(recentSearchesProvider);
+
+    return recentSearchesAsync.when(
+      data: (searches) {
+        if (searches.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: EdgeInsets.only(top: 16.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'عمليات البحث الأخيرة',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _clearRecentSearches,
+                    child: Text(
+                      'مسح الكل',
+                      style: TextStyle(fontSize: 12.sp, color: Colors.blue),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8.h),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: searches.map((search) {
+                  return InkWell(
+                    onTap: () => _performRecentSearch(search.query),
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 8.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(20.r),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.history,
+                            size: 16.w,
+                            color: Colors.blue.shade700,
+                          ),
+                          SizedBox(width: 6.w),
+                          Text(
+                            search.query,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                          SizedBox(width: 6.w),
+                          InkWell(
+                            onTap: () => _removeRecentSearch(search.query),
+                            child: Icon(
+                              Icons.close,
+                              size: 16.w,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
@@ -369,12 +563,7 @@ class _CivilSearchPageEnhancedState
                   label: const Text('إعادة المحاولة'),
                 ),
               )
-            : const EmptyState(
-                icon: Icons.search_off,
-                title: 'لا توجد نتائج',
-                message: 'لم يتم العثور على نتائج مطابقة',
-                iconColor: Colors.orange,
-              ),
+            : _buildEnhancedEmptyState(searchState.query),
       );
     }
 
@@ -532,6 +721,108 @@ class _CivilSearchPageEnhancedState
   void _clearSearch() {
     _searchController.clear();
     ref.read(searchProvider.notifier).clearSearch();
+  }
+
+  // 🎨 Speed indicator helpers
+  Color _getSpeedColor(int ms) {
+    if (ms < 100) return Colors.green.shade600; // سريع جداً
+    if (ms < 300) return Colors.orange.shade600; // مقبول
+    return Colors.red.shade600; // بطيء
+  }
+
+  IconData _getSpeedIcon(int ms) {
+    if (ms < 100) return Icons.bolt; // برق
+    if (ms < 300) return Icons.schedule; // ساعة
+    return Icons.hourglass_bottom; // ساعة رملية
+  }
+
+  // 🔍 Recent searches handlers
+  void _performRecentSearch(String query) {
+    _searchController.text = query;
+    ref.read(searchProvider.notifier).setQuery(query);
+    ref.read(searchProvider.notifier).search(reset: true);
+  }
+
+  Future<void> _removeRecentSearch(String query) async {
+    final repository = ref.read(recentSearchesRepositoryProvider);
+    await repository.removeSearch(query);
+    ref.invalidate(recentSearchesProvider); // Refresh list
+  }
+
+  Future<void> _clearRecentSearches() async {
+    final useCase = ref.read(clearRecentSearchesUseCaseProvider);
+    await useCase();
+    ref.invalidate(recentSearchesProvider); // Refresh list
+  }
+
+  /// 🎨 Enhanced Empty State with helpful tips
+  Widget _buildEnhancedEmptyState(String query) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(32.w),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search_off, size: 64.w, color: Colors.grey.shade300),
+            SizedBox(height: 20.h),
+            Text(
+              'لا توجد نتائج لـ "$query"',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              'نصائح للبحث:',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            SizedBox(height: 10.h),
+            _buildSearchTip(
+              Icons.abc,
+              'جرب كتابة اسم جزئي (مثال: "محمد" بدلاً من "محمد أحمد")',
+            ),
+            SizedBox(height: 6.h),
+            _buildSearchTip(
+              Icons.filter_alt_outlined,
+              'تحقق من الفلاتر (المحافظة، الجنس)',
+            ),
+            SizedBox(height: 6.h),
+            _buildSearchTip(Icons.spellcheck, 'تأكد من صحة الإملاء'),
+            SizedBox(height: 20.h),
+            OutlinedButton.icon(
+              onPressed: _clearSearch,
+              icon: Icon(Icons.clear_all, size: 20.w),
+              label: const Text('مسح البحث'),
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchTip(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18.w, color: Colors.blue.shade600),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 13.sp, color: Colors.grey.shade600),
+          ),
+        ),
+      ],
+    );
   }
 
   void _onClearFilters() {

@@ -184,7 +184,11 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
       }
 
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // Log the error with stack trace
+      print('❌ Error saving beneficiary: $e');
+      print('📋 Stack trace: $stackTrace');
+
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'فشل في حفظ البيانات: ${e.toString()}',

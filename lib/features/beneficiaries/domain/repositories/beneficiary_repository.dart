@@ -11,6 +11,9 @@ abstract class BeneficiaryRepository {
   /// Get beneficiary by ID
   Future<Beneficiary?> getById(String id);
 
+  /// Get beneficiary by National ID
+  Future<Beneficiary?> getByNationalId(String nationalId);
+
   /// Delete beneficiary
   Future<void> delete(String id);
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/civil_person.dart';
 import '../../domain/entities/search_entities.dart';
+import '../../domain/entities/recent_search.dart';
 import '../../domain/usecases/search_by_name.dart';
 import '../../domain/usecases/search_by_national_id.dart';
 import 'search_dependencies.dart';
@@ -62,6 +63,7 @@ class SearchState {
 class SearchNotifier extends StateNotifier<SearchState> {
   final SearchByNationalIdUseCase searchByNationalIdUseCase;
   final SearchByNameUseCase searchByNameUseCase;
+  final Ref _ref; // For accessing other providers
 
   // ⚡ Aggressive debouncing to eliminate lag
   Timer? _debounceTimer;
@@ -77,7 +79,9 @@ class SearchNotifier extends StateNotifier<SearchState> {
   SearchNotifier({
     required this.searchByNationalIdUseCase,
     required this.searchByNameUseCase,
-  }) : super(const SearchState());
+    required Ref ref,
+  }) : _ref = ref,
+       super(const SearchState());
 
   // ⚡ Performance: Reduced to 6 for ultra-smooth scrolling (no lag!)
   static const int _pageSize = 6;
@@ -351,6 +355,11 @@ class SearchNotifier extends StateNotifier<SearchState> {
           totalResults: result.totalResults,
           searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
         );
+
+        // 🔍 Save to recent searches (Clean Architecture!)
+        if (result.persons.isNotEmpty) {
+          _saveToRecentSearches(state.query, result.persons.length);
+        }
       } else {
         state = state.copyWith(
           results: [...state.results, ...result.persons],
@@ -408,6 +417,26 @@ class SearchNotifier extends StateNotifier<SearchState> {
     if (!state.hasMore || state.isSearching) return;
     await search(reset: false);
   }
+
+  /// 🔍 Save to recent searches (Clean Architecture - uses use case)
+  void _saveToRecentSearches(String query, int resultsCount) {
+    // Fire and forget - don't block UI
+    Future.microtask(() async {
+      try {
+        final repository = _ref.read(recentSearchesRepositoryProvider);
+        final search = RecentSearch(
+          query: query,
+          searchedAt: DateTime.now(),
+          resultsCount: resultsCount,
+        );
+        await repository.saveSearch(search);
+        // Don't invalidate here - causes performance issues!
+        // Provider will auto-refresh when needed
+      } catch (e) {
+        // Fail silently - not critical
+      }
+    });
+  }
 }
 
 /// Provider for Search State
@@ -420,6 +449,7 @@ final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
   return SearchNotifier(
     searchByNationalIdUseCase: searchByNationalId,
     searchByNameUseCase: searchByName,
+    ref: ref,
   );
 });
 
