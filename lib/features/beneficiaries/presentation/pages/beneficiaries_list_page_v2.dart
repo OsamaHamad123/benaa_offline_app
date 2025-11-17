@@ -1,17 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import '../providers/list/beneficiaries_list_provider.dart';
+import '../providers/list/beneficiaries_list_state.dart';
 import '../providers/list/filters_provider.dart';
 import '../providers/list/selection_provider.dart';
 import 'list_widgets/beneficiary_card_v2.dart';
 import 'list_widgets/statistics_dashboard.dart';
 import 'list_widgets/filters_bottom_sheet.dart';
 import 'list_widgets/bulk_actions_bar.dart';
-import '../../../../core/widgets/custom_snackbar.dart';
+import '../../../../core/utils/responsive_utils.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
 class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
@@ -225,34 +227,86 @@ class _BeneficiariesListPageV2State
       );
     }
 
+    final rv = ResponsiveUtils.getValues(context);
+
     return RefreshIndicator(
       onRefresh: () async {
+        HapticFeedback.mediumImpact();
         await ref.read(beneficiariesListProvider.notifier).refresh();
       },
-      child: ListView.builder(
-        controller: _scrollController,
-        padding: EdgeInsets.all(16.r),
-        itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == state.items.length) {
-            return Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.r),
-                child: const CircularProgressIndicator(),
-              ),
-            );
-          }
+      child: rv.isTablet
+          ? _buildGridView(state, selection, rv)
+          : _buildListView(state, selection, rv),
+    );
+  }
 
-          final beneficiary = state.items[index];
-          final isSelected = selection.isSelected(beneficiary.id);
-
-          return BeneficiaryCardV2(
-            beneficiary: beneficiary,
-            isSelectionMode: selection.isSelectionMode,
-            isSelected: isSelected,
+  /// بناء ListView للموبايل
+  Widget _buildListView(
+    BeneficiariesListState state,
+    SelectionState selection,
+    ResponsiveValues rv,
+  ) {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: EdgeInsets.all(16.r),
+      itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.r),
+              child: const CircularProgressIndicator(),
+            ),
           );
-        },
+        }
+
+        final beneficiary = state.items[index];
+        final isSelected = selection.isSelected(beneficiary.id);
+
+        return BeneficiaryCardV2(
+          beneficiary: beneficiary,
+          isSelectionMode: selection.isSelectionMode,
+          isSelected: isSelected,
+        );
+      },
+    );
+  }
+
+  /// بناء GridView للتابلت (عمودين)
+  Widget _buildGridView(
+    BeneficiariesListState state,
+    SelectionState selection,
+    ResponsiveValues rv,
+  ) {
+    return GridView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(20),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 2.5, // عرض أكبر من الطول للبطاقة
       ),
+      itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final beneficiary = state.items[index];
+        final isSelected = selection.isSelected(beneficiary.id);
+
+        return BeneficiaryCardV2(
+          beneficiary: beneficiary,
+          isSelectionMode: selection.isSelectionMode,
+          isSelected: isSelected,
+        );
+      },
     );
   }
 
@@ -291,16 +345,16 @@ class _BeneficiariesListPageV2State
                         children: [
                           Container(
                             width: 150,
-                            height: 16,
+                            height: 14,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Container(
                             width: 100,
-                            height: 12,
+                            height: 10,
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(4),
@@ -311,17 +365,19 @@ class _BeneficiariesListPageV2State
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: List.generate(
-                    4,
-                    (i) => Container(
-                      width: 70 + (i * 10).toDouble(),
-                      height: 28,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: Row(
+                    children: List.generate(
+                      4,
+                      (i) => Container(
+                        width: 60 + (i * 8).toDouble(),
+                        height: 24,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),

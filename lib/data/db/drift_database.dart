@@ -81,7 +81,26 @@ class AppDatabase extends _$AppDatabase {
 
   /// ⚡ إنشاء Indexes للبحث السريع
   Future<void> _createPerformanceIndexes() async {
-    // Beneficiaries indexes
+    // ✅ Composite index للبحث المتقدم (full_name + province + section)
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_search_composite '
+      'ON beneficiaries(full_name_norm, province, section_id);',
+    );
+
+    // ✅ Index للفلترة بتاريخ الإضافة + حالة المزامنة
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_recent '
+      'ON beneficiaries(created_at DESC, sync_state);',
+    );
+
+    // ✅ Partial index للمستفيدين غير المكتملين
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_incomplete '
+      'ON beneficiaries(phone_number, province) '
+      'WHERE phone_number IS NULL OR province IS NULL;',
+    );
+
+    // Existing indexes
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_beneficiaries_search ON beneficiaries(full_name, phone_number);',
     );
@@ -103,6 +122,41 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_beneficiaries_updated ON beneficiaries(updated_at);',
     );
+
+    // ✅ Trigger لتحديث full_name_norm تلقائياً
+    await customStatement('''
+      CREATE TRIGGER IF NOT EXISTS trg_beneficiaries_full_name_norm_insert
+      AFTER INSERT ON beneficiaries
+      BEGIN
+        UPDATE beneficiaries 
+        SET full_name_norm = LOWER(
+          COALESCE(NEW.first_name, '') || ' ' || 
+          COALESCE(NEW.father_name, '') || ' ' || 
+          COALESCE(NEW.grand_father_name, '') || ' ' || 
+          COALESCE(NEW.family_name, '')
+        )
+        WHERE id = NEW.id;
+      END;
+    ''');
+
+    await customStatement('''
+      CREATE TRIGGER IF NOT EXISTS trg_beneficiaries_full_name_norm_update
+      AFTER UPDATE ON beneficiaries
+      WHEN NEW.first_name != OLD.first_name 
+        OR NEW.father_name != OLD.father_name 
+        OR NEW.grand_father_name != OLD.grand_father_name 
+        OR NEW.family_name != OLD.family_name
+      BEGIN
+        UPDATE beneficiaries 
+        SET full_name_norm = LOWER(
+          COALESCE(NEW.first_name, '') || ' ' || 
+          COALESCE(NEW.father_name, '') || ' ' || 
+          COALESCE(NEW.grand_father_name, '') || ' ' || 
+          COALESCE(NEW.family_name, '')
+        )
+        WHERE id = NEW.id;
+      END;
+    ''');
 
     // Civil Registry indexes (existing)
     await _createIndexes();

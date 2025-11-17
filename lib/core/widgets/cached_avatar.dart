@@ -56,10 +56,11 @@ class CachedAvatar extends StatelessWidget {
         ),
         placeholder: (context, url) => _buildShimmerAvatar(),
         errorWidget: (context, url, error) => _buildInitialsAvatar(),
-        memCacheHeight: 200, // Limit memory cache
-        memCacheWidth: 200,
-        maxHeightDiskCache: 400, // Limit disk cache
-        maxWidthDiskCache: 400,
+        memCacheHeight: (size * 2).toInt(), // ✅ 2x الحجم الفعلي
+        memCacheWidth: (size * 2).toInt(),
+        maxHeightDiskCache: (size * 4).toInt(), // ✅ 4x للدقة العالية
+        maxWidthDiskCache: (size * 4).toInt(),
+        fadeInDuration: const Duration(milliseconds: 300),
       );
     }
 

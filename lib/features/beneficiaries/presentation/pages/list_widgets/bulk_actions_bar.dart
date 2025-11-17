@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../../core/utils/responsive_utils.dart';
 import '../../providers/list/selection_provider.dart';
 import '../../providers/list/beneficiaries_list_provider.dart';
 
@@ -12,11 +13,15 @@ class BulkActionsBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selection = ref.watch(selectionProvider);
     final theme = Theme.of(context);
+    final rv = ResponsiveUtils.getValues(context);
 
     if (!selection.isSelectionMode) return const SizedBox.shrink();
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      padding: EdgeInsets.symmetric(
+        horizontal: rv.isTablet ? 20 : 16,
+        vertical: rv.isTablet ? 14 : 12,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.primaryContainer,
         boxShadow: const [
@@ -32,35 +37,47 @@ class BulkActionsBar extends ConsumerWidget {
         child: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: Icon(Icons.close, size: rv.isTablet ? 26 : 24),
               onPressed: () {
+                HapticFeedback.lightImpact();
                 ref.read(selectionProvider.notifier).deselectAll();
               },
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: rv.isTablet ? 10 : 8),
             Text(
               '${selection.selectedCount} محدد',
-              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: rv.isTablet ? 18 : 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: Icon(Icons.delete_outline, size: rv.isTablet ? 26 : 24),
               tooltip: 'حذف',
-              onPressed: () => _showDeleteConfirmation(context, ref),
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _showDeleteConfirmation(context, ref);
+              },
             ),
             IconButton(
-              icon: const Icon(Icons.file_download_outlined),
+              icon: Icon(
+                Icons.file_download_outlined,
+                size: rv.isTablet ? 26 : 24,
+              ),
               tooltip: 'تصدير',
               onPressed: () {
+                HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('قريباً: تصدير المحددة')),
                 );
               },
             ),
             IconButton(
-              icon: const Icon(Icons.sync),
+              icon: Icon(Icons.sync, size: rv.isTablet ? 26 : 24),
               tooltip: 'مزامنة',
               onPressed: () {
+                HapticFeedback.lightImpact();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('قريباً: مزامنة المحددة')),
                 );
@@ -84,11 +101,17 @@ class BulkActionsBar extends ConsumerWidget {
         content: Text('هل أنت متأكد من حذف ${selection.selectedCount} مستفيد؟'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pop(context, false);
+            },
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              HapticFeedback.heavyImpact();
+              Navigator.pop(context, true);
+            },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),
           ),

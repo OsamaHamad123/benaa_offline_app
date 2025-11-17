@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../../data/db/drift_database.dart';
 import '../../providers/list/selection_provider.dart';
 import '../../../../../../core/widgets/cached_avatar.dart';
+import '../../../../../../core/utils/responsive_utils.dart';
 
 // Helpers & Services
 import 'helpers/beneficiary_helpers.dart';
@@ -41,6 +42,7 @@ class BeneficiaryCardV2 extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final rv = ResponsiveUtils.getValues(context);
     final categoryColor = BeneficiaryHelpers.getCategoryColor(
       beneficiary.sectionId,
     );
@@ -49,37 +51,43 @@ class BeneficiaryCardV2 extends ConsumerWidget {
       key: ValueKey('beneficiary_${beneficiary.id}'),
       child: Card(
         elevation: isSelected ? 8 : 2,
-        margin: EdgeInsets.only(bottom: 16.h),
+        margin: EdgeInsets.only(bottom: rv.spacing),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(16),
           side: isSelected
-              ? BorderSide(color: theme.colorScheme.primary, width: 3.w)
+              ? BorderSide(color: theme.colorScheme.primary, width: 3)
               : BorderSide.none,
         ),
         child: InkWell(
           onTap: isSelectionMode
-              ? () => ref
-                    .read(selectionProvider.notifier)
-                    .toggleItem(beneficiary.id)
+              ? () {
+                  HapticFeedback.lightImpact();
+                  ref
+                      .read(selectionProvider.notifier)
+                      .toggleItem(beneficiary.id);
+                }
               : (onTap ??
                     () => context.push('/beneficiaries/${beneficiary.id}')),
           onLongPress:
               onLongPress ??
-              () => ref
-                  .read(selectionProvider.notifier)
-                  .startSelectionWith(beneficiary.id),
-          borderRadius: BorderRadius.circular(16.r),
+              () {
+                HapticFeedback.mediumImpact();
+                ref
+                    .read(selectionProvider.notifier)
+                    .startSelectionWith(beneficiary.id);
+              },
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: EdgeInsets.all(16.r),
-            constraints: BoxConstraints(minHeight: 140.h),
+            padding: rv.padding,
+            constraints: BoxConstraints(minHeight: rv.isTablet ? 160 : 140),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, ref, theme, categoryColor),
-                SizedBox(height: 16.h),
-                _buildInfoChips(categoryColor),
+                _buildHeader(context, ref, theme, categoryColor, rv),
+                SizedBox(height: rv.spacing),
+                _buildInfoChips(categoryColor, rv),
                 if (BeneficiaryHelpers.isPending(beneficiary.syncState))
-                  _buildOfflineIndicator(),
+                  _buildOfflineIndicator(rv),
               ],
             ),
           ),
@@ -94,74 +102,86 @@ class BeneficiaryCardV2 extends ConsumerWidget {
     WidgetRef ref,
     ThemeData theme,
     Color categoryColor,
+    ResponsiveValues rv,
   ) {
     return Row(
       children: [
         // Selection Checkbox
-        if (isSelectionMode) _buildSelectionCheckbox(theme),
+        if (isSelectionMode) _buildSelectionCheckbox(theme, rv),
 
         // Avatar
-        _buildAvatar(categoryColor),
-        SizedBox(width: 12.w),
+        _buildAvatar(categoryColor, rv),
+        SizedBox(width: rv.spacing),
 
         // Name & File Number
-        Expanded(child: _buildNameSection()),
+        Expanded(child: _buildNameSection(rv)),
 
         // Sync Status & Quick Actions
-        if (!isSelectionMode) _buildActionsColumn(context),
+        if (!isSelectionMode) _buildActionsColumn(context, rv),
       ],
     );
   }
 
   /// Selection Checkbox
-  Widget _buildSelectionCheckbox(ThemeData theme) {
+  Widget _buildSelectionCheckbox(ThemeData theme, ResponsiveValues rv) {
+    final size = rv.isTablet ? 36.0 : 32.0;
     return Container(
-      width: 32.w,
-      height: 32.h,
-      margin: EdgeInsets.only(left: 12.w),
+      width: size,
+      height: size,
+      margin: EdgeInsets.only(left: rv.spacing),
       decoration: BoxDecoration(
         color: isSelected ? theme.colorScheme.primary : Colors.transparent,
         border: Border.all(
           color: isSelected ? theme.colorScheme.primary : Colors.grey,
-          width: 2.w,
+          width: 2,
         ),
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: isSelected
-          ? Icon(Icons.check, color: Colors.white, size: 20.sp)
+          ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20)
           : null,
     );
   }
 
   /// Avatar with Gradient
-  Widget _buildAvatar(Color categoryColor) {
+  Widget _buildAvatar(Color categoryColor, ResponsiveValues rv) {
     return CachedAvatar(
       imageUrl: null, // TODO: Add photo URL when available
       initials: BeneficiaryHelpers.getInitials(beneficiary.fullName),
       color: categoryColor,
-      size: 56,
+      size: rv.isTablet ? 64 : 56,
     );
   }
 
   /// Name & File Number
-  Widget _buildNameSection() {
+  Widget _buildNameSection(ResponsiveValues rv) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           beneficiary.fullName,
-          style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: rv.isTablet ? 18 : 17,
+            fontWeight: FontWeight.bold,
+          ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: 4.h),
+        SizedBox(height: 4),
         Row(
           children: [
-            Icon(Icons.folder_outlined, size: 14.sp, color: Colors.grey),
-            SizedBox(width: 4.w),
+            Icon(
+              Icons.folder_outlined,
+              size: rv.isTablet ? 15 : 14,
+              color: Colors.grey,
+            ),
+            SizedBox(width: 4),
             Text(
               beneficiary.fileIdNumber ?? 'لا يوجد',
-              style: TextStyle(fontSize: 13.sp, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: rv.isTablet ? 14 : 13,
+                color: Colors.grey[600],
+              ),
             ),
           ],
         ),
@@ -170,21 +190,21 @@ class BeneficiaryCardV2 extends ConsumerWidget {
   }
 
   /// Sync Badge + Quick Actions
-  Widget _buildActionsColumn(BuildContext context) {
+  Widget _buildActionsColumn(BuildContext context, ResponsiveValues rv) {
     return Column(
       children: [
         SyncStatusBadge(syncState: beneficiary.syncState),
-        SizedBox(height: 8.h),
+        SizedBox(height: 8),
         _QuickActionsButton(beneficiary: beneficiary, onDelete: onDelete),
       ],
     );
   }
 
   /// Info Chips (Category, Location, Age, Phone)
-  Widget _buildInfoChips(Color categoryColor) {
+  Widget _buildInfoChips(Color categoryColor, ResponsiveValues rv) {
     return Wrap(
-      spacing: 8.w,
-      runSpacing: 8.h,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         // Category Chip
         InfoChip(
@@ -223,13 +243,13 @@ class BeneficiaryCardV2 extends ConsumerWidget {
   }
 
   /// Offline Pending Indicator
-  Widget _buildOfflineIndicator() {
+  Widget _buildOfflineIndicator(ResponsiveValues rv) {
     return Container(
-      margin: EdgeInsets.only(top: 12.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      margin: EdgeInsets.only(top: rv.spacing),
+      padding: EdgeInsets.symmetric(horizontal: rv.spacing, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.orange.shade200),
       ),
       child: Row(
@@ -237,14 +257,14 @@ class BeneficiaryCardV2 extends ConsumerWidget {
         children: [
           Icon(
             Icons.cloud_off_rounded,
-            size: 16.sp,
+            size: rv.isTablet ? 18 : 16,
             color: Colors.orange.shade700,
           ),
-          SizedBox(width: 6.w),
+          SizedBox(width: 6),
           Text(
             'بانتظار المزامنة',
             style: TextStyle(
-              fontSize: 11.sp,
+              fontSize: rv.isTablet ? 12 : 11,
               color: Colors.orange.shade700,
               fontWeight: FontWeight.w600,
             ),
@@ -264,9 +284,10 @@ class _QuickActionsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rv = ResponsiveUtils.getValues(context);
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded, size: 24.sp),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+      icon: Icon(Icons.more_vert_rounded, size: rv.isTablet ? 26 : 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) => _handleAction(context, value),
       itemBuilder: (context) => [
         // Call Action
@@ -274,8 +295,12 @@ class _QuickActionsButton extends StatelessWidget {
           value: 'call',
           child: Row(
             children: [
-              Icon(Icons.phone, size: 20.sp, color: Colors.green),
-              SizedBox(width: 12.w),
+              Icon(
+                Icons.phone,
+                size: rv.isTablet ? 22 : 20,
+                color: Colors.green,
+              ),
+              SizedBox(width: rv.spacing),
               const Text('اتصال'),
             ],
           ),
@@ -286,8 +311,12 @@ class _QuickActionsButton extends StatelessWidget {
           value: 'whatsapp',
           child: Row(
             children: [
-              Icon(Icons.chat, size: 20.sp, color: Colors.green[700]),
-              SizedBox(width: 12.w),
+              Icon(
+                Icons.chat,
+                size: rv.isTablet ? 22 : 20,
+                color: Colors.green[700],
+              ),
+              SizedBox(width: rv.spacing),
               const Text('واتساب'),
             ],
           ),
@@ -300,8 +329,8 @@ class _QuickActionsButton extends StatelessWidget {
           value: 'edit',
           child: Row(
             children: [
-              Icon(Icons.edit, size: 20.sp),
-              SizedBox(width: 12.w),
+              Icon(Icons.edit, size: rv.isTablet ? 22 : 20),
+              SizedBox(width: rv.spacing),
               const Text('تعديل'),
             ],
           ),
@@ -312,8 +341,12 @@ class _QuickActionsButton extends StatelessWidget {
           value: 'delete',
           child: Row(
             children: [
-              Icon(Icons.delete, size: 20.sp, color: Colors.red),
-              SizedBox(width: 12.w),
+              Icon(
+                Icons.delete,
+                size: rv.isTablet ? 22 : 20,
+                color: Colors.red,
+              ),
+              SizedBox(width: rv.spacing),
               Text('حذف', style: TextStyle(color: Colors.red)),
             ],
           ),
@@ -327,20 +360,24 @@ class _QuickActionsButton extends StatelessWidget {
 
     switch (action) {
       case 'call':
+        HapticFeedback.lightImpact();
         await PhoneLauncherService.makeCall(phoneStr);
         break;
 
       case 'whatsapp':
+        HapticFeedback.lightImpact();
         await PhoneLauncherService.openWhatsApp(phoneStr);
         break;
 
       case 'edit':
+        HapticFeedback.lightImpact();
         if (context.mounted) {
           context.push('/beneficiaries/edit/${beneficiary.id}');
         }
         break;
 
       case 'delete':
+        HapticFeedback.heavyImpact();
         if (onDelete != null) {
           onDelete!();
         }

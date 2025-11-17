@@ -193,6 +193,27 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
   }
 
+  /// Batch delete beneficiaries (optimized with transaction)
+  Future<int> batchDeleteBeneficiaries(List<int> ids) async {
+    if (ids.isEmpty) return 0;
+
+    return await transaction(() async {
+      int deletedCount = 0;
+
+      // Delete in batches of 100 for optimal performance
+      const batchSize = 100;
+      for (int i = 0; i < ids.length; i += batchSize) {
+        final batch = ids.skip(i).take(batchSize).toList();
+        final result = await (delete(
+          beneficiaries,
+        )..where((b) => b.id.isIn(batch))).go();
+        deletedCount += result;
+      }
+
+      return deletedCount;
+    });
+  }
+
   // ============================================================================
   // SEARCH OPERATIONS - عمليات البحث
   // ============================================================================
@@ -204,11 +225,21 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     }
 
     final normalized = query.trim().toLowerCase();
-    return await (select(beneficiaries)..where(
-          (b) =>
+    final isNumeric = int.tryParse(query.trim()) != null;
+
+    return await (select(beneficiaries)..where((b) {
+          var condition =
               b.fullNameNorm.like('%$normalized%') |
-              b.fileIdNumber.like('%$normalized%'),
-        ))
+              b.fileIdNumber.like('%$normalized%');
+
+          // إذا كان رقم، ابحث في id_number أيضاً
+          if (isNumeric) {
+            condition =
+                condition | b.idNumber.cast<String>().contains(query.trim());
+          }
+
+          return condition;
+        }))
         .get();
   }
 
@@ -228,12 +259,21 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
       ..where((b) {
         Expression<bool> condition = const Constant(true);
 
-        // Search filter (search in fullName and fileIdNumber)
+        // Search filter (search in fullName, fileIdNumber, and idNumber)
         if (normalized.isNotEmpty) {
-          condition =
-              condition &
-              (b.fullNameNorm.like('%$normalized%') |
-                  b.fileIdNumber.like('%$normalized%'));
+          final isNumeric = int.tryParse(query.trim()) != null;
+          var searchCondition =
+              b.fullNameNorm.like('%$normalized%') |
+              b.fileIdNumber.like('%$normalized%');
+
+          // إذا كان رقم، ابحث في id_number
+          if (isNumeric) {
+            searchCondition =
+                searchCondition |
+                b.idNumber.cast<String>().contains(query.trim());
+          }
+
+          condition = condition & searchCondition;
         }
 
         // Category filter (section_id)
@@ -340,5 +380,45 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
           ..where((b) => b.numberOfPeopleWithSpecialNeeds.isBiggerThanValue(0))
           ..limit(limit))
         .get();
+  }
+
+  // ============================================================================
+  // MAINTENANCE - صيانة
+  // ============================================================================
+
+  /// تحديث full_name_norm لجميع السجلات (يُنفذ مرة واحدة بعد التحديث)
+  Future<int> updateAllFullNameNorm() async {
+    // تحديث جميع السجلات
+    await customStatement('''
+      UPDATE beneficiaries 
+      SET full_name_norm = LOWER(
+        TRIM(
+          COALESCE(first_name, '') || ' ' || 
+          COALESCE(father_name, '') || ' ' || 
+          COALESCE(grand_father_name, '') || ' ' || 
+          COALESCE(family_name, '')
+        )
+      )
+      WHERE full_name_norm IS NULL 
+         OR full_name_norm = '' 
+         OR full_name_norm = ' '
+    ''');
+
+    // إرجاع عدد السجلات بعد التحديث
+    final total = await countBeneficiaries();
+    return total;
+  }
+
+  /// فحص عدد السجلات التي تحتاج تحديث full_name_norm
+  Future<int> countRecordsNeedingFullNameNormUpdate() async {
+    final result = await customSelect(
+      '''SELECT COUNT(*) as count 
+         FROM beneficiaries 
+         WHERE full_name_norm IS NULL 
+            OR full_name_norm = '' 
+            OR full_name_norm = ' ' ''',
+      readsFrom: {beneficiaries},
+    ).getSingle();
+    return result.read<int>('count');
   }
 }

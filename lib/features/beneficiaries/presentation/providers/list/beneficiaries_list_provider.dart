@@ -266,15 +266,14 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     final oldItems = state.items;
     final oldCachedData = _cachedData;
 
-    // حذف فوري
+    // حذف فوري من الواجهة
     final newItems = state.items.where((b) => !ids.contains(b.id)).toList();
     state = state.copyWith(items: newItems);
     _cachedData = newItems;
 
     try {
-      for (final id in ids) {
-        await _db.beneficiariesDao.deleteBeneficiary(id);
-      }
+      // استخدام batch delete للسرعة
+      await _db.beneficiariesDao.batchDeleteBeneficiaries(ids.toList());
       await _updateStatistics();
     } catch (e) {
       state = state.copyWith(items: oldItems, error: e.toString());
