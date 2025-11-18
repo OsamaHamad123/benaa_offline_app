@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/usecases/beneficiary_usecases.dart';
@@ -186,8 +187,8 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
       return true;
     } catch (e, stackTrace) {
       // Log the error with stack trace
-      print('❌ Error saving beneficiary: $e');
-      print('📋 Stack trace: $stackTrace');
+      debugPrint('❌ Error saving beneficiary: $e');
+      debugPrint('📋 Stack trace: $stackTrace');
 
       state = state.copyWith(
         isSaving: false,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/activity_log.dart';
 
@@ -70,7 +71,7 @@ class ActivityLogger {
       final jsonList = logs.map((log) => log.toJson()).toList();
       await prefs.setString(_storageKey, jsonEncode(jsonList));
     } catch (e) {
-      print('Error saving activity: $e');
+      debugPrint('Error saving activity: $e');
     }
   }
 
@@ -91,7 +92,7 @@ class ActivityLogger {
       // إرجاع آخر activities حسب الـ limit
       return logs.take(limit).toList();
     } catch (e) {
-      print('Error loading activities: $e');
+      debugPrint('Error loading activities: $e');
       return [];
     }
   }
@@ -136,7 +137,7 @@ class ActivityLogger {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_storageKey);
     } catch (e) {
-      print('Error clearing activities: $e');
+      debugPrint('Error clearing activities: $e');
     }
   }
 }

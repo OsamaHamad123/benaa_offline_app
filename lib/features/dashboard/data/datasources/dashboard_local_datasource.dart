@@ -160,36 +160,7 @@ class DashboardLocalDataSource {
     }).toList();
   }
 
-  String _getActivityDescription(dynamic item) {
-    final entity = item.entity;
-    final operation = item.operation;
-
-    switch (operation) {
-      case 'create':
-        return 'تم إنشاء ${_getEntityName(entity)} جديد';
-      case 'update':
-        return 'تم تحديث ${_getEntityName(entity)}';
-      case 'delete':
-        return 'تم حذف ${_getEntityName(entity)}';
-      case 'upload':
-        return 'تم رفع ${_getEntityName(entity)}';
-      default:
-        return 'عملية على ${_getEntityName(entity)}';
-    }
-  }
-
-  String _getEntityName(String entity) {
-    switch (entity) {
-      case 'beneficiary':
-        return 'مستفيد';
-      case 'visit':
-        return 'زيارة';
-      case 'attachment':
-        return 'مرفق';
-      default:
-        return entity;
-    }
-  }
+  // Method removed - not used anymore (description comes from sync_log table)
 
   // ============================================================================
   // HELPER METHODS - Database Queries

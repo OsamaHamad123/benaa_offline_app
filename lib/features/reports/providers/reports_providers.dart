@@ -116,7 +116,7 @@ final genderReportProvider = FutureProvider.autoDispose<Map<String, int>>((
 
   final genderCounts = <String, int>{};
   for (var b in beneficiaries) {
-    final genderKey = b.gender == 'male' ? 'ذكور' : 'إناث';
+    final genderKey = b.gender == 1 ? 'ذكور' : 'إناث'; // 1=male, 2=female
     genderCounts[genderKey] = (genderCounts[genderKey] ?? 0) + 1;
   }
 

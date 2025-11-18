@@ -164,7 +164,7 @@ class _VisitTimelineCard extends StatelessWidget {
                 ),
 
                 // Notes
-                if (visit.notes != null && visit.notes!.isNotEmpty) ...[
+                if (visit.notes.isNotEmpty) ...[
                   SizedBox(height: 8.h),
                   Container(
                     padding: EdgeInsets.all(8.r),

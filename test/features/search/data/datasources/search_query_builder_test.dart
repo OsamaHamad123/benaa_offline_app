@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:benaa_offline_app/features/search/data/datasources/search_query_builder.dart';
-import 'package:benaa_offline_app/core/constants/search_constants.dart';
 
 /// 🧪 Search Query Builder Tests
 ///

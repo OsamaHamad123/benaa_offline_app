@@ -53,6 +53,6 @@ Future<void> _performDatabaseMaintenance(SharedPreferences prefs) async {
     await maintenanceService.performMaintenanceIfNeeded();
     container.dispose();
   } catch (e) {
-    print('⚠️ Database maintenance failed: $e');
+    debugPrint('⚠️ Database maintenance failed: $e');
   }
 }

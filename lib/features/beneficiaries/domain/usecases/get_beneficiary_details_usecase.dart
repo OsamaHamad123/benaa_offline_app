@@ -23,7 +23,7 @@ class GetBeneficiaryDetailsUseCase {
     // يمكن إضافة تحقق إضافي هنا
     return BeneficiaryDetails(
       beneficiary: beneficiary,
-      isSynced: beneficiary == 'synced',
+      isSynced: !beneficiary.needsSync, // true if synced (not pending)
       hasAttachments: false, // سيتم تحديثه لاحقاً
       hasVisits: false, // سيتم تحديثه لاحقاً
     );

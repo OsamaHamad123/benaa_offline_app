@@ -90,107 +90,121 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
   }
 
   Widget _buildBasicInfoTab() {
-    return V2BasicInfoTab(
-      key: const ValueKey('basic_info_tab'),
-      firstNameController: widget.formControllers.firstNameController,
-      fatherNameController: widget.formControllers.fatherNameController,
-      grandfatherNameController:
-          widget.formControllers.grandfatherNameController,
-      lastNameController: widget.formControllers.lastNameController,
-      motherNameController: widget.formControllers.motherNameController,
-      nationalIdController: widget.formControllers.nationalIdController,
-      birthDateController: widget.formControllers.birthDateController,
-      selectedGender: widget.formControllers.selectedGender,
-      onGenderChanged: (value) => widget.formControllers.selectedGender = value,
-      onBirthDateTap: widget.onBirthDateTap,
-      firstFieldFocusNode: widget.firstFieldFocusNode,
-      selectedCategory: widget.formControllers.selectedCategory,
-      onCategoryChanged: (value) =>
-          widget.formControllers.selectedCategory = value,
-      formControllers:
-          widget.formControllers, // 🆕 Pass controllers for autofill
+    return RepaintBoundary(
+      child: V2BasicInfoTab(
+        key: const ValueKey('basic_info_tab'),
+        firstNameController: widget.formControllers.firstNameController,
+        fatherNameController: widget.formControllers.fatherNameController,
+        grandfatherNameController:
+            widget.formControllers.grandfatherNameController,
+        lastNameController: widget.formControllers.lastNameController,
+        motherNameController: widget.formControllers.motherNameController,
+        nationalIdController: widget.formControllers.nationalIdController,
+        birthDateController: widget.formControllers.birthDateController,
+        selectedGender: widget.formControllers.selectedGender,
+        onGenderChanged: (value) =>
+            widget.formControllers.selectedGender = value,
+        onBirthDateTap: widget.onBirthDateTap,
+        firstFieldFocusNode: widget.firstFieldFocusNode,
+        selectedCategory: widget.formControllers.selectedCategory,
+        onCategoryChanged: (value) =>
+            widget.formControllers.selectedCategory = value,
+        formControllers:
+            widget.formControllers, // 🆕 Pass controllers for autofill
+      ),
     );
   }
 
   Widget _buildFamilyInfoTab() {
-    return V2FamilyInfoTab(
-      key: const ValueKey('family_info_tab'),
-      selectedMaritalStatus: widget.formControllers.selectedMaritalStatus,
-      onMaritalStatusChanged: (value) =>
-          widget.formControllers.selectedMaritalStatus = value,
-      numberOfDependentsController:
-          widget.formControllers.numberOfDependentsController,
-      numberOfMalesController: widget.formControllers.numberOfMalesController,
-      numberOfFemalesController:
-          widget.formControllers.numberOfFemalesController,
-      selectedRelationship: widget.formControllers.selectedRelationship,
-      onRelationshipChanged: (value) =>
-          widget.formControllers.selectedRelationship = value,
+    return RepaintBoundary(
+      child: V2FamilyInfoTab(
+        key: const ValueKey('family_info_tab'),
+        selectedMaritalStatus: widget.formControllers.selectedMaritalStatus,
+        onMaritalStatusChanged: (value) =>
+            widget.formControllers.selectedMaritalStatus = value,
+        numberOfDependentsController:
+            widget.formControllers.numberOfDependentsController,
+        numberOfMalesController: widget.formControllers.numberOfMalesController,
+        numberOfFemalesController:
+            widget.formControllers.numberOfFemalesController,
+        selectedRelationship: widget.formControllers.selectedRelationship,
+        onRelationshipChanged: (value) =>
+            widget.formControllers.selectedRelationship = value,
+      ),
     );
   }
 
   Widget _buildContactInfoTab() {
-    return V2ContactInfoTab(
-      key: const ValueKey('contact_info_tab'),
-      phoneController: widget.formControllers.phoneController,
-      altPhoneController: widget.formControllers.altPhoneController,
-      addressController: widget.formControllers.addressController,
-      neighborhoodController: widget.formControllers.neighborhoodController,
-      selectedCity: widget.formControllers.selectedCity,
-      onCityChanged: (value) => widget.formControllers.selectedCity = value,
-      selectedProvince: widget.formControllers.selectedProvince,
-      onProvinceChanged: (value) =>
-          widget.formControllers.selectedProvince = value,
-      selectedDisplacementStatus:
-          widget.formControllers.selectedDisplacementStatus,
-      onDisplacementStatusChanged: (value) =>
-          widget.formControllers.selectedDisplacementStatus = value,
-      addressBeforeDisplacementController:
-          widget.formControllers.addressBeforeDisplacementController,
+    return RepaintBoundary(
+      child: V2ContactInfoTab(
+        key: const ValueKey('contact_info_tab'),
+        phoneController: widget.formControllers.phoneController,
+        altPhoneController: widget.formControllers.altPhoneController,
+        addressController: widget.formControllers.addressController,
+        neighborhoodController: widget.formControllers.neighborhoodController,
+        selectedCity: widget.formControllers.selectedCity,
+        onCityChanged: (value) => widget.formControllers.selectedCity = value,
+        selectedProvince: widget.formControllers.selectedProvince,
+        onProvinceChanged: (value) =>
+            widget.formControllers.selectedProvince = value,
+        selectedDisplacementStatus:
+            widget.formControllers.selectedDisplacementStatus,
+        onDisplacementStatusChanged: (value) =>
+            widget.formControllers.selectedDisplacementStatus = value,
+        addressBeforeDisplacementController:
+            widget.formControllers.addressBeforeDisplacementController,
+      ),
     );
   }
 
   Widget _buildAdditionalInfoTab() {
-    return V2AdditionalInfoTab(
-      key: const ValueKey('additional_info_tab'),
-      selectedEducationLevel: widget.formControllers.selectedEducationLevel,
-      onEducationLevelChanged: (value) =>
-          widget.formControllers.selectedEducationLevel = value,
-      selectedEmploymentStatus: widget.formControllers.selectedEmploymentStatus,
-      onEmploymentStatusChanged: (value) =>
-          widget.formControllers.selectedEmploymentStatus = value,
-      hasDisability: widget.formControllers.hasDisability,
-      onDisabilityChanged: (value) =>
-          widget.formControllers.hasDisability = value,
-      selectedHealthStatus: widget.formControllers.selectedHealthStatus,
-      onHealthStatusChanged: (value) =>
-          widget.formControllers.selectedHealthStatus = value,
-      chronicDiseasesController:
-          widget.formControllers.chronicDiseasesController,
-      selectedHousingStatus: widget.formControllers.selectedHousingStatus,
-      onHousingStatusChanged: (value) =>
-          widget.formControllers.selectedHousingStatus = value,
-      selectedHousingType: widget.formControllers.selectedHousingType,
-      onHousingTypeChanged: (value) =>
-          widget.formControllers.selectedHousingType = value,
+    return RepaintBoundary(
+      child: V2AdditionalInfoTab(
+        key: const ValueKey('additional_info_tab'),
+        selectedEducationLevel: widget.formControllers.selectedEducationLevel,
+        onEducationLevelChanged: (value) =>
+            widget.formControllers.selectedEducationLevel = value,
+        selectedEmploymentStatus:
+            widget.formControllers.selectedEmploymentStatus,
+        onEmploymentStatusChanged: (value) =>
+            widget.formControllers.selectedEmploymentStatus = value,
+        hasDisability: widget.formControllers.hasDisability,
+        onDisabilityChanged: (value) =>
+            widget.formControllers.hasDisability = value,
+        selectedHealthStatus: widget.formControllers.selectedHealthStatus,
+        onHealthStatusChanged: (value) =>
+            widget.formControllers.selectedHealthStatus = value,
+        chronicDiseasesController:
+            widget.formControllers.chronicDiseasesController,
+        selectedHousingStatus: widget.formControllers.selectedHousingStatus,
+        onHousingStatusChanged: (value) =>
+            widget.formControllers.selectedHousingStatus = value,
+        selectedHousingType: widget.formControllers.selectedHousingType,
+        onHousingTypeChanged: (value) =>
+            widget.formControllers.selectedHousingType = value,
+      ),
     );
   }
 
   Widget _buildNotesTab() {
-    return V2NotesTab(
-      key: const ValueKey('notes_tab'),
-      notesController: widget.formControllers.notesController,
+    return RepaintBoundary(
+      child: V2NotesTab(
+        key: const ValueKey('notes_tab'),
+        notesController: widget.formControllers.notesController,
+      ),
     );
   }
 
   Widget _buildAttachmentsTab() {
-    return V2AttachmentsTab(
-      key: const ValueKey('attachments_tab'),
-      beneficiaryId: widget.beneficiaryId,
-      pendingFiles: widget.formControllers.pendingAttachmentFiles,
-      onPendingFilesChanged: (files) {
-        widget.formControllers.pendingAttachmentFiles = files;
-      },
+    return RepaintBoundary(
+      child: V2AttachmentsTab(
+        key: const ValueKey('attachments_tab'),
+        beneficiaryId: widget.beneficiaryId,
+        pendingFiles: widget.formControllers.pendingAttachmentFiles,
+        onPendingFilesChanged: (files) {
+          widget.formControllers.updatePendingFiles(files);
+        },
+      ),
     );
   }
 }

@@ -34,6 +34,17 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final chronicDiseasesController = TextEditingController();
   final addressBeforeDisplacementController = TextEditingController();
 
+  // 🔥 CRITICAL FIX: Prevent rebuild on every keystroke
+  // Only notify on dropdown/switch changes, NOT on text input
+  bool _shouldNotifyListeners = true;
+
+  /// Temporarily disable notifications (for bulk updates)
+  void pauseNotifications() => _shouldNotifyListeners = false;
+  void resumeNotifications() {
+    _shouldNotifyListeners = true;
+    notifyListeners();
+  }
+
   // Dropdown values with smart setters
   String? _selectedGender;
   String? get selectedGender => _selectedGender;
@@ -193,7 +204,9 @@ class BeneficiaryFormControllers extends ChangeNotifier {
 
   /// Smart notification with auto-save scheduling
   void _notifyAndScheduleAutoSave() {
-    notifyListeners();
+    if (_shouldNotifyListeners) {
+      notifyListeners();
+    }
     _scheduleAutoSave();
   }
 

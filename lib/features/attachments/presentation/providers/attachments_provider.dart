@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/providers.dart';
 import '../../domain/entities/attachment.dart';
@@ -85,16 +86,20 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
 
   /// Load attachments for beneficiary
   Future<void> loadAttachments(String beneficiaryId) async {
-    print('🔍 [AttachmentsProvider] Loading attachments for: $beneficiaryId');
+    debugPrint(
+      '🔍 [AttachmentsProvider] Loading attachments for: $beneficiaryId',
+    );
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
       final attachments = await _getAttachmentsUseCase.execute(beneficiaryId);
-      print('✅ [AttachmentsProvider] Loaded ${attachments.length} attachments');
+      debugPrint(
+        '✅ [AttachmentsProvider] Loaded ${attachments.length} attachments',
+      );
       state = state.copyWith(attachments: attachments, isLoading: false);
     } catch (e, stackTrace) {
-      print('❌ [AttachmentsProvider] Error loading attachments: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('❌ [AttachmentsProvider] Error loading attachments: $e');
+      debugPrint('Stack trace: $stackTrace');
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'خطأ في تحميل المرفقات: $e',

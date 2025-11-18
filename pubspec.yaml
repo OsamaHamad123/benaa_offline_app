@@ -108,6 +108,8 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
   workmanager: ^0.9.0+3
+  sqflite_common_ffi: ^2.3.0
+  riverpod: ^2.6.1
   rxdart: ^0.28.0
 
 dev_dependencies:

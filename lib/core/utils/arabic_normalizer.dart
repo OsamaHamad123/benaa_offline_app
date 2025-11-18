@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// 🔤 Arabic Text Normalizer
 /// معالج تطبيع النصوص العربية لتحسين نتائج البحث
 ///
@@ -39,7 +41,7 @@ class ArabicNormalizer {
 
       return normalized;
     } catch (e) {
-      print('⚠️ خطأ في تطبيع النص: $e');
+      debugPrint('⚠️ خطأ في تطبيع النص: $e');
       return text.trim();
     }
   }

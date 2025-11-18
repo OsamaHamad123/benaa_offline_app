@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../data/db/drift_database.dart';
@@ -172,7 +173,7 @@ class SyncManager {
   Future<void> syncAll() async {
     // تحقق من الاتصال بالإنترنت
     final connectivityResult = await Connectivity().checkConnectivity();
-    if (connectivityResult == ConnectivityResult.none) {
+    if (connectivityResult.contains(ConnectivityResult.none)) {
       _updateStatus(
         _currentStatus.copyWith(lastError: 'لا يوجد اتصال بالإنترنت'),
       );
@@ -378,7 +379,7 @@ class SyncManager {
           }
         } catch (e) {
           // تسجيل الخطأ والمتابعة
-          print('Error processing beneficiary: $e');
+          debugPrint('Error processing beneficiary: $e');
         }
       }
 

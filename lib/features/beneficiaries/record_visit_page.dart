@@ -56,6 +56,7 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
     );
 
     if (picked != null) {
+      if (!mounted) return;
       final time = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(_visitDate),

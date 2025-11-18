@@ -3,7 +3,6 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:benaa_offline_app/data/db/drift_database.dart';
 import 'package:benaa_offline_app/data/db/daos/beneficiaries_dao.dart';
-import 'package:benaa_offline_app/data/db/tables/beneficiaries_table.dart';
 
 void main() {
   late AppDatabase database;
@@ -41,7 +40,7 @@ void main() {
       final results = await dao.searchBeneficiaries('محمد أحمد');
 
       expect(results.isNotEmpty, true);
-      expect(results.any((b) => b.fullName?.contains('محمد') ?? false), true);
+      expect(results.any((b) => b.fullName.contains('محمد')), true);
     });
 
     test('يجب أن يجد المستفيد بالاسم الأول فقط', () async {

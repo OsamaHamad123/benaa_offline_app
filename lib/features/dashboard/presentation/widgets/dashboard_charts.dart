@@ -17,128 +17,151 @@ class GrowthChart extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'نمو المستفيدين (آخر 7 أيام)',
-              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16.h),
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                context,
-                mobile: 200.h,
-                tablet: 250.h,
-                desktop: 300.h,
+    return RepaintBoundary(
+      child: Card(
+        elevation: 2,
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'نمو المستفيدين (آخر 7 أيام)',
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
               ),
-              child: LineChart(
-                LineChartData(
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: 1,
-                    getDrawingHorizontalLine: (value) {
-                      return FlLine(
-                        color: Colors.grey.withOpacity(0.2),
-                        strokeWidth: 1,
-                      );
-                    },
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          if (value.toInt() >= 0 &&
-                              value.toInt() < growthData.length) {
-                            final date = growthData[value.toInt()].date;
-                            return Padding(
-                              padding: EdgeInsets.only(top: 8.h),
-                              child: Text(
-                                '${date.day}/${date.month}',
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: Colors.grey,
-                                ),
+              SizedBox(height: 16.h),
+              SizedBox(
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 200.h,
+                  tablet: 250.h,
+                  desktop: 300.h,
+                ),
+                child: LineChart(
+                  LineChartData(
+                    lineTouchData: LineTouchData(
+                      enabled: true,
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (touchedSpot) =>
+                            Colors.blueAccent.withOpacity(0.8),
+                        tooltipPadding: EdgeInsets.all(8.w),
+                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            final date = growthData[spot.x.toInt()].date;
+                            return LineTooltipItem(
+                              '${spot.y.toInt()} مستفيد\\n${date.day}/${date.month}/${date.year}',
+                              TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.bold,
                               ),
                             );
-                          }
-                          return const Text('');
+                          }).toList();
                         },
                       ),
                     ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: 1,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(
+                          color: Colors.grey.withOpacity(0.2),
+                          strokeWidth: 1,
+                        );
+                      },
+                    ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 30,
+                          interval: 1,
+                          getTitlesWidget: (value, meta) {
+                            if (value.toInt() >= 0 &&
+                                value.toInt() < growthData.length) {
+                              final date = growthData[value.toInt()].date;
+                              return Padding(
+                                padding: EdgeInsets.only(top: 8.h),
+                                child: Text(
+                                  '${date.day}/${date.month}',
+                                  style: TextStyle(
+                                    fontSize: 10.sp,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              value.toInt().toString(),
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                color: Colors.grey,
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
+                    borderData: FlBorderData(show: false),
+                    minX: 0,
+                    maxX: (growthData.length - 1).toDouble(),
+                    minY: 0,
+                    maxY: _getMaxY(),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: growthData
+                            .asMap()
+                            .entries
+                            .map(
+                              (e) => FlSpot(
+                                e.key.toDouble(),
+                                e.value.count.toDouble(),
+                              ),
+                            )
+                            .toList(),
+                        isCurved: true,
+                        color: Colors.blue,
+                        barWidth: 3,
+                        isStrokeCapRound: true,
+                        dotData: FlDotData(
+                          show: true,
+                          getDotPainter: (spot, percent, barData, index) {
+                            return FlDotCirclePainter(
+                              radius: 4,
+                              color: Colors.blue,
+                              strokeWidth: 2,
+                              strokeColor: Colors.white,
+                            );
+                          },
+                        ),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          color: Colors.blue.withOpacity(0.1),
+                        ),
+                      ),
+                    ],
                   ),
-                  borderData: FlBorderData(show: false),
-                  minX: 0,
-                  maxX: (growthData.length - 1).toDouble(),
-                  minY: 0,
-                  maxY: _getMaxY(),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: growthData
-                          .asMap()
-                          .entries
-                          .map(
-                            (e) => FlSpot(
-                              e.key.toDouble(),
-                              e.value.count.toDouble(),
-                            ),
-                          )
-                          .toList(),
-                      isCurved: true,
-                      color: Colors.blue,
-                      barWidth: 3,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(
-                        show: true,
-                        getDotPainter: (spot, percent, barData, index) {
-                          return FlDotCirclePainter(
-                            radius: 4,
-                            color: Colors.blue,
-                            strokeWidth: 2,
-                            strokeColor: Colors.white,
-                          );
-                        },
-                      ),
-                      belowBarData: BarAreaData(
-                        show: true,
-                        color: Colors.blue.withOpacity(0.1),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -171,50 +194,52 @@ class CategoryDistributionChart extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'توزيع الفئات',
-              style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16.h),
-            SizedBox(
-              height: ResponsiveUtils.getResponsiveValue(
-                context,
-                mobile: 200.h,
-                tablet: 250.h,
-                desktop: 300.h,
+    return RepaintBoundary(
+      child: Card(
+        elevation: 2,
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'توزيع الفئات',
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: PieChart(
-                      PieChartData(
-                        sections: _buildPieSections(total),
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 40.r,
-                        borderData: FlBorderData(show: false),
+              SizedBox(height: 16.h),
+              SizedBox(
+                height: ResponsiveUtils.getResponsiveValue(
+                  context,
+                  mobile: 200.h,
+                  tablet: 250.h,
+                  desktop: 300.h,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: PieChart(
+                        PieChartData(
+                          sections: _buildPieSections(total),
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 40.r,
+                          borderData: FlBorderData(show: false),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 16.w),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _buildLegend(),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _buildLegend(),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

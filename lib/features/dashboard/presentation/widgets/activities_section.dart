@@ -109,11 +109,26 @@ class RecentActivitiesList extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 64.sp, color: Colors.grey),
+            Icon(
+              Icons.analytics_outlined,
+              size: 80.sp,
+              color: Colors.blue.withOpacity(0.3),
+            ),
             SizedBox(height: 16.h),
             Text(
-              'لا توجد أنشطة حديثة',
-              style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+              'ابدأ بإضافة مستفيدين لرؤية الإحصائيات',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[800],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'ستظهر هنا أنشطتك اليومية وتقاريرك',
+              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -121,6 +136,7 @@ class RecentActivitiesList extends ConsumerWidget {
     }
 
     return ListView.builder(
+      key: const PageStorageKey('activities_list'),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: activities.length + (hasMore ? 1 : 0),

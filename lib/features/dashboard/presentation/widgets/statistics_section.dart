@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
@@ -31,7 +32,12 @@ class StatCard extends StatelessWidget {
         side: BorderSide(color: color.withOpacity(0.2), width: 1),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: onTap != null
+            ? () {
+                HapticFeedback.selectionClick();
+                onTap!();
+              }
+            : null,
         borderRadius: BorderRadius.circular(16.r),
         child: Container(
           decoration: BoxDecoration(

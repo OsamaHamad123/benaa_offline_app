@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 🔥 Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:uuid/uuid.dart'; // 🔥 UUID للـ ID الآمن
 import '../../../../data/db/drift_database.dart';
 import '../../../../core/widgets/beneficiary/beneficiary_info_card.dart';
 import '../../../../core/widgets/beneficiary/date_time_picker_field.dart';
@@ -148,9 +150,9 @@ class _RecordVisitPageEnhancedState
         fullNotes = '$fullNotes\n\nالفئات: ${_selectedCategories.join(', ')}';
       }
 
-      // Generate unique ID for the visit
+      // 🔥 Generate secure unique ID using UUID
       final now = DateTime.now();
-      final visitId = '${widget.beneficiary.id}_${now.millisecondsSinceEpoch}';
+      final visitId = const Uuid().v4();
 
       final visit = VisitEntity(
         id: visitId,
@@ -170,12 +172,10 @@ class _RecordVisitPageEnhancedState
           .read(visitNotifierProvider.notifier)
           .createNewVisit(visit);
 
-      if (mounted) {
-        LoadingDialog.hide(context);
-      }
-
       if (success && mounted) {
         SuccessSnackBar.show(context, '✓ تم حفظ الزيارة بنجاح');
+
+        HapticFeedback.mediumImpact();
 
         // Save staff name for next time
         // TODO: Save to SharedPreferences
@@ -183,6 +183,7 @@ class _RecordVisitPageEnhancedState
         // Return to previous screen
         Navigator.pop(context, true);
       } else if (mounted) {
+        HapticFeedback.heavyImpact();
         final errorMessage = ref.read(visitNotifierProvider).errorMessage;
         ErrorSnackBar.show(
           context,
@@ -192,8 +193,13 @@ class _RecordVisitPageEnhancedState
       }
     } catch (e) {
       if (mounted) {
-        LoadingDialog.hide(context);
+        HapticFeedback.heavyImpact();
         ErrorSnackBar.show(context, 'خطأ غير متوقع: $e');
+      }
+    } finally {
+      // 🔥 دائماً إخفاء Loading Dialog
+      if (mounted) {
+        LoadingDialog.hide(context);
       }
     }
   }

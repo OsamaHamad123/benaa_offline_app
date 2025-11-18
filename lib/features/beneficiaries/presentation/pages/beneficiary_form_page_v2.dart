@@ -304,11 +304,13 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
         HapticFeedback.mediumImpact();
 
         // ✨ Enhanced snackbar
-        EnhancedSnackbar.showSuccess(
-          context,
-          message: 'تم الحفظ بنجاح',
-          duration: const Duration(seconds: 2),
-        );
+        if (mounted) {
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: 'تم الحفظ بنجاح',
+            duration: const Duration(seconds: 2),
+          );
+        }
 
         setState(() => _isSaving = false);
 
@@ -505,29 +507,22 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
                                 },
                               ),
 
-                              // 🆕 Tab Content (wrapped in ListenableBuilder for ChangeNotifier)
+                              // 🆕 Tab Content - No ListenableBuilder needed (Controllers notify internally)
                               Expanded(
-                                child: ListenableBuilder(
-                                  listenable: _controllers,
-                                  builder: (context, child) {
-                                    return RepaintBoundary(
-                                      child: BeneficiaryFormTabs(
-                                        controller: _tabController,
-                                        formControllers: _controllers,
-                                        onBirthDateTap: () =>
-                                            _selectDate(context),
-                                        firstFieldFocusNode:
-                                            _firstFieldFocusNode,
-                                        beneficiaryId: widget.beneficiaryId,
-                                      ),
-                                    );
-                                  },
+                                child: RepaintBoundary(
+                                  child: BeneficiaryFormTabs(
+                                    controller: _tabController,
+                                    formControllers: _controllers,
+                                    onBirthDateTap: () => _selectDate(context),
+                                    firstFieldFocusNode: _firstFieldFocusNode,
+                                    beneficiaryId: widget.beneficiaryId,
+                                  ),
                                 ),
                               ),
 
-                              // 🆕 Previous/Next Navigation (wrapped in AnimatedBuilder)
-                              AnimatedBuilder(
-                                animation: _tabController,
+                              // 🆕 Previous/Next Navigation
+                              ListenableBuilder(
+                                listenable: _tabController,
                                 builder: (context, child) {
                                   return RepaintBoundary(
                                     child: TabNavigationButtons(

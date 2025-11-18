@@ -151,11 +151,6 @@ class BeneficiaryValidator {
   static bool _containsArabic(String text) {
     return RegExp(r'[\u0600-\u06FF]').hasMatch(text);
   }
-
-  /// التحقق من أن النص عربي فقط
-  static bool _isArabicOnly(String text) {
-    return RegExp(r'^[\u0600-\u06FF\s]+$').hasMatch(text);
-  }
 }
 
 /// نتيجة التحقق
