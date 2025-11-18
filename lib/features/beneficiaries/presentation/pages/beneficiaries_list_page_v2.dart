@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
 import '../providers/list/beneficiaries_list_provider.dart';
 import '../providers/list/beneficiaries_list_state.dart';
 import '../providers/list/filters_provider.dart';
@@ -16,6 +17,7 @@ import '../widgets/list_app_bar.dart';
 import '../widgets/beneficiaries_loading_shimmer.dart';
 import '../widgets/beneficiaries_states.dart';
 import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/widgets/micro_interactions.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
 class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
@@ -30,6 +32,8 @@ class _BeneficiariesListPageV2State
     extends ConsumerState<BeneficiariesListPageV2> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  Timer? _debounceTimer;
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -41,6 +45,7 @@ class _BeneficiariesListPageV2State
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
@@ -70,9 +75,16 @@ class _BeneficiariesListPageV2State
   }
 
   void _onSearchChanged(String value) {
-    // الـ debounce موجود في searchProvider (300ms)
-    ref.read(filtersProvider.notifier).setSearchQuery(value);
-    ref.read(beneficiariesListProvider.notifier).refresh();
+    _debounceTimer?.cancel();
+    setState(() => _isSearching = true);
+
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      ref.read(filtersProvider.notifier).setSearchQuery(value);
+      ref.read(beneficiariesListProvider.notifier).refresh();
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    });
   }
 
   /// 🗑️ Optimistic Delete with rollback
@@ -145,6 +157,9 @@ class _BeneficiariesListPageV2State
             hintText: 'ابحث بالاسم، الرقم الوطني، أو رقم الملف...',
           ),
 
+          // Search Progress Indicator
+          if (_isSearching) const LinearProgressIndicator(minHeight: 2),
+
           const SizedBox(height: 16),
 
           // List
@@ -153,18 +168,29 @@ class _BeneficiariesListPageV2State
       ),
       floatingActionButton: selection.isSelectionMode
           ? null
-          : FloatingActionButton.extended(
-              onPressed: () async {
-                // 🔄 Navigate to add page
+          : MicroInteractions.bounceButton(
+              onTap: () async {
+                HapticFeedback.mediumImpact();
                 final result = await context.push('/beneficiaries/add');
                 if (result == true && mounted) {
-                  // تم إضافة مستفيد - clear cache and refresh
                   ref.read(beneficiariesListProvider.notifier).clearCache();
                   await ref.read(beneficiariesListProvider.notifier).refresh();
                 }
               },
-              icon: const Icon(Icons.person_add),
-              label: const Text('إضافة'),
+              child: FloatingActionButton.extended(
+                onPressed: () async {
+                  HapticFeedback.mediumImpact();
+                  final result = await context.push('/beneficiaries/add');
+                  if (result == true && mounted) {
+                    ref.read(beneficiariesListProvider.notifier).clearCache();
+                    await ref
+                        .read(beneficiariesListProvider.notifier)
+                        .refresh();
+                  }
+                },
+                icon: const Icon(Icons.person_add),
+                label: const Text('إضافة'),
+              ),
             ),
       bottomNavigationBar: const BulkActionsBar(),
     );
@@ -172,37 +198,43 @@ class _BeneficiariesListPageV2State
 
   /// ⚡ Build filter button with badge (memoized)
   Widget _buildFilterButton(FiltersState filters) {
-    return Stack(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          tooltip: 'فلاتر',
-          onPressed: () => _showFilters(context),
-        ),
-        if (filters.hasActiveFilters)
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-              child: Center(
-                child: Text(
-                  '${filters.activeFiltersCount}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+    return Semantics(
+      label:
+          'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+      button: true,
+      child: Stack(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            tooltip:
+                'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+            onPressed: () => _showFilters(context),
+          ),
+          if (filters.hasActiveFilters)
+            Positioned(
+              right: 8,
+              top: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                child: Center(
+                  child: Text(
+                    '${filters.activeFiltersCount}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 

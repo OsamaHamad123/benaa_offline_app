@@ -59,50 +59,57 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
       widget.beneficiary.sectionId,
     );
 
-    return RepaintBoundary(
-      key: ValueKey('beneficiary_${widget.beneficiary.id}'),
-      child: Card(
-        elevation: widget.isSelected ? 8 : 2,
-        margin: EdgeInsets.only(bottom: rv.spacing),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: widget.isSelected
-              ? BorderSide(color: theme.colorScheme.primary, width: 3)
-              : BorderSide.none,
-        ),
-        child: InkWell(
-          onTap: widget.isSelectionMode
-              ? () {
-                  HapticFeedback.lightImpact();
+    return Semantics(
+      label: 'بطاقة مستفيد: ${widget.beneficiary.fullName}',
+      hint: 'انقر للتفاصيل، اضغط مطولاً للتحديد',
+      button: true,
+      child: RepaintBoundary(
+        key: ValueKey('beneficiary_${widget.beneficiary.id}'),
+        child: Card(
+          elevation: widget.isSelected ? 8 : 2,
+          margin: EdgeInsets.only(bottom: rv.spacing),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: widget.isSelected
+                ? BorderSide(color: theme.colorScheme.primary, width: 3)
+                : BorderSide.none,
+          ),
+          child: InkWell(
+            onTap: widget.isSelectionMode
+                ? () {
+                    HapticFeedback.lightImpact();
+                    ref
+                        .read(selectionProvider.notifier)
+                        .toggleItem(widget.beneficiary.id);
+                  }
+                : (widget.onTap ??
+                      () => context.push(
+                        '/beneficiaries/${widget.beneficiary.id}',
+                      )),
+            onLongPress:
+                widget.onLongPress ??
+                () {
+                  HapticFeedback.mediumImpact();
                   ref
                       .read(selectionProvider.notifier)
-                      .toggleItem(widget.beneficiary.id);
-                }
-              : (widget.onTap ??
-                    () => context.push(
-                      '/beneficiaries/${widget.beneficiary.id}',
-                    )),
-          onLongPress:
-              widget.onLongPress ??
-              () {
-                HapticFeedback.mediumImpact();
-                ref
-                    .read(selectionProvider.notifier)
-                    .startSelectionWith(widget.beneficiary.id);
-              },
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: rv.padding,
-            constraints: BoxConstraints(minHeight: rv.isTablet ? 160 : 140),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, ref, theme, categoryColor, rv),
-                SizedBox(height: rv.spacing),
-                _buildInfoChips(categoryColor, rv),
-                if (BeneficiaryHelpers.isPending(widget.beneficiary.syncState))
-                  _buildOfflineIndicator(rv),
-              ],
+                      .startSelectionWith(widget.beneficiary.id);
+                },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: rv.padding,
+              constraints: BoxConstraints(minHeight: rv.isTablet ? 160 : 140),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(context, ref, theme, categoryColor, rv),
+                  SizedBox(height: rv.spacing),
+                  _buildInfoChips(categoryColor, rv),
+                  if (BeneficiaryHelpers.isPending(
+                    widget.beneficiary.syncState,
+                  ))
+                    _buildOfflineIndicator(rv),
+                ],
+              ),
             ),
           ),
         ),

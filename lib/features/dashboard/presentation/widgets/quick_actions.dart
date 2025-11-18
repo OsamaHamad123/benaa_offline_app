@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/widgets/micro_interactions.dart';
 
 /// Quick Action Button - Reusable action button with Badge support
 class QuickActionButton extends StatelessWidget {
@@ -24,16 +25,17 @@ class QuickActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
-      elevation: 2,
-      shadowColor: color.withOpacity(0.25),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.mediumImpact();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(14.r),
+    return MicroInteractions.bounceButton(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
+      child: Card(
+        elevation: 2,
+        shadowColor: color.withOpacity(0.25),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14.r),
+        ),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
           child: Column(

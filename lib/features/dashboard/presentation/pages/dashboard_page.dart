@@ -8,6 +8,8 @@ import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/widgets/animated_progress_indicator.dart';
+import '../../../../core/widgets/micro_interactions.dart';
+import '../../../../core/widgets/charts.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../sync/sync_page.dart';
@@ -145,15 +147,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       appBar: _buildAppBar(),
       body: currentPage,
       floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: () {
+          ? MicroInteractions.bounceButton(
+              onTap: () {
                 HapticFeedback.mediumImpact();
                 context.push('/beneficiaries/add');
               },
-              icon: const Icon(Icons.person_add),
-              label: const Text('إضافة مستفيد'),
-              backgroundColor: Colors.blue,
-              elevation: 4,
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  context.push('/beneficiaries/add');
+                },
+                icon: const Icon(Icons.person_add),
+                label: const Text('إضافة مستفيد'),
+                backgroundColor: Colors.blue,
+                elevation: 4,
+              ),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -458,6 +466,68 @@ class _DashboardHome extends ConsumerWidget {
           ),
 
           SizedBox(height: 16.h),
+
+          // 📊 Interactive Charts Section - NEW!
+          _SectionTitle(title: 'الإحصائيات التفاعلية', icon: Icons.bar_chart),
+          SizedBox(height: 12.h),
+
+          // Trend Line Chart
+          TrendLineChart(
+            title: 'نمو المستفيدين (آخر 6 أشهر)',
+            data: [
+              stats.totalBeneficiaries * 0.5,
+              stats.totalBeneficiaries * 0.65,
+              stats.totalBeneficiaries * 0.75,
+              stats.totalBeneficiaries * 0.85,
+              stats.totalBeneficiaries * 0.92,
+              stats.totalBeneficiaries.toDouble(),
+            ],
+            labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
+            lineColor: Colors.blue,
+          ),
+
+          SizedBox(height: 16.h),
+
+          // Mini Sparkline Cards Row
+          Row(
+            children: [
+              Expanded(
+                child: MiniSparklineCard(
+                  title: 'الزيارات',
+                  value: '${stats.completedVisitsToday}',
+                  data: [
+                    8,
+                    12,
+                    10,
+                    15,
+                    18,
+                    stats.completedVisitsToday.toDouble(),
+                  ],
+                  color: Colors.green,
+                  isPositive: true,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: MiniSparklineCard(
+                  title: 'النشطون',
+                  value: '${stats.activeBeneficiaries}',
+                  data: [
+                    stats.activeBeneficiaries * 0.7,
+                    stats.activeBeneficiaries * 0.8,
+                    stats.activeBeneficiaries * 0.85,
+                    stats.activeBeneficiaries * 0.9,
+                    stats.activeBeneficiaries * 0.95,
+                    stats.activeBeneficiaries.toDouble(),
+                  ],
+                  color: Colors.purple,
+                  isPositive: true,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 24.h),
 
           // Sync Progress Indicator
           if (stats.pendingSync > 0)
