@@ -7,6 +7,7 @@ import '../../../../core/utils/responsive_utils.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
+import '../../../../core/widgets/animated_progress_indicator.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../sync/sync_page.dart';
 import '../providers.dart';
@@ -362,6 +363,62 @@ class _DashboardHome extends ConsumerWidget {
             onBeneficiariesTap: () => context.push('/beneficiaries'),
             onPendingSyncTap: () => context.push('/sync'),
           ),
+
+          SizedBox(height: 16.h),
+
+          // Sync Progress Indicator
+          if (stats.pendingSync > 0)
+            Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: EdgeInsets.all(16.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.sync, size: 20.sp, color: Colors.orange),
+                        SizedBox(width: 8.w),
+                        Text(
+                          'تقدم المزامنة',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${((stats.totalBeneficiaries - stats.pendingSync) / stats.totalBeneficiaries * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12.h),
+                    AnimatedProgressIndicator(
+                      value:
+                          (stats.totalBeneficiaries - stats.pendingSync) /
+                          stats.totalBeneficiaries,
+                      height: 8,
+                      valueColor: Colors.orange,
+                      backgroundColor: Colors.orange.withOpacity(0.2),
+                      duration: const Duration(milliseconds: 1500),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      '${stats.pendingSync} سجل متبقي للمزامنة',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
 
           SizedBox(height: 24.h),
 
