@@ -38,110 +38,119 @@ class StatCard extends StatelessWidget {
     }
     final trend = trendPercentage ?? calculatedTrend;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: color.withOpacity(0.2), width: 1),
-      ),
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.mediumImpact();
-                onTap!();
-              }
-            : null,
-        borderRadius: BorderRadius.circular(16.r),
-        child: Container(
-          decoration: BoxDecoration(
+    // Hero tag for animations
+    final heroTag = 'stat-card-$title';
+
+    return Hero(
+      tag: heroTag,
+      child: Material(
+        color: Colors.transparent,
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color.withOpacity(0.05), color.withOpacity(0.1)],
-            ),
+            side: BorderSide(color: color.withOpacity(0.2), width: 1),
           ),
-          padding: EdgeInsets.all(12.w),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: InkWell(
+            onTap: onTap != null
+                ? () {
+                    HapticFeedback.mediumImpact();
+                    onTap!();
+                  }
+                : null,
+            borderRadius: BorderRadius.circular(16.r),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16.r),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color.withOpacity(0.05), color.withOpacity(0.1)],
+                ),
+              ),
+              padding: EdgeInsets.all(12.w),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(8.w),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                        child: Icon(icon, color: color, size: 20.sp),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8.w),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Icon(icon, color: color, size: 20.sp),
+                          ),
+                          // Trend Indicator or Arrow
+                          if (trend != null)
+                            TrendIndicator(
+                              percentChange: trend,
+                              isPositive: trend >= 0,
+                            )
+                          else if (onTap != null)
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12.sp,
+                              color: color,
+                            ),
+                        ],
                       ),
-                      // Trend Indicator or Arrow
-                      if (trend != null)
-                        TrendIndicator(
-                          percentChange: trend,
-                          isPositive: trend >= 0,
-                        )
-                      else if (onTap != null)
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 12.sp,
-                          color: color,
-                        ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                      height: 1.0,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (subtitle != null) ...[
-                    SizedBox(height: 4.h),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 6.w,
-                        vertical: 3.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Text(
-                        subtitle!,
+                      const Spacer(),
+                      Text(
+                        value,
                         style: TextStyle(
-                          fontSize: 10.sp,
+                          fontSize: 28.sp,
+                          fontWeight: FontWeight.bold,
                           color: color,
-                          fontWeight: FontWeight.w500,
+                          height: 1.0,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ],
-              );
-            },
+                      SizedBox(height: 4.h),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (subtitle != null) ...[
+                        SizedBox(height: 4.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 3.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Text(
+                            subtitle!,
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),

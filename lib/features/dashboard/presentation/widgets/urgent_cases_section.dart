@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/providers/providers.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../data/db/drift_database.dart';
 
 /// Urgent Cases Section - عرض الحالات التي تحتاج متابعة عاجلة
@@ -380,58 +381,7 @@ class UrgentCasesSection extends ConsumerWidget {
   }
 
   Widget _buildSkeletonLoader() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
-      ),
-      child: Container(
-        padding: EdgeInsets.all(16.w),
-        height: 200.h,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40.w,
-                  height: 40.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Container(
-                    height: 20.h,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4.r),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16.h),
-            ...List.generate(
-              3,
-              (i) => Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
-                child: Container(
-                  height: 30.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return SkeletonCard(height: 200.h, padding: EdgeInsets.all(16.w));
   }
 }
 

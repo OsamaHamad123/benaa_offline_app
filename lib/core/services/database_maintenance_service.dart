@@ -1,5 +1,7 @@
-﻿import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/db/drift_database.dart';
+
 /// Database Maintenance Service
 /// Performs periodic optimization tasks
 class DatabaseMaintenanceService {
@@ -15,12 +17,14 @@ class DatabaseMaintenanceService {
   // Run FTS optimization every 7 days
   static const Duration _ftsOptimizeInterval = Duration(days: 7);
   DatabaseMaintenanceService({required this.database, required this.prefs});
+
   /// Check and perform maintenance if needed
   Future<void> performMaintenanceIfNeeded() async {
     await _checkAndVacuum();
     await _checkAndAnalyze();
     await _checkAndOptimizeFts();
   }
+
   /// VACUUM - Rebuild database file to reduce size and improve performance
   Future<void> _checkAndVacuum() async {
     final lastVacuum = prefs.getString(_lastVacuumKey);
@@ -32,6 +36,7 @@ class DatabaseMaintenanceService {
       await prefs.setString(_lastVacuumKey, DateTime.now().toIso8601String());
     }
   }
+
   /// ANALYZE - Update query planner statistics
   Future<void> _checkAndAnalyze() async {
     final lastAnalyze = prefs.getString(_lastAnalyzeKey);
@@ -44,6 +49,7 @@ class DatabaseMaintenanceService {
       await prefs.setString(_lastAnalyzeKey, DateTime.now().toIso8601String());
     }
   }
+
   /// FTS Optimize - Optimize Full Text Search tables
   Future<void> _checkAndOptimizeFts() async {
     final lastOptimize = prefs.getString(_lastFtsOptimizeKey);
@@ -59,6 +65,7 @@ class DatabaseMaintenanceService {
       );
     }
   }
+
   /// Perform VACUUM - Reduces database file size
   Future<void> vacuum() async {
     try {
@@ -68,6 +75,7 @@ class DatabaseMaintenanceService {
       debugPrint('❌ Database VACUUM failed: $e');
     }
   }
+
   /// Perform ANALYZE - Updates statistics for query optimizer
   Future<void> analyze() async {
     try {
@@ -77,6 +85,7 @@ class DatabaseMaintenanceService {
       debugPrint('❌ Database ANALYZE failed: $e');
     }
   }
+
   /// Get database size in MB
   Future<double> getDatabaseSize() async {
     try {
@@ -92,6 +101,7 @@ class DatabaseMaintenanceService {
       return 0.0;
     }
   }
+
   /// Optimize FTS (Full Text Search) tables
   Future<void> optimizeFTS() async {
     try {
@@ -104,6 +114,7 @@ class DatabaseMaintenanceService {
       debugPrint('❌ FTS optimization failed: $e');
     }
   }
+
   /// Full maintenance - Run all optimization tasks
   Future<Map<String, dynamic>> performFullMaintenance() async {
     final sizeBefore = await getDatabaseSize();
@@ -119,6 +130,7 @@ class DatabaseMaintenanceService {
       'savedPercentage': sizeBefore > 0 ? (savedSpace / sizeBefore * 100) : 0,
     };
   }
+
   /// Get maintenance status
   Future<Map<String, dynamic>> getMaintenanceStatus() async {
     final lastVacuum = prefs.getString(_lastVacuumKey);
