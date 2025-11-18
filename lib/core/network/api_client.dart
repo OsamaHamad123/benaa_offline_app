@@ -9,6 +9,9 @@ class ApiClient {
   final AppConfig config;
   final Logger _logger = Logger();
 
+  /// Expose Dio instance for custom usage (e.g., sync datasources)
+  Dio get dio => _dio;
+
   ApiClient(this.config) {
     _dio = Dio(
       BaseOptions(

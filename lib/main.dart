@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/services/database_maintenance_service.dart';
+import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 import 'features/visits/presentation/providers/visit_providers.dart'
     as visit_providers;
 import 'features/search/presentation/providers/search_dependencies.dart'
@@ -20,6 +21,14 @@ void main() async {
   runApp(
     ProviderScope(
       overrides: [
+        // Override Sync infrastructure providers
+        sync_providers.databaseProvider.overrideWith(
+          (ref) => ref.watch(core_providers.databaseProvider),
+        ),
+        sync_providers.apiClientProvider.overrideWith(
+          (ref) => ref.watch(core_providers.apiClientProvider),
+        ),
+
         // Override database provider for visits feature
         visit_providers.databaseProvider.overrideWith(
           (ref) => ref.watch(core_providers.databaseProvider),

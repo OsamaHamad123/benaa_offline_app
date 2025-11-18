@@ -15,6 +15,8 @@ import 'daos/attachments_dao.dart';
 import 'daos/civil_registry_dao.dart';
 import 'daos/sync_dao.dart';
 import 'daos/tracking_dao.dart';
+import 'daos/taxonomies_dao.dart';
+import 'daos/sync_metadata_dao.dart';
 
 part 'drift_database.g.dart';
 
@@ -25,6 +27,7 @@ part 'drift_database.g.dart';
     Attachments,
     Taxonomies,
     SyncQueue,
+    SyncMetadataTable,
     CivilRegistry,
     CivilRegistryCity,
     CivilRegistryRelations,
@@ -41,6 +44,8 @@ part 'drift_database.g.dart';
     CivilRegistryDao,
     SyncDao,
     TrackingDao,
+    TaxonomiesDao,
+    SyncMetadataDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {

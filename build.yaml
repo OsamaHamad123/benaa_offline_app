@@ -1,0 +1,15 @@
+# Build configuration
+targets:
+  $default:
+    builders:
+      json_serializable:
+        generate_for:
+          exclude:
+            - lib/core/sync/domain/**
+            - lib/**/domain/**
+
+      source_gen|combining_builder:
+        generate_for:
+          exclude:
+            - lib/core/sync/domain/**
+            - lib/**/domain/**

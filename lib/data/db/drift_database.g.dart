@@ -4751,6 +4751,457 @@ class SyncQueueCompanion extends UpdateCompanion<SyncQueueItem> {
   }
 }
 
+class $SyncMetadataTableTable extends SyncMetadataTable
+    with TableInfo<$SyncMetadataTableTable, SyncMetadata> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncMetadataTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityMeta = const VerificationMeta('entity');
+  @override
+  late final GeneratedColumn<String> entity = GeneratedColumn<String>(
+    'entity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastSyncTimeMeta = const VerificationMeta(
+    'lastSyncTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncTime = GeneratedColumn<DateTime>(
+    'last_sync_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _totalSyncedMeta = const VerificationMeta(
+    'totalSynced',
+  );
+  @override
+  late final GeneratedColumn<int> totalSynced = GeneratedColumn<int>(
+    'total_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _failedSyncsMeta = const VerificationMeta(
+    'failedSyncs',
+  );
+  @override
+  late final GeneratedColumn<int> failedSyncs = GeneratedColumn<int>(
+    'failed_syncs',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastErrorTimeMeta = const VerificationMeta(
+    'lastErrorTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastErrorTime =
+      GeneratedColumn<DateTime>(
+        'last_error_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    entity,
+    lastSyncTime,
+    totalSynced,
+    failedSyncs,
+    lastError,
+    lastErrorTime,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_metadata_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncMetadata> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity')) {
+      context.handle(
+        _entityMeta,
+        entity.isAcceptableOrUnknown(data['entity']!, _entityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityMeta);
+    }
+    if (data.containsKey('last_sync_time')) {
+      context.handle(
+        _lastSyncTimeMeta,
+        lastSyncTime.isAcceptableOrUnknown(
+          data['last_sync_time']!,
+          _lastSyncTimeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastSyncTimeMeta);
+    }
+    if (data.containsKey('total_synced')) {
+      context.handle(
+        _totalSyncedMeta,
+        totalSynced.isAcceptableOrUnknown(
+          data['total_synced']!,
+          _totalSyncedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('failed_syncs')) {
+      context.handle(
+        _failedSyncsMeta,
+        failedSyncs.isAcceptableOrUnknown(
+          data['failed_syncs']!,
+          _failedSyncsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('last_error_time')) {
+      context.handle(
+        _lastErrorTimeMeta,
+        lastErrorTime.isAcceptableOrUnknown(
+          data['last_error_time']!,
+          _lastErrorTimeMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entity};
+  @override
+  SyncMetadata map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncMetadata(
+      entity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity'],
+      )!,
+      lastSyncTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_sync_time'],
+      )!,
+      totalSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}total_synced'],
+      )!,
+      failedSyncs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}failed_syncs'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      lastErrorTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_error_time'],
+      ),
+    );
+  }
+
+  @override
+  $SyncMetadataTableTable createAlias(String alias) {
+    return $SyncMetadataTableTable(attachedDatabase, alias);
+  }
+}
+
+class SyncMetadata extends DataClass implements Insertable<SyncMetadata> {
+  /// نوع البيانات: 'beneficiaries', 'visits', 'taxonomies', etc.
+  final String entity;
+
+  /// آخر وقت مزامنة ناجحة
+  final DateTime lastSyncTime;
+
+  /// عدد العناصر التي تمت مزامنتها
+  final int totalSynced;
+
+  /// عدد العناصر الفاشلة
+  final int failedSyncs;
+
+  /// آخر خطأ حصل
+  final String? lastError;
+
+  /// وقت آخر خطأ
+  final DateTime? lastErrorTime;
+  const SyncMetadata({
+    required this.entity,
+    required this.lastSyncTime,
+    required this.totalSynced,
+    required this.failedSyncs,
+    this.lastError,
+    this.lastErrorTime,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity'] = Variable<String>(entity);
+    map['last_sync_time'] = Variable<DateTime>(lastSyncTime);
+    map['total_synced'] = Variable<int>(totalSynced);
+    map['failed_syncs'] = Variable<int>(failedSyncs);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || lastErrorTime != null) {
+      map['last_error_time'] = Variable<DateTime>(lastErrorTime);
+    }
+    return map;
+  }
+
+  SyncMetadataTableCompanion toCompanion(bool nullToAbsent) {
+    return SyncMetadataTableCompanion(
+      entity: Value(entity),
+      lastSyncTime: Value(lastSyncTime),
+      totalSynced: Value(totalSynced),
+      failedSyncs: Value(failedSyncs),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      lastErrorTime: lastErrorTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastErrorTime),
+    );
+  }
+
+  factory SyncMetadata.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncMetadata(
+      entity: serializer.fromJson<String>(json['entity']),
+      lastSyncTime: serializer.fromJson<DateTime>(json['lastSyncTime']),
+      totalSynced: serializer.fromJson<int>(json['totalSynced']),
+      failedSyncs: serializer.fromJson<int>(json['failedSyncs']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      lastErrorTime: serializer.fromJson<DateTime?>(json['lastErrorTime']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entity': serializer.toJson<String>(entity),
+      'lastSyncTime': serializer.toJson<DateTime>(lastSyncTime),
+      'totalSynced': serializer.toJson<int>(totalSynced),
+      'failedSyncs': serializer.toJson<int>(failedSyncs),
+      'lastError': serializer.toJson<String?>(lastError),
+      'lastErrorTime': serializer.toJson<DateTime?>(lastErrorTime),
+    };
+  }
+
+  SyncMetadata copyWith({
+    String? entity,
+    DateTime? lastSyncTime,
+    int? totalSynced,
+    int? failedSyncs,
+    Value<String?> lastError = const Value.absent(),
+    Value<DateTime?> lastErrorTime = const Value.absent(),
+  }) => SyncMetadata(
+    entity: entity ?? this.entity,
+    lastSyncTime: lastSyncTime ?? this.lastSyncTime,
+    totalSynced: totalSynced ?? this.totalSynced,
+    failedSyncs: failedSyncs ?? this.failedSyncs,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    lastErrorTime: lastErrorTime.present
+        ? lastErrorTime.value
+        : this.lastErrorTime,
+  );
+  SyncMetadata copyWithCompanion(SyncMetadataTableCompanion data) {
+    return SyncMetadata(
+      entity: data.entity.present ? data.entity.value : this.entity,
+      lastSyncTime: data.lastSyncTime.present
+          ? data.lastSyncTime.value
+          : this.lastSyncTime,
+      totalSynced: data.totalSynced.present
+          ? data.totalSynced.value
+          : this.totalSynced,
+      failedSyncs: data.failedSyncs.present
+          ? data.failedSyncs.value
+          : this.failedSyncs,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      lastErrorTime: data.lastErrorTime.present
+          ? data.lastErrorTime.value
+          : this.lastErrorTime,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncMetadata(')
+          ..write('entity: $entity, ')
+          ..write('lastSyncTime: $lastSyncTime, ')
+          ..write('totalSynced: $totalSynced, ')
+          ..write('failedSyncs: $failedSyncs, ')
+          ..write('lastError: $lastError, ')
+          ..write('lastErrorTime: $lastErrorTime')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    entity,
+    lastSyncTime,
+    totalSynced,
+    failedSyncs,
+    lastError,
+    lastErrorTime,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncMetadata &&
+          other.entity == this.entity &&
+          other.lastSyncTime == this.lastSyncTime &&
+          other.totalSynced == this.totalSynced &&
+          other.failedSyncs == this.failedSyncs &&
+          other.lastError == this.lastError &&
+          other.lastErrorTime == this.lastErrorTime);
+}
+
+class SyncMetadataTableCompanion extends UpdateCompanion<SyncMetadata> {
+  final Value<String> entity;
+  final Value<DateTime> lastSyncTime;
+  final Value<int> totalSynced;
+  final Value<int> failedSyncs;
+  final Value<String?> lastError;
+  final Value<DateTime?> lastErrorTime;
+  final Value<int> rowid;
+  const SyncMetadataTableCompanion({
+    this.entity = const Value.absent(),
+    this.lastSyncTime = const Value.absent(),
+    this.totalSynced = const Value.absent(),
+    this.failedSyncs = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.lastErrorTime = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncMetadataTableCompanion.insert({
+    required String entity,
+    required DateTime lastSyncTime,
+    this.totalSynced = const Value.absent(),
+    this.failedSyncs = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.lastErrorTime = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : entity = Value(entity),
+       lastSyncTime = Value(lastSyncTime);
+  static Insertable<SyncMetadata> custom({
+    Expression<String>? entity,
+    Expression<DateTime>? lastSyncTime,
+    Expression<int>? totalSynced,
+    Expression<int>? failedSyncs,
+    Expression<String>? lastError,
+    Expression<DateTime>? lastErrorTime,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entity != null) 'entity': entity,
+      if (lastSyncTime != null) 'last_sync_time': lastSyncTime,
+      if (totalSynced != null) 'total_synced': totalSynced,
+      if (failedSyncs != null) 'failed_syncs': failedSyncs,
+      if (lastError != null) 'last_error': lastError,
+      if (lastErrorTime != null) 'last_error_time': lastErrorTime,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncMetadataTableCompanion copyWith({
+    Value<String>? entity,
+    Value<DateTime>? lastSyncTime,
+    Value<int>? totalSynced,
+    Value<int>? failedSyncs,
+    Value<String?>? lastError,
+    Value<DateTime?>? lastErrorTime,
+    Value<int>? rowid,
+  }) {
+    return SyncMetadataTableCompanion(
+      entity: entity ?? this.entity,
+      lastSyncTime: lastSyncTime ?? this.lastSyncTime,
+      totalSynced: totalSynced ?? this.totalSynced,
+      failedSyncs: failedSyncs ?? this.failedSyncs,
+      lastError: lastError ?? this.lastError,
+      lastErrorTime: lastErrorTime ?? this.lastErrorTime,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entity.present) {
+      map['entity'] = Variable<String>(entity.value);
+    }
+    if (lastSyncTime.present) {
+      map['last_sync_time'] = Variable<DateTime>(lastSyncTime.value);
+    }
+    if (totalSynced.present) {
+      map['total_synced'] = Variable<int>(totalSynced.value);
+    }
+    if (failedSyncs.present) {
+      map['failed_syncs'] = Variable<int>(failedSyncs.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (lastErrorTime.present) {
+      map['last_error_time'] = Variable<DateTime>(lastErrorTime.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncMetadataTableCompanion(')
+          ..write('entity: $entity, ')
+          ..write('lastSyncTime: $lastSyncTime, ')
+          ..write('totalSynced: $totalSynced, ')
+          ..write('failedSyncs: $failedSyncs, ')
+          ..write('lastError: $lastError, ')
+          ..write('lastErrorTime: $lastErrorTime, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CivilRegistryTable extends CivilRegistry
     with TableInfo<$CivilRegistryTable, CivilRegistryData> {
   @override
@@ -9203,6 +9654,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
   late final $TaxonomiesTable taxonomies = $TaxonomiesTable(this);
   late final $SyncQueueTable syncQueue = $SyncQueueTable(this);
+  late final $SyncMetadataTableTable syncMetadataTable =
+      $SyncMetadataTableTable(this);
   late final $CivilRegistryTable civilRegistry = $CivilRegistryTable(this);
   late final $CivilRegistryCityTable civilRegistryCity =
       $CivilRegistryCityTable(this);
@@ -9228,6 +9681,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final SyncDao syncDao = SyncDao(this as AppDatabase);
   late final TrackingDao trackingDao = TrackingDao(this as AppDatabase);
+  late final TaxonomiesDao taxonomiesDao = TaxonomiesDao(this as AppDatabase);
+  late final SyncMetadataDao syncMetadataDao = SyncMetadataDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9238,6 +9695,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     attachments,
     taxonomies,
     syncQueue,
+    syncMetadataTable,
     civilRegistry,
     civilRegistryCity,
     civilRegistryRelations,
@@ -11383,6 +11841,242 @@ typedef $$SyncQueueTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $SyncQueueTable, SyncQueueItem>,
       ),
       SyncQueueItem,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncMetadataTableTableCreateCompanionBuilder =
+    SyncMetadataTableCompanion Function({
+      required String entity,
+      required DateTime lastSyncTime,
+      Value<int> totalSynced,
+      Value<int> failedSyncs,
+      Value<String?> lastError,
+      Value<DateTime?> lastErrorTime,
+      Value<int> rowid,
+    });
+typedef $$SyncMetadataTableTableUpdateCompanionBuilder =
+    SyncMetadataTableCompanion Function({
+      Value<String> entity,
+      Value<DateTime> lastSyncTime,
+      Value<int> totalSynced,
+      Value<int> failedSyncs,
+      Value<String?> lastError,
+      Value<DateTime?> lastErrorTime,
+      Value<int> rowid,
+    });
+
+class $$SyncMetadataTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncMetadataTableTable> {
+  $$SyncMetadataTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncTime => $composableBuilder(
+    column: $table.lastSyncTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get totalSynced => $composableBuilder(
+    column: $table.totalSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get failedSyncs => $composableBuilder(
+    column: $table.failedSyncs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastErrorTime => $composableBuilder(
+    column: $table.lastErrorTime,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncMetadataTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncMetadataTableTable> {
+  $$SyncMetadataTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entity => $composableBuilder(
+    column: $table.entity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncTime => $composableBuilder(
+    column: $table.lastSyncTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get totalSynced => $composableBuilder(
+    column: $table.totalSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get failedSyncs => $composableBuilder(
+    column: $table.failedSyncs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastErrorTime => $composableBuilder(
+    column: $table.lastErrorTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncMetadataTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncMetadataTableTable> {
+  $$SyncMetadataTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entity =>
+      $composableBuilder(column: $table.entity, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncTime => $composableBuilder(
+    column: $table.lastSyncTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get totalSynced => $composableBuilder(
+    column: $table.totalSynced,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get failedSyncs => $composableBuilder(
+    column: $table.failedSyncs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastErrorTime => $composableBuilder(
+    column: $table.lastErrorTime,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncMetadataTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncMetadataTableTable,
+          SyncMetadata,
+          $$SyncMetadataTableTableFilterComposer,
+          $$SyncMetadataTableTableOrderingComposer,
+          $$SyncMetadataTableTableAnnotationComposer,
+          $$SyncMetadataTableTableCreateCompanionBuilder,
+          $$SyncMetadataTableTableUpdateCompanionBuilder,
+          (
+            SyncMetadata,
+            BaseReferences<
+              _$AppDatabase,
+              $SyncMetadataTableTable,
+              SyncMetadata
+            >,
+          ),
+          SyncMetadata,
+          PrefetchHooks Function()
+        > {
+  $$SyncMetadataTableTableTableManager(
+    _$AppDatabase db,
+    $SyncMetadataTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncMetadataTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncMetadataTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncMetadataTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> entity = const Value.absent(),
+                Value<DateTime> lastSyncTime = const Value.absent(),
+                Value<int> totalSynced = const Value.absent(),
+                Value<int> failedSyncs = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastErrorTime = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncMetadataTableCompanion(
+                entity: entity,
+                lastSyncTime: lastSyncTime,
+                totalSynced: totalSynced,
+                failedSyncs: failedSyncs,
+                lastError: lastError,
+                lastErrorTime: lastErrorTime,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entity,
+                required DateTime lastSyncTime,
+                Value<int> totalSynced = const Value.absent(),
+                Value<int> failedSyncs = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastErrorTime = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncMetadataTableCompanion.insert(
+                entity: entity,
+                lastSyncTime: lastSyncTime,
+                totalSynced: totalSynced,
+                failedSyncs: failedSyncs,
+                lastError: lastError,
+                lastErrorTime: lastErrorTime,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncMetadataTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncMetadataTableTable,
+      SyncMetadata,
+      $$SyncMetadataTableTableFilterComposer,
+      $$SyncMetadataTableTableOrderingComposer,
+      $$SyncMetadataTableTableAnnotationComposer,
+      $$SyncMetadataTableTableCreateCompanionBuilder,
+      $$SyncMetadataTableTableUpdateCompanionBuilder,
+      (
+        SyncMetadata,
+        BaseReferences<_$AppDatabase, $SyncMetadataTableTable, SyncMetadata>,
+      ),
+      SyncMetadata,
       PrefetchHooks Function()
     >;
 typedef $$CivilRegistryTableCreateCompanionBuilder =
@@ -13670,6 +14364,8 @@ class $AppDatabaseManager {
       $$TaxonomiesTableTableManager(_db, _db.taxonomies);
   $$SyncQueueTableTableManager get syncQueue =>
       $$SyncQueueTableTableManager(_db, _db.syncQueue);
+  $$SyncMetadataTableTableTableManager get syncMetadataTable =>
+      $$SyncMetadataTableTableTableManager(_db, _db.syncMetadataTable);
   $$CivilRegistryTableTableManager get civilRegistry =>
       $$CivilRegistryTableTableManager(_db, _db.civilRegistry);
   $$CivilRegistryCityTableTableManager get civilRegistryCity =>
