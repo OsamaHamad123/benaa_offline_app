@@ -36,10 +36,7 @@ class AppColorSystem {
   // Glass Gradients (for glassmorphism)
   static LinearGradient glassGradient(Color baseColor) {
     return LinearGradient(
-      colors: [
-        baseColor.withOpacity(0.2),
-        baseColor.withOpacity(0.1),
-      ],
+      colors: [baseColor.withOpacity(0.2), baseColor.withOpacity(0.1)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
@@ -115,18 +112,19 @@ class AppColorSystem {
     bool isPressed = false,
   }) {
     if (isPressed) {
+      // Inner shadow effect (simulated with darker colors)
       return [
         BoxShadow(
           color: Colors.black.withOpacity(0.2),
-          offset: const Offset(4, 4),
-          blurRadius: 8,
-          inset: true,
+          offset: const Offset(2, 2),
+          blurRadius: 4,
+          spreadRadius: -2,
         ),
         BoxShadow(
           color: Colors.white.withOpacity(0.1),
-          offset: const Offset(-4, -4),
-          blurRadius: 8,
-          inset: true,
+          offset: const Offset(-2, -2),
+          blurRadius: 4,
+          spreadRadius: -2,
         ),
       ];
     } else {

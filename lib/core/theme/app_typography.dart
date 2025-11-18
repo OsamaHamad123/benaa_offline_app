@@ -209,10 +209,7 @@ class GradientText extends StatelessWidget {
       shaderCallback: (bounds) => gradient.createShader(
         Rect.fromLTWH(0, 0, bounds.width, bounds.height),
       ),
-      child: Text(
-        text,
-        style: style.copyWith(color: Colors.white),
-      ),
+      child: Text(text, style: style.copyWith(color: Colors.white)),
     );
   }
 }
