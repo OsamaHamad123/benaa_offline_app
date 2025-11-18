@@ -9,6 +9,7 @@ import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/widgets/animated_progress_indicator.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../sync/sync_page.dart';
 import '../providers.dart';
 import '../widgets/dashboard_app_bar.dart' as dashboard_widgets;
@@ -34,11 +35,54 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedIndex = 0;
   bool _showWelcomeBanner = false;
   String _selectedFilter = 'all';
+  bool _isOnline = true;
 
   @override
   void initState() {
     super.initState();
     _checkWelcomeBanner();
+    _checkConnectivity();
+    _listenToConnectivity();
+  }
+
+  void _checkConnectivity() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (mounted) {
+      setState(() {
+        _isOnline = connectivityResult != ConnectivityResult.none;
+      });
+    }
+  }
+
+  void _listenToConnectivity() {
+    Connectivity().onConnectivityChanged.listen((result) {
+      if (mounted) {
+        final wasOffline = !_isOnline;
+        setState(() {
+          _isOnline = result != ConnectivityResult.none;
+        });
+        if (wasOffline && _isOnline) {
+          _showOnlineSnackbar();
+        }
+      }
+    });
+  }
+
+  void _showOnlineSnackbar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.wifi, color: Colors.white),
+            SizedBox(width: 8.w),
+            const Text('تم الاتصال بالإنترنت - جاري المزامنة التلقائية'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _checkWelcomeBanner() async {
@@ -60,6 +104,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         currentPage = _DashboardHome(
           showWelcomeBanner: _showWelcomeBanner,
           selectedFilter: _selectedFilter,
+          isOnline: _isOnline,
           onWelcomeDismiss: () {
             setState(() {
               _showWelcomeBanner = false;
@@ -82,6 +127,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         currentPage = _DashboardHome(
           showWelcomeBanner: _showWelcomeBanner,
           selectedFilter: _selectedFilter,
+          isOnline: _isOnline,
           onWelcomeDismiss: () {
             setState(() {
               _showWelcomeBanner = false;
@@ -143,7 +189,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   PreferredSizeWidget _buildAppBar() {
     if (_selectedIndex == 0) {
       return dashboard_widgets.DashboardAppBar(
-        title: 'منظومة بناء',
+        title: !_isOnline ? 'منظومة بناء (غير متصل)' : 'منظومة بناء',
         onSearchTap: () => context.push('/beneficiaries'),
         onNotificationTap: () {
           final state = ref.read(dashboardProvider);
@@ -172,12 +218,14 @@ class _DashboardHome extends ConsumerWidget {
   final String selectedFilter;
   final VoidCallback onWelcomeDismiss;
   final Function(String) onFilterChanged;
+  final bool isOnline;
 
   const _DashboardHome({
     required this.showWelcomeBanner,
     required this.selectedFilter,
     required this.onWelcomeDismiss,
     required this.onFilterChanged,
+    required this.isOnline,
   });
 
   @override
@@ -217,7 +265,7 @@ class _DashboardHome extends ConsumerWidget {
           ? const Center(child: CircularProgressIndicator())
           : state.hasError
           ? _buildErrorView(context, state.errorMessage!, notifier)
-          : _buildContent(context, ref, state, notifier, padding),
+          : _buildContent(context, ref, state, notifier, padding, isOnline),
     );
   }
 
@@ -250,6 +298,7 @@ class _DashboardHome extends ConsumerWidget {
     dynamic state,
     dynamic notifier,
     EdgeInsets padding,
+    bool isOnline,
   ) {
     final stats = state.statistics;
     if (stats == null) return const SizedBox();
@@ -259,6 +308,50 @@ class _DashboardHome extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Offline Indicator Banner
+          if (!isOnline)
+            Container(
+              margin: EdgeInsets.only(bottom: 16.h),
+              padding: EdgeInsets.all(12.w),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border.all(color: Colors.orange.shade300),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.wifi_off,
+                    color: Colors.orange.shade700,
+                    size: 20.sp,
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'وضع عدم الاتصال',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade900,
+                          ),
+                        ),
+                        Text(
+                          'يمكنك العمل حالياً وسيتم المزامنة عند عودة الاتصال',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Welcome Banner (First time users)
           if (showWelcomeBanner)
             WelcomeBanner(

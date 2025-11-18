@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entities/activity.dart';
 import 'package:intl/intl.dart' as intl;
+import '../../../../core/widgets/swipeable_card.dart';
 
 /// Activity Item Widget - Single activity in the list
 class ActivityItem extends StatelessWidget {
@@ -12,29 +13,50 @@ class ActivityItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 4.h),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getActivityColor(),
-          child: Icon(_getActivityIcon(), color: Colors.white, size: 20.sp),
-        ),
-        title: Text(activity.description, style: TextStyle(fontSize: 14.sp)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (activity.beneficiaryName != null)
+    return SwipeableCard(
+      key: ValueKey(activity.id),
+      onSwipeRight: () {
+        // View action
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('عرض ${activity.description}')));
+      },
+      onSwipeLeft: () {
+        // Delete action
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('حذف ${activity.description}')));
+      },
+      leftActionColor: Colors.blue,
+      leftActionIcon: Icons.visibility,
+      leftActionLabel: 'عرض',
+      rightActionColor: Colors.red,
+      rightActionIcon: Icons.delete,
+      rightActionLabel: 'حذف',
+      child: Card(
+        margin: EdgeInsets.symmetric(vertical: 4.h),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: _getActivityColor(),
+            child: Icon(_getActivityIcon(), color: Colors.white, size: 20.sp),
+          ),
+          title: Text(activity.description, style: TextStyle(fontSize: 14.sp)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (activity.beneficiaryName != null)
+                Text(
+                  activity.beneficiaryName!,
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                ),
               Text(
-                activity.beneficiaryName!,
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                _formatTime(activity.timestamp),
+                style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
               ),
-            Text(
-              _formatTime(activity.timestamp),
-              style: TextStyle(fontSize: 11.sp, color: Colors.grey[500]),
-            ),
-          ],
+            ],
+          ),
+          trailing: Icon(Icons.chevron_right, size: 20.sp),
         ),
-        trailing: Icon(Icons.chevron_right, size: 20.sp),
       ),
     );
   }
