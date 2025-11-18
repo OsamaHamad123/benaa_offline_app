@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/theme/app_color_system.dart';
 import 'trend_indicator.dart';
 
 /// Stat Card Widget - Reusable statistics card with Trend Indicator
