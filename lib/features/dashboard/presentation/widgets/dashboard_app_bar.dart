@@ -5,12 +5,13 @@ import '../../../../core/providers/providers.dart' as core_providers;
 import '../providers.dart';
 
 /// Dashboard AppBar - Clean Architecture Version
-/// Displays notifications badge and action buttons
+/// Displays notifications badge, search, and action buttons
 class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onSyncTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onSearchTap;
 
   const DashboardAppBar({
     super.key,
@@ -18,6 +19,7 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.onNotificationTap,
     this.onSyncTap,
     this.onProfileTap,
+    this.onSearchTap,
   });
 
   @override
@@ -37,12 +39,19 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
       title: Text(title),
       centerTitle: true,
       actions: [
+        // Search Button
+        IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: onSearchTap,
+          tooltip: 'بحث',
+        ),
         // Notifications Badge
         Stack(
           children: [
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
               onPressed: onNotificationTap,
+              tooltip: 'الإشعارات',
             ),
             if (notificationCount > 0)
               Positioned(
@@ -69,11 +78,16 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
           ],
         ),
         // Sync Button
-        IconButton(icon: const Icon(Icons.sync), onPressed: onSyncTap),
+        IconButton(
+          icon: const Icon(Icons.sync),
+          onPressed: onSyncTap,
+          tooltip: 'مزامنة',
+        ),
         // Profile Button
         IconButton(
           icon: const Icon(Icons.person_outline),
           onPressed: onProfileTap,
+          tooltip: 'الملف الشخصي',
         ),
       ],
     );

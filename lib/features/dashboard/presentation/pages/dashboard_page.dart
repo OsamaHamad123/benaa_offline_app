@@ -50,6 +50,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return Scaffold(
       appBar: _buildAppBar(),
       body: currentPage,
+      floatingActionButton: _selectedIndex == 0
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                context.push('/beneficiaries/add');
+              },
+              icon: const Icon(Icons.person_add),
+              label: const Text('إضافة مستفيد'),
+              backgroundColor: Colors.blue,
+              elevation: 4,
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -83,6 +96,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     if (_selectedIndex == 0) {
       return dashboard_widgets.DashboardAppBar(
         title: 'منظومة بناء',
+        onSearchTap: () => context.push('/beneficiaries'),
         onNotificationTap: () {
           final state = ref.read(dashboardProvider);
           final count = state.todayStats?.pendingTasks ?? 0;
@@ -216,40 +230,7 @@ class _DashboardHome extends ConsumerWidget {
               ),
             ),
 
-          // Statistics Grid
-          StatisticsGrid(
-            totalBeneficiaries: stats.totalBeneficiaries,
-            activeBeneficiaries: stats.activeBeneficiaries,
-            pendingSync: stats.pendingSync,
-            completedVisitsToday: stats.completedVisitsToday,
-            onBeneficiariesTap: () => context.push('/beneficiaries'),
-            onPendingSyncTap: () => context.push('/sync'),
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Section: Daily Performance - مؤشر الأداء اليومي
-          _SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
-          SizedBox(height: 12.h),
-          const DailyPerformanceSection(),
-
-          SizedBox(height: 24.h),
-
-          // Section: Urgent Cases - الحالات الطارئة
-          _SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
-          SizedBox(height: 12.h),
-          const UrgentCasesSection(),
-
-          SizedBox(height: 24.h),
-
-          // Section: Geographic Distribution - التوزيع الجغرافي
-          _SectionTitle(title: 'التوزيع الجغرافي', icon: Icons.map),
-          SizedBox(height: 12.h),
-          const GeographicDistributionSection(),
-
-          SizedBox(height: 24.h),
-
-          // Section: Quick Actions
+          // Section: Quick Actions (الأكثر استخداماً - في الأعلى)
           _SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
           SizedBox(height: 12.h),
           QuickActionsGrid(
@@ -262,28 +243,40 @@ class _DashboardHome extends ConsumerWidget {
 
           SizedBox(height: 24.h),
 
-          // Section: Charts
-          _SectionTitle(title: 'إحصائيات النمو', icon: Icons.trending_up),
-          SizedBox(height: 12.h),
-          GrowthChart(growthData: stats.growthData),
+          // Statistics Grid (مع تحسينات)
+          StatisticsGrid(
+            totalBeneficiaries: stats.totalBeneficiaries,
+            activeBeneficiaries: stats.activeBeneficiaries,
+            pendingSync: stats.pendingSync,
+            completedVisitsToday: stats.completedVisitsToday,
+            onBeneficiariesTap: () => context.push('/beneficiaries'),
+            onPendingSyncTap: () => context.push('/sync'),
+          ),
 
           SizedBox(height: 24.h),
 
-          // Section: Categories
-          _SectionTitle(title: 'توزيع الفئات', icon: Icons.pie_chart),
+          // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
+          _SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
           SizedBox(height: 12.h),
-          CategoryDistributionChart(categoryCounts: stats.categoryCounts),
+          const UrgentCasesSection(),
 
           SizedBox(height: 24.h),
 
-          // Section: Recent Activities
+          // Section: Daily Performance - مؤشر الأداء اليومي
+          _SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
+          SizedBox(height: 12.h),
+          const DailyPerformanceSection(),
+
+          SizedBox(height: 24.h),
+
+          // Section: Recent Activities (آخر 5 فقط)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _SectionTitle(title: 'الأنشطة الحديثة', icon: Icons.history),
               TextButton.icon(
                 onPressed: () {
-                  // TODO: Navigate to full activities page
+                  context.push('/activities');
                 },
                 icon: const Icon(Icons.arrow_forward, size: 16),
                 label: const Text('عرض الكل'),
@@ -292,10 +285,64 @@ class _DashboardHome extends ConsumerWidget {
           ),
           SizedBox(height: 12.h),
           RecentActivitiesList(
-            activities: state.activities,
+            activities: state.activities.take(5).toList(),
             isLoading: state.isLoadingActivities,
             hasMore: state.hasMoreActivities,
             onLoadMore: () => notifier.loadMoreActivities(),
+          ),
+
+          SizedBox(height: 24.h),
+
+          // Section: Charts (قابلة للطي)
+          _CollapsibleSection(
+            title: 'إحصائيات النمو',
+            icon: Icons.trending_up,
+            child: Column(
+              children: [
+                SizedBox(height: 12.h),
+                GrowthChart(growthData: stats.growthData),
+                SizedBox(height: 16.h),
+                CategoryDistributionChart(categoryCounts: stats.categoryCounts),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 24.h),
+
+          // Section: Geographic Distribution (قابلة للطي)
+          _CollapsibleSection(
+            title: 'التوزيع الجغرافي',
+            icon: Icons.map,
+            child: Column(
+              children: [
+                SizedBox(height: 12.h),
+                const GeographicDistributionSection(),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 24.h),
+
+          // Last Refresh Time (في Footer)
+          Center(
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.access_time, size: 14.sp, color: Colors.grey[600]),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'آخر تحديث: ${_formatRefreshTime(state.lastRefreshTime)}',
+                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
           ),
 
           SizedBox(height: 24.h),
@@ -315,6 +362,73 @@ class _DashboardHome extends ConsumerWidget {
     } else {
       return 'منذ ${diff.inHours} ساعة';
     }
+  }
+}
+
+/// Collapsible Section Widget
+class _CollapsibleSection extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const _CollapsibleSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
+
+  @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: EdgeInsets.all(8.w),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.withOpacity(0.2),
+                  Colors.purple.withOpacity(0.2),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(widget.icon, size: 20.sp, color: Colors.blue),
+          ),
+          title: Text(
+            widget.title,
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          ),
+          trailing: AnimatedRotation(
+            turns: _isExpanded ? 0.5 : 0,
+            duration: const Duration(milliseconds: 200),
+            child: const Icon(Icons.expand_more),
+          ),
+          onExpansionChanged: (expanded) {
+            setState(() {
+              _isExpanded = expanded;
+            });
+            HapticFeedback.selectionClick();
+          },
+          children: [
+            Padding(padding: EdgeInsets.all(16.w), child: widget.child),
+          ],
+        ),
+      ),
+    );
   }
 }
 

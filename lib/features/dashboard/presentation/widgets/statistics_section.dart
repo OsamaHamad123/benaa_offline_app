@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
+import 'trend_indicator.dart';
 
-/// Stat Card Widget - Reusable statistics card
+/// Stat Card Widget - Reusable statistics card with Trend Indicator
 class StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -12,6 +13,8 @@ class StatCard extends StatelessWidget {
   final Color color;
   final VoidCallback? onTap;
   final String? subtitle;
+  final double? trendPercentage; // Trend percentage (optional)
+  final int? previousValue; // Previous value for comparison
 
   const StatCard({
     super.key,
@@ -21,10 +24,20 @@ class StatCard extends StatelessWidget {
     required this.color,
     this.onTap,
     this.subtitle,
+    this.trendPercentage,
+    this.previousValue,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Calculate trend if previous value is provided
+    double? calculatedTrend;
+    if (previousValue != null && previousValue! > 0) {
+      final currentVal = int.tryParse(value) ?? 0;
+      calculatedTrend = ((currentVal - previousValue!) / previousValue!) * 100;
+    }
+    final trend = trendPercentage ?? calculatedTrend;
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -34,7 +47,7 @@ class StatCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap != null
             ? () {
-                HapticFeedback.selectionClick();
+                HapticFeedback.mediumImpact();
                 onTap!();
               }
             : null,
@@ -66,7 +79,13 @@ class StatCard extends StatelessWidget {
                         ),
                         child: Icon(icon, color: color, size: 20.sp),
                       ),
-                      if (onTap != null)
+                      // Trend Indicator or Arrow
+                      if (trend != null)
+                        TrendIndicator(
+                          percentChange: trend,
+                          isPositive: trend >= 0,
+                        )
+                      else if (onTap != null)
                         Icon(
                           Icons.arrow_forward_ios,
                           size: 12.sp,
