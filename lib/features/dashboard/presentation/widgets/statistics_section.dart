@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
 import '../../../../core/theme/app_color_system.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'trend_indicator.dart';
 
 /// Stat Card Widget - Reusable statistics card with Trend Indicator
@@ -46,33 +47,39 @@ class StatCard extends StatelessWidget {
       tag: heroTag,
       child: Material(
         color: Colors.transparent,
-        child: Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-            side: BorderSide(color: color.withOpacity(0.2), width: 1),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.r),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                color.withOpacity(0.08),
+                color.withOpacity(0.15),
+                color.withOpacity(0.05),
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+            boxShadow: AppColorSystem.getElevatedShadow(
+              color: color,
+              elevation: 2.0,
+            ),
           ),
-          child: InkWell(
-            onTap: onTap != null
-                ? () {
-                    HapticFeedback.mediumImpact();
-                    onTap!();
-                  }
-                : null,
-            borderRadius: BorderRadius.circular(16.r),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16.r),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [color.withOpacity(0.05), color.withOpacity(0.1)],
-                ),
-              ),
-              padding: EdgeInsets.all(12.w),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Column(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap != null
+                  ? () {
+                      HapticFeedback.mediumImpact();
+                      onTap!();
+                    }
+                  : null,
+              borderRadius: BorderRadius.circular(20.r),
+              child: Container(
+                padding: EdgeInsets.all(16.w),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -80,12 +87,24 @@ class StatCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
-                            padding: EdgeInsets.all(8.w),
+                            padding: EdgeInsets.all(10.w),
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12.r),
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(14.r),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  color.withOpacity(0.2),
+                                  color.withOpacity(0.1),
+                                ],
+                              ),
+                              boxShadow: AppColorSystem.getNeumorphicShadow(
+                                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                                isPressed: false,
+                              ),
                             ),
-                            child: Icon(icon, color: color, size: 20.sp),
+                            child: Icon(icon, color: color, size: 22.sp),
                           ),
                           // Trend Indicator or Arrow
                           if (trend != null)
@@ -102,22 +121,28 @@ class StatCard extends StatelessWidget {
                         ],
                       ),
                       const Spacer(),
-                      Text(
-                        value,
-                        style: TextStyle(
-                          fontSize: 28.sp,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                          height: 1.0,
+                      GradientText(
+                        text: value,
+                        gradient: LinearGradient(
+                          colors: [
+                            color,
+                            color.withOpacity(0.7),
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Cairo',
+                          fontSize: 32.sp,
+                          fontWeight: FontWeight.bold,
+                          height: 1.0,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                      SizedBox(height: 4.h),
+                      SizedBox(height: 6.h),
                       Text(
                         title,
                         style: TextStyle(
-                          fontSize: 12.sp,
+                          fontFamily: 'Tajawal',
+                          fontSize: 13.sp,
                           color: Colors.grey[700],
                           fontWeight: FontWeight.w500,
                         ),
@@ -150,6 +175,7 @@ class StatCard extends StatelessWidget {
                     ],
                   );
                 },
+                ),
               ),
             ),
           ),
