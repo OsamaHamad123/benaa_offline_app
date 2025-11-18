@@ -18,10 +18,11 @@ class TaxonomyService {
       // جلب آخر تاريخ تحديث من قاعدة البيانات
       final lastUpdate = await _getLastTaxonomyUpdate();
 
-      // جلب التصنيفات من API
-      final taxonomiesData = await apiClient.getTaxonomies(
-        updatedAfter: lastUpdate,
-      );
+      // جلب التصنيفات من API (getTaxonomies returns Map<String, dynamic>)
+      final response = await apiClient.getTaxonomies(since: lastUpdate);
+
+      // استخراج البيانات من response
+      final taxonomiesData = response['data'] as List<dynamic>? ?? [];
 
       // حفظ التصنيفات في قاعدة البيانات
       await _saveTaxonomies(taxonomiesData);

@@ -512,4 +512,355 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     ).getSingle();
     return result.read<int>('count');
   }
+
+  // ============================================================================
+  // REPORTS AGGREGATION QUERIES - استعلامات التقارير المُحسَّنة
+  // ============================================================================
+
+  /// Get gender counts (OPTIMIZED: SQL aggregation)
+  /// Supports optional date range filtering
+  Future<List<GenderCountResult>> getGenderCounts({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    String whereClause = 'WHERE gender IS NOT NULL';
+    final List<Variable> variables = [];
+
+    if (startDate != null) {
+      whereClause += ' AND created_at >= ?';
+      variables.add(Variable(startDate.millisecondsSinceEpoch));
+    }
+
+    if (endDate != null) {
+      // Add 1 day to include the end date entirely
+      final endOfDay = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+      whereClause += ' AND created_at <= ?';
+      variables.add(Variable(endOfDay.millisecondsSinceEpoch));
+    }
+
+    final results = await customSelect(
+      '''SELECT 
+           gender, 
+           COUNT(*) as count 
+         FROM beneficiaries 
+         $whereClause 
+         GROUP BY gender''',
+      variables: variables,
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return results.map((row) {
+      return GenderCountResult(
+        gender: row.read<int>('gender'),
+        count: row.read<int>('count'),
+      );
+    }).toList();
+  }
+
+  /// Get governorate counts (OPTIMIZED: SQL aggregation)
+  /// Supports optional date range filtering
+  Future<List<GovernorateCountResult>> getGovernorateCounts({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    String whereClause = 'WHERE province IS NOT NULL';
+    final List<Variable> variables = [];
+
+    if (startDate != null) {
+      whereClause += ' AND created_at >= ?';
+      variables.add(Variable(startDate.millisecondsSinceEpoch));
+    }
+
+    if (endDate != null) {
+      final endOfDay = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+      whereClause += ' AND created_at <= ?';
+      variables.add(Variable(endOfDay.millisecondsSinceEpoch));
+    }
+
+    final results = await customSelect(
+      '''SELECT 
+           province, 
+           COUNT(*) as count 
+         FROM beneficiaries 
+         $whereClause 
+         GROUP BY province 
+         ORDER BY count DESC''',
+      variables: variables,
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return results.map((row) {
+      return GovernorateCountResult(
+        governorate: row.read<int>('province'),
+        count: row.read<int>('count'),
+      );
+    }).toList();
+  }
+
+  /// Get category counts (OPTIMIZED: SQL aggregation)
+  /// Supports optional date range filtering
+  Future<List<CategoryCountResult>> getCategoryCounts({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    String whereClause = 'WHERE section_id IS NOT NULL';
+    final List<Variable> variables = [];
+
+    if (startDate != null) {
+      whereClause += ' AND created_at >= ?';
+      variables.add(Variable(startDate.millisecondsSinceEpoch));
+    }
+
+    if (endDate != null) {
+      final endOfDay = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+      whereClause += ' AND created_at <= ?';
+      variables.add(Variable(endOfDay.millisecondsSinceEpoch));
+    }
+
+    final results = await customSelect(
+      '''SELECT 
+           section_id, 
+           COUNT(*) as count 
+         FROM beneficiaries 
+         $whereClause 
+         GROUP BY section_id''',
+      variables: variables,
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return results.map((row) {
+      return CategoryCountResult(
+        sectionId: row.read<int>('section_id'),
+        count: row.read<int>('count'),
+      );
+    }).toList();
+  }
+
+  /// Get age bracket counts (OPTIMIZED: SQL aggregation with age calculation)
+  /// Supports optional date range filtering
+  Future<List<AgeCountResult>> getAgeCounts({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    String whereClause = 'WHERE birth_date IS NOT NULL';
+    final List<Variable> variables = [];
+
+    if (startDate != null) {
+      whereClause += ' AND created_at >= ?';
+      variables.add(Variable(startDate.millisecondsSinceEpoch));
+    }
+
+    if (endDate != null) {
+      final endOfDay = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+      whereClause += ' AND created_at <= ?';
+      variables.add(Variable(endOfDay.millisecondsSinceEpoch));
+    }
+
+    final results = await customSelect(
+      '''SELECT 
+           CASE 
+             WHEN CAST((julianday('now') - julianday(birth_date)) / 365.25 AS INTEGER) < 13 THEN '0-12'
+             WHEN CAST((julianday('now') - julianday(birth_date)) / 365.25 AS INTEGER) < 19 THEN '13-18'
+             WHEN CAST((julianday('now') - julianday(birth_date)) / 365.25 AS INTEGER) < 36 THEN '19-35'
+             WHEN CAST((julianday('now') - julianday(birth_date)) / 365.25 AS INTEGER) < 51 THEN '36-50'
+             ELSE '51+'
+           END as age_bracket,
+           COUNT(*) as count
+         FROM beneficiaries
+         $whereClause
+         GROUP BY age_bracket
+         ORDER BY age_bracket''',
+      variables: variables,
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return results.map((row) {
+      return AgeCountResult(
+        ageBracket: row.read<String>('age_bracket'),
+        count: row.read<int>('count'),
+      );
+    }).toList();
+  }
+
+  /// Get sync status counts (OPTIMIZED: SQL aggregation)
+  /// Supports optional date range filtering
+  Future<List<SyncStatusCountResult>> getSyncStatusCounts({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    String whereClause = '';
+    final List<Variable> variables = [];
+
+    if (startDate != null) {
+      whereClause = 'WHERE created_at >= ?';
+      variables.add(Variable(startDate.millisecondsSinceEpoch));
+    }
+
+    if (endDate != null) {
+      final endOfDay = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+      whereClause += whereClause.isEmpty ? 'WHERE' : ' AND';
+      whereClause += ' created_at <= ?';
+      variables.add(Variable(endOfDay.millisecondsSinceEpoch));
+    }
+
+    final results = await customSelect(
+      '''SELECT 
+           sync_state, 
+           COUNT(*) as count 
+         FROM beneficiaries 
+         $whereClause
+         GROUP BY sync_state''',
+      variables: variables,
+      readsFrom: {beneficiaries},
+    ).get();
+
+    return results.map((row) {
+      return SyncStatusCountResult(
+        syncState: row.read<String>('sync_state'),
+        count: row.read<int>('count'),
+      );
+    }).toList();
+  }
+
+  /// Get summary statistics (OPTIMIZED: Single query with multiple aggregations)
+  /// Supports optional date range filtering
+  Future<SummaryStatisticsResult> getSummaryStatistics({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    String whereClause = '';
+    final List<Variable> variables = [];
+
+    if (startDate != null) {
+      whereClause = 'WHERE created_at >= ?';
+      variables.add(Variable(startDate.millisecondsSinceEpoch));
+    }
+
+    if (endDate != null) {
+      final endOfDay = DateTime(
+        endDate.year,
+        endDate.month,
+        endDate.day,
+        23,
+        59,
+        59,
+      );
+      whereClause += whereClause.isEmpty ? 'WHERE' : ' AND';
+      whereClause += ' created_at <= ?';
+      variables.add(Variable(endOfDay.millisecondsSinceEpoch));
+    }
+
+    final result = await customSelect(
+      '''SELECT 
+           COUNT(*) as total,
+           SUM(CASE WHEN section_id = 1 THEN 1 ELSE 0 END) as orphans,
+           SUM(CASE WHEN section_id = 3 THEN 1 ELSE 0 END) as poor,
+           SUM(CASE WHEN sync_state = 'pending' THEN 1 ELSE 0 END) as pending
+         FROM beneficiaries
+         $whereClause''',
+      variables: variables,
+      readsFrom: {beneficiaries},
+    ).getSingle();
+
+    return SummaryStatisticsResult(
+      total: result.read<int>('total'),
+      orphans: result.read<int>('orphans'),
+      poor: result.read<int>('poor'),
+      pending: result.read<int>('pending'),
+    );
+  }
+}
+
+// ============================================================================
+// QUERY RESULT CLASSES - نتائج الاستعلامات
+// ============================================================================
+
+/// Gender count query result
+class GenderCountResult {
+  final int gender;
+  final int count;
+
+  GenderCountResult({required this.gender, required this.count});
+}
+
+/// Governorate count query result
+class GovernorateCountResult {
+  final int governorate;
+  final int count;
+
+  GovernorateCountResult({required this.governorate, required this.count});
+}
+
+/// Category count query result
+class CategoryCountResult {
+  final int sectionId;
+  final int count;
+
+  CategoryCountResult({required this.sectionId, required this.count});
+}
+
+/// Age count query result
+class AgeCountResult {
+  final String ageBracket;
+  final int count;
+
+  AgeCountResult({required this.ageBracket, required this.count});
+}
+
+/// Sync status count query result
+class SyncStatusCountResult {
+  final String syncState;
+  final int count;
+
+  SyncStatusCountResult({required this.syncState, required this.count});
+}
+
+/// Summary statistics query result
+class SummaryStatisticsResult {
+  final int total;
+  final int orphans;
+  final int poor;
+  final int pending;
+
+  SummaryStatisticsResult({
+    required this.total,
+    required this.orphans,
+    required this.poor,
+    required this.pending,
+  });
 }

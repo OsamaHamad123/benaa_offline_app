@@ -158,7 +158,7 @@ class DatabaseMigrationsService {
   /// Populate FTS table with individual name columns
   static Future<void> _populateFtsTable(Database db) async {
     print('📥 Populating FTS table...');
-    
+
     // Delete existing FTS data
     await db.execute('DELETE FROM persons_fts');
 
@@ -241,7 +241,6 @@ class DatabaseMigrationsService {
       END;
     ''');
   }
-  
 
   /// Check if column exists in table
   static Future<bool> _columnExists(

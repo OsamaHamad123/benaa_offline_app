@@ -129,17 +129,40 @@ class ApiClient {
     }
   }
 
-  // Taxonomies
-  Future<List<dynamic>> getTaxonomies({DateTime? updatedAfter}) async {
+  // Taxonomies - Updated for Clean Architecture Sync
+  Future<Map<String, dynamic>> getTaxonomies({
+    String? group,
+    DateTime? since,
+  }) async {
+    try {
+      final params = <String, dynamic>{};
+      if (group != null) params['group'] = group;
+      if (since != null) params['since'] = since.toIso8601String();
+
+      final response = await _dio.get(
+        '/api/v1/taxonomies',
+        queryParameters: params.isEmpty ? null : params,
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // Beneficiaries - Delta Sync Support
+  Future<Map<String, dynamic>> getBeneficiaryChanges({
+    DateTime? since,
+    int limit = 100,
+  }) async {
     try {
       final response = await _dio.get(
-        '/taxonomies',
+        '/api/v1/beneficiaries/changes',
         queryParameters: {
-          if (updatedAfter != null)
-            'updated_after': updatedAfter.toIso8601String(),
+          if (since != null) 'since': since.toIso8601String(),
+          'limit': limit,
         },
       );
-      return response.data['data'] as List;
+      return response.data;
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -147,12 +170,31 @@ class ApiClient {
 
   // Beneficiaries bulk sync
   Future<Map<String, dynamic>> syncBeneficiaries(
-    List<Map<String, dynamic>> beneficiaries,
+    List<Map<String, dynamic>> changes,
   ) async {
     try {
       final response = await _dio.post(
-        '/beneficiaries/bulk',
-        data: {'beneficiaries': beneficiaries},
+        '/api/v1/beneficiaries/sync',
+        data: {'changes': changes},
+      );
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
+
+  // Visits - Delta Sync Support
+  Future<Map<String, dynamic>> getVisitChanges({
+    DateTime? since,
+    int limit = 100,
+  }) async {
+    try {
+      final response = await _dio.get(
+        '/api/v1/visits/changes',
+        queryParameters: {
+          if (since != null) 'since': since.toIso8601String(),
+          'limit': limit,
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -162,12 +204,12 @@ class ApiClient {
 
   // Visits bulk sync
   Future<Map<String, dynamic>> syncVisits(
-    List<Map<String, dynamic>> visits,
+    List<Map<String, dynamic>> changes,
   ) async {
     try {
       final response = await _dio.post(
-        '/visits/bulk',
-        data: {'visits': visits},
+        '/api/v1/visits/sync',
+        data: {'changes': changes},
       );
       return response.data;
     } on DioException catch (e) {

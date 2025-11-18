@@ -1,12 +1,98 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/providers.dart';
+import '../../../data/repositories/reports_repository_impl.dart';
+import '../domain/entities/report_data.dart';
+import '../domain/entities/summary_statistics.dart';
+import '../domain/usecases/get_summary_statistics.dart';
+import '../domain/usecases/get_gender_report.dart';
+import '../domain/usecases/get_governorate_report.dart';
+import '../domain/usecases/get_category_report.dart';
+import '../domain/usecases/get_age_report.dart';
+import '../domain/usecases/get_sync_status_report.dart';
 
-// Cache duration for reports (5 minutes)
+/// Reports cache duration - 5 minutes
 const _reportsCacheDuration = Duration(minutes: 5);
 
+// ============================================================================
+// REPOSITORY & USE CASES PROVIDERS
+// ============================================================================
+
+/// Reports repository provider
+final reportsRepositoryProvider = Provider<ReportsRepositoryImpl>((ref) {
+  final database = ref.watch(databaseProvider);
+  return ReportsRepositoryImpl(
+    beneficiariesDao: database.beneficiariesDao,
+    taxonomiesDao: database.taxonomiesDao,
+  );
+});
+
+/// Get Summary Statistics Use Case Provider
+final getSummaryStatisticsUseCaseProvider = Provider<GetSummaryStatistics>((
+  ref,
+) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return GetSummaryStatistics(repository);
+});
+
+/// Get Gender Report Use Case Provider
+final getGenderReportUseCaseProvider = Provider<GetGenderReport>((ref) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return GetGenderReport(repository);
+});
+
+/// Get Governorate Report Use Case Provider
+final getGovernorateReportUseCaseProvider = Provider<GetGovernorateReport>((
+  ref,
+) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return GetGovernorateReport(repository);
+});
+
+/// Get Category Report Use Case Provider
+final getCategoryReportUseCaseProvider = Provider<GetCategoryReport>((ref) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return GetCategoryReport(repository);
+});
+
+/// Get Age Report Use Case Provider
+final getAgeReportUseCaseProvider = Provider<GetAgeReport>((ref) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return GetAgeReport(repository);
+});
+
+/// Get Sync Status Report Use Case Provider
+final getSyncStatusReportUseCaseProvider = Provider<GetSyncStatusReport>((ref) {
+  final repository = ref.watch(reportsRepositoryProvider);
+  return GetSyncStatusReport(repository);
+});
+
+// ============================================================================
+// DATA PROVIDERS (with caching)
+// ============================================================================
+
 /// Summary Statistics Provider with caching
-final summaryStatisticsProvider = FutureProvider.autoDispose<Map<String, int>>((
+final summaryStatisticsProvider = FutureProvider.autoDispose<SummaryStatistics>(
+  (ref) async {
+    // Keep provider alive for cache duration
+    final link = ref.keepAlive();
+    Timer? timer;
+
+    ref.onDispose(() {
+      timer?.cancel();
+    });
+
+    timer = Timer(_reportsCacheDuration, () {
+      link.close();
+    });
+
+    final useCase = ref.watch(getSummaryStatisticsUseCaseProvider);
+    return await useCase();
+  },
+);
+
+/// Gender Report Provider with caching
+final genderReportProvider = FutureProvider.autoDispose<List<GenderCount>>((
   ref,
 ) async {
   // Keep provider alive for cache duration
@@ -17,58 +103,35 @@ final summaryStatisticsProvider = FutureProvider.autoDispose<Map<String, int>>((
     timer?.cancel();
   });
 
-  // Invalidate cache after duration
   timer = Timer(_reportsCacheDuration, () {
     link.close();
   });
 
-  final database = ref.watch(databaseProvider);
-
-  final results = await Future.wait([
-    database.beneficiariesDao.countBeneficiaries(),
-    database.beneficiariesDao.countBeneficiariesByCategory(1), // orphan
-    database.beneficiariesDao.countBeneficiariesByCategory(2), // poor
-    database.beneficiariesDao.countPendingSync(),
-  ]);
-
-  return {
-    'total': results[0],
-    'orphans': results[1],
-    'poor': results[2],
-    'pending': results[3],
-  };
+  final useCase = ref.watch(getGenderReportUseCaseProvider);
+  return await useCase();
 });
 
 /// Governorate Report Provider with caching
-final governorateReportProvider = FutureProvider.autoDispose<Map<String, int>>((
-  ref,
-) async {
-  // Keep provider alive for cache duration
-  final link = ref.keepAlive();
-  Timer? timer;
+final governorateReportProvider =
+    FutureProvider.autoDispose<List<GovernorateCount>>((ref) async {
+      // Keep provider alive for cache duration
+      final link = ref.keepAlive();
+      Timer? timer;
 
-  ref.onDispose(() {
-    timer?.cancel();
-  });
+      ref.onDispose(() {
+        timer?.cancel();
+      });
 
-  timer = Timer(_reportsCacheDuration, () {
-    link.close();
-  });
+      timer = Timer(_reportsCacheDuration, () {
+        link.close();
+      });
 
-  final database = ref.watch(databaseProvider);
-  final beneficiaries = await database.beneficiariesDao.getAllBeneficiaries();
-
-  final governorateCounts = <String, int>{};
-  for (var b in beneficiaries) {
-    final provinceKey = b.province?.toString() ?? 'غير محدد';
-    governorateCounts[provinceKey] = (governorateCounts[provinceKey] ?? 0) + 1;
-  }
-
-  return governorateCounts;
-});
+      final useCase = ref.watch(getGovernorateReportUseCaseProvider);
+      return await useCase();
+    });
 
 /// Category Report Provider with caching
-final categoryReportProvider = FutureProvider.autoDispose<Map<String, int>>((
+final categoryReportProvider = FutureProvider.autoDispose<List<CategoryCount>>((
   ref,
 ) async {
   // Keep provider alive for cache duration
@@ -83,20 +146,12 @@ final categoryReportProvider = FutureProvider.autoDispose<Map<String, int>>((
     link.close();
   });
 
-  final database = ref.watch(databaseProvider);
-  final beneficiaries = await database.beneficiariesDao.getAllBeneficiaries();
-
-  final categoryCounts = <String, int>{};
-  for (var b in beneficiaries) {
-    final categoryKey = _getCategoryName(b.sectionId);
-    categoryCounts[categoryKey] = (categoryCounts[categoryKey] ?? 0) + 1;
-  }
-
-  return categoryCounts;
+  final useCase = ref.watch(getCategoryReportUseCaseProvider);
+  return await useCase();
 });
 
-/// Gender Report Provider with caching
-final genderReportProvider = FutureProvider.autoDispose<Map<String, int>>((
+/// Age Report Provider with caching
+final ageReportProvider = FutureProvider.autoDispose<List<AgeCount>>((
   ref,
 ) async {
   // Keep provider alive for cache duration
@@ -111,72 +166,25 @@ final genderReportProvider = FutureProvider.autoDispose<Map<String, int>>((
     link.close();
   });
 
-  final database = ref.watch(databaseProvider);
-  final beneficiaries = await database.beneficiariesDao.getAllBeneficiaries();
-
-  final genderCounts = <String, int>{};
-  for (var b in beneficiaries) {
-    final genderKey = b.gender == 1 ? 'ذكور' : 'إناث'; // 1=male, 2=female
-    genderCounts[genderKey] = (genderCounts[genderKey] ?? 0) + 1;
-  }
-
-  return genderCounts;
+  final useCase = ref.watch(getAgeReportUseCaseProvider);
+  return await useCase();
 });
 
 /// Sync Status Report Provider with caching
-final syncStatusReportProvider = FutureProvider.autoDispose<Map<String, int>>((
-  ref,
-) async {
-  // Keep provider alive for cache duration
-  final link = ref.keepAlive();
-  Timer? timer;
+final syncStatusReportProvider =
+    FutureProvider.autoDispose<List<SyncStatusCount>>((ref) async {
+      // Keep provider alive for cache duration
+      final link = ref.keepAlive();
+      Timer? timer;
 
-  ref.onDispose(() {
-    timer?.cancel();
-  });
+      ref.onDispose(() {
+        timer?.cancel();
+      });
 
-  timer = Timer(_reportsCacheDuration, () {
-    link.close();
-  });
+      timer = Timer(_reportsCacheDuration, () {
+        link.close();
+      });
 
-  final database = ref.watch(databaseProvider);
-  final beneficiaries = await database.beneficiariesDao.getAllBeneficiaries();
-
-  final syncCounts = <String, int>{};
-  for (var b in beneficiaries) {
-    final statusKey = _getSyncStatusName(b.syncState);
-    syncCounts[statusKey] = (syncCounts[statusKey] ?? 0) + 1;
-  }
-
-  return syncCounts;
-});
-
-/// Helper function to get category name
-String _getCategoryName(int? sectionId) {
-  switch (sectionId) {
-    case 1:
-      return 'أيتام';
-    case 2:
-      return 'أرامل';
-    case 3:
-      return 'فقراء';
-    case 4:
-      return 'معاقين';
-    default:
-      return 'غير محدد';
-  }
-}
-
-/// Helper function to get sync status name
-String _getSyncStatusName(String syncState) {
-  switch (syncState) {
-    case 'synced':
-      return 'متزامن';
-    case 'pending':
-      return 'بانتظار المزامنة';
-    case 'failed':
-      return 'فشل';
-    default:
-      return 'غير محدد';
-  }
-}
+      final useCase = ref.watch(getSyncStatusReportUseCaseProvider);
+      return await useCase();
+    });
