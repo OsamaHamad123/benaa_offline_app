@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils.dart';
-import '../../../../core/theme/app_color_system.dart';
-import '../../../../core/theme/app_typography.dart';
 import 'trend_indicator.dart';
 
 /// Stat Card Widget - Reusable statistics card with Trend Indicator
@@ -40,143 +38,109 @@ class StatCard extends StatelessWidget {
     }
     final trend = trendPercentage ?? calculatedTrend;
 
-    // Hero tag for animations
-    final heroTag = 'stat-card-$title';
-
-    return Hero(
-      tag: heroTag,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20.r),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                color.withOpacity(0.08),
-                color.withOpacity(0.15),
-                color.withOpacity(0.05),
-              ],
-              stops: const [0.0, 0.5, 1.0],
-            ),
-            boxShadow: AppColorSystem.getElevatedShadow(
-              color: color,
-              elevation: 2.0,
-            ),
+    return Card(
+      elevation: 2,
+      shadowColor: color.withOpacity(0.25),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16.r),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withOpacity(0.06), color.withOpacity(0.12)],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap != null
-                  ? () {
-                      HapticFeedback.mediumImpact();
-                      onTap!();
-                    }
-                  : null,
-              borderRadius: BorderRadius.circular(20.r),
-              child: Container(
-                padding: EdgeInsets.all(16.w),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(10.w),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(14.r),
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  color.withOpacity(0.2),
-                                  color.withOpacity(0.1),
-                                ],
-                              ),
-                              boxShadow: AppColorSystem.getNeumorphicShadow(
-                                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                                isPressed: false,
-                              ),
-                            ),
-                            child: Icon(icon, color: color, size: 22.sp),
-                          ),
-                          // Trend Indicator or Arrow
-                          if (trend != null)
-                            TrendIndicator(
-                              percentChange: trend,
-                              isPositive: trend >= 0,
-                            )
-                          else if (onTap != null)
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 12.sp,
-                              color: color,
-                            ),
-                        ],
-                      ),
-                      const Spacer(),
-                      GradientText(
-                        text: value,
-                        gradient: LinearGradient(
-                          colors: [
-                            color,
-                            color.withOpacity(0.7),
-                          ],
-                        ),
-                        style: TextStyle(
-                          fontFamily: 'Cairo',
-                          fontSize: 32.sp,
-                          fontWeight: FontWeight.bold,
-                          height: 1.0,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 13.sp,
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (subtitle != null) ...[
-                        SizedBox(height: 4.h),
+        ),
+        child: InkWell(
+          onTap: onTap != null
+              ? () {
+                  HapticFeedback.mediumImpact();
+                  onTap!();
+                }
+              : null,
+          borderRadius: BorderRadius.circular(16.r),
+          child: Padding(
+            padding: EdgeInsets.all(14.w),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
                         Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6.w,
-                            vertical: 3.h,
-                          ),
+                          padding: EdgeInsets.all(10.w),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8.r),
+                            color: color.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12.r),
                           ),
-                          child: Text(
-                            subtitle!,
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: color,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          child: Icon(icon, color: color, size: 22.sp),
                         ),
+                        // Trend Indicator or Arrow
+                        if (trend != null)
+                          TrendIndicator(
+                            percentChange: trend,
+                            isPositive: trend >= 0,
+                          )
+                        else if (onTap != null)
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 12.sp,
+                            color: color,
+                          ),
                       ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 28.sp,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        height: 1.0,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitle != null) ...[
+                      SizedBox(height: 4.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6.w,
+                          vertical: 3.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          subtitle!,
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            color: color,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
-                  );
-                },
-                ),
-              ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -216,9 +180,9 @@ class StatisticsGrid extends ConsumerWidget {
 
     final childAspectRatio = ResponsiveUtils.getResponsiveValue(
       context,
-      mobile: 1.2,
-      tablet: 1.3,
-      desktop: 1.4,
+      mobile: 1.15,
+      tablet: 1.45,
+      desktop: 1.5,
     );
 
     final spacing = ResponsiveUtils.getResponsiveSpacing(context);
