@@ -3,6 +3,7 @@
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../domain/entities/report_data.dart';
 import '../../../core/constants/category_colors.dart';
 
@@ -21,8 +22,13 @@ class _GenderDonutChartState extends State<GenderDonutChart> {
 
   @override
   Widget build(BuildContext context) {
+    // Responsive aspect ratio based on screen width
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final aspectRatio = isTablet ? 1.5 : 1.2;
+
     return AspectRatio(
-      aspectRatio: 1.3,
+      aspectRatio: aspectRatio,
       child: Stack(
         children: [
           PieChart(
@@ -42,8 +48,8 @@ class _GenderDonutChartState extends State<GenderDonutChart> {
                 },
               ),
               borderData: FlBorderData(show: false),
-              sectionsSpace: 4,
-              centerSpaceRadius: 60,
+              sectionsSpace: 2,
+              centerSpaceRadius: isTablet ? 70.r : 45.r,
               sections: _getSections(),
             ),
             swapAnimationDuration: const Duration(milliseconds: 600),
@@ -55,14 +61,17 @@ class _GenderDonutChartState extends State<GenderDonutChart> {
               children: [
                 Text(
                   widget.total.toString(),
-                  style: const TextStyle(
-                    fontSize: 32,
+                  style: TextStyle(
+                    fontSize: isTablet ? 28.sp : 22.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const Text(
+                Text(
                   'إجمالي',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: isTablet ? 13.sp : 11.sp,
+                    color: Colors.grey,
+                  ),
                 ),
               ],
             ),
@@ -73,12 +82,21 @@ class _GenderDonutChartState extends State<GenderDonutChart> {
   }
 
   List<PieChartSectionData> _getSections() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return widget.data.asMap().entries.map((entry) {
       final index = entry.key;
       final item = entry.value;
       final isTouched = index == touchedIndex;
-      final fontSize = isTouched ? 22.0 : 16.0;
-      final radius = isTouched ? 80.0 : 70.0;
+
+      // Responsive sizes based on device type
+      final fontSize = isTouched
+          ? (isTablet ? 18.0.sp : 14.0.sp)
+          : (isTablet ? 14.0.sp : 12.0.sp);
+      final radius = isTouched
+          ? (isTablet ? 70.0.r : 50.0.r)
+          : (isTablet ? 60.0.r : 45.0.r);
 
       final percentage = widget.total == 0
           ? 0.0

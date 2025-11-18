@@ -7,6 +7,9 @@ import '../db/daos/taxonomies_dao.dart';
 import '../../features/reports/domain/entities/report_data.dart';
 import '../../features/reports/domain/entities/summary_statistics.dart';
 import '../../features/reports/domain/repositories/reports_repository.dart';
+import '../../features/beneficiaries/domain/entities/beneficiary.dart'
+    as entity;
+import '../../features/beneficiaries/data/models/beneficiary_data_model.dart';
 
 class ReportsRepositoryImpl implements ReportsRepository {
   final BeneficiariesDao beneficiariesDao;
@@ -148,6 +151,22 @@ class ReportsRepositoryImpl implements ReportsRepository {
       }).toList();
     } catch (e) {
       throw Exception('Failed to get sync status report: $e');
+    }
+  }
+
+  @override
+  Future<List<entity.Beneficiary>> getAllBeneficiaries() async {
+    try {
+      // Get all beneficiaries from database (Drift entities)
+      final driftBeneficiaries = await beneficiariesDao.getAllBeneficiaries();
+
+      // Convert each Drift beneficiary to Domain entity using BeneficiaryDataModel
+      return driftBeneficiaries.map((driftBen) {
+        final dataModel = BeneficiaryDataModel.fromDrift(driftBen);
+        return dataModel.toEntity();
+      }).toList();
+    } catch (e) {
+      throw Exception('Failed to get all beneficiaries: $e');
     }
   }
 

@@ -4,6 +4,7 @@
 
 import '../entities/report_data.dart';
 import '../entities/summary_statistics.dart';
+import '../../../beneficiaries/domain/entities/beneficiary.dart';
 
 abstract class ReportsRepository {
   /// Get summary statistics for dashboard
@@ -44,4 +45,8 @@ abstract class ReportsRepository {
     DateTime? startDate,
     DateTime? endDate,
   });
+
+  /// Get all beneficiaries for comprehensive export
+  /// Returns complete list of all beneficiaries with full details
+  Future<List<Beneficiary>> getAllBeneficiaries();
 }

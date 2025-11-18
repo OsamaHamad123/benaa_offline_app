@@ -14,13 +14,15 @@ import 'widgets/statistic_card.dart';
 import 'widgets/detail_list_item.dart';
 import 'widgets/chart_section.dart';
 import 'widgets/export_buttons.dart';
+import 'widgets/summary_statistics_widget.dart';
+import 'widgets/report_card_widget.dart';
+import 'widgets/export_all_section.dart';
+import 'widgets/date_filter_actions.dart';
 import 'helpers/percentage_helper.dart';
 import 'services/pdf_export_service.dart';
 import 'services/excel_export_service.dart';
 import '../../core/constants/report_styles.dart';
 import '../../core/constants/category_colors.dart';
-import '../../core/widgets/animated_counter.dart';
-import '../../core/widgets/shimmer_loading.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
   const ReportsPage({super.key});
@@ -31,72 +33,152 @@ class ReportsPage extends ConsumerStatefulWidget {
 
 class _ReportsPageState extends ConsumerState<ReportsPage>
     with AutomaticKeepAliveClientMixin {
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   @override
   bool get wantKeepAlive => true;
+
+  Future<void> _selectDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : null,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+      _refreshData();
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+    _refreshData();
+  }
+
+  void _refreshData() {
+    ref.invalidate(summaryStatisticsProvider);
+    ref.invalidate(genderReportProvider);
+    ref.invalidate(categoryReportProvider);
+    ref.invalidate(governorateReportProvider);
+    ref.invalidate(ageReportProvider);
+    ref.invalidate(syncStatusReportProvider);
+  }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
-      appBar: AppBar(title: const Text('التقارير والإحصائيات')),
-      body: ListView(
-        padding: EdgeInsets.all(16.r),
-        children: [
-          // Summary Statistics
-          const _SummaryStatistics(),
-          SizedBox(height: 24.h),
-
-          // Report Categories
-          Text(
-            'تقارير مفصلة',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 16.h),
-
-          _ReportCard(
-            title: 'تقرير حسب المحافظة',
-            description: 'توزيع المستفيدين على المحافظات',
-            icon: Icons.location_on,
-            color: Colors.blue,
-            gradient: ReportStyles.governorateGradient,
-            onTap: () => _showGovernorateReport(context),
-          ),
-          _ReportCard(
-            title: 'تقرير حسب الفئة',
-            description: 'توزيع المستفيدين حسب الفئات',
-            icon: Icons.category,
-            color: Colors.green,
-            gradient: ReportStyles.categoryGradient,
-            onTap: () => _showCategoryReport(context),
-          ),
-          _ReportCard(
-            title: 'تقرير حسب الجنس',
-            description: 'توزيع المستفيدين حسب الجنس',
-            icon: Icons.wc,
-            color: Colors.purple,
-            gradient: ReportStyles.genderGradient,
-            onTap: () => _showGenderReport(context),
-          ),
-          _ReportCard(
-            title: 'تقرير الأعمار',
-            description: 'توزيع المستفيدين حسب الفئات العمرية',
-            icon: Icons.cake,
-            color: Colors.orange,
-            gradient: ReportStyles.ageGradient,
-            onTap: () => _showAgeReport(context),
-          ),
-          _ReportCard(
-            title: 'تقرير المزامنة',
-            description: 'حالة مزامنة البيانات',
-            icon: Icons.sync,
-            color: Colors.teal,
-            gradient: ReportStyles.syncGradient,
-            onTap: () => _showSyncReport(context),
+      appBar: AppBar(
+        title: const Text('التقارير والإحصائيات'),
+        actions: [
+          DateFilterActions(
+            startDate: _startDate,
+            endDate: _endDate,
+            onFilterTap: _selectDateRange,
+            onClearFilter: _clearDateFilter,
+            onRefresh: () {
+              _refreshData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('تم تحديث البيانات'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
           ),
         ],
       ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          _refreshData();
+          await Future.delayed(const Duration(milliseconds: 500));
+        },
+        child: ListView(
+          padding: EdgeInsets.all(16.r),
+          children: [
+            // Summary Statistics
+            const SummaryStatisticsWidget(),
+            SizedBox(height: 24.h),
+
+            // Report Categories
+            Text(
+              'تقارير مفصلة',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16.h),
+
+            ReportCardWidget(
+              title: 'تقرير حسب المحافظة',
+              description: 'توزيع المستفيدين على المحافظات',
+              icon: Icons.location_on,
+              color: Colors.blue,
+              gradient: ReportStyles.governorateGradient,
+              onTap: () => _showGovernorateReport(context),
+            ),
+            ReportCardWidget(
+              title: 'تقرير حسب الفئة',
+              description: 'توزيع المستفيدين حسب الفئات',
+              icon: Icons.category,
+              color: Colors.green,
+              gradient: ReportStyles.categoryGradient,
+              onTap: () => _showCategoryReport(context),
+            ),
+            ReportCardWidget(
+              title: 'تقرير حسب الجنس',
+              description: 'توزيع المستفيدين حسب الجنس',
+              icon: Icons.wc,
+              color: Colors.purple,
+              gradient: ReportStyles.genderGradient,
+              onTap: () => _showGenderReport(context),
+            ),
+            ReportCardWidget(
+              title: 'تقرير الأعمار',
+              description: 'توزيع المستفيدين حسب الفئات العمرية',
+              icon: Icons.cake,
+              color: Colors.orange,
+              gradient: ReportStyles.ageGradient,
+              onTap: () => _showAgeReport(context),
+            ),
+            ReportCardWidget(
+              title: 'تقرير المزامنة',
+              description: 'حالة مزامنة البيانات',
+              icon: Icons.sync,
+              color: Colors.teal,
+              gradient: ReportStyles.syncGradient,
+              onTap: () => _showSyncReport(context),
+            ),
+            SizedBox(height: 24.h),
+
+            // Export All Beneficiaries Section
+            ExportAllSection(
+              onExport: () => _exportAllBeneficiariesToExcel(context),
+            ),
+          ],
+        ),
+      ), // Close RefreshIndicator
     );
   }
 
@@ -139,179 +221,150 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       builder: (context) => const _SyncReportSheet(),
     );
   }
-}
 
-class _SummaryStatistics extends ConsumerWidget {
-  const _SummaryStatistics();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(summaryStatisticsProvider);
-
-    return statsAsync.when(
-      data: (stats) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+  Future<void> _exportAllBeneficiariesToExcel(BuildContext context) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.assessment,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'ملخص الإحصائيات',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('جاري تصدير البيانات...'),
                 ],
               ),
-              const Divider(height: 24),
-              _StatRow(label: 'إجمالي المستفيدين', value: '${stats.total}'),
-              const SizedBox(height: 12),
-              _StatRow(label: 'الأيتام', value: '${stats.orphans}'),
-              const SizedBox(height: 12),
-              _StatRow(label: 'الفقراء', value: '${stats.poor}'),
-              const SizedBox(height: 12),
-              _StatRow(
-                label: 'بانتظار المزامنة',
-                value: '${stats.pending}',
-                valueColor: Colors.orange,
-              ),
-            ],
-          ),
-        ),
-      ),
-      loading: () => const SkeletonCard(height: 200),
-      error: (error, stack) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Center(child: Text('خطأ: $error')),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _StatRow({required this.label, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    // Extract numeric value from string
-    final numericValue = int.tryParse(value) ?? 0;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(color: Colors.grey[600])),
-        AnimatedCounter(
-          value: numericValue,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: valueColor,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReportCard extends StatelessWidget {
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-  final LinearGradient? gradient;
-
-  const _ReportCard({
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    this.gradient,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: ReportStyles.cardMargin),
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: ReportStyles.cardBorderRadius,
-        boxShadow: ReportStyles.cardShadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: ReportStyles.cardBorderRadius,
-          child: Padding(
-            padding: const EdgeInsets.all(ReportStyles.cardPadding),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: ReportStyles.cardIconSize,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.white),
-              ],
             ),
           ),
         ),
-      ),
-    );
+      );
+
+      // Get all beneficiaries from the repository
+      final repository = ref.read(
+        reportsRepositoryProvider,
+      ); // Use the reports repository
+
+      // Fetch ALL beneficiaries without pagination
+      final beneficiaries = await repository.getAllBeneficiaries();
+
+      if (!mounted) return;
+
+      if (beneficiaries.isEmpty) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا توجد بيانات للتصدير')));
+        return;
+      }
+
+      // Export to Excel
+      final filePath = await ExcelExportService.exportAllBeneficiaries(
+        beneficiaries: beneficiaries,
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      // Share the file
+      await Share.shareXFiles([
+        XFile(filePath),
+      ], text: 'قائمة شاملة بجميع المستفيدين (${beneficiaries.length} مستفيد)');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم تصدير ${beneficiaries.length} مستفيد بنجاح'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog if still open
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشل التصدير: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 
-class _GovernorateReportSheet extends ConsumerWidget {
+class _GovernorateReportSheet extends ConsumerStatefulWidget {
   const _GovernorateReportSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_GovernorateReportSheet> createState() =>
+      _GovernorateReportSheetState();
+}
+
+class _GovernorateReportSheetState
+    extends ConsumerState<_GovernorateReportSheet> {
+  bool _isExporting = false;
+
+  Future<void> _exportToPdf(List<GovernorateCount> data, int total) async {
+    setState(() => _isExporting = true);
+    try {
+      final pdfBytes = await PdfExportService.exportGovernorateReport(
+        data: data,
+        total: total,
+      );
+      await PdfExportService.shareOrPrint(
+        pdfBytes,
+        'governorate_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  Future<void> _exportToExcel(List<GovernorateCount> data, int total) async {
+    setState(() => _isExporting = true);
+    try {
+      final filePath = await ExcelExportService.exportGovernorateReport(
+        data: data,
+        total: total,
+      );
+      await Share.shareXFiles([XFile(filePath)], text: 'تقرير حسب المحافظة');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.5,
@@ -325,8 +378,9 @@ class _GovernorateReportSheet extends ConsumerWidget {
           title: 'تقرير حسب المحافظة',
           child: reportAsync.when(
             data: (governorateCounts) {
-              final sortedCounts = List.from(governorateCounts)
-                ..sort((a, b) => b.count.compareTo(a.count));
+              final sortedCounts = List<GovernorateCount>.from(
+                governorateCounts,
+              )..sort((a, b) => b.count.compareTo(a.count));
 
               return ListView(
                 controller: scrollController,
@@ -341,6 +395,14 @@ class _GovernorateReportSheet extends ConsumerWidget {
                           .toList()
                           .cast<GovernorateCount>(),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Export Buttons
+                  ExportButtons(
+                    isLoading: _isExporting,
+                    onPdfExport: () => _exportToPdf(sortedCounts, total),
+                    onExcelExport: () => _exportToExcel(sortedCounts, total),
+                    onPrint: () => _exportToPdf(sortedCounts, total),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -378,11 +440,70 @@ class _GovernorateReportSheet extends ConsumerWidget {
   }
 }
 
-class _CategoryReportSheet extends ConsumerWidget {
+class _CategoryReportSheet extends ConsumerStatefulWidget {
   const _CategoryReportSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CategoryReportSheet> createState() =>
+      _CategoryReportSheetState();
+}
+
+class _CategoryReportSheetState extends ConsumerState<_CategoryReportSheet> {
+  bool _isExporting = false;
+
+  Future<void> _exportToPdf(List<CategoryCount> data) async {
+    setState(() => _isExporting = true);
+    try {
+      final pdfBytes = await PdfExportService.exportCategoryReport(data: data);
+      await PdfExportService.shareOrPrint(
+        pdfBytes,
+        'category_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  Future<void> _exportToExcel(List<CategoryCount> data) async {
+    setState(() => _isExporting = true);
+    try {
+      final filePath = await ExcelExportService.exportCategoryReport(
+        data: data,
+      );
+      await Share.shareXFiles([XFile(filePath)], text: 'تقرير حسب الفئة');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.5,
       minChildSize: 0.3,
@@ -412,6 +533,14 @@ class _CategoryReportSheet extends ConsumerWidget {
                         data: categoryCounts,
                         total: total,
                       ),
+                    ),
+                    SizedBox(height: 12.h),
+                    // Export Buttons
+                    ExportButtons(
+                      isLoading: _isExporting,
+                      onPdfExport: () => _exportToPdf(categoryCounts),
+                      onExcelExport: () => _exportToExcel(categoryCounts),
+                      onPrint: () => _exportToPdf(categoryCounts),
                     ),
                     SizedBox(height: 12.h),
                     Text(
@@ -517,6 +646,9 @@ class _GenderReportSheetState extends ConsumerState<_GenderReportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+
     return DraggableScrollableSheet(
       initialChildSize: 0.5,
       minChildSize: 0.3,
@@ -572,9 +704,9 @@ class _GenderReportSheetState extends ConsumerState<_GenderReportSheet> {
 
                     return Column(
                       children: [
-                        // Donut Chart
+                        // Donut Chart - smaller on mobile
                         Expanded(
-                          flex: 2,
+                          flex: isTablet ? 2 : 3,
                           child: GenderDonutChart(
                             data: genderCounts,
                             total: total,
@@ -583,6 +715,7 @@ class _GenderReportSheetState extends ConsumerState<_GenderReportSheet> {
                         SizedBox(height: 8.h),
                         // Statistics Cards
                         Expanded(
+                          flex: isTablet ? 1 : 2,
                           child: Row(
                             children: [
                               Expanded(
@@ -642,11 +775,68 @@ class _GenderReportSheetState extends ConsumerState<_GenderReportSheet> {
   }
 }
 
-class _SyncReportSheet extends ConsumerWidget {
+class _SyncReportSheet extends ConsumerStatefulWidget {
   const _SyncReportSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SyncReportSheet> createState() => _SyncReportSheetState();
+}
+
+class _SyncReportSheetState extends ConsumerState<_SyncReportSheet> {
+  bool _isExporting = false;
+
+  Future<void> _exportToPdf(List<SyncStatusCount> data) async {
+    setState(() => _isExporting = true);
+    try {
+      final pdfBytes = await PdfExportService.exportSyncStatusReport(
+        data: data,
+      );
+      await PdfExportService.shareOrPrint(
+        pdfBytes,
+        'sync_status_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  Future<void> _exportToExcel(List<SyncStatusCount> data) async {
+    setState(() => _isExporting = true);
+    try {
+      await ExcelExportService.exportSyncStatusReport(data: data);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.5,
       minChildSize: 0.3,
@@ -717,6 +907,14 @@ class _SyncReportSheet extends ConsumerWidget {
                           controller: scrollController,
                           padding: const EdgeInsets.all(16),
                           children: [
+                            // Export Buttons
+                            ExportButtons(
+                              isLoading: _isExporting,
+                              onPdfExport: () => _exportToPdf(syncCounts),
+                              onExcelExport: () => _exportToExcel(syncCounts),
+                              onPrint: () => _exportToPdf(syncCounts),
+                            ),
+                            const SizedBox(height: 16),
                             InfoCard(
                               icon: Icons.check_circle,
                               title: 'تمت المزامنة',
@@ -756,11 +954,69 @@ class _SyncReportSheet extends ConsumerWidget {
   }
 }
 
-class _AgeReportSheet extends ConsumerWidget {
+class _AgeReportSheet extends ConsumerStatefulWidget {
   const _AgeReportSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AgeReportSheet> createState() => _AgeReportSheetState();
+}
+
+class _AgeReportSheetState extends ConsumerState<_AgeReportSheet> {
+  bool _isExporting = false;
+
+  Future<void> _exportToPdf(List<AgeCount> data, int total) async {
+    setState(() => _isExporting = true);
+    try {
+      final pdfBytes = await PdfExportService.exportAgeReport(
+        data: data,
+        total: total,
+      );
+      await PdfExportService.shareOrPrint(
+        pdfBytes,
+        'age_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  Future<void> _exportToExcel(List<AgeCount> data, int total) async {
+    setState(() => _isExporting = true);
+    try {
+      await ExcelExportService.exportAgeReport(data: data, total: total);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.6,
       minChildSize: 0.4,
@@ -782,6 +1038,14 @@ class _AgeReportSheet extends ConsumerWidget {
                   ChartSection(
                     title: 'التوزيع حسب العمر',
                     chart: AgeBarChart(data: ageCounts),
+                  ),
+                  const SizedBox(height: 16),
+                  // Export Buttons
+                  ExportButtons(
+                    isLoading: _isExporting,
+                    onPdfExport: () => _exportToPdf(ageCounts, total),
+                    onExcelExport: () => _exportToExcel(ageCounts, total),
+                    onPrint: () => _exportToPdf(ageCounts, total),
                   ),
                   const SizedBox(height: 16),
                   Text(
