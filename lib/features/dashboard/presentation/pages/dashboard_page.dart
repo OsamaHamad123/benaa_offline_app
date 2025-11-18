@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/responsive_utils.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
+import '../../../../core/widgets/welcome_banner.dart';
+import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../sync/sync_page.dart';
 import '../providers.dart';
@@ -28,6 +31,24 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedIndex = 0;
+  bool _showWelcomeBanner = false;
+  String _selectedFilter = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkWelcomeBanner();
+  }
+
+  Future<void> _checkWelcomeBanner() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shown = prefs.getBool('welcome_banner_shown') ?? false;
+    if (mounted) {
+      setState(() {
+        _showWelcomeBanner = !shown;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +56,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
     switch (_selectedIndex) {
       case 0:
-        currentPage = const _DashboardHome();
+        currentPage = _DashboardHome(
+          showWelcomeBanner: _showWelcomeBanner,
+          selectedFilter: _selectedFilter,
+          onWelcomeDismiss: () {
+            setState(() {
+              _showWelcomeBanner = false;
+            });
+          },
+          onFilterChanged: (filter) {
+            setState(() {
+              _selectedFilter = filter;
+            });
+          },
+        );
         break;
       case 1:
         currentPage = const SyncPage();
@@ -44,7 +78,20 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         currentPage = const _SettingsView();
         break;
       default:
-        currentPage = const _DashboardHome();
+        currentPage = _DashboardHome(
+          showWelcomeBanner: _showWelcomeBanner,
+          selectedFilter: _selectedFilter,
+          onWelcomeDismiss: () {
+            setState(() {
+              _showWelcomeBanner = false;
+            });
+          },
+          onFilterChanged: (filter) {
+            setState(() {
+              _selectedFilter = filter;
+            });
+          },
+        );
     }
 
     return Scaffold(
@@ -120,7 +167,17 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 }
 
 class _DashboardHome extends ConsumerWidget {
-  const _DashboardHome();
+  final bool showWelcomeBanner;
+  final String selectedFilter;
+  final VoidCallback onWelcomeDismiss;
+  final Function(String) onFilterChanged;
+
+  const _DashboardHome({
+    required this.showWelcomeBanner,
+    required this.selectedFilter,
+    required this.onWelcomeDismiss,
+    required this.onFilterChanged,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -201,6 +258,59 @@ class _DashboardHome extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Welcome Banner (First time users)
+          if (showWelcomeBanner)
+            WelcomeBanner(
+              userName: 'المستخدم',
+              message: 'مرحباً بك في منظومة بناء',
+              onGetStarted: () {
+                context.push('/beneficiaries/add');
+              },
+              onDismiss: onWelcomeDismiss,
+            ),
+
+          // Filter Chips
+          SizedBox(height: 16.h),
+          FilterChipGroup(
+            filters: [
+              FilterChipData(
+                label: 'الكل',
+                value: 'all',
+                icon: Icons.grid_view,
+                count: stats.totalBeneficiaries,
+              ),
+              FilterChipData(
+                label: 'اليوم',
+                value: 'today',
+                icon: Icons.today,
+                count: stats.completedVisitsToday,
+                color: Colors.green,
+              ),
+              FilterChipData(
+                label: 'هذا الأسبوع',
+                value: 'week',
+                icon: Icons.date_range,
+                color: Colors.blue,
+              ),
+              FilterChipData(
+                label: 'تحتاج متابعة',
+                value: 'urgent',
+                icon: Icons.warning_amber,
+                count: stats.pendingSync,
+                color: Colors.red,
+              ),
+            ],
+            selectedFilter: selectedFilter,
+            onSelectionChanged: (selected) {
+              if (selected.isNotEmpty) {
+                onFilterChanged(selected.first);
+                // TODO: Apply filter to dashboard data
+              }
+            },
+          ),
+
+          SizedBox(height: 24.h),
+
           // Last Refresh Time with modern design
           if (state.lastRefreshTime != null)
             Container(
