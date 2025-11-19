@@ -5,6 +5,9 @@ import '../../domain/entities/search_entities.dart';
 import '../../domain/entities/recent_search.dart';
 import '../../domain/usecases/search_by_name.dart';
 import '../../domain/usecases/search_by_national_id.dart';
+import '../../data/services/search_analytics.dart';
+import '../../data/services/search_isolate_service.dart';
+import '../../data/datasources/text_normalization_service.dart';
 import 'search_dependencies.dart';
 
 /// 🔍 Search State - Presentation Layer
@@ -63,34 +66,118 @@ class SearchState {
 class SearchNotifier extends StateNotifier<SearchState> {
   final SearchByNationalIdUseCase searchByNationalIdUseCase;
   final SearchByNameUseCase searchByNameUseCase;
+  final SearchIsolateService? isolateService; // ⚡ For background search
   final Ref _ref; // For accessing other providers
 
-  // ⚡ Aggressive debouncing to eliminate lag
+  // ⚡ Ultra-responsive debouncing - adaptive based on query type
   Timer? _debounceTimer;
-  static const Duration _debounceDuration = Duration(milliseconds: 400);
+  static const Duration _debounceDuration = Duration(
+    milliseconds: 250,
+  ); // Reduced from 400ms
 
   // 🚫 Request cancellation token
   int _requestId = 0;
 
-  // 💾 Smart cache for instant results (LRU-style)
+  // 💾 Memory-aware cache for instant results (max 30MB estimated)
   final Map<String, List<CivilPerson>> _cache = {};
-  static const int _maxCacheSize = 50;
+  static const int _maxCacheSize = 30; // Reduced from 50
+  static const int _maxCacheMemoryBytes = 30 * 1024 * 1024; // 30MB max
+  int _currentCacheMemoryBytes = 0;
+
+  // 🎯 Cache access tracking for LRU eviction
+  final Map<String, DateTime> _cacheAccess = {};
+
+  // 🎯 Autocomplete suggestions cache (lightweight - names only)
+  final Map<String, List<String>> _suggestionsCache = {};
+  static const int _maxSuggestions = 10;
+
+  /// Calculate accurate size of a CivilPerson object in memory
+  int _calculatePersonSize(CivilPerson person) {
+    // UTF-16 encoding: 2 bytes per character
+    int size = 0;
+
+    // Required fields
+    size += person.nationalId.length * 2; // ~24 bytes
+    size += person.fullName.length * 2; // ~60-100 bytes
+    size += person.firstName.length * 2;
+    size += person.fatherName.length * 2;
+    size += person.grandFatherName.length * 2;
+    size += person.familyName.length * 2;
+
+    // Optional fields
+    if (person.motherName != null) size += person.motherName!.length * 2;
+    if (person.birthDate != null) size += person.birthDate!.length * 2;
+    if (person.city != null) size += person.city!.length * 2;
+    if (person.governorate != null) size += person.governorate!.length * 2;
+
+    // Gender enum + object overhead
+    size += 100; // ~100 bytes overhead (object pointers, padding, etc.)
+
+    return size;
+  }
 
   SearchNotifier({
     required this.searchByNationalIdUseCase,
     required this.searchByNameUseCase,
+    this.isolateService,
     required Ref ref,
   }) : _ref = ref,
        super(const SearchState());
 
-  // ⚡ Performance: Reduced to 6 for ultra-smooth scrolling (no lag!)
-  static const int _pageSize = 6;
+  // ⚡ Optimized for 5M records: 20 results per page (reduced network overhead)
+  static const int _pageSize = 20;
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
     _cache.clear();
+    _cacheAccess.clear();
+    _suggestionsCache.clear();
     super.dispose();
+  }
+
+  /// ⚡ Smart Cache Management - LRU eviction for mobile/tablet
+  void _manageCacheSize() {
+    // Check if cache is too large (memory or count)
+    if (_cache.length <= _maxCacheSize &&
+        _currentCacheMemoryBytes <= _maxCacheMemoryBytes) {
+      return;
+    }
+
+    // ⚡ Sort by access time (oldest first)
+    final sortedEntries = _cacheAccess.entries.toList()
+      ..sort((a, b) => a.value.compareTo(b.value));
+
+    // Calculate how many entries to remove (25% of cache)
+    final entriesToRemove = (_cache.length * 0.25).ceil();
+    final keysToRemove = sortedEntries
+        .take(entriesToRemove)
+        .map((e) => e.key)
+        .toList();
+
+    // Remove old entries and recalculate memory
+    var freedMemory = 0;
+    for (final key in keysToRemove) {
+      final results = _cache.remove(key);
+      _cacheAccess.remove(key);
+
+      if (results != null) {
+        for (final person in results) {
+          freedMemory += _calculatePersonSize(person);
+        }
+      }
+    }
+
+    _currentCacheMemoryBytes -= freedMemory;
+
+    // Also clean suggestions cache
+    if (_suggestionsCache.length > _maxCacheSize) {
+      final suggestionKeys = _suggestionsCache.keys.toList();
+      final toRemove = suggestionKeys.take(_suggestionsCache.length ~/ 2);
+      for (final key in toRemove) {
+        _suggestionsCache.remove(key);
+      }
+    }
   }
 
   /// Update query with instant feedback
@@ -134,6 +221,20 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
     state = state.copyWith(filter: newFilter, currentPage: 0, results: []);
     _cache.clear(); // Clear cache when filter changes
+  }
+
+  /// Update filter - Age Range
+  void setAgeRange(int? minAge, int? maxAge) {
+    final newFilter = state.filter.copyWith(minAge: minAge, maxAge: maxAge);
+    state = state.copyWith(filter: newFilter, currentPage: 0, results: []);
+    _cache.clear(); // Clear cache when filter changes
+  }
+
+  /// Clear age filter
+  void clearAgeFilter() {
+    final newFilter = state.filter.clearAge();
+    state = state.copyWith(filter: newFilter, currentPage: 0, results: []);
+    _cache.clear();
   }
 
   /// Clear all filters
@@ -204,6 +305,9 @@ class SearchNotifier extends StateNotifier<SearchState> {
     // Check cache first
     final cacheKey = _getCacheKey(state.query, state.filter);
     if (_cache.containsKey(cacheKey) && reset) {
+      // ⚡ Update cache access time (LRU)
+      _cacheAccess[cacheKey] = DateTime.now();
+
       stopwatch.stop();
       state = state.copyWith(
         results: _cache[cacheKey]!,
@@ -215,6 +319,9 @@ class SearchNotifier extends StateNotifier<SearchState> {
       );
       return;
     }
+
+    // ⚡ Smart cache management - clean if needed
+    _manageCacheSize();
 
     // Reset or continue pagination
     if (reset) {
@@ -328,12 +435,46 @@ class SearchNotifier extends StateNotifier<SearchState> {
     try {
       final page = reset ? 1 : state.currentPage + 1;
 
-      final result = await searchByNameUseCase(
-        query: state.query,
-        filter: state.filter,
-        page: page,
-        pageSize: _pageSize,
-      );
+      // ⚡ Use isolate service if available (background search)
+      SearchResult result;
+      if (isolateService != null) {
+        final offset = (page - 1) * _pageSize;
+
+        // Search in background isolate - doesn't block UI!
+        final persons = await isolateService!.search(
+          query: state.query,
+          filter: state.filter,
+          limit: _pageSize + 1, // Get one extra to check hasMore
+          offset: offset,
+        );
+
+        final hasMore = persons.length > _pageSize;
+        final resultPersons = persons.take(_pageSize).toList();
+
+        // Get total count only on first page
+        int totalCount = resultPersons.length;
+        if (page == 1 && resultPersons.isNotEmpty) {
+          totalCount = await isolateService!.getSearchCount(
+            query: state.query,
+            filter: state.filter,
+          );
+        }
+
+        result = SearchResult(
+          persons: resultPersons,
+          hasMore: hasMore,
+          currentPage: page,
+          totalResults: totalCount,
+        );
+      } else {
+        // Fallback to use case (main thread)
+        result = await searchByNameUseCase(
+          query: state.query,
+          filter: state.filter,
+          page: page,
+          pageSize: _pageSize,
+        );
+      }
 
       // Check if request is still valid
       if (requestId != _requestId) return;
@@ -354,6 +495,13 @@ class SearchNotifier extends StateNotifier<SearchState> {
           isSearching: false,
           totalResults: result.totalResults,
           searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
+        );
+
+        // 📊 Record search analytics
+        SearchAnalytics.recordSearch(
+          query: state.query,
+          durationMs: stopwatch.elapsedMilliseconds,
+          resultsCount: result.persons.length,
         );
 
         // 🔍 Save to recent searches (Clean Architecture!)
@@ -405,17 +553,94 @@ class SearchNotifier extends StateNotifier<SearchState> {
   }
 
   void _addToCache(String key, List<CivilPerson> results) {
-    // Simple LRU: remove oldest if cache is full
-    if (_cache.length >= _maxCacheSize) {
-      _cache.remove(_cache.keys.first);
+    // Memory-aware LRU cache with accurate size calculation
+    int estimatedSize = 0;
+    for (final person in results) {
+      estimatedSize += _calculatePersonSize(person);
     }
+
+    // Check if adding this would exceed memory limit
+    if (_currentCacheMemoryBytes + estimatedSize > _maxCacheMemoryBytes) {
+      // Evict oldest entries until we have space
+      while (_cache.isNotEmpty &&
+          _currentCacheMemoryBytes + estimatedSize > _maxCacheMemoryBytes) {
+        final oldestKey = _cache.keys.first;
+        final oldestResults = _cache.remove(oldestKey);
+        if (oldestResults != null) {
+          int oldSize = 0;
+          for (final person in oldestResults) {
+            oldSize += _calculatePersonSize(person);
+          }
+          _currentCacheMemoryBytes -= oldSize;
+        }
+      }
+    }
+
+    // Also check entry count limit
+    if (_cache.length >= _maxCacheSize) {
+      final oldestKey = _cache.keys.first;
+      final oldestResults = _cache.remove(oldestKey);
+      if (oldestResults != null) {
+        int oldSize = 0;
+        for (final person in oldestResults) {
+          oldSize += _calculatePersonSize(person);
+        }
+        _currentCacheMemoryBytes -= oldSize;
+      }
+    }
+
     _cache[key] = results;
+    _currentCacheMemoryBytes += estimatedSize;
   }
 
   /// Load more results (pagination)
   Future<void> loadMore() async {
     if (!state.hasMore || state.isSearching) return;
     await search(reset: false);
+  }
+
+  /// 🎯 Get autocomplete suggestions from cache
+  List<String> getSuggestions(String query) {
+    if (query.length < 2) return [];
+
+    final normalized = TextNormalizationService.normalize(query);
+
+    // Check if we have cached suggestions for this prefix
+    if (_suggestionsCache.containsKey(normalized)) {
+      return _suggestionsCache[normalized]!;
+    }
+
+    // Generate suggestions from search cache
+    final suggestions = <String>{};
+
+    for (final entry in _cache.entries) {
+      final cachedQuery = entry.key.split('|').first;
+      final persons = entry.value;
+
+      // Add matching query
+      if (TextNormalizationService.normalize(
+        cachedQuery,
+      ).contains(normalized)) {
+        suggestions.add(cachedQuery);
+      }
+
+      // Add matching person names (first 3 only)
+      for (final person in persons.take(3)) {
+        if (TextNormalizationService.normalize(
+          person.fullName,
+        ).contains(normalized)) {
+          suggestions.add(person.fullName);
+        }
+        if (suggestions.length >= _maxSuggestions) break;
+      }
+
+      if (suggestions.length >= _maxSuggestions) break;
+    }
+
+    final suggestionsList = suggestions.take(_maxSuggestions).toList();
+    _suggestionsCache[normalized] = suggestionsList;
+
+    return suggestionsList;
   }
 
   /// 🔍 Save to recent searches (Clean Architecture - uses use case)
@@ -445,10 +670,12 @@ final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
 ) {
   final searchByNationalId = ref.watch(searchByNationalIdUseCaseProvider);
   final searchByName = ref.watch(searchByNameUseCaseProvider);
+  final isolateService = ref.watch(searchIsolateServiceProvider);
 
   return SearchNotifier(
     searchByNationalIdUseCase: searchByNationalId,
     searchByNameUseCase: searchByName,
+    isolateService: isolateService,
     ref: ref,
   );
 });

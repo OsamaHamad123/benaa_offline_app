@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entities/civil_person.dart';
 
 /// Gender Badge Widget - عرض الجنس بشكل أنيق
@@ -16,22 +15,22 @@ class GenderBadge extends StatelessWidget {
 
     if (compact) {
       return Container(
-        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 14.sp),
-            SizedBox(width: 4.w),
+            Icon(icon, color: color, size: 14),
+            SizedBox(width: 4),
             Text(
               gender.arabicLabel,
               style: TextStyle(
                 color: color,
-                fontSize: 12.sp,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -41,22 +40,22 @@ class GenderBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.4), width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 18.sp),
-          SizedBox(width: 6.w),
+          Icon(icon, color: color, size: 18),
+          SizedBox(width: 6),
           Text(
             gender.arabicLabel,
             style: TextStyle(
               color: color,
-              fontSize: 14.sp,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
             ),
           ),

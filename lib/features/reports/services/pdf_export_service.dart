@@ -410,4 +410,257 @@ class PdfExportService {
     await file.writeAsBytes(pdfBytes);
     return file;
   }
+
+  /// Save PDF to file and return path
+  static Future<String> savePdfToFile(
+    Uint8List pdfBytes,
+    String filename,
+  ) async {
+    final directory = await Directory.systemTemp.createTemp();
+    final filePath = '${directory.path}/$filename';
+    await savePdf(pdfBytes, filePath);
+    return filePath;
+  }
+
+  /// Export Custom Report (for custom reports page)
+  static Future<Uint8List> exportCustomReport({
+    required String title,
+    DateTime? startDate,
+    DateTime? endDate,
+    required List<String> selectedReports,
+    required List<String> selectedFields,
+    required bool includeCharts,
+    required bool includeDetails,
+    required Map<String, dynamic> data,
+  }) async {
+    await initialize();
+
+    final pdf = pw.Document();
+
+    // Build pages based on selected reports
+    final pages = <pw.Widget>[];
+
+    // Add title page
+    pages.add(_buildCustomReportTitle(title, startDate, endDate));
+
+    // Add selected reports
+    if (selectedReports.contains('summary') && data.containsKey('summary')) {
+      pages.add(_buildSummarySection(data['summary'], selectedFields));
+    }
+
+    if (selectedReports.contains('gender') && data.containsKey('gender')) {
+      pages.add(_buildGenderSection(data['gender']));
+    }
+
+    if (selectedReports.contains('governorate') &&
+        data.containsKey('governorate')) {
+      pages.add(_buildGovernorateSection(data['governorate']));
+    }
+
+    if (selectedReports.contains('category') && data.containsKey('category')) {
+      pages.add(_buildCategorySection(data['category']));
+    }
+
+    if (selectedReports.contains('age') && data.containsKey('age')) {
+      pages.add(_buildAgeSection(data['age']));
+    }
+
+    if (selectedReports.contains('sync') && data.containsKey('sync')) {
+      pages.add(_buildSyncSection(data['sync']));
+    }
+
+    pdf.addPage(
+      pw.MultiPage(
+        textDirection: pw.TextDirection.rtl,
+        pageFormat: PdfPageFormat.a4,
+        build: (context) => pages,
+        footer: (context) => _buildFooter(),
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  static pw.Widget _buildCustomReportTitle(
+    String title,
+    DateTime? startDate,
+    DateTime? endDate,
+  ) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(20),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title,
+            style: pw.TextStyle(
+              fontSize: 24,
+              fontWeight: pw.FontWeight.bold,
+              font: _arabicFont,
+            ),
+          ),
+          pw.SizedBox(height: 10),
+          if (startDate != null || endDate != null)
+            pw.Text(
+              'الفترة: ${startDate != null ? '${startDate.year}/${startDate.month}/${startDate.day}' : '...'} - ${endDate != null ? '${endDate.year}/${endDate.month}/${endDate.day}' : '...'}',
+              style: pw.TextStyle(fontSize: 12, font: _arabicFont),
+            ),
+          pw.Divider(),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildSummarySection(dynamic summary, List<String> fields) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'ملخص الإحصائيات',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            font: _arabicFont,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        if (fields.contains('total'))
+          _buildStatRow('إجمالي المستفيدين', summary.total.toString()),
+        if (fields.contains('orphans'))
+          _buildStatRow('الأيتام', summary.orphans.toString()),
+        if (fields.contains('poor'))
+          _buildStatRow('الفقراء', summary.poor.toString()),
+        if (fields.contains('pending'))
+          _buildStatRow('بانتظار المزامنة', summary.pending.toString()),
+        pw.SizedBox(height: 20),
+      ],
+    );
+  }
+
+  static pw.Widget _buildGenderSection(List<dynamic> genderData) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'تقرير الجنس',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            font: _arabicFont,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...genderData.map(
+          (item) => _buildStatRow(item.gender, item.count.toString()),
+        ),
+        pw.SizedBox(height: 20),
+      ],
+    );
+  }
+
+  static pw.Widget _buildGovernorateSection(List<dynamic> data) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'تقرير المحافظات',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            font: _arabicFont,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...data
+            .take(10)
+            .map(
+              (item) => _buildStatRow(item.governorate, item.count.toString()),
+            ),
+        pw.SizedBox(height: 20),
+      ],
+    );
+  }
+
+  static pw.Widget _buildCategorySection(List<dynamic> data) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'تقرير الفئات',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            font: _arabicFont,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...data.map(
+          (item) => _buildStatRow(item.category, item.count.toString()),
+        ),
+        pw.SizedBox(height: 20),
+      ],
+    );
+  }
+
+  static pw.Widget _buildAgeSection(List<dynamic> data) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'تقرير الأعمار',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            font: _arabicFont,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...data.map(
+          (item) =>
+              _buildStatRow('${item.ageBracket} سنة', item.count.toString()),
+        ),
+        pw.SizedBox(height: 20),
+      ],
+    );
+  }
+
+  static pw.Widget _buildSyncSection(List<dynamic> data) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'تقرير المزامنة',
+          style: pw.TextStyle(
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            font: _arabicFont,
+          ),
+        ),
+        pw.SizedBox(height: 10),
+        ...data.map(
+          (item) => _buildStatRow(item.status, item.count.toString()),
+        ),
+        pw.SizedBox(height: 20),
+      ],
+    );
+  }
+
+  static pw.Widget _buildStatRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(label, style: pw.TextStyle(font: _arabicFont)),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              font: _arabicFont,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

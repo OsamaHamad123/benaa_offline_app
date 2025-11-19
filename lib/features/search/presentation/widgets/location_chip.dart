@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Location Chip Widget - عرض الموقع الجغرافي
 class LocationChip extends StatelessWidget {
@@ -33,25 +32,25 @@ class LocationChip extends StatelessWidget {
     final locationText = _buildLocationText();
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.teal.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.teal.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showIcon) ...[
-            Icon(Icons.location_on, color: Colors.teal, size: 16.sp),
-            SizedBox(width: 6.w),
+            Icon(Icons.location_on, color: Colors.teal, size: 16),
+            SizedBox(width: 6),
           ],
           Flexible(
             child: Text(
               locationText,
               style: TextStyle(
                 color: Colors.teal.shade700,
-                fontSize: 13.sp,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
               overflow: TextOverflow.ellipsis,

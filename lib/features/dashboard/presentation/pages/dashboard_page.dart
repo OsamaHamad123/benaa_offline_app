@@ -7,7 +7,6 @@ import '../../../../core/utils/responsive_utils.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
-import '../../../../core/widgets/animated_progress_indicator.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 import '../../../../core/widgets/charts.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
@@ -15,13 +14,14 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../sync/sync_page.dart';
 import '../providers.dart';
 import '../widgets/dashboard_app_bar.dart' as dashboard_widgets;
-import '../widgets/statistics_section.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/activities_section.dart';
 import '../widgets/dashboard_charts.dart';
 import '../widgets/urgent_cases_section.dart';
 import '../widgets/geographic_distribution_section.dart';
 import '../widgets/daily_performance_section.dart';
+import '../widgets/dashboard_summary_widget.dart';
+import '../widgets/advanced_filters_widget.dart';
 import 'package:go_router/go_router.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
@@ -38,6 +38,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _showWelcomeBanner = false;
   String _selectedFilter = 'all';
   bool _isOnline = true;
+
+  // Advanced Filters
+  String? _selectedCategory;
+  String? _selectedGovernorate;
+  bool? _syncedOnly;
 
   @override
   void initState() {
@@ -97,6 +102,33 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
   }
 
+  void _showAdvancedFilters() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AdvancedFiltersWidget(
+        selectedCategory: _selectedCategory,
+        selectedGovernorate: _selectedGovernorate,
+        syncedOnly: _syncedOnly,
+        onApply: (category, governorate, synced) {
+          setState(() {
+            _selectedCategory = category;
+            _selectedGovernorate = governorate;
+            _syncedOnly = synced;
+          });
+          // TODO: Apply filters to dashboard data
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم تطبيق الفلاتر'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Widget currentPage;
@@ -107,6 +139,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           showWelcomeBanner: _showWelcomeBanner,
           selectedFilter: _selectedFilter,
           isOnline: _isOnline,
+          selectedCategory: _selectedCategory,
+          selectedGovernorate: _selectedGovernorate,
+          syncedOnly: _syncedOnly,
           onWelcomeDismiss: () {
             setState(() {
               _showWelcomeBanner = false;
@@ -117,6 +152,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               _selectedFilter = filter;
             });
           },
+          onShowFilters: _showAdvancedFilters,
         );
         break;
       case 1:
@@ -130,6 +166,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           showWelcomeBanner: _showWelcomeBanner,
           selectedFilter: _selectedFilter,
           isOnline: _isOnline,
+          selectedCategory: _selectedCategory,
+          selectedGovernorate: _selectedGovernorate,
+          syncedOnly: _syncedOnly,
           onWelcomeDismiss: () {
             setState(() {
               _showWelcomeBanner = false;
@@ -140,6 +179,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               _selectedFilter = filter;
             });
           },
+          onShowFilters: _showAdvancedFilters,
         );
     }
 
@@ -210,7 +250,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
           );
         },
-        onSyncTap: () => setState(() => _selectedIndex = 1),
+        onSyncTap: () {
+          // Refresh dashboard data before navigating
+          ref.read(dashboardProvider.notifier).refresh();
+          setState(() => _selectedIndex = 1);
+        },
         onProfileTap: () => context.push('/profile'),
       );
     } else if (_selectedIndex == 1) {
@@ -227,6 +271,10 @@ class _DashboardHome extends ConsumerWidget {
   final VoidCallback onWelcomeDismiss;
   final Function(String) onFilterChanged;
   final bool isOnline;
+  final String? selectedCategory;
+  final String? selectedGovernorate;
+  final bool? syncedOnly;
+  final VoidCallback onShowFilters;
 
   const _DashboardHome({
     required this.showWelcomeBanner,
@@ -234,6 +282,10 @@ class _DashboardHome extends ConsumerWidget {
     required this.onWelcomeDismiss,
     required this.onFilterChanged,
     required this.isOnline,
+    required this.selectedCategory,
+    required this.selectedGovernorate,
+    required this.syncedOnly,
+    required this.onShowFilters,
   });
 
   @override
@@ -371,21 +423,68 @@ class _DashboardHome extends ConsumerWidget {
               onDismiss: onWelcomeDismiss,
             ),
 
-          // Filter Chips
+          // Filter Chips with Advanced Filters Button - في الأعلى للوصول السريع
           SizedBox(height: 16.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _SectionTitle(
+                  title: 'التصنيفات السريعة',
+                  icon: Icons.filter_alt,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Refresh Button
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      notifier.refresh();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('تم تحديث البيانات'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    tooltip: 'تحديث البيانات',
+                  ),
+                  // Advanced Filters
+                  IconButton(
+                    icon: Badge(
+                      isLabelVisible:
+                          selectedCategory != null ||
+                          selectedGovernorate != null ||
+                          syncedOnly != null,
+                      label: Text(
+                        '${(selectedCategory != null ? 1 : 0) + (selectedGovernorate != null ? 1 : 0) + (syncedOnly != null ? 1 : 0)}',
+                      ),
+                      child: const Icon(Icons.tune),
+                    ),
+                    onPressed: onShowFilters,
+                    tooltip: 'فلاتر متقدمة',
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          SizedBox(height: 8.h),
+
           FilterChipGroup(
             filters: [
               FilterChipData(
                 label: 'الكل',
                 value: 'all',
                 icon: Icons.grid_view,
-                count: stats.totalBeneficiaries,
               ),
               FilterChipData(
                 label: 'اليوم',
                 value: 'today',
                 icon: Icons.today,
-                count: stats.completedVisitsToday,
                 color: Colors.green,
               ),
               FilterChipData(
@@ -398,7 +497,6 @@ class _DashboardHome extends ConsumerWidget {
                 label: 'تحتاج متابعة',
                 value: 'urgent',
                 icon: Icons.warning_amber,
-                count: stats.pendingSync,
                 color: Colors.red,
               ),
             ],
@@ -410,6 +508,11 @@ class _DashboardHome extends ConsumerWidget {
               }
             },
           ),
+
+          SizedBox(height: 24.h),
+
+          // Dashboard Summary Widget - لوحة المعلومات المصغرة
+          const DashboardSummaryWidget(),
 
           SizedBox(height: 24.h),
 
@@ -455,18 +558,6 @@ class _DashboardHome extends ConsumerWidget {
 
           SizedBox(height: 24.h),
 
-          // Statistics Grid (مع تحسينات)
-          StatisticsGrid(
-            totalBeneficiaries: stats.totalBeneficiaries,
-            activeBeneficiaries: stats.activeBeneficiaries,
-            pendingSync: stats.pendingSync,
-            completedVisitsToday: stats.completedVisitsToday,
-            onBeneficiariesTap: () => context.push('/beneficiaries'),
-            onPendingSyncTap: () => context.push('/sync'),
-          ),
-
-          SizedBox(height: 16.h),
-
           // 📊 Interactive Charts Section - NEW!
           _SectionTitle(title: 'الإحصائيات التفاعلية', icon: Icons.bar_chart),
           SizedBox(height: 12.h),
@@ -485,103 +576,6 @@ class _DashboardHome extends ConsumerWidget {
             labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
             lineColor: Colors.blue,
           ),
-
-          SizedBox(height: 16.h),
-
-          // Mini Sparkline Cards Row
-          Row(
-            children: [
-              Expanded(
-                child: MiniSparklineCard(
-                  title: 'الزيارات',
-                  value: '${stats.completedVisitsToday}',
-                  data: [
-                    8,
-                    12,
-                    10,
-                    15,
-                    18,
-                    stats.completedVisitsToday.toDouble(),
-                  ],
-                  color: Colors.green,
-                  isPositive: true,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: MiniSparklineCard(
-                  title: 'النشطون',
-                  value: '${stats.activeBeneficiaries}',
-                  data: [
-                    stats.activeBeneficiaries * 0.7,
-                    stats.activeBeneficiaries * 0.8,
-                    stats.activeBeneficiaries * 0.85,
-                    stats.activeBeneficiaries * 0.9,
-                    stats.activeBeneficiaries * 0.95,
-                    stats.activeBeneficiaries.toDouble(),
-                  ],
-                  color: Colors.purple,
-                  isPositive: true,
-                ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Sync Progress Indicator
-          if (stats.pendingSync > 0)
-            Card(
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: EdgeInsets.all(16.w),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.sync, size: 20.sp, color: Colors.orange),
-                        SizedBox(width: 8.w),
-                        Text(
-                          'تقدم المزامنة',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '${((stats.totalBeneficiaries - stats.pendingSync) / stats.totalBeneficiaries * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 12.h),
-                    AnimatedProgressIndicator(
-                      value:
-                          (stats.totalBeneficiaries - stats.pendingSync) /
-                          stats.totalBeneficiaries,
-                      height: 8,
-                      valueColor: Colors.orange,
-                      backgroundColor: Colors.orange.withOpacity(0.2),
-                      duration: const Duration(milliseconds: 1500),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      '${stats.pendingSync} سجل متبقي للمزامنة',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
           SizedBox(height: 24.h),
 

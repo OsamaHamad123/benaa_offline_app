@@ -29,24 +29,66 @@ class SearchStatistics {
 class SearchFilter {
   final String? governorate;
   final Gender? gender;
+  final int? minAge;
+  final int? maxAge;
 
-  const SearchFilter({this.governorate, this.gender});
+  const SearchFilter({this.governorate, this.gender, this.minAge, this.maxAge});
 
-  bool get hasActiveFilters => governorate != null || gender != null;
+  bool get hasActiveFilters =>
+      governorate != null || gender != null || minAge != null || maxAge != null;
 
-  SearchFilter copyWith({String? governorate, Gender? gender}) {
+  bool get hasAgeFilter => minAge != null || maxAge != null;
+
+  String get ageRangeText {
+    if (minAge != null && maxAge != null) {
+      return '$minAge-$maxAge سنة';
+    } else if (minAge != null) {
+      return 'من $minAge سنة';
+    } else if (maxAge != null) {
+      return 'حتى $maxAge سنة';
+    }
+    return '';
+  }
+
+  SearchFilter copyWith({
+    String? governorate,
+    Gender? gender,
+    int? minAge,
+    int? maxAge,
+  }) {
     return SearchFilter(
       governorate: governorate ?? this.governorate,
       gender: gender ?? this.gender,
+      minAge: minAge ?? this.minAge,
+      maxAge: maxAge ?? this.maxAge,
     );
   }
 
   SearchFilter clearGovernorate() {
-    return SearchFilter(governorate: null, gender: gender);
+    return SearchFilter(
+      governorate: null,
+      gender: gender,
+      minAge: minAge,
+      maxAge: maxAge,
+    );
   }
 
   SearchFilter clearGender() {
-    return SearchFilter(governorate: governorate, gender: null);
+    return SearchFilter(
+      governorate: governorate,
+      gender: null,
+      minAge: minAge,
+      maxAge: maxAge,
+    );
+  }
+
+  SearchFilter clearAge() {
+    return SearchFilter(
+      governorate: governorate,
+      gender: gender,
+      minAge: null,
+      maxAge: null,
+    );
   }
 
   SearchFilter clearAll() {

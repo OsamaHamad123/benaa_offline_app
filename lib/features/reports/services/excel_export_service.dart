@@ -528,4 +528,175 @@ class ExcelExportService {
       throw Exception('Failed to encode Excel file');
     }
   }
+
+  /// Export Custom Report (for custom reports page)
+  static Future<String> exportCustomReport({
+    required String title,
+    DateTime? startDate,
+    DateTime? endDate,
+    required List<String> selectedReports,
+    required List<String> selectedFields,
+    required Map<String, dynamic> data,
+  }) async {
+    final excel = Excel.createExcel();
+
+    // Remove default sheet
+    final defaultSheet = excel.getDefaultSheet();
+    if (defaultSheet != null) {
+      excel.delete(defaultSheet);
+    }
+
+    // Add summary sheet if selected
+    if (selectedReports.contains('summary') && data.containsKey('summary')) {
+      _addSummarySheet(
+        excel,
+        data['summary'],
+        selectedFields,
+        startDate,
+        endDate,
+      );
+    }
+
+    // Add gender sheet if selected
+    if (selectedReports.contains('gender') && data.containsKey('gender')) {
+      _addGenderSheet(excel, data['gender']);
+    }
+
+    // Add governorate sheet if selected
+    if (selectedReports.contains('governorate') &&
+        data.containsKey('governorate')) {
+      _addGovernorateSheet(excel, data['governorate']);
+    }
+
+    // Add category sheet if selected
+    if (selectedReports.contains('category') && data.containsKey('category')) {
+      _addCategorySheet(excel, data['category']);
+    }
+
+    // Add age sheet if selected
+    if (selectedReports.contains('age') && data.containsKey('age')) {
+      _addAgeSheet(excel, data['age']);
+    }
+
+    // Add sync sheet if selected
+    if (selectedReports.contains('sync') && data.containsKey('sync')) {
+      _addSyncSheet(excel, data['sync']);
+    }
+
+    return await _saveExcelFile(excel, title);
+  }
+
+  static void _addSummarySheet(
+    Excel excel,
+    dynamic summary,
+    List<String> fields,
+    DateTime? startDate,
+    DateTime? endDate,
+  ) {
+    final sheet = excel['ملخص الإحصائيات'];
+    sheet.isRTL = true;
+
+    sheet.appendRow([TextCellValue('ملخص الإحصائيات')]);
+    if (startDate != null || endDate != null) {
+      sheet.appendRow([
+        TextCellValue(
+          'الفترة: ${startDate != null ? '${startDate.year}/${startDate.month}/${startDate.day}' : '...'} - ${endDate != null ? '${endDate.year}/${endDate.month}/${endDate.day}' : '...'}',
+        ),
+      ]);
+    }
+    sheet.appendRow([]);
+
+    if (fields.contains('total')) {
+      sheet.appendRow([
+        TextCellValue('إجمالي المستفيدين'),
+        IntCellValue(summary.total),
+      ]);
+    }
+    if (fields.contains('orphans')) {
+      sheet.appendRow([
+        TextCellValue('الأيتام'),
+        IntCellValue(summary.orphans),
+      ]);
+    }
+    if (fields.contains('poor')) {
+      sheet.appendRow([TextCellValue('الفقراء'), IntCellValue(summary.poor)]);
+    }
+    if (fields.contains('pending')) {
+      sheet.appendRow([
+        TextCellValue('بانتظار المزامنة'),
+        IntCellValue(summary.pending),
+      ]);
+    }
+  }
+
+  static void _addGenderSheet(Excel excel, List<dynamic> data) {
+    final sheet = excel['تقرير الجنس'];
+    sheet.isRTL = true;
+
+    sheet.appendRow([TextCellValue('تقرير الجنس')]);
+    sheet.appendRow([]);
+    sheet.appendRow([TextCellValue('الجنس'), TextCellValue('العدد')]);
+
+    for (final item in data) {
+      sheet.appendRow([TextCellValue(item.gender), IntCellValue(item.count)]);
+    }
+  }
+
+  static void _addGovernorateSheet(Excel excel, List<dynamic> data) {
+    final sheet = excel['تقرير المحافظات'];
+    sheet.isRTL = true;
+
+    sheet.appendRow([TextCellValue('تقرير المحافظات')]);
+    sheet.appendRow([]);
+    sheet.appendRow([TextCellValue('المحافظة'), TextCellValue('العدد')]);
+
+    for (final item in data) {
+      sheet.appendRow([
+        TextCellValue(item.governorate),
+        IntCellValue(item.count),
+      ]);
+    }
+  }
+
+  static void _addCategorySheet(Excel excel, List<dynamic> data) {
+    final sheet = excel['تقرير الفئات'];
+    sheet.isRTL = true;
+
+    sheet.appendRow([TextCellValue('تقرير الفئات')]);
+    sheet.appendRow([]);
+    sheet.appendRow([TextCellValue('الفئة'), TextCellValue('العدد')]);
+
+    for (final item in data) {
+      sheet.appendRow([TextCellValue(item.category), IntCellValue(item.count)]);
+    }
+  }
+
+  static void _addAgeSheet(Excel excel, List<dynamic> data) {
+    final sheet = excel['تقرير الأعمار'];
+    sheet.isRTL = true;
+
+    sheet.appendRow([TextCellValue('تقرير الأعمار')]);
+    sheet.appendRow([]);
+    sheet.appendRow([TextCellValue('الفئة العمرية'), TextCellValue('العدد')]);
+
+    for (final item in data) {
+      sheet.appendRow([
+        TextCellValue('${item.ageBracket} سنة'),
+        IntCellValue(item.count),
+      ]);
+    }
+  }
+
+  static void _addSyncSheet(Excel excel, List<dynamic> data) {
+    final sheet = excel['تقرير المزامنة'];
+    sheet.isRTL = true;
+
+    sheet.appendRow([TextCellValue('تقرير المزامنة')]);
+    sheet.appendRow([]);
+    sheet.appendRow([TextCellValue('الحالة'), TextCellValue('العدد')]);
+
+    for (final item in data) {
+      sheet.appendRow([TextCellValue(item.status), IntCellValue(item.count)]);
+    }
+  }
 }

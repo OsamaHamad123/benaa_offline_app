@@ -11,8 +11,8 @@ import '../domain/usecases/get_category_report.dart';
 import '../domain/usecases/get_age_report.dart';
 import '../domain/usecases/get_sync_status_report.dart';
 
-/// Reports cache duration - 5 minutes
-const _reportsCacheDuration = Duration(minutes: 5);
+/// Reports cache duration - 30 seconds for better real-time updates
+const _reportsCacheDuration = Duration(seconds: 30);
 
 // ============================================================================
 // REPOSITORY & USE CASES PROVIDERS
@@ -68,28 +68,49 @@ final getSyncStatusReportUseCaseProvider = Provider<GetSyncStatusReport>((ref) {
 });
 
 // ============================================================================
+// HELPER CLASSES
+// ============================================================================
+
+/// Date Range Filter for reports
+class DateRangeFilter {
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  const DateRangeFilter({this.startDate, this.endDate});
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is DateRangeFilter &&
+        other.startDate == startDate &&
+        other.endDate == endDate;
+  }
+
+  @override
+  int get hashCode => Object.hash(startDate, endDate);
+}
+
+// ============================================================================
 // DATA PROVIDERS (with caching)
 // ============================================================================
 
-/// Summary Statistics Provider with caching
+/// Summary Statistics Provider with caching and optional date filtering
 final summaryStatisticsProvider = FutureProvider.autoDispose<SummaryStatistics>(
   (ref) async {
-    // Keep provider alive for cache duration
-    final link = ref.keepAlive();
-    Timer? timer;
-
-    ref.onDispose(() {
-      timer?.cancel();
-    });
-
-    timer = Timer(_reportsCacheDuration, () {
-      link.close();
-    });
-
     final useCase = ref.watch(getSummaryStatisticsUseCaseProvider);
     return await useCase();
   },
 );
+
+/// Summary Statistics Provider with date range
+final summaryStatisticsWithDateProvider = FutureProvider.autoDispose
+    .family<SummaryStatistics, DateRangeFilter?>((ref, dateRange) async {
+      final repository = ref.watch(reportsRepositoryProvider);
+      return await repository.getSummaryStatistics(
+        startDate: dateRange?.startDate,
+        endDate: dateRange?.endDate,
+      );
+    });
 
 /// Gender Report Provider with caching
 final genderReportProvider = FutureProvider.autoDispose<List<GenderCount>>((

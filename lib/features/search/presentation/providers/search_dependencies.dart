@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import '../../data/datasources/civil_registry_database.dart';
 import '../../data/repositories/civil_search_repository_impl.dart';
 import '../../data/repositories/recent_searches_repository_impl.dart';
+import '../../data/services/search_isolate_service.dart';
 import '../../domain/repositories/civil_search_repository.dart';
 import '../../domain/repositories/recent_searches_repository.dart';
 import '../../domain/usecases/get_statistics.dart';
@@ -34,6 +37,37 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 final civilRegistryDatabaseProvider = Provider<CivilRegistryDatabase>((ref) {
   return CivilRegistryDatabase.instance;
 });
+
+// ⚡ Isolate Service for background database operations
+/// Provides SearchIsolateService for ultra-fast non-blocking search
+final searchIsolateServiceProvider = Provider<SearchIsolateService?>((ref) {
+  final service = SearchIsolateService();
+
+  // Initialize with database path (async)
+  _initializeIsolateService(service);
+
+  // Dispose on provider disposal
+  ref.onDispose(() {
+    service.dispose();
+  });
+
+  return service;
+});
+
+/// Initialize isolate service with database path
+Future<void> _initializeIsolateService(SearchIsolateService service) async {
+  try {
+    // Get database path (in main thread - has Flutter bindings)
+    final appDir = await getApplicationDocumentsDirectory();
+    final dbPath = p.join(appDir.path, 'persons.db');
+
+    // Initialize isolate with path
+    await service.initialize(dbPath);
+    print('✅ SearchIsolateService initialized successfully');
+  } catch (e) {
+    print('⚠️ Failed to initialize SearchIsolateService: $e');
+  }
+}
 
 // ============================================================================
 // REPOSITORY LAYER

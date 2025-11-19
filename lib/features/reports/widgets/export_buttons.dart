@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Reusable widget for export buttons (PDF, Excel, Print)
+/// Reusable widget for export buttons (PDF, Excel, CSV, Print)
 class ExportButtons extends StatelessWidget {
   final VoidCallback? onPdfExport;
   final VoidCallback? onExcelExport;
+  final VoidCallback? onCsvExport;
   final VoidCallback? onPrint;
   final bool isLoading;
 
@@ -12,6 +13,7 @@ class ExportButtons extends StatelessWidget {
     super.key,
     this.onPdfExport,
     this.onExcelExport,
+    this.onCsvExport,
     this.onPrint,
     this.isLoading = false,
   });
@@ -29,38 +31,57 @@ class ExportButtons extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-      child: Row(
+      child: Column(
         children: [
-          if (onPdfExport != null)
-            Expanded(
-              child: _ExportButton(
-                icon: Icons.picture_as_pdf,
-                label: 'PDF',
-                color: Colors.red,
-                onTap: onPdfExport!,
-              ),
-            ),
-          if (onPdfExport != null && onExcelExport != null)
-            SizedBox(width: 8.w),
-          if (onExcelExport != null)
-            Expanded(
-              child: _ExportButton(
-                icon: Icons.table_chart,
-                label: 'Excel',
-                color: Colors.green,
-                onTap: onExcelExport!,
-              ),
-            ),
-          if ((onPdfExport != null || onExcelExport != null) && onPrint != null)
-            SizedBox(width: 8.w),
-          if (onPrint != null)
-            Expanded(
-              child: _ExportButton(
-                icon: Icons.print,
-                label: 'طباعة',
-                color: Colors.blue,
-                onTap: onPrint!,
-              ),
+          Row(
+            children: [
+              if (onPdfExport != null)
+                Expanded(
+                  child: _ExportButton(
+                    icon: Icons.picture_as_pdf,
+                    label: 'PDF',
+                    color: Colors.red,
+                    onTap: onPdfExport!,
+                  ),
+                ),
+              if (onPdfExport != null && onExcelExport != null)
+                SizedBox(width: 8.w),
+              if (onExcelExport != null)
+                Expanded(
+                  child: _ExportButton(
+                    icon: Icons.table_chart,
+                    label: 'Excel',
+                    color: Colors.green,
+                    onTap: onExcelExport!,
+                  ),
+                ),
+            ],
+          ),
+          if (onCsvExport != null || onPrint != null) SizedBox(height: 8.h),
+          if (onCsvExport != null || onPrint != null)
+            Row(
+              children: [
+                if (onCsvExport != null)
+                  Expanded(
+                    child: _ExportButton(
+                      icon: Icons.description,
+                      label: 'CSV',
+                      color: Colors.orange,
+                      onTap: onCsvExport!,
+                    ),
+                  ),
+                if (onCsvExport != null && onPrint != null)
+                  SizedBox(width: 8.w),
+                if (onPrint != null)
+                  Expanded(
+                    child: _ExportButton(
+                      icon: Icons.print,
+                      label: 'طباعة',
+                      color: Colors.blue,
+                      onTap: onPrint!,
+                    ),
+                  ),
+              ],
             ),
         ],
       ),

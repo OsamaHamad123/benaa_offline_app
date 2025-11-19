@@ -18,9 +18,12 @@ import 'widgets/summary_statistics_widget.dart';
 import 'widgets/report_card_widget.dart';
 import 'widgets/export_all_section.dart';
 import 'widgets/date_filter_actions.dart';
+import 'widgets/quick_date_filters.dart';
+import 'widgets/report_search_field.dart';
 import 'helpers/percentage_helper.dart';
 import 'services/pdf_export_service.dart';
 import 'services/excel_export_service.dart';
+import 'custom_reports_page.dart';
 import '../../core/constants/report_styles.dart';
 import '../../core/constants/category_colors.dart';
 
@@ -35,6 +38,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     with AutomaticKeepAliveClientMixin {
   DateTime? _startDate;
   DateTime? _endDate;
+  bool _isExportingAll = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -76,6 +80,14 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     _refreshData();
   }
 
+  void _setQuickFilter(DateTime start, DateTime end) {
+    setState(() {
+      _startDate = start;
+      _endDate = end;
+    });
+    _refreshData();
+  }
+
   void _refreshData() {
     ref.invalidate(summaryStatisticsProvider);
     ref.invalidate(genderReportProvider);
@@ -92,6 +104,18 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       appBar: AppBar(
         title: const Text('التقارير والإحصائيات'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_chart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CustomReportsPage(),
+                ),
+              );
+            },
+            tooltip: 'إنشاء تقرير مخصص',
+          ),
           DateFilterActions(
             startDate: _startDate,
             endDate: _endDate,
@@ -117,13 +141,26 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         child: ListView(
           padding: EdgeInsets.all(16.r),
           children: [
+            // Quick Date Filters
+            QuickDateFilters(
+              startDate: _startDate,
+              endDate: _endDate,
+              onFilterSelected: _setQuickFilter,
+              onClearFilter: _clearDateFilter,
+            ),
+            SizedBox(height: 16.h),
+
             // Summary Statistics
             const SummaryStatisticsWidget(),
             SizedBox(height: 24.h),
 
+            // Export All Reports Button
+            _buildExportAllReportsSection(),
+            SizedBox(height: 24.h),
+
             // Report Categories
             Text(
-              'تقارير مفصلة',
+              'التقارير المفصلة',
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -188,6 +225,239 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       isScrollControlled: true,
       builder: (context) => const _GovernorateReportSheet(),
     );
+  }
+
+  Widget _buildExportAllReportsSection() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade400, Colors.deepPurple.shade600],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        padding: EdgeInsets.all(20.r),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.download_for_offline,
+                  color: Colors.white,
+                  size: 32.sp,
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'تصدير جميع التقارير',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'احصل على ملف شامل لجميع التقارير',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16.h),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isExportingAll
+                        ? null
+                        : () => _exportAllReports('pdf'),
+                    icon: _isExportingAll
+                        ? SizedBox(
+                            width: 16.w,
+                            height: 16.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.deepPurple,
+                            ),
+                          )
+                        : Icon(Icons.picture_as_pdf, size: 20.sp),
+                    label: Text('PDF', style: TextStyle(fontSize: 14.sp)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.deepPurple,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isExportingAll
+                        ? null
+                        : () => _exportAllReports('excel'),
+                    icon: Icon(Icons.table_view, size: 20.sp),
+                    label: Text('Excel', style: TextStyle(fontSize: 14.sp)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.deepPurple,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportAllReports(String format) async {
+    // Show confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد التصدير'),
+        content: Text(
+          'سيتم تصدير جميع التقارير بصيغة $format. قد تحتوي البيانات على معلومات حساسة. هل تريد المتابعة؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تصدير'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isExportingAll = true);
+
+    try {
+      // Fetch all report data
+      final summary = await ref.read(summaryStatisticsProvider.future);
+      final gender = await ref.read(genderReportProvider.future);
+      final governorate = await ref.read(governorateReportProvider.future);
+      final category = await ref.read(categoryReportProvider.future);
+      final age = await ref.read(ageReportProvider.future);
+      final sync = await ref.read(syncStatusReportProvider.future);
+
+      if (format == 'pdf') {
+        final pdfBytes = await PdfExportService.exportCustomReport(
+          title:
+              'تقرير شامل - ${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}',
+          startDate: _startDate,
+          endDate: _endDate,
+          selectedReports: [
+            'summary',
+            'gender',
+            'governorate',
+            'category',
+            'age',
+            'sync',
+          ],
+          selectedFields: ['total', 'orphans', 'poor', 'pending'],
+          includeCharts: true,
+          includeDetails: true,
+          data: {
+            'summary': summary,
+            'gender': gender,
+            'governorate': governorate,
+            'category': category,
+            'age': age,
+            'sync': sync,
+          },
+        );
+
+        final pdfPath = await PdfExportService.savePdfToFile(
+          pdfBytes,
+          'all_reports_${DateTime.now().millisecondsSinceEpoch}.pdf',
+        );
+
+        await Share.shareXFiles([
+          XFile(pdfPath),
+        ], text: 'تقرير شامل لجميع الإحصائيات');
+      } else {
+        final excelPath = await ExcelExportService.exportCustomReport(
+          title: 'تقرير شامل',
+          startDate: _startDate,
+          endDate: _endDate,
+          selectedReports: [
+            'summary',
+            'gender',
+            'governorate',
+            'category',
+            'age',
+            'sync',
+          ],
+          selectedFields: ['total', 'orphans', 'poor', 'pending'],
+          data: {
+            'summary': summary,
+            'gender': gender,
+            'governorate': governorate,
+            'category': category,
+            'age': age,
+            'sync': sync,
+          },
+        );
+
+        await Share.shareXFiles([
+          XFile(excelPath),
+        ], text: 'تقرير شامل لجميع الإحصائيات');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تصدير جميع التقارير بنجاح'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'تمام',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل التصدير: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingAll = false);
+      }
+    }
   }
 
   void _showCategoryReport(BuildContext context) {
@@ -307,6 +577,7 @@ class _GovernorateReportSheet extends ConsumerStatefulWidget {
 class _GovernorateReportSheetState
     extends ConsumerState<_GovernorateReportSheet> {
   bool _isExporting = false;
+  String _searchQuery = '';
 
   Future<void> _exportToPdf(List<GovernorateCount> data, int total) async {
     setState(() => _isExporting = true);
@@ -382,10 +653,29 @@ class _GovernorateReportSheetState
                 governorateCounts,
               )..sort((a, b) => b.count.compareTo(a.count));
 
+              // Filter by search query
+              final filteredCounts = _searchQuery.isEmpty
+                  ? sortedCounts
+                  : sortedCounts
+                        .where(
+                          (item) => item.governorate.toLowerCase().contains(
+                            _searchQuery.toLowerCase(),
+                          ),
+                        )
+                        .toList();
+
               return ListView(
                 controller: scrollController,
                 padding: const EdgeInsets.all(16),
                 children: [
+                  // Search Field
+                  ReportSearchField(
+                    hint: 'ابحث عن محافظة...',
+                    onSearch: (query) {
+                      setState(() => _searchQuery = query);
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   // Chart Section - Using reusable ChartSection widget
                   ChartSection(
                     title: 'التوزيع حسب المحافظة',
@@ -405,29 +695,60 @@ class _GovernorateReportSheetState
                     onPrint: () => _exportToPdf(sortedCounts, total),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    'التفاصيل',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'التفاصيل',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        Text(
+                          '${filteredCounts.length} نتيجة',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   // Detail List Items - Using reusable DetailListItemWithProgress widget
-                  ...sortedCounts.map((item) {
-                    return DetailListItemWithProgress(
-                      title: item.governorate,
-                      subtitle: PercentageHelper.getCountWithPercentage(
-                        item.count,
-                        total,
+                  if (filteredCounts.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.search_off,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'لا توجد نتائج',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
                       ),
-                      progressValue:
-                          PercentageHelper.calculatePercentage(
-                            item.count,
-                            total,
-                          ) /
-                          100,
-                    );
-                  }).toList(),
+                    )
+                  else
+                    ...filteredCounts.map((item) {
+                      return DetailListItemWithProgress(
+                        title: item.governorate,
+                        subtitle: PercentageHelper.getCountWithPercentage(
+                          item.count,
+                          total,
+                        ),
+                        progressValue:
+                            PercentageHelper.calculatePercentage(
+                              item.count,
+                              total,
+                            ) /
+                            100,
+                      );
+                    }).toList(),
                 ],
               );
             },

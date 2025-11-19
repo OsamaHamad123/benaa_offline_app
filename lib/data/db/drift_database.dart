@@ -59,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 8; // ⚡ Database Indexing للأداء
+  int get schemaVersion => 9; // ⚡ Added FTS5 for ultra-fast search
 
   @override
   MigrationStrategy get migration {
@@ -67,9 +67,20 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
         await _createPerformanceIndexes();
+        // ⚡ Create FTS5 on first install
+        await _createFTS4Table();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (to == 8) {
+        if (from == 8 && to == 9) {
+          // ⚡ Add FTS5 table without dropping existing data
+          await _createFTS4Table();
+          await _populateFTS4Table();
+        } else if (to == 9) {
+          // إضافة indexes للأداء + FTS5
+          await _createPerformanceIndexes();
+          await _createFTS4Table();
+          await _populateFTS4Table();
+        } else if (to == 8) {
           // إضافة indexes للأداء
           await _createPerformanceIndexes();
         } else {
@@ -165,6 +176,66 @@ class AppDatabase extends _$AppDatabase {
 
     // Civil Registry indexes (existing)
     await _createIndexes();
+
+    // ⚡ Create FTS4 table for ultra-fast search
+    await _createFTS4Table();
+  }
+
+  /// ⚡ إنشاء جدول FTS5 للبحث السريع جداً (FTS5 متوفر على Android)
+  Future<void> _createFTS4Table() async {
+    try {
+      // Drop existing FTS table if exists
+      await customStatement('DROP TABLE IF EXISTS civil_registry_fts;');
+
+      // Create FTS5 virtual table (FTS5 is available on Android, FTS4 is NOT!)
+      // tokenize='unicode61': دعم اللغة العربية بشكل صحيح
+      await customStatement('''
+        CREATE VIRTUAL TABLE IF NOT EXISTS civil_registry_fts USING fts5(
+          national_id,
+          full_name,
+          first_name,
+          father_name,
+          family_name,
+          tokenize='unicode61'
+        );
+      ''');
+
+      print('✅ FTS5 table created successfully');
+    } catch (e) {
+      print('❌ Failed to create FTS5 table: $e');
+      rethrow;
+    }
+  }
+
+  /// ⚡ ملء جدول FTS5 من البيانات الموجودة
+  Future<void> _populateFTS4Table() async {
+    try {
+      // Check if FTS table exists first
+      final check = await customSelect(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='civil_registry_fts'",
+      ).getSingleOrNull();
+
+      if (check == null) {
+        print('⚠️ FTS5 table does not exist, creating...');
+        await _createFTS4Table();
+      }
+
+      // Clear existing FTS data
+      await customStatement('DELETE FROM civil_registry_fts;');
+
+      // Populate from main table
+      print('⏳ Populating FTS5 table...');
+      await customStatement('''
+        INSERT INTO civil_registry_fts(rowid, national_id, full_name, first_name, father_name, family_name)
+        SELECT id, CI_ID_NUM, full_name_normalized, CI_FIRST_ARB, CI_FATHER_ARB, CI_FAMILY_ARB
+        FROM civil_registry;
+      ''');
+
+      print('✅ FTS5 table populated successfully');
+    } catch (e) {
+      print('❌ Failed to populate FTS5 table: $e');
+      rethrow;
+    }
   }
 
   Future<void> _createIndexes() async {

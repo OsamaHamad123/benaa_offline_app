@@ -3,17 +3,19 @@ import '../../domain/entities/civil_person.dart';
 import 'person_info_card.dart';
 
 /// بطاقة عرض نتيجة البحث - Clean Architecture
-/// Wrapper around PersonInfoCard for backward compatibility
+/// Wrapper around PersonInfoCard with search highlighting support
 class ResultCard extends StatelessWidget {
   final CivilPerson person;
   final VoidCallback onCopy;
   final VoidCallback onAddAsBeneficiary;
+  final String? searchQuery; // 🎯 NEW: للتظليل
 
   const ResultCard({
     super.key,
     required this.person,
     required this.onCopy,
     required this.onAddAsBeneficiary,
+    this.searchQuery,
   });
 
   @override
@@ -22,7 +24,8 @@ class ResultCard extends StatelessWidget {
       person: person,
       onCopy: onCopy,
       onAddAsBeneficiary: onAddAsBeneficiary,
-      expanded: true, // Show all details
+      expanded: true,
+      searchQuery: searchQuery, // 🎯 تمرير الـ query
     );
   }
 }

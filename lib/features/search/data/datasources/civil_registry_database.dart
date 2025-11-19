@@ -79,7 +79,11 @@ class CivilRegistryDatabase {
         print('⚠️ ANALYZE failed: $e');
       }
 
-      // ⚡ FTS4 is TOO SLOW with millions of rows - DISABLED for now
+      // ⚡ Optimized indexes setup - MUST run synchronously for fast search!
+      print('⏳ Setting up optimized indexes for ultra-fast search...');
+      await DatabaseMigrationsService.ensureOptimizedIndexes(db);
+      print('✅ Optimized indexes ready!');
+
       // Create indexes and other migrations in background (non-blocking)
       DatabaseMigrationsService.createIndexesAsync(db);
       DatabaseMigrationsService.runOtherMigrationsAsync(db);
@@ -91,7 +95,7 @@ class CivilRegistryDatabase {
     }
   }
 
-  /// Apply PRAGMA settings - EXTREME PERFORMANCE MODE ⚡
+  /// Apply PRAGMA settings - SMART PERFORMANCE MODE ⚡
   Future<void> _applyPragmaSettings(Database db) async {
     // ⚡ CRITICAL: Disable synchronous for MAXIMUM SPEED (read-only DB is safe)
     await db.rawQuery('PRAGMA synchronous = OFF');
@@ -108,8 +112,10 @@ class CivilRegistryDatabase {
     // Optimal page size for modern systems
     await db.rawQuery('PRAGMA page_size = 4096');
 
-    // ⚡ EXTREME memory-mapped I/O (4GB for ultra speed)
-    await db.rawQuery('PRAGMA mmap_size = 4294967296');
+    // ⚡ SMART memory-mapped I/O (adaptive based on 5M records DB ~2GB)
+    // Conservative: 512MB (works on all devices)
+    // Note: Full DB is ~2GB, but we don't need to map it all at once
+    await db.rawQuery('PRAGMA mmap_size = 536870912'); // 512MB
 
     // ⚡ EXCLUSIVE lock for single-user app (faster)
     await db.rawQuery('PRAGMA locking_mode = EXCLUSIVE');

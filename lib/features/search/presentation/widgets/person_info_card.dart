@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 import '../../../../core/utils/responsive_utils.dart';
 import '../../domain/entities/civil_person.dart';
 import 'gender_badge.dart';
 import 'location_chip.dart';
 import 'person_detail_row.dart';
+import 'highlighted_text.dart';
 
 /// Enhanced Person Info Card - بطاقة معلومات الشخص المحسّنة
 ///
@@ -14,11 +15,19 @@ import 'person_detail_row.dart';
 /// - تصميم عصري مع gradients
 /// - Responsive design
 /// - Performance optimized
+/// - 🎯 Search highlighting support
 class PersonInfoCard extends StatelessWidget {
   final CivilPerson person;
   final VoidCallback onCopy;
   final VoidCallback onAddAsBeneficiary;
   final bool expanded;
+  final String? searchQuery; // 🎯 NEW: للتظليل
+
+  // ⚡ Cache common colors to avoid withOpacity() calls
+  static final _shadowColor = Colors.blue.withOpacity(0.2);
+  static final _borderColor = Colors.blue.withOpacity(0.1);
+  static final _bgColor = Colors.blue.withOpacity(0.05);
+  static final _dividerColor = Colors.blue.withOpacity(0.2);
 
   const PersonInfoCard({
     super.key,
@@ -26,38 +35,40 @@ class PersonInfoCard extends StatelessWidget {
     required this.onCopy,
     required this.onAddAsBeneficiary,
     this.expanded = false,
+    this.searchQuery,
   });
 
   @override
   Widget build(BuildContext context) {
+    // ⚡ Get ResponsiveValues once - avoid recalculating on every build
     final rv = ResponsiveUtils.getValues(context);
 
     return Card(
       elevation: 2,
-      shadowColor: Colors.blue.withOpacity(0.2),
+      shadowColor: _shadowColor,
       margin: EdgeInsets.only(bottom: rv.spacing),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.blue.withOpacity(0.1), width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: _borderColor, width: 1.5),
       ),
       child: InkWell(
         onTap: onAddAsBeneficiary,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: rv.padding,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
-              SizedBox(height: 16.h),
+              SizedBox(height: 16),
               _buildDivider(),
-              SizedBox(height: 16.h),
+              SizedBox(height: 16),
               _buildPersonDetails(context),
               if (expanded) ...[
-                SizedBox(height: 16.h),
+                SizedBox(height: 16),
                 _buildAdditionalInfo(context),
               ],
-              SizedBox(height: 16.h),
+              SizedBox(height: 16),
               _buildActions(context, rv),
             ],
           ),
@@ -74,19 +85,31 @@ class PersonInfoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                person.fullName,
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade900,
-                  height: 1.3,
-                ),
-              ),
-              SizedBox(height: 8.h),
+              // 🎯 استخدام HighlightedText إذا كان هناك query
+              searchQuery != null && searchQuery!.isNotEmpty
+                  ? HighlightedText(
+                      text: person.fullName,
+                      query: searchQuery!,
+                      textStyle: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade900,
+                        height: 1.3,
+                      ),
+                    )
+                  : Text(
+                      person.fullName,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade900,
+                        height: 1.3,
+                      ),
+                    ),
+              SizedBox(height: 8),
               Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   GenderBadge(gender: person.gender, compact: true),
                   if (person.city != null || person.governorate != null)
@@ -100,10 +123,10 @@ class PersonInfoCard extends StatelessWidget {
           ),
         ),
         Container(
-          padding: EdgeInsets.all(12.w),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12.r),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(Icons.person, color: Colors.blue, size: 32),
         ),
@@ -113,11 +136,7 @@ class PersonInfoCard extends StatelessWidget {
 
   /// Divider - simple and fast
   Widget _buildDivider() {
-    return Divider(
-      height: 1.5.h,
-      thickness: 1.5,
-      color: Colors.blue.withOpacity(0.2),
-    );
+    return Divider(height: 1.5, thickness: 1.5, color: _dividerColor);
   }
 
   /// Person details section
@@ -125,7 +144,7 @@ class PersonInfoCard extends StatelessWidget {
     return Column(
       children: [
         _buildNationalIdRow(context),
-        SizedBox(height: 12.h),
+        SizedBox(height: 12),
         _buildNameBreakdown(),
       ],
     );
@@ -134,23 +153,23 @@ class PersonInfoCard extends StatelessWidget {
   /// National ID row with copy button
   Widget _buildNationalIdRow(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),
+      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: Colors.blue.withOpacity(0.2), width: 1),
+        color: _bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _dividerColor, width: 1),
       ),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8.w),
+            padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.indigo.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8.r),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.badge, color: Colors.indigo, size: 18.sp),
+            child: Icon(Icons.badge, color: Colors.indigo, size: 18),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,16 +177,16 @@ class PersonInfoCard extends StatelessWidget {
                 Text(
                   'الرقم الوطني',
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 12,
                     color: Colors.grey.shade600,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 4),
                 Text(
                   person.nationalId,
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 14,
                     color: Colors.grey.shade900,
                     fontWeight: FontWeight.w600,
                   ),
@@ -177,13 +196,13 @@ class PersonInfoCard extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => _copyNationalId(context),
-            icon: Icon(Icons.copy, size: 18.sp),
+            icon: Icon(Icons.copy, size: 18),
             color: Colors.blue,
             tooltip: 'نسخ الرقم',
             style: IconButton.styleFrom(
               backgroundColor: Colors.blue.withOpacity(0.1),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -206,7 +225,7 @@ class PersonInfoCard extends StatelessWidget {
                 Colors.blue,
               ),
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: 8),
             Expanded(
               child: _buildSmallDetail(
                 Icons.family_restroom,
@@ -217,7 +236,7 @@ class PersonInfoCard extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -228,7 +247,7 @@ class PersonInfoCard extends StatelessWidget {
                 Colors.green,
               ),
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: 8),
             Expanded(
               child: _buildSmallDetail(
                 Icons.supervisor_account,
@@ -251,10 +270,10 @@ class PersonInfoCard extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: EdgeInsets.all(10.w),
+      padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(10.r),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
@@ -262,23 +281,24 @@ class PersonInfoCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 14.sp),
-              SizedBox(width: 4.w),
+              Icon(icon, color: color, size: 14),
+              SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10.sp,
+                  fontSize: 10,
                   color: Colors.grey.shade600,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 4.h),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13.sp,
+          SizedBox(height: 4),
+          HighlightedText(
+            text: value,
+            query: searchQuery ?? '',
+            textStyle: TextStyle(
+              fontSize: 13,
               color: Colors.grey.shade900,
               fontWeight: FontWeight.w600,
             ),
@@ -307,12 +327,12 @@ class PersonInfoCard extends StatelessWidget {
         Text(
           'معلومات إضافية',
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             color: Colors.grey.shade700,
           ),
         ),
-        SizedBox(height: 12.h),
+        SizedBox(height: 12),
         if (hasMotherName)
           PersonDetailRow(
             icon: Icons.woman,
@@ -320,7 +340,7 @@ class PersonInfoCard extends StatelessWidget {
             value: person.motherName!,
             iconColor: Colors.pink,
           ),
-        if (hasMotherName && hasBirthDate) SizedBox(height: 8.h),
+        if (hasMotherName && hasBirthDate) SizedBox(height: 8),
         if (hasBirthDate)
           PersonDetailRow(
             icon: Icons.cake,
@@ -339,34 +359,34 @@ class PersonInfoCard extends StatelessWidget {
         Expanded(
           child: OutlinedButton.icon(
             onPressed: () => _copyToClipboard(context),
-            icon: Icon(Icons.copy, size: 18.sp),
+            icon: Icon(Icons.copy, size: 18),
             label: Text('نسخ', style: TextStyle(fontSize: rv.fontSize)),
             style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 12.h),
+              padding: EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: BorderRadius.circular(12),
               ),
               side: BorderSide(color: Colors.blue, width: 1.5),
             ),
           ),
         ),
-        SizedBox(width: 12.w),
+        SizedBox(width: 12),
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
             onPressed: onAddAsBeneficiary,
-            icon: Icon(Icons.person_add, size: 18.sp),
+            icon: Icon(Icons.person_add, size: 18),
             label: Text(
               'إضافة كمستفيد',
               style: TextStyle(fontSize: rv.fontSize),
             ),
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 12.h),
+              padding: EdgeInsets.symmetric(vertical: 12),
               backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
               elevation: 2,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -383,9 +403,7 @@ class PersonInfoCard extends StatelessWidget {
         content: const Text('تم نسخ الرقم الوطني ✓'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -406,9 +424,7 @@ ${person.motherName != null ? 'اسم الأم: ${person.motherName}\n' : ''}${p
         content: const Text('تم النسخ إلى الحافظة ✓'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.r),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
       ),
     );

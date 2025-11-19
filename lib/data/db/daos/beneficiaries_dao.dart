@@ -788,9 +788,9 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     final result = await customSelect(
       '''SELECT 
            COUNT(*) as total,
-           SUM(CASE WHEN section_id = 1 THEN 1 ELSE 0 END) as orphans,
-           SUM(CASE WHEN section_id = 3 THEN 1 ELSE 0 END) as poor,
-           SUM(CASE WHEN sync_state = 'pending' THEN 1 ELSE 0 END) as pending
+           COALESCE(SUM(CASE WHEN section_id = 1 THEN 1 ELSE 0 END), 0) as orphans,
+           COALESCE(SUM(CASE WHEN section_id = 3 THEN 1 ELSE 0 END), 0) as poor,
+           COALESCE(SUM(CASE WHEN sync_state = 'pending' THEN 1 ELSE 0 END), 0) as pending
          FROM beneficiaries
          $whereClause''',
       variables: variables,

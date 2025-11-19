@@ -7,6 +7,7 @@ import '../features/beneficiaries/presentation/pages/beneficiaries_list_page_v2.
 import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v2.dart';
 import '../features/beneficiaries/presentation/pages/beneficiary_details_page_v2.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
+import '../features/search/presentation/pages/update_normalization_page.dart';
 import '../features/civil_registry/civil_registry_test_page.dart';
 import '../features/civil_db_download/presentation/pages/welcome_page.dart';
 import '../features/civil_db_download/presentation/pages/download_civil_db_page.dart';
@@ -86,6 +87,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/search',
         builder: (context, state) => const CivilSearchPage(),
+      ),
+      GoRoute(
+        path: '/update-normalization',
+        builder: (context, state) => const UpdateNormalizationPage(),
       ),
       GoRoute(
         path: '/civil-test',
