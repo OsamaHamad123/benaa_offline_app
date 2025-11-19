@@ -4,7 +4,8 @@ import '../../data/datasources/text_normalization_service.dart';
 /// 🎨 Highlighted Text Widget - For search result highlighting
 ///
 /// Highlights matching text in search results with proper font inheritance
-class HighlightedText extends StatelessWidget {
+/// ⚡ OPTIMIZED: Caches normalization and spans to avoid rebuilds
+class HighlightedText extends StatefulWidget {
   final String text;
   final String query;
   final TextStyle? textStyle;
@@ -25,13 +26,64 @@ class HighlightedText extends StatelessWidget {
   });
 
   @override
+  State<HighlightedText> createState() => _HighlightedTextState();
+}
+
+class _HighlightedTextState extends State<HighlightedText> {
+  // ⚡ Cache to avoid recalculating on every build
+  List<TextSpan>? _cachedSpans;
+  String? _lastText;
+  String? _lastQuery;
+
+  @override
+  void didUpdateWidget(HighlightedText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // ⚡ Only recalculate if text or query changed
+    if (widget.text != oldWidget.text || widget.query != oldWidget.query) {
+      _cachedSpans = null;
+      _lastText = null;
+      _lastQuery = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (query.isEmpty || text.isEmpty) {
-      return Text(text, style: textStyle);
+    // ⚡ Fast path: empty or no highlighting needed
+    if (widget.query.isEmpty || widget.text.isEmpty) {
+      return Text(widget.text, style: widget.textStyle);
     }
 
-    final normalizedText = TextNormalizationService.normalize(text);
-    final normalizedQuery = TextNormalizationService.normalize(query);
+    // ⚡ Use cached spans if available
+    if (_cachedSpans != null &&
+        _lastText == widget.text &&
+        _lastQuery == widget.query) {
+      final baseStyle = widget.textStyle ?? DefaultTextStyle.of(context).style;
+      return RichText(
+        text: TextSpan(children: _cachedSpans!, style: baseStyle),
+        overflow: widget.overflow ?? TextOverflow.ellipsis,
+        maxLines: widget.maxLines ?? 2,
+        textDirection: widget.textDirection ?? TextDirection.rtl,
+      );
+    }
+
+    // ⚡ Calculate and cache spans
+    _lastText = widget.text;
+    _lastQuery = widget.query;
+    _cachedSpans = _buildSpans();
+
+    final baseStyle = widget.textStyle ?? DefaultTextStyle.of(context).style;
+    return RichText(
+      text: TextSpan(children: _cachedSpans!, style: baseStyle),
+      overflow: widget.overflow ?? TextOverflow.ellipsis,
+      maxLines: widget.maxLines ?? 2,
+      textDirection: widget.textDirection ?? TextDirection.rtl,
+    );
+  }
+
+  /// Build highlighted spans (cached)
+  List<TextSpan> _buildSpans() {
+    final normalizedText = TextNormalizationService.normalize(widget.text);
+    final normalizedQuery = TextNormalizationService.normalize(widget.query);
 
     // Split query into words for multi-word highlighting
     final queryWords = normalizedQuery
@@ -40,7 +92,7 @@ class HighlightedText extends StatelessWidget {
         .toList();
 
     if (queryWords.isEmpty) {
-      return Text(text, style: textStyle);
+      return [TextSpan(text: widget.text, style: widget.textStyle)];
     }
 
     // Build highlight spans
@@ -62,7 +114,7 @@ class HighlightedText extends StatelessWidget {
 
     // Sort and merge overlapping matches
     if (matches.isEmpty) {
-      return Text(text, style: textStyle);
+      return [TextSpan(text: widget.text, style: widget.textStyle)];
     }
 
     matches.sort((a, b) => a.start.compareTo(b.start));
@@ -74,8 +126,8 @@ class HighlightedText extends StatelessWidget {
       if (currentIndex < match.start) {
         spans.add(
           TextSpan(
-            text: text.substring(currentIndex, match.start),
-            style: textStyle,
+            text: widget.text.substring(currentIndex, match.start),
+            style: widget.textStyle,
           ),
         );
       }
@@ -83,10 +135,10 @@ class HighlightedText extends StatelessWidget {
       // Add highlighted match
       spans.add(
         TextSpan(
-          text: text.substring(match.start, match.end),
+          text: widget.text.substring(match.start, match.end),
           style:
-              highlightStyle ??
-              (textStyle ?? const TextStyle()).copyWith(
+              widget.highlightStyle ??
+              (widget.textStyle ?? const TextStyle()).copyWith(
                 backgroundColor: Colors.yellow.shade300,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
@@ -98,19 +150,16 @@ class HighlightedText extends StatelessWidget {
     }
 
     // Add remaining text
-    if (currentIndex < text.length) {
-      spans.add(TextSpan(text: text.substring(currentIndex), style: textStyle));
+    if (currentIndex < widget.text.length) {
+      spans.add(
+        TextSpan(
+          text: widget.text.substring(currentIndex),
+          style: widget.textStyle,
+        ),
+      );
     }
 
-    // Get base style from context or use provided textStyle
-    final baseStyle = textStyle ?? DefaultTextStyle.of(context).style;
-
-    return RichText(
-      text: TextSpan(children: spans, style: baseStyle),
-      overflow: overflow ?? TextOverflow.ellipsis,
-      maxLines: maxLines ?? 2,
-      textDirection: textDirection ?? TextDirection.rtl, // ⚡ Arabic by default
-    );
+    return spans;
   }
 
   /// Merge overlapping matches

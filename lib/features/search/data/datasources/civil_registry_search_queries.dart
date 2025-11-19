@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:benaa_offline_app/core/constants/search_constants.dart';
 import 'package:benaa_offline_app/core/utils/app_logger.dart';
 import 'package:benaa_offline_app/features/search/domain/failures/search_failures.dart';
+import 'package:benaa_offline_app/core/utils/debug_logger.dart';
 import 'person_mapper.dart';
 import 'text_normalization_service.dart';
 import 'search_query_builder.dart';
@@ -267,9 +268,11 @@ class CivilRegistrySearchQueries {
 
         if (allResults.isNotEmpty) {
           if (elapsedMs > 200) {
-            print('│ ⚠️ Indexed search took ${elapsedMs}ms for "$query"');
+            DebugLogger.warning(
+              '│ Indexed search took ${elapsedMs}ms for "$query"',
+            );
           } else {
-            print(
+            DebugLogger.info(
               '│ ✅ Indexed search: ${elapsedMs}ms for "$query" (${allResults.length} results)',
             );
           }

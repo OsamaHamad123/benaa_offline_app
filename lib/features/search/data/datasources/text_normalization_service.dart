@@ -145,19 +145,19 @@ class TextNormalizationService {
         return text;
 
       case HamzaMode.smart:
-        // 1️⃣ Handle word-ending hamza FIRST (ولاء → ولا)
-        // Match hamza at end of word or before space/end of string
-        text = text.replaceAllMapped(
-          RegExp(r'ء(?=\s|$)'),
-          (match) => '', // Remove hamza at end
-        );
-
-        // 2️⃣ Smart normalization: convert to base letter
+        // ⚡ FIXED: Better hamza handling for names like "ولاء"
+        // Convert all hamza forms to their base letters first
         text = text.replaceAll('ؤ', 'و');
         text = text.replaceAll('ئ', 'ي');
 
-        // 3️⃣ Remove remaining hamza (middle positions)
-        text = text.replaceAll('ء', '');
+        // Then handle standalone hamza:
+        // - Keep hamza in middle of word for better matching
+        // - Remove only at word boundaries
+        text = text.replaceAll(RegExp(r'^ء'), ''); // Remove at start
+        text = text.replaceAll(RegExp(r'ء$'), ''); // Remove at end
+        text = text.replaceAll(RegExp(r'\sء'), ' '); // Remove after space
+        text = text.replaceAll(RegExp(r'ء\s'), ' '); // Remove before space
+
         return text;
     }
   }

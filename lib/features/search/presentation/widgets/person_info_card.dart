@@ -6,7 +6,6 @@ import '../../domain/entities/civil_person.dart';
 import 'gender_badge.dart';
 import 'location_chip.dart';
 import 'person_detail_row.dart';
-import 'highlighted_text.dart';
 
 /// Enhanced Person Info Card - بطاقة معلومات الشخص المحسّنة
 ///
@@ -60,15 +59,15 @@ class PersonInfoCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildDivider(),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildPersonDetails(context),
               if (expanded) ...[
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 _buildAdditionalInfo(context),
               ],
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               _buildActions(context, rv),
             ],
           ),
@@ -85,28 +84,17 @@ class PersonInfoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🎯 استخدام HighlightedText إذا كان هناك query
-              searchQuery != null && searchQuery!.isNotEmpty
-                  ? HighlightedText(
-                      text: person.fullName,
-                      query: searchQuery!,
-                      textStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade900,
-                        height: 1.3,
-                      ),
-                    )
-                  : Text(
-                      person.fullName,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade900,
-                        height: 1.3,
-                      ),
-                    ),
-              SizedBox(height: 8),
+              // ⚡ Simple Text - no highlighting for better performance
+              Text(
+                person.fullName,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade900,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -123,7 +111,7 @@ class PersonInfoCard extends StatelessWidget {
           ),
         ),
         Container(
-          padding: EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.blue.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
@@ -144,7 +132,7 @@ class PersonInfoCard extends StatelessWidget {
     return Column(
       children: [
         _buildNationalIdRow(context),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         _buildNameBreakdown(),
       ],
     );
@@ -153,7 +141,7 @@ class PersonInfoCard extends StatelessWidget {
   /// National ID row with copy button
   Widget _buildNationalIdRow(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
         color: _bgColor,
         borderRadius: BorderRadius.circular(8),
@@ -162,14 +150,14 @@ class PersonInfoCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.indigo.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.badge, color: Colors.indigo, size: 18),
+            child: const Icon(Icons.badge, color: Colors.indigo, size: 18),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +184,7 @@ class PersonInfoCard extends StatelessWidget {
           ),
           IconButton(
             onPressed: () => _copyNationalId(context),
-            icon: Icon(Icons.copy, size: 18),
+            icon: const Icon(Icons.copy, size: 18),
             color: Colors.blue,
             tooltip: 'نسخ الرقم',
             style: IconButton.styleFrom(
@@ -269,12 +257,16 @@ class PersonInfoCard extends StatelessWidget {
     String value,
     Color color,
   ) {
+    // ⚡ Cache color operations
+    final bgColor = color.withOpacity(0.05);
+    final borderColor = color.withOpacity(0.2);
+
     return Container(
-      padding: EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -282,7 +274,7 @@ class PersonInfoCard extends StatelessWidget {
           Row(
             children: [
               Icon(icon, color: color, size: 14),
-              SizedBox(width: 4),
+              const SizedBox(width: 4),
               Text(
                 label,
                 style: TextStyle(
@@ -293,11 +285,10 @@ class PersonInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 4),
-          HighlightedText(
-            text: value,
-            query: searchQuery ?? '',
-            textStyle: TextStyle(
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade900,
               fontWeight: FontWeight.w600,

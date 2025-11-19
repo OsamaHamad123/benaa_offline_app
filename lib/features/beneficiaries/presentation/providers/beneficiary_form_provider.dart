@@ -1,8 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/usecases/beneficiary_usecases.dart';
 import 'beneficiary_dependencies_provider.dart';
+import '../../../../core/utils/debug_logger.dart';
 
 /// 🎯 Beneficiary Form State
 class BeneficiaryFormState {
@@ -187,8 +188,10 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
       return true;
     } catch (e, stackTrace) {
       // Log the error with stack trace
-      debugPrint('❌ Error saving beneficiary: $e');
-      debugPrint('📋 Stack trace: $stackTrace');
+      DebugLogger.error('Error saving beneficiary', e, stackTrace);
+
+      // Report to Sentry
+      await Sentry.captureException(e, stackTrace: stackTrace);
 
       state = state.copyWith(
         isSaving: false,

@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/config/app_constants.dart';
 import '../../domain/entities/civil_person.dart';
 import '../../domain/entities/search_entities.dart';
 import '../../domain/entities/recent_search.dart';
 import '../../domain/usecases/search_by_name.dart';
 import '../../domain/usecases/search_by_national_id.dart';
 import '../../data/services/search_analytics.dart';
-import '../../data/services/search_isolate_service.dart';
+import '../../data/services/search_performance_analytics.dart';
 import '../../data/datasources/text_normalization_service.dart';
 import 'search_dependencies.dart';
 
@@ -66,22 +67,22 @@ class SearchState {
 class SearchNotifier extends StateNotifier<SearchState> {
   final SearchByNationalIdUseCase searchByNationalIdUseCase;
   final SearchByNameUseCase searchByNameUseCase;
-  final SearchIsolateService? isolateService; // ⚡ For background search
   final Ref _ref; // For accessing other providers
 
-  // ⚡ Ultra-responsive debouncing - adaptive based on query type
+  // ⚡ Optimized debouncing for performance
+  // Note: Page-level adaptive debounce (50-200ms) happens first
+  // This is a fallback for programmatic searches
   Timer? _debounceTimer;
-  static const Duration _debounceDuration = Duration(
-    milliseconds: 250,
-  ); // Reduced from 400ms
+  static final Duration _debounceDuration = AppConstants.searchDebounceDuration;
 
   // 🚫 Request cancellation token
   int _requestId = 0;
 
-  // 💾 Memory-aware cache for instant results (max 30MB estimated)
+  // 💾 Memory-aware cache for instant results (optimized for mobile/tablet)
   final Map<String, List<CivilPerson>> _cache = {};
-  static const int _maxCacheSize = 30; // Reduced from 50
-  static const int _maxCacheMemoryBytes = 30 * 1024 * 1024; // 30MB max
+  static const int _maxCacheSize = AppConstants.maxCachedSearches;
+  static const int _maxCacheMemoryBytes =
+      AppConstants.searchCacheMaxMemoryBytes;
   int _currentCacheMemoryBytes = 0;
 
   // 🎯 Cache access tracking for LRU eviction
@@ -89,7 +90,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
   // 🎯 Autocomplete suggestions cache (lightweight - names only)
   final Map<String, List<String>> _suggestionsCache = {};
-  static const int _maxSuggestions = 10;
+  static const int _maxSuggestions = AppConstants.maxSuggestions;
 
   /// Calculate accurate size of a CivilPerson object in memory
   int _calculatePersonSize(CivilPerson person) {
@@ -119,13 +120,12 @@ class SearchNotifier extends StateNotifier<SearchState> {
   SearchNotifier({
     required this.searchByNationalIdUseCase,
     required this.searchByNameUseCase,
-    this.isolateService,
     required Ref ref,
   }) : _ref = ref,
        super(const SearchState());
 
-  // ⚡ Optimized for 5M records: 20 results per page (reduced network overhead)
-  static const int _pageSize = 20;
+  // ⚡ Optimized for 5M records: Page size from AppConstants
+  static const int _pageSize = AppConstants.searchPageSize;
 
   @override
   void dispose() {
@@ -304,11 +304,22 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
     // Check cache first
     final cacheKey = _getCacheKey(state.query, state.filter);
-    if (_cache.containsKey(cacheKey) && reset) {
+    final fromCache = _cache.containsKey(cacheKey);
+
+    if (fromCache && reset) {
       // ⚡ Update cache access time (LRU)
       _cacheAccess[cacheKey] = DateTime.now();
 
       stopwatch.stop();
+
+      // 📊 Record analytics - cache hit
+      SearchPerformanceAnalytics().recordSearch(
+        query: state.query,
+        durationMs: stopwatch.elapsedMilliseconds,
+        resultsCount: _cache[cacheKey]!.length,
+        fromCache: true,
+      );
+
       state = state.copyWith(
         results: _cache[cacheKey]!,
         currentPage: 1,
@@ -386,7 +397,16 @@ class SearchNotifier extends StateNotifier<SearchState> {
       if (requestId != _requestId) return;
 
       stopwatch.stop();
+
       if (person != null) {
+        // 📊 Record analytics - successful national ID search
+        SearchPerformanceAnalytics().recordSearch(
+          query: state.query,
+          durationMs: stopwatch.elapsedMilliseconds,
+          resultsCount: 1,
+          fromCache: false,
+        );
+
         state = state.copyWith(
           results: [person],
           hasMore: false,
@@ -396,6 +416,14 @@ class SearchNotifier extends StateNotifier<SearchState> {
           searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
         );
       } else {
+        // 📊 Record analytics - no results
+        SearchPerformanceAnalytics().recordSearch(
+          query: state.query,
+          durationMs: stopwatch.elapsedMilliseconds,
+          resultsCount: 0,
+          fromCache: false,
+        );
+
         state = state.copyWith(
           results: [],
           hasMore: false,
@@ -418,6 +446,13 @@ class SearchNotifier extends StateNotifier<SearchState> {
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
       }
+
+      // 📊 Record error in analytics
+      SearchPerformanceAnalytics().recordError(
+        query: state.query,
+        error: errorMessage,
+      );
+
       state = state.copyWith(
         isSearching: false,
         error: errorMessage,
@@ -435,46 +470,13 @@ class SearchNotifier extends StateNotifier<SearchState> {
     try {
       final page = reset ? 1 : state.currentPage + 1;
 
-      // ⚡ Use isolate service if available (background search)
-      SearchResult result;
-      if (isolateService != null) {
-        final offset = (page - 1) * _pageSize;
-
-        // Search in background isolate - doesn't block UI!
-        final persons = await isolateService!.search(
-          query: state.query,
-          filter: state.filter,
-          limit: _pageSize + 1, // Get one extra to check hasMore
-          offset: offset,
-        );
-
-        final hasMore = persons.length > _pageSize;
-        final resultPersons = persons.take(_pageSize).toList();
-
-        // Get total count only on first page
-        int totalCount = resultPersons.length;
-        if (page == 1 && resultPersons.isNotEmpty) {
-          totalCount = await isolateService!.getSearchCount(
-            query: state.query,
-            filter: state.filter,
-          );
-        }
-
-        result = SearchResult(
-          persons: resultPersons,
-          hasMore: hasMore,
-          currentPage: page,
-          totalResults: totalCount,
-        );
-      } else {
-        // Fallback to use case (main thread)
-        result = await searchByNameUseCase(
-          query: state.query,
-          filter: state.filter,
-          page: page,
-          pageSize: _pageSize,
-        );
-      }
+      // ⚡ Use SearchByNameUseCase - sqflite already uses native threads
+      final result = await searchByNameUseCase(
+        query: state.query,
+        filter: state.filter,
+        page: page,
+        pageSize: _pageSize,
+      );
 
       // Check if request is still valid
       if (requestId != _requestId) return;
@@ -488,6 +490,14 @@ class SearchNotifier extends StateNotifier<SearchState> {
       }
 
       if (reset) {
+        // 📊 Record performance analytics
+        SearchPerformanceAnalytics().recordSearch(
+          query: state.query,
+          durationMs: stopwatch.elapsedMilliseconds,
+          resultsCount: result.persons.length,
+          fromCache: false,
+        );
+
         state = state.copyWith(
           results: result.persons,
           hasMore: result.hasMore,
@@ -590,6 +600,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
     }
 
     _cache[key] = results;
+    _cacheAccess[key] = DateTime.now(); // ✅ Track access time for LRU
     _currentCacheMemoryBytes += estimatedSize;
   }
 
@@ -664,21 +675,23 @@ class SearchNotifier extends StateNotifier<SearchState> {
   }
 }
 
-/// Provider for Search State
-final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((
-  ref,
-) {
-  final searchByNationalId = ref.watch(searchByNationalIdUseCaseProvider);
-  final searchByName = ref.watch(searchByNameUseCaseProvider);
-  final isolateService = ref.watch(searchIsolateServiceProvider);
+/// Provider for Search State with auto-dispose for memory cleanup
+final searchProvider =
+    StateNotifierProvider.autoDispose<SearchNotifier, SearchState>((ref) {
+      final searchByNationalId = ref.watch(searchByNationalIdUseCaseProvider);
+      final searchByName = ref.watch(searchByNameUseCaseProvider);
 
-  return SearchNotifier(
-    searchByNationalIdUseCase: searchByNationalId,
-    searchByNameUseCase: searchByName,
-    isolateService: isolateService,
-    ref: ref,
-  );
-});
+      final notifier = SearchNotifier(
+        searchByNationalIdUseCase: searchByNationalId,
+        searchByNameUseCase: searchByName,
+        ref: ref,
+      );
+
+      // ✅ Cleanup happens automatically via StateNotifier.dispose()
+      // No need for explicit ref.onDispose() - it's called by autoDispose
+
+      return notifier;
+    });
 
 /// Statistics Provider with caching (10 minutes TTL)
 final statisticsProvider = FutureProvider.autoDispose<SearchStatistics>((

@@ -59,6 +59,9 @@ dependencies:
   crypto: ^3.0.6
   encrypt: ^5.0.3
 
+  # Error Tracking & Monitoring
+  sentry_flutter: ^8.11.0
+
   # Networking
   dio: ^5.7.0
   retry: ^3.1.2

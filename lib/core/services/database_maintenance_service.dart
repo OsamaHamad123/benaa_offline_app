@@ -1,5 +1,6 @@
-﻿import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+﻿import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_constants.dart';
+import '../utils/debug_logger.dart';
 import '../../data/db/drift_database.dart';
 
 /// Database Maintenance Service
@@ -10,12 +11,11 @@ class DatabaseMaintenanceService {
   static const String _lastVacuumKey = 'last_vacuum_date';
   static const String _lastAnalyzeKey = 'last_analyze_date';
   static const String _lastFtsOptimizeKey = 'last_fts_optimize_date';
-  // Run VACUUM weekly (7 days)
-  static const Duration _vacuumInterval = Duration(days: 7);
-  // Run ANALYZE every 3 days
-  static const Duration _analyzeInterval = Duration(days: 3);
-  // Run FTS optimization every 7 days
-  static const Duration _ftsOptimizeInterval = Duration(days: 7);
+
+  // Use centralized configuration from AppConstants
+  static final Duration _vacuumInterval = AppConstants.vacuumInterval;
+  static final Duration _analyzeInterval = AppConstants.analyzeInterval;
+  static final Duration _ftsOptimizeInterval = AppConstants.ftsOptimizeInterval;
   DatabaseMaintenanceService({required this.database, required this.prefs});
 
   /// Check and perform maintenance if needed
@@ -70,9 +70,9 @@ class DatabaseMaintenanceService {
   Future<void> vacuum() async {
     try {
       await database.customStatement('VACUUM;');
-      debugPrint('✅ Database VACUUM completed successfully');
+      DebugLogger.success('Database VACUUM completed successfully');
     } catch (e) {
-      debugPrint('❌ Database VACUUM failed: $e');
+      DebugLogger.error('Database VACUUM failed', e);
     }
   }
 
@@ -80,9 +80,9 @@ class DatabaseMaintenanceService {
   Future<void> analyze() async {
     try {
       await database.customStatement('ANALYZE;');
-      debugPrint('✅ Database ANALYZE completed successfully');
+      DebugLogger.success('Database ANALYZE completed successfully');
     } catch (e) {
-      debugPrint('❌ Database ANALYZE failed: $e');
+      DebugLogger.error('Database ANALYZE failed', e);
     }
   }
 
@@ -97,7 +97,7 @@ class DatabaseMaintenanceService {
       final bytes = result.read<int>('size');
       return bytes / (1024 * 1024); // Convert to MB
     } catch (e) {
-      debugPrint('❌ Failed to get database size: $e');
+      DebugLogger.error('Failed to get database size', e);
       return 0.0;
     }
   }
@@ -109,9 +109,9 @@ class DatabaseMaintenanceService {
         INSERT INTO beneficiaries_fts(beneficiaries_fts, rank)
         SELECT 'optimize', 2;
       ''');
-      debugPrint('✅ FTS optimization completed successfully');
+      DebugLogger.success('FTS optimization completed successfully');
     } catch (e) {
-      debugPrint('❌ FTS optimization failed: $e');
+      DebugLogger.error('FTS optimization failed', e);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'text_normalization_service.dart';
+import '../../../../core/utils/debug_logger.dart';
 
 /// 🔄 Database Migrations Service - Handles all database migrations
 ///
@@ -16,7 +17,7 @@ class DatabaseMigrationsService {
     try {
       await _ensureOptimizedIndexes(db);
     } catch (e) {
-      print('⚠️ Index setup error: $e');
+      DebugLogger.warning('Index setup error: $e');
       rethrow;
     }
   }
@@ -27,7 +28,7 @@ class DatabaseMigrationsService {
       await _ensureNameNormColumn(db);
       await _ensureNameNormIndex(db);
     } catch (e) {
-      print('⚠️ Background migration error (non-critical): $e');
+      DebugLogger.warning('Background migration error (non-critical): $e');
     }
   }
 
@@ -39,7 +40,7 @@ class DatabaseMigrationsService {
       // Indexes are expensive - run them last
       await _ensureOptimizedIndexes(db);
     } catch (e) {
-      print('⚠️ Background migration error (non-critical): $e');
+      DebugLogger.warning('Background migration error (non-critical): $e');
     }
   }
 
@@ -155,7 +156,9 @@ class DatabaseMigrationsService {
   /// 8. idx_persons_birth_date: For age-based searches
   static Future<void> _ensureOptimizedIndexes(Database db) async {
     try {
-      print('🚀 Creating ULTRA-OPTIMIZED indexes for 5M+ records...');
+      DebugLogger.info(
+        '🚀 Creating ULTRA-OPTIMIZED indexes for 5M+ records...',
+      );
 
       // ⚡ 1. National ID with COLLATE NOCASE (handles formatting variations)
       await db.execute('''
@@ -203,9 +206,11 @@ class DatabaseMigrationsService {
         ON persons(CI_BIRTH_DT)
       ''');
 
-      print('✅ 8 optimized indexes created successfully (20-50x speedup)');
+      DebugLogger.success(
+        '8 optimized indexes created successfully (20-50x speedup)',
+      );
     } catch (e) {
-      print('❌ Index creation failed: $e');
+      DebugLogger.error('Index creation failed', e);
       rethrow;
     }
   }

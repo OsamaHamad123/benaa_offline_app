@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
+import 'core/utils/debug_logger.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/services/database_maintenance_service.dart';
 import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
@@ -18,6 +20,27 @@ void main() async {
   // Initialize SharedPreferences for dashboard caching & recent searches
   final sharedPreferences = await SharedPreferences.getInstance();
 
+  // Initialize Sentry for error tracking
+  await SentryFlutter.init((options) {
+    options.dsn = 'YOUR_SENTRY_DSN_HERE'; // Replace with actual DSN
+    options.tracesSampleRate =
+        1.0; // Capture 100% of transactions in development
+    options.environment = 'production';
+    options.enableAutoPerformanceTracing = true;
+    options.attachStacktrace = true;
+    options.attachScreenshot = true;
+    options.beforeSend = (event, hint) {
+      // Don't send events in debug mode
+      if (const bool.fromEnvironment('dart.vm.product', defaultValue: false) ==
+          false) {
+        return null;
+      }
+      return event;
+    };
+  }, appRunner: () => _runApp(sharedPreferences));
+}
+
+void _runApp(SharedPreferences sharedPreferences) {
   runApp(
     ProviderScope(
       overrides: [
@@ -61,7 +84,9 @@ Future<void> _performDatabaseMaintenance(SharedPreferences prefs) async {
     );
     await maintenanceService.performMaintenanceIfNeeded();
     container.dispose();
-  } catch (e) {
-    debugPrint('⚠️ Database maintenance failed: $e');
+  } catch (e, stackTrace) {
+    DebugLogger.warning('Database maintenance failed: $e');
+    // Report to Sentry
+    await Sentry.captureException(e, stackTrace: stackTrace);
   }
 }

@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../core/storage/secure_store.dart';
+import '../../core/utils/debug_logger.dart';
 
 // Import all table definitions
 import 'tables/tables.dart';
@@ -200,9 +201,9 @@ class AppDatabase extends _$AppDatabase {
         );
       ''');
 
-      print('✅ FTS5 table created successfully');
+      DebugLogger.success('FTS5 table created successfully');
     } catch (e) {
-      print('❌ Failed to create FTS5 table: $e');
+      DebugLogger.error('Failed to create FTS5 table', e);
       rethrow;
     }
   }
@@ -216,7 +217,7 @@ class AppDatabase extends _$AppDatabase {
       ).getSingleOrNull();
 
       if (check == null) {
-        print('⚠️ FTS5 table does not exist, creating...');
+        DebugLogger.warning('FTS5 table does not exist, creating...');
         await _createFTS4Table();
       }
 
@@ -224,16 +225,16 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('DELETE FROM civil_registry_fts;');
 
       // Populate from main table
-      print('⏳ Populating FTS5 table...');
+      DebugLogger.info('⏳ Populating FTS5 table...');
       await customStatement('''
         INSERT INTO civil_registry_fts(rowid, national_id, full_name, first_name, father_name, family_name)
         SELECT id, CI_ID_NUM, full_name_normalized, CI_FIRST_ARB, CI_FATHER_ARB, CI_FAMILY_ARB
         FROM civil_registry;
       ''');
 
-      print('✅ FTS5 table populated successfully');
+      DebugLogger.success('FTS5 table populated successfully');
     } catch (e) {
-      print('❌ Failed to populate FTS5 table: $e');
+      DebugLogger.error('Failed to populate FTS5 table', e);
       rethrow;
     }
   }

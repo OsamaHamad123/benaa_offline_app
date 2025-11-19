@@ -1,4 +1,5 @@
 import 'package:sqflite/sqflite.dart';
+import '../../../../core/utils/debug_logger.dart';
 import 'civil_registry_database.dart';
 import 'text_normalization_service.dart';
 
@@ -10,7 +11,7 @@ class UpdateNormalizationUtility {
   static Future<void> updateAllNormalization() async {
     final db = await CivilRegistryDatabase.instance.database;
 
-    print('🔄 Starting normalization update...');
+    DebugLogger.info('🔄 Starting normalization update...');
     final stopwatch = Stopwatch()..start();
 
     // Get total count
@@ -18,7 +19,7 @@ class UpdateNormalizationUtility {
       'SELECT COUNT(*) as total FROM persons',
     );
     final total = countResult.first['total'] as int;
-    print('📊 Total records to update: ${_formatNumber(total)}');
+    DebugLogger.info('📊 Total records to update: ${_formatNumber(total)}');
 
     // Process in batches to avoid memory issues
     const batchSize = 10000;
@@ -26,7 +27,9 @@ class UpdateNormalizationUtility {
     var batch = db.batch();
 
     for (var offset = 0; offset < total; offset += batchSize) {
-      print('📦 Processing batch: ${offset + 1} to ${offset + batchSize}...');
+      DebugLogger.info(
+        '📦 Processing batch: ${offset + 1} to ${offset + batchSize}...',
+      );
 
       // Get batch of records
       final records = await db.rawQuery(
@@ -72,12 +75,12 @@ class UpdateNormalizationUtility {
     }
 
     stopwatch.stop();
-    print('');
-    print('🎉 ✅ Normalization update completed!');
-    print('📊 Updated records: ${_formatNumber(updated)}');
-    print('⏱️ Time taken: ${stopwatch.elapsed.inSeconds}s');
-    print('');
-    print('🔍 Testing sample records:');
+    DebugLogger.log('');
+    DebugLogger.success('🎉 Normalization update completed!');
+    DebugLogger.info('📊 Updated records: ${_formatNumber(updated)}');
+    DebugLogger.info('⏱️ Time taken: ${stopwatch.elapsed.inSeconds}s');
+    DebugLogger.log('');
+    DebugLogger.info('🔍 Testing sample records:');
     await _testSampleRecords(db);
   }
 
@@ -102,8 +105,8 @@ class UpdateNormalizationUtility {
       );
 
       if (results.isNotEmpty) {
-        print('');
-        print('🔍 Testing: $name');
+        DebugLogger.log('');
+        DebugLogger.info('🔍 Testing: $name');
         for (final row in results) {
           final fullName =
               '${row['CI_FIRST_ARB']} ${row['CI_FATHER_ARB']} ${row['CI_FAMILY_ARB']}';

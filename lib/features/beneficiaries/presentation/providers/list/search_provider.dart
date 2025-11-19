@@ -1,9 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'filters_provider.dart';
 import '../beneficiary_dependencies.dart';
 import '../../../../../data/db/drift_database.dart';
+import '../../../../../core/utils/debug_logger.dart';
 
 /// ⚡ Search Provider with Debounce - تحسين أداء البحث
 class SearchNotifier extends StateNotifier<String> {
@@ -63,8 +64,10 @@ final searchResultsProvider = StreamProvider.autoDispose<List<Beneficiary>>((
       );
 
       yield results;
-    } catch (e) {
-      debugPrint('Search error: $e');
+    } catch (e, stackTrace) {
+      DebugLogger.error('Search error', e, stackTrace);
+      // Report to Sentry
+      await Sentry.captureException(e, stackTrace: stackTrace);
       yield [];
     }
   }

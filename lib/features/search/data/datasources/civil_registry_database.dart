@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import '../../../../core/utils/debug_logger.dart';
 import 'database_migrations_service.dart';
 import 'civil_registry_search_queries.dart';
 import '../../domain/entities/civil_person.dart';
@@ -76,13 +77,15 @@ class CivilRegistryDatabase {
       try {
         await db.rawQuery('ANALYZE');
       } catch (e) {
-        print('⚠️ ANALYZE failed: $e');
+        DebugLogger.warning('ANALYZE failed: $e');
       }
 
       // ⚡ Optimized indexes setup - MUST run synchronously for fast search!
-      print('⏳ Setting up optimized indexes for ultra-fast search...');
+      DebugLogger.info(
+        '⏳ Setting up optimized indexes for ultra-fast search...',
+      );
       await DatabaseMigrationsService.ensureOptimizedIndexes(db);
-      print('✅ Optimized indexes ready!');
+      DebugLogger.success('Optimized indexes ready!');
 
       // Create indexes and other migrations in background (non-blocking)
       DatabaseMigrationsService.createIndexesAsync(db);
@@ -90,7 +93,7 @@ class CivilRegistryDatabase {
 
       return db;
     } catch (e) {
-      print('❌ Database error: $e');
+      DebugLogger.error('Database error', e);
       rethrow;
     }
   }
@@ -132,9 +135,6 @@ class CivilRegistryDatabase {
     // ⚡ NEW: Disable secure delete for speed
     await db.rawQuery('PRAGMA secure_delete = OFF');
 
-    // ⚡ NEW: Disable cell size check for speed
-    await db.rawQuery('PRAGMA cell_size_check = OFF');
-
     // Optimize query planner
     await db.rawQuery('PRAGMA optimize');
 
@@ -146,9 +146,6 @@ class CivilRegistryDatabase {
 
     // Disable query_only mode for flexibility
     await db.rawQuery('PRAGMA query_only = OFF');
-
-    // ⚡ NEW: Disable cell size check for speed
-    await db.rawQuery('PRAGMA cell_size_check = OFF');
   }
 
   /// Search by National ID

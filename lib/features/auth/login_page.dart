@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/storage/secure_store.dart';
+import '../../core/services/password_hash_service.dart';
 import '../../theme/app_colors.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -72,11 +73,16 @@ class _LoginPageState extends ConsumerState<LoginPage>
       // For now, accept any non-empty credentials
       if (_usernameController.text.isNotEmpty &&
           _passwordController.text.isNotEmpty) {
+        // ✅ SECURITY: Hash password before storing
+        final hashedPassword = PasswordHashService.hashPassword(
+          _passwordController.text,
+        );
+
         // Save credentials if remember me is checked
         if (_rememberMe) {
           await SecureStore.saveCredentials(
             _usernameController.text,
-            _passwordController.text,
+            hashedPassword, // Store hashed password instead of plain text
           );
         }
 

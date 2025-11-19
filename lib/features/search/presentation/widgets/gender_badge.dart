@@ -12,20 +12,23 @@ class GenderBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _getGenderColor(gender);
     final icon = _getGenderIcon(gender);
+    // ⚡ Cache color calculations
+    final bgColor = color.withOpacity(compact ? 0.1 : 0.15);
+    final borderColor = color.withOpacity(compact ? 0.3 : 0.4);
 
     if (compact) {
       return Container(
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: bgColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color, size: 14),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             Text(
               gender.arabicLabel,
               style: TextStyle(
@@ -40,17 +43,17 @@ class GenderBadge extends StatelessWidget {
     }
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+        border: Border.all(color: borderColor, width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: color, size: 18),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           Text(
             gender.arabicLabel,
             style: TextStyle(

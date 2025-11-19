@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
+import '../../../../core/utils/debug_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../domain/entities/civil_db_status.dart';
@@ -112,7 +113,9 @@ class CivilDbManager {
       // Clean up temp file
       try {
         await File(tempPath).delete();
-      } catch (_) {}
+      } catch (cleanupError) {
+        DebugLogger.warning('Failed to cleanup temp file: $cleanupError');
+      }
 
       String errorMessage = 'فشل تنزيل قاعدة البيانات';
 
@@ -133,7 +136,11 @@ class CivilDbManager {
       // Clean up temp file
       try {
         await File(tempPath).delete();
-      } catch (_) {}
+      } catch (cleanupError) {
+        DebugLogger.warning(
+          'Failed to cleanup temp file after error: $cleanupError',
+        );
+      }
 
       yield CivilDbStatus(
         status: CivilDbStatusType.error,
@@ -147,9 +154,9 @@ class CivilDbManager {
     final finalPath = await getLocalDbPath();
 
     try {
-      print('🔧 Development Mode: Copying from Assets...');
-      print('📂 Asset path: $assetDbPath');
-      print('📂 Final path: $finalPath');
+      DebugLogger.debug('Development Mode: Copying from Assets...');
+      DebugLogger.info('📂 Asset path: $assetDbPath');
+      DebugLogger.info('📂 Final path: $finalPath');
 
       // Initial status
       yield CivilDbStatus(
@@ -166,9 +173,9 @@ class CivilDbManager {
       );
 
       // Load from Assets
-      print('📥 Loading from Assets...');
+      DebugLogger.info('📥 Loading from Assets...');
       final byteData = await rootBundle.load(assetDbPath);
-      print('✅ Loaded ${byteData.lengthInBytes} bytes');
+      DebugLogger.success('Loaded ${byteData.lengthInBytes} bytes');
 
       yield CivilDbStatus(
         status: CivilDbStatusType.downloading,
@@ -178,14 +185,14 @@ class CivilDbManager {
 
       // Write to file
       final file = File(finalPath);
-      print('💾 Writing to file...');
+      DebugLogger.info('💾 Writing to file...');
       await file.writeAsBytes(
         byteData.buffer.asUint8List(
           byteData.offsetInBytes,
           byteData.lengthInBytes,
         ),
       );
-      print('✅ File written successfully');
+      DebugLogger.success('File written successfully');
 
       yield CivilDbStatus(
         status: CivilDbStatusType.downloading,
@@ -195,7 +202,7 @@ class CivilDbManager {
 
       // Complete
       final fileSize = await getDatabaseSize();
-      print('✅ Database ready! Size: ${fileSize ?? 0} bytes');
+      DebugLogger.success('Database ready! Size: ${fileSize ?? 0} bytes');
       yield CivilDbStatus(
         status: CivilDbStatusType.ready,
         filePath: finalPath,
@@ -204,7 +211,7 @@ class CivilDbManager {
         lastUpdated: DateTime.now(),
       );
     } catch (e) {
-      print('❌ Error copying from Assets: $e');
+      DebugLogger.error('Error copying from Assets', e);
       yield CivilDbStatus(
         status: CivilDbStatusType.error,
         errorMessage: 'فشل نسخ قاعدة البيانات من Assets: ${e.toString()}',
@@ -276,7 +283,11 @@ class CivilDbManager {
       // Clean up temp file
       try {
         await File(tempPath).delete();
-      } catch (_) {}
+      } catch (cleanupError) {
+        DebugLogger.warning(
+          'Failed to cleanup temp file in downloadWithProgress: $cleanupError',
+        );
+      }
 
       yield CivilDbStatus(
         status: CivilDbStatusType.error,
@@ -294,8 +305,9 @@ class CivilDbManager {
     try {
       final tempPath = await _getTempFilePath();
       await File(tempPath).delete();
-    } catch (_) {
-      // Ignore errors
+    } catch (e) {
+      // Temp file cleanup failed - not critical, will be cleaned next time
+      DebugLogger.warning('Failed to cleanup temp file on cancel: $e');
     }
   }
 
