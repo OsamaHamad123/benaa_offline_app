@@ -3,6 +3,7 @@ import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_basic_info_tab.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_contact_info_tab.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_family_info_tab.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_family_members_tab.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_notes_tab.dart';
 import 'package:flutter/material.dart';
 import '../form_controllers.dart';
@@ -59,7 +60,7 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
     // استخدام IndexedStack للحفاظ على حالة التبويبات + Lazy Loading
     return IndexedStack(
       index: widget.controller.index,
-      children: List.generate(6, (index) {
+      children: List.generate(7, (index) {
         // Lazy load: only build tabs that have been visited
         if (!_loadedTabs.contains(index)) {
           return const SizedBox.shrink();
@@ -83,6 +84,8 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
       case 4:
         return _buildNotesTab();
       case 5:
+        return _buildFamilyMembersTab();
+      case 6:
         return _buildAttachmentsTab();
       default:
         return const SizedBox.shrink();
@@ -192,6 +195,14 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         key: const ValueKey('notes_tab'),
         notesController: widget.formControllers.notesController,
       ),
+    );
+  }
+
+  Widget _buildFamilyMembersTab() {
+    // التبويب الجديد لأفراد العائلة التفصيلية
+    return RepaintBoundary(
+      key: const ValueKey('family_members_tab'),
+      child: V2FamilyMembersTab(formControllers: widget.formControllers),
     );
   }
 

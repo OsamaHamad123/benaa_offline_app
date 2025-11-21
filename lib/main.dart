@@ -20,24 +20,25 @@ void main() async {
   // Initialize SharedPreferences for dashboard caching & recent searches
   final sharedPreferences = await SharedPreferences.getInstance();
 
-  // Initialize Sentry for error tracking
-  await SentryFlutter.init((options) {
-    options.dsn = 'YOUR_SENTRY_DSN_HERE'; // Replace with actual DSN
-    options.tracesSampleRate =
-        1.0; // Capture 100% of transactions in development
-    options.environment = 'production';
-    options.enableAutoPerformanceTracing = true;
-    options.attachStacktrace = true;
-    options.attachScreenshot = true;
-    options.beforeSend = (event, hint) {
-      // Don't send events in debug mode
-      if (const bool.fromEnvironment('dart.vm.product', defaultValue: false) ==
-          false) {
-        return null;
-      }
-      return event;
-    };
-  }, appRunner: () => _runApp(sharedPreferences));
+  // Initialize Sentry for error tracking (DISABLED - no valid DSN)
+  // TODO: Enable when you have a valid Sentry DSN
+  // await SentryFlutter.init((options) {
+  //   options.dsn = 'YOUR_SENTRY_DSN_HERE'; // Replace with actual DSN
+  //   options.tracesSampleRate = 1.0;
+  //   options.environment = 'production';
+  //   options.enableAutoPerformanceTracing = true;
+  //   options.attachStacktrace = true;
+  //   options.attachScreenshot = true;
+  //   options.beforeSend = (event, hint) {
+  //     if (const bool.fromEnvironment('dart.vm.product', defaultValue: false) == false) {
+  //       return null;
+  //     }
+  //     return event;
+  //   };
+  // }, appRunner: () => _runApp(sharedPreferences));
+
+  // Run app directly without Sentry
+  _runApp(sharedPreferences);
 }
 
 void _runApp(SharedPreferences sharedPreferences) {

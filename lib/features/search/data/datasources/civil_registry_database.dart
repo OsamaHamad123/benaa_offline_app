@@ -73,11 +73,15 @@ class CivilRegistryDatabase {
       // Apply performance PRAGMA settings
       await _applyPragmaSettings(db);
 
-      // 🚀 Run ANALYZE immediately for better query plans
-      try {
-        await db.rawQuery('ANALYZE');
-      } catch (e) {
-        DebugLogger.warning('ANALYZE failed: $e');
+      // ⚡ Check if database needs optimization (first time after copy)
+      final needsOptimization = await _needsOptimization(db);
+
+      if (needsOptimization) {
+        DebugLogger.info('⏳ Optimizing database for first use...');
+        await _optimizeDatabase(db);
+        DebugLogger.success('✅ Database optimization complete!');
+      } else {
+        DebugLogger.info('✅ Database already optimized, skipping...');
       }
 
       // ⚡ Optimized indexes setup - MUST run synchronously for fast search!
@@ -87,9 +91,16 @@ class CivilRegistryDatabase {
       await DatabaseMigrationsService.ensureOptimizedIndexes(db);
       DebugLogger.success('Optimized indexes ready!');
 
-      // Create indexes and other migrations in background (non-blocking)
-      DatabaseMigrationsService.createIndexesAsync(db);
-      DatabaseMigrationsService.runOtherMigrationsAsync(db);
+      // ⚠️ Background migrations DISABLED to prevent lag after fetch
+      // These were causing heavy GC and app slowdown:
+      // - createIndexesAsync: 15 indexes on 5M records (CPU/Memory intensive)
+      // - runOtherMigrationsAsync: name_norm population (10K batches × 500 iterations)
+      //
+      // Result: App is now smooth after fetch, no background processing lag
+      //
+      // If you need to run migrations, use UpdateNormalizationPage manually
+      // DatabaseMigrationsService.createIndexesAsync(db);
+      // DatabaseMigrationsService.runOtherMigrationsAsync(db);
 
       return db;
     } catch (e) {
@@ -138,14 +149,48 @@ class CivilRegistryDatabase {
     // Optimize query planner
     await db.rawQuery('PRAGMA optimize');
 
-    // Analyze statistics for better query plans
-    await db.rawQuery('ANALYZE');
+    // ⚠️ NOTE: ANALYZE removed - runs once in _optimizeDatabase() on first use
+    // Running ANALYZE multiple times causes unnecessary overhead
 
     // Increase WAL checkpoint threshold (less frequent checkpoints)
     await db.rawQuery('PRAGMA wal_autocheckpoint = 10000');
 
     // Disable query_only mode for flexibility
     await db.rawQuery('PRAGMA query_only = OFF');
+  }
+
+  /// Check if database needs optimization (first time after copy from assets)
+  Future<bool> _needsOptimization(Database db) async {
+    try {
+      // Check if optimization marker exists in SQLite's application_id
+      final result = await db.rawQuery('PRAGMA application_id');
+      final appId = result.first.values.first as int?;
+
+      // If application_id != 0xBEAA (optimized marker), needs optimization
+      return appId != 0xBEAA;
+    } catch (e) {
+      // On error, assume needs optimization
+      return true;
+    }
+  }
+
+  /// Optimize database after first copy (ANALYZE + set marker)
+  /// ⚠️ NOTE: VACUUM removed - causes OOM on large databases (5M records = 2GB)
+  Future<void> _optimizeDatabase(Database db) async {
+    try {
+      // 1️⃣ ANALYZE - Update query optimizer statistics
+      DebugLogger.info('  📊 Running ANALYZE...');
+      await db.rawQuery('ANALYZE');
+
+      // 2️⃣ Set optimization marker to avoid re-running
+      DebugLogger.info('  ✅ Setting optimization marker...');
+      await db.rawQuery('PRAGMA application_id = 0xBEAA'); // BEAA = بناء
+
+      DebugLogger.success('Database optimization complete! 🚀');
+    } catch (e) {
+      DebugLogger.error('Database optimization failed', e);
+      // Don't rethrow - app should still work even if optimization fails
+    }
   }
 
   /// Search by National ID

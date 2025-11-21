@@ -15,6 +15,7 @@ import 'v2_form_helpers/form_controllers.dart';
 import 'v2_form_helpers/form_data_handler.dart';
 import 'v2_form_helpers/beneficiary_builder.dart';
 import 'v2_form_helpers/save_operations_helper.dart';
+import 'v2_form_helpers/family_save_helper.dart';
 
 // 🆕 Reusable Widgets
 import 'v2_form_helpers/widgets/tab_navigation_bar.dart';
@@ -66,7 +67,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     // 🆕 Initialize controllers with auto-save callback
     _controllers = BeneficiaryFormControllers(onAutoSave: _performAutoSave);
 
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
 
     // ✅ No need for TabController listener - ListenableBuilder handles it
 
@@ -186,6 +187,24 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
       beneficiary,
       (fn) => fn(), // Dummy setState - ChangeNotifier will notify
     );
+
+    // 👨‍👩‍👧‍👦 تحميل بيانات أفراد العائلة
+    _loadFamilyMembers(beneficiary.id);
+  }
+
+  /// 👨‍👩‍👧‍👦 تحميل بيانات أفراد العائلة من قاعدة البيانات
+  Future<void> _loadFamilyMembers(String beneficiaryId) async {
+    try {
+      final familyData = await FamilySaveHelper.loadFamilyMembers(
+        database: ref.read(databaseProvider),
+        beneficiaryId: beneficiaryId,
+      );
+
+      _controllers.updateLivingMembers(familyData.living);
+      _controllers.updateDeceasedMembers(familyData.deceased);
+    } catch (e) {
+      debugPrint('❌ [FormPage] Error loading family members: $e');
+    }
   }
 
   @override
@@ -217,6 +236,16 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
         }
       });
     }
+  }
+
+  /// 👨‍👩‍👧‍👦 حفظ بيانات أفراد العائلة
+  Future<void> _saveFamilyMembers(String beneficiaryId) async {
+    await FamilySaveHelper.saveFamilyMembers(
+      database: ref.read(databaseProvider),
+      beneficiaryId: beneficiaryId,
+      livingMembers: _controllers.livingMembers,
+      deceasedMembers: _controllers.deceasedMembers,
+    );
   }
 
   Future<void> _handleSave({bool isAutoSave = false}) async {
@@ -297,6 +326,9 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
         '💾 [FormPage] Attachment save result - Saved: ${attachmentResult.savedCount}, Failed: ${attachmentResult.failedCount}',
       );
       _controllers.pendingAttachmentFiles.clear();
+
+      // 🆕 Save family members
+      await _saveFamilyMembers(savedBeneficiary.id);
 
       // Don't show snackbar or pop for auto-save
       if (!isAutoSave) {
@@ -501,7 +533,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
                                     child: TabNavigationBar(
                                       controller: _tabController,
                                       currentIndex: _tabController.index,
-                                      totalTabs: 6,
+                                      totalTabs: 7,
                                     ),
                                   );
                                 },
@@ -528,7 +560,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
                                     child: TabNavigationButtons(
                                       controller: _tabController,
                                       currentIndex: _tabController.index,
-                                      totalTabs: 6,
+                                      totalTabs: 7,
                                     ),
                                   );
                                 },

@@ -75,6 +75,15 @@ class _CivilSearchPageEnhancedState
     _searchFocusNode.dispose();
     _debounceTimer?.cancel();
     _scrollDebounceTimer?.cancel();
+
+    // ⚡ Clean up cache when leaving page to free memory
+    // This prevents GC lag when navigating to other pages
+    try {
+      ref.read(searchProvider.notifier).clearCache();
+    } catch (e) {
+      // Ignore if provider already disposed
+    }
+
     super.dispose();
   }
 
@@ -84,7 +93,7 @@ class _CivilSearchPageEnhancedState
 
     // ⚡ Debounce scroll events to reduce provider reads
     _scrollDebounceTimer?.cancel();
-    _scrollDebounceTimer = Timer(const Duration(milliseconds: 150), () {
+    _scrollDebounceTimer = Timer(const Duration(milliseconds: 100), () {
       if (!mounted) return;
 
       final searchState = ref.read(searchProvider);
@@ -979,7 +988,8 @@ class _CivilSearchPageEnhancedState
           // ⚡ Performance optimizations
           addAutomaticKeepAlives:
               false, // Don't keep state of scrolled-away items
-          addRepaintBoundaries: false, // ⚡ CHANGED: Avoid double wrapping
+          addRepaintBoundaries:
+              true, // ⚡ Isolate card repaints (ResultCard no longer wraps)
           addSemanticIndexes:
               false, // Reduce overhead for assistive technologies
         ),

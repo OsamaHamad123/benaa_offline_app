@@ -254,6 +254,14 @@ class SearchNotifier extends StateNotifier<SearchState> {
     state = const SearchState();
   }
 
+  /// ⚡ Clear cache only (for memory cleanup when leaving page)
+  void clearCache() {
+    _cache.clear();
+    _cacheAccess.clear();
+    _suggestionsCache.clear();
+    _currentCacheMemoryBytes = 0;
+  }
+
   /// ⚡ Search with aggressive debouncing (400ms) - ELIMINATES LAG
   void searchDebounced({bool reset = true}) {
     // Cancel previous timer

@@ -26,13 +26,16 @@ class AppConstants {
   static const Duration searchDebounceDuration = Duration(milliseconds: 300);
 
   /// Search page size - عدد النتائج لكل صفحة
-  static const int searchPageSize = 20;
+  /// ⚡ Optimized: 5 نتائج تكفي للبحث السريع (كان 20)
+  static const int searchPageSize = 5;
 
   /// Max cached searches - عدد عمليات البحث المخزنة
-  static const int maxCachedSearches = 20;
+  /// ⚡ Optimized: 10 عمليات بحث تكفي (كان 20)
+  static const int maxCachedSearches = 10;
 
   /// Search cache max memory (bytes) - الحد الأقصى لذاكرة البحث
-  static const int searchCacheMaxMemoryBytes = 12 * 1024 * 1024; // 12MB
+  /// ⚡ Optimized: 3MB تكفي مع 5 نتائج فقط (كان 12MB)
+  static const int searchCacheMaxMemoryBytes = 3 * 1024 * 1024; // 3MB
 
   /// Max autocomplete suggestions
   static const int maxSuggestions = 10;
@@ -105,9 +108,6 @@ class AppConstants {
   /// اسم ملف قاعدة السجل المدني
   static const String civilDbFileName = 'persons.db';
 
-  /// حجم الـ FTS cache (MB)
-  static const int ftsCacheSizeMB = 50;
-
   // ============================================================================
   // MAINTENANCE
   // ============================================================================
@@ -117,9 +117,6 @@ class AppConstants {
 
   /// Run ANALYZE every 3 days to update query optimizer statistics
   static const Duration analyzeInterval = Duration(days: 3);
-
-  /// Run FTS optimization weekly to maintain search performance
-  static const Duration ftsOptimizeInterval = Duration(days: 7);
 
   /// الحد الأقصى لعمر ملفات الـ temp (ساعات)
   static const Duration tempFileMaxAge = Duration(hours: 24);

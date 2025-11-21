@@ -20,6 +20,7 @@ import 'details_widgets/sections/needs_section.dart';
 import 'details_widgets/sections/attachments_section.dart';
 import 'details_widgets/sections/visits_section.dart';
 import 'details_widgets/sections/action_buttons.dart';
+import '../widgets/family_section.dart';
 import '../../../visits/presentation/pages/record_visit_page_enhanced.dart';
 import '../../../visits/presentation/providers/visit_providers.dart'
     hide databaseProvider;
@@ -219,13 +220,16 @@ class _BeneficiaryDetailsPageV2State
                   beneficiary,
                 )) ...[
                   InfoSection(
-                    title: 'معلومات العائلة',
+                    title: 'معلومات العائلة (أساسية)',
                     icon: Icons.family_restroom,
                     accentColor: Colors.purple,
                     items: InfoBuilders.buildFamilyInfoItems(beneficiary),
                   ),
                   SizedBox(height: 20.h),
                 ],
+                // قسم أفراد العائلة التفصيلي (الجديد)
+                FamilySection(beneficiaryId: _beneficiaryIntId!),
+                SizedBox(height: 20.h),
                 if (BeneficiaryValidationHelpers.hasLocationInfo(
                   beneficiary,
                 )) ...[

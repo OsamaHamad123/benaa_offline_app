@@ -4,7 +4,6 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../../core/storage/secure_store.dart';
-import '../../core/utils/debug_logger.dart';
 
 // Import all table definitions
 import 'tables/tables.dart';
@@ -18,6 +17,8 @@ import 'daos/sync_dao.dart';
 import 'daos/tracking_dao.dart';
 import 'daos/taxonomies_dao.dart';
 import 'daos/sync_metadata_dao.dart';
+import 'daos/family_deceased_dao.dart';
+import 'daos/family_members_dao.dart';
 
 part 'drift_database.g.dart';
 
@@ -37,6 +38,8 @@ part 'drift_database.g.dart';
     CivilRegistryPersonalCode,
     Activities,
     DataRequests,
+    FamilyDeceasedTable,
+    FamilyMembersTable,
   ],
   daos: [
     BeneficiariesDao,
@@ -47,6 +50,8 @@ part 'drift_database.g.dart';
     TrackingDao,
     TaxonomiesDao,
     SyncMetadataDao,
+    FamilyDeceasedDao,
+    FamilyMembersDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -60,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 9; // ⚡ Added FTS5 for ultra-fast search
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -68,19 +73,14 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
         await _createPerformanceIndexes();
-        // ⚡ Create FTS5 on first install
-        await _createFTS4Table();
       },
       onUpgrade: (Migrator m, int from, int to) async {
         if (from == 8 && to == 9) {
-          // ⚡ Add FTS5 table without dropping existing data
-          await _createFTS4Table();
-          await _populateFTS4Table();
-        } else if (to == 9) {
-          // إضافة indexes للأداء + FTS5
+          // ⚡ Performance indexes only
           await _createPerformanceIndexes();
-          await _createFTS4Table();
-          await _populateFTS4Table();
+        } else if (to == 9) {
+          // إضافة indexes للأداء
+          await _createPerformanceIndexes();
         } else if (to == 8) {
           // إضافة indexes للأداء
           await _createPerformanceIndexes();
@@ -177,66 +177,6 @@ class AppDatabase extends _$AppDatabase {
 
     // Civil Registry indexes (existing)
     await _createIndexes();
-
-    // ⚡ Create FTS4 table for ultra-fast search
-    await _createFTS4Table();
-  }
-
-  /// ⚡ إنشاء جدول FTS5 للبحث السريع جداً (FTS5 متوفر على Android)
-  Future<void> _createFTS4Table() async {
-    try {
-      // Drop existing FTS table if exists
-      await customStatement('DROP TABLE IF EXISTS civil_registry_fts;');
-
-      // Create FTS5 virtual table (FTS5 is available on Android, FTS4 is NOT!)
-      // tokenize='unicode61': دعم اللغة العربية بشكل صحيح
-      await customStatement('''
-        CREATE VIRTUAL TABLE IF NOT EXISTS civil_registry_fts USING fts5(
-          national_id,
-          full_name,
-          first_name,
-          father_name,
-          family_name,
-          tokenize='unicode61'
-        );
-      ''');
-
-      DebugLogger.success('FTS5 table created successfully');
-    } catch (e) {
-      DebugLogger.error('Failed to create FTS5 table', e);
-      rethrow;
-    }
-  }
-
-  /// ⚡ ملء جدول FTS5 من البيانات الموجودة
-  Future<void> _populateFTS4Table() async {
-    try {
-      // Check if FTS table exists first
-      final check = await customSelect(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='civil_registry_fts'",
-      ).getSingleOrNull();
-
-      if (check == null) {
-        DebugLogger.warning('FTS5 table does not exist, creating...');
-        await _createFTS4Table();
-      }
-
-      // Clear existing FTS data
-      await customStatement('DELETE FROM civil_registry_fts;');
-
-      // Populate from main table
-      DebugLogger.info('⏳ Populating FTS5 table...');
-      await customStatement('''
-        INSERT INTO civil_registry_fts(rowid, national_id, full_name, first_name, father_name, family_name)
-        SELECT id, CI_ID_NUM, full_name_normalized, CI_FIRST_ARB, CI_FATHER_ARB, CI_FAMILY_ARB
-        FROM civil_registry;
-      ''');
-
-      DebugLogger.success('FTS5 table populated successfully');
-    } catch (e) {
-      DebugLogger.error('Failed to populate FTS5 table', e);
-      rethrow;
-    }
   }
 
   Future<void> _createIndexes() async {

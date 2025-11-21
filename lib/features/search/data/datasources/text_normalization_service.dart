@@ -145,18 +145,14 @@ class TextNormalizationService {
         return text;
 
       case HamzaMode.smart:
-        // ⚡ FIXED: Better hamza handling for names like "ولاء"
-        // Convert all hamza forms to their base letters first
-        text = text.replaceAll('ؤ', 'و');
-        text = text.replaceAll('ئ', 'ي');
+        // ⚡ FIXED: Keep word-ending hamza for names like "ولاء" "دعاء"
+        // Convert hamza on waw/ya to base letters
+        text = text.replaceAll('ؤ', 'وء');
+        text = text.replaceAll('ئ', 'يء');
 
-        // Then handle standalone hamza:
-        // - Keep hamza in middle of word for better matching
-        // - Remove only at word boundaries
+        // Remove standalone hamza ONLY at word start and after spaces
         text = text.replaceAll(RegExp(r'^ء'), ''); // Remove at start
-        text = text.replaceAll(RegExp(r'ء$'), ''); // Remove at end
         text = text.replaceAll(RegExp(r'\sء'), ' '); // Remove after space
-        text = text.replaceAll(RegExp(r'ء\s'), ' '); // Remove before space
 
         return text;
     }
@@ -216,28 +212,14 @@ class TextNormalizationService {
   static String _normalizeCompoundNames(String text) {
     var result = text;
 
-    // Convert compound prefixes to single word: "عبد ال" → "عبدال"
-    // Enhanced: handles multiple spaces and variations
+    // ⚡ IMPROVED: Better compound name handling
+    // Convert compound prefixes to single word AND keep spaced version
     for (final prefix in compoundPrefixes) {
       // Handle "ال" after prefix with multiple spaces
       result = result.replaceAll(RegExp('$prefix\\s+ال'), '${prefix}ال');
 
-      // Handle space after compound prefix
-      result = result.replaceAll(RegExp('$prefix\\s+'), '$prefix');
-    }
-
-    // Special handling for common compound names
-    final commonCompounds = {
-      'عبد الله': 'عبدالله',
-      'عبد الرحمن': 'عبدالرحمن',
-      'عبد العزيز': 'عبدالعزيز',
-      'عبد الكريم': 'عبدالكريم',
-      'أبو بكر': 'أبوبكر',
-      'أبو العباس': 'أبوالعباس',
-    };
-
-    for (final entry in commonCompounds.entries) {
-      result = result.replaceAll(entry.key, entry.value);
+      // DON'T remove space after compound prefix
+      // This allows matching both "عبد الله" and "عبدالله"
     }
 
     return result;

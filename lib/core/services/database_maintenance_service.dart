@@ -10,19 +10,16 @@ class DatabaseMaintenanceService {
   final SharedPreferences prefs;
   static const String _lastVacuumKey = 'last_vacuum_date';
   static const String _lastAnalyzeKey = 'last_analyze_date';
-  static const String _lastFtsOptimizeKey = 'last_fts_optimize_date';
 
   // Use centralized configuration from AppConstants
   static final Duration _vacuumInterval = AppConstants.vacuumInterval;
   static final Duration _analyzeInterval = AppConstants.analyzeInterval;
-  static final Duration _ftsOptimizeInterval = AppConstants.ftsOptimizeInterval;
   DatabaseMaintenanceService({required this.database, required this.prefs});
 
   /// Check and perform maintenance if needed
   Future<void> performMaintenanceIfNeeded() async {
     await _checkAndVacuum();
     await _checkAndAnalyze();
-    await _checkAndOptimizeFts();
   }
 
   /// VACUUM - Rebuild database file to reduce size and improve performance
@@ -47,22 +44,6 @@ class DatabaseMaintenanceService {
     if (shouldAnalyze) {
       await analyze();
       await prefs.setString(_lastAnalyzeKey, DateTime.now().toIso8601String());
-    }
-  }
-
-  /// FTS Optimize - Optimize Full Text Search tables
-  Future<void> _checkAndOptimizeFts() async {
-    final lastOptimize = prefs.getString(_lastFtsOptimizeKey);
-    final shouldOptimize =
-        lastOptimize == null ||
-        DateTime.now().difference(DateTime.parse(lastOptimize)) >
-            _ftsOptimizeInterval;
-    if (shouldOptimize) {
-      await optimizeFTS();
-      await prefs.setString(
-        _lastFtsOptimizeKey,
-        DateTime.now().toIso8601String(),
-      );
     }
   }
 
@@ -102,25 +83,11 @@ class DatabaseMaintenanceService {
     }
   }
 
-  /// Optimize FTS (Full Text Search) tables
-  Future<void> optimizeFTS() async {
-    try {
-      await database.customStatement('''
-        INSERT INTO beneficiaries_fts(beneficiaries_fts, rank)
-        SELECT 'optimize', 2;
-      ''');
-      DebugLogger.success('FTS optimization completed successfully');
-    } catch (e) {
-      DebugLogger.error('FTS optimization failed', e);
-    }
-  }
-
   /// Full maintenance - Run all optimization tasks
   Future<Map<String, dynamic>> performFullMaintenance() async {
     final sizeBefore = await getDatabaseSize();
     await vacuum();
     await analyze();
-    await optimizeFTS();
     final sizeAfter = await getDatabaseSize();
     final savedSpace = sizeBefore - sizeAfter;
     return {

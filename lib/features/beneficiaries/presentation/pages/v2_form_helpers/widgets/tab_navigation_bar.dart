@@ -56,6 +56,10 @@ class TabNavigationBar extends StatelessWidget {
                 text: 'ملاحظات',
               ),
               Tab(
+                icon: Icon(Icons.people_rounded, size: 18.sp),
+                text: 'أفراد',
+              ),
+              Tab(
                 icon: Icon(Icons.attach_file_rounded, size: 18.sp),
                 text: 'مرفقات',
               ),
@@ -116,6 +120,8 @@ class TabNavigationBar extends StatelessWidget {
       case 4:
         return 'الملاحظات';
       case 5:
+        return 'أفراد العائلة';
+      case 6:
         return 'المرفقات';
       default:
         return '';

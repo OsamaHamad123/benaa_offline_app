@@ -8,3 +8,5 @@ export 'sync_metadata_table.dart';
 export 'activities_table.dart';
 export 'data_requests_table.dart';
 export 'civil_registry_tables.dart';
+export 'family_deceased_table.dart';
+export 'family_members_table.dart';

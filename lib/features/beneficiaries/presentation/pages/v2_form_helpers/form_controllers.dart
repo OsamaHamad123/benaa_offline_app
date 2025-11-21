@@ -168,6 +168,13 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final List<File> _pendingAttachmentFiles = [];
   List<File> get pendingAttachmentFiles => _pendingAttachmentFiles;
 
+  // 👨‍👩‍👧‍👦 Family members data (living and deceased)
+  final List<Map<String, dynamic>> _livingMembers = [];
+  List<Map<String, dynamic>> get livingMembers => _livingMembers;
+
+  final List<Map<String, dynamic>> _deceasedMembers = [];
+  List<Map<String, dynamic>> get deceasedMembers => _deceasedMembers;
+
   /// Setter for pending files (used by PendingAttachmentsSection callback)
   set pendingAttachmentFiles(List<File> files) {
     _pendingAttachmentFiles.clear();
@@ -198,6 +205,48 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void removePendingFile(int index) {
     if (index >= 0 && index < _pendingAttachmentFiles.length) {
       _pendingAttachmentFiles.removeAt(index);
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  /// Update living family members
+  void updateLivingMembers(List<Map<String, dynamic>> members) {
+    _livingMembers.clear();
+    _livingMembers.addAll(members);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Update deceased family members
+  void updateDeceasedMembers(List<Map<String, dynamic>> members) {
+    _deceasedMembers.clear();
+    _deceasedMembers.addAll(members);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Add a living family member
+  void addLivingMember(Map<String, dynamic> member) {
+    _livingMembers.add(member);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Add a deceased family member
+  void addDeceasedMember(Map<String, dynamic> member) {
+    _deceasedMembers.add(member);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Remove living family member by index
+  void removeLivingMember(int index) {
+    if (index >= 0 && index < _livingMembers.length) {
+      _livingMembers.removeAt(index);
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  /// Remove deceased family member by index
+  void removeDeceasedMember(int index) {
+    if (index >= 0 && index < _deceasedMembers.length) {
+      _deceasedMembers.removeAt(index);
       _notifyAndScheduleAutoSave();
     }
   }

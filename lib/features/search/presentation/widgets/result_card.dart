@@ -20,15 +20,14 @@ class ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ⚡ RepaintBoundary: Isolate repaints to this card only
-    return RepaintBoundary(
-      child: PersonInfoCard(
-        person: person,
-        onCopy: onCopy,
-        onAddAsBeneficiary: onAddAsBeneficiary,
-        expanded: true,
-        searchQuery: searchQuery, // 🎯 تمرير الـ query
-      ),
+    // ⚡ RepaintBoundary removed - SliverList handles it automatically
+    // Duplicate RepaintBoundary causes performance overhead
+    return PersonInfoCard(
+      person: person,
+      onCopy: onCopy,
+      onAddAsBeneficiary: onAddAsBeneficiary,
+      expanded: true,
+      searchQuery: searchQuery, // 🎯 تمرير الـ query
     );
   }
 }
