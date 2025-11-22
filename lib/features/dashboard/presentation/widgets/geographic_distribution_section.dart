@@ -1,7 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/providers/providers.dart';
+import '../providers/dashboard_providers.dart';
+
+/// Provider for geographic distribution
+final geographicDistributionMapProvider = FutureProvider<Map<String, int>>((
+  ref,
+) async {
+  final rawData = await ref.watch(geographicDistributionProvider.future);
+  // Convert Map<int, int> to Map<String, int> with province names
+  return rawData.map((key, value) => MapEntry(_getProvinceName(key), value));
+});
+
+String _getProvinceName(int provinceId) {
+  const provinceNames = {
+    1: 'بغداد',
+    2: 'نينوى',
+    3: 'البصرة',
+    4: 'ذي قار',
+    5: 'ميسان',
+    6: 'واسط',
+    7: 'القادسية',
+    8: 'المثنى',
+    9: 'بابل',
+    10: 'كربلاء',
+    11: 'النجف',
+    12: 'الأنبار',
+    13: 'ديالى',
+    14: 'صلاح الدين',
+    15: 'كركوك',
+    16: 'أربيل',
+    17: 'السليمانية',
+    18: 'دهوك',
+  };
+  return provinceNames[provinceId] ?? 'غير محدد';
+}
 
 /// Geographic Distribution Section - توزيع المستفيدين حسب المحافظة
 class GeographicDistributionSection extends ConsumerWidget {
@@ -9,16 +42,10 @@ class GeographicDistributionSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.watch(databaseProvider);
+    final distributionAsync = ref.watch(geographicDistributionMapProvider);
 
-    return FutureBuilder<Map<String, int>>(
-      future: database.beneficiariesDao.getBeneficiariesCountByGovernorate(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return _buildSkeletonLoader();
-        }
-
-        final data = snapshot.data!;
+    return distributionAsync.when(
+      data: (data) {
         if (data.isEmpty) {
           return _buildEmptyState();
         }
@@ -136,6 +163,18 @@ class GeographicDistributionSection extends ConsumerWidget {
           ),
         );
       },
+      loading: () => _buildSkeletonLoader(),
+      error: (error, stack) => Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          side: BorderSide(color: Colors.red.withOpacity(0.3), width: 1),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Text('خطأ: ${error.toString()}'),
+        ),
+      ),
     );
   }
 

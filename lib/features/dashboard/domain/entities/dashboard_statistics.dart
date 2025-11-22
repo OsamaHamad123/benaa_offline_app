@@ -11,6 +11,12 @@ class DashboardStatistics extends Equatable {
   final List<GrowthDataPoint> growthData;
   final TodayStats todayStats;
 
+  // ⚡ Family Statistics - NEW
+  final int totalFamilyMembers;
+  final int totalDeceased;
+  final int totalOrphans;
+  final double averageFamilySize;
+
   const DashboardStatistics({
     required this.totalBeneficiaries,
     required this.activeBeneficiaries,
@@ -20,6 +26,10 @@ class DashboardStatistics extends Equatable {
     required this.categoryCounts,
     required this.growthData,
     required this.todayStats,
+    this.totalFamilyMembers = 0,
+    this.totalDeceased = 0,
+    this.totalOrphans = 0,
+    this.averageFamilySize = 0.0,
   });
 
   @override
@@ -32,6 +42,10 @@ class DashboardStatistics extends Equatable {
     categoryCounts,
     growthData,
     todayStats,
+    totalFamilyMembers,
+    totalDeceased,
+    totalOrphans,
+    averageFamilySize,
   ];
 }
 

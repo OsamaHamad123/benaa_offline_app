@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/providers.dart';
 import '../../../theme/app_colors.dart';
+import '../presentation/providers/dashboard_providers.dart';
 
 /// Pending Sync Alert Card
 class PendingSyncAlert extends ConsumerWidget {
@@ -9,16 +9,13 @@ class PendingSyncAlert extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.watch(databaseProvider);
+    final countAsync = ref.watch(pendingSyncCountProvider);
 
-    return FutureBuilder<int>(
-      future: database.beneficiariesDao.countPendingSync(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data == 0) {
+    return countAsync.when(
+      data: (count) {
+        if (count == 0) {
           return const SizedBox.shrink();
         }
-
-        final count = snapshot.data!;
 
         return Card(
           elevation: 0,
@@ -67,6 +64,8 @@ class PendingSyncAlert extends ConsumerWidget {
           ),
         );
       },
+      loading: () => const SizedBox.shrink(),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 }
@@ -127,23 +126,17 @@ class DataQualityScore extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.watch(databaseProvider);
+    final qualityAsync = ref.watch(dataQualityProvider);
 
-    return FutureBuilder<int>(
-      future: database.beneficiariesDao.countBeneficiaries(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+    return qualityAsync.when(
+      data: (quality) {
+        if (quality.total == 0) {
           return const SizedBox.shrink();
         }
 
-        final total = snapshot.data!;
-        if (total == 0) {
-          return const SizedBox.shrink();
-        }
-
-        // TODO: حساب البيانات الناقصة من قاعدة البيانات
-        final completeData = (total * 0.85).round();
-        final score = (completeData / total * 100).round();
+        final total = quality.total;
+        final completeData = quality.complete;
+        final score = quality.score;
 
         return Card(
           elevation: 2,
@@ -237,6 +230,8 @@ class DataQualityScore extends ConsumerWidget {
           ),
         );
       },
+      loading: () => const SizedBox.shrink(),
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 

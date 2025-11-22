@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/providers/providers.dart';
+import '../providers/dashboard_providers.dart';
 
 /// Daily Performance Section - مؤشر الأداء اليومي
 class DailyPerformanceSection extends ConsumerWidget {
@@ -12,19 +12,13 @@ class DailyPerformanceSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.watch(databaseProvider);
+    final performanceAsync = ref.watch(dailyPerformanceProvider);
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _loadPerformanceData(database),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return _buildSkeletonLoader();
-        }
-
-        final data = snapshot.data!;
-        final visitsToday = data['visitsToday'] as int;
-        final newBeneficiariesToday = data['newBeneficiariesToday'] as int;
-        final avgVisitsPerDay = data['avgVisitsPerDay'] as double;
+    return performanceAsync.when(
+      data: (data) {
+        final visitsToday = data.visitsToday;
+        final newBeneficiariesToday = data.newBeneficiariesToday;
+        final avgVisitsPerDay = data.avgVisitsPerDay;
 
         final percentage = (visitsToday / dailyTarget).clamp(0.0, 1.0);
         final isTargetMet = visitsToday >= dailyTarget;
@@ -247,20 +241,19 @@ class DailyPerformanceSection extends ConsumerWidget {
           ),
         );
       },
+      loading: () => _buildSkeletonLoader(),
+      error: (error, stack) => Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          side: BorderSide(color: Colors.red.withOpacity(0.3), width: 2),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16.w),
+          child: Text('خطأ: ${error.toString()}'),
+        ),
+      ),
     );
-  }
-
-  Future<Map<String, dynamic>> _loadPerformanceData(database) async {
-    final visitsToday = await database.visitsDao.countVisitsToday();
-    final newBeneficiariesToday = await database.beneficiariesDao
-        .countNewBeneficiariesToday();
-    final avgVisitsPerDay = await database.visitsDao.getAverageVisitsPerDay(7);
-
-    return {
-      'visitsToday': visitsToday,
-      'newBeneficiariesToday': newBeneficiariesToday,
-      'avgVisitsPerDay': avgVisitsPerDay,
-    };
   }
 
   Widget _buildSkeletonLoader() {

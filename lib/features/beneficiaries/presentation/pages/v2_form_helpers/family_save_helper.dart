@@ -24,27 +24,21 @@ class FamilySaveHelper {
       final livingMembers = results[0] as List<FamilyMember>;
       final deceasedMembers = results[1] as List<FamilyDeceased>;
 
-      // تحويل إلى Map
+      // تحويل إلى Map - NEW SCHEMA
       final livingList = livingMembers
           .map(
             (m) => {
               'id': m.id,
-              'fullName': m.fullName,
-              'relationship': m.relationship,
-              'gender': m.gender,
-              'nationalId': m.nationalId,
+              'orphanNationalId': m.orphanNationalId,
+              'firstName': m.firstName,
+              'secondName': m.secondName,
+              'thirdName': m.thirdName,
+              'familyName': m.familyName,
               'birthDate': m.birthDate,
               'age': m.age,
-              'phone': m.phone,
-              'maritalStatus': m.maritalStatus,
-              'educationLevel': m.educationLevel,
-              'occupation': m.occupation,
+              'gender': m.gender,
               'healthStatus': m.healthStatus,
-              'hasDisability': m.hasDisability,
-              'disabilityType': m.disabilityType,
-              'hasChronicDisease': m.hasChronicDisease,
-              'chronicDiseaseType': m.chronicDiseaseType,
-              'livesWithBeneficiary': m.livesWithBeneficiary,
+              'attachments': m.attachments,
               'notes': m.notes,
             },
           )
@@ -54,12 +48,16 @@ class FamilySaveHelper {
           .map(
             (d) => {
               'id': d.id,
-              'fullName': d.fullName,
-              'relationship': d.relationship,
-              'gender': d.gender,
+              'deceasedType': d.deceasedType,
+              'firstName': d.firstName,
+              'secondName': d.secondName,
+              'thirdName': d.thirdName,
+              'familyName': d.familyName,
+              'nationalId': d.nationalId,
               'deathDate': d.deathDate,
               'deathCause': d.deathCause,
-              'ageAtDeath': d.ageAtDeath,
+              'documentType': d.documentType,
+              'documentPath': d.documentPath,
               'notes': d.notes,
             },
           )
@@ -105,7 +103,7 @@ class FamilySaveHelper {
           await database.familyDeceasedDao.deleteDeceased(old.id);
         }
 
-        // ⚡ حفظ الأحياء الجدد بـ Batch (أداء أفضل)
+        // ⚡ حفظ الأحياء الجدد بـ Batch (أداء أفضل) - NEW SCHEMA
         if (livingMembers.isNotEmpty) {
           await database.batch((batch) {
             for (final member in livingMembers) {
@@ -113,26 +111,16 @@ class FamilySaveHelper {
                 database.familyMembersTable,
                 FamilyMembersTableCompanion.insert(
                   beneficiaryId: intBeneficiaryId,
-                  fullName: member['fullName'] ?? '',
-                  relationship: member['relationship'] ?? '',
-                  gender: member['gender'] ?? '',
-                  nationalId: Value(member['nationalId']),
-                  birthDate: Value(member['birthDate']),
+                  orphanNationalId: member['orphanNationalId'] ?? 0,
+                  firstName: member['firstName'] ?? '',
+                  secondName: Value(member['secondName']),
+                  thirdName: Value(member['thirdName']),
+                  familyName: member['familyName'] ?? '',
+                  birthDate: member['birthDate'] ?? DateTime.now(),
                   age: Value(member['age']),
-                  phone: Value(member['phone']),
-                  maritalStatus: Value(member['maritalStatus']),
-                  educationLevel: Value(member['educationLevel']),
-                  occupation: Value(member['occupation']),
-                  healthStatus: Value(member['healthStatus']),
-                  hasDisability: Value(member['hasDisability'] ?? false),
-                  disabilityType: Value(member['disabilityType']),
-                  hasChronicDisease: Value(
-                    member['hasChronicDisease'] ?? false,
-                  ),
-                  chronicDiseaseType: Value(member['chronicDiseaseType']),
-                  livesWithBeneficiary: Value(
-                    member['livesWithBeneficiary'] ?? false,
-                  ),
+                  gender: member['gender'] ?? 1, // 1=male
+                  healthStatus: member['healthStatus'] ?? 5, // 5=unknown
+                  attachments: Value(member['attachments']),
                   notes: Value(member['notes']),
                   syncState: const Value('pending'),
                 ),
@@ -141,7 +129,7 @@ class FamilySaveHelper {
           });
         }
 
-        // ⚡ حفظ الأموات الجدد بـ Batch (أداء أفضل)
+        // ⚡ حفظ الأموات الجدد بـ Batch (أداء أفضل) - NEW SCHEMA
         if (deceasedMembers.isNotEmpty) {
           await database.batch((batch) {
             for (final deceased in deceasedMembers) {
@@ -149,12 +137,16 @@ class FamilySaveHelper {
                 database.familyDeceasedTable,
                 FamilyDeceasedTableCompanion.insert(
                   beneficiaryId: intBeneficiaryId,
-                  fullName: deceased['fullName'] ?? '',
-                  relationship: deceased['relationship'] ?? '',
-                  gender: deceased['gender'] ?? '',
-                  deathDate: Value(deceased['deathDate']),
-                  deathCause: Value(deceased['deathCause']),
-                  ageAtDeath: Value(deceased['ageAtDeath']),
+                  deceasedType: deceased['deceasedType'] ?? 1, // 1=father
+                  firstName: deceased['firstName'] ?? '',
+                  secondName: Value(deceased['secondName']),
+                  thirdName: Value(deceased['thirdName']),
+                  familyName: deceased['familyName'] ?? '',
+                  nationalId: deceased['nationalId'] ?? 0,
+                  deathDate: deceased['deathDate'] ?? DateTime.now(),
+                  deathCause: deceased['deathCause'] ?? 8, // 8=unknown
+                  documentType: Value(deceased['documentType']),
+                  documentPath: Value(deceased['documentPath']),
                   notes: Value(deceased['notes']),
                   syncState: const Value('pending'),
                 ),

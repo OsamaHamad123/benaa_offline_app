@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../data/db/daos/family_members_dao.dart';
-import '../providers/beneficiary_dependencies.dart';
+import '../providers/family_providers.dart';
 
 /// ويدجت عرض إحصائيات أفراد العائلة
 class FamilyStatisticsWidget extends ConsumerWidget {
@@ -11,8 +10,6 @@ class FamilyStatisticsWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.read(databaseProvider);
-
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -32,64 +29,52 @@ class FamilyStatisticsWidget extends ConsumerWidget {
             ),
             const Divider(height: 24),
 
-            // الإحصائيات الإجمالية
-            FutureBuilder<FamilyStatistics>(
-              future: database.familyMembersDao.getStatistics(beneficiaryId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            // الإحصائيات الإجمالية - استخدام Provider
+            Consumer(
+              builder: (context, ref, child) {
+                final statsAsync = ref.watch(
+                  familyStatisticsProvider(beneficiaryId),
+                );
 
-                if (snapshot.hasError) {
-                  return Text('خطأ: ${snapshot.error}');
-                }
-
-                final stats = snapshot.data;
-                if (stats == null) {
-                  return const Text('لا توجد بيانات');
-                }
-
-                return Column(
-                  children: [
-                    _buildOverallStats(stats),
-                    const SizedBox(height: 24),
-                    _buildHealthStats(stats),
-                  ],
+                return statsAsync.when(
+                  data: (stats) => Column(
+                    children: [
+                      _buildOverallStats(stats),
+                      const SizedBox(height: 24),
+                      _buildHealthStats(stats),
+                    ],
+                  ),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                  error: (error, stack) => Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      'خطأ في تحميل الإحصائيات: $error',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
                 );
               },
             ),
 
             const SizedBox(height: 24),
 
-            // إحصائيات حسب صلة القرابة
-            FutureBuilder<Map<String, int>>(
-              future: database.familyMembersDao.getMembersByRelationshipStats(
-                beneficiaryId,
-              ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox.shrink();
-                }
+            // عدد الأموات - استخدام Provider
+            Consumer(
+              builder: (context, ref, child) {
+                final deceasedAsync = ref.watch(
+                  familyDeceasedProvider(beneficiaryId),
+                );
 
-                final relationshipStats = snapshot.data ?? {};
-                if (relationshipStats.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-
-                return _buildRelationshipStats(relationshipStats);
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // عدد الأموات
-            FutureBuilder<int>(
-              future: database.familyDeceasedDao.getDeceasedCount(
-                beneficiaryId,
-              ),
-              builder: (context, snapshot) {
-                final count = snapshot.data ?? 0;
-                return _buildDeceasedStats(count);
+                return deceasedAsync.when(
+                  data: (deceased) => _buildDeceasedStats(deceased.length),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                );
               },
             ),
           ],
@@ -148,15 +133,6 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 Colors.orange,
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildStatCard(
-                'يعيشون معاً',
-                stats.livingTogether.toString(),
-                Icons.home,
-                Colors.green,
-              ),
-            ),
           ],
         ),
       ],
@@ -176,51 +152,44 @@ class FamilyStatisticsWidget extends ConsumerWidget {
           children: [
             Expanded(
               child: _buildStatCard(
-                'ذوو إعاقة',
-                stats.withDisability.toString(),
-                Icons.accessible,
-                Colors.orange,
+                'سليم وآمن',
+                stats.healthySafe.toString(),
+                Icons.health_and_safety,
+                Colors.green,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _buildStatCard(
-                'أمراض مزمنة',
-                stats.withChronicDisease.toString(),
-                Icons.medical_services,
-                Colors.red,
+                'مريض',
+                stats.sick.toString(),
+                Icons.sick,
+                Colors.yellow.shade700,
               ),
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildRelationshipStats(Map<String, int> stats) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'التوزيع حسب صلة القرابة',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: stats.entries.map((entry) {
-            return Chip(
-              avatar: CircleAvatar(
-                backgroundColor: Colors.blue,
-                child: Text(
-                  entry.value.toString(),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                'مريض مزمن',
+                stats.chronicSick.toString(),
+                Icons.medical_services,
+                Colors.red,
               ),
-              label: Text(entry.key),
-            );
-          }).toList(),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildStatCard(
+                'معاق',
+                stats.disabled.toString(),
+                Icons.accessible,
+                Colors.orange,
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -14,6 +14,8 @@ import '../features/civil_db_download/presentation/pages/download_civil_db_page.
 import '../features/sync/sync_page.dart';
 import '../features/sync/import_test_data_page.dart';
 import '../features/sync/test_sync_page.dart';
+import '../features/sync/mobile_sync_page.dart';
+import '../features/sync/test_mobile_api_page.dart';
 import '../features/reports/reports_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../core/storage/secure_store.dart';
@@ -115,6 +117,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/test-sync',
         builder: (context, state) => const TestSyncPage(),
+      ),
+      GoRoute(
+        path: '/mobile-sync',
+        builder: (context, state) => const MobileSyncPage(),
+      ),
+      GoRoute(
+        path: '/test-mobile-api',
+        builder: (context, state) => const TestMobileApiPage(),
       ),
     ],
   );

@@ -277,7 +277,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   /// Check if data is valid for auto-save
   bool _hasValidData() {
     return firstNameController.text.trim().isNotEmpty &&
-        nationalIdController.text.trim().length == 11;
+        nationalIdController.text.trim().length == 9;
   }
 
   /// Convert controllers to Map for draft saving

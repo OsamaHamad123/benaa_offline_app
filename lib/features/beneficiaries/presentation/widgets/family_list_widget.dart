@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../core/utils/family_enums.dart';
 import '../providers/beneficiary_dependencies.dart';
+import '../providers/family_providers.dart';
 import 'family_deceased_form.dart';
 import 'family_members_form.dart';
+import '../../../../core/widgets/custom_empty_state.dart';
 
 /// قائمة عرض أفراد العائلة (الأحياء والأموات)
 class FamilyListWidget extends ConsumerStatefulWidget {
@@ -32,7 +35,9 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
   }
 
   void _refreshLists() {
-    setState(() {});
+    // ⚡ استخدام invalidate بدلاً من setState لتحديث البيانات
+    ref.invalidate(familyMembersProvider(widget.beneficiaryId));
+    ref.invalidate(familyDeceasedProvider(widget.beneficiaryId));
   }
 
   @override
@@ -61,38 +66,17 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
   }
 
   Widget _buildLivingMembersList() {
-    final database = ref.read(databaseProvider);
-    final dao = database.familyMembersDao;
+    final membersAsync = ref.watch(familyMembersProvider(widget.beneficiaryId));
 
-    return FutureBuilder<List<FamilyMember>>(
-      future: dao.getMembersByBeneficiary(widget.beneficiaryId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('خطأ: ${snapshot.error}'));
-        }
-
-        final members = snapshot.data ?? [];
-
+    return membersAsync.when(
+      data: (members) {
         if (members.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                const Text('لا يوجد أفراد عائلة'),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddMemberForm(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة فرد'),
-                ),
-              ],
-            ),
+          return CustomEmptyState(
+            icon: Icons.people_outline,
+            title: 'لا يوجد أفراد عائلة',
+            message: 'ابدأ بإضافة أول فرد من العائلة',
+            onAction: () => _showAddMemberForm(context),
+            actionLabel: 'إضافة فرد',
           );
         }
 
@@ -127,6 +111,14 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
           ],
         );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: ErrorState(
+          errorMessage: 'خطأ في تحميل أفراد العائلة: $error',
+          onRetry: () =>
+              ref.invalidate(familyMembersProvider(widget.beneficiaryId)),
+        ),
+      ),
     );
   }
 
@@ -135,33 +127,34 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: member.gender == 'male' ? Colors.blue : Colors.pink,
+          backgroundColor: member.gender == 1
+              ? Colors.blue
+              : Colors.pink, // 1=male
           child: Icon(
-            member.gender == 'male' ? Icons.man : Icons.woman,
+            member.gender == 1 ? Icons.man : Icons.woman, // 1=male
             color: Colors.white,
           ),
         ),
-        title: Text(member.fullName),
+        title: Text('${member.firstName} ${member.familyName}'),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${member.relationship} • ${member.age ?? '؟'} سنة'),
-            if (member.hasDisability || member.hasChronicDisease)
-              Row(
-                children: [
-                  if (member.hasDisability)
-                    const Chip(
-                      label: Text('إعاقة', style: TextStyle(fontSize: 10)),
-                      backgroundColor: Colors.orange,
-                      padding: EdgeInsets.zero,
-                    ),
-                  if (member.hasChronicDisease)
-                    const Chip(
-                      label: Text('مرض مزمن', style: TextStyle(fontSize: 10)),
-                      backgroundColor: Colors.red,
-                      padding: EdgeInsets.zero,
-                    ),
-                ],
+            Text('${member.age ?? '؟'} سنة • هوية: ${member.orphanNationalId}'),
+            if (member.healthStatus != 1) // 1=healthy
+              Chip(
+                label: Text(
+                  HealthStatus.toArabic(member.healthStatus),
+                  style: const TextStyle(fontSize: 10),
+                ),
+                backgroundColor:
+                    member.healthStatus ==
+                        4 // 4=disabled
+                    ? Colors.orange
+                    : member.healthStatus ==
+                          3 // 3=chronic
+                    ? Colors.red
+                    : Colors.yellow.shade700,
+                padding: EdgeInsets.zero,
               ),
           ],
         ),
@@ -183,42 +176,19 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
   }
 
   Widget _buildDeceasedList() {
-    final database = ref.read(databaseProvider);
-    final dao = database.familyDeceasedDao;
+    final deceasedAsync = ref.watch(
+      familyDeceasedProvider(widget.beneficiaryId),
+    );
 
-    return FutureBuilder<List<FamilyDeceased>>(
-      future: dao.getDeceasedByBeneficiary(widget.beneficiaryId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('خطأ: ${snapshot.error}'));
-        }
-
-        final deceased = snapshot.data ?? [];
-
+    return deceasedAsync.when(
+      data: (deceased) {
         if (deceased.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.local_hospital_outlined,
-                  size: 64,
-                  color: Colors.grey,
-                ),
-                const SizedBox(height: 16),
-                const Text('لا يوجد أموات مسجلين'),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddDeceasedForm(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة'),
-                ),
-              ],
-            ),
+          return CustomEmptyState(
+            icon: Icons.local_hospital_outlined,
+            title: 'لا يوجد أموات مسجلين',
+            message: 'سجل بيانات الأموات من العائلة',
+            onAction: () => _showAddDeceasedForm(context),
+            actionLabel: 'إضافة متوفى',
           );
         }
 
@@ -253,6 +223,14 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
           ],
         );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: ErrorState(
+          errorMessage: 'خطأ في تحميل بيانات المتوفين: $error',
+          onRetry: () =>
+              ref.invalidate(familyDeceasedProvider(widget.beneficiaryId)),
+        ),
+      ),
     );
   }
 
@@ -260,25 +238,27 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
-        leading: const CircleAvatar(
+        leading: CircleAvatar(
           backgroundColor: Colors.grey,
-          child: Icon(Icons.person_off, color: Colors.white),
+          child: Icon(
+            deceased.deceasedType == 'father' ? Icons.man : Icons.woman,
+            color: Colors.white,
+          ),
         ),
-        title: Text(deceased.fullName),
+        title: Text('${deceased.firstName} ${deceased.familyName}'),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${deceased.relationship} • ${deceased.ageAtDeath ?? '؟'} سنة',
+              '${deceased.deceasedType == 'father' ? 'أب' : 'أم'} • هوية: ${deceased.nationalId}',
             ),
-            if (deceased.deathDate != null)
+            Text(
+              'تاريخ الوفاة: ${deceased.deathDate.year}-${deceased.deathDate.month}-${deceased.deathDate.day}',
+              style: const TextStyle(fontSize: 12),
+            ),
+            if (deceased.deathCause != 8) // 8=unknown
               Text(
-                'تاريخ الوفاة: ${deceased.deathDate!.year}-${deceased.deathDate!.month}-${deceased.deathDate!.day}',
-                style: const TextStyle(fontSize: 12),
-              ),
-            if (deceased.deathCause != null && deceased.deathCause!.isNotEmpty)
-              Text(
-                'السبب: ${deceased.deathCause}',
+                'السبب: ${DeathCause.toArabic(deceased.deathCause)}',
                 style: const TextStyle(fontSize: 12),
               ),
           ],
@@ -355,7 +335,7 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تأكيد الحذف'),
-        content: Text('هل تريد حذف ${member.fullName}؟'),
+        content: Text('هل تريد حذف ${member.firstName} ${member.familyName}؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -386,7 +366,9 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('تأكيد الحذف'),
-        content: Text('هل تريد حذف ${deceased.fullName}؟'),
+        content: Text(
+          'هل تريد حذف ${deceased.firstName} ${deceased.familyName}؟',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

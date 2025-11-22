@@ -11,7 +11,7 @@ import '../../../../core/widgets/micro_interactions.dart';
 import '../../../../core/widgets/charts.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../../../sync/sync_page.dart';
+import '../../../sync/mobile_sync_page.dart';
 import '../providers.dart';
 import '../widgets/dashboard_app_bar.dart' as dashboard_widgets;
 import '../widgets/quick_actions.dart';
@@ -156,7 +156,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         );
         break;
       case 1:
-        currentPage = const SyncPage();
+        currentPage = const MobileSyncPage();
         break;
       case 2:
         currentPage = const _SettingsView();

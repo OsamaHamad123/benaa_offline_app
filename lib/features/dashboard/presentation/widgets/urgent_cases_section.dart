@@ -169,6 +169,22 @@ class UrgentCasesSection extends ConsumerWidget {
     );
   }
 
+  Future<Map<String, dynamic>> _loadUrgentCasesData(
+    AppDatabase database,
+  ) async {
+    final results = await Future.wait([
+      database.beneficiariesDao.countBeneficiariesWithNoRecentVisits(30),
+      database.beneficiariesDao.countBeneficiariesWithPoorHealth(),
+      database.beneficiariesDao.countBeneficiariesWithDisabilities(),
+    ]);
+
+    return {
+      'noVisitsCount': results[0],
+      'poorHealthCount': results[1],
+      'disabilitiesCount': results[2],
+    };
+  }
+
   Widget _buildEmptyState() {
     return Card(
       elevation: 0,
@@ -200,22 +216,6 @@ class UrgentCasesSection extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  Future<Map<String, dynamic>> _loadUrgentCasesData(
-    AppDatabase database,
-  ) async {
-    final results = await Future.wait([
-      database.beneficiariesDao.countBeneficiariesWithNoRecentVisits(30),
-      database.beneficiariesDao.countBeneficiariesWithPoorHealth(),
-      database.beneficiariesDao.countBeneficiariesWithDisabilities(),
-    ]);
-
-    return {
-      'noVisitsCount': results[0],
-      'poorHealthCount': results[1],
-      'disabilitiesCount': results[2],
-    };
   }
 
   void _showUrgentCasesDialog(

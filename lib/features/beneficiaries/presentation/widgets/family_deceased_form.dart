@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:file_picker/file_picker.dart';
 import '../../../../data/db/drift_database.dart';
 import '../providers/beneficiary_dependencies.dart';
+import '../../../../core/utils/family_enums.dart';
+import '../../../../core/utils/ux_helpers.dart';
 
 class FamilyDeceasedForm extends ConsumerStatefulWidget {
   final int beneficiaryId;
   final FamilyDeceased? existingDeceased;
   final VoidCallback onSaved;
+  final int? presetDeceasedType; // لتحديد نوع المتوفى مسبقاً (1=أب، 2=أم)
 
   const FamilyDeceasedForm({
     super.key,
     required this.beneficiaryId,
     this.existingDeceased,
     required this.onSaved,
+    this.presetDeceasedType,
   });
 
   @override
@@ -22,53 +28,46 @@ class FamilyDeceasedForm extends ConsumerStatefulWidget {
 
 class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _deathCauseController;
-  late TextEditingController _ageController;
+  late TextEditingController _firstNameController;
+  late TextEditingController _secondNameController;
+  late TextEditingController _thirdNameController;
+  late TextEditingController _familyNameController;
+  late TextEditingController _nationalIdController;
   late TextEditingController _notesController;
 
-  String? _selectedRelationship;
-  String? _selectedGender;
+  int? _selectedDeceasedType;
+  int? _selectedDeathCause;
+  int? _selectedDocumentType;
   DateTime? _deathDate;
-
-  final List<String> _relationships = [
-    'أب',
-    'أم',
-    'ابن',
-    'ابنة',
-    'أخ',
-    'أخت',
-    'جد',
-    'جدة',
-    'عم',
-    'عمة',
-    'خال',
-    'خالة',
-    'زوج',
-    'زوجة',
-    'آخر',
-  ];
+  String? _documentPath;
 
   @override
   void initState() {
     super.initState();
     final deceased = widget.existingDeceased;
-    _nameController = TextEditingController(text: deceased?.fullName);
-    _deathCauseController = TextEditingController(text: deceased?.deathCause);
-    _ageController = TextEditingController(
-      text: deceased?.ageAtDeath?.toString(),
+    _firstNameController = TextEditingController(text: deceased?.firstName);
+    _secondNameController = TextEditingController(text: deceased?.secondName);
+    _thirdNameController = TextEditingController(text: deceased?.thirdName);
+    _familyNameController = TextEditingController(text: deceased?.familyName);
+    _nationalIdController = TextEditingController(
+      text: deceased != null ? deceased.nationalId.toString() : '',
     );
     _notesController = TextEditingController(text: deceased?.notes);
-    _selectedRelationship = deceased?.relationship;
-    _selectedGender = deceased?.gender;
+    // إذا كان هناك قيمة محددة مسبقاً، استخدمها
+    _selectedDeceasedType = widget.presetDeceasedType ?? deceased?.deceasedType;
+    _selectedDeathCause = deceased?.deathCause;
+    _selectedDocumentType = deceased?.documentType;
     _deathDate = deceased?.deathDate;
+    _documentPath = deceased?.documentPath;
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _deathCauseController.dispose();
-    _ageController.dispose();
+    _firstNameController.dispose();
+    _secondNameController.dispose();
+    _thirdNameController.dispose();
+    _familyNameController.dispose();
+    _nationalIdController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -86,8 +85,23 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
     }
   }
 
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+    if (result != null && result.files.single.path != null) {
+      setState(() => _documentPath = result.files.single.path);
+    }
+  }
+
   Future<void> _saveDeceased() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_deathDate == null) {
+      ToastHelper.showError('الرجاء اختيار تاريخ الوفاة');
+      return;
+    }
 
     final database = ref.read(databaseProvider);
     final dao = database.familyDeceasedDao;
@@ -97,13 +111,23 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
           ? drift.Value(widget.existingDeceased!.id)
           : const drift.Value.absent(),
       beneficiaryId: drift.Value(widget.beneficiaryId),
-      fullName: drift.Value(_nameController.text.trim()),
-      relationship: drift.Value(_selectedRelationship!),
-      gender: drift.Value(_selectedGender ?? 'male'),
-      deathDate: drift.Value(_deathDate),
-      deathCause: drift.Value(_deathCauseController.text.trim()),
-      ageAtDeath: _ageController.text.isNotEmpty
-          ? drift.Value(int.tryParse(_ageController.text))
+      deceasedType: drift.Value(_selectedDeceasedType!),
+      firstName: drift.Value(_firstNameController.text.trim()),
+      secondName: _secondNameController.text.trim().isEmpty
+          ? const drift.Value(null)
+          : drift.Value(_secondNameController.text.trim()),
+      thirdName: _thirdNameController.text.trim().isEmpty
+          ? const drift.Value(null)
+          : drift.Value(_thirdNameController.text.trim()),
+      familyName: drift.Value(_familyNameController.text.trim()),
+      nationalId: drift.Value(int.parse(_nationalIdController.text.trim())),
+      deathDate: drift.Value(_deathDate!),
+      deathCause: drift.Value(_selectedDeathCause ?? DeathCause.unknown),
+      documentType: _selectedDocumentType != null
+          ? drift.Value(_selectedDocumentType)
+          : const drift.Value(null),
+      documentPath: _documentPath != null
+          ? drift.Value(_documentPath)
           : const drift.Value(null),
       notes: drift.Value(_notesController.text.trim()),
       syncState: const drift.Value('pending'),
@@ -119,13 +143,23 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
       if (widget.existingDeceased != null) {
         final updateCompanion = FamilyDeceasedTableCompanion(
           id: drift.Value(widget.existingDeceased!.id),
-          fullName: drift.Value(_nameController.text.trim()),
-          relationship: drift.Value(_selectedRelationship!),
-          gender: drift.Value(_selectedGender ?? 'male'),
-          deathDate: drift.Value(_deathDate),
-          deathCause: drift.Value(_deathCauseController.text.trim()),
-          ageAtDeath: _ageController.text.isNotEmpty
-              ? drift.Value(int.tryParse(_ageController.text))
+          deceasedType: drift.Value(_selectedDeceasedType!),
+          firstName: drift.Value(_firstNameController.text.trim()),
+          secondName: _secondNameController.text.trim().isEmpty
+              ? const drift.Value(null)
+              : drift.Value(_secondNameController.text.trim()),
+          thirdName: _thirdNameController.text.trim().isEmpty
+              ? const drift.Value(null)
+              : drift.Value(_thirdNameController.text.trim()),
+          familyName: drift.Value(_familyNameController.text.trim()),
+          nationalId: drift.Value(int.parse(_nationalIdController.text.trim())),
+          deathDate: drift.Value(_deathDate!),
+          deathCause: drift.Value(_selectedDeathCause ?? DeathCause.unknown),
+          documentType: _selectedDocumentType != null
+              ? drift.Value(_selectedDocumentType)
+              : const drift.Value(null),
+          documentPath: _documentPath != null
+              ? drift.Value(_documentPath)
               : const drift.Value(null),
           notes: drift.Value(_notesController.text.trim()),
           updatedAt: drift.Value(DateTime.now()),
@@ -138,17 +172,13 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم الحفظ بنجاح')));
+        ToastHelper.showSuccess('تم الحفظ بنجاح');
         Navigator.of(context).pop();
         widget.onSaved();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في الحفظ: $e')));
+        ToastHelper.showError('خطأ في الحفظ: $e');
       }
     }
   }
@@ -171,56 +201,114 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // الاسم الكامل
+            // نوع المتوفى (أب/أم) - اخفيه إذا كان محدد مسبقاً
+            if (widget.presetDeceasedType == null)
+              DropdownButtonFormField<int>(
+                value: _selectedDeceasedType,
+                decoration: const InputDecoration(
+                  labelText: 'نوع المتوفى *',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.family_restroom),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: DeceasedType.father,
+                    child: Text('أب'),
+                  ),
+                  DropdownMenuItem(
+                    value: DeceasedType.mother,
+                    child: Text('أم'),
+                  ),
+                ],
+                onChanged: (value) =>
+                    setState(() => _selectedDeceasedType = value),
+                validator: (value) {
+                  if (value == null) return 'الرجاء اختيار نوع المتوفى';
+                  return null;
+                },
+              ),
+            if (widget.presetDeceasedType == null) const SizedBox(height: 16),
+
+            // الاسم الأول
             TextFormField(
-              controller: _nameController,
+              controller: _firstNameController,
               decoration: const InputDecoration(
-                labelText: 'الاسم الكامل *',
+                labelText: 'الاسم الأول *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'الرجاء إدخال الاسم';
+                  return 'الرجاء إدخال الاسم الأول';
                 }
                 return null;
               },
             ),
             const SizedBox(height: 16),
 
-            // صلة القرابة
-            DropdownButtonFormField<String>(
-              value: _selectedRelationship,
+            // اسم الأب
+            TextFormField(
+              controller: _secondNameController,
               decoration: const InputDecoration(
-                labelText: 'صلة القرابة *',
+                labelText: 'اسم الأب',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // اسم الجد
+            TextFormField(
+              controller: _thirdNameController,
+              decoration: const InputDecoration(
+                labelText: 'اسم الجد',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // اسم العائلة
+            TextFormField(
+              controller: _familyNameController,
+              decoration: const InputDecoration(
+                labelText: 'اسم العائلة *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.family_restroom),
               ),
-              items: _relationships.map((rel) {
-                return DropdownMenuItem(value: rel, child: Text(rel));
-              }).toList(),
-              onChanged: (value) =>
-                  setState(() => _selectedRelationship = value),
               validator: (value) {
-                if (value == null) return 'الرجاء اختيار صلة القرابة';
+                if (value == null || value.trim().isEmpty) {
+                  return 'الرجاء إدخال اسم العائلة';
+                }
                 return null;
               },
             ),
             const SizedBox(height: 16),
 
-            // الجنس
-            DropdownButtonFormField<String>(
-              value: _selectedGender,
+            // رقم الهوية
+            TextFormField(
+              controller: _nationalIdController,
               decoration: const InputDecoration(
-                labelText: 'الجنس',
+                labelText: 'رقم الهوية *',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.wc),
+                prefixIcon: Icon(Icons.badge),
               ),
-              items: const [
-                DropdownMenuItem(value: 'male', child: Text('ذكر')),
-                DropdownMenuItem(value: 'female', child: Text('أنثى')),
-              ],
-              onChanged: (value) => setState(() => _selectedGender = value),
+              keyboardType: TextInputType.number,
+              maxLength: 9,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'الرجاء إدخال رقم الهوية';
+                }
+                if (value.trim().length != 9) {
+                  return 'رقم الهوية يجب أن يكون 9 أرقام';
+                }
+                final parsedValue = int.tryParse(value.trim());
+                if (parsedValue == null) {
+                  return 'رقم الهوية يجب أن يحتوي على أرقام فقط';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
 
@@ -229,7 +317,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
               onTap: _selectDeathDate,
               child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'تاريخ الوفاة',
+                  labelText: 'تاريخ الوفاة *',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.calendar_today),
                 ),
@@ -237,43 +325,93 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
                   _deathDate != null
                       ? '${_deathDate!.year}-${_deathDate!.month.toString().padLeft(2, '0')}-${_deathDate!.day.toString().padLeft(2, '0')}'
                       : 'اختر التاريخ',
+                  style: TextStyle(
+                    color: _deathDate != null ? null : Colors.grey,
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
             // سبب الوفاة
-            TextFormField(
-              controller: _deathCauseController,
+            DropdownButtonFormField<int>(
+              value: _selectedDeathCause,
               decoration: const InputDecoration(
                 labelText: 'سبب الوفاة',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.medical_information),
               ),
-              maxLines: 2,
+              items: const [
+                DropdownMenuItem(
+                  value: DeathCause.natural,
+                  child: Text('طبيعية'),
+                ),
+                DropdownMenuItem(value: DeathCause.disease, child: Text('مرض')),
+                DropdownMenuItem(value: DeathCause.sudden, child: Text('فجأة')),
+                DropdownMenuItem(
+                  value: DeathCause.accident,
+                  child: Text('حادث'),
+                ),
+                DropdownMenuItem(value: DeathCause.other, child: Text('أخرى')),
+                DropdownMenuItem(
+                  value: DeathCause.suicide,
+                  child: Text('انتحار'),
+                ),
+                DropdownMenuItem(
+                  value: DeathCause.murdered,
+                  child: Text('مغدور'),
+                ),
+                DropdownMenuItem(
+                  value: DeathCause.unknown,
+                  child: Text('غير معروف'),
+                ),
+              ],
+              onChanged: (value) => setState(() => _selectedDeathCause = value),
             ),
             const SizedBox(height: 16),
 
-            // العمر عند الوفاة
-            TextFormField(
-              controller: _ageController,
+            // نوع الوثيقة
+            DropdownButtonFormField<int>(
+              value: _selectedDocumentType,
               decoration: const InputDecoration(
-                labelText: 'العمر عند الوفاة',
+                labelText: 'نوع الوثيقة',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.cake),
-                suffixText: 'سنة',
+                prefixIcon: Icon(Icons.description),
               ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value != null && value.isNotEmpty) {
-                  final age = int.tryParse(value);
-                  if (age == null || age < 0 || age > 150) {
-                    return 'الرجاء إدخال عمر صحيح (0-150)';
-                  }
-                }
-                return null;
-              },
+              items: const [
+                DropdownMenuItem(
+                  value: DocumentType.deathCertificate,
+                  child: Text('شهادة وفاة'),
+                ),
+                DropdownMenuItem(
+                  value: DocumentType.martyrCertificate,
+                  child: Text('إفادة شهيد'),
+                ),
+              ],
+              onChanged: (value) =>
+                  setState(() => _selectedDocumentType = value),
             ),
+            const SizedBox(height: 16),
+
+            // رفع الوثيقة
+            OutlinedButton.icon(
+              onPressed: _pickDocument,
+              icon: const Icon(Icons.upload_file),
+              label: Text(
+                _documentPath != null ? 'تم رفع الوثيقة' : 'رفع وثيقة',
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.all(16),
+                foregroundColor: _documentPath != null ? Colors.green : null,
+              ),
+            ),
+            if (_documentPath != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'الملف: ${_documentPath!.split('/').last}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
             const SizedBox(height: 16),
 
             // ملاحظات

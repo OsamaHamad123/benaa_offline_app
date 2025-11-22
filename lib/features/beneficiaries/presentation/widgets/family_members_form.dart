@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:file_picker/file_picker.dart';
 import '../../../../data/db/drift_database.dart';
 import '../providers/beneficiary_dependencies.dart';
+import '../../../../core/utils/family_enums.dart';
+import '../../../../core/utils/ux_helpers.dart';
 
 class FamilyMembersForm extends ConsumerStatefulWidget {
   final int beneficiaryId;
@@ -22,91 +26,76 @@ class FamilyMembersForm extends ConsumerStatefulWidget {
 
 class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _nationalIdController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _disabilityTypeController = TextEditingController();
-  final _chronicDiseaseTypeController = TextEditingController();
+  late TextEditingController _firstNameController;
+  late TextEditingController _secondNameController;
+  late TextEditingController _thirdNameController;
+  late TextEditingController _familyNameController;
+  late TextEditingController _orphanNationalIdController;
+  late TextEditingController _notesController;
 
-  String? _selectedRelationship;
-  String? _selectedGender;
-  String? _selectedMaritalStatus;
-  String? _selectedEducation;
-  String? _selectedOccupation;
-  String? _selectedHealthStatus;
+  int? _selectedGender;
+  int? _selectedHealthStatus;
   DateTime? _birthDate;
-  bool _hasDisability = false;
-  bool _hasChronicDisease = false;
-  bool _livesWithBeneficiary = true;
+  int? _calculatedAge;
 
-  final List<String> _relationships = [
-    'ابن',
-    'ابنة',
-    'زوج',
-    'زوجة',
-    'أب',
-    'أم',
-    'أخ',
-    'أخت',
-    'جد',
-    'جدة',
-    'حفيد',
-    'حفيدة',
-    'عم',
-    'عمة',
-    'خال',
-    'خالة',
-    'آخر',
-  ];
-
-  final List<String> _maritalStatuses = ['أعزب', 'متزوج', 'مطلق', 'أرمل'];
-
-  final List<String> _educationLevels = [
-    'أمي',
-    'ابتدائي',
-    'إعدادي',
-    'ثانوي',
-    'دبلوم',
-    'بكالوريوس',
-    'ماجستير',
-    'دكتوراه',
-  ];
-
-  final List<String> _healthStatuses = ['جيدة', 'متوسطة', 'سيئة'];
+  // Attachments
+  String? _nationalIdImagePath;
+  String? _medicalReportPath;
+  String? _birthCertificatePath;
+  String? _lastCertificatePath;
+  String? _personalPhotoPath;
+  String? _fullPhotoPath;
 
   @override
   void initState() {
     super.initState();
     final member = widget.existingMember;
-    if (member != null) {
-      _nameController.text = member.fullName;
-      _nationalIdController.text = member.nationalId ?? '';
-      _ageController.text = member.age?.toString() ?? '';
-      _phoneController.text = member.phone ?? '';
-      _disabilityTypeController.text = member.disabilityType ?? '';
-      _chronicDiseaseTypeController.text = member.chronicDiseaseType ?? '';
-      _selectedRelationship = member.relationship;
-      _selectedGender = member.gender;
-      _selectedMaritalStatus = member.maritalStatus;
-      _selectedEducation = member.educationLevel;
-      _selectedOccupation = member.occupation;
-      _selectedHealthStatus = member.healthStatus;
-      _birthDate = member.birthDate;
-      _hasDisability = member.hasDisability;
-      _hasChronicDisease = member.hasChronicDisease;
-      _livesWithBeneficiary = member.livesWithBeneficiary;
+    _firstNameController = TextEditingController(text: member?.firstName);
+    _secondNameController = TextEditingController(text: member?.secondName);
+    _thirdNameController = TextEditingController(text: member?.thirdName);
+    _familyNameController = TextEditingController(text: member?.familyName);
+    _orphanNationalIdController = TextEditingController(
+      text: member?.orphanNationalId.toString() ?? '',
+    );
+    _notesController = TextEditingController(text: member?.notes);
+
+    // تحميل القيم
+    _selectedGender = member?.gender;
+    _selectedHealthStatus = member?.healthStatus;
+    _birthDate = member?.birthDate;
+    if (_birthDate != null) {
+      _calculatedAge = DateTime.now().difference(_birthDate!).inDays ~/ 365;
+    }
+
+    // Parse existing attachments
+    if (member?.attachments != null && member!.attachments!.isNotEmpty) {
+      final attachmentsList = member.attachments!.split(',');
+      for (var attachment in attachmentsList) {
+        if (attachment.contains('national_id')) {
+          _nationalIdImagePath = attachment;
+        } else if (attachment.contains('medical')) {
+          _medicalReportPath = attachment;
+        } else if (attachment.contains('birth')) {
+          _birthCertificatePath = attachment;
+        } else if (attachment.contains('certificate')) {
+          _lastCertificatePath = attachment;
+        } else if (attachment.contains('personal')) {
+          _personalPhotoPath = attachment;
+        } else if (attachment.contains('full')) {
+          _fullPhotoPath = attachment;
+        }
+      }
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _nationalIdController.dispose();
-    _ageController.dispose();
-    _phoneController.dispose();
-    _disabilityTypeController.dispose();
-    _chronicDiseaseTypeController.dispose();
+    _firstNameController.dispose();
+    _secondNameController.dispose();
+    _thirdNameController.dispose();
+    _familyNameController.dispose();
+    _orphanNationalIdController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
@@ -114,7 +103,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     final picked = await showDatePicker(
       context: context,
       initialDate:
-          _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 18)),
+          _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('ar'),
@@ -122,44 +111,100 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     if (picked != null) {
       setState(() {
         _birthDate = picked;
-        // حساب العمر تلقائياً
-        final age = DateTime.now().difference(picked).inDays ~/ 365;
-        _ageController.text = age.toString();
+        _calculatedAge = DateTime.now().difference(picked).inDays ~/ 365;
       });
     }
+  }
+
+  Future<void> _pickFile(String attachmentType) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        switch (attachmentType) {
+          case 'national_id':
+            _nationalIdImagePath = result.files.single.path;
+            break;
+          case 'medical':
+            _medicalReportPath = result.files.single.path;
+            break;
+          case 'birth':
+            _birthCertificatePath = result.files.single.path;
+            break;
+          case 'certificate':
+            _lastCertificatePath = result.files.single.path;
+            break;
+          case 'personal':
+            _personalPhotoPath = result.files.single.path;
+            break;
+          case 'full':
+            _fullPhotoPath = result.files.single.path;
+            break;
+        }
+      });
+    }
+  }
+
+  String _buildAttachmentsString() {
+    final attachments = <String>[];
+    if (_nationalIdImagePath != null) attachments.add(_nationalIdImagePath!);
+    if (_medicalReportPath != null) attachments.add(_medicalReportPath!);
+    if (_birthCertificatePath != null) attachments.add(_birthCertificatePath!);
+    if (_lastCertificatePath != null) attachments.add(_lastCertificatePath!);
+    if (_personalPhotoPath != null) attachments.add(_personalPhotoPath!);
+    if (_fullPhotoPath != null) attachments.add(_fullPhotoPath!);
+    return attachments.join(',');
   }
 
   Future<void> _saveMember() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_birthDate == null) {
+      ToastHelper.showError('الرجاء اختيار تاريخ الميلاد');
+      return;
+    }
+
+    // Validate required attachments
+    if (_nationalIdImagePath == null ||
+        _medicalReportPath == null ||
+        _birthCertificatePath == null ||
+        _lastCertificatePath == null ||
+        _personalPhotoPath == null ||
+        _fullPhotoPath == null) {
+      ToastHelper.showWarning('الرجاء رفع جميع المرفقات المطلوبة');
+      return;
+    }
+
     final database = ref.read(databaseProvider);
     final dao = database.familyMembersDao;
+
+    final orphanNationalIdInt = int.parse(
+      _orphanNationalIdController.text.trim(),
+    );
 
     final companion = FamilyMembersTableCompanion(
       id: widget.existingMember != null
           ? drift.Value(widget.existingMember!.id)
           : const drift.Value.absent(),
       beneficiaryId: drift.Value(widget.beneficiaryId),
-      fullName: drift.Value(_nameController.text.trim()),
-      relationship: drift.Value(_selectedRelationship!),
-      gender: drift.Value(_selectedGender ?? 'male'),
-      nationalId: drift.Value(_nationalIdController.text.trim()),
-      birthDate: drift.Value(_birthDate),
-      age: _ageController.text.isNotEmpty
-          ? drift.Value(int.tryParse(_ageController.text))
-          : const drift.Value(null),
-      maritalStatus: drift.Value(_selectedMaritalStatus),
-      educationLevel: drift.Value(_selectedEducation),
-      occupation: drift.Value(_selectedOccupation),
-      healthStatus: drift.Value(_selectedHealthStatus),
-      hasDisability: drift.Value(_hasDisability),
-      disabilityType: drift.Value(_disabilityTypeController.text.trim()),
-      hasChronicDisease: drift.Value(_hasChronicDisease),
-      chronicDiseaseType: drift.Value(
-        _chronicDiseaseTypeController.text.trim(),
-      ),
-      livesWithBeneficiary: drift.Value(_livesWithBeneficiary),
-      phone: drift.Value(_phoneController.text.trim()),
+      orphanNationalId: drift.Value(orphanNationalIdInt),
+      firstName: drift.Value(_firstNameController.text.trim()),
+      secondName: _secondNameController.text.trim().isEmpty
+          ? const drift.Value(null)
+          : drift.Value(_secondNameController.text.trim()),
+      thirdName: _thirdNameController.text.trim().isEmpty
+          ? const drift.Value(null)
+          : drift.Value(_thirdNameController.text.trim()),
+      familyName: drift.Value(_familyNameController.text.trim()),
+      birthDate: drift.Value(_birthDate!),
+      age: drift.Value(_calculatedAge),
+      gender: drift.Value(_selectedGender ?? Gender.male),
+      healthStatus: drift.Value(_selectedHealthStatus ?? HealthStatus.unknown),
+      attachments: drift.Value(_buildAttachmentsString()),
+      notes: drift.Value(_notesController.text.trim()),
       syncState: const drift.Value('pending'),
       serverId: const drift.Value(null),
       lastSyncedAt: const drift.Value(null),
@@ -173,26 +218,23 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       if (widget.existingMember != null) {
         final updateCompanion = FamilyMembersTableCompanion(
           id: drift.Value(widget.existingMember!.id),
-          fullName: drift.Value(_nameController.text.trim()),
-          relationship: drift.Value(_selectedRelationship!),
-          gender: drift.Value(_selectedGender ?? 'male'),
-          nationalId: drift.Value(_nationalIdController.text.trim()),
-          birthDate: drift.Value(_birthDate),
-          age: _ageController.text.isNotEmpty
-              ? drift.Value(int.tryParse(_ageController.text))
-              : const drift.Value(null),
-          maritalStatus: drift.Value(_selectedMaritalStatus),
-          educationLevel: drift.Value(_selectedEducation),
-          occupation: drift.Value(_selectedOccupation),
-          healthStatus: drift.Value(_selectedHealthStatus),
-          hasDisability: drift.Value(_hasDisability),
-          disabilityType: drift.Value(_disabilityTypeController.text.trim()),
-          hasChronicDisease: drift.Value(_hasChronicDisease),
-          chronicDiseaseType: drift.Value(
-            _chronicDiseaseTypeController.text.trim(),
+          orphanNationalId: drift.Value(orphanNationalIdInt),
+          firstName: drift.Value(_firstNameController.text.trim()),
+          secondName: _secondNameController.text.trim().isEmpty
+              ? const drift.Value(null)
+              : drift.Value(_secondNameController.text.trim()),
+          thirdName: _thirdNameController.text.trim().isEmpty
+              ? const drift.Value(null)
+              : drift.Value(_thirdNameController.text.trim()),
+          familyName: drift.Value(_familyNameController.text.trim()),
+          birthDate: drift.Value(_birthDate!),
+          age: drift.Value(_calculatedAge),
+          gender: drift.Value(_selectedGender ?? Gender.male),
+          healthStatus: drift.Value(
+            _selectedHealthStatus ?? HealthStatus.unknown,
           ),
-          livesWithBeneficiary: drift.Value(_livesWithBeneficiary),
-          phone: drift.Value(_phoneController.text.trim()),
+          attachments: drift.Value(_buildAttachmentsString()),
+          notes: drift.Value(_notesController.text.trim()),
           updatedAt: drift.Value(DateTime.now()),
         );
         await (database.update(database.familyMembersTable)
@@ -203,19 +245,53 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم الحفظ بنجاح')));
+        ToastHelper.showSuccess('تم الحفظ بنجاح');
         Navigator.of(context).pop();
         widget.onSaved();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في الحفظ: $e')));
+        ToastHelper.showError('خطأ في الحفظ: $e');
       }
     }
+  }
+
+  Widget _buildAttachmentButton({
+    required String label,
+    required String attachmentType,
+    required String? filePath,
+    required IconData icon,
+  }) {
+    return Column(
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => _pickFile(attachmentType),
+          icon: Icon(icon),
+          label: Text(label),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.all(12),
+            foregroundColor: filePath != null ? Colors.green : Colors.red,
+          ),
+        ),
+        if (filePath != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            '✓ تم الرفع',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.green[700],
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 4),
+          const Text(
+            'مطلوب *',
+            style: TextStyle(fontSize: 11, color: Colors.red),
+          ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -223,7 +299,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.existingMember != null ? 'تعديل بيانات فرد' : 'إضافة فرد',
+          widget.existingMember != null ? 'تعديل بيانات يتيم' : 'إضافة يتيم',
         ),
         actions: [
           IconButton(icon: const Icon(Icons.save), onPressed: _saveMember),
@@ -234,216 +310,289 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // المعلومات الأساسية
-            _buildSectionHeader('المعلومات الأساسية'),
+            // Section: معلومات الهوية
+            const Text(
+              'معلومات الهوية',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
 
+            // رقم هوية اليتيم
             TextFormField(
-              controller: _nameController,
+              controller: _orphanNationalIdController,
               decoration: const InputDecoration(
-                labelText: 'الاسم الكامل *',
+                labelText: 'رقم هوية اليتيم *',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.badge),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(9),
+              ],
+              maxLength: 9,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'الرجاء إدخال رقم الهوية';
+                }
+                if (value.trim().length != 9) {
+                  return 'رقم الهوية يجب أن يكون 9 أرقام';
+                }
+                final intValue = int.tryParse(value.trim());
+                if (intValue == null) {
+                  return 'رقم الهوية يجب أن يكون أرقام فقط';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // Section: الاسم الرباعي
+            const Text(
+              'الاسم الرباعي',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            // الاسم الأول
+            TextFormField(
+              controller: _firstNameController,
+              decoration: const InputDecoration(
+                labelText: 'الاسم الأول *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
-              validator: (v) => v?.trim().isEmpty ?? true ? 'مطلوب' : null,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'الرجاء إدخال الاسم الأول';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 16),
 
-            DropdownButtonFormField<String>(
-              value: _selectedRelationship,
+            // اسم الأب
+            TextFormField(
+              controller: _secondNameController,
               decoration: const InputDecoration(
-                labelText: 'صلة القرابة *',
+                labelText: 'اسم الأب',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // اسم الجد
+            TextFormField(
+              controller: _thirdNameController,
+              decoration: const InputDecoration(
+                labelText: 'اسم الجد',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // اسم العائلة
+            TextFormField(
+              controller: _familyNameController,
+              decoration: const InputDecoration(
+                labelText: 'اسم العائلة *',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.family_restroom),
               ),
-              items: _relationships
-                  .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedRelationship = v),
-              validator: (v) => v == null ? 'مطلوب' : null,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'الرجاء إدخال اسم العائلة';
+                }
+                return null;
+              },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedGender,
-                    decoration: const InputDecoration(
-                      labelText: 'الجنس',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'male', child: Text('ذكر')),
-                      DropdownMenuItem(value: 'female', child: Text('أنثى')),
-                    ],
-                    onChanged: (v) => setState(() => _selectedGender = v),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _nationalIdController,
-                    decoration: const InputDecoration(
-                      labelText: 'الرقم الوطني',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
+            // Section: المعلومات الشخصية
+            const Text(
+              'المعلومات الشخصية',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
 
+            // تاريخ الميلاد
             InkWell(
               onTap: _selectBirthDate,
               child: InputDecorator(
                 decoration: const InputDecoration(
-                  labelText: 'تاريخ الميلاد',
+                  labelText: 'تاريخ الميلاد *',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.calendar_today),
+                  prefixIcon: Icon(Icons.cake),
                 ),
-                child: Text(
-                  _birthDate != null
-                      ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
-                      : 'اختر التاريخ',
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _birthDate != null
+                          ? '${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}'
+                          : 'اختر التاريخ',
+                      style: TextStyle(
+                        color: _birthDate != null ? null : Colors.grey,
+                      ),
+                    ),
+                    if (_calculatedAge != null)
+                      Text(
+                        'العمر: $_calculatedAge سنة',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                  ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+
+            // الجنس
+            DropdownButtonFormField<int>(
+              value: _selectedGender,
+              decoration: const InputDecoration(
+                labelText: 'الجنس *',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.wc),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: Gender.male,
+                  child: Text(Gender.toArabic(Gender.male)),
+                ),
+                DropdownMenuItem(
+                  value: Gender.female,
+                  child: Text(Gender.toArabic(Gender.female)),
+                ),
+              ],
+              onChanged: (value) => setState(() => _selectedGender = value),
+              validator: (value) {
+                if (value == null) return 'الرجاء اختيار الجنس';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            // الحالة الصحية
+            DropdownButtonFormField<int>(
+              value: _selectedHealthStatus,
+              decoration: const InputDecoration(
+                labelText: 'الحالة الصحية *',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.health_and_safety),
+              ),
+              items: HealthStatus.allValues.map((statusValue) {
+                return DropdownMenuItem(
+                  value: statusValue,
+                  child: Text(HealthStatus.toArabic(statusValue)),
+                );
+              }).toList(),
+              onChanged: (value) =>
+                  setState(() => _selectedHealthStatus = value),
+              validator: (value) {
+                if (value == null) return 'الرجاء اختيار الحالة الصحية';
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // Section: المرفقات المطلوبة
+            const Text(
+              'المرفقات المطلوبة',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildAttachmentButton(
+                    label: 'صورة هوية',
+                    attachmentType: 'national_id',
+                    filePath: _nationalIdImagePath,
+                    icon: Icons.credit_card,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildAttachmentButton(
+                    label: 'تقرير طبي',
+                    attachmentType: 'medical',
+                    filePath: _medicalReportPath,
+                    icon: Icons.medical_information,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _ageController,
-                    decoration: const InputDecoration(
-                      labelText: 'العمر',
-                      border: OutlineInputBorder(),
-                      suffixText: 'سنة',
-                    ),
-                    keyboardType: TextInputType.number,
+                  child: _buildAttachmentButton(
+                    label: 'شهادة الميلاد',
+                    attachmentType: 'birth',
+                    filePath: _birthCertificatePath,
+                    icon: Icons.description,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: TextFormField(
-                    controller: _phoneController,
-                    decoration: const InputDecoration(
-                      labelText: 'الهاتف',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.phone),
-                    ),
-                    keyboardType: TextInputType.phone,
+                  child: _buildAttachmentButton(
+                    label: 'آخر شهادة',
+                    attachmentType: 'certificate',
+                    filePath: _lastCertificatePath,
+                    icon: Icons.school,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _buildAttachmentButton(
+                    label: 'صورة شخصية',
+                    attachmentType: 'personal',
+                    filePath: _personalPhotoPath,
+                    icon: Icons.face,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildAttachmentButton(
+                    label: 'صورة طولية',
+                    attachmentType: 'full',
+                    filePath: _fullPhotoPath,
+                    icon: Icons.person,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
 
-            // المعلومات الاجتماعية
-            _buildSectionHeader('المعلومات الاجتماعية'),
-
-            DropdownButtonFormField<String>(
-              value: _selectedMaritalStatus,
-              decoration: const InputDecoration(
-                labelText: 'الحالة الاجتماعية',
-                border: OutlineInputBorder(),
-              ),
-              items: _maritalStatuses
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedMaritalStatus = v),
-            ),
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<String>(
-              value: _selectedEducation,
-              decoration: const InputDecoration(
-                labelText: 'المستوى التعليمي',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.school),
-              ),
-              items: _educationLevels
-                  .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedEducation = v),
-            ),
-            const SizedBox(height: 16),
-
+            // ملاحظات
             TextFormField(
-              initialValue: _selectedOccupation,
+              controller: _notesController,
               decoration: const InputDecoration(
-                labelText: 'المهنة',
+                labelText: 'ملاحظات',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.work),
+                prefixIcon: Icon(Icons.notes),
               ),
-              onChanged: (v) => _selectedOccupation = v,
+              maxLines: 3,
             ),
             const SizedBox(height: 24),
 
-            // المعلومات الصحية
-            _buildSectionHeader('المعلومات الصحية'),
-
-            DropdownButtonFormField<String>(
-              value: _selectedHealthStatus,
-              decoration: const InputDecoration(
-                labelText: 'الحالة الصحية',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.health_and_safety),
-              ),
-              items: _healthStatuses
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
-              onChanged: (v) => setState(() => _selectedHealthStatus = v),
-            ),
-            const SizedBox(height: 16),
-
-            SwitchListTile(
-              title: const Text('يعاني من إعاقة'),
-              value: _hasDisability,
-              onChanged: (v) => setState(() => _hasDisability = v),
-            ),
-            if (_hasDisability)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: TextFormField(
-                  controller: _disabilityTypeController,
-                  decoration: const InputDecoration(
-                    labelText: 'نوع الإعاقة',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-
-            SwitchListTile(
-              title: const Text('يعاني من مرض مزمن'),
-              value: _hasChronicDisease,
-              onChanged: (v) => setState(() => _hasChronicDisease = v),
-            ),
-            if (_hasChronicDisease)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: TextFormField(
-                  controller: _chronicDiseaseTypeController,
-                  decoration: const InputDecoration(
-                    labelText: 'نوع المرض المزمن',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 24),
-
-            // معلومات السكن
-            _buildSectionHeader('معلومات السكن'),
-
-            SwitchListTile(
-              title: const Text('يعيش مع المستفيد'),
-              value: _livesWithBeneficiary,
-              onChanged: (v) => setState(() => _livesWithBeneficiary = v),
-            ),
-            const SizedBox(height: 24),
-
+            // زر الحفظ
             ElevatedButton.icon(
               onPressed: _saveMember,
               icon: const Icon(Icons.save),
@@ -454,16 +603,6 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }

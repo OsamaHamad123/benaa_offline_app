@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
-/// جدول أفراد العائلة الأحياء
+/// جدول أفراد الأسرة (الأيتام)
+/// يحتوي على بيانات تفصيلية لأفراد الأسرة
 @DataClassName('FamilyMember')
 class FamilyMembersTable extends Table {
   @override
@@ -9,36 +10,33 @@ class FamilyMembersTable extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get beneficiaryId => integer()();
 
-  // Personal Info
-  TextColumn get fullName => text()();
-  TextColumn get relationship =>
-      text()(); // ابن، ابنة، أخ، أخت، زوج، زوجة، أب، أم
-  TextColumn get gender => text()(); // male, female
-  TextColumn get nationalId => text().nullable()();
+  // رقم هوية اليتيم - Integer (9 أرقام)
+  IntColumn get orphanNationalId => integer()();
 
-  DateTimeColumn get birthDate => dateTime().nullable()();
+  // الاسم الرباعي
+  TextColumn get firstName => text()();
+  TextColumn get secondName => text().nullable()();
+  TextColumn get thirdName => text().nullable()();
+  TextColumn get familyName => text()();
+
+  // تاريخ الميلاد والعمر
+  DateTimeColumn get birthDate => dateTime()();
   IntColumn get age => integer().nullable()();
 
-  // Social & Education
-  TextColumn get maritalStatus => text().nullable()();
-  TextColumn get educationLevel => text().nullable()();
-  TextColumn get occupation => text().nullable()();
+  // الجنس (1=ذكر، 2=أنثى)
+  IntColumn get gender => integer()(); // 1=male, 2=female
 
-  // Health
-  TextColumn get healthStatus => text().nullable()();
-  BoolColumn get hasDisability =>
-      boolean().withDefault(const Constant(false))();
-  TextColumn get disabilityType => text().nullable()();
-  BoolColumn get hasChronicDisease =>
-      boolean().withDefault(const Constant(false))();
-  TextColumn get chronicDiseaseType => text().nullable()();
+  // الحالة الصحية (1=سليم، 2=مريض، 3=مريض مزمن، 4=معاق، 5=غير معروف)
+  IntColumn get healthStatus => integer()();
+  // 1=سليم، 2=مريض، 3=مريض مزمن، 4=معاق، 5=غير معروف
 
-  // Living situation
-  BoolColumn get livesWithBeneficiary =>
-      boolean().withDefault(const Constant(true))();
-  TextColumn get phone => text().nullable()();
-
+  // ملاحظات
   TextColumn get notes => text().nullable()();
+
+  // الملفات المرفقة (مفصولة بفاصلة)
+  TextColumn get attachments => text().nullable()();
+  // أنواع الملفات: صورة هوية، تقرير طبي، شهادة الميلاد،
+  // آخر شهادة، صورة شخصية، صورة طولية
 
   // System fields
   DateTimeColumn get createdAt => dateTime().nullable()();

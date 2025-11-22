@@ -92,7 +92,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
     // Don't auto-save if validation fails (basic required fields)
     if (_controllers.firstNameController.text.trim().isEmpty ||
         _controllers.nationalIdController.text.trim().isEmpty ||
-        _controllers.nationalIdController.text.trim().length != 11) {
+        _controllers.nationalIdController.text.trim().length != 9) {
       return;
     }
 
@@ -204,6 +204,20 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
       _controllers.updateDeceasedMembers(familyData.deceased);
     } catch (e) {
       debugPrint('❌ [FormPage] Error loading family members: $e');
+
+      // إظهار رسالة خطأ للمستخدم
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('تعذر تحميل بيانات أفراد العائلة'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -231,7 +245,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
 
       // Wait for tab animation, then focus first field
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (_firstFieldFocusNode.canRequestFocus) {
+        if (mounted && _firstFieldFocusNode.canRequestFocus) {
           _firstFieldFocusNode.requestFocus();
         }
       });
@@ -325,6 +339,31 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
       debugPrint(
         '💾 [FormPage] Attachment save result - Saved: ${attachmentResult.savedCount}, Failed: ${attachmentResult.failedCount}',
       );
+
+      // إظهار تحذير إذا فشل حفظ بعض الملفات
+      if (attachmentResult.failedCount > 0 && mounted && !isAutoSave) {
+        String errorMessage =
+            'تم حفظ البيانات لكن فشل حفظ ${attachmentResult.failedCount} من الملفات';
+
+        // إذا كانت المشكلة بسبب حجم الملف
+        if (attachmentResult.oversizedFiles != null &&
+            attachmentResult.oversizedFiles!.isNotEmpty) {
+          errorMessage = 'بعض الملفات تتجاوز الحد الأقصى للحجم (10 ميجابايت)';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+        );
+      }
+
       _controllers.pendingAttachmentFiles.clear();
 
       // 🆕 Save family members
@@ -394,10 +433,14 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
       );
 
       if (confirmed == true && mounted) {
-        context.pop();
+        if (context.mounted) {
+          context.pop();
+        }
       }
     } else {
-      context.pop();
+      if (context.mounted) {
+        context.pop();
+      }
     }
   }
 
@@ -437,7 +480,9 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
 
           EnhancedSnackbar.showSuccess(context, message: 'تم الحذف بنجاح');
 
-          context.pop();
+          if (context.mounted) {
+            context.pop();
+          }
         }
       } catch (e) {
         if (mounted) {

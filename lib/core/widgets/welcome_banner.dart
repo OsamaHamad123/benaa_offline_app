@@ -180,10 +180,4 @@ class _WelcomeBannerState extends State<WelcomeBanner>
       ),
     );
   }
-
-  /// Check if banner should be shown
-  static Future<bool> shouldShow() async {
-    final prefs = await SharedPreferences.getInstance();
-    return !(prefs.getBool(_bannerShownKey) ?? false);
-  }
 }

@@ -7,6 +7,7 @@ import '../../data/db/drift_database.dart';
 import '../storage/secure_storage.dart';
 import '../config/api_config.dart';
 import '../utils/debug_logger.dart';
+import '../utils/family_enums.dart';
 import 'background_sync_worker.dart';
 import 'package:drift/drift.dart' as drift;
 
@@ -160,7 +161,7 @@ class NewSyncManager {
 
       for (final row in pendingRows) {
         // تحويل البيانات من JSON string إلى Map
-        final Map<String, dynamic> data = {};
+        Map<String, dynamic> data = {};
         try {
           // payload قد يكون JSON string
           if (row.payload.isNotEmpty) {
@@ -169,6 +170,13 @@ class NewSyncManager {
           }
         } catch (e) {
           DebugLogger.warning('⚠️ Failed to parse payload for ${row.id}');
+        }
+
+        // 🔄 تحويل البيانات من Local Integer إلى API String/Text
+        if (row.entity == 'family_deceased') {
+          data = _familyDeceasedToApi(data);
+        } else if (row.entity == 'family_member') {
+          data = _familyMemberToApi(data);
         }
 
         changes.add(
@@ -284,17 +292,39 @@ class NewSyncManager {
         return;
       }
 
+      // تحويل من String/Text (API) إلى Integer (Local)
+      final deceasedTypeStr = data['deceased_type'] as String? ?? 'father';
+      final deceasedTypeInt = DeceasedType.fromEnglish(deceasedTypeStr);
+
+      final deathCauseStr = data['death_cause'] as String? ?? 'غير معروف';
+      final deathCauseInt = DeathCause.fromArabic(deathCauseStr);
+
+      final documentTypeStr = data['document_type'] as String?;
+      final documentTypeInt = documentTypeStr != null
+          ? DocumentType.fromArabic(documentTypeStr)
+          : null;
+
+      // تحويل nationalId إذا كان نص إلى رقم
+      final nationalIdRaw = data['national_id'];
+      final nationalIdInt = nationalIdRaw is String
+          ? (int.tryParse(nationalIdRaw) ?? 0)
+          : (nationalIdRaw as int? ?? 0);
+
       final companion = FamilyDeceasedTableCompanion(
         id: drift.Value(serverId),
         beneficiaryId: drift.Value(data['beneficiary_id'] as int),
-        fullName: drift.Value(data['full_name'] as String),
-        relationship: drift.Value(data['relationship'] as String),
-        gender: drift.Value(data['gender'] as String? ?? 'male'),
+        deceasedType: drift.Value(deceasedTypeInt),
+        firstName: drift.Value(data['first_name'] as String? ?? ''),
+        secondName: drift.Value(data['second_name'] as String?),
+        thirdName: drift.Value(data['third_name'] as String?),
+        familyName: drift.Value(data['family_name'] as String? ?? ''),
+        nationalId: drift.Value(nationalIdInt),
         deathDate: data['death_date'] != null
             ? drift.Value(DateTime.parse(data['death_date']))
-            : const drift.Value(null),
-        deathCause: drift.Value(data['death_cause'] as String?),
-        ageAtDeath: drift.Value(data['age_at_death'] as int?),
+            : drift.Value(DateTime.now()),
+        deathCause: drift.Value(deathCauseInt),
+        documentType: drift.Value(documentTypeInt),
+        documentPath: drift.Value(data['document_path'] as String?),
         notes: drift.Value(data['notes'] as String?),
         syncState: const drift.Value('synced'),
         serverId: drift.Value(serverId),
@@ -325,33 +355,35 @@ class NewSyncManager {
         return;
       }
 
+      // تحويل من String/Text (API) إلى Integer (Local)
+      final genderStr = data['gender'] as String? ?? 'male';
+      final genderInt = Gender.fromEnglish(genderStr);
+
+      final healthStatusStr = data['health_status'] as String? ?? 'غير معروف';
+      final healthStatusInt = HealthStatus.fromArabic(healthStatusStr);
+
+      // تحويل orphan_national_id إذا كان نص إلى رقم
+      final orphanNationalIdRaw = data['orphan_national_id'];
+      final orphanNationalIdInt = orphanNationalIdRaw is String
+          ? (int.tryParse(orphanNationalIdRaw) ?? 0)
+          : (orphanNationalIdRaw as int? ?? 0);
+
       final companion = FamilyMembersTableCompanion(
         id: drift.Value(serverId),
         beneficiaryId: drift.Value(data['beneficiary_id'] as int),
-        fullName: drift.Value(data['full_name'] as String),
-        relationship: drift.Value(data['relationship'] as String),
-        gender: drift.Value(data['gender'] as String? ?? 'male'),
-        nationalId: drift.Value(data['national_id'] as String?),
+        orphanNationalId: drift.Value(orphanNationalIdInt),
+        firstName: drift.Value(data['first_name'] as String? ?? ''),
+        secondName: drift.Value(data['second_name'] as String?),
+        thirdName: drift.Value(data['third_name'] as String?),
+        familyName: drift.Value(data['family_name'] as String? ?? ''),
         birthDate: data['birth_date'] != null
             ? drift.Value(DateTime.parse(data['birth_date']))
-            : const drift.Value(null),
+            : drift.Value(DateTime.now()),
         age: drift.Value(data['age'] as int?),
-        maritalStatus: drift.Value(data['marital_status'] as String?),
-        educationLevel: drift.Value(data['education_level'] as String?),
-        occupation: drift.Value(data['occupation'] as String?),
-        healthStatus: drift.Value(data['health_status'] as String?),
-        hasDisability: drift.Value((data['has_disability'] as int? ?? 0) == 1),
-        disabilityType: drift.Value(data['disability_type'] as String?),
-        hasChronicDisease: drift.Value(
-          (data['has_chronic_disease'] as int? ?? 0) == 1,
-        ),
-        chronicDiseaseType: drift.Value(
-          data['chronic_disease_type'] as String?,
-        ),
-        livesWithBeneficiary: drift.Value(
-          (data['lives_with_beneficiary'] as int? ?? 1) == 1,
-        ),
-        phone: drift.Value(data['phone'] as String?),
+        gender: drift.Value(genderInt),
+        healthStatus: drift.Value(healthStatusInt),
+        attachments: drift.Value(data['attachments'] as String?),
+        notes: drift.Value(data['notes'] as String?),
         syncState: const drift.Value('synced'),
         serverId: drift.Value(serverId),
         lastSyncedAt: drift.Value(DateTime.now()),
@@ -405,6 +437,67 @@ class NewSyncManager {
     } catch (e) {
       DebugLogger.error('❌ Failed to clear successful changes', e);
     }
+  }
+
+  // ===========================
+  // 📤 CONVERT TO API FORMAT (Local Integer → API String/Text)
+  // ===========================
+
+  /// تحويل family_deceased من Local إلى API format
+  Map<String, dynamic> _familyDeceasedToApi(Map<String, dynamic> localData) {
+    final apiData = Map<String, dynamic>.from(localData);
+
+    // تحويل deceased_type: Integer → String
+    if (apiData['deceased_type'] is int) {
+      apiData['deceased_type'] = DeceasedType.toEnglish(
+        apiData['deceased_type'] as int,
+      );
+    }
+
+    // تحويل death_cause: Integer → Arabic Text
+    if (apiData['death_cause'] is int) {
+      apiData['death_cause'] = DeathCause.toArabic(
+        apiData['death_cause'] as int,
+      );
+    }
+
+    // تحويل document_type: Integer → Arabic Text
+    if (apiData['document_type'] is int) {
+      apiData['document_type'] = DocumentType.toArabic(
+        apiData['document_type'] as int,
+      );
+    }
+
+    // تحويل national_id: Integer → String
+    if (apiData['national_id'] is int) {
+      apiData['national_id'] = apiData['national_id'].toString();
+    }
+
+    return apiData;
+  }
+
+  /// تحويل family_member من Local إلى API format
+  Map<String, dynamic> _familyMemberToApi(Map<String, dynamic> localData) {
+    final apiData = Map<String, dynamic>.from(localData);
+
+    // تحويل gender: Integer → String
+    if (apiData['gender'] is int) {
+      apiData['gender'] = Gender.toEnglish(apiData['gender'] as int);
+    }
+
+    // تحويل health_status: Integer → Arabic Text
+    if (apiData['health_status'] is int) {
+      apiData['health_status'] = HealthStatus.toArabic(
+        apiData['health_status'] as int,
+      );
+    }
+
+    // تحويل orphan_national_id: Integer → String
+    if (apiData['orphan_national_id'] is int) {
+      apiData['orphan_national_id'] = apiData['orphan_national_id'].toString();
+    }
+
+    return apiData;
   }
 
   // ===========================

@@ -9,38 +9,23 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
     with _$FamilyMembersDaoMixin {
   FamilyMembersDao(AppDatabase db) : super(db);
 
-  /// 📋 الحصول على جميع أفراد العائلة لمستفيد معين
+  /// 📋 الحصول على جميع أفراد العائلة (الأيتام) لمستفيد معين
   Future<List<FamilyMember>> getMembersByBeneficiary(int beneficiaryId) {
     return (select(familyMembersTable)
           ..where((t) => t.beneficiaryId.equals(beneficiaryId))
           ..orderBy([
-            (t) => OrderingTerm(expression: t.relationship),
             (t) => OrderingTerm(expression: t.age, mode: OrderingMode.desc),
           ]))
         .get();
   }
 
-  /// 👨‍👩‍👧‍👦 الحصول على أفراد العائلة حسب صلة القرابة
-  Future<List<FamilyMember>> getMembersByRelationship(
-    int beneficiaryId,
-    String relationship,
-  ) {
-    return (select(familyMembersTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              t.relationship.equals(relationship),
-        ))
-        .get();
-  }
-
-  /// 🏠 الأفراد الذين يعيشون مع المستفيد
-  Future<List<FamilyMember>> getMembersLivingTogether(int beneficiaryId) {
-    return (select(familyMembersTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              t.livesWithBeneficiary.equals(true),
-        ))
-        .get();
+  /// 🔢 عدد أفراد العائلة
+  Future<int> getMembersCount(int beneficiaryId) {
+    return (selectOnly(familyMembersTable)
+          ..where(familyMembersTable.beneficiaryId.equals(beneficiaryId))
+          ..addColumns([familyMembersTable.id.count()]))
+        .getSingle()
+        .then((row) => row.read(familyMembersTable.id.count()) ?? 0);
   }
 
   /// ➕ إضافة فرد جديد
@@ -58,15 +43,6 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
     return (delete(familyMembersTable)..where((t) => t.id.equals(id))).go();
   }
 
-  /// 🔢 عدد أفراد العائلة
-  Future<int> getMembersCount(int beneficiaryId) {
-    return (selectOnly(familyMembersTable)
-          ..where(familyMembersTable.beneficiaryId.equals(beneficiaryId))
-          ..addColumns([familyMembersTable.id.count()]))
-        .getSingle()
-        .then((row) => row.read(familyMembersTable.id.count()) ?? 0);
-  }
-
   /// 📊 إحصائيات مفصلة
   Future<FamilyStatistics> getStatistics(int beneficiaryId) async {
     final members = await getMembersByBeneficiary(beneficiaryId);
@@ -74,17 +50,31 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
     int malesCount = 0;
     int femalesCount = 0;
     int childrenCount = 0; // أقل من 18
-    int withDisability = 0;
-    int withChronicDisease = 0;
-    int livingTogether = 0;
+    int healthySafe = 0; // سليم
+    int sick = 0; // مريض
+    int chronicSick = 0; // مريض مزمن
+    int disabled = 0; // معاق
 
     for (final member in members) {
-      if (member.gender == 'male') malesCount++;
-      if (member.gender == 'female') femalesCount++;
+      if (member.gender == 1) malesCount++; // 1=male
+      if (member.gender == 2) femalesCount++; // 2=female
       if (member.age != null && member.age! < 18) childrenCount++;
-      if (member.hasDisability) withDisability++;
-      if (member.hasChronicDisease) withChronicDisease++;
-      if (member.livesWithBeneficiary) livingTogether++;
+
+      // إحصائيات الحالة الصحية
+      switch (member.healthStatus) {
+        case 1: // سليم
+          healthySafe++;
+          break;
+        case 2: // مريض
+          sick++;
+          break;
+        case 3: // مريض مزمن
+          chronicSick++;
+          break;
+        case 4: // معاق
+          disabled++;
+          break;
+      }
     }
 
     return FamilyStatistics(
@@ -92,54 +82,22 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
       malesCount: malesCount,
       femalesCount: femalesCount,
       childrenCount: childrenCount,
-      withDisability: withDisability,
-      withChronicDisease: withChronicDisease,
-      livingTogether: livingTogether,
+      healthySafe: healthySafe,
+      sick: sick,
+      chronicSick: chronicSick,
+      disabled: disabled,
     );
   }
 
-  /// 📊 إحصائيات حسب صلة القرابة
-  Future<Map<String, int>> getMembersByRelationshipStats(
+  /// 🏥 أفراد العائلة حسب الحالة الصحية
+  Future<List<FamilyMember>> getMembersByHealthStatus(
     int beneficiaryId,
-  ) async {
-    final query = selectOnly(familyMembersTable)
-      ..where(familyMembersTable.beneficiaryId.equals(beneficiaryId))
-      ..addColumns([
-        familyMembersTable.relationship,
-        familyMembersTable.id.count(),
-      ])
-      ..groupBy([familyMembersTable.relationship]);
-
-    final results = await query.get();
-    final Map<String, int> stats = {};
-
-    for (final row in results) {
-      final relationship = row.read(familyMembersTable.relationship);
-      final count = row.read(familyMembersTable.id.count());
-      if (relationship != null && count != null) {
-        stats[relationship] = count;
-      }
-    }
-
-    return stats;
-  }
-
-  /// 🏥 أفراد العائلة ذوو الاحتياجات الخاصة
-  Future<List<FamilyMember>> getMembersWithDisability(int beneficiaryId) {
+    int healthStatus, // 1=سليم, 2=مريض, 3=مزمن, 4=معاق, 5=غير معروف
+  ) {
     return (select(familyMembersTable)..where(
           (t) =>
               t.beneficiaryId.equals(beneficiaryId) &
-              t.hasDisability.equals(true),
-        ))
-        .get();
-  }
-
-  /// 💊 أفراد العائلة ذوو الأمراض المزمنة
-  Future<List<FamilyMember>> getMembersWithChronicDisease(int beneficiaryId) {
-    return (select(familyMembersTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              t.hasChronicDisease.equals(true),
+              t.healthStatus.equals(healthStatus),
         ))
         .get();
   }
@@ -147,12 +105,15 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
   /// 🔍 البحث في أفراد العائلة
   Future<List<FamilyMember>> searchMembers(int beneficiaryId, String query) {
     final searchTerm = '%${query.toLowerCase()}%';
+    final nationalIdInt = int.tryParse(query);
     return (select(familyMembersTable)..where(
           (t) =>
               t.beneficiaryId.equals(beneficiaryId) &
-              (t.fullName.lower().like(searchTerm) |
-                  t.relationship.lower().like(searchTerm) |
-                  t.nationalId.lower().like(searchTerm)),
+              (t.firstName.lower().like(searchTerm) |
+                  t.familyName.lower().like(searchTerm) |
+                  (nationalIdInt != null
+                      ? t.orphanNationalId.equals(nationalIdInt)
+                      : const Constant(false))),
         ))
         .get();
   }
@@ -182,17 +143,19 @@ class FamilyStatistics {
   final int malesCount;
   final int femalesCount;
   final int childrenCount;
-  final int withDisability;
-  final int withChronicDisease;
-  final int livingTogether;
+  final int healthySafe; // سليم
+  final int sick; // مريض
+  final int chronicSick; // مريض مزمن
+  final int disabled; // معاق
 
   FamilyStatistics({
     required this.totalMembers,
     required this.malesCount,
     required this.femalesCount,
     required this.childrenCount,
-    required this.withDisability,
-    required this.withChronicDisease,
-    required this.livingTogether,
+    required this.healthySafe,
+    required this.sick,
+    required this.chronicSick,
+    required this.disabled,
   });
 }

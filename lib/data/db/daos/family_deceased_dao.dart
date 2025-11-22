@@ -9,15 +9,34 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
     with _$FamilyDeceasedDaoMixin {
   FamilyDeceasedDao(AppDatabase db) : super(db);
 
-  /// 📋 الحصول على جميع الأموات لمستفيد معين
+  /// 📋 الحصول على جميع الأموات (الأب/الأم) لمستفيد معين
   Future<List<FamilyDeceased>> getDeceasedByBeneficiary(int beneficiaryId) {
     return (select(familyDeceasedTable)
           ..where((t) => t.beneficiaryId.equals(beneficiaryId))
           ..orderBy([
-            (t) =>
-                OrderingTerm(expression: t.deathDate, mode: OrderingMode.desc),
+            (t) => OrderingTerm(expression: t.deceasedType), // father first
           ]))
         .get();
+  }
+
+  /// 👨 الحصول على الأب المتوفى
+  Future<FamilyDeceased?> getFather(int beneficiaryId) {
+    return (select(familyDeceasedTable)..where(
+          (t) =>
+              t.beneficiaryId.equals(beneficiaryId) &
+              t.deceasedType.equals(1), // 1=father
+        ))
+        .getSingleOrNull();
+  }
+
+  /// 👩 الحصول على الأم المتوفية
+  Future<FamilyDeceased?> getMother(int beneficiaryId) {
+    return (select(familyDeceasedTable)..where(
+          (t) =>
+              t.beneficiaryId.equals(beneficiaryId) &
+              t.deceasedType.equals(2), // 2=mother
+        ))
+        .getSingleOrNull();
   }
 
   /// ➕ إضافة متوفى جديد
@@ -44,24 +63,24 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
         .then((row) => row.read(familyDeceasedTable.id.count()) ?? 0);
   }
 
-  /// 📊 إحصائيات حسب صلة القرابة
-  Future<Map<String, int>> getDeceasedByRelationship(int beneficiaryId) async {
+  /// 📊 إحصائيات حسب سبب الوفاة
+  Future<Map<int, int>> getDeceasedByDeathCause(int beneficiaryId) async {
     final query = selectOnly(familyDeceasedTable)
       ..where(familyDeceasedTable.beneficiaryId.equals(beneficiaryId))
       ..addColumns([
-        familyDeceasedTable.relationship,
+        familyDeceasedTable.deathCause,
         familyDeceasedTable.id.count(),
       ])
-      ..groupBy([familyDeceasedTable.relationship]);
+      ..groupBy([familyDeceasedTable.deathCause]);
 
     final results = await query.get();
-    final Map<String, int> stats = {};
+    final Map<int, int> stats = {};
 
     for (final row in results) {
-      final relationship = row.read(familyDeceasedTable.relationship);
+      final cause = row.read(familyDeceasedTable.deathCause);
       final count = row.read(familyDeceasedTable.id.count());
-      if (relationship != null && count != null) {
-        stats[relationship] = count;
+      if (cause != null && count != null) {
+        stats[cause] = count;
       }
     }
 
@@ -71,11 +90,15 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
   /// 🔍 البحث في الأموات
   Future<List<FamilyDeceased>> searchDeceased(int beneficiaryId, String query) {
     final searchTerm = '%${query.toLowerCase()}%';
+    final nationalIdInt = int.tryParse(query);
     return (select(familyDeceasedTable)..where(
           (t) =>
               t.beneficiaryId.equals(beneficiaryId) &
-              (t.fullName.lower().like(searchTerm) |
-                  t.relationship.lower().like(searchTerm)),
+              (t.firstName.lower().like(searchTerm) |
+                  t.familyName.lower().like(searchTerm) |
+                  (nationalIdInt != null
+                      ? t.nationalId.equals(nationalIdInt)
+                      : const Constant(false))),
         ))
         .get();
   }

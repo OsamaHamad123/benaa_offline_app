@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/providers.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../dashboard/presentation/providers/dashboard_providers.dart';
 
 class SyncPage extends ConsumerStatefulWidget {
   const SyncPage({super.key});
@@ -78,7 +78,6 @@ class _SyncPageState extends ConsumerState<SyncPage>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    final database = ref.watch(databaseProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -151,10 +150,13 @@ class _SyncPageState extends ConsumerState<SyncPage>
           const SizedBox(height: 24),
 
           // Pending Items
-          FutureBuilder<int>(
-            future: database.beneficiariesDao.countPendingSync(),
-            builder: (context, snapshot) {
-              final pendingCount = snapshot.data ?? 0;
+          Consumer(
+            builder: (context, ref, child) {
+              final pendingCountAsync = ref.watch(pendingSyncCountProvider);
+              final pendingCount = pendingCountAsync.maybeWhen(
+                data: (count) => count,
+                orElse: () => 0,
+              );
 
               return Card(
                 child: Padding(

@@ -9676,35 +9676,70 @@ class $FamilyDeceasedTableTable extends FamilyDeceasedTable
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _fullNameMeta = const VerificationMeta(
-    'fullName',
+  static const VerificationMeta _deceasedTypeMeta = const VerificationMeta(
+    'deceasedType',
   );
   @override
-  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
-    'full_name',
+  late final GeneratedColumn<int> deceasedType = GeneratedColumn<int>(
+    'deceased_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firstNameMeta = const VerificationMeta(
+    'firstName',
+  );
+  @override
+  late final GeneratedColumn<String> firstName = GeneratedColumn<String>(
+    'first_name',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _relationshipMeta = const VerificationMeta(
-    'relationship',
+  static const VerificationMeta _secondNameMeta = const VerificationMeta(
+    'secondName',
   );
   @override
-  late final GeneratedColumn<String> relationship = GeneratedColumn<String>(
-    'relationship',
+  late final GeneratedColumn<String> secondName = GeneratedColumn<String>(
+    'second_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thirdNameMeta = const VerificationMeta(
+    'thirdName',
+  );
+  @override
+  late final GeneratedColumn<String> thirdName = GeneratedColumn<String>(
+    'third_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _familyNameMeta = const VerificationMeta(
+    'familyName',
+  );
+  @override
+  late final GeneratedColumn<String> familyName = GeneratedColumn<String>(
+    'family_name',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
+  static const VerificationMeta _nationalIdMeta = const VerificationMeta(
+    'nationalId',
+  );
   @override
-  late final GeneratedColumn<String> gender = GeneratedColumn<String>(
-    'gender',
+  late final GeneratedColumn<int> nationalId = GeneratedColumn<int>(
+    'national_id',
     aliasedName,
     false,
-    type: DriftSqlType.string,
+    type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
   static const VerificationMeta _deathDateMeta = const VerificationMeta(
@@ -9714,30 +9749,41 @@ class $FamilyDeceasedTableTable extends FamilyDeceasedTable
   late final GeneratedColumn<DateTime> deathDate = GeneratedColumn<DateTime>(
     'death_date',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _deathCauseMeta = const VerificationMeta(
     'deathCause',
   );
   @override
-  late final GeneratedColumn<String> deathCause = GeneratedColumn<String>(
+  late final GeneratedColumn<int> deathCause = GeneratedColumn<int>(
     'death_cause',
     aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
   );
-  static const VerificationMeta _ageAtDeathMeta = const VerificationMeta(
-    'ageAtDeath',
+  static const VerificationMeta _documentTypeMeta = const VerificationMeta(
+    'documentType',
   );
   @override
-  late final GeneratedColumn<int> ageAtDeath = GeneratedColumn<int>(
-    'age_at_death',
+  late final GeneratedColumn<int> documentType = GeneratedColumn<int>(
+    'document_type',
     aliasedName,
     true,
     type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _documentPathMeta = const VerificationMeta(
+    'documentPath',
+  );
+  @override
+  late final GeneratedColumn<String> documentPath = GeneratedColumn<String>(
+    'document_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
@@ -9809,12 +9855,16 @@ class $FamilyDeceasedTableTable extends FamilyDeceasedTable
   List<GeneratedColumn> get $columns => [
     id,
     beneficiaryId,
-    fullName,
-    relationship,
-    gender,
+    deceasedType,
+    firstName,
+    secondName,
+    thirdName,
+    familyName,
+    nationalId,
     deathDate,
     deathCause,
-    ageAtDeath,
+    documentType,
+    documentPath,
     notes,
     createdAt,
     updatedAt,
@@ -9848,51 +9898,84 @@ class $FamilyDeceasedTableTable extends FamilyDeceasedTable
     } else if (isInserting) {
       context.missing(_beneficiaryIdMeta);
     }
-    if (data.containsKey('full_name')) {
+    if (data.containsKey('deceased_type')) {
       context.handle(
-        _fullNameMeta,
-        fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_fullNameMeta);
-    }
-    if (data.containsKey('relationship')) {
-      context.handle(
-        _relationshipMeta,
-        relationship.isAcceptableOrUnknown(
-          data['relationship']!,
-          _relationshipMeta,
+        _deceasedTypeMeta,
+        deceasedType.isAcceptableOrUnknown(
+          data['deceased_type']!,
+          _deceasedTypeMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_relationshipMeta);
+      context.missing(_deceasedTypeMeta);
     }
-    if (data.containsKey('gender')) {
+    if (data.containsKey('first_name')) {
       context.handle(
-        _genderMeta,
-        gender.isAcceptableOrUnknown(data['gender']!, _genderMeta),
+        _firstNameMeta,
+        firstName.isAcceptableOrUnknown(data['first_name']!, _firstNameMeta),
       );
     } else if (isInserting) {
-      context.missing(_genderMeta);
+      context.missing(_firstNameMeta);
+    }
+    if (data.containsKey('second_name')) {
+      context.handle(
+        _secondNameMeta,
+        secondName.isAcceptableOrUnknown(data['second_name']!, _secondNameMeta),
+      );
+    }
+    if (data.containsKey('third_name')) {
+      context.handle(
+        _thirdNameMeta,
+        thirdName.isAcceptableOrUnknown(data['third_name']!, _thirdNameMeta),
+      );
+    }
+    if (data.containsKey('family_name')) {
+      context.handle(
+        _familyNameMeta,
+        familyName.isAcceptableOrUnknown(data['family_name']!, _familyNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_familyNameMeta);
+    }
+    if (data.containsKey('national_id')) {
+      context.handle(
+        _nationalIdMeta,
+        nationalId.isAcceptableOrUnknown(data['national_id']!, _nationalIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nationalIdMeta);
     }
     if (data.containsKey('death_date')) {
       context.handle(
         _deathDateMeta,
         deathDate.isAcceptableOrUnknown(data['death_date']!, _deathDateMeta),
       );
+    } else if (isInserting) {
+      context.missing(_deathDateMeta);
     }
     if (data.containsKey('death_cause')) {
       context.handle(
         _deathCauseMeta,
         deathCause.isAcceptableOrUnknown(data['death_cause']!, _deathCauseMeta),
       );
+    } else if (isInserting) {
+      context.missing(_deathCauseMeta);
     }
-    if (data.containsKey('age_at_death')) {
+    if (data.containsKey('document_type')) {
       context.handle(
-        _ageAtDeathMeta,
-        ageAtDeath.isAcceptableOrUnknown(
-          data['age_at_death']!,
-          _ageAtDeathMeta,
+        _documentTypeMeta,
+        documentType.isAcceptableOrUnknown(
+          data['document_type']!,
+          _documentTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('document_path')) {
+      context.handle(
+        _documentPathMeta,
+        documentPath.isAcceptableOrUnknown(
+          data['document_path']!,
+          _documentPathMeta,
         ),
       );
     }
@@ -9952,29 +10035,45 @@ class $FamilyDeceasedTableTable extends FamilyDeceasedTable
         DriftSqlType.int,
         data['${effectivePrefix}beneficiary_id'],
       )!,
-      fullName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}full_name'],
+      deceasedType: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deceased_type'],
       )!,
-      relationship: attachedDatabase.typeMapping.read(
+      firstName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}relationship'],
+        data['${effectivePrefix}first_name'],
       )!,
-      gender: attachedDatabase.typeMapping.read(
+      secondName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}gender'],
+        data['${effectivePrefix}second_name'],
+      ),
+      thirdName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}third_name'],
+      ),
+      familyName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}family_name'],
+      )!,
+      nationalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}national_id'],
       )!,
       deathDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}death_date'],
-      ),
+      )!,
       deathCause: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}death_cause'],
-      ),
-      ageAtDeath: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}age_at_death'],
+        data['${effectivePrefix}death_cause'],
+      )!,
+      documentType: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}document_type'],
+      ),
+      documentPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}document_path'],
       ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -10012,12 +10111,16 @@ class $FamilyDeceasedTableTable extends FamilyDeceasedTable
 class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
   final int id;
   final int beneficiaryId;
-  final String fullName;
-  final String relationship;
-  final String gender;
-  final DateTime? deathDate;
-  final String? deathCause;
-  final int? ageAtDeath;
+  final int deceasedType;
+  final String firstName;
+  final String? secondName;
+  final String? thirdName;
+  final String familyName;
+  final int nationalId;
+  final DateTime deathDate;
+  final int deathCause;
+  final int? documentType;
+  final String? documentPath;
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -10027,12 +10130,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
   const FamilyDeceased({
     required this.id,
     required this.beneficiaryId,
-    required this.fullName,
-    required this.relationship,
-    required this.gender,
-    this.deathDate,
-    this.deathCause,
-    this.ageAtDeath,
+    required this.deceasedType,
+    required this.firstName,
+    this.secondName,
+    this.thirdName,
+    required this.familyName,
+    required this.nationalId,
+    required this.deathDate,
+    required this.deathCause,
+    this.documentType,
+    this.documentPath,
     this.notes,
     this.createdAt,
     this.updatedAt,
@@ -10045,17 +10152,23 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['beneficiary_id'] = Variable<int>(beneficiaryId);
-    map['full_name'] = Variable<String>(fullName);
-    map['relationship'] = Variable<String>(relationship);
-    map['gender'] = Variable<String>(gender);
-    if (!nullToAbsent || deathDate != null) {
-      map['death_date'] = Variable<DateTime>(deathDate);
+    map['deceased_type'] = Variable<int>(deceasedType);
+    map['first_name'] = Variable<String>(firstName);
+    if (!nullToAbsent || secondName != null) {
+      map['second_name'] = Variable<String>(secondName);
     }
-    if (!nullToAbsent || deathCause != null) {
-      map['death_cause'] = Variable<String>(deathCause);
+    if (!nullToAbsent || thirdName != null) {
+      map['third_name'] = Variable<String>(thirdName);
     }
-    if (!nullToAbsent || ageAtDeath != null) {
-      map['age_at_death'] = Variable<int>(ageAtDeath);
+    map['family_name'] = Variable<String>(familyName);
+    map['national_id'] = Variable<int>(nationalId);
+    map['death_date'] = Variable<DateTime>(deathDate);
+    map['death_cause'] = Variable<int>(deathCause);
+    if (!nullToAbsent || documentType != null) {
+      map['document_type'] = Variable<int>(documentType);
+    }
+    if (!nullToAbsent || documentPath != null) {
+      map['document_path'] = Variable<String>(documentPath);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -10080,18 +10193,24 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
     return FamilyDeceasedTableCompanion(
       id: Value(id),
       beneficiaryId: Value(beneficiaryId),
-      fullName: Value(fullName),
-      relationship: Value(relationship),
-      gender: Value(gender),
-      deathDate: deathDate == null && nullToAbsent
+      deceasedType: Value(deceasedType),
+      firstName: Value(firstName),
+      secondName: secondName == null && nullToAbsent
           ? const Value.absent()
-          : Value(deathDate),
-      deathCause: deathCause == null && nullToAbsent
+          : Value(secondName),
+      thirdName: thirdName == null && nullToAbsent
           ? const Value.absent()
-          : Value(deathCause),
-      ageAtDeath: ageAtDeath == null && nullToAbsent
+          : Value(thirdName),
+      familyName: Value(familyName),
+      nationalId: Value(nationalId),
+      deathDate: Value(deathDate),
+      deathCause: Value(deathCause),
+      documentType: documentType == null && nullToAbsent
           ? const Value.absent()
-          : Value(ageAtDeath),
+          : Value(documentType),
+      documentPath: documentPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(documentPath),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -10119,12 +10238,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
     return FamilyDeceased(
       id: serializer.fromJson<int>(json['id']),
       beneficiaryId: serializer.fromJson<int>(json['beneficiaryId']),
-      fullName: serializer.fromJson<String>(json['fullName']),
-      relationship: serializer.fromJson<String>(json['relationship']),
-      gender: serializer.fromJson<String>(json['gender']),
-      deathDate: serializer.fromJson<DateTime?>(json['deathDate']),
-      deathCause: serializer.fromJson<String?>(json['deathCause']),
-      ageAtDeath: serializer.fromJson<int?>(json['ageAtDeath']),
+      deceasedType: serializer.fromJson<int>(json['deceasedType']),
+      firstName: serializer.fromJson<String>(json['firstName']),
+      secondName: serializer.fromJson<String?>(json['secondName']),
+      thirdName: serializer.fromJson<String?>(json['thirdName']),
+      familyName: serializer.fromJson<String>(json['familyName']),
+      nationalId: serializer.fromJson<int>(json['nationalId']),
+      deathDate: serializer.fromJson<DateTime>(json['deathDate']),
+      deathCause: serializer.fromJson<int>(json['deathCause']),
+      documentType: serializer.fromJson<int?>(json['documentType']),
+      documentPath: serializer.fromJson<String?>(json['documentPath']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
@@ -10139,12 +10262,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'beneficiaryId': serializer.toJson<int>(beneficiaryId),
-      'fullName': serializer.toJson<String>(fullName),
-      'relationship': serializer.toJson<String>(relationship),
-      'gender': serializer.toJson<String>(gender),
-      'deathDate': serializer.toJson<DateTime?>(deathDate),
-      'deathCause': serializer.toJson<String?>(deathCause),
-      'ageAtDeath': serializer.toJson<int?>(ageAtDeath),
+      'deceasedType': serializer.toJson<int>(deceasedType),
+      'firstName': serializer.toJson<String>(firstName),
+      'secondName': serializer.toJson<String?>(secondName),
+      'thirdName': serializer.toJson<String?>(thirdName),
+      'familyName': serializer.toJson<String>(familyName),
+      'nationalId': serializer.toJson<int>(nationalId),
+      'deathDate': serializer.toJson<DateTime>(deathDate),
+      'deathCause': serializer.toJson<int>(deathCause),
+      'documentType': serializer.toJson<int?>(documentType),
+      'documentPath': serializer.toJson<String?>(documentPath),
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
@@ -10157,12 +10284,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
   FamilyDeceased copyWith({
     int? id,
     int? beneficiaryId,
-    String? fullName,
-    String? relationship,
-    String? gender,
-    Value<DateTime?> deathDate = const Value.absent(),
-    Value<String?> deathCause = const Value.absent(),
-    Value<int?> ageAtDeath = const Value.absent(),
+    int? deceasedType,
+    String? firstName,
+    Value<String?> secondName = const Value.absent(),
+    Value<String?> thirdName = const Value.absent(),
+    String? familyName,
+    int? nationalId,
+    DateTime? deathDate,
+    int? deathCause,
+    Value<int?> documentType = const Value.absent(),
+    Value<String?> documentPath = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<DateTime?> createdAt = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
@@ -10172,12 +10303,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
   }) => FamilyDeceased(
     id: id ?? this.id,
     beneficiaryId: beneficiaryId ?? this.beneficiaryId,
-    fullName: fullName ?? this.fullName,
-    relationship: relationship ?? this.relationship,
-    gender: gender ?? this.gender,
-    deathDate: deathDate.present ? deathDate.value : this.deathDate,
-    deathCause: deathCause.present ? deathCause.value : this.deathCause,
-    ageAtDeath: ageAtDeath.present ? ageAtDeath.value : this.ageAtDeath,
+    deceasedType: deceasedType ?? this.deceasedType,
+    firstName: firstName ?? this.firstName,
+    secondName: secondName.present ? secondName.value : this.secondName,
+    thirdName: thirdName.present ? thirdName.value : this.thirdName,
+    familyName: familyName ?? this.familyName,
+    nationalId: nationalId ?? this.nationalId,
+    deathDate: deathDate ?? this.deathDate,
+    deathCause: deathCause ?? this.deathCause,
+    documentType: documentType.present ? documentType.value : this.documentType,
+    documentPath: documentPath.present ? documentPath.value : this.documentPath,
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
@@ -10191,18 +10326,30 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
       beneficiaryId: data.beneficiaryId.present
           ? data.beneficiaryId.value
           : this.beneficiaryId,
-      fullName: data.fullName.present ? data.fullName.value : this.fullName,
-      relationship: data.relationship.present
-          ? data.relationship.value
-          : this.relationship,
-      gender: data.gender.present ? data.gender.value : this.gender,
+      deceasedType: data.deceasedType.present
+          ? data.deceasedType.value
+          : this.deceasedType,
+      firstName: data.firstName.present ? data.firstName.value : this.firstName,
+      secondName: data.secondName.present
+          ? data.secondName.value
+          : this.secondName,
+      thirdName: data.thirdName.present ? data.thirdName.value : this.thirdName,
+      familyName: data.familyName.present
+          ? data.familyName.value
+          : this.familyName,
+      nationalId: data.nationalId.present
+          ? data.nationalId.value
+          : this.nationalId,
       deathDate: data.deathDate.present ? data.deathDate.value : this.deathDate,
       deathCause: data.deathCause.present
           ? data.deathCause.value
           : this.deathCause,
-      ageAtDeath: data.ageAtDeath.present
-          ? data.ageAtDeath.value
-          : this.ageAtDeath,
+      documentType: data.documentType.present
+          ? data.documentType.value
+          : this.documentType,
+      documentPath: data.documentPath.present
+          ? data.documentPath.value
+          : this.documentPath,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -10219,12 +10366,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
     return (StringBuffer('FamilyDeceased(')
           ..write('id: $id, ')
           ..write('beneficiaryId: $beneficiaryId, ')
-          ..write('fullName: $fullName, ')
-          ..write('relationship: $relationship, ')
-          ..write('gender: $gender, ')
+          ..write('deceasedType: $deceasedType, ')
+          ..write('firstName: $firstName, ')
+          ..write('secondName: $secondName, ')
+          ..write('thirdName: $thirdName, ')
+          ..write('familyName: $familyName, ')
+          ..write('nationalId: $nationalId, ')
           ..write('deathDate: $deathDate, ')
           ..write('deathCause: $deathCause, ')
-          ..write('ageAtDeath: $ageAtDeath, ')
+          ..write('documentType: $documentType, ')
+          ..write('documentPath: $documentPath, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -10239,12 +10390,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
   int get hashCode => Object.hash(
     id,
     beneficiaryId,
-    fullName,
-    relationship,
-    gender,
+    deceasedType,
+    firstName,
+    secondName,
+    thirdName,
+    familyName,
+    nationalId,
     deathDate,
     deathCause,
-    ageAtDeath,
+    documentType,
+    documentPath,
     notes,
     createdAt,
     updatedAt,
@@ -10258,12 +10413,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
       (other is FamilyDeceased &&
           other.id == this.id &&
           other.beneficiaryId == this.beneficiaryId &&
-          other.fullName == this.fullName &&
-          other.relationship == this.relationship &&
-          other.gender == this.gender &&
+          other.deceasedType == this.deceasedType &&
+          other.firstName == this.firstName &&
+          other.secondName == this.secondName &&
+          other.thirdName == this.thirdName &&
+          other.familyName == this.familyName &&
+          other.nationalId == this.nationalId &&
           other.deathDate == this.deathDate &&
           other.deathCause == this.deathCause &&
-          other.ageAtDeath == this.ageAtDeath &&
+          other.documentType == this.documentType &&
+          other.documentPath == this.documentPath &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -10275,12 +10434,16 @@ class FamilyDeceased extends DataClass implements Insertable<FamilyDeceased> {
 class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
   final Value<int> id;
   final Value<int> beneficiaryId;
-  final Value<String> fullName;
-  final Value<String> relationship;
-  final Value<String> gender;
-  final Value<DateTime?> deathDate;
-  final Value<String?> deathCause;
-  final Value<int?> ageAtDeath;
+  final Value<int> deceasedType;
+  final Value<String> firstName;
+  final Value<String?> secondName;
+  final Value<String?> thirdName;
+  final Value<String> familyName;
+  final Value<int> nationalId;
+  final Value<DateTime> deathDate;
+  final Value<int> deathCause;
+  final Value<int?> documentType;
+  final Value<String?> documentPath;
   final Value<String?> notes;
   final Value<DateTime?> createdAt;
   final Value<DateTime?> updatedAt;
@@ -10290,12 +10453,16 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
   const FamilyDeceasedTableCompanion({
     this.id = const Value.absent(),
     this.beneficiaryId = const Value.absent(),
-    this.fullName = const Value.absent(),
-    this.relationship = const Value.absent(),
-    this.gender = const Value.absent(),
+    this.deceasedType = const Value.absent(),
+    this.firstName = const Value.absent(),
+    this.secondName = const Value.absent(),
+    this.thirdName = const Value.absent(),
+    this.familyName = const Value.absent(),
+    this.nationalId = const Value.absent(),
     this.deathDate = const Value.absent(),
     this.deathCause = const Value.absent(),
-    this.ageAtDeath = const Value.absent(),
+    this.documentType = const Value.absent(),
+    this.documentPath = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -10306,12 +10473,16 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
   FamilyDeceasedTableCompanion.insert({
     this.id = const Value.absent(),
     required int beneficiaryId,
-    required String fullName,
-    required String relationship,
-    required String gender,
-    this.deathDate = const Value.absent(),
-    this.deathCause = const Value.absent(),
-    this.ageAtDeath = const Value.absent(),
+    required int deceasedType,
+    required String firstName,
+    this.secondName = const Value.absent(),
+    this.thirdName = const Value.absent(),
+    required String familyName,
+    required int nationalId,
+    required DateTime deathDate,
+    required int deathCause,
+    this.documentType = const Value.absent(),
+    this.documentPath = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -10319,18 +10490,25 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
     this.serverId = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
   }) : beneficiaryId = Value(beneficiaryId),
-       fullName = Value(fullName),
-       relationship = Value(relationship),
-       gender = Value(gender);
+       deceasedType = Value(deceasedType),
+       firstName = Value(firstName),
+       familyName = Value(familyName),
+       nationalId = Value(nationalId),
+       deathDate = Value(deathDate),
+       deathCause = Value(deathCause);
   static Insertable<FamilyDeceased> custom({
     Expression<int>? id,
     Expression<int>? beneficiaryId,
-    Expression<String>? fullName,
-    Expression<String>? relationship,
-    Expression<String>? gender,
+    Expression<int>? deceasedType,
+    Expression<String>? firstName,
+    Expression<String>? secondName,
+    Expression<String>? thirdName,
+    Expression<String>? familyName,
+    Expression<int>? nationalId,
     Expression<DateTime>? deathDate,
-    Expression<String>? deathCause,
-    Expression<int>? ageAtDeath,
+    Expression<int>? deathCause,
+    Expression<int>? documentType,
+    Expression<String>? documentPath,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -10341,12 +10519,16 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (beneficiaryId != null) 'beneficiary_id': beneficiaryId,
-      if (fullName != null) 'full_name': fullName,
-      if (relationship != null) 'relationship': relationship,
-      if (gender != null) 'gender': gender,
+      if (deceasedType != null) 'deceased_type': deceasedType,
+      if (firstName != null) 'first_name': firstName,
+      if (secondName != null) 'second_name': secondName,
+      if (thirdName != null) 'third_name': thirdName,
+      if (familyName != null) 'family_name': familyName,
+      if (nationalId != null) 'national_id': nationalId,
       if (deathDate != null) 'death_date': deathDate,
       if (deathCause != null) 'death_cause': deathCause,
-      if (ageAtDeath != null) 'age_at_death': ageAtDeath,
+      if (documentType != null) 'document_type': documentType,
+      if (documentPath != null) 'document_path': documentPath,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -10359,12 +10541,16 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
   FamilyDeceasedTableCompanion copyWith({
     Value<int>? id,
     Value<int>? beneficiaryId,
-    Value<String>? fullName,
-    Value<String>? relationship,
-    Value<String>? gender,
-    Value<DateTime?>? deathDate,
-    Value<String?>? deathCause,
-    Value<int?>? ageAtDeath,
+    Value<int>? deceasedType,
+    Value<String>? firstName,
+    Value<String?>? secondName,
+    Value<String?>? thirdName,
+    Value<String>? familyName,
+    Value<int>? nationalId,
+    Value<DateTime>? deathDate,
+    Value<int>? deathCause,
+    Value<int?>? documentType,
+    Value<String?>? documentPath,
     Value<String?>? notes,
     Value<DateTime?>? createdAt,
     Value<DateTime?>? updatedAt,
@@ -10375,12 +10561,16 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
     return FamilyDeceasedTableCompanion(
       id: id ?? this.id,
       beneficiaryId: beneficiaryId ?? this.beneficiaryId,
-      fullName: fullName ?? this.fullName,
-      relationship: relationship ?? this.relationship,
-      gender: gender ?? this.gender,
+      deceasedType: deceasedType ?? this.deceasedType,
+      firstName: firstName ?? this.firstName,
+      secondName: secondName ?? this.secondName,
+      thirdName: thirdName ?? this.thirdName,
+      familyName: familyName ?? this.familyName,
+      nationalId: nationalId ?? this.nationalId,
       deathDate: deathDate ?? this.deathDate,
       deathCause: deathCause ?? this.deathCause,
-      ageAtDeath: ageAtDeath ?? this.ageAtDeath,
+      documentType: documentType ?? this.documentType,
+      documentPath: documentPath ?? this.documentPath,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -10399,23 +10589,35 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
     if (beneficiaryId.present) {
       map['beneficiary_id'] = Variable<int>(beneficiaryId.value);
     }
-    if (fullName.present) {
-      map['full_name'] = Variable<String>(fullName.value);
+    if (deceasedType.present) {
+      map['deceased_type'] = Variable<int>(deceasedType.value);
     }
-    if (relationship.present) {
-      map['relationship'] = Variable<String>(relationship.value);
+    if (firstName.present) {
+      map['first_name'] = Variable<String>(firstName.value);
     }
-    if (gender.present) {
-      map['gender'] = Variable<String>(gender.value);
+    if (secondName.present) {
+      map['second_name'] = Variable<String>(secondName.value);
+    }
+    if (thirdName.present) {
+      map['third_name'] = Variable<String>(thirdName.value);
+    }
+    if (familyName.present) {
+      map['family_name'] = Variable<String>(familyName.value);
+    }
+    if (nationalId.present) {
+      map['national_id'] = Variable<int>(nationalId.value);
     }
     if (deathDate.present) {
       map['death_date'] = Variable<DateTime>(deathDate.value);
     }
     if (deathCause.present) {
-      map['death_cause'] = Variable<String>(deathCause.value);
+      map['death_cause'] = Variable<int>(deathCause.value);
     }
-    if (ageAtDeath.present) {
-      map['age_at_death'] = Variable<int>(ageAtDeath.value);
+    if (documentType.present) {
+      map['document_type'] = Variable<int>(documentType.value);
+    }
+    if (documentPath.present) {
+      map['document_path'] = Variable<String>(documentPath.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -10443,12 +10645,16 @@ class FamilyDeceasedTableCompanion extends UpdateCompanion<FamilyDeceased> {
     return (StringBuffer('FamilyDeceasedTableCompanion(')
           ..write('id: $id, ')
           ..write('beneficiaryId: $beneficiaryId, ')
-          ..write('fullName: $fullName, ')
-          ..write('relationship: $relationship, ')
-          ..write('gender: $gender, ')
+          ..write('deceasedType: $deceasedType, ')
+          ..write('firstName: $firstName, ')
+          ..write('secondName: $secondName, ')
+          ..write('thirdName: $thirdName, ')
+          ..write('familyName: $familyName, ')
+          ..write('nationalId: $nationalId, ')
           ..write('deathDate: $deathDate, ')
           ..write('deathCause: $deathCause, ')
-          ..write('ageAtDeath: $ageAtDeath, ')
+          ..write('documentType: $documentType, ')
+          ..write('documentPath: $documentPath, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -10490,47 +10696,60 @@ class $FamilyMembersTableTable extends FamilyMembersTable
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _fullNameMeta = const VerificationMeta(
-    'fullName',
+  static const VerificationMeta _orphanNationalIdMeta = const VerificationMeta(
+    'orphanNationalId',
   );
   @override
-  late final GeneratedColumn<String> fullName = GeneratedColumn<String>(
-    'full_name',
+  late final GeneratedColumn<int> orphanNationalId = GeneratedColumn<int>(
+    'orphan_national_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firstNameMeta = const VerificationMeta(
+    'firstName',
+  );
+  @override
+  late final GeneratedColumn<String> firstName = GeneratedColumn<String>(
+    'first_name',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _relationshipMeta = const VerificationMeta(
-    'relationship',
+  static const VerificationMeta _secondNameMeta = const VerificationMeta(
+    'secondName',
   );
   @override
-  late final GeneratedColumn<String> relationship = GeneratedColumn<String>(
-    'relationship',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
-  @override
-  late final GeneratedColumn<String> gender = GeneratedColumn<String>(
-    'gender',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _nationalIdMeta = const VerificationMeta(
-    'nationalId',
-  );
-  @override
-  late final GeneratedColumn<String> nationalId = GeneratedColumn<String>(
-    'national_id',
+  late final GeneratedColumn<String> secondName = GeneratedColumn<String>(
+    'second_name',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thirdNameMeta = const VerificationMeta(
+    'thirdName',
+  );
+  @override
+  late final GeneratedColumn<String> thirdName = GeneratedColumn<String>(
+    'third_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _familyNameMeta = const VerificationMeta(
+    'familyName',
+  );
+  @override
+  late final GeneratedColumn<String> familyName = GeneratedColumn<String>(
+    'family_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _birthDateMeta = const VerificationMeta(
     'birthDate',
@@ -10539,9 +10758,9 @@ class $FamilyMembersTableTable extends FamilyMembersTable
   late final GeneratedColumn<DateTime> birthDate = GeneratedColumn<DateTime>(
     'birth_date',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _ageMeta = const VerificationMeta('age');
   @override
@@ -10552,129 +10771,41 @@ class $FamilyMembersTableTable extends FamilyMembersTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _maritalStatusMeta = const VerificationMeta(
-    'maritalStatus',
-  );
+  static const VerificationMeta _genderMeta = const VerificationMeta('gender');
   @override
-  late final GeneratedColumn<String> maritalStatus = GeneratedColumn<String>(
-    'marital_status',
+  late final GeneratedColumn<int> gender = GeneratedColumn<int>(
+    'gender',
     aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _educationLevelMeta = const VerificationMeta(
-    'educationLevel',
-  );
-  @override
-  late final GeneratedColumn<String> educationLevel = GeneratedColumn<String>(
-    'education_level',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _occupationMeta = const VerificationMeta(
-    'occupation',
-  );
-  @override
-  late final GeneratedColumn<String> occupation = GeneratedColumn<String>(
-    'occupation',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _healthStatusMeta = const VerificationMeta(
     'healthStatus',
   );
   @override
-  late final GeneratedColumn<String> healthStatus = GeneratedColumn<String>(
+  late final GeneratedColumn<int> healthStatus = GeneratedColumn<int>(
     'health_status',
     aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _hasDisabilityMeta = const VerificationMeta(
-    'hasDisability',
-  );
-  @override
-  late final GeneratedColumn<bool> hasDisability = GeneratedColumn<bool>(
-    'has_disability',
-    aliasedName,
     false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("has_disability" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _disabilityTypeMeta = const VerificationMeta(
-    'disabilityType',
-  );
-  @override
-  late final GeneratedColumn<String> disabilityType = GeneratedColumn<String>(
-    'disability_type',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _hasChronicDiseaseMeta = const VerificationMeta(
-    'hasChronicDisease',
-  );
-  @override
-  late final GeneratedColumn<bool> hasChronicDisease = GeneratedColumn<bool>(
-    'has_chronic_disease',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("has_chronic_disease" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _chronicDiseaseTypeMeta =
-      const VerificationMeta('chronicDiseaseType');
-  @override
-  late final GeneratedColumn<String> chronicDiseaseType =
-      GeneratedColumn<String>(
-        'chronic_disease_type',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _livesWithBeneficiaryMeta =
-      const VerificationMeta('livesWithBeneficiary');
-  @override
-  late final GeneratedColumn<bool> livesWithBeneficiary = GeneratedColumn<bool>(
-    'lives_with_beneficiary',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("lives_with_beneficiary" IN (0, 1))',
-    ),
-    defaultValue: const Constant(true),
-  );
-  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
-  @override
-  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
-    'phone',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
     'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _attachmentsMeta = const VerificationMeta(
+    'attachments',
+  );
+  @override
+  late final GeneratedColumn<String> attachments = GeneratedColumn<String>(
+    'attachments',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -10740,23 +10871,17 @@ class $FamilyMembersTableTable extends FamilyMembersTable
   List<GeneratedColumn> get $columns => [
     id,
     beneficiaryId,
-    fullName,
-    relationship,
-    gender,
-    nationalId,
+    orphanNationalId,
+    firstName,
+    secondName,
+    thirdName,
+    familyName,
     birthDate,
     age,
-    maritalStatus,
-    educationLevel,
-    occupation,
+    gender,
     healthStatus,
-    hasDisability,
-    disabilityType,
-    hasChronicDisease,
-    chronicDiseaseType,
-    livesWithBeneficiary,
-    phone,
     notes,
+    attachments,
     createdAt,
     updatedAt,
     syncState,
@@ -10789,24 +10914,58 @@ class $FamilyMembersTableTable extends FamilyMembersTable
     } else if (isInserting) {
       context.missing(_beneficiaryIdMeta);
     }
-    if (data.containsKey('full_name')) {
+    if (data.containsKey('orphan_national_id')) {
       context.handle(
-        _fullNameMeta,
-        fullName.isAcceptableOrUnknown(data['full_name']!, _fullNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_fullNameMeta);
-    }
-    if (data.containsKey('relationship')) {
-      context.handle(
-        _relationshipMeta,
-        relationship.isAcceptableOrUnknown(
-          data['relationship']!,
-          _relationshipMeta,
+        _orphanNationalIdMeta,
+        orphanNationalId.isAcceptableOrUnknown(
+          data['orphan_national_id']!,
+          _orphanNationalIdMeta,
         ),
       );
     } else if (isInserting) {
-      context.missing(_relationshipMeta);
+      context.missing(_orphanNationalIdMeta);
+    }
+    if (data.containsKey('first_name')) {
+      context.handle(
+        _firstNameMeta,
+        firstName.isAcceptableOrUnknown(data['first_name']!, _firstNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_firstNameMeta);
+    }
+    if (data.containsKey('second_name')) {
+      context.handle(
+        _secondNameMeta,
+        secondName.isAcceptableOrUnknown(data['second_name']!, _secondNameMeta),
+      );
+    }
+    if (data.containsKey('third_name')) {
+      context.handle(
+        _thirdNameMeta,
+        thirdName.isAcceptableOrUnknown(data['third_name']!, _thirdNameMeta),
+      );
+    }
+    if (data.containsKey('family_name')) {
+      context.handle(
+        _familyNameMeta,
+        familyName.isAcceptableOrUnknown(data['family_name']!, _familyNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_familyNameMeta);
+    }
+    if (data.containsKey('birth_date')) {
+      context.handle(
+        _birthDateMeta,
+        birthDate.isAcceptableOrUnknown(data['birth_date']!, _birthDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_birthDateMeta);
+    }
+    if (data.containsKey('age')) {
+      context.handle(
+        _ageMeta,
+        age.isAcceptableOrUnknown(data['age']!, _ageMeta),
+      );
     }
     if (data.containsKey('gender')) {
       context.handle(
@@ -10816,48 +10975,6 @@ class $FamilyMembersTableTable extends FamilyMembersTable
     } else if (isInserting) {
       context.missing(_genderMeta);
     }
-    if (data.containsKey('national_id')) {
-      context.handle(
-        _nationalIdMeta,
-        nationalId.isAcceptableOrUnknown(data['national_id']!, _nationalIdMeta),
-      );
-    }
-    if (data.containsKey('birth_date')) {
-      context.handle(
-        _birthDateMeta,
-        birthDate.isAcceptableOrUnknown(data['birth_date']!, _birthDateMeta),
-      );
-    }
-    if (data.containsKey('age')) {
-      context.handle(
-        _ageMeta,
-        age.isAcceptableOrUnknown(data['age']!, _ageMeta),
-      );
-    }
-    if (data.containsKey('marital_status')) {
-      context.handle(
-        _maritalStatusMeta,
-        maritalStatus.isAcceptableOrUnknown(
-          data['marital_status']!,
-          _maritalStatusMeta,
-        ),
-      );
-    }
-    if (data.containsKey('education_level')) {
-      context.handle(
-        _educationLevelMeta,
-        educationLevel.isAcceptableOrUnknown(
-          data['education_level']!,
-          _educationLevelMeta,
-        ),
-      );
-    }
-    if (data.containsKey('occupation')) {
-      context.handle(
-        _occupationMeta,
-        occupation.isAcceptableOrUnknown(data['occupation']!, _occupationMeta),
-      );
-    }
     if (data.containsKey('health_status')) {
       context.handle(
         _healthStatusMeta,
@@ -10866,62 +10983,22 @@ class $FamilyMembersTableTable extends FamilyMembersTable
           _healthStatusMeta,
         ),
       );
-    }
-    if (data.containsKey('has_disability')) {
-      context.handle(
-        _hasDisabilityMeta,
-        hasDisability.isAcceptableOrUnknown(
-          data['has_disability']!,
-          _hasDisabilityMeta,
-        ),
-      );
-    }
-    if (data.containsKey('disability_type')) {
-      context.handle(
-        _disabilityTypeMeta,
-        disabilityType.isAcceptableOrUnknown(
-          data['disability_type']!,
-          _disabilityTypeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('has_chronic_disease')) {
-      context.handle(
-        _hasChronicDiseaseMeta,
-        hasChronicDisease.isAcceptableOrUnknown(
-          data['has_chronic_disease']!,
-          _hasChronicDiseaseMeta,
-        ),
-      );
-    }
-    if (data.containsKey('chronic_disease_type')) {
-      context.handle(
-        _chronicDiseaseTypeMeta,
-        chronicDiseaseType.isAcceptableOrUnknown(
-          data['chronic_disease_type']!,
-          _chronicDiseaseTypeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('lives_with_beneficiary')) {
-      context.handle(
-        _livesWithBeneficiaryMeta,
-        livesWithBeneficiary.isAcceptableOrUnknown(
-          data['lives_with_beneficiary']!,
-          _livesWithBeneficiaryMeta,
-        ),
-      );
-    }
-    if (data.containsKey('phone')) {
-      context.handle(
-        _phoneMeta,
-        phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta),
-      );
+    } else if (isInserting) {
+      context.missing(_healthStatusMeta);
     }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('attachments')) {
+      context.handle(
+        _attachmentsMeta,
+        attachments.isAcceptableOrUnknown(
+          data['attachments']!,
+          _attachmentsMeta,
+        ),
       );
     }
     if (data.containsKey('created_at')) {
@@ -10974,73 +11051,49 @@ class $FamilyMembersTableTable extends FamilyMembersTable
         DriftSqlType.int,
         data['${effectivePrefix}beneficiary_id'],
       )!,
-      fullName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}full_name'],
+      orphanNationalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orphan_national_id'],
       )!,
-      relationship: attachedDatabase.typeMapping.read(
+      firstName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}relationship'],
+        data['${effectivePrefix}first_name'],
       )!,
-      gender: attachedDatabase.typeMapping.read(
+      secondName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}gender'],
-      )!,
-      nationalId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}national_id'],
+        data['${effectivePrefix}second_name'],
       ),
+      thirdName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}third_name'],
+      ),
+      familyName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}family_name'],
+      )!,
       birthDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}birth_date'],
-      ),
+      )!,
       age: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}age'],
       ),
-      maritalStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}marital_status'],
-      ),
-      educationLevel: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}education_level'],
-      ),
-      occupation: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}occupation'],
-      ),
+      gender: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}gender'],
+      )!,
       healthStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
+        DriftSqlType.int,
         data['${effectivePrefix}health_status'],
-      ),
-      hasDisability: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}has_disability'],
       )!,
-      disabilityType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}disability_type'],
-      ),
-      hasChronicDisease: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}has_chronic_disease'],
-      )!,
-      chronicDiseaseType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}chronic_disease_type'],
-      ),
-      livesWithBeneficiary: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}lives_with_beneficiary'],
-      )!,
-      phone: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}phone'],
-      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
+      ),
+      attachments: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}attachments'],
       ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -11074,23 +11127,17 @@ class $FamilyMembersTableTable extends FamilyMembersTable
 class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   final int id;
   final int beneficiaryId;
-  final String fullName;
-  final String relationship;
-  final String gender;
-  final String? nationalId;
-  final DateTime? birthDate;
+  final int orphanNationalId;
+  final String firstName;
+  final String? secondName;
+  final String? thirdName;
+  final String familyName;
+  final DateTime birthDate;
   final int? age;
-  final String? maritalStatus;
-  final String? educationLevel;
-  final String? occupation;
-  final String? healthStatus;
-  final bool hasDisability;
-  final String? disabilityType;
-  final bool hasChronicDisease;
-  final String? chronicDiseaseType;
-  final bool livesWithBeneficiary;
-  final String? phone;
+  final int gender;
+  final int healthStatus;
   final String? notes;
+  final String? attachments;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String syncState;
@@ -11099,23 +11146,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   const FamilyMember({
     required this.id,
     required this.beneficiaryId,
-    required this.fullName,
-    required this.relationship,
-    required this.gender,
-    this.nationalId,
-    this.birthDate,
+    required this.orphanNationalId,
+    required this.firstName,
+    this.secondName,
+    this.thirdName,
+    required this.familyName,
+    required this.birthDate,
     this.age,
-    this.maritalStatus,
-    this.educationLevel,
-    this.occupation,
-    this.healthStatus,
-    required this.hasDisability,
-    this.disabilityType,
-    required this.hasChronicDisease,
-    this.chronicDiseaseType,
-    required this.livesWithBeneficiary,
-    this.phone,
+    required this.gender,
+    required this.healthStatus,
     this.notes,
+    this.attachments,
     this.createdAt,
     this.updatedAt,
     required this.syncState,
@@ -11127,44 +11168,26 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['beneficiary_id'] = Variable<int>(beneficiaryId);
-    map['full_name'] = Variable<String>(fullName);
-    map['relationship'] = Variable<String>(relationship);
-    map['gender'] = Variable<String>(gender);
-    if (!nullToAbsent || nationalId != null) {
-      map['national_id'] = Variable<String>(nationalId);
+    map['orphan_national_id'] = Variable<int>(orphanNationalId);
+    map['first_name'] = Variable<String>(firstName);
+    if (!nullToAbsent || secondName != null) {
+      map['second_name'] = Variable<String>(secondName);
     }
-    if (!nullToAbsent || birthDate != null) {
-      map['birth_date'] = Variable<DateTime>(birthDate);
+    if (!nullToAbsent || thirdName != null) {
+      map['third_name'] = Variable<String>(thirdName);
     }
+    map['family_name'] = Variable<String>(familyName);
+    map['birth_date'] = Variable<DateTime>(birthDate);
     if (!nullToAbsent || age != null) {
       map['age'] = Variable<int>(age);
     }
-    if (!nullToAbsent || maritalStatus != null) {
-      map['marital_status'] = Variable<String>(maritalStatus);
-    }
-    if (!nullToAbsent || educationLevel != null) {
-      map['education_level'] = Variable<String>(educationLevel);
-    }
-    if (!nullToAbsent || occupation != null) {
-      map['occupation'] = Variable<String>(occupation);
-    }
-    if (!nullToAbsent || healthStatus != null) {
-      map['health_status'] = Variable<String>(healthStatus);
-    }
-    map['has_disability'] = Variable<bool>(hasDisability);
-    if (!nullToAbsent || disabilityType != null) {
-      map['disability_type'] = Variable<String>(disabilityType);
-    }
-    map['has_chronic_disease'] = Variable<bool>(hasChronicDisease);
-    if (!nullToAbsent || chronicDiseaseType != null) {
-      map['chronic_disease_type'] = Variable<String>(chronicDiseaseType);
-    }
-    map['lives_with_beneficiary'] = Variable<bool>(livesWithBeneficiary);
-    if (!nullToAbsent || phone != null) {
-      map['phone'] = Variable<String>(phone);
-    }
+    map['gender'] = Variable<int>(gender);
+    map['health_status'] = Variable<int>(healthStatus);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || attachments != null) {
+      map['attachments'] = Variable<String>(attachments);
     }
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
@@ -11186,43 +11209,25 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     return FamilyMembersTableCompanion(
       id: Value(id),
       beneficiaryId: Value(beneficiaryId),
-      fullName: Value(fullName),
-      relationship: Value(relationship),
-      gender: Value(gender),
-      nationalId: nationalId == null && nullToAbsent
+      orphanNationalId: Value(orphanNationalId),
+      firstName: Value(firstName),
+      secondName: secondName == null && nullToAbsent
           ? const Value.absent()
-          : Value(nationalId),
-      birthDate: birthDate == null && nullToAbsent
+          : Value(secondName),
+      thirdName: thirdName == null && nullToAbsent
           ? const Value.absent()
-          : Value(birthDate),
+          : Value(thirdName),
+      familyName: Value(familyName),
+      birthDate: Value(birthDate),
       age: age == null && nullToAbsent ? const Value.absent() : Value(age),
-      maritalStatus: maritalStatus == null && nullToAbsent
-          ? const Value.absent()
-          : Value(maritalStatus),
-      educationLevel: educationLevel == null && nullToAbsent
-          ? const Value.absent()
-          : Value(educationLevel),
-      occupation: occupation == null && nullToAbsent
-          ? const Value.absent()
-          : Value(occupation),
-      healthStatus: healthStatus == null && nullToAbsent
-          ? const Value.absent()
-          : Value(healthStatus),
-      hasDisability: Value(hasDisability),
-      disabilityType: disabilityType == null && nullToAbsent
-          ? const Value.absent()
-          : Value(disabilityType),
-      hasChronicDisease: Value(hasChronicDisease),
-      chronicDiseaseType: chronicDiseaseType == null && nullToAbsent
-          ? const Value.absent()
-          : Value(chronicDiseaseType),
-      livesWithBeneficiary: Value(livesWithBeneficiary),
-      phone: phone == null && nullToAbsent
-          ? const Value.absent()
-          : Value(phone),
+      gender: Value(gender),
+      healthStatus: Value(healthStatus),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      attachments: attachments == null && nullToAbsent
+          ? const Value.absent()
+          : Value(attachments),
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
@@ -11247,27 +11252,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     return FamilyMember(
       id: serializer.fromJson<int>(json['id']),
       beneficiaryId: serializer.fromJson<int>(json['beneficiaryId']),
-      fullName: serializer.fromJson<String>(json['fullName']),
-      relationship: serializer.fromJson<String>(json['relationship']),
-      gender: serializer.fromJson<String>(json['gender']),
-      nationalId: serializer.fromJson<String?>(json['nationalId']),
-      birthDate: serializer.fromJson<DateTime?>(json['birthDate']),
+      orphanNationalId: serializer.fromJson<int>(json['orphanNationalId']),
+      firstName: serializer.fromJson<String>(json['firstName']),
+      secondName: serializer.fromJson<String?>(json['secondName']),
+      thirdName: serializer.fromJson<String?>(json['thirdName']),
+      familyName: serializer.fromJson<String>(json['familyName']),
+      birthDate: serializer.fromJson<DateTime>(json['birthDate']),
       age: serializer.fromJson<int?>(json['age']),
-      maritalStatus: serializer.fromJson<String?>(json['maritalStatus']),
-      educationLevel: serializer.fromJson<String?>(json['educationLevel']),
-      occupation: serializer.fromJson<String?>(json['occupation']),
-      healthStatus: serializer.fromJson<String?>(json['healthStatus']),
-      hasDisability: serializer.fromJson<bool>(json['hasDisability']),
-      disabilityType: serializer.fromJson<String?>(json['disabilityType']),
-      hasChronicDisease: serializer.fromJson<bool>(json['hasChronicDisease']),
-      chronicDiseaseType: serializer.fromJson<String?>(
-        json['chronicDiseaseType'],
-      ),
-      livesWithBeneficiary: serializer.fromJson<bool>(
-        json['livesWithBeneficiary'],
-      ),
-      phone: serializer.fromJson<String?>(json['phone']),
+      gender: serializer.fromJson<int>(json['gender']),
+      healthStatus: serializer.fromJson<int>(json['healthStatus']),
       notes: serializer.fromJson<String?>(json['notes']),
+      attachments: serializer.fromJson<String?>(json['attachments']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       syncState: serializer.fromJson<String>(json['syncState']),
@@ -11281,23 +11276,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'beneficiaryId': serializer.toJson<int>(beneficiaryId),
-      'fullName': serializer.toJson<String>(fullName),
-      'relationship': serializer.toJson<String>(relationship),
-      'gender': serializer.toJson<String>(gender),
-      'nationalId': serializer.toJson<String?>(nationalId),
-      'birthDate': serializer.toJson<DateTime?>(birthDate),
+      'orphanNationalId': serializer.toJson<int>(orphanNationalId),
+      'firstName': serializer.toJson<String>(firstName),
+      'secondName': serializer.toJson<String?>(secondName),
+      'thirdName': serializer.toJson<String?>(thirdName),
+      'familyName': serializer.toJson<String>(familyName),
+      'birthDate': serializer.toJson<DateTime>(birthDate),
       'age': serializer.toJson<int?>(age),
-      'maritalStatus': serializer.toJson<String?>(maritalStatus),
-      'educationLevel': serializer.toJson<String?>(educationLevel),
-      'occupation': serializer.toJson<String?>(occupation),
-      'healthStatus': serializer.toJson<String?>(healthStatus),
-      'hasDisability': serializer.toJson<bool>(hasDisability),
-      'disabilityType': serializer.toJson<String?>(disabilityType),
-      'hasChronicDisease': serializer.toJson<bool>(hasChronicDisease),
-      'chronicDiseaseType': serializer.toJson<String?>(chronicDiseaseType),
-      'livesWithBeneficiary': serializer.toJson<bool>(livesWithBeneficiary),
-      'phone': serializer.toJson<String?>(phone),
+      'gender': serializer.toJson<int>(gender),
+      'healthStatus': serializer.toJson<int>(healthStatus),
       'notes': serializer.toJson<String?>(notes),
+      'attachments': serializer.toJson<String?>(attachments),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'syncState': serializer.toJson<String>(syncState),
@@ -11309,23 +11298,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   FamilyMember copyWith({
     int? id,
     int? beneficiaryId,
-    String? fullName,
-    String? relationship,
-    String? gender,
-    Value<String?> nationalId = const Value.absent(),
-    Value<DateTime?> birthDate = const Value.absent(),
+    int? orphanNationalId,
+    String? firstName,
+    Value<String?> secondName = const Value.absent(),
+    Value<String?> thirdName = const Value.absent(),
+    String? familyName,
+    DateTime? birthDate,
     Value<int?> age = const Value.absent(),
-    Value<String?> maritalStatus = const Value.absent(),
-    Value<String?> educationLevel = const Value.absent(),
-    Value<String?> occupation = const Value.absent(),
-    Value<String?> healthStatus = const Value.absent(),
-    bool? hasDisability,
-    Value<String?> disabilityType = const Value.absent(),
-    bool? hasChronicDisease,
-    Value<String?> chronicDiseaseType = const Value.absent(),
-    bool? livesWithBeneficiary,
-    Value<String?> phone = const Value.absent(),
+    int? gender,
+    int? healthStatus,
     Value<String?> notes = const Value.absent(),
+    Value<String?> attachments = const Value.absent(),
     Value<DateTime?> createdAt = const Value.absent(),
     Value<DateTime?> updatedAt = const Value.absent(),
     String? syncState,
@@ -11334,31 +11317,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   }) => FamilyMember(
     id: id ?? this.id,
     beneficiaryId: beneficiaryId ?? this.beneficiaryId,
-    fullName: fullName ?? this.fullName,
-    relationship: relationship ?? this.relationship,
-    gender: gender ?? this.gender,
-    nationalId: nationalId.present ? nationalId.value : this.nationalId,
-    birthDate: birthDate.present ? birthDate.value : this.birthDate,
+    orphanNationalId: orphanNationalId ?? this.orphanNationalId,
+    firstName: firstName ?? this.firstName,
+    secondName: secondName.present ? secondName.value : this.secondName,
+    thirdName: thirdName.present ? thirdName.value : this.thirdName,
+    familyName: familyName ?? this.familyName,
+    birthDate: birthDate ?? this.birthDate,
     age: age.present ? age.value : this.age,
-    maritalStatus: maritalStatus.present
-        ? maritalStatus.value
-        : this.maritalStatus,
-    educationLevel: educationLevel.present
-        ? educationLevel.value
-        : this.educationLevel,
-    occupation: occupation.present ? occupation.value : this.occupation,
-    healthStatus: healthStatus.present ? healthStatus.value : this.healthStatus,
-    hasDisability: hasDisability ?? this.hasDisability,
-    disabilityType: disabilityType.present
-        ? disabilityType.value
-        : this.disabilityType,
-    hasChronicDisease: hasChronicDisease ?? this.hasChronicDisease,
-    chronicDiseaseType: chronicDiseaseType.present
-        ? chronicDiseaseType.value
-        : this.chronicDiseaseType,
-    livesWithBeneficiary: livesWithBeneficiary ?? this.livesWithBeneficiary,
-    phone: phone.present ? phone.value : this.phone,
+    gender: gender ?? this.gender,
+    healthStatus: healthStatus ?? this.healthStatus,
     notes: notes.present ? notes.value : this.notes,
+    attachments: attachments.present ? attachments.value : this.attachments,
     createdAt: createdAt.present ? createdAt.value : this.createdAt,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     syncState: syncState ?? this.syncState,
@@ -11371,45 +11340,27 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       beneficiaryId: data.beneficiaryId.present
           ? data.beneficiaryId.value
           : this.beneficiaryId,
-      fullName: data.fullName.present ? data.fullName.value : this.fullName,
-      relationship: data.relationship.present
-          ? data.relationship.value
-          : this.relationship,
-      gender: data.gender.present ? data.gender.value : this.gender,
-      nationalId: data.nationalId.present
-          ? data.nationalId.value
-          : this.nationalId,
+      orphanNationalId: data.orphanNationalId.present
+          ? data.orphanNationalId.value
+          : this.orphanNationalId,
+      firstName: data.firstName.present ? data.firstName.value : this.firstName,
+      secondName: data.secondName.present
+          ? data.secondName.value
+          : this.secondName,
+      thirdName: data.thirdName.present ? data.thirdName.value : this.thirdName,
+      familyName: data.familyName.present
+          ? data.familyName.value
+          : this.familyName,
       birthDate: data.birthDate.present ? data.birthDate.value : this.birthDate,
       age: data.age.present ? data.age.value : this.age,
-      maritalStatus: data.maritalStatus.present
-          ? data.maritalStatus.value
-          : this.maritalStatus,
-      educationLevel: data.educationLevel.present
-          ? data.educationLevel.value
-          : this.educationLevel,
-      occupation: data.occupation.present
-          ? data.occupation.value
-          : this.occupation,
+      gender: data.gender.present ? data.gender.value : this.gender,
       healthStatus: data.healthStatus.present
           ? data.healthStatus.value
           : this.healthStatus,
-      hasDisability: data.hasDisability.present
-          ? data.hasDisability.value
-          : this.hasDisability,
-      disabilityType: data.disabilityType.present
-          ? data.disabilityType.value
-          : this.disabilityType,
-      hasChronicDisease: data.hasChronicDisease.present
-          ? data.hasChronicDisease.value
-          : this.hasChronicDisease,
-      chronicDiseaseType: data.chronicDiseaseType.present
-          ? data.chronicDiseaseType.value
-          : this.chronicDiseaseType,
-      livesWithBeneficiary: data.livesWithBeneficiary.present
-          ? data.livesWithBeneficiary.value
-          : this.livesWithBeneficiary,
-      phone: data.phone.present ? data.phone.value : this.phone,
       notes: data.notes.present ? data.notes.value : this.notes,
+      attachments: data.attachments.present
+          ? data.attachments.value
+          : this.attachments,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncState: data.syncState.present ? data.syncState.value : this.syncState,
@@ -11425,23 +11376,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     return (StringBuffer('FamilyMember(')
           ..write('id: $id, ')
           ..write('beneficiaryId: $beneficiaryId, ')
-          ..write('fullName: $fullName, ')
-          ..write('relationship: $relationship, ')
-          ..write('gender: $gender, ')
-          ..write('nationalId: $nationalId, ')
+          ..write('orphanNationalId: $orphanNationalId, ')
+          ..write('firstName: $firstName, ')
+          ..write('secondName: $secondName, ')
+          ..write('thirdName: $thirdName, ')
+          ..write('familyName: $familyName, ')
           ..write('birthDate: $birthDate, ')
           ..write('age: $age, ')
-          ..write('maritalStatus: $maritalStatus, ')
-          ..write('educationLevel: $educationLevel, ')
-          ..write('occupation: $occupation, ')
+          ..write('gender: $gender, ')
           ..write('healthStatus: $healthStatus, ')
-          ..write('hasDisability: $hasDisability, ')
-          ..write('disabilityType: $disabilityType, ')
-          ..write('hasChronicDisease: $hasChronicDisease, ')
-          ..write('chronicDiseaseType: $chronicDiseaseType, ')
-          ..write('livesWithBeneficiary: $livesWithBeneficiary, ')
-          ..write('phone: $phone, ')
           ..write('notes: $notes, ')
+          ..write('attachments: $attachments, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
@@ -11452,55 +11397,43 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   }
 
   @override
-  int get hashCode => Object.hashAll([
+  int get hashCode => Object.hash(
     id,
     beneficiaryId,
-    fullName,
-    relationship,
-    gender,
-    nationalId,
+    orphanNationalId,
+    firstName,
+    secondName,
+    thirdName,
+    familyName,
     birthDate,
     age,
-    maritalStatus,
-    educationLevel,
-    occupation,
+    gender,
     healthStatus,
-    hasDisability,
-    disabilityType,
-    hasChronicDisease,
-    chronicDiseaseType,
-    livesWithBeneficiary,
-    phone,
     notes,
+    attachments,
     createdAt,
     updatedAt,
     syncState,
     serverId,
     lastSyncedAt,
-  ]);
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is FamilyMember &&
           other.id == this.id &&
           other.beneficiaryId == this.beneficiaryId &&
-          other.fullName == this.fullName &&
-          other.relationship == this.relationship &&
-          other.gender == this.gender &&
-          other.nationalId == this.nationalId &&
+          other.orphanNationalId == this.orphanNationalId &&
+          other.firstName == this.firstName &&
+          other.secondName == this.secondName &&
+          other.thirdName == this.thirdName &&
+          other.familyName == this.familyName &&
           other.birthDate == this.birthDate &&
           other.age == this.age &&
-          other.maritalStatus == this.maritalStatus &&
-          other.educationLevel == this.educationLevel &&
-          other.occupation == this.occupation &&
+          other.gender == this.gender &&
           other.healthStatus == this.healthStatus &&
-          other.hasDisability == this.hasDisability &&
-          other.disabilityType == this.disabilityType &&
-          other.hasChronicDisease == this.hasChronicDisease &&
-          other.chronicDiseaseType == this.chronicDiseaseType &&
-          other.livesWithBeneficiary == this.livesWithBeneficiary &&
-          other.phone == this.phone &&
           other.notes == this.notes &&
+          other.attachments == this.attachments &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncState == this.syncState &&
@@ -11511,23 +11444,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
 class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
   final Value<int> id;
   final Value<int> beneficiaryId;
-  final Value<String> fullName;
-  final Value<String> relationship;
-  final Value<String> gender;
-  final Value<String?> nationalId;
-  final Value<DateTime?> birthDate;
+  final Value<int> orphanNationalId;
+  final Value<String> firstName;
+  final Value<String?> secondName;
+  final Value<String?> thirdName;
+  final Value<String> familyName;
+  final Value<DateTime> birthDate;
   final Value<int?> age;
-  final Value<String?> maritalStatus;
-  final Value<String?> educationLevel;
-  final Value<String?> occupation;
-  final Value<String?> healthStatus;
-  final Value<bool> hasDisability;
-  final Value<String?> disabilityType;
-  final Value<bool> hasChronicDisease;
-  final Value<String?> chronicDiseaseType;
-  final Value<bool> livesWithBeneficiary;
-  final Value<String?> phone;
+  final Value<int> gender;
+  final Value<int> healthStatus;
   final Value<String?> notes;
+  final Value<String?> attachments;
   final Value<DateTime?> createdAt;
   final Value<DateTime?> updatedAt;
   final Value<String> syncState;
@@ -11536,23 +11463,17 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
   const FamilyMembersTableCompanion({
     this.id = const Value.absent(),
     this.beneficiaryId = const Value.absent(),
-    this.fullName = const Value.absent(),
-    this.relationship = const Value.absent(),
-    this.gender = const Value.absent(),
-    this.nationalId = const Value.absent(),
+    this.orphanNationalId = const Value.absent(),
+    this.firstName = const Value.absent(),
+    this.secondName = const Value.absent(),
+    this.thirdName = const Value.absent(),
+    this.familyName = const Value.absent(),
     this.birthDate = const Value.absent(),
     this.age = const Value.absent(),
-    this.maritalStatus = const Value.absent(),
-    this.educationLevel = const Value.absent(),
-    this.occupation = const Value.absent(),
+    this.gender = const Value.absent(),
     this.healthStatus = const Value.absent(),
-    this.hasDisability = const Value.absent(),
-    this.disabilityType = const Value.absent(),
-    this.hasChronicDisease = const Value.absent(),
-    this.chronicDiseaseType = const Value.absent(),
-    this.livesWithBeneficiary = const Value.absent(),
-    this.phone = const Value.absent(),
     this.notes = const Value.absent(),
+    this.attachments = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncState = const Value.absent(),
@@ -11562,52 +11483,43 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
   FamilyMembersTableCompanion.insert({
     this.id = const Value.absent(),
     required int beneficiaryId,
-    required String fullName,
-    required String relationship,
-    required String gender,
-    this.nationalId = const Value.absent(),
-    this.birthDate = const Value.absent(),
+    required int orphanNationalId,
+    required String firstName,
+    this.secondName = const Value.absent(),
+    this.thirdName = const Value.absent(),
+    required String familyName,
+    required DateTime birthDate,
     this.age = const Value.absent(),
-    this.maritalStatus = const Value.absent(),
-    this.educationLevel = const Value.absent(),
-    this.occupation = const Value.absent(),
-    this.healthStatus = const Value.absent(),
-    this.hasDisability = const Value.absent(),
-    this.disabilityType = const Value.absent(),
-    this.hasChronicDisease = const Value.absent(),
-    this.chronicDiseaseType = const Value.absent(),
-    this.livesWithBeneficiary = const Value.absent(),
-    this.phone = const Value.absent(),
+    required int gender,
+    required int healthStatus,
     this.notes = const Value.absent(),
+    this.attachments = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncState = const Value.absent(),
     this.serverId = const Value.absent(),
     this.lastSyncedAt = const Value.absent(),
   }) : beneficiaryId = Value(beneficiaryId),
-       fullName = Value(fullName),
-       relationship = Value(relationship),
-       gender = Value(gender);
+       orphanNationalId = Value(orphanNationalId),
+       firstName = Value(firstName),
+       familyName = Value(familyName),
+       birthDate = Value(birthDate),
+       gender = Value(gender),
+       healthStatus = Value(healthStatus);
   static Insertable<FamilyMember> custom({
     Expression<int>? id,
     Expression<int>? beneficiaryId,
-    Expression<String>? fullName,
-    Expression<String>? relationship,
-    Expression<String>? gender,
-    Expression<String>? nationalId,
+    Expression<int>? orphanNationalId,
+    Expression<String>? firstName,
+    Expression<String>? secondName,
+    Expression<String>? thirdName,
+    Expression<String>? familyName,
     Expression<DateTime>? birthDate,
     Expression<int>? age,
-    Expression<String>? maritalStatus,
-    Expression<String>? educationLevel,
-    Expression<String>? occupation,
-    Expression<String>? healthStatus,
-    Expression<bool>? hasDisability,
-    Expression<String>? disabilityType,
-    Expression<bool>? hasChronicDisease,
-    Expression<String>? chronicDiseaseType,
-    Expression<bool>? livesWithBeneficiary,
-    Expression<String>? phone,
+    Expression<int>? gender,
+    Expression<int>? healthStatus,
     Expression<String>? notes,
+    Expression<String>? attachments,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncState,
@@ -11617,25 +11529,17 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (beneficiaryId != null) 'beneficiary_id': beneficiaryId,
-      if (fullName != null) 'full_name': fullName,
-      if (relationship != null) 'relationship': relationship,
-      if (gender != null) 'gender': gender,
-      if (nationalId != null) 'national_id': nationalId,
+      if (orphanNationalId != null) 'orphan_national_id': orphanNationalId,
+      if (firstName != null) 'first_name': firstName,
+      if (secondName != null) 'second_name': secondName,
+      if (thirdName != null) 'third_name': thirdName,
+      if (familyName != null) 'family_name': familyName,
       if (birthDate != null) 'birth_date': birthDate,
       if (age != null) 'age': age,
-      if (maritalStatus != null) 'marital_status': maritalStatus,
-      if (educationLevel != null) 'education_level': educationLevel,
-      if (occupation != null) 'occupation': occupation,
+      if (gender != null) 'gender': gender,
       if (healthStatus != null) 'health_status': healthStatus,
-      if (hasDisability != null) 'has_disability': hasDisability,
-      if (disabilityType != null) 'disability_type': disabilityType,
-      if (hasChronicDisease != null) 'has_chronic_disease': hasChronicDisease,
-      if (chronicDiseaseType != null)
-        'chronic_disease_type': chronicDiseaseType,
-      if (livesWithBeneficiary != null)
-        'lives_with_beneficiary': livesWithBeneficiary,
-      if (phone != null) 'phone': phone,
       if (notes != null) 'notes': notes,
+      if (attachments != null) 'attachments': attachments,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncState != null) 'sync_state': syncState,
@@ -11647,23 +11551,17 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
   FamilyMembersTableCompanion copyWith({
     Value<int>? id,
     Value<int>? beneficiaryId,
-    Value<String>? fullName,
-    Value<String>? relationship,
-    Value<String>? gender,
-    Value<String?>? nationalId,
-    Value<DateTime?>? birthDate,
+    Value<int>? orphanNationalId,
+    Value<String>? firstName,
+    Value<String?>? secondName,
+    Value<String?>? thirdName,
+    Value<String>? familyName,
+    Value<DateTime>? birthDate,
     Value<int?>? age,
-    Value<String?>? maritalStatus,
-    Value<String?>? educationLevel,
-    Value<String?>? occupation,
-    Value<String?>? healthStatus,
-    Value<bool>? hasDisability,
-    Value<String?>? disabilityType,
-    Value<bool>? hasChronicDisease,
-    Value<String?>? chronicDiseaseType,
-    Value<bool>? livesWithBeneficiary,
-    Value<String?>? phone,
+    Value<int>? gender,
+    Value<int>? healthStatus,
     Value<String?>? notes,
+    Value<String?>? attachments,
     Value<DateTime?>? createdAt,
     Value<DateTime?>? updatedAt,
     Value<String>? syncState,
@@ -11673,23 +11571,17 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     return FamilyMembersTableCompanion(
       id: id ?? this.id,
       beneficiaryId: beneficiaryId ?? this.beneficiaryId,
-      fullName: fullName ?? this.fullName,
-      relationship: relationship ?? this.relationship,
-      gender: gender ?? this.gender,
-      nationalId: nationalId ?? this.nationalId,
+      orphanNationalId: orphanNationalId ?? this.orphanNationalId,
+      firstName: firstName ?? this.firstName,
+      secondName: secondName ?? this.secondName,
+      thirdName: thirdName ?? this.thirdName,
+      familyName: familyName ?? this.familyName,
       birthDate: birthDate ?? this.birthDate,
       age: age ?? this.age,
-      maritalStatus: maritalStatus ?? this.maritalStatus,
-      educationLevel: educationLevel ?? this.educationLevel,
-      occupation: occupation ?? this.occupation,
+      gender: gender ?? this.gender,
       healthStatus: healthStatus ?? this.healthStatus,
-      hasDisability: hasDisability ?? this.hasDisability,
-      disabilityType: disabilityType ?? this.disabilityType,
-      hasChronicDisease: hasChronicDisease ?? this.hasChronicDisease,
-      chronicDiseaseType: chronicDiseaseType ?? this.chronicDiseaseType,
-      livesWithBeneficiary: livesWithBeneficiary ?? this.livesWithBeneficiary,
-      phone: phone ?? this.phone,
       notes: notes ?? this.notes,
+      attachments: attachments ?? this.attachments,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncState: syncState ?? this.syncState,
@@ -11707,17 +11599,20 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     if (beneficiaryId.present) {
       map['beneficiary_id'] = Variable<int>(beneficiaryId.value);
     }
-    if (fullName.present) {
-      map['full_name'] = Variable<String>(fullName.value);
+    if (orphanNationalId.present) {
+      map['orphan_national_id'] = Variable<int>(orphanNationalId.value);
     }
-    if (relationship.present) {
-      map['relationship'] = Variable<String>(relationship.value);
+    if (firstName.present) {
+      map['first_name'] = Variable<String>(firstName.value);
     }
-    if (gender.present) {
-      map['gender'] = Variable<String>(gender.value);
+    if (secondName.present) {
+      map['second_name'] = Variable<String>(secondName.value);
     }
-    if (nationalId.present) {
-      map['national_id'] = Variable<String>(nationalId.value);
+    if (thirdName.present) {
+      map['third_name'] = Variable<String>(thirdName.value);
+    }
+    if (familyName.present) {
+      map['family_name'] = Variable<String>(familyName.value);
     }
     if (birthDate.present) {
       map['birth_date'] = Variable<DateTime>(birthDate.value);
@@ -11725,40 +11620,17 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     if (age.present) {
       map['age'] = Variable<int>(age.value);
     }
-    if (maritalStatus.present) {
-      map['marital_status'] = Variable<String>(maritalStatus.value);
-    }
-    if (educationLevel.present) {
-      map['education_level'] = Variable<String>(educationLevel.value);
-    }
-    if (occupation.present) {
-      map['occupation'] = Variable<String>(occupation.value);
+    if (gender.present) {
+      map['gender'] = Variable<int>(gender.value);
     }
     if (healthStatus.present) {
-      map['health_status'] = Variable<String>(healthStatus.value);
-    }
-    if (hasDisability.present) {
-      map['has_disability'] = Variable<bool>(hasDisability.value);
-    }
-    if (disabilityType.present) {
-      map['disability_type'] = Variable<String>(disabilityType.value);
-    }
-    if (hasChronicDisease.present) {
-      map['has_chronic_disease'] = Variable<bool>(hasChronicDisease.value);
-    }
-    if (chronicDiseaseType.present) {
-      map['chronic_disease_type'] = Variable<String>(chronicDiseaseType.value);
-    }
-    if (livesWithBeneficiary.present) {
-      map['lives_with_beneficiary'] = Variable<bool>(
-        livesWithBeneficiary.value,
-      );
-    }
-    if (phone.present) {
-      map['phone'] = Variable<String>(phone.value);
+      map['health_status'] = Variable<int>(healthStatus.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
+    }
+    if (attachments.present) {
+      map['attachments'] = Variable<String>(attachments.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -11783,23 +11655,17 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     return (StringBuffer('FamilyMembersTableCompanion(')
           ..write('id: $id, ')
           ..write('beneficiaryId: $beneficiaryId, ')
-          ..write('fullName: $fullName, ')
-          ..write('relationship: $relationship, ')
-          ..write('gender: $gender, ')
-          ..write('nationalId: $nationalId, ')
+          ..write('orphanNationalId: $orphanNationalId, ')
+          ..write('firstName: $firstName, ')
+          ..write('secondName: $secondName, ')
+          ..write('thirdName: $thirdName, ')
+          ..write('familyName: $familyName, ')
           ..write('birthDate: $birthDate, ')
           ..write('age: $age, ')
-          ..write('maritalStatus: $maritalStatus, ')
-          ..write('educationLevel: $educationLevel, ')
-          ..write('occupation: $occupation, ')
+          ..write('gender: $gender, ')
           ..write('healthStatus: $healthStatus, ')
-          ..write('hasDisability: $hasDisability, ')
-          ..write('disabilityType: $disabilityType, ')
-          ..write('hasChronicDisease: $hasChronicDisease, ')
-          ..write('chronicDiseaseType: $chronicDiseaseType, ')
-          ..write('livesWithBeneficiary: $livesWithBeneficiary, ')
-          ..write('phone: $phone, ')
           ..write('notes: $notes, ')
+          ..write('attachments: $attachments, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
@@ -16530,12 +16396,16 @@ typedef $$FamilyDeceasedTableTableCreateCompanionBuilder =
     FamilyDeceasedTableCompanion Function({
       Value<int> id,
       required int beneficiaryId,
-      required String fullName,
-      required String relationship,
-      required String gender,
-      Value<DateTime?> deathDate,
-      Value<String?> deathCause,
-      Value<int?> ageAtDeath,
+      required int deceasedType,
+      required String firstName,
+      Value<String?> secondName,
+      Value<String?> thirdName,
+      required String familyName,
+      required int nationalId,
+      required DateTime deathDate,
+      required int deathCause,
+      Value<int?> documentType,
+      Value<String?> documentPath,
       Value<String?> notes,
       Value<DateTime?> createdAt,
       Value<DateTime?> updatedAt,
@@ -16547,12 +16417,16 @@ typedef $$FamilyDeceasedTableTableUpdateCompanionBuilder =
     FamilyDeceasedTableCompanion Function({
       Value<int> id,
       Value<int> beneficiaryId,
-      Value<String> fullName,
-      Value<String> relationship,
-      Value<String> gender,
-      Value<DateTime?> deathDate,
-      Value<String?> deathCause,
-      Value<int?> ageAtDeath,
+      Value<int> deceasedType,
+      Value<String> firstName,
+      Value<String?> secondName,
+      Value<String?> thirdName,
+      Value<String> familyName,
+      Value<int> nationalId,
+      Value<DateTime> deathDate,
+      Value<int> deathCause,
+      Value<int?> documentType,
+      Value<String?> documentPath,
       Value<String?> notes,
       Value<DateTime?> createdAt,
       Value<DateTime?> updatedAt,
@@ -16580,18 +16454,33 @@ class $$FamilyDeceasedTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fullName => $composableBuilder(
-    column: $table.fullName,
+  ColumnFilters<int> get deceasedType => $composableBuilder(
+    column: $table.deceasedType,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get relationship => $composableBuilder(
-    column: $table.relationship,
+  ColumnFilters<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get gender => $composableBuilder(
-    column: $table.gender,
+  ColumnFilters<String> get secondName => $composableBuilder(
+    column: $table.secondName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get thirdName => $composableBuilder(
+    column: $table.thirdName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get familyName => $composableBuilder(
+    column: $table.familyName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get nationalId => $composableBuilder(
+    column: $table.nationalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16600,13 +16489,18 @@ class $$FamilyDeceasedTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get deathCause => $composableBuilder(
+  ColumnFilters<int> get deathCause => $composableBuilder(
     column: $table.deathCause,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get ageAtDeath => $composableBuilder(
-    column: $table.ageAtDeath,
+  ColumnFilters<int> get documentType => $composableBuilder(
+    column: $table.documentType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get documentPath => $composableBuilder(
+    column: $table.documentPath,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16660,18 +16554,33 @@ class $$FamilyDeceasedTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fullName => $composableBuilder(
-    column: $table.fullName,
+  ColumnOrderings<int> get deceasedType => $composableBuilder(
+    column: $table.deceasedType,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get relationship => $composableBuilder(
-    column: $table.relationship,
+  ColumnOrderings<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get gender => $composableBuilder(
-    column: $table.gender,
+  ColumnOrderings<String> get secondName => $composableBuilder(
+    column: $table.secondName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get thirdName => $composableBuilder(
+    column: $table.thirdName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get familyName => $composableBuilder(
+    column: $table.familyName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get nationalId => $composableBuilder(
+    column: $table.nationalId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16680,13 +16589,18 @@ class $$FamilyDeceasedTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get deathCause => $composableBuilder(
+  ColumnOrderings<int> get deathCause => $composableBuilder(
     column: $table.deathCause,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get ageAtDeath => $composableBuilder(
-    column: $table.ageAtDeath,
+  ColumnOrderings<int> get documentType => $composableBuilder(
+    column: $table.documentType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get documentPath => $composableBuilder(
+    column: $table.documentPath,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16738,27 +16652,47 @@ class $$FamilyDeceasedTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get fullName =>
-      $composableBuilder(column: $table.fullName, builder: (column) => column);
-
-  GeneratedColumn<String> get relationship => $composableBuilder(
-    column: $table.relationship,
+  GeneratedColumn<int> get deceasedType => $composableBuilder(
+    column: $table.deceasedType,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get gender =>
-      $composableBuilder(column: $table.gender, builder: (column) => column);
+  GeneratedColumn<String> get firstName =>
+      $composableBuilder(column: $table.firstName, builder: (column) => column);
+
+  GeneratedColumn<String> get secondName => $composableBuilder(
+    column: $table.secondName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get thirdName =>
+      $composableBuilder(column: $table.thirdName, builder: (column) => column);
+
+  GeneratedColumn<String> get familyName => $composableBuilder(
+    column: $table.familyName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get nationalId => $composableBuilder(
+    column: $table.nationalId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get deathDate =>
       $composableBuilder(column: $table.deathDate, builder: (column) => column);
 
-  GeneratedColumn<String> get deathCause => $composableBuilder(
+  GeneratedColumn<int> get deathCause => $composableBuilder(
     column: $table.deathCause,
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get ageAtDeath => $composableBuilder(
-    column: $table.ageAtDeath,
+  GeneratedColumn<int> get documentType => $composableBuilder(
+    column: $table.documentType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get documentPath => $composableBuilder(
+    column: $table.documentPath,
     builder: (column) => column,
   );
 
@@ -16828,12 +16762,16 @@ class $$FamilyDeceasedTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> beneficiaryId = const Value.absent(),
-                Value<String> fullName = const Value.absent(),
-                Value<String> relationship = const Value.absent(),
-                Value<String> gender = const Value.absent(),
-                Value<DateTime?> deathDate = const Value.absent(),
-                Value<String?> deathCause = const Value.absent(),
-                Value<int?> ageAtDeath = const Value.absent(),
+                Value<int> deceasedType = const Value.absent(),
+                Value<String> firstName = const Value.absent(),
+                Value<String?> secondName = const Value.absent(),
+                Value<String?> thirdName = const Value.absent(),
+                Value<String> familyName = const Value.absent(),
+                Value<int> nationalId = const Value.absent(),
+                Value<DateTime> deathDate = const Value.absent(),
+                Value<int> deathCause = const Value.absent(),
+                Value<int?> documentType = const Value.absent(),
+                Value<String?> documentPath = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
@@ -16843,12 +16781,16 @@ class $$FamilyDeceasedTableTableTableManager
               }) => FamilyDeceasedTableCompanion(
                 id: id,
                 beneficiaryId: beneficiaryId,
-                fullName: fullName,
-                relationship: relationship,
-                gender: gender,
+                deceasedType: deceasedType,
+                firstName: firstName,
+                secondName: secondName,
+                thirdName: thirdName,
+                familyName: familyName,
+                nationalId: nationalId,
                 deathDate: deathDate,
                 deathCause: deathCause,
-                ageAtDeath: ageAtDeath,
+                documentType: documentType,
+                documentPath: documentPath,
                 notes: notes,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -16860,12 +16802,16 @@ class $$FamilyDeceasedTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int beneficiaryId,
-                required String fullName,
-                required String relationship,
-                required String gender,
-                Value<DateTime?> deathDate = const Value.absent(),
-                Value<String?> deathCause = const Value.absent(),
-                Value<int?> ageAtDeath = const Value.absent(),
+                required int deceasedType,
+                required String firstName,
+                Value<String?> secondName = const Value.absent(),
+                Value<String?> thirdName = const Value.absent(),
+                required String familyName,
+                required int nationalId,
+                required DateTime deathDate,
+                required int deathCause,
+                Value<int?> documentType = const Value.absent(),
+                Value<String?> documentPath = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
@@ -16875,12 +16821,16 @@ class $$FamilyDeceasedTableTableTableManager
               }) => FamilyDeceasedTableCompanion.insert(
                 id: id,
                 beneficiaryId: beneficiaryId,
-                fullName: fullName,
-                relationship: relationship,
-                gender: gender,
+                deceasedType: deceasedType,
+                firstName: firstName,
+                secondName: secondName,
+                thirdName: thirdName,
+                familyName: familyName,
+                nationalId: nationalId,
                 deathDate: deathDate,
                 deathCause: deathCause,
-                ageAtDeath: ageAtDeath,
+                documentType: documentType,
+                documentPath: documentPath,
                 notes: notes,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -16921,23 +16871,17 @@ typedef $$FamilyMembersTableTableCreateCompanionBuilder =
     FamilyMembersTableCompanion Function({
       Value<int> id,
       required int beneficiaryId,
-      required String fullName,
-      required String relationship,
-      required String gender,
-      Value<String?> nationalId,
-      Value<DateTime?> birthDate,
+      required int orphanNationalId,
+      required String firstName,
+      Value<String?> secondName,
+      Value<String?> thirdName,
+      required String familyName,
+      required DateTime birthDate,
       Value<int?> age,
-      Value<String?> maritalStatus,
-      Value<String?> educationLevel,
-      Value<String?> occupation,
-      Value<String?> healthStatus,
-      Value<bool> hasDisability,
-      Value<String?> disabilityType,
-      Value<bool> hasChronicDisease,
-      Value<String?> chronicDiseaseType,
-      Value<bool> livesWithBeneficiary,
-      Value<String?> phone,
+      required int gender,
+      required int healthStatus,
       Value<String?> notes,
+      Value<String?> attachments,
       Value<DateTime?> createdAt,
       Value<DateTime?> updatedAt,
       Value<String> syncState,
@@ -16948,23 +16892,17 @@ typedef $$FamilyMembersTableTableUpdateCompanionBuilder =
     FamilyMembersTableCompanion Function({
       Value<int> id,
       Value<int> beneficiaryId,
-      Value<String> fullName,
-      Value<String> relationship,
-      Value<String> gender,
-      Value<String?> nationalId,
-      Value<DateTime?> birthDate,
+      Value<int> orphanNationalId,
+      Value<String> firstName,
+      Value<String?> secondName,
+      Value<String?> thirdName,
+      Value<String> familyName,
+      Value<DateTime> birthDate,
       Value<int?> age,
-      Value<String?> maritalStatus,
-      Value<String?> educationLevel,
-      Value<String?> occupation,
-      Value<String?> healthStatus,
-      Value<bool> hasDisability,
-      Value<String?> disabilityType,
-      Value<bool> hasChronicDisease,
-      Value<String?> chronicDiseaseType,
-      Value<bool> livesWithBeneficiary,
-      Value<String?> phone,
+      Value<int> gender,
+      Value<int> healthStatus,
       Value<String?> notes,
+      Value<String?> attachments,
       Value<DateTime?> createdAt,
       Value<DateTime?> updatedAt,
       Value<String> syncState,
@@ -16991,23 +16929,28 @@ class $$FamilyMembersTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get fullName => $composableBuilder(
-    column: $table.fullName,
+  ColumnFilters<int> get orphanNationalId => $composableBuilder(
+    column: $table.orphanNationalId,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get relationship => $composableBuilder(
-    column: $table.relationship,
+  ColumnFilters<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get gender => $composableBuilder(
-    column: $table.gender,
+  ColumnFilters<String> get secondName => $composableBuilder(
+    column: $table.secondName,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get nationalId => $composableBuilder(
-    column: $table.nationalId,
+  ColumnFilters<String> get thirdName => $composableBuilder(
+    column: $table.thirdName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get familyName => $composableBuilder(
+    column: $table.familyName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17021,58 +16964,23 @@ class $$FamilyMembersTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get maritalStatus => $composableBuilder(
-    column: $table.maritalStatus,
+  ColumnFilters<int> get gender => $composableBuilder(
+    column: $table.gender,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get educationLevel => $composableBuilder(
-    column: $table.educationLevel,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get occupation => $composableBuilder(
-    column: $table.occupation,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get healthStatus => $composableBuilder(
+  ColumnFilters<int> get healthStatus => $composableBuilder(
     column: $table.healthStatus,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get hasDisability => $composableBuilder(
-    column: $table.hasDisability,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get disabilityType => $composableBuilder(
-    column: $table.disabilityType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get hasChronicDisease => $composableBuilder(
-    column: $table.hasChronicDisease,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get chronicDiseaseType => $composableBuilder(
-    column: $table.chronicDiseaseType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get livesWithBeneficiary => $composableBuilder(
-    column: $table.livesWithBeneficiary,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get phone => $composableBuilder(
-    column: $table.phone,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get attachments => $composableBuilder(
+    column: $table.attachments,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17121,23 +17029,28 @@ class $$FamilyMembersTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get fullName => $composableBuilder(
-    column: $table.fullName,
+  ColumnOrderings<int> get orphanNationalId => $composableBuilder(
+    column: $table.orphanNationalId,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get relationship => $composableBuilder(
-    column: $table.relationship,
+  ColumnOrderings<String> get firstName => $composableBuilder(
+    column: $table.firstName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get gender => $composableBuilder(
-    column: $table.gender,
+  ColumnOrderings<String> get secondName => $composableBuilder(
+    column: $table.secondName,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get nationalId => $composableBuilder(
-    column: $table.nationalId,
+  ColumnOrderings<String> get thirdName => $composableBuilder(
+    column: $table.thirdName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get familyName => $composableBuilder(
+    column: $table.familyName,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -17151,58 +17064,23 @@ class $$FamilyMembersTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get maritalStatus => $composableBuilder(
-    column: $table.maritalStatus,
+  ColumnOrderings<int> get gender => $composableBuilder(
+    column: $table.gender,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get educationLevel => $composableBuilder(
-    column: $table.educationLevel,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get occupation => $composableBuilder(
-    column: $table.occupation,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get healthStatus => $composableBuilder(
+  ColumnOrderings<int> get healthStatus => $composableBuilder(
     column: $table.healthStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get hasDisability => $composableBuilder(
-    column: $table.hasDisability,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get disabilityType => $composableBuilder(
-    column: $table.disabilityType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get hasChronicDisease => $composableBuilder(
-    column: $table.hasChronicDisease,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get chronicDiseaseType => $composableBuilder(
-    column: $table.chronicDiseaseType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get livesWithBeneficiary => $composableBuilder(
-    column: $table.livesWithBeneficiary,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get phone => $composableBuilder(
-    column: $table.phone,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get attachments => $composableBuilder(
+    column: $table.attachments,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -17249,19 +17127,24 @@ class $$FamilyMembersTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get fullName =>
-      $composableBuilder(column: $table.fullName, builder: (column) => column);
-
-  GeneratedColumn<String> get relationship => $composableBuilder(
-    column: $table.relationship,
+  GeneratedColumn<int> get orphanNationalId => $composableBuilder(
+    column: $table.orphanNationalId,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get gender =>
-      $composableBuilder(column: $table.gender, builder: (column) => column);
+  GeneratedColumn<String> get firstName =>
+      $composableBuilder(column: $table.firstName, builder: (column) => column);
 
-  GeneratedColumn<String> get nationalId => $composableBuilder(
-    column: $table.nationalId,
+  GeneratedColumn<String> get secondName => $composableBuilder(
+    column: $table.secondName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get thirdName =>
+      $composableBuilder(column: $table.thirdName, builder: (column) => column);
+
+  GeneratedColumn<String> get familyName => $composableBuilder(
+    column: $table.familyName,
     builder: (column) => column,
   );
 
@@ -17271,56 +17154,21 @@ class $$FamilyMembersTableTableAnnotationComposer
   GeneratedColumn<int> get age =>
       $composableBuilder(column: $table.age, builder: (column) => column);
 
-  GeneratedColumn<String> get maritalStatus => $composableBuilder(
-    column: $table.maritalStatus,
-    builder: (column) => column,
-  );
+  GeneratedColumn<int> get gender =>
+      $composableBuilder(column: $table.gender, builder: (column) => column);
 
-  GeneratedColumn<String> get educationLevel => $composableBuilder(
-    column: $table.educationLevel,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get occupation => $composableBuilder(
-    column: $table.occupation,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get healthStatus => $composableBuilder(
+  GeneratedColumn<int> get healthStatus => $composableBuilder(
     column: $table.healthStatus,
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get hasDisability => $composableBuilder(
-    column: $table.hasDisability,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get disabilityType => $composableBuilder(
-    column: $table.disabilityType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get hasChronicDisease => $composableBuilder(
-    column: $table.hasChronicDisease,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get chronicDiseaseType => $composableBuilder(
-    column: $table.chronicDiseaseType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get livesWithBeneficiary => $composableBuilder(
-    column: $table.livesWithBeneficiary,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get phone =>
-      $composableBuilder(column: $table.phone, builder: (column) => column);
-
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<String> get attachments => $composableBuilder(
+    column: $table.attachments,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -17382,23 +17230,17 @@ class $$FamilyMembersTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> beneficiaryId = const Value.absent(),
-                Value<String> fullName = const Value.absent(),
-                Value<String> relationship = const Value.absent(),
-                Value<String> gender = const Value.absent(),
-                Value<String?> nationalId = const Value.absent(),
-                Value<DateTime?> birthDate = const Value.absent(),
+                Value<int> orphanNationalId = const Value.absent(),
+                Value<String> firstName = const Value.absent(),
+                Value<String?> secondName = const Value.absent(),
+                Value<String?> thirdName = const Value.absent(),
+                Value<String> familyName = const Value.absent(),
+                Value<DateTime> birthDate = const Value.absent(),
                 Value<int?> age = const Value.absent(),
-                Value<String?> maritalStatus = const Value.absent(),
-                Value<String?> educationLevel = const Value.absent(),
-                Value<String?> occupation = const Value.absent(),
-                Value<String?> healthStatus = const Value.absent(),
-                Value<bool> hasDisability = const Value.absent(),
-                Value<String?> disabilityType = const Value.absent(),
-                Value<bool> hasChronicDisease = const Value.absent(),
-                Value<String?> chronicDiseaseType = const Value.absent(),
-                Value<bool> livesWithBeneficiary = const Value.absent(),
-                Value<String?> phone = const Value.absent(),
+                Value<int> gender = const Value.absent(),
+                Value<int> healthStatus = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<String?> attachments = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
@@ -17407,23 +17249,17 @@ class $$FamilyMembersTableTableTableManager
               }) => FamilyMembersTableCompanion(
                 id: id,
                 beneficiaryId: beneficiaryId,
-                fullName: fullName,
-                relationship: relationship,
-                gender: gender,
-                nationalId: nationalId,
+                orphanNationalId: orphanNationalId,
+                firstName: firstName,
+                secondName: secondName,
+                thirdName: thirdName,
+                familyName: familyName,
                 birthDate: birthDate,
                 age: age,
-                maritalStatus: maritalStatus,
-                educationLevel: educationLevel,
-                occupation: occupation,
+                gender: gender,
                 healthStatus: healthStatus,
-                hasDisability: hasDisability,
-                disabilityType: disabilityType,
-                hasChronicDisease: hasChronicDisease,
-                chronicDiseaseType: chronicDiseaseType,
-                livesWithBeneficiary: livesWithBeneficiary,
-                phone: phone,
                 notes: notes,
+                attachments: attachments,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncState: syncState,
@@ -17434,23 +17270,17 @@ class $$FamilyMembersTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int beneficiaryId,
-                required String fullName,
-                required String relationship,
-                required String gender,
-                Value<String?> nationalId = const Value.absent(),
-                Value<DateTime?> birthDate = const Value.absent(),
+                required int orphanNationalId,
+                required String firstName,
+                Value<String?> secondName = const Value.absent(),
+                Value<String?> thirdName = const Value.absent(),
+                required String familyName,
+                required DateTime birthDate,
                 Value<int?> age = const Value.absent(),
-                Value<String?> maritalStatus = const Value.absent(),
-                Value<String?> educationLevel = const Value.absent(),
-                Value<String?> occupation = const Value.absent(),
-                Value<String?> healthStatus = const Value.absent(),
-                Value<bool> hasDisability = const Value.absent(),
-                Value<String?> disabilityType = const Value.absent(),
-                Value<bool> hasChronicDisease = const Value.absent(),
-                Value<String?> chronicDiseaseType = const Value.absent(),
-                Value<bool> livesWithBeneficiary = const Value.absent(),
-                Value<String?> phone = const Value.absent(),
+                required int gender,
+                required int healthStatus,
                 Value<String?> notes = const Value.absent(),
+                Value<String?> attachments = const Value.absent(),
                 Value<DateTime?> createdAt = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<String> syncState = const Value.absent(),
@@ -17459,23 +17289,17 @@ class $$FamilyMembersTableTableTableManager
               }) => FamilyMembersTableCompanion.insert(
                 id: id,
                 beneficiaryId: beneficiaryId,
-                fullName: fullName,
-                relationship: relationship,
-                gender: gender,
-                nationalId: nationalId,
+                orphanNationalId: orphanNationalId,
+                firstName: firstName,
+                secondName: secondName,
+                thirdName: thirdName,
+                familyName: familyName,
                 birthDate: birthDate,
                 age: age,
-                maritalStatus: maritalStatus,
-                educationLevel: educationLevel,
-                occupation: occupation,
+                gender: gender,
                 healthStatus: healthStatus,
-                hasDisability: hasDisability,
-                disabilityType: disabilityType,
-                hasChronicDisease: hasChronicDisease,
-                chronicDiseaseType: chronicDiseaseType,
-                livesWithBeneficiary: livesWithBeneficiary,
-                phone: phone,
                 notes: notes,
+                attachments: attachments,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncState: syncState,

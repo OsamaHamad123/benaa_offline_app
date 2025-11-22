@@ -204,6 +204,56 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_relations_relative ON civil_registry_relations(CF_ID_RELATIVE);',
     );
+
+    // ⚡ Family tables indexes for better performance
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_family_deceased_beneficiary ON family_deceased(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_family_deceased_type ON family_deceased(deceased_type);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_family_members_beneficiary ON family_members(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_family_members_gender ON family_members(gender);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_family_members_birth_date ON family_members(birth_date);',
+    );
+
+    // ⚡ Additional performance indexes for common queries
+    // Beneficiaries table - composite indexes
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_category_province ON beneficiaries(category_code, province);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_section_sync ON beneficiaries(section_id, sync_state);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_phone ON beneficiaries(phone_number) WHERE phone_number IS NOT NULL;',
+    );
+
+    // Visits table - for quick lookups
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_visits_beneficiary_date ON visits(beneficiary_id, visit_date DESC);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date DESC);',
+    );
+
+    // Attachments table
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_attachments_beneficiary ON attachments(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(attachment_type);',
+    );
+
+    // Sync Queue - critical for sync performance
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status, created_at);',
+    );
   }
 
   // Note: All legacy migrations (v2-v7) removed

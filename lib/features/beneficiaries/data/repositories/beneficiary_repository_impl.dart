@@ -50,7 +50,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       notes: beneficiary.notes,
       createdAt: beneficiary.createdAt,
       updatedAt: beneficiary.updatedAt,
-      needsSync: beneficiary.needsSync,
+      needsSync: true, // ✅ المستفيدين الجدد يحتاجون مزامنة
     ).toDrift();
 
     final result = await localDataSource.create(companion);
@@ -96,7 +96,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       requestStatus: beneficiary.requestStatus,
       createdAt: beneficiary.createdAt,
       updatedAt: beneficiary.updatedAt,
-      needsSync: beneficiary.needsSync,
+      needsSync: true, // ✅ التعديلات تحتاج مزامنة
     ).toDrift();
 
     final id = int.tryParse(beneficiary.id);

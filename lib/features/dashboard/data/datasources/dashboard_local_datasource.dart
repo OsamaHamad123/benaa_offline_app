@@ -82,7 +82,10 @@ class DashboardLocalDataSource {
       _getCategoryCounts(),
       _getGrowthData(),
       getTodayStatsData(),
+      _getFamilyStatistics(), // NEW: Family statistics
     ]);
+
+    final familyStats = results[7] as Map<String, dynamic>;
 
     final stats = DashboardStatisticsModel(
       totalBeneficiaries: results[0] as int,
@@ -95,6 +98,10 @@ class DashboardLocalDataSource {
       categoryCounts: results[4] as Map<String, int>,
       growthData: results[5] as List<GrowthDataPointModel>,
       todayStats: results[6] as TodayStatsModel,
+      totalFamilyMembers: familyStats['totalFamilyMembers'] as int,
+      totalDeceased: familyStats['totalDeceased'] as int,
+      totalOrphans: familyStats['totalOrphans'] as int,
+      averageFamilySize: familyStats['averageFamilySize'] as double,
     );
 
     // Cache the result
@@ -243,6 +250,44 @@ class DashboardLocalDataSource {
     }
 
     return growthData;
+  }
+
+  /// ⚡ Get family statistics (NEW)
+  Future<Map<String, dynamic>> _getFamilyStatistics() async {
+    // Count all family members
+    final totalOrphansResult = await database
+        .customSelect(
+          'SELECT COUNT(*) as count FROM family_members',
+          readsFrom: {database.familyMembersTable},
+        )
+        .getSingle();
+    final totalOrphans = totalOrphansResult.read<int>('count');
+
+    // Count deceased members
+    final totalDeceasedResult = await database
+        .customSelect(
+          'SELECT COUNT(*) as count FROM family_deceased',
+          readsFrom: {database.familyDeceasedTable},
+        )
+        .getSingle();
+    final totalDeceased = totalDeceasedResult.read<int>('count');
+
+    // Total family members (deceased + orphans)
+    final totalFamilyMembers = totalDeceased + totalOrphans;
+
+    // Average family size (orphans per beneficiary)
+    final beneficiariesCount = await database.beneficiariesDao
+        .countBeneficiaries();
+    final averageFamilySize = beneficiariesCount > 0
+        ? (totalOrphans / beneficiariesCount)
+        : 0.0;
+
+    return {
+      'totalFamilyMembers': totalFamilyMembers,
+      'totalDeceased': totalDeceased,
+      'totalOrphans': totalOrphans,
+      'averageFamilySize': averageFamilySize,
+    };
   }
 
   /// Clear all caches

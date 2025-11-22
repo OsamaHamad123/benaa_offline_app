@@ -1,9 +1,9 @@
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_additional_info_tab.dart';
-import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_attachments_tab.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_unified_attachments_tab.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_basic_info_tab.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_contact_info_tab.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_family_info_tab.dart';
-import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_family_members_tab.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_family_members_tab_redesigned.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_notes_tab.dart';
 import 'package:flutter/material.dart';
 import '../form_controllers.dart';
@@ -199,22 +199,27 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
   }
 
   Widget _buildFamilyMembersTab() {
-    // التبويب الجديد لأفراد العائلة التفصيلية
+    // ✅ التبويب المحسّن لأفراد العائلة (ExpansionTile, const widgets, keys)
     return RepaintBoundary(
       key: const ValueKey('family_members_tab'),
-      child: V2FamilyMembersTab(formControllers: widget.formControllers),
+      child: V2FamilyMembersTabRedesigned(
+        formControllers: widget.formControllers,
+      ),
     );
   }
 
   Widget _buildAttachmentsTab() {
+    // ✅ تبويب المرفقات الموحد (كل المرفقات في مكان واحد)
     return RepaintBoundary(
-      child: V2AttachmentsTab(
+      child: V2UnifiedAttachmentsTab(
         key: const ValueKey('attachments_tab'),
         beneficiaryId: widget.beneficiaryId,
         pendingFiles: widget.formControllers.pendingAttachmentFiles,
         onPendingFilesChanged: (files) {
           widget.formControllers.updatePendingFiles(files);
         },
+        formControllers: widget
+            .formControllers, // ✅ تمرير controllers للوصول لبيانات العائلة
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/providers/providers.dart';
+import '../providers/dashboard_providers.dart';
 
 /// Dashboard Summary Widget - عرض ملخص سريع لأهم الإحصائيات
 /// Enhanced version with real-time data from database
@@ -10,127 +10,105 @@ class DashboardSummaryWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final db = ref.watch(databaseProvider);
+    final summaryAsync = ref.watch(dashboardSummaryProvider);
 
-    return FutureBuilder<Map<String, dynamic>>(
-      future: () async {
-        // Get counts
-        final total = await db.beneficiariesDao.countBeneficiaries();
-        final orphans = await db.beneficiariesDao.countBeneficiariesByCategory(
-          1,
-        );
-        final poor = await db.beneficiariesDao.countBeneficiariesByCategory(3);
-        final pending = await db.beneficiariesDao.countPendingSync();
-
-        // Calculate sync percentage
-        final synced = total - pending;
-        final syncPercentage = total > 0 ? (synced / total * 100) : 0.0;
-
-        return {
-          'total': total,
-          'orphans': orphans,
-          'poor': poor,
-          'pending': pending,
-          'synced': synced,
-          'syncPercentage': syncPercentage,
-          'totalTrend': null,
-        };
-      }(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: SizedBox(
-              height: 200.h,
-              child: const Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
-
-        final stats = snapshot.data!;
-        return Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
+    return summaryAsync.when(
+      data: (stats) => Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.dashboard,
+                    color: Theme.of(context).primaryColor,
+                    size: 24.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'لوحة المعلومات',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.assessment, size: 20.sp, color: Colors.grey),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              // أهم الإحصائيات في Grid
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                mainAxisSpacing: 12.h,
+                crossAxisSpacing: 12.w,
+                childAspectRatio: 2.5,
+                children: [
+                  _QuickStatCard(
+                    icon: Icons.people,
+                    label: 'إجمالي المستفيدين',
+                    value: '${stats.total}',
+                    color: Colors.blue,
+                  ),
+                  _QuickStatCard(
+                    icon: Icons.child_care,
+                    label: 'أيتام',
+                    value: '${stats.orphans}',
+                    color: Colors.orange,
+                  ),
+                  _QuickStatCard(
+                    icon: Icons.attach_money,
+                    label: 'فقراء',
+                    value: '${stats.poor}',
+                    color: Colors.green,
+                  ),
+                  _QuickStatCard(
+                    icon: Icons.pending,
+                    label: 'بانتظار المزامنة',
+                    value: '${stats.pending}',
+                    color: stats.pending > 0 ? Colors.red : Colors.grey,
+                    urgent: stats.pending > 0,
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              // شريط التقدم للمزامنة
+              _SyncProgressBar(
+                synced: stats.synced,
+                total: stats.total,
+                percentage: stats.syncPercentage,
+              ),
+            ],
           ),
-          child: Padding(
-            padding: EdgeInsets.all(16.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.dashboard,
-                      color: Theme.of(context).primaryColor,
-                      size: 24.sp,
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'لوحة المعلومات',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(Icons.assessment, size: 20.sp, color: Colors.grey),
-                  ],
-                ),
-                SizedBox(height: 16.h),
-                // أهم الإحصائيات في Grid
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12.h,
-                  crossAxisSpacing: 12.w,
-                  childAspectRatio: 2.5,
-                  children: [
-                    _QuickStatCard(
-                      icon: Icons.people,
-                      label: 'إجمالي المستفيدين',
-                      value: '${stats['total'] ?? 0}',
-                      color: Colors.blue,
-                      trend: stats['totalTrend'],
-                    ),
-                    _QuickStatCard(
-                      icon: Icons.child_care,
-                      label: 'أيتام',
-                      value: '${stats['orphans'] ?? 0}',
-                      color: Colors.orange,
-                    ),
-                    _QuickStatCard(
-                      icon: Icons.attach_money,
-                      label: 'فقراء',
-                      value: '${stats['poor'] ?? 0}',
-                      color: Colors.green,
-                    ),
-                    _QuickStatCard(
-                      icon: Icons.pending,
-                      label: 'بانتظار المزامنة',
-                      value: '${stats['pending'] ?? 0}',
-                      color: (stats['pending'] ?? 0) > 0
-                          ? Colors.red
-                          : Colors.grey,
-                      urgent: (stats['pending'] ?? 0) > 0,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                // شريط التقدم للمزامنة
-                _SyncProgressBar(
-                  synced: stats['synced'] ?? 0,
-                  total: stats['total'] ?? 0,
-                  percentage: stats['syncPercentage']?.toDouble() ?? 0.0,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+        ),
+      ),
+      loading: () => Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: SizedBox(
+          height: 200.h,
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+      ),
+      error: (error, stack) => Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(16.r),
+          child: Text('خطأ: ${error.toString()}'),
+        ),
+      ),
     );
   }
 }
@@ -141,7 +119,6 @@ class _QuickStatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  final double? trend;
   final bool urgent;
 
   const _QuickStatCard({
@@ -149,7 +126,6 @@ class _QuickStatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
-    this.trend,
     this.urgent = false,
   });
 
@@ -215,10 +191,6 @@ class _QuickStatCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (trend != null) ...[
-                      SizedBox(width: 4.w),
-                      _TrendIndicator(trend: trend!),
-                    ],
                   ],
                 ),
               ],
@@ -226,36 +198,6 @@ class _QuickStatCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Trend Indicator - مؤشر الاتجاه
-class _TrendIndicator extends StatelessWidget {
-  final double trend;
-
-  const _TrendIndicator({required this.trend});
-
-  @override
-  Widget build(BuildContext context) {
-    final isPositive = trend >= 0;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          isPositive ? Icons.trending_up : Icons.trending_down,
-          color: isPositive ? Colors.green : Colors.red,
-          size: 14.sp,
-        ),
-        Text(
-          '${trend.abs().toStringAsFixed(1)}%',
-          style: TextStyle(
-            fontSize: 10.sp,
-            color: isPositive ? Colors.green : Colors.red,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../domain/repositories/beneficiary_repository.dart';
 import '../../../../../data/db/drift_database.dart';
 import '../../../../attachments/data/datasources/attachment_datasource.dart';
+import 'file_size_validator.dart';
 
 /// 💾 Save Operations Helper
 ///
@@ -44,7 +45,7 @@ class SaveOperationsHelper {
     }
   }
 
-  /// Save attachments and return count
+  /// Save attachments and return count (with file size validation)
   static Future<AttachmentSaveResult> saveAttachments({
     required AppDatabase database,
     required String beneficiaryId,
@@ -55,6 +56,18 @@ class SaveOperationsHelper {
     debugPrint(
       '💾 [SaveOperationsHelper] Number of files: ${pendingFiles.length}',
     );
+
+    // ✅ التحقق من حجم الملفات قبل الحفظ
+    final validation = FileSizeValidator.validateFiles(pendingFiles);
+
+    if (!validation.isAllValid) {
+      debugPrint('💾 [SaveOperationsHelper] ❌ Some files exceed size limit');
+      return AttachmentSaveResult(
+        savedCount: 0,
+        failedCount: pendingFiles.length,
+        oversizedFiles: validation.invalidFiles.keys.toList(),
+      );
+    }
 
     int savedCount = 0;
     int failedCount = 0;
@@ -163,6 +176,11 @@ class SaveOperationsHelper {
 class AttachmentSaveResult {
   final int savedCount;
   final int failedCount;
+  final List<File>? oversizedFiles;
 
-  AttachmentSaveResult({required this.savedCount, required this.failedCount});
+  AttachmentSaveResult({
+    required this.savedCount,
+    required this.failedCount,
+    this.oversizedFiles,
+  });
 }

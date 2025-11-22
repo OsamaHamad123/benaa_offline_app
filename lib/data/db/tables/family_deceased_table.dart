@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
-/// جدول الأموات في العائلة
+/// جدول الأب/الأم المتوفى
+/// يحتوي على بيانات تفصيلية للوالدين المتوفيين
 @DataClassName('FamilyDeceased')
 class FamilyDeceasedTable extends Table {
   @override
@@ -9,14 +10,27 @@ class FamilyDeceasedTable extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get beneficiaryId => integer()();
 
-  TextColumn get fullName => text()();
-  TextColumn get relationship =>
-      text()(); // أب، أم، ابن، ابنة، أخ، أخت، زوج، زوجة
-  TextColumn get gender => text()(); // male, female
+  // نوع المتوفى (1=أب، 2=أم)
+  IntColumn get deceasedType => integer()(); // 1=father, 2=mother
 
-  DateTimeColumn get deathDate => dateTime().nullable()();
-  TextColumn get deathCause => text().nullable()();
-  IntColumn get ageAtDeath => integer().nullable()();
+  // الاسم الرباعي
+  TextColumn get firstName => text()();
+  TextColumn get secondName => text().nullable()();
+  TextColumn get thirdName => text().nullable()();
+  TextColumn get familyName => text()();
+
+  // رقم الهوية - Integer (9 أرقام)
+  IntColumn get nationalId => integer()();
+
+  // تاريخ وسبب الوفاة
+  DateTimeColumn get deathDate => dateTime()();
+  IntColumn get deathCause => integer()();
+  // 1=طبيعية، 2=مرض، 3=فجأة، 4=حادث، 5=أخرى، 6=انتحار، 7=مغدور، 8=غير معروف
+
+  // الوثائق
+  IntColumn get documentType =>
+      integer().nullable()(); // 1=شهادة وفاة، 2=إفادة شهيد
+  TextColumn get documentPath => text().nullable()(); // مسار الوثيقة المرفقة
 
   TextColumn get notes => text().nullable()();
 

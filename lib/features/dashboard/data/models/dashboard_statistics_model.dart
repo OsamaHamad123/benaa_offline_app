@@ -11,6 +11,10 @@ class DashboardStatisticsModel extends DashboardStatistics {
     required super.categoryCounts,
     required super.growthData,
     required super.todayStats,
+    super.totalFamilyMembers,
+    super.totalDeceased,
+    super.totalOrphans,
+    super.averageFamilySize,
   });
 
   factory DashboardStatisticsModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,10 @@ class DashboardStatisticsModel extends DashboardStatistics {
       todayStats: TodayStatsModel.fromJson(
         json['todayStats'] as Map<String, dynamic>,
       ),
+      totalFamilyMembers: json['totalFamilyMembers'] as int? ?? 0,
+      totalDeceased: json['totalDeceased'] as int? ?? 0,
+      totalOrphans: json['totalOrphans'] as int? ?? 0,
+      averageFamilySize: (json['averageFamilySize'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -44,6 +52,10 @@ class DashboardStatisticsModel extends DashboardStatistics {
           .map((e) => (e as GrowthDataPointModel).toJson())
           .toList(),
       'todayStats': (todayStats as TodayStatsModel).toJson(),
+      'totalFamilyMembers': totalFamilyMembers,
+      'totalDeceased': totalDeceased,
+      'totalOrphans': totalOrphans,
+      'averageFamilySize': averageFamilySize,
     };
   }
 }

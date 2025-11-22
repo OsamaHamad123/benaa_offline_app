@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/list_widgets/statistics_dashboard.dart';
 
 /// 🧪 Widget Tests للـ Statistics Dashboard
@@ -9,8 +10,11 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+      ProviderScope(
+        child: ScreenUtilInit(
+          designSize: const Size(375, 812),
+          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+        ),
       ),
     );
 
@@ -23,8 +27,11 @@ void main() {
 
   testWidgets('StatisticsDashboard has gradient background', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+      ProviderScope(
+        child: ScreenUtilInit(
+          designSize: const Size(375, 812),
+          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+        ),
       ),
     );
 
@@ -37,8 +44,11 @@ void main() {
 
   testWidgets('StatisticsDashboard contains stat icons', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+      ProviderScope(
+        child: ScreenUtilInit(
+          designSize: const Size(375, 812),
+          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+        ),
       ),
     );
 
