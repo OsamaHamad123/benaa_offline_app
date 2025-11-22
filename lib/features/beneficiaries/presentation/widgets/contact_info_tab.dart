@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/theme/app_dimensions.dart';
 import 'package:flutter/material.dart';
 
 /// 📞 Contact Info Tab Widget
@@ -30,13 +31,13 @@ class ContactInfoTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppDimensions.paddingMD,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // معلومات الاتصال
           _buildSectionHeader('معلومات الاتصال', Icons.phone, colorScheme),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: phoneNumberController,
@@ -45,12 +46,12 @@ class ContactInfoTab extends StatelessWidget {
               hintText: '07xxxxxxxxx',
               prefixIcon: const Icon(Icons.phone),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             keyboardType: TextInputType.phone,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: altPhoneNumberController,
@@ -59,12 +60,12 @@ class ContactInfoTab extends StatelessWidget {
               hintText: '07xxxxxxxxx',
               prefixIcon: const Icon(Icons.phone_android),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             keyboardType: TextInputType.phone,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // معلومات العنوان
           _buildSectionHeader(
@@ -72,7 +73,7 @@ class ContactInfoTab extends StatelessWidget {
             Icons.location_on,
             colorScheme,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           Row(
             children: [
@@ -84,13 +85,13 @@ class ContactInfoTab extends StatelessWidget {
                     hintText: 'بغداد',
                     prefixIcon: const Icon(Icons.map),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimensions.borderRadiusLG,
                     ),
                   ),
                   textDirection: TextDirection.rtl,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: AppDimensions.md),
               Expanded(
                 child: TextField(
                   controller: districtController,
@@ -99,7 +100,7 @@ class ContactInfoTab extends StatelessWidget {
                     hintText: 'الكرخ',
                     prefixIcon: const Icon(Icons.location_city),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimensions.borderRadiusLG,
                     ),
                   ),
                   textDirection: TextDirection.rtl,
@@ -107,7 +108,7 @@ class ContactInfoTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: addressController,
@@ -116,13 +117,13 @@ class ContactInfoTab extends StatelessWidget {
               hintText: 'الشارع، المنطقة، رقم الدار',
               prefixIcon: const Icon(Icons.home),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             textDirection: TextDirection.rtl,
             maxLines: 2,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // معلومات النزوح (إن وجدت)
           _buildSectionHeader(
@@ -130,7 +131,7 @@ class ContactInfoTab extends StatelessWidget {
             Icons.info_outline,
             colorScheme,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: currentAddressController,
@@ -139,14 +140,14 @@ class ContactInfoTab extends StatelessWidget {
               hintText: 'إذا كان مختلفاً عن العنوان الأصلي',
               prefixIcon: const Icon(Icons.place),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
               helperText: 'للنازحين: العنوان الحالي في منطقة النزوح',
             ),
             textDirection: TextDirection.rtl,
             maxLines: 2,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: addressBeforeDisplacementController,
@@ -155,7 +156,7 @@ class ContactInfoTab extends StatelessWidget {
               hintText: 'العنوان الأصلي قبل النزوح',
               prefixIcon: const Icon(Icons.home_work),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
               helperText: 'للنازحين: العنوان الأصلي قبل ترك المنزل',
             ),
@@ -175,7 +176,7 @@ class ContactInfoTab extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, color: colorScheme.primary),
-        const SizedBox(width: 8),
+        SizedBox(width: AppDimensions.sm),
         Text(
           title,
           style: TextStyle(

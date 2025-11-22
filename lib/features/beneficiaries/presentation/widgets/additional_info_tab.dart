@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/theme/app_dimensions.dart';
 import 'package:flutter/material.dart';
 import '../../domain/entities/beneficiary.dart';
 
@@ -62,13 +63,13 @@ class AdditionalInfoTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppDimensions.paddingMD,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // الحالة الشخصية
           _buildSectionHeader('الحالة الشخصية', Icons.person_pin, colorScheme),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<MaritalStatus>(
             value: maritalStatus,
@@ -76,7 +77,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'الحالة الاجتماعية',
               prefixIcon: const Icon(Icons.favorite),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: MaritalStatus.values.map((status) {
@@ -87,7 +88,7 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onMaritalStatusChanged,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<EducationLevel>(
             value: educationLevel,
@@ -95,7 +96,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'المستوى التعليمي',
               prefixIcon: const Icon(Icons.school),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: EducationLevel.values.map((level) {
@@ -106,7 +107,7 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onEducationLevelChanged,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<HealthStatus>(
             value: healthStatus,
@@ -114,7 +115,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'الحالة الصحية',
               prefixIcon: const Icon(Icons.health_and_safety),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: HealthStatus.values.map((status) {
@@ -125,11 +126,11 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onHealthStatusChanged,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // معلومات النزوح والسكن
           _buildSectionHeader('النزوح والسكن', Icons.home_work, colorScheme),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<DisplacementStatus>(
             value: displacementStatus,
@@ -137,7 +138,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'حالة النزوح',
               prefixIcon: const Icon(Icons.moving),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: DisplacementStatus.values.map((status) {
@@ -148,7 +149,7 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onDisplacementStatusChanged,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<HousingStatus>(
             value: housingStatus,
@@ -156,7 +157,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'حالة السكن',
               prefixIcon: const Icon(Icons.house),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: HousingStatus.values.map((status) {
@@ -167,7 +168,7 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onHousingStatusChanged,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<HousingType>(
             value: housingType,
@@ -175,7 +176,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'نوع السكن',
               prefixIcon: const Icon(Icons.apartment),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: HousingType.values.map((type) {
@@ -186,11 +187,11 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onHousingTypeChanged,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // معلومات العمل والدخل
           _buildSectionHeader('العمل والدخل', Icons.work, colorScheme),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<EmploymentStatus>(
             value: employmentStatus,
@@ -198,7 +199,7 @@ class AdditionalInfoTab extends StatelessWidget {
               labelText: 'حالة التوظيف',
               prefixIcon: const Icon(Icons.business_center),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             items: EmploymentStatus.values.map((status) {
@@ -209,7 +210,7 @@ class AdditionalInfoTab extends StatelessWidget {
             }).toList(),
             onChanged: onEmploymentStatusChanged,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: monthlyIncomeController,
@@ -219,12 +220,12 @@ class AdditionalInfoTab extends StatelessWidget {
               prefixIcon: const Icon(Icons.attach_money),
               suffixText: 'IQD',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             keyboardType: TextInputType.number,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // الدعم المالي
           _buildSectionHeader(
@@ -232,7 +233,7 @@ class AdditionalInfoTab extends StatelessWidget {
             Icons.account_balance,
             colorScheme,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           SwitchListTile(
             title: const Text('يتلقى دعماً مالياً'),
@@ -241,13 +242,13 @@ class AdditionalInfoTab extends StatelessWidget {
             onChanged: onHasFinancialSupportChanged,
             secondary: const Icon(Icons.monetization_on),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppDimensions.borderRadiusLG,
               side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
             ),
           ),
 
           if (hasFinancialSupport) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: AppDimensions.md),
             TextField(
               controller: supportSourceController,
               decoration: InputDecoration(
@@ -255,12 +256,12 @@ class AdditionalInfoTab extends StatelessWidget {
                 hintText: 'منظمة، جمعية، إلخ',
                 prefixIcon: const Icon(Icons.business),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppDimensions.borderRadiusLG,
                 ),
               ),
               textDirection: TextDirection.rtl,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppDimensions.md),
             TextField(
               controller: supportAmountController,
               decoration: InputDecoration(
@@ -269,14 +270,14 @@ class AdditionalInfoTab extends StatelessWidget {
                 prefixIcon: const Icon(Icons.money),
                 suffixText: 'IQD',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppDimensions.borderRadiusLG,
                 ),
               ),
               keyboardType: TextInputType.number,
             ),
           ],
 
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           SwitchListTile(
             title: const Text('يمتلك ممتلكات أو أصول'),
@@ -285,13 +286,13 @@ class AdditionalInfoTab extends StatelessWidget {
             onChanged: onHasAssetsChanged,
             secondary: const Icon(Icons.inventory),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppDimensions.borderRadiusLG,
               side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
             ),
           ),
 
           if (hasAssets) ...[
-            const SizedBox(height: 16),
+            SizedBox(height: AppDimensions.md),
             TextField(
               controller: assetsDescriptionController,
               decoration: InputDecoration(
@@ -299,7 +300,7 @@ class AdditionalInfoTab extends StatelessWidget {
                 hintText: 'منزل في بغداد، سيارة، إلخ',
                 prefixIcon: const Icon(Icons.description),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppDimensions.borderRadiusLG,
                 ),
               ),
               textDirection: TextDirection.rtl,
@@ -319,7 +320,7 @@ class AdditionalInfoTab extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, color: colorScheme.primary),
-        const SizedBox(width: 8),
+        SizedBox(width: AppDimensions.sm),
         Text(
           title,
           style: TextStyle(

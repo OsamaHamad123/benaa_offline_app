@@ -252,11 +252,15 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   }
 
   /// Smart notification with auto-save scheduling
+  /// ✅ Only notifies on dropdown changes, NOT on text input (prevents 60 rebuilds/sec)
   void _notifyAndScheduleAutoSave() {
+    // Schedule auto-save (timer-based, no immediate notification)
+    _scheduleAutoSave();
+
+    // Only notify on dropdown/switch changes
     if (_shouldNotifyListeners) {
       notifyListeners();
     }
-    _scheduleAutoSave();
   }
 
   /// Schedule auto-save (debounced - only after 30s of inactivity)
@@ -357,8 +361,9 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   /// Dispose all controllers
   @override
   void dispose() {
-    // Cancel auto-save timer
+    // ✅ Cancel auto-save timer and nullify to prevent memory leak
     _autoSaveDebounce?.cancel();
+    _autoSaveDebounce = null;
 
     // Dispose text controllers
     firstNameController.dispose();

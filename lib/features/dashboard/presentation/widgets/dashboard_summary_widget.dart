@@ -131,8 +131,8 @@ class _QuickStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
+    // ✅ Use ScreenUtil instead of MediaQuery for better performance
+    final isTablet = 1.sw > 600;
 
     return Container(
       padding: EdgeInsets.all(isTablet ? 12.r : 10.r),

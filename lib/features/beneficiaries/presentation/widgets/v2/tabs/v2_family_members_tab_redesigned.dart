@@ -4,8 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../core/utils/ux_helpers.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
-import '../../family_deceased_form.dart';
-import '../../family_members_form.dart';
+import 'compact_family_member_dialog.dart';
 
 /// 👥 تبويب أفراد العائلة - تصميم محسّن بدون AppBar
 ///
@@ -38,8 +37,7 @@ class _V2FamilyMembersTabRedesignedState
   Widget build(BuildContext context) {
     super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
 
-    return ListView(
-      padding: EdgeInsets.all(16.w),
+    return Column(
       children: [
         // 🪦 قسم الوالدين المتوفيين
         _DeceasedParentsSection(
@@ -215,133 +213,40 @@ class _ParentCard extends StatelessWidget {
   void _showAddDialog(BuildContext context) {
     final deceasedType = type == 'أب' ? 1 : 2;
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-          ),
-          child: Column(
-            children: [
-              // مقبض السحب
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-
-              // العنوان
-              Padding(
-                padding: EdgeInsets.all(16.w),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'إضافة $type المتوفى',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // النموذج
-              Expanded(
-                child: FamilyDeceasedForm(
-                  beneficiaryId: 0,
-                  presetDeceasedType: deceasedType,
-                  onSaved: () {
-                    Navigator.pop(context);
-                    ToastHelper.showSuccess('تم الحفظ بنجاح');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => CompactFamilyMemberDialog(
+        isDeceased: true,
+        presetDeceasedType: deceasedType,
+        onSave: (memberData) {
+          formControllers.addDeceasedMember(memberData);
+          ToastHelper.showSuccess('تم الحفظ بنجاح');
+        },
       ),
     );
   }
 
   void _showEditDialog(BuildContext context) {
-    showModalBottomSheet(
+    final deceasedType = type == 'أب' ? 1 : 2;
+    final existingData = formControllers.deceasedMembers
+        .where((d) => d['deceasedType'] == deceasedType)
+        .firstOrNull;
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-          ),
-          child: Column(
-            children: [
-              // مقبض السحب
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-
-              // العنوان
-              Padding(
-                padding: EdgeInsets.all(16.w),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'تعديل بيانات $type',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // النموذج (مع بيانات موجودة)
-              Expanded(
-                child: FamilyDeceasedForm(
-                  beneficiaryId: 0,
-                  // existingDeceased: data, // TODO: تحويل Map إلى FamilyDeceased
-                  onSaved: () {
-                    Navigator.pop(context);
-                    ToastHelper.showSuccess('تم التحديث بنجاح');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => CompactFamilyMemberDialog(
+        isDeceased: true,
+        presetDeceasedType: deceasedType,
+        existingMember: existingData,
+        onSave: (memberData) {
+          final index = formControllers.deceasedMembers.indexWhere(
+            (d) => d['deceasedType'] == deceasedType,
+          );
+          if (index != -1) {
+            formControllers.deceasedMembers[index] = memberData;
+          }
+          ToastHelper.showSuccess('تم التحديث بنجاح');
+        },
       ),
     );
   }
@@ -442,66 +347,14 @@ class _OrphansSection extends StatelessWidget {
   }
 
   void _showAddOrphanDialog(BuildContext context) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-          ),
-          child: Column(
-            children: [
-              // مقبض السحب
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-
-              // العنوان
-              Padding(
-                padding: EdgeInsets.all(16.w),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'إضافة يتيم جديد',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // النموذج
-              Expanded(
-                child: FamilyMembersForm(
-                  beneficiaryId: 0,
-                  onSaved: () {
-                    Navigator.pop(context);
-                    ToastHelper.showSuccess('تم الحفظ بنجاح');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => CompactFamilyMemberDialog(
+        isDeceased: false,
+        onSave: (memberData) {
+          formControllers.addLivingMember(memberData);
+          ToastHelper.showSuccess('تم الحفظ بنجاح');
+        },
       ),
     );
   }
@@ -599,67 +452,15 @@ class _OrphanCard extends StatelessWidget {
   }
 
   void _showEditDialog(BuildContext context) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, controller) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-          ),
-          child: Column(
-            children: [
-              // مقبض السحب
-              Container(
-                margin: EdgeInsets.symmetric(vertical: 8.h),
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-
-              // العنوان
-              Padding(
-                padding: EdgeInsets.all(16.w),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'تعديل بيانات اليتيم',
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // النموذج (مع بيانات موجودة)
-              Expanded(
-                child: FamilyMembersForm(
-                  beneficiaryId: 0,
-                  // existingMember: data, // TODO: تحويل Map إلى FamilyMember
-                  onSaved: () {
-                    Navigator.pop(context);
-                    ToastHelper.showSuccess('تم التحديث بنجاح');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+      builder: (context) => CompactFamilyMemberDialog(
+        isDeceased: false,
+        existingMember: data,
+        onSave: (memberData) {
+          formControllers.livingMembers[index] = memberData;
+          ToastHelper.showSuccess('تم التحديث بنجاح');
+        },
       ),
     );
   }

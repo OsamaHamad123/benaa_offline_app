@@ -36,6 +36,11 @@ void main() {
       // Assert
       expect(find.text('إضافة مستفيد'), findsOneWidget);
       expect(find.byIcon(Icons.person_add), findsOneWidget);
+
+      // Tap button and verify callback
+      await tester.tap(find.byType(QuickActionButton));
+      await tester.pump();
+      expect(tapped, true);
       expect(find.byType(Card), findsOneWidget);
       expect(find.byType(InkWell), findsOneWidget);
     });

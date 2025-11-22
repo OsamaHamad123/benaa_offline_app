@@ -58,7 +58,6 @@ void main() {
 
       // Simulate 2 minutes passed
       notifier.completeSync();
-      final twoMinutesAgo = DateTime.now().subtract(const Duration(minutes: 2));
       // Hack to test - normally you'd use a clock abstraction
       expect(notifier.statusText, contains('تمت المزامنة'));
     });

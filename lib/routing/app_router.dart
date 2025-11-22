@@ -4,7 +4,7 @@ import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../features/beneficiaries/presentation/pages/beneficiaries_list_page_v2.dart';
-import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v2.dart';
+import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v3.dart';
 import '../features/beneficiaries/presentation/pages/beneficiary_details_page_v2.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
 import '../features/search/presentation/pages/update_normalization_page.dart';
@@ -71,13 +71,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/beneficiaries/add',
-        builder: (context, state) => const BeneficiaryFormPageV2(),
+        builder: (context, state) => const BeneficiaryFormPageV3(),
       ),
       GoRoute(
         path: '/beneficiaries/:id/edit',
         builder: (context, state) {
           final id = state.pathParameters['id']!;
-          return BeneficiaryFormPageV2(beneficiaryId: id);
+          return BeneficiaryFormPageV3(beneficiaryId: id);
         },
       ),
 

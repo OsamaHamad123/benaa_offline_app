@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../reusable_civil_registry_lookup.dart';
+import '../../../../../../core/theme/app_dimensions.dart';
+import '../../../../../../core/theme/app_breakpoints.dart';
 
 /// 🎨 Bottom Sheet احترافي محسّن لإضافة/تعديل فرد من العائلة
 ///
@@ -209,7 +211,7 @@ class _FamilyMemberBottomSheetState
           data: Theme.of(context).copyWith(
             datePickerTheme: DatePickerThemeData(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
+                borderRadius: AppDimensions.borderRadiusXL,
               ),
             ),
           ),
@@ -278,10 +280,12 @@ class _FamilyMemberBottomSheetState
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
+        height: context.screenHeight * 0.85,
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDimensions.xxl),
+          ),
         ),
         child: Column(
           children: [
@@ -296,26 +300,28 @@ class _FamilyMemberBottomSheetState
                     ? AutovalidateMode.onUserInteraction
                     : AutovalidateMode.disabled,
                 child: ListView(
-                  padding: EdgeInsets.all(20.w),
+                  padding: AppDimensions.paddingLG,
                   children: [
                     // صورة الفرد
                     _buildImagePicker(),
-                    SizedBox(height: 24.h),
+                    SizedBox(height: AppDimensions.xl),
 
                     // البيانات الأساسية
                     _buildBasicInfoSection(),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: AppDimensions.lg),
 
                     // معلومات إضافية
                     _buildAdditionalInfoSection(),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: AppDimensions.lg),
 
                     // الملاحظات
                     _buildNotesSection(),
 
                     // Extra padding for keyboard
                     SizedBox(
-                      height: MediaQuery.of(context).viewInsets.bottom + 20.h,
+                      height:
+                          MediaQuery.of(context).viewInsets.bottom +
+                          AppDimensions.lg,
                     ),
                   ],
                 ),
@@ -329,7 +335,7 @@ class _FamilyMemberBottomSheetState
 
   Widget _buildHeader(String title) {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: AppDimensions.paddingLG,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -337,7 +343,9 @@ class _FamilyMemberBottomSheetState
             Theme.of(context).primaryColor.withOpacity(0.8),
           ],
         ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.xxl),
+        ),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).primaryColor.withOpacity(0.3),
@@ -358,12 +366,12 @@ class _FamilyMemberBottomSheetState
               },
               tooltip: 'إغلاق',
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: AppDimensions.sm),
             Expanded(
               child: Text(
                 title,
                 style: TextStyle(
-                  fontSize: 20.sp,
+                  fontSize: AppDimensions.fontLG,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -376,9 +384,12 @@ class _FamilyMemberBottomSheetState
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Theme.of(context).primaryColor,
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppDimensions.md,
+                  vertical: AppDimensions.sm + 4.h,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+                  borderRadius: AppDimensions.borderRadiusMD,
                 ),
                 elevation: 2,
               ),
@@ -405,8 +416,8 @@ class _FamilyMemberBottomSheetState
           Hero(
             tag: 'member_image_${widget.existingMember?['id'] ?? 'new'}',
             child: Container(
-              width: 120.w,
-              height: 120.w,
+              width: AppDimensions.avatarXL,
+              height: AppDimensions.avatarXL,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.grey[200],
@@ -431,7 +442,7 @@ class _FamilyMemberBottomSheetState
               child: _selectedImage == null
                   ? Icon(
                       _selectedGender == 1 ? Icons.boy : Icons.girl,
-                      size: 60.sp,
+                      size: AppDimensions.iconHuge,
                       color: Colors.grey[400],
                     )
                   : null,
@@ -444,9 +455,9 @@ class _FamilyMemberBottomSheetState
               color: Colors.transparent,
               child: InkWell(
                 onTap: _showImageSourceDialog,
-                borderRadius: BorderRadius.circular(50),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
                 child: Container(
-                  padding: EdgeInsets.all(10.w),
+                  padding: EdgeInsets.all(AppDimensions.sm + 2.w),
                   decoration: BoxDecoration(
                     color: Theme.of(context).primaryColor,
                     shape: BoxShape.circle,
@@ -461,7 +472,7 @@ class _FamilyMemberBottomSheetState
                   child: Icon(
                     Icons.camera_alt,
                     color: Colors.white,
-                    size: 20.sp,
+                    size: AppDimensions.iconMD,
                   ),
                 ),
               ),
@@ -485,7 +496,7 @@ class _FamilyMemberBottomSheetState
           focusNode: _firstNameFocus,
           nextFocus: _familyNameFocus,
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: AppDimensions.md),
         _buildTextField(
           controller: _familyNameController,
           label: 'اسم العائلة',
@@ -494,7 +505,7 @@ class _FamilyMemberBottomSheetState
           focusNode: _familyNameFocus,
           nextFocus: _nationalIdFocus,
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: AppDimensions.md),
         _buildTextField(
           controller: _nationalIdController,
           label: 'الرقم الوطني',
@@ -508,7 +519,7 @@ class _FamilyMemberBottomSheetState
             LengthLimitingTextInputFormatter(9),
           ],
         ),
-        SizedBox(height: 12.h),
+        SizedBox(height: AppDimensions.sm),
 
         // Civil Registry Lookup
         CompactCivilRegistryLookup(
@@ -552,12 +563,12 @@ class _FamilyMemberBottomSheetState
       children: [
         // Gender Selector
         _buildGenderSelector(),
-        SizedBox(height: 16.h),
+        SizedBox(height: AppDimensions.md),
 
         // تاريخ الميلاد
         InkWell(
           onTap: _selectBirthDate,
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: AppDimensions.borderRadiusMD,
           child: InputDecorator(
             decoration: InputDecoration(
               labelText: 'تاريخ الميلاد',
@@ -575,7 +586,7 @@ class _FamilyMemberBottomSheetState
                     )
                   : const Icon(Icons.calendar_today, size: 20),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: AppDimensions.borderRadiusMD,
               ),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surface,
@@ -585,7 +596,7 @@ class _FamilyMemberBottomSheetState
                   ? '${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}'
                   : 'اختر تاريخ الميلاد',
               style: TextStyle(
-                fontSize: 16.sp,
+                fontSize: AppDimensions.fontMD,
                 color: _selectedBirthDate != null
                     ? Theme.of(context).textTheme.bodyLarge?.color
                     : Colors.grey,
@@ -593,7 +604,7 @@ class _FamilyMemberBottomSheetState
             ),
           ),
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: AppDimensions.md),
 
         // العمر (للعرض فقط)
         _buildTextField(
@@ -630,10 +641,10 @@ class _FamilyMemberBottomSheetState
     required List<Widget> children,
   }) {
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: AppDimensions.paddingMD,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: AppDimensions.borderRadiusXL,
         border: Border.all(color: Colors.grey.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
@@ -649,29 +660,29 @@ class _FamilyMemberBottomSheetState
           Row(
             children: [
               Container(
-                padding: EdgeInsets.all(8.w),
+                padding: EdgeInsets.all(AppDimensions.sm),
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8.r),
+                  borderRadius: AppDimensions.borderRadiusSM,
                 ),
                 child: Icon(
                   icon,
-                  size: 24.sp,
+                  size: AppDimensions.iconLG,
                   color: Theme.of(context).primaryColor,
                 ),
               ),
-              SizedBox(width: 12.w),
+              SizedBox(width: AppDimensions.sm),
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 17.sp,
+                  fontSize: AppDimensions.fontMD + 1.sp,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: AppDimensions.md),
           ...children,
         ],
       ),
@@ -713,20 +724,20 @@ class _FamilyMemberBottomSheetState
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+        border: OutlineInputBorder(borderRadius: AppDimensions.borderRadiusMD),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: AppDimensions.borderRadiusMD,
           borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: AppDimensions.borderRadiusMD,
           borderSide: BorderSide(
             color: Theme.of(context).primaryColor,
             width: 2,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: AppDimensions.borderRadiusMD,
           borderSide: const BorderSide(color: Colors.red),
         ),
         filled: true,
@@ -735,7 +746,10 @@ class _FamilyMemberBottomSheetState
             : Colors.grey[200],
         counterText: '',
         helperText: isRequired ? null : 'اختياري',
-        helperStyle: TextStyle(fontSize: 11.sp, color: Colors.grey),
+        helperStyle: TextStyle(
+          fontSize: AppDimensions.fontXS + 1.sp,
+          color: Colors.grey,
+        ),
       ),
       validator: isRequired
           ? (value) {
@@ -752,7 +766,7 @@ class _FamilyMemberBottomSheetState
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: AppDimensions.borderRadiusMD,
       ),
       child: Row(
         children: [
@@ -764,13 +778,13 @@ class _FamilyMemberBottomSheetState
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(vertical: 16.h),
+                padding: EdgeInsets.symmetric(vertical: AppDimensions.md),
                 decoration: BoxDecoration(
                   color: _selectedGender == 1
                       ? Colors.blue.withOpacity(0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.horizontal(
-                    right: Radius.circular(12.r),
+                    right: Radius.circular(AppDimensions.md - 4.r),
                   ),
                   border: _selectedGender == 1
                       ? Border.all(color: Colors.blue, width: 2)
@@ -782,13 +796,13 @@ class _FamilyMemberBottomSheetState
                     Icon(
                       Icons.boy,
                       color: _selectedGender == 1 ? Colors.blue : Colors.grey,
-                      size: 28.sp,
+                      size: AppDimensions.iconLG + 4.sp,
                     ),
-                    SizedBox(width: 8.w),
+                    SizedBox(width: AppDimensions.sm),
                     Text(
                       'ذكر',
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: AppDimensions.fontMD,
                         color: _selectedGender == 1 ? Colors.blue : Colors.grey,
                         fontWeight: _selectedGender == 1
                             ? FontWeight.bold
@@ -808,13 +822,13 @@ class _FamilyMemberBottomSheetState
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(vertical: 16.h),
+                padding: EdgeInsets.symmetric(vertical: AppDimensions.md),
                 decoration: BoxDecoration(
                   color: _selectedGender == 2
                       ? Colors.pink.withOpacity(0.15)
                       : Colors.transparent,
                   borderRadius: BorderRadius.horizontal(
-                    left: Radius.circular(12.r),
+                    left: Radius.circular(AppDimensions.md - 4.r),
                   ),
                   border: _selectedGender == 2
                       ? Border.all(color: Colors.pink, width: 2)
@@ -826,13 +840,13 @@ class _FamilyMemberBottomSheetState
                     Icon(
                       Icons.girl,
                       color: _selectedGender == 2 ? Colors.pink : Colors.grey,
-                      size: 28.sp,
+                      size: AppDimensions.iconLG + 4.sp,
                     ),
-                    SizedBox(width: 8.w),
+                    SizedBox(width: AppDimensions.sm),
                     Text(
                       'أنثى',
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: AppDimensions.fontMD,
                         color: _selectedGender == 2 ? Colors.pink : Colors.grey,
                         fontWeight: _selectedGender == 2
                             ? FontWeight.bold

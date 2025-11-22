@@ -65,7 +65,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration {
@@ -75,14 +75,8 @@ class AppDatabase extends _$AppDatabase {
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from == 8 && to == 9) {
-          // ⚡ Performance indexes only
-          await _createPerformanceIndexes();
-        } else if (to == 9) {
-          // إضافة indexes للأداء
-          await _createPerformanceIndexes();
-        } else if (to == 8) {
-          // إضافة indexes للأداء
+        if (from < 11) {
+          // ⚡ Recreate performance indexes (fixing attachment_type and category_code issues)
           await _createPerformanceIndexes();
         } else {
           // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
@@ -225,7 +219,7 @@ class AppDatabase extends _$AppDatabase {
     // ⚡ Additional performance indexes for common queries
     // Beneficiaries table - composite indexes
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_category_province ON beneficiaries(category_code, province);',
+      'CREATE INDEX IF NOT EXISTS idx_beneficiaries_section_province ON beneficiaries(section_id, province);',
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_beneficiaries_section_sync ON beneficiaries(section_id, sync_state);',
@@ -247,12 +241,15 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_attachments_beneficiary ON attachments(beneficiary_id);',
     );
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(attachment_type);',
+      'CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(type);',
     );
 
     // Sync Queue - critical for sync performance
     await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_sync_queue_status ON sync_queue(status, created_at);',
+      'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity, created_at);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sync_queue_priority ON sync_queue(priority DESC, created_at);',
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../../../../core/theme/app_dimensions.dart';
 import '../../domain/helpers/beneficiary_domain_helpers.dart';
 import '../providers/details/beneficiary_details_provider.dart';
 import 'details_widgets/details_header_card.dart';
@@ -329,7 +330,7 @@ class _BeneficiaryDetailsPageV2State
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: AppDimensions.borderRadiusXL,
         ),
         child: Container(
           height: height,

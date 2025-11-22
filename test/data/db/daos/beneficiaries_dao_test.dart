@@ -60,7 +60,6 @@ void main() {
     test('البحث يجب أن يكون case-insensitive', () async {
       final results1 = await dao.searchBeneficiaries('محمد');
       final results2 = await dao.searchBeneficiaries('محمد');
-      final results3 = await dao.searchBeneficiaries('مُحَمَّد');
 
       expect(results1.length, equals(results2.length));
       // يجب أن تكون النتائج متطابقة بغض النظر عن الحالة
@@ -115,9 +114,7 @@ void main() {
       );
 
       expect(
-        results.every(
-          (b) => b.sectionId == 1 && (b.fullName?.contains('محمد') ?? false),
-        ),
+        results.every((b) => b.sectionId == 1 && (b.fullName.contains('محمد'))),
         true,
       );
     });

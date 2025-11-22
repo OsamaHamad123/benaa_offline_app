@@ -1,6 +1,6 @@
 import 'package:benaa_offline_app/features/beneficiaries/domain/entities/beneficiary.dart';
+import 'package:benaa_offline_app/core/theme/app_dimensions.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 📋 Basic Info Tab Widget
 ///
@@ -41,7 +41,7 @@ class BasicInfoTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16.r),
+      padding: AppDimensions.paddingMD,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -53,12 +53,12 @@ class BasicInfoTab extends StatelessWidget {
               hintText: 'أدخل الاسم الرباعي',
               prefixIcon: const Icon(Icons.person),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: AppDimensions.borderRadiusMD,
               ),
             ),
             textDirection: TextDirection.rtl,
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: AppDimensions.md),
 
           // الرقم الوطني مع QR Scanner
           TextField(
@@ -73,22 +73,22 @@ class BasicInfoTab extends StatelessWidget {
                 tooltip: 'مسح QR Code',
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12.r),
+                borderRadius: AppDimensions.borderRadiusMD,
               ),
             ),
             keyboardType: TextInputType.number,
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: AppDimensions.md),
 
           // الجنس والفئة في صف واحد
           Row(
             children: [
               Expanded(child: _buildGenderSelector(colorScheme)),
-              SizedBox(width: 16.w),
+              SizedBox(width: AppDimensions.md),
               Expanded(child: _buildCategorySelector(colorScheme)),
             ],
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: AppDimensions.md),
 
           // تاريخ الميلاد
           TextField(
@@ -106,13 +106,13 @@ class BasicInfoTab extends StatelessWidget {
                     )
                   : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusMD,
               ),
             ),
             readOnly: true,
             onTap: onSelectDate,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           // رقم الملف
           TextField(
@@ -122,11 +122,11 @@ class BasicInfoTab extends StatelessWidget {
               hintText: 'F-2024-001',
               prefixIcon: const Icon(Icons.folder_outlined),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusMD,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           // اسم الجمعية
           TextField(
@@ -136,7 +136,7 @@ class BasicInfoTab extends StatelessWidget {
               hintText: 'جمعية بناء الخيرية',
               prefixIcon: const Icon(Icons.business),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusMD,
               ),
             ),
             textDirection: TextDirection.rtl,
@@ -154,7 +154,7 @@ class BasicInfoTab extends StatelessWidget {
           'الجنس *',
           style: TextStyle(fontSize: 12, color: colorScheme.onSurfaceVariant),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: AppDimensions.xs),
         SegmentedButton<Gender>(
           segments: const [
             ButtonSegment(
@@ -183,7 +183,7 @@ class BasicInfoTab extends StatelessWidget {
       decoration: InputDecoration(
         labelText: 'فئة المستفيد *',
         prefixIcon: const Icon(Icons.category),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        border: OutlineInputBorder(borderRadius: AppDimensions.borderRadiusMD),
       ),
       items: BeneficiaryCategory.values.map((cat) {
         return DropdownMenuItem(

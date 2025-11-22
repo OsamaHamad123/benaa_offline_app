@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
+import '../../../../core/theme/app_dimensions.dart';
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -43,7 +44,7 @@ class BeneficiaryFormPageV2 extends ConsumerStatefulWidget {
 }
 
 class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
-    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
@@ -55,10 +56,11 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
   bool _isDeleting = false;
   bool _isLoading = false;
 
+  // ✅ Save lock to prevent race conditions
+  bool _isSavingLocked = false;
+
   // Focus node for auto-focus
   final FocusNode _firstFieldFocusNode = FocusNode();
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -213,7 +215,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
             backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.r),
+              borderRadius: AppDimensions.borderRadiusMD,
             ),
           ),
         );
@@ -263,150 +265,165 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
   }
 
   Future<void> _handleSave({bool isAutoSave = false}) async {
-    if (!_formKey.currentState!.validate()) {
-      // Don't show errors for auto-save
-      if (isAutoSave) return;
+    // ✅ Check save lock first to prevent race conditions
+    if (_isSavingLocked) {
+      debugPrint('⚠️ [FormPage] Save already in progress, skipping');
+      return;
+    }
 
-      // Scroll to first error field
-      _scrollToFirstError();
+    _isSavingLocked = true;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('يرجى إكمال الحقول المطلوبة'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.r),
+    try {
+      if (!_formKey.currentState!.validate()) {
+        // Don't show errors for auto-save
+        if (isAutoSave) return;
+
+        // Scroll to first error field
+        _scrollToFirstError();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('يرجى إكمال الحقول المطلوبة'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppDimensions.borderRadiusMD,
+            ),
           ),
-        ),
+        );
+        return;
+      }
+
+      setState(() => _isSaving = true);
+
+      // 🆕 Build beneficiary using helper
+      final currentBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
+      final beneficiary = BeneficiaryEntityBuilder.build(
+        controllers: _controllers,
+        existingId: widget.beneficiaryId,
+        existingFileNo: currentBeneficiary?.fileNo,
+        existingCreatedAt: currentBeneficiary?.createdAt,
       );
-      return;
-    }
 
-    setState(() => _isSaving = true);
+      // 🆕 Check for duplicate using helper
+      final repository = ref.read(beneficiaryRepositoryProvider);
 
-    // 🆕 Build beneficiary using helper
-    final currentBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
-    final beneficiary = BeneficiaryEntityBuilder.build(
-      controllers: _controllers,
-      existingId: widget.beneficiaryId,
-      existingFileNo: currentBeneficiary?.fileNo,
-      existingCreatedAt: currentBeneficiary?.createdAt,
-    );
+      final hasDuplicate = await SaveOperationsHelper.checkDuplicate(
+        context: context,
+        repository: repository,
+        nationalId: _controllers.nationalIdController.text.trim(),
+        isNewBeneficiary: widget.beneficiaryId == null,
+      );
 
-    // 🆕 Check for duplicate using helper
-    final repository = ref.read(beneficiaryRepositoryProvider);
-
-    final hasDuplicate = await SaveOperationsHelper.checkDuplicate(
-      context: context,
-      repository: repository,
-      nationalId: _controllers.nationalIdController.text.trim(),
-      isNewBeneficiary: widget.beneficiaryId == null,
-    );
-
-    if (hasDuplicate) {
-      setState(() => _isSaving = false);
-      return;
-    }
-
-    // Update provider with new beneficiary
-    ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
-
-    final success = await ref.read(beneficiaryFormProvider.notifier).save();
-
-    if (success && mounted) {
-      // 🆕 Get the saved beneficiary with correct ID
-      final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
-      if (savedBeneficiary == null) {
+      if (hasDuplicate) {
         setState(() => _isSaving = false);
         return;
       }
 
-      // 🆕 Save attachments using helper with CORRECT beneficiaryId
-      debugPrint(
-        '💾 [FormPage] Saving attachments for beneficiary: ${savedBeneficiary.id}',
-      );
-      debugPrint(
-        '💾 [FormPage] Pending files count: ${_controllers.pendingAttachmentFiles.length}',
-      );
+      // Update provider with new beneficiary
+      ref
+          .read(beneficiaryFormProvider.notifier)
+          .updateField((_) => beneficiary);
 
-      final attachmentResult = await SaveOperationsHelper.saveAttachments(
-        database: ref.read(databaseProvider),
-        beneficiaryId: savedBeneficiary.id,
-        pendingFiles: _controllers.pendingAttachmentFiles,
-      );
+      final success = await ref.read(beneficiaryFormProvider.notifier).save();
 
-      debugPrint(
-        '💾 [FormPage] Attachment save result - Saved: ${attachmentResult.savedCount}, Failed: ${attachmentResult.failedCount}',
-      );
-
-      // إظهار تحذير إذا فشل حفظ بعض الملفات
-      if (attachmentResult.failedCount > 0 && mounted && !isAutoSave) {
-        String errorMessage =
-            'تم حفظ البيانات لكن فشل حفظ ${attachmentResult.failedCount} من الملفات';
-
-        // إذا كانت المشكلة بسبب حجم الملف
-        if (attachmentResult.oversizedFiles != null &&
-            attachmentResult.oversizedFiles!.isNotEmpty) {
-          errorMessage = 'بعض الملفات تتجاوز الحد الأقصى للحجم (10 ميجابايت)';
+      if (success && mounted) {
+        // 🆕 Get the saved beneficiary with correct ID
+        final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
+        if (savedBeneficiary == null) {
+          setState(() => _isSaving = false);
+          return;
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-          ),
+        // 🆕 Save attachments using helper with CORRECT beneficiaryId
+        debugPrint(
+          '💾 [FormPage] Saving attachments for beneficiary: ${savedBeneficiary.id}',
         );
-      }
+        debugPrint(
+          '💾 [FormPage] Pending files count: ${_controllers.pendingAttachmentFiles.length}',
+        );
 
-      _controllers.pendingAttachmentFiles.clear();
+        final attachmentResult = await SaveOperationsHelper.saveAttachments(
+          database: ref.read(databaseProvider),
+          beneficiaryId: savedBeneficiary.id,
+          pendingFiles: _controllers.pendingAttachmentFiles,
+        );
 
-      // 🆕 Save family members
-      await _saveFamilyMembers(savedBeneficiary.id);
+        debugPrint(
+          '💾 [FormPage] Attachment save result - Saved: ${attachmentResult.savedCount}, Failed: ${attachmentResult.failedCount}',
+        );
 
-      // Don't show snackbar or pop for auto-save
-      if (!isAutoSave) {
-        // ✨ Haptic feedback for success
-        HapticFeedback.mediumImpact();
+        // إظهار تحذير إذا فشل حفظ بعض الملفات
+        if (attachmentResult.failedCount > 0 && mounted && !isAutoSave) {
+          String errorMessage =
+              'تم حفظ البيانات لكن فشل حفظ ${attachmentResult.failedCount} من الملفات';
 
-        // ✨ Enhanced snackbar
-        if (mounted) {
-          EnhancedSnackbar.showSuccess(
-            context,
-            message: 'تم الحفظ بنجاح',
-            duration: const Duration(seconds: 2),
+          // إذا كانت المشكلة بسبب حجم الملف
+          if (attachmentResult.oversizedFiles != null &&
+              attachmentResult.oversizedFiles!.isNotEmpty) {
+            errorMessage = 'بعض الملفات تتجاوز الحد الأقصى للحجم (10 ميجابايت)';
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppDimensions.borderRadiusMD,
+              ),
+            ),
           );
         }
 
-        setState(() => _isSaving = false);
+        _controllers.pendingAttachmentFiles.clear();
 
-        // Success animation - delay before pop (only for manual save)
-        await Future.delayed(const Duration(milliseconds: 500));
+        // 🆕 Save family members
+        await _saveFamilyMembers(savedBeneficiary.id);
 
-        if (mounted) {
-          context.pop(true);
+        // Don't show snackbar or pop for auto-save
+        if (!isAutoSave) {
+          // ✨ Haptic feedback for success
+          HapticFeedback.mediumImpact();
+
+          // ✨ Enhanced snackbar
+          if (mounted) {
+            EnhancedSnackbar.showSuccess(
+              context,
+              message: 'تم الحفظ بنجاح',
+              duration: const Duration(seconds: 2),
+            );
+          }
+
+          setState(() => _isSaving = false);
+
+          // Success animation - delay before pop (only for manual save)
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          if (mounted) {
+            context.pop(true);
+          }
+        } else {
+          // Auto-save: just update state silently
+          setState(() => _isSaving = false);
         }
       } else {
-        // Auto-save: just update state silently
         setState(() => _isSaving = false);
-      }
-    } else {
-      setState(() => _isSaving = false);
 
-      // ✨ Show error with haptic feedback
-      if (!isAutoSave && mounted) {
-        HapticFeedback.heavyImpact();
-        EnhancedSnackbar.showError(
-          context,
-          message: 'فشل في حفظ البيانات. يرجى المحاولة مرة أخرى',
-          onRetry: () => _handleSave(),
-        );
+        // ✨ Show error with haptic feedback
+        if (!isAutoSave && mounted) {
+          HapticFeedback.heavyImpact();
+          EnhancedSnackbar.showError(
+            context,
+            message: 'فشل في حفظ البيانات. يرجى المحاولة مرة أخرى',
+            onRetry: () => _handleSave(),
+          );
+        }
       }
+    } finally {
+      // ✅ Always release lock, even on exception
+      _isSavingLocked = false;
     }
   }
 
@@ -503,7 +520,6 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final state = ref.watch(beneficiaryFormProvider);
     final notifier = ref.read(beneficiaryFormProvider.notifier);
 
@@ -646,7 +662,7 @@ class _BeneficiaryFormPageV2State extends ConsumerState<BeneficiaryFormPageV2>
           data: Theme.of(context).copyWith(
             datePickerTheme: DatePickerThemeData(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
+                borderRadius: AppDimensions.borderRadiusXL,
               ),
             ),
           ),

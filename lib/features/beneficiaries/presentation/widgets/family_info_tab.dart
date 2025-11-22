@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/theme/app_dimensions.dart';
 import 'package:flutter/material.dart';
 
 /// 👨‍👩‍👧‍👦 Family Info Tab Widget
@@ -42,7 +43,7 @@ class FamilyInfoTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: AppDimensions.paddingMD,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,7 +53,7 @@ class FamilyInfoTab extends StatelessWidget {
             Icons.family_restroom,
             colorScheme,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: motherNameController,
@@ -61,12 +62,12 @@ class FamilyInfoTab extends StatelessWidget {
               hintText: 'الاسم الثلاثي للأم',
               prefixIcon: const Icon(Icons.person_outline),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             textDirection: TextDirection.rtl,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: fatherNameController,
@@ -75,7 +76,7 @@ class FamilyInfoTab extends StatelessWidget {
               hintText: 'الاسم الثلاثي للأب',
               prefixIcon: const Icon(Icons.person),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             textDirection: TextDirection.rtl,
@@ -89,7 +90,7 @@ class FamilyInfoTab extends StatelessWidget {
               hintText: 'الاسم الثلاثي للجد',
               prefixIcon: const Icon(Icons.elderly),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             textDirection: TextDirection.rtl,
@@ -103,16 +104,16 @@ class FamilyInfoTab extends StatelessWidget {
               hintText: 'اللقب',
               prefixIcon: const Icon(Icons.home),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             textDirection: TextDirection.rtl,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // معلومات الأسرة
           _buildSectionHeader('معلومات الأسرة', Icons.groups, colorScheme),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           TextField(
             controller: familySizeController,
@@ -121,12 +122,12 @@ class FamilyInfoTab extends StatelessWidget {
               hintText: '5',
               prefixIcon: const Icon(Icons.people),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppDimensions.borderRadiusLG,
               ),
             ),
             keyboardType: TextInputType.number,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           // الذكور والإناث في صف واحد
           Row(
@@ -139,7 +140,7 @@ class FamilyInfoTab extends StatelessWidget {
                     hintText: '3',
                     prefixIcon: const Icon(Icons.male),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimensions.borderRadiusLG,
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -154,7 +155,7 @@ class FamilyInfoTab extends StatelessWidget {
                     hintText: '2',
                     prefixIcon: const Icon(Icons.female),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimensions.borderRadiusLG,
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -162,7 +163,7 @@ class FamilyInfoTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           // الأطفال وكبار السن في صف واحد
           Row(
@@ -175,7 +176,7 @@ class FamilyInfoTab extends StatelessWidget {
                     hintText: '2',
                     prefixIcon: const Icon(Icons.child_care),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimensions.borderRadiusLG,
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -190,7 +191,7 @@ class FamilyInfoTab extends StatelessWidget {
                     hintText: '1',
                     prefixIcon: const Icon(Icons.elderly),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppDimensions.borderRadiusLG,
                     ),
                   ),
                   keyboardType: TextInputType.number,
@@ -198,11 +199,11 @@ class FamilyInfoTab extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: AppDimensions.lg),
 
           // حالات خاصة
           _buildSectionHeader('حالات خاصة', Icons.accessible, colorScheme),
-          const SizedBox(height: 16),
+          SizedBox(height: AppDimensions.md),
 
           SwitchListTile(
             title: const Text('يوجد أفراد من ذوي الاحتياجات الخاصة'),
@@ -211,11 +212,11 @@ class FamilyInfoTab extends StatelessWidget {
             onChanged: onHasPwdChanged,
             secondary: const Icon(Icons.accessible),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppDimensions.borderRadiusLG,
               side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: AppDimensions.md12),
 
           SwitchListTile(
             title: const Text('يوجد أفراد يعانون من أمراض مزمنة'),
@@ -224,7 +225,7 @@ class FamilyInfoTab extends StatelessWidget {
             onChanged: onHasChronicallyIllChanged,
             secondary: const Icon(Icons.medication),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppDimensions.borderRadiusLG,
               side: BorderSide(color: colorScheme.outline.withOpacity(0.5)),
             ),
           ),
@@ -241,7 +242,7 @@ class FamilyInfoTab extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, color: colorScheme.primary),
-        const SizedBox(width: 8),
+        SizedBox(width: AppDimensions.sm),
         Text(
           title,
           style: TextStyle(
