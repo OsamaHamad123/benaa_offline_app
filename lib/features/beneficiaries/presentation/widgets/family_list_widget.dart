@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../data/db/drift_database.dart';
+import '../../../../core/widgets/common_dialogs.dart';
+import '../../../../core/widgets/custom_empty_state.dart';
 import '../../../../core/utils/family_enums.dart';
+import '../../../../data/db/drift_database.dart';
 import '../providers/beneficiary_dependencies.dart';
 import '../providers/family_providers.dart';
 import 'family_deceased_form.dart';
 import 'family_members_form.dart';
-import '../../../../core/widgets/custom_empty_state.dart';
 
 /// قائمة عرض أفراد العائلة (الأحياء والأموات)
 class FamilyListWidget extends ConsumerStatefulWidget {
@@ -331,22 +332,12 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
   }
 
   Future<void> _confirmDeleteMember(FamilyMember member) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text('هل تريد حذف ${member.firstName} ${member.familyName}؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+    final confirm = await CommonDialogs.showConfirmation(
+      context,
+      title: 'تأكيد الحذف',
+      message: 'هل تريد حذف ${member.firstName} ${member.familyName}؟',
+      confirmText: 'حذف',
+      confirmColor: Colors.red,
     );
 
     if (confirm == true) {
@@ -354,32 +345,18 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
       await database.familyMembersDao.deleteMember(member.id);
       _refreshLists();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم الحذف')));
+        CommonDialogs.showSuccess(context, message: 'تم الحذف');
       }
     }
   }
 
   Future<void> _confirmDeleteDeceased(FamilyDeceased deceased) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text(
-          'هل تريد حذف ${deceased.firstName} ${deceased.familyName}؟',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('حذف', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+    final confirm = await CommonDialogs.showConfirmation(
+      context,
+      title: 'تأكيد الحذف',
+      message: 'هل تريد حذف ${deceased.firstName} ${deceased.familyName}؟',
+      confirmText: 'حذف',
+      confirmColor: Colors.red,
     );
 
     if (confirm == true) {
@@ -387,9 +364,7 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
       await database.familyDeceasedDao.deleteDeceased(deceased.id);
       _refreshLists();
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم الحذف')));
+        CommonDialogs.showSuccess(context, message: 'تم الحذف');
       }
     }
   }

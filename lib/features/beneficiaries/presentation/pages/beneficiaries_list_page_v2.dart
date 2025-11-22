@@ -16,8 +16,15 @@ import '../widgets/beneficiaries_search_bar.dart';
 import '../widgets/list_app_bar.dart';
 import '../widgets/beneficiaries_loading_shimmer.dart';
 import '../widgets/beneficiaries_states.dart';
+import '../widgets/advanced_search_dialog.dart';
+import '../services/export_service.dart';
 import '../../../../core/utils/responsive_utils.dart';
-import '../../../../core/widgets/micro_interactions.dart';
+import '../../../../core/widgets/swipeable_card_widget.dart';
+import '../../../../core/widgets/enhanced_refresh_indicator.dart';
+import '../../../../core/widgets/quick_actions_menu.dart';
+import '../../../../core/utils/feedback_utils.dart';
+import '../../../../core/monitoring/app_monitoring.dart';
+import '../../../../core/performance/widget_performance_analyzer.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
 class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
@@ -39,10 +46,28 @@ class _BeneficiariesListPageV2State
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    // Track screen view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appMonitoringProvider).logScreenView('BeneficiariesList');
+      // Optional: Track widget build performance (lazy initialization)
+      try {
+        WidgetPerformanceAnalyzer.recordBuild('BeneficiariesListPage');
+      } catch (_) {
+        // Silently ignore if performance suite not initialized
+      }
+    });
   }
 
   @override
   void dispose() {
+    // Log screen exit BEFORE disposing controllers
+    try {
+      ref.read(appMonitoringProvider).logScreenExit('BeneficiariesList');
+    } catch (_) {
+      // Ignore if ref is already disposed
+    }
+
     _searchController.dispose();
     _scrollController.dispose();
     _debounceTimer?.cancel();
@@ -94,29 +119,20 @@ class _BeneficiariesListPageV2State
       await ref.read(beneficiariesListProvider.notifier).deleteBeneficiary(id);
 
       if (mounted) {
-        HapticFeedback.lightImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم الحذف بنجاح'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        HapticPatterns.success();
+        VisualFeedback.showSuccess(context, 'تم الحذف بنجاح');
       }
     } catch (e) {
       if (mounted) {
-        HapticFeedback.heavyImpact();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('فشل الحذف: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'إعادة المحاولة',
-              textColor: Colors.white,
-              onPressed: () => _handleDelete(id),
-            ),
-            duration: const Duration(seconds: 4),
+        VisualFeedback.showError(
+          context,
+          'فشل الحذف: ${e.toString()}',
+          action: SnackBarAction(
+            label: 'إعادة المحاولة',
+            textColor: Colors.white,
+            onPressed: () => _handleDelete(id),
           ),
+          duration: const Duration(seconds: 4),
         );
       }
     }
@@ -168,31 +184,65 @@ class _BeneficiariesListPageV2State
       ),
       floatingActionButton: selection.isSelectionMode
           ? null
-          : MicroInteractions.bounceButton(
-              onTap: () async {
-                HapticFeedback.mediumImpact();
-                final result = await context.push('/beneficiaries/add');
-                if (result == true && mounted) {
-                  ref.read(beneficiariesListProvider.notifier).clearCache();
-                  await ref.read(beneficiariesListProvider.notifier).refresh();
-                }
-              },
-              child: FloatingActionButton.extended(
-                onPressed: () async {
-                  HapticFeedback.mediumImpact();
-                  final result = await context.push('/beneficiaries/add');
-                  if (result == true && mounted) {
-                    ref.read(beneficiariesListProvider.notifier).clearCache();
-                    await ref
-                        .read(beneficiariesListProvider.notifier)
-                        .refresh();
-                  }
-                },
-                icon: const Icon(Icons.person_add),
-                label: const Text('إضافة'),
-              ),
+          : QuickActionsMenu(
+              mainIcon: Icons.add,
+              tooltip: 'إضافة',
+              actions: [
+                QuickAction(
+                  label: 'إضافة مستفيد',
+                  icon: Icons.person_add,
+                  onTap: () async {
+                    final result = await context.push('/beneficiaries/add');
+                    if (result == true && mounted) {
+                      ref.read(beneficiariesListProvider.notifier).clearCache();
+                      await ref
+                          .read(beneficiariesListProvider.notifier)
+                          .refresh();
+                      if (mounted) {
+                        VisualFeedback.showSuccess(
+                          context,
+                          'تمت الإضافة بنجاح',
+                        );
+                      }
+                    }
+                  },
+                  backgroundColor: Colors.blue,
+                ),
+                QuickAction(
+                  label: 'بحث متقدم',
+                  icon: Icons.search,
+                  onTap: () {
+                    _showAdvancedSearch();
+                  },
+                  backgroundColor: Colors.green,
+                ),
+                QuickAction(
+                  label: 'تصدير',
+                  icon: Icons.download,
+                  onTap: () {
+                    _exportData();
+                  },
+                  backgroundColor: Colors.orange,
+                ),
+              ],
             ),
       bottomNavigationBar: const BulkActionsBar(),
+    );
+  }
+
+  void _showAdvancedSearch() {
+    HapticPatterns.medium();
+    showDialog(
+      context: context,
+      builder: (context) => const AdvancedSearchDialog(),
+    );
+  }
+
+  void _exportData() {
+    HapticPatterns.medium();
+    showDialog(
+      context: context,
+      builder: (context) => const ExportOptionsDialog(),
     );
   }
 
@@ -256,7 +306,7 @@ class _BeneficiariesListPageV2State
       return const BeneficiariesEmptyState(actionText: 'إضافة مستفيد');
     }
 
-    return RefreshIndicator(
+    return CustomPullToRefresh(
       onRefresh: () async {
         HapticFeedback.mediumImpact();
         await ref.read(beneficiariesListProvider.notifier).refresh();
@@ -264,9 +314,7 @@ class _BeneficiariesListPageV2State
           HapticFeedback.lightImpact();
         }
       },
-      color: Theme.of(context).colorScheme.primary,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      strokeWidth: 3.0,
+      primaryColor: Theme.of(context).colorScheme.primary,
       child: rv.isTablet
           ? _buildGridView(state, selection, rv)
           : _buildListView(state, selection, rv),
@@ -301,16 +349,28 @@ class _BeneficiariesListPageV2State
         final beneficiary = state.items[index];
         final isSelected = selection.isSelected(beneficiary.id);
 
-        // ✨ Staggered slide animation
+        // ✨ Staggered slide animation with swipe actions
         return RepaintBoundary(
           child: AnimatedListItem(
             index: index,
             type: AnimationType.slide,
-            child: BeneficiaryCardV2(
-              beneficiary: beneficiary,
-              isSelectionMode: selection.isSelectionMode,
-              isSelected: isSelected,
-              onDelete: () => _handleDelete(beneficiary.id),
+            child: SwipeableCardWidget(
+              enabled: !selection.isSelectionMode,
+              onSwipeRight: () async {
+                // تعديل
+                HapticFeedback.lightImpact();
+                await context.push('/beneficiaries/${beneficiary.id}/edit');
+                if (mounted) {
+                  ref.read(beneficiariesListProvider.notifier).refresh();
+                }
+              },
+              onSwipeLeft: () => _handleDelete(beneficiary.id),
+              child: BeneficiaryCardV2(
+                beneficiary: beneficiary,
+                isSelectionMode: selection.isSelectionMode,
+                isSelected: isSelected,
+                onDelete: () => _handleDelete(beneficiary.id),
+              ),
             ),
           ),
         );

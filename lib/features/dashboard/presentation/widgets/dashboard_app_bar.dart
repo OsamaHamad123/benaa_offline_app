@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../providers.dart';
+import 'monitoring_dashboard.dart';
+import '../../../../core/drafts/form_draft_manager.dart';
 
 /// Dashboard AppBar - Clean Architecture Version
 /// Displays notifications badge, search, and action buttons
@@ -51,6 +53,19 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        // Monitoring Dashboard (Dev/Admin only)
+        IconButton(
+          icon: const Icon(Icons.analytics_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MonitoringDashboard()),
+            );
+          },
+          tooltip: 'المراقبة والإحصائيات',
+        ),
+        // Drafts Indicator
+        const DraftIndicator(),
         // Search Button
         IconButton(
           icon: const Icon(Icons.search),

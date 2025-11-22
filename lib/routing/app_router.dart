@@ -19,6 +19,8 @@ import '../features/sync/test_mobile_api_page.dart';
 import '../features/reports/reports_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../core/storage/secure_store.dart';
+import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
+import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -109,7 +111,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/reports',
         builder: (context, state) => const ReportsPage(),
       ),
-      GoRoute(path: '/sync', builder: (context, state) => const SyncPage()),
+      GoRoute(
+        path: '/sync',
+        builder: (context, state) => const MobileSyncPage(),
+      ),
       GoRoute(
         path: '/import-test',
         builder: (context, state) => const ImportTestDataPage(),
@@ -125,6 +130,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/test-mobile-api',
         builder: (context, state) => const TestMobileApiPage(),
+      ),
+      // Performance & Monitoring Dashboards
+      GoRoute(
+        path: '/performance',
+        builder: (context, state) => const PerformanceDashboard(),
+      ),
+      GoRoute(
+        path: '/monitoring',
+        builder: (context, state) => const MonitoringDashboard(),
       ),
     ],
   );

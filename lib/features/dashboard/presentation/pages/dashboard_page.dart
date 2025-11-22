@@ -4,16 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/responsive_utils.dart';
-import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 import '../../../../core/widgets/charts.dart';
+import '../../../../core/widgets/modern_sliver_app_bar.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
+import '../../../../core/monitoring/app_monitoring.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../sync/mobile_sync_page.dart';
 import '../providers.dart';
-import '../widgets/dashboard_app_bar.dart' as dashboard_widgets;
 import '../widgets/quick_actions.dart';
 import '../widgets/activities_section.dart';
 import '../widgets/dashboard_charts.dart';
@@ -23,6 +23,7 @@ import '../widgets/daily_performance_section.dart';
 import '../widgets/dashboard_summary_widget.dart';
 import '../widgets/advanced_filters_widget.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/settings/enhanced_settings_page.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
 /// Uses StateNotifier for state management with performance optimizations
@@ -50,6 +51,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     _checkWelcomeBanner();
     _checkConnectivity();
     _listenToConnectivity();
+
+    // Track screen view
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(appMonitoringProvider).logScreenView('Dashboard');
+    });
+  }
+
+  @override
+  void dispose() {
+    // Log screen exit with error handling
+    try {
+      ref.read(appMonitoringProvider).logScreenExit('Dashboard');
+    } catch (_) {
+      // Ignore if ref is already disposed
+    }
+    super.dispose();
   }
 
   void _checkConnectivity() async {
@@ -184,7 +201,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     return Scaffold(
-      appBar: _buildAppBar(),
       body: currentPage,
       floatingActionButton: _selectedIndex == 0
           ? MicroInteractions.bounceButton(
@@ -232,36 +248,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         ],
       ),
     );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    if (_selectedIndex == 0) {
-      return dashboard_widgets.DashboardAppBar(
-        title: !_isOnline ? 'منظومة بناء (غير متصل)' : 'منظومة بناء',
-        onSearchTap: () => context.push('/beneficiaries'),
-        onNotificationTap: () {
-          final state = ref.read(dashboardProvider);
-          final count = state.todayStats?.pendingTasks ?? 0;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                count > 0 ? 'لديك $count مهمة معلقة' : 'لا توجد مهام معلقة',
-              ),
-            ),
-          );
-        },
-        onSyncTap: () {
-          // Refresh dashboard data before navigating
-          ref.read(dashboardProvider.notifier).refresh();
-          setState(() => _selectedIndex = 1);
-        },
-        onProfileTap: () => context.push('/profile'),
-      );
-    } else if (_selectedIndex == 1) {
-      return const CustomAppBar(title: 'المزامنة', showBackButton: false);
-    } else {
-      return const CustomAppBar(title: 'الإعدادات', showBackButton: false);
-    }
   }
 }
 
@@ -317,15 +303,61 @@ class _DashboardHome extends ConsumerWidget {
     final notifier = ref.read(dashboardProvider.notifier);
     final padding = ResponsiveUtils.getResponsivePadding(context);
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await notifier.refresh();
-      },
-      child: state.isLoadingStats && state.statistics == null
-          ? const Center(child: CircularProgressIndicator())
-          : state.hasError
-          ? _buildErrorView(context, state.errorMessage!, notifier)
-          : _buildContent(context, ref, state, notifier, padding, isOnline),
+    return CustomScrollView(
+      slivers: [
+        // Modern App Bar - مكون موحد قابل لإعادة الاستخدام
+        ModernSliverAppBar(
+          title: !isOnline ? 'منظومة بناء (غير متصل)' : 'منظومة بناء',
+          icon: Icons.dashboard_rounded,
+          actions: [
+            ModernActionButton(
+              icon: Icons.search_rounded,
+              tooltip: 'البحث',
+              onPressed: () => context.push('/beneficiaries'),
+            ),
+            ModernActionButton(
+              icon: Icons.notifications_outlined,
+              tooltip: 'الإشعارات',
+              onPressed: () {
+                final count = state.todayStats?.pendingTasks ?? 0;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      count > 0
+                          ? 'لديك $count مهمة معلقة'
+                          : 'لا توجد مهام معلقة',
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+
+        // Content
+        SliverToBoxAdapter(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await notifier.refresh();
+            },
+            child: state.isLoadingStats && state.statistics == null
+                ? SizedBox(
+                    height: 400.h,
+                    child: const Center(child: CircularProgressIndicator()),
+                  )
+                : state.hasError
+                ? _buildErrorView(context, state.errorMessage!, notifier)
+                : _buildContent(
+                    context,
+                    ref,
+                    state,
+                    notifier,
+                    padding,
+                    isOnline,
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -800,119 +832,7 @@ class _SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final padding = ResponsiveUtils.getResponsivePadding(context);
-
-    return ListView(
-      padding: padding,
-      children: [
-        SizedBox(height: 16.h),
-        Text(
-          'الإعدادات',
-          style: TextStyle(
-            fontSize: 24.sp,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
-          ),
-        ),
-        SizedBox(height: 24.h),
-        _SettingsCard(
-          children: [
-            _SettingsTile(
-              icon: Icons.person,
-              title: 'الملف الشخصي',
-              onTap: () => context.push('/profile'),
-            ),
-            const Divider(height: 1),
-            _SettingsTile(
-              icon: Icons.notifications,
-              title: 'الإشعارات',
-              onTap: () {
-                // TODO: Navigate to notifications settings
-              },
-            ),
-            const Divider(height: 1),
-            _SettingsTile(
-              icon: Icons.sync,
-              title: 'إعدادات المزامنة',
-              onTap: () => context.push('/sync'),
-            ),
-            const Divider(height: 1),
-            _SettingsTile(
-              icon: Icons.info,
-              title: 'حول التطبيق',
-              onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'منظومة بناء',
-                  applicationVersion: '1.0.0',
-                  applicationIcon: const Icon(Icons.app_settings_alt, size: 48),
-                );
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _SettingsCard extends StatelessWidget {
-  final List<Widget> children;
-
-  const _SettingsCard({required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        padding: EdgeInsets.all(8.w),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.blue.withOpacity(0.1),
-              Colors.purple.withOpacity(0.1),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(8.r),
-        ),
-        child: Icon(icon, color: Colors.blue, size: 24.sp),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500),
-      ),
-      trailing: Icon(Icons.chevron_right, color: Colors.grey, size: 24.sp),
-      onTap: onTap,
-    );
+    // استخدم صفحة الإعدادات الجديدة المحسّنة
+    return const EnhancedSettingsPage();
   }
 }

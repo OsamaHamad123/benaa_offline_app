@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../theme/app_colors.dart';
 
 /// Custom AppBar مخصص وجذاب - قابل لإعادة الاستخدام
+/// يدعم نظام الألوان الديناميكي من الإعدادات
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
@@ -35,13 +35,20 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+
     return Container(
       decoration: showGradient
           ? BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: LinearGradient(
+                colors: [primaryColor, primaryColor.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
+                  color: primaryColor.withOpacity(0.3),
                   blurRadius: 8.r,
                   offset: Offset(0, 2.h),
                 ),
@@ -264,7 +271,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
                 child: Container(
                   padding: EdgeInsets.all(4.r),
                   decoration: const BoxDecoration(
-                    color: AppColors.error,
+                    color: Colors.red,
                     shape: BoxShape.circle,
                   ),
                   constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
@@ -286,6 +293,8 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildProfileButton(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Tooltip(
       message: 'الملف الشخصي',
       child: InkWell(
@@ -300,11 +309,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: CircleAvatar(
             radius: 16.r,
             backgroundColor: Colors.white,
-            child: Icon(
-              Icons.person_rounded,
-              color: AppColors.primary,
-              size: 18.sp,
-            ),
+            child: Icon(Icons.person_rounded, color: primaryColor, size: 18.sp),
           ),
         ),
       ),

@@ -1,77 +1,219 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
 
 /// نظام الثيمات للتطبيق (Material 3 + Cupertino Adaptive)
 class AppTheme {
   AppTheme._();
 
-  // ============================================================================
-  // MATERIAL 3 THEME - للأندرويد
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // COLOR SCHEME MAPPER
+  // ═══════════════════════════════════════════════════════════════════════════
 
-  static ThemeData get lightTheme {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      fontFamily: GoogleFonts.cairo().fontFamily,
+  static Color getColorFromScheme(String scheme) {
+    switch (scheme) {
+      case 'blue':
+        return const Color(0xFF2196F3);
+      case 'green':
+        return const Color(0xFF4CAF50);
+      case 'purple':
+        return const Color(0xFF9C27B0);
+      case 'orange':
+        return const Color(0xFFFF9800);
+      case 'red':
+        return const Color(0xFFF44336);
+      case 'teal':
+        return const Color(0xFF009688);
+      case 'indigo':
+        return const Color(0xFF3F51B5);
+      case 'pink':
+        return const Color(0xFFE91E63);
+      default:
+        return const Color(0xFF2196F3); // default blue
+    }
+  }
 
-      // Text Theme with Cairo font
-      textTheme: GoogleFonts.cairoTextTheme(
-        const TextTheme(
-          displayLarge: TextStyle(fontSize: 57, fontWeight: FontWeight.w400),
-          displayMedium: TextStyle(fontSize: 45, fontWeight: FontWeight.w400),
-          displaySmall: TextStyle(fontSize: 36, fontWeight: FontWeight.w400),
-          headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700),
-          headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
-          titleLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
-          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-          bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-          bodySmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
-          labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-          labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DYNAMIC THEME BUILDER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static ThemeData buildTheme({
+    required Color primaryColor,
+    required bool isDark,
+    required bool useMaterial3,
+    required double fontSize,
+  }) {
+    // Font size multiplier (base size 14)
+    final fontSizeMultiplier = fontSize / 14.0;
+
+    // Create adaptive text theme
+    final textTheme = _buildTextTheme(isDark, fontSizeMultiplier);
+
+    if (isDark) {
+      return _buildDarkTheme(
+        primaryColor: primaryColor,
+        useMaterial3: useMaterial3,
+        textTheme: textTheme,
+      );
+    } else {
+      return _buildLightTheme(
+        primaryColor: primaryColor,
+        useMaterial3: useMaterial3,
+        textTheme: textTheme,
+      );
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEXT THEME BUILDER
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static TextTheme _buildTextTheme(bool isDark, double multiplier) {
+    final baseColor = isDark
+        ? const Color(0xFFE3E3E3)
+        : const Color(0xFF1A1A1A);
+    final secondaryColor = isDark
+        ? const Color(0xFFB0B0B0)
+        : const Color(0xFF757575);
+
+    return GoogleFonts.cairoTextTheme(
+      TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 57 * multiplier,
+          fontWeight: FontWeight.w400,
+          color: baseColor,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 45 * multiplier,
+          fontWeight: FontWeight.w400,
+          color: baseColor,
+        ),
+        displaySmall: TextStyle(
+          fontSize: 36 * multiplier,
+          fontWeight: FontWeight.w400,
+          color: baseColor,
+        ),
+        headlineLarge: TextStyle(
+          fontSize: 32 * multiplier,
+          fontWeight: FontWeight.w700,
+          color: baseColor,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 28 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 24 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 22 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        titleMedium: TextStyle(
+          fontSize: 16 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        titleSmall: TextStyle(
+          fontSize: 14 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16 * multiplier,
+          fontWeight: FontWeight.w400,
+          color: baseColor,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14 * multiplier,
+          fontWeight: FontWeight.w400,
+          color: baseColor,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12 * multiplier,
+          fontWeight: FontWeight.w400,
+          color: secondaryColor,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        labelMedium: TextStyle(
+          fontSize: 12 * multiplier,
+          fontWeight: FontWeight.w600,
+          color: baseColor,
+        ),
+        labelSmall: TextStyle(
+          fontSize: 11 * multiplier,
+          fontWeight: FontWeight.w500,
+          color: secondaryColor,
         ),
       ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LIGHT THEME
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static ThemeData _buildLightTheme({
+    required Color primaryColor,
+    required bool useMaterial3,
+    required TextTheme textTheme,
+  }) {
+    final primaryLight = Color.alphaBlend(
+      Colors.white.withOpacity(0.7),
+      primaryColor,
+    );
+    final primaryDark = Color.alphaBlend(
+      Colors.black.withOpacity(0.2),
+      primaryColor,
+    );
+
+    return ThemeData(
+      useMaterial3: useMaterial3,
+      brightness: Brightness.light,
+      fontFamily: GoogleFonts.cairo().fontFamily,
+      textTheme: textTheme,
 
       colorScheme: ColorScheme.light(
-        primary: AppColors.primary,
+        primary: primaryColor,
         onPrimary: Colors.white,
-        primaryContainer: AppColors.primaryLight,
-        onPrimaryContainer: AppColors.primaryDark,
+        primaryContainer: primaryLight,
+        onPrimaryContainer: primaryDark,
 
-        secondary: AppColors.secondary,
+        secondary: primaryColor.withOpacity(0.8),
         onSecondary: Colors.white,
-        secondaryContainer: AppColors.secondaryLight,
-        onSecondaryContainer: AppColors.secondaryDark,
+        secondaryContainer: primaryLight,
+        onSecondaryContainer: primaryDark,
 
-        tertiary: AppColors.accent,
+        tertiary: primaryColor.withOpacity(0.6),
         onTertiary: Colors.white,
 
-        error: AppColors.error,
+        error: const Color(0xFFD32F2F),
         onError: Colors.white,
-        errorContainer: AppColors.errorLight,
-        onErrorContainer: AppColors.errorDark,
+        errorContainer: const Color(0xFFFFCDD2),
+        onErrorContainer: const Color(0xFFB71C1C),
 
-        surface: AppColors.surface,
-        onSurface: AppColors.textPrimary,
-        surfaceContainerHighest: AppColors.background,
+        surface: Colors.white,
+        onSurface: const Color(0xFF1A1A1A),
+        surfaceContainerHighest: const Color(0xFFF5F5F5),
 
-        outline: AppColors.border,
-        outlineVariant: AppColors.divider,
+        outline: const Color(0xFFE0E0E0),
+        outlineVariant: const Color(0xFFF0F0F0),
       ),
 
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 2,
-        backgroundColor: AppColors.primary,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         titleTextStyle: GoogleFonts.cairo(
           fontSize: 20,
@@ -79,36 +221,40 @@ class AppTheme {
           color: Colors.white,
         ),
       ),
+
       cardTheme: CardThemeData(
         elevation: 2,
-        shadowColor: AppColors.shadowLight,
+        shadowColor: Colors.black.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: Colors.white,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
+
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.divider),
+          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F)),
         ),
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
       ),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -116,7 +262,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 2,
-          backgroundColor: AppColors.primary,
+          backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           textStyle: GoogleFonts.cairo(
             fontSize: 16,
@@ -124,207 +270,264 @@ class AppTheme {
           ),
         ),
       ),
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          side: const BorderSide(color: AppColors.primary, width: 2),
-          foregroundColor: AppColors.primary,
+          side: BorderSide(color: primaryColor, width: 2),
+          foregroundColor: primaryColor,
         ),
       ),
+
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        backgroundColor: AppColors.primary,
+        backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 4,
       ),
+
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.divider,
-        selectedColor: AppColors.primaryLight,
+        backgroundColor: const Color(0xFFF0F0F0),
+        selectedColor: primaryLight,
         labelStyle: const TextStyle(fontSize: 14),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
+
       dividerTheme: const DividerThemeData(
-        color: AppColors.divider,
+        color: Color(0xFFE0E0E0),
         thickness: 1,
         space: 1,
       ),
+
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: Colors.white,
+        selectedItemColor: primaryColor,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+      ),
     );
   }
 
-  static ThemeData get darkTheme {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DARK THEME - Professional Dark Mode 🌙
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static ThemeData _buildDarkTheme({
+    required Color primaryColor,
+    required bool useMaterial3,
+    required TextTheme textTheme,
+  }) {
+    // Enhanced dark colors for better contrast and readability
+    final primaryLight = Color.alphaBlend(
+      Colors.white.withOpacity(0.3),
+      primaryColor,
+    );
+
+    // Professional dark palette
+    const backgroundDark = Color(
+      0xFF121212,
+    ); // Pure AMOLED black with slight gray
+    const surfaceDark = Color(0xFF1E1E1E); // Elevated surface
+    const cardDark = Color(0xFF2C2C2C); // Card background
+    const textPrimary = Color(0xFFE3E3E3); // High contrast text
+    const textSecondary = Color(0xFFB0B0B0); // Secondary text
+    const dividerDark = Color(0xFF3A3A3A); // Subtle dividers
+
     return ThemeData(
-      useMaterial3: true,
+      useMaterial3: useMaterial3,
       brightness: Brightness.dark,
       fontFamily: GoogleFonts.cairo().fontFamily,
+      textTheme: textTheme,
 
-      // Text Theme with Cairo font for dark mode
-      textTheme: GoogleFonts.cairoTextTheme(
-        const TextTheme(
-          displayLarge: TextStyle(
-            fontSize: 57,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textPrimaryDark,
-          ),
-          displayMedium: TextStyle(
-            fontSize: 45,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textPrimaryDark,
-          ),
-          displaySmall: TextStyle(
-            fontSize: 36,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textPrimaryDark,
-          ),
-          headlineLarge: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimaryDark,
-          ),
-          headlineMedium: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          headlineSmall: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          titleLarge: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          titleMedium: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          titleSmall: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          bodyLarge: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textPrimaryDark,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textPrimaryDark,
-          ),
-          bodySmall: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            color: AppColors.textSecondaryDark,
-          ),
-          labelLarge: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          labelMedium: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          labelSmall: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondaryDark,
-          ),
-        ),
+      colorScheme: ColorScheme.dark(
+        primary: primaryLight,
+        onPrimary: Colors.black87,
+        primaryContainer: primaryColor,
+        onPrimaryContainer: primaryLight,
+
+        secondary: primaryLight.withOpacity(0.8),
+        onSecondary: Colors.black87,
+        secondaryContainer: primaryColor.withOpacity(0.6),
+        onSecondaryContainer: primaryLight,
+
+        tertiary: primaryLight.withOpacity(0.6),
+        onTertiary: Colors.black87,
+
+        error: const Color(0xFFEF5350),
+        onError: Colors.black87,
+        errorContainer: const Color(0xFFB71C1C),
+        onErrorContainer: const Color(0xFFFFCDD2),
+
+        surface: surfaceDark,
+        onSurface: textPrimary,
+        surfaceContainerHighest: backgroundDark,
+
+        outline: dividerDark,
+        outlineVariant: const Color(0xFF2A2A2A),
       ),
 
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primaryLight,
-        onPrimary: Colors.black,
-        primaryContainer: AppColors.primary,
-        onPrimaryContainer: AppColors.primaryLight,
+      scaffoldBackgroundColor: backgroundDark,
 
-        secondary: AppColors.secondaryLight,
-        onSecondary: Colors.black,
-        secondaryContainer: AppColors.secondary,
-        onSecondaryContainer: AppColors.secondaryLight,
-
-        tertiary: AppColors.accent,
-        onTertiary: Colors.black,
-
-        error: AppColors.errorLight,
-        onError: Colors.black,
-
-        surface: AppColors.surfaceDark,
-        onSurface: AppColors.textPrimaryDark,
-        surfaceContainerHighest: AppColors.backgroundDark,
-
-        outline: AppColors.borderDark,
-        outlineVariant: AppColors.dividerDark,
-      ),
-
-      scaffoldBackgroundColor: AppColors.backgroundDark,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
-        scrolledUnderElevation: 2,
-        backgroundColor: AppColors.surfaceDark,
-        foregroundColor: AppColors.textPrimaryDark,
+        scrolledUnderElevation: 4,
+        backgroundColor: surfaceDark,
+        foregroundColor: textPrimary,
         titleTextStyle: GoogleFonts.cairo(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimaryDark,
+          color: textPrimary,
+        ),
+        shadowColor: Colors.black.withOpacity(0.5),
+      ),
+
+      cardTheme: CardThemeData(
+        elevation: 4,
+        shadowColor: Colors.black.withOpacity(0.4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: cardDark,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: dividerDark),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: dividerDark),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryLight, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF5350)),
+        ),
+        filled: true,
+        fillColor: surfaceDark,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        labelStyle: const TextStyle(color: textSecondary),
+        hintStyle: const TextStyle(color: textSecondary),
+      ),
+
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 4,
+          backgroundColor: primaryLight,
+          foregroundColor: Colors.black87,
+          textStyle: GoogleFonts.cairo(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          shadowColor: Colors.black.withOpacity(0.3),
         ),
       ),
-      cardTheme: CardThemeData(
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.3),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          side: BorderSide(color: primaryLight, width: 2),
+          foregroundColor: primaryLight,
+        ),
+      ),
+
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: AppColors.cardBackgroundDark,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        backgroundColor: primaryLight,
+        foregroundColor: Colors.black87,
+        elevation: 6,
+      ),
+
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceDark,
+        selectedColor: primaryColor.withOpacity(0.3),
+        labelStyle: const TextStyle(fontSize: 14, color: textPrimary),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        side: const BorderSide(color: dividerDark),
+      ),
+
+      dividerTheme: const DividerThemeData(
+        color: dividerDark,
+        thickness: 1,
+        space: 1,
+      ),
+
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: surfaceDark,
+        selectedItemColor: primaryLight,
+        unselectedItemColor: textSecondary,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+
+      // Additional dark theme enhancements
+      dialogTheme: DialogThemeData(
+        backgroundColor: cardDark,
+        titleTextStyle: GoogleFonts.cairo(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+        ),
+        contentTextStyle: GoogleFonts.cairo(fontSize: 14, color: textSecondary),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return primaryLight;
+          }
+          return textSecondary;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return primaryColor.withOpacity(0.5);
+          }
+          return dividerDark;
+        }),
+      ),
+
+      listTileTheme: const ListTileThemeData(
+        textColor: textPrimary,
+        iconColor: textSecondary,
       ),
     );
   }
 
-  // ============================================================================
-  // CUPERTINO THEME - لـ iOS
-  // ============================================================================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LEGACY THEMES (for backward compatibility)
+  // ═══════════════════════════════════════════════════════════════════════════
 
-  static const CupertinoThemeData cupertinoLightTheme = CupertinoThemeData(
-    brightness: Brightness.light,
-    primaryColor: AppColors.primary,
-    primaryContrastingColor: Colors.white,
-    scaffoldBackgroundColor: AppColors.background,
-    barBackgroundColor: AppColors.surface,
+  static ThemeData get adaptiveTheme => buildTheme(
+    primaryColor: const Color(0xFF2196F3),
+    isDark: false,
+    useMaterial3: true,
+    fontSize: 14.0,
   );
 
-  static const CupertinoThemeData cupertinoDarkTheme = CupertinoThemeData(
-    brightness: Brightness.dark,
-    primaryColor: AppColors.primaryLight,
-    primaryContrastingColor: Colors.black,
-    scaffoldBackgroundColor: AppColors.backgroundDark,
-    barBackgroundColor: AppColors.surfaceDark,
+  static ThemeData get adaptiveDarkTheme => buildTheme(
+    primaryColor: const Color(0xFF2196F3),
+    isDark: true,
+    useMaterial3: true,
+    fontSize: 14.0,
   );
-
-  // ============================================================================
-  // ADAPTIVE THEME - يختار حسب النظام
-  // ============================================================================
-
-  static ThemeData get adaptiveTheme {
-    if (Platform.isIOS) {
-      return lightTheme.copyWith(cupertinoOverrideTheme: cupertinoLightTheme);
-    }
-    return lightTheme;
-  }
-
-  static ThemeData get adaptiveDarkTheme {
-    if (Platform.isIOS) {
-      return darkTheme.copyWith(cupertinoOverrideTheme: cupertinoDarkTheme);
-    }
-    return darkTheme;
-  }
 }

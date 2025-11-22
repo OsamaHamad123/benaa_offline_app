@@ -2,6 +2,7 @@ import '../../domain/entities/beneficiary.dart';
 import '../../domain/repositories/beneficiary_repository.dart';
 import '../datasources/beneficiary_local_datasource.dart';
 import '../models/beneficiary_model.dart';
+import '../../../../core/monitoring/performance_monitor.dart';
 
 /// 📦 Beneficiary Repository Implementation
 ///
@@ -136,18 +137,29 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
     int? limit,
     int? offset,
   }) async {
-    final results = await localDataSource.list(
-      searchQuery: searchQuery,
-      category: category?.code,
-      gender: gender == Gender.male
-          ? 1
-          : gender == Gender.female
-          ? 2
-          : null,
-      limit: limit,
-      offset: offset,
+    return await PerformanceMonitor.measure(
+      'BeneficiaryRepository.list',
+      () async {
+        final results = await localDataSource.list(
+          searchQuery: searchQuery,
+          category: category?.code,
+          gender: gender == Gender.male
+              ? 1
+              : gender == Gender.female
+              ? 2
+              : null,
+          limit: limit,
+          offset: offset,
+        );
+        return results.cast<Beneficiary>();
+      },
+      metadata: {
+        'searchQuery': searchQuery,
+        'category': category?.code,
+        'limit': limit,
+        'offset': offset,
+      },
     );
-    return results.cast<Beneficiary>();
   }
 
   @override

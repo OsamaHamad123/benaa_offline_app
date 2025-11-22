@@ -70,8 +70,10 @@ void _runApp(SharedPreferences sharedPreferences) {
     ),
   );
 
-  // Performance: Run database maintenance in background
-  _performDatabaseMaintenance(sharedPreferences);
+  // Performance: Run database maintenance in background (after UI is ready)
+  Future.delayed(const Duration(seconds: 2), () {
+    _performDatabaseMaintenance(sharedPreferences);
+  });
 }
 
 /// Perform database maintenance in background

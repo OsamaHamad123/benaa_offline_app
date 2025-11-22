@@ -1,15 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/providers.dart';
 
 /// Dashboard Summary Stats Provider
-final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
+/// يتم تحديثه تلقائياً كل 30 ثانية للحصول على بيانات محدّثة
+final dashboardSummaryProvider = FutureProvider.autoDispose<DashboardSummary>((
+  ref,
+) async {
+  // Keep alive for 30 seconds
+  final link = ref.keepAlive();
+  Timer(const Duration(seconds: 30), link.close);
+
   final db = ref.watch(databaseProvider);
 
-  // Get counts
-  final total = await db.beneficiariesDao.countBeneficiaries();
-  final orphans = await db.beneficiariesDao.countBeneficiariesByCategory(1);
-  final poor = await db.beneficiariesDao.countBeneficiariesByCategory(3);
-  final pending = await db.beneficiariesDao.countPendingSync();
+  // Get counts in parallel for better performance
+  final results = await Future.wait([
+    db.beneficiariesDao.countBeneficiaries(),
+    db.beneficiariesDao.countBeneficiariesByCategory(1), // orphans
+    db.beneficiariesDao.countBeneficiariesByCategory(3), // poor
+    db.beneficiariesDao.countPendingSync(),
+  ]);
+
+  final total = results[0];
+  final orphans = results[1];
+  final poor = results[2];
+  final pending = results[3];
 
   // Calculate sync percentage
   final synced = total - pending;

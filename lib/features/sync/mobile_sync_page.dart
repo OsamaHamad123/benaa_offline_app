@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import '../../../core/providers/providers.dart';
-import '../../../core/sync/mobile_sync_service.dart';
+import '../../core/providers/providers.dart';
+import '../../core/sync/mobile_sync_service.dart';
+import '../../core/widgets/modern_sliver_app_bar.dart';
+import 'presentation/widgets/sync_history_viewer.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
@@ -137,52 +139,72 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     final status = _status ?? MobileSyncStatus();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('مزامنة البيانات'),
-        centerTitle: true,
-        backgroundColor: Theme.of(context).primaryColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'تحديث الإحصائيات',
-            onPressed: _loadStats,
+      body: CustomScrollView(
+        slivers: [
+          // Modern App Bar - مكون موحد
+          ModernSliverAppBar(
+            title: 'مزامنة البيانات',
+            icon: Icons.sync_rounded,
+            actions: [
+              ModernActionButton(
+                icon: Icons.history,
+                tooltip: 'سجل المزامنة',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const SyncHistoryViewer(),
+                    ),
+                  );
+                },
+              ),
+              ModernActionButton(
+                icon: Icons.refresh,
+                tooltip: 'تحديث الإحصائيات',
+                onPressed: _loadStats,
+              ),
+            ],
+          ),
+
+          // Content
+          SliverToBoxAdapter(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Warning card
+                  _buildWarningCard(),
+
+                  SizedBox(height: 20.h),
+
+                  // Stats card (if available)
+                  if (_stats != null) _buildStatsCard(),
+
+                  if (_stats != null) SizedBox(height: 20.h),
+
+                  // Status card
+                  _buildStatusCard(status),
+
+                  SizedBox(height: 20.h),
+
+                  // Sync buttons
+                  _buildSyncButtons(status),
+
+                  SizedBox(height: 20.h),
+
+                  // Last result
+                  if (_lastResult != null) _buildResultCard(_lastResult!),
+
+                  SizedBox(height: 20.h),
+
+                  // Info card
+                  _buildInfoCard(),
+                ],
+              ),
+            ),
           ),
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Warning card
-            _buildWarningCard(),
-
-            SizedBox(height: 20.h),
-
-            // Stats card (if available)
-            if (_stats != null) _buildStatsCard(),
-
-            if (_stats != null) SizedBox(height: 20.h),
-
-            // Status card
-            _buildStatusCard(status),
-
-            SizedBox(height: 20.h),
-
-            // Sync buttons
-            _buildSyncButtons(status),
-
-            SizedBox(height: 20.h),
-
-            // Last result
-            if (_lastResult != null) _buildResultCard(_lastResult!),
-
-            SizedBox(height: 20.h),
-
-            // Info card
-            _buildInfoCard(),
-          ],
-        ),
       ),
     );
   }
