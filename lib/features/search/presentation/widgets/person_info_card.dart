@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/utils/responsive_utils_v2.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../domain/entities/civil_person.dart';
 import 'gender_badge.dart';
 import 'location_chip.dart';
@@ -389,15 +390,7 @@ class PersonInfoCard extends StatelessWidget {
   /// Copy national ID only
   void _copyNationalId(BuildContext context) {
     Clipboard.setData(ClipboardData(text: person.nationalId));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('تم نسخ الرقم الوطني ✓'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+    context.showSuccess('تم نسخ الرقم الوطني ✓');
   }
 
   /// Copy to clipboard
@@ -410,14 +403,6 @@ class PersonInfoCard extends StatelessWidget {
 ${person.motherName != null ? 'اسم الأم: ${person.motherName}\n' : ''}${person.birthDate != null ? 'تاريخ الميلاد: ${person.birthDate}\n' : ''}${person.city != null ? 'المدينة: ${person.city}\n' : ''}${person.governorate != null ? 'المحافظة: ${person.governorate}\n' : ''}''';
 
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('تم النسخ إلى الحافظة ✓'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    context.showSuccess('تم النسخ إلى الحافظة ✓');
   }
 }

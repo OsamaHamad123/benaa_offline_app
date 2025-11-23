@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import 'dart:typed_data';
 import 'services/pdf_export_service.dart';
 import 'services/excel_export_service.dart';
@@ -407,12 +408,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
       await Share.shareXFiles(files, text: _reportTitle);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('تم إنشاء التقرير بنجاح'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        context.showSuccess('تم إنشاء التقرير بنجاح');
       }
     } catch (e) {
       if (mounted) {
@@ -501,9 +497,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
+    context.showError(message);
   }
 
   void _showHelp() {

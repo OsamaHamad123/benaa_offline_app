@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart'; // 🔥 UUID للـ ID الآمن
 import '../../../../data/db/drift_database.dart';
 import '../../../../core/widgets/beneficiary/beneficiary_info_card.dart';
 import '../../../../core/widgets/beneficiary/date_time_picker_field.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../domain/entities/visit_entity.dart';
 import '../providers/visit_providers.dart';
 import '../../../beneficiaries/presentation/pages/details_widgets/states/reusable_states.dart';
@@ -122,18 +123,7 @@ class _RecordVisitPageEnhancedState
 
   Future<void> _saveVisit() async {
     if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.warning_amber, color: Colors.white),
-              SizedBox(width: 12.w),
-              Text('يرجى ملء جميع الحقول المطلوبة'),
-            ],
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      context.showWarning('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
 

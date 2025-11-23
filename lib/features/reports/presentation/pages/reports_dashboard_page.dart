@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 
 /// 📊 Reports Dashboard - Hub for all reports
 class ReportsDashboardPage extends ConsumerWidget {
@@ -115,12 +116,7 @@ class ReportsDashboardPage extends ConsumerWidget {
   }
 
   void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('قريباً...'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    context.showInfo('قريباً...');
   }
 }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/storage/secure_store.dart';
 import '../../core/services/password_hash_service.dart';
+import '../../core/extensions/context_extensions.dart';
 import '../../theme/app_colors.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -88,7 +89,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
         if (mounted) {
           // Success feedback
-          _showSuccessSnackBar();
+          context.showSuccess('مرحباً ${_usernameController.text}!');
 
           // Navigate to dashboard
           await Future.delayed(const Duration(milliseconds: 500));
@@ -100,10 +101,11 @@ class _LoginPageState extends ConsumerState<LoginPage>
         throw Exception('بيانات الدخول غير صحيحة');
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = _getErrorMessage(e.toString());
-      });
-      _showErrorSnackBar();
+      if (mounted) {
+        final errorMsg = _getErrorMessage(e.toString());
+        context.showError(errorMsg);
+        setState(() => _errorMessage = errorMsg);
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -120,47 +122,6 @@ class _LoginPageState extends ConsumerState<LoginPage>
       return 'اسم المستخدم أو كلمة المرور غير صحيحة';
     }
     return 'حدث خطأ أثناء تسجيل الدخول';
-  }
-
-  void _showSuccessSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 12),
-            Text('مرحباً ${_usernameController.text}!'),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showErrorSnackBar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(_errorMessage ?? 'حدث خطأ')),
-          ],
-        ),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'إعادة المحاولة',
-          textColor: Colors.white,
-          onPressed: _handleLogin,
-        ),
-      ),
-    );
   }
 
   @override

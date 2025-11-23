@@ -37,7 +37,7 @@ dependencies:
   csv: ^6.0.0
   cupertino_icons: ^1.0.8
   device_info_plus: ^12.2.0
-  dio: ^5.7.0
+  dio: ^5.9.0
   drift: ^2.20.3
   drift_sqflite: ^2.0.0
   encrypt: ^5.0.3
@@ -93,6 +93,7 @@ dependencies:
   url_launcher: ^6.3.1
   uuid: ^4.5.1
   workmanager: ^0.9.0+3
+  archive: ^3.6.1
 
 dev_dependencies:
   # Code Generation

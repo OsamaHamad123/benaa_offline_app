@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/extensions/context_extensions.dart';
 import 'providers/reports_providers.dart';
 import 'domain/entities/report_data.dart';
 import 'widgets/governorate_bar_chart.dart';
@@ -123,12 +124,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
             onClearFilter: _clearDateFilter,
             onRefresh: () {
               _refreshData();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('تم تحديث البيانات'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
+              context.showSuccess('تم تحديث البيانات');
             },
           ),
         ],
@@ -547,21 +543,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       ], text: 'قائمة شاملة بجميع المستفيدين (${beneficiaries.length} مستفيد)');
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم تصدير ${beneficiaries.length} مستفيد بنجاح'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      context.showSuccess('تم تصدير ${beneficiaries.length} مستفيد بنجاح');
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog if still open
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('فشل التصدير: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      context.showError('فشل التصدير: ${e.toString()}');
     }
   }
 }

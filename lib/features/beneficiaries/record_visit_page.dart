@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import 'package:go_router/go_router.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../core/providers/providers.dart';
 import '../../data/db/drift_database.dart';
 
@@ -101,22 +102,12 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم تسجيل الزيارة بنجاح'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        context.showSuccess('تم تسجيل الزيارة بنجاح');
         context.pop(true); // Return true to indicate success
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('خطأ في التسجيل: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        context.showError('خطأ في التسجيل: $e');
       }
     } finally {
       if (mounted) {

@@ -1,5 +1,6 @@
 import 'package:benaa_offline_app/features/search/data/datasources/update_normalization.dart';
 import 'package:flutter/material.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 
 /// 🔧 Debug page for updating normalization
 ///
@@ -86,13 +87,7 @@ class _UpdateNormalizationPageState extends State<UpdateNormalizationPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ تم تحديث البيانات بنجاح!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 5),
-          ),
-        );
+        context.showSuccess('✅ تم تحديث البيانات بنجاح!');
       }
     } catch (e) {
       setState(() {
@@ -101,13 +96,7 @@ class _UpdateNormalizationPageState extends State<UpdateNormalizationPage> {
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ خطأ: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        context.showError('❌ خطأ: $e');
       }
     }
   }

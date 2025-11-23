@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../core/providers/providers.dart' as core_providers;
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/beneficiary/visit_card.dart';
@@ -71,9 +72,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                 icon: const Icon(Icons.share),
                 tooltip: 'مشاركة',
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('سيتم إضافة المشاركة قريباً')),
-                  );
+                  context.showInfo('سيتم إضافة المشاركة قريباً');
                 },
               ),
               IconButton(
@@ -88,11 +87,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   if (value == 'delete') {
                     _showDeleteDialog(context, database);
                   } else if (value == 'print') {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('سيتم إضافة الطباعة قريباً'),
-                      ),
-                    );
+                    context.showInfo('سيتم إضافة الطباعة قريباً');
                   }
                 },
                 itemBuilder: (context) => [

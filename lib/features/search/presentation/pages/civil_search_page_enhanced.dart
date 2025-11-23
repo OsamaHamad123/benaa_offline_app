@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../domain/entities/civil_person.dart';
@@ -1026,13 +1027,7 @@ class _CivilSearchPageEnhancedState
     } catch (e) {
       // Handle search errors gracefully
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('خطأ في البحث: يرجى المحاولة مرة أخرى'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      context.showError('خطأ في البحث: يرجى المحاولة مرة أخرى');
     }
   }
 
@@ -1352,16 +1347,7 @@ class _CivilSearchPageEnhancedState
 ${person.motherName != null ? 'اسم الأم: ${person.motherName}\n' : ''}${person.birthDate != null ? 'تاريخ الميلاد: ${person.birthDate}\n' : ''}${person.city != null ? 'المدينة: ${person.city}\n' : ''}${person.governorate != null ? 'المحافظة: ${person.governorate}\n' : ''}''';
 
     Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('تم النسخ إلى الحافظة ✓'),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: EdgeInsets.all(16),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    context.showSuccess('تم النسخ إلى الحافظة ✓');
   }
 
   void _addAsBeneficiary(CivilPerson person) {
