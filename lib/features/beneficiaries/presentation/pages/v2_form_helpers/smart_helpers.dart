@@ -1,4 +1,5 @@
 import 'form_controllers.dart';
+import 'widgets/tab_completion_badge.dart'; // 🏆 Tab Stats
 
 /// 🎯 Smart Category Suggester
 ///
@@ -109,27 +110,38 @@ class FormCompletionCalculator {
     'address',
   ];
 
-  /// Calculate completion percentage
-  static int calculateCompletion(BeneficiaryFormControllers controllers) {
-    int completed = 0;
-    final total = requiredFields.length;
+  // 🚀 Cache for expensive calculations
+  static Map<int, TabCompletionStats>? _cachedTabStats;
+  static int? _cachedCompletedCount;
+  static int? _lastControllersHashCode;
 
-    // Check each required field
-    if (controllers.firstNameController.text.trim().isNotEmpty) completed++;
-    if (controllers.fatherNameController.text.trim().isNotEmpty) completed++;
-    if (controllers.lastNameController.text.trim().isNotEmpty) completed++;
-    if (controllers.nationalIdController.text.trim().length == 9) completed++;
-    if (controllers.birthDateController.text.isNotEmpty) completed++;
-    if (controllers.selectedGender != null) completed++;
-    if (controllers.selectedCategory != null) completed++;
-    if (controllers.phoneController.text.trim().isNotEmpty) completed++;
-    if (controllers.addressController.text.trim().isNotEmpty) completed++;
+  /// Calculate completion percentage (cached)
+  static int calculateCompletion(BeneficiaryFormControllers controllers) {
+    final currentHash = controllers.hashCode;
+
+    // Return cached value if controllers haven't changed
+    if (_lastControllersHashCode == currentHash &&
+        _cachedCompletedCount != null) {
+      final total = requiredFields.length;
+      return ((_cachedCompletedCount! / total) * 100).round();
+    }
+
+    int completed = getCompletedCount(controllers);
+    final total = requiredFields.length;
 
     return ((completed / total) * 100).round();
   }
 
-  /// Get completed count
+  /// Get completed count (cached)
   static int getCompletedCount(BeneficiaryFormControllers controllers) {
+    final currentHash = controllers.hashCode;
+
+    // Return cached value if controllers haven't changed
+    if (_lastControllersHashCode == currentHash &&
+        _cachedCompletedCount != null) {
+      return _cachedCompletedCount!;
+    }
+
     int completed = 0;
 
     if (controllers.firstNameController.text.trim().isNotEmpty) completed++;
@@ -141,10 +153,141 @@ class FormCompletionCalculator {
     if (controllers.selectedCategory != null) completed++;
     if (controllers.phoneController.text.trim().isNotEmpty) completed++;
     if (controllers.addressController.text.trim().isNotEmpty) completed++;
+
+    // Cache the result
+    _cachedCompletedCount = completed;
+    _lastControllersHashCode = currentHash;
 
     return completed;
   }
 
   /// Get total required fields count
   static int getTotalRequired() => requiredFields.length;
+
+  /// حساب إحصائيات الإكمال لكل تاب (cached)
+  static Map<int, TabCompletionStats> calculateTabStats(
+    BeneficiaryFormControllers controllers,
+  ) {
+    final currentHash = controllers.hashCode;
+
+    // Return cached value if controllers haven't changed
+    if (_lastControllersHashCode == currentHash && _cachedTabStats != null) {
+      return _cachedTabStats!;
+    }
+
+    final stats = {
+      0: _calculatePersonalTabStats(controllers),
+      1: _calculateFamilyTabStats(controllers),
+      2: _calculateContactTabStats(controllers),
+      3: _calculateAttachmentsTabStats(controllers),
+    };
+
+    // Cache the result
+    _cachedTabStats = stats;
+    _lastControllersHashCode = currentHash;
+
+    return stats;
+  }
+
+  /// Clear cache (call when controllers change significantly)
+  static void clearCache() {
+    _cachedTabStats = null;
+    _cachedCompletedCount = null;
+    _lastControllersHashCode = null;
+  }
+
+  // Tab 0: Personal Info
+  static TabCompletionStats _calculatePersonalTabStats(
+    BeneficiaryFormControllers controllers,
+  ) {
+    int total = 12;
+    int completed = 0;
+
+    if (controllers.firstNameController.text.trim().isNotEmpty) completed++;
+    if (controllers.fatherNameController.text.trim().isNotEmpty) completed++;
+    if (controllers.grandfatherNameController.text.trim().isNotEmpty)
+      completed++;
+    if (controllers.lastNameController.text.trim().isNotEmpty) completed++;
+    if (controllers.nationalIdController.text.trim().length == 9) completed++;
+    if (controllers.birthDateController.text.isNotEmpty) completed++;
+    if (controllers.selectedGender != null) completed++;
+    if (controllers.selectedCategory != null) completed++;
+    if (controllers.selectedMaritalStatus != null) completed++;
+    if (controllers.selectedEducationLevel != null) completed++;
+    if (controllers.selectedHealthStatus != null) completed++;
+    if (controllers.chronicDiseasesController.text.trim().isNotEmpty)
+      completed++;
+
+    final progress = total > 0 ? completed / total : 0.0;
+    return TabCompletionStats(
+      completedFields: completed,
+      totalFields: total,
+      progress: progress,
+    );
+  }
+
+  // Tab 1: Family
+  static TabCompletionStats _calculateFamilyTabStats(
+    BeneficiaryFormControllers controllers,
+  ) {
+    int total = 4;
+    int completed = 0;
+
+    if (controllers.motherNameController.text.trim().isNotEmpty) completed++;
+    if (controllers.numberOfDependentsController.text.trim().isNotEmpty)
+      completed++;
+    if (controllers.numberOfMalesController.text.trim().isNotEmpty) completed++;
+    if (controllers.numberOfFemalesController.text.trim().isNotEmpty)
+      completed++;
+
+    final progress = total > 0 ? completed / total : 0.0;
+    return TabCompletionStats(
+      completedFields: completed,
+      totalFields: total,
+      progress: progress,
+    );
+  }
+
+  // Tab 2: Contact & Notes
+  static TabCompletionStats _calculateContactTabStats(
+    BeneficiaryFormControllers controllers,
+  ) {
+    int total = 7;
+    int completed = 0;
+
+    if (controllers.phoneController.text.trim().isNotEmpty) completed++;
+    if (controllers.altPhoneController.text.trim().isNotEmpty) completed++;
+    if (controllers.addressController.text.trim().isNotEmpty) completed++;
+    if (controllers.neighborhoodController.text.trim().isNotEmpty) completed++;
+    if (controllers.addressBeforeDisplacementController.text.trim().isNotEmpty)
+      completed++;
+    if (controllers.selectedDisplacementStatus != null) completed++;
+    if (controllers.selectedEmploymentStatus != null) completed++;
+
+    final progress = total > 0 ? completed / total : 0.0;
+    return TabCompletionStats(
+      completedFields: completed,
+      totalFields: total,
+      progress: progress,
+    );
+  }
+
+  // Tab 3: Attachments
+  static TabCompletionStats _calculateAttachmentsTabStats(
+    BeneficiaryFormControllers controllers,
+  ) {
+    final totalAttachments = controllers.pendingAttachmentFiles.length;
+    final hasNotes = controllers.notesController.text.trim().isNotEmpty;
+
+    int total = 3; // نتوقع على الأقل 3 مرفقات
+    int completed = totalAttachments;
+    if (hasNotes) completed++;
+
+    final progress = total > 0 ? (completed / total).clamp(0.0, 1.0) : 0.0;
+    return TabCompletionStats(
+      completedFields: completed,
+      totalFields: total,
+      progress: progress,
+    );
+  }
 }

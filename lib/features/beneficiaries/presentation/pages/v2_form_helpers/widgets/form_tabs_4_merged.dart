@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../form_controllers.dart';
 import '../form_constants.dart';
+import '../beneficiary_form_colors.dart'; // 🎨 Material 3 Colors
+import 'tab_completion_badge.dart'; // 🏆 Tab Completion Badges
+import 'tab_completion_celebration.dart'; // 🎉 Success Celebrations
+import 'skeleton_loader.dart'; // 💀 Skeleton screens
 
 // Import redesigned tabs
 import '../../../widgets/v2/tabs/v2_personal_info_merged_tab.dart';
@@ -40,6 +44,7 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
 class _BeneficiaryFormTabs4MergedState
     extends State<BeneficiaryFormTabs4Merged> {
   final Set<int> _loadedTabs = {0}; // Always load first tab
+  final Map<int, bool> _tabsLoading = {}; // Track loading state per tab
 
   @override
   void initState() {
@@ -55,9 +60,37 @@ class _BeneficiaryFormTabs4MergedState
 
   void _onTabChanged() {
     if (mounted) {
-      setState(() {
-        _loadedTabs.add(widget.controller.index);
-      });
+      final currentTab = widget.controller.index;
+      if (!_loadedTabs.contains(currentTab)) {
+        setState(() {
+          _tabsLoading[currentTab] = true; // Show skeleton
+        });
+
+        // Simulate async loading (could be replaced with actual data loading)
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _loadedTabs.add(currentTab);
+              _tabsLoading[currentTab] = false;
+            });
+          }
+        });
+      } else {
+        // Tab already loaded, just trigger rebuild
+        setState(() {});
+      }
+    }
+  }
+
+  /// 🎉 Check and celebrate tab completion
+  void checkAndCelebrateCompletion(int tabIndex, TabCompletionStats stats) {
+    if (stats.percentage == 100 &&
+        !TabCompletionCelebration.hasCelebrated(tabIndex)) {
+      TabCompletionCelebration.show(
+        context,
+        tabIndex: tabIndex,
+        tabTitle: FormTabs.tabs[tabIndex].title,
+      );
     }
   }
 
@@ -67,6 +100,11 @@ class _BeneficiaryFormTabs4MergedState
       index: widget.controller.index,
       sizing: StackFit.loose, // تحسين الأداء
       children: List.generate(FormConstants.totalTabs, (index) {
+        // Show skeleton while loading
+        if (_tabsLoading[index] == true) {
+          return _buildSkeletonForTab(index);
+        }
+
         // Lazy load: only build tabs that have been visited
         if (!_loadedTabs.contains(index)) {
           return const SizedBox.shrink();
@@ -79,6 +117,16 @@ class _BeneficiaryFormTabs4MergedState
         );
       }),
     );
+  }
+
+  /// 💀 Skeleton screen based on tab type
+  Widget _buildSkeletonForTab(int tabIndex) {
+    switch (tabIndex) {
+      case 3: // Attachments tab
+        return const SkeletonAttachmentGrid();
+      default: // Form tabs (0, 1, 2)
+        return const SkeletonFormScreen();
+    }
   }
 
   Widget _buildTabAtIndex(int index) {
@@ -140,11 +188,13 @@ class _BeneficiaryFormTabs4MergedState
 class BeneficiaryFormTabBar4 extends StatelessWidget {
   final TabController controller;
   final int currentIndex;
+  final Map<int, TabCompletionStats>? tabStats;
 
   const BeneficiaryFormTabBar4({
     super.key,
     required this.controller,
     required this.currentIndex,
+    this.tabStats,
   });
 
   @override
@@ -153,27 +203,103 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              FormColors.tabGradients[currentIndex] ??
-              [theme.colorScheme.primary, theme.colorScheme.primaryContainer],
+        color: theme.colorScheme.surfaceVariant,
+        border: Border(
+          bottom: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
         ),
       ),
       child: TabBar(
         controller: controller,
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.white.withOpacity(0.7),
-        indicatorColor: Colors.white,
+        labelColor: theme.colorScheme.primary,
+        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+        indicatorColor: theme.colorScheme.primary,
         indicatorWeight: 3,
-        labelStyle: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+        labelStyle: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
         unselectedLabelStyle: TextStyle(
-          fontSize: 12.sp,
+          fontSize: 11.sp,
           fontWeight: FontWeight.w500,
         ),
-        tabs: FormTabs.tabs.map((tab) {
+        tabs: FormTabs.tabs.asMap().entries.map((entry) {
+          final index = entry.key;
+          final tab = entry.value;
+          final stats = tabStats?[index];
+          final isActive = currentIndex == index;
+
           return Tab(
-            icon: Icon(tab.icon, size: FormConstants.tabIconSize.sp),
-            text: tab.title,
+            height: 60,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icon with checkmark badge
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      tab.icon,
+                      size: 20,
+                      color: isActive
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                    // Checkmark for completed tabs
+                    if (stats != null && stats.percentage == 100)
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: BeneficiaryFormColors.success,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.5),
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 10,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+
+                // Tab Title
+                Text(
+                  tab.title,
+                  style: TextStyle(
+                    fontSize: isActive ? 12.sp : 11.sp,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                    color: isActive
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+
+                if (stats != null) ...[
+                  const SizedBox(height: 4),
+
+                  // Simple Progress Bar
+                  SizedBox(
+                    width: 50,
+                    height: 3,
+                    child: LinearProgressIndicator(
+                      value: stats.percentage / 100,
+                      backgroundColor: theme.colorScheme.surfaceVariant,
+                      valueColor: AlwaysStoppedAnimation(
+                        BeneficiaryFormColors.getProgressColor(
+                          context,
+                          stats.percentage,
+                        ),
+                      ),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           );
         }).toList(),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // 🎮 Haptic Feedback
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart';
 
@@ -54,34 +55,21 @@ class BottomNavigationButtons extends StatelessWidget {
           top: false,
           child: Row(
             children: [
-              // Previous Button
-              if (!isFirstTab) ...[
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isLoading ? null : onPrevious,
-                    icon: const Icon(Icons.arrow_forward_ios_rounded),
-                    label: Text(
-                      'السابق',
-                      style: TextStyle(
-                        fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: buttonSpacing),
-              ],
-
-              // Next or Save Button
+              // Next or Save Button (Left side in RTL)
               Expanded(
                 flex: isFirstTab ? 1 : 2,
                 child: FilledButton.icon(
-                  onPressed: isLoading ? null : (isLastTab ? onSave : onNext),
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          if (isLastTab) {
+                            HapticFeedback.mediumImpact(); // حفظ
+                            onSave();
+                          } else {
+                            HapticFeedback.selectionClick(); // التالي
+                            onNext();
+                          }
+                        },
                   icon: isLoading
                       ? SizedBox(
                           width: 20.w,
@@ -96,7 +84,7 @@ class BottomNavigationButtons extends StatelessWidget {
                       : Icon(
                           isLastTab
                               ? Icons.check_circle_rounded
-                              : Icons.arrow_back_ios_rounded,
+                              : Icons.arrow_back_ios_rounded, // ← للأمام في RTL
                           size: isTabletOrDesktop ? 22 : 20,
                         ),
                   label: Text(
@@ -119,6 +107,36 @@ class BottomNavigationButtons extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // Previous Button (Right side in RTL)
+              if (!isFirstTab) ...[
+                SizedBox(width: buttonSpacing),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            HapticFeedback.selectionClick();
+                            onPrevious();
+                          },
+                    icon: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                    ), // → للخلف في RTL
+                    label: Text(
+                      'السابق',
+                      style: TextStyle(
+                        fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

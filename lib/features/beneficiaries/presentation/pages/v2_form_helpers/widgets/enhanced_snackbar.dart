@@ -22,14 +22,31 @@ class EnhancedSnackbar {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20.sp),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Text(message, style: TextStyle(fontSize: 14.sp)),
-            ),
-          ],
+        content: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 15 * (1 - value)),
+              child: Opacity(
+                opacity: value,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.white,
+                      size: 20.sp,
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Text(message, style: TextStyle(fontSize: 14.sp)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         backgroundColor: Colors.green.shade600,
         behavior: SnackBarBehavior.floating,
@@ -63,14 +80,29 @@ class EnhancedSnackbar {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error_rounded, color: Colors.white, size: 20.sp),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: Text(message, style: TextStyle(fontSize: 14.sp)),
-            ),
-          ],
+        content: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) {
+            // Shake effect for first 200ms
+            final shakeOffset = value < 0.5 ? (value * 20 - 10) : 0.0;
+            return Transform.translate(
+              offset: Offset(shakeOffset, 0),
+              child: Opacity(
+                opacity: value,
+                child: Row(
+                  children: [
+                    Icon(Icons.error_rounded, color: Colors.white, size: 20.sp),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Text(message, style: TextStyle(fontSize: 14.sp)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         backgroundColor: Colors.red.shade600,
         behavior: SnackBarBehavior.floating,

@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/list/beneficiaries_list_provider.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/list/beneficiaries_list_state.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/list/filters_provider.dart';
 
 /// 🧪 Integration Tests للـ Beneficiaries List Provider
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('BeneficiariesListNotifier Integration Tests', () {
     late ProviderContainer container;
 

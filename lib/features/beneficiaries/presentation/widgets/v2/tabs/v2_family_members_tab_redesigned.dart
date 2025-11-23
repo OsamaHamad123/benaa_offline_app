@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../core/utils/ux_helpers.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
-import 'compact_family_member_dialog.dart';
+import 'zero_lag_family_dialog.dart'; // ⚡ Optimized version
 
 /// 👥 تبويب أفراد العائلة - تصميم محسّن بدون AppBar
 ///
@@ -215,7 +215,7 @@ class _ParentCard extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => CompactFamilyMemberDialog(
+      builder: (context) => ZeroLagFamilyDialog(
         isDeceased: true,
         presetDeceasedType: deceasedType,
         onSave: (memberData) {
@@ -234,7 +234,7 @@ class _ParentCard extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => CompactFamilyMemberDialog(
+      builder: (context) => ZeroLagFamilyDialog(
         isDeceased: true,
         presetDeceasedType: deceasedType,
         existingMember: existingData,
@@ -346,11 +346,11 @@ class _OrphansSection extends StatelessWidget {
   void _showAddOrphanDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => CompactFamilyMemberDialog(
+      builder: (context) => ZeroLagFamilyDialog(
         isDeceased: false,
         onSave: (memberData) {
           formControllers.addLivingMember(memberData);
-          ToastHelper.showSuccess('تم الحفظ بنجاح');
+          ToastHelper.showSuccess('تمت الإضافة بنجاح');
         },
       ),
     );
@@ -451,7 +451,7 @@ class _OrphanCard extends StatelessWidget {
   void _showEditDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => CompactFamilyMemberDialog(
+      builder: (context) => ZeroLagFamilyDialog(
         isDeceased: false,
         existingMember: data,
         onSave: (memberData) {

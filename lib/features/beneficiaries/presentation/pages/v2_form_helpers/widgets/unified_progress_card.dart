@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../../../core/utils/responsive_utils_v2.dart';
 
-/// 📋 Unified Progress Card
+///  Compact Progress Card - Simplified Single Line
 ///
-/// Combines tab progress and field completion in one card
-/// Responsive design with adaptive sizes for different devices
+/// Shows tab progress and field completion in a clean, compact way
 class UnifiedProgressCard extends StatelessWidget {
   final int currentTab;
   final int totalTabs;
@@ -27,190 +25,118 @@ class UnifiedProgressCard extends StatelessWidget {
       totalFields > 0 ? completedFields / totalFields : 0.0;
   double get overallProgress => (tabProgress + fieldsProgress) / 2;
 
+  Color _getProgressColor() {
+    if (overallProgress >= 0.8) return Colors.green;
+    if (overallProgress >= 0.5) return Colors.orange;
+    return Colors.blue;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isTabletOrDesktop =
-        ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
-
-    // Responsive sizes
-    final circleSize = isTabletOrDesktop ? 70.0 : 60.0;
-    final titleFontSize = isTabletOrDesktop ? 16.sp : 15.sp;
-    final subtitleFontSize = isTabletOrDesktop ? 13.sp : 12.sp;
-    final percentFontSize = isTabletOrDesktop ? 18.sp : 16.sp;
+    final progressColor = _getProgressColor();
 
     return RepaintBoundary(
-      child: Card(
-        elevation: 2,
-        margin: ResponsiveUtils.getHorizontalPadding(
-          context,
-        ).add(EdgeInsets.symmetric(vertical: ResponsiveUtils.smallSpace)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.r),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: progressColor.withOpacity(0.3),
+            width: 1.5,
+          ),
         ),
-        child: Padding(
-          padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
-          child: Column(
-            children: [
-              // Header Row
-              Row(
+        child: Row(
+          children: [
+            // Compact Progress Indicator
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 40.w,
+                  height: 40.w,
+                  child: CircularProgressIndicator(
+                    value: overallProgress,
+                    strokeWidth: 3.5,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation(progressColor),
+                  ),
+                ),
+                Text(
+                  '${(overallProgress * 100).toInt()}%',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.bold,
+                    color: progressColor,
+                  ),
+                ),
+              ],
+            ),
+
+            SizedBox(width: 12.w),
+
+            // Info Column
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Overall Progress Circle
-                  Stack(
-                    alignment: Alignment.center,
+                  // Tab Title
+                  Text(
+                    currentTabTitle,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 2.h),
+                  
+                  // Compact Stats
+                  Row(
                     children: [
-                      SizedBox(
-                        width: circleSize,
-                        height: circleSize,
-                        child: CircularProgressIndicator(
-                          value: overallProgress,
-                          strokeWidth: isTabletOrDesktop ? 6 : 5,
-                          backgroundColor: Colors.grey.shade200,
-                          valueColor: AlwaysStoppedAnimation(
-                            _getProgressColor(overallProgress),
-                          ),
+                      Icon(Icons.tab, size: 12.sp, color: Colors.grey.shade600),
+                      SizedBox(width: 4.w),
+                      Text(
+                        '${currentTab + 1}/$totalTabs',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: Colors.grey.shade600,
                         ),
                       ),
+                      SizedBox(width: 12.w),
+                      Icon(Icons.task_alt, size: 12.sp, color: Colors.grey.shade600),
+                      SizedBox(width: 4.w),
                       Text(
-                        '${(overallProgress * 100).toInt()}%',
+                        '$completedFields/$totalFields',
                         style: TextStyle(
-                          fontSize: percentFontSize,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
+                          fontSize: 11.sp,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
                   ),
-
-                  SizedBox(width: ResponsiveUtils.mediumSpace),
-
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          currentTabTitle,
-                          style: TextStyle(
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: ResponsiveUtils.xSmallSpace),
-                        Text(
-                          'التبويب ${currentTab + 1} من $totalTabs',
-                          style: TextStyle(
-                            fontSize: subtitleFontSize,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        SizedBox(height: ResponsiveUtils.xSmallSpace),
-                        Text(
-                          'الحقول: $completedFields / $totalFields',
-                          style: TextStyle(
-                            fontSize: subtitleFontSize,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Status Icon
-                  Icon(
-                    overallProgress >= 0.8
-                        ? Icons.check_circle_rounded
-                        : overallProgress >= 0.5
-                        ? Icons.access_time_rounded
-                        : Icons.info_rounded,
-                    color: _getProgressColor(overallProgress),
-                    size: isTabletOrDesktop ? 30 : 28,
-                  ),
                 ],
               ),
+            ),
 
-              SizedBox(height: ResponsiveUtils.smallSpace),
-
-              // Progress Bars
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildProgressBar(
-                      context: context,
-                      label: 'التبويبات',
-                      progress: tabProgress,
-                      color: Colors.blue,
-                      isTabletOrDesktop: isTabletOrDesktop,
-                    ),
-                  ),
-                  SizedBox(width: ResponsiveUtils.smallSpace),
-                  Expanded(
-                    child: _buildProgressBar(
-                      context: context,
-                      label: 'الحقول',
-                      progress: fieldsProgress,
-                      color: _getProgressColor(fieldsProgress),
-                      isTabletOrDesktop: isTabletOrDesktop,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            // Status Icon
+            Icon(
+              overallProgress >= 0.8
+                  ? Icons.check_circle_rounded
+                  : overallProgress >= 0.5
+                      ? Icons.schedule_rounded
+                      : Icons.circle_outlined,
+              color: progressColor,
+              size: 24.sp,
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  Widget _buildProgressBar({
-    required BuildContext context,
-    required String label,
-    required double progress,
-    required Color color,
-    required bool isTabletOrDesktop,
-  }) {
-    final labelFontSize = isTabletOrDesktop ? 12.sp : 11.sp;
-    final percentFontSize = isTabletOrDesktop ? 11.sp : 10.sp;
-    final barHeight = isTabletOrDesktop ? 8.0 : 6.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: labelFontSize,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        SizedBox(height: ResponsiveUtils.xSmallSpace),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4.r),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: barHeight,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: AlwaysStoppedAnimation(color),
-          ),
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          '${(progress * 100).toInt()}%',
-          style: TextStyle(
-            fontSize: percentFontSize,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getProgressColor(double progress) {
-    if (progress >= 0.8) return Colors.green;
-    if (progress >= 0.5) return Colors.orange;
-    return Colors.red;
   }
 }
