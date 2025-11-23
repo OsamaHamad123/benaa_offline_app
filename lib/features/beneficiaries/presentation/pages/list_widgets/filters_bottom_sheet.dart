@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../core/utils/responsive_utils.dart';
+import '../../../../../core/utils/responsive_utils_v2.dart';
 import '../../providers/list/filters_provider.dart';
 import '../../providers/list/beneficiaries_list_state.dart';
 import '../../providers/list/beneficiaries_list_provider.dart';

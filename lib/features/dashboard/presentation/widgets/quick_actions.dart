@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 
 /// Quick Action Button - Reusable action button with Badge support

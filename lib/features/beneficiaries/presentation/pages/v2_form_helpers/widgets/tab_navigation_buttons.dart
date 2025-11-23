@@ -9,12 +9,14 @@ class TabNavigationButtons extends StatelessWidget {
   final TabController controller;
   final int currentIndex;
   final int totalTabs;
+  final VoidCallback? onFinalSave; // 🆕 Callback for save button
 
   const TabNavigationButtons({
     super.key,
     required this.controller,
     required this.currentIndex,
     required this.totalTabs,
+    this.onFinalSave,
   });
 
   @override
@@ -69,24 +71,45 @@ class TabNavigationButtons extends StatelessWidget {
               ),
             ),
 
-            // Next button
+            // Next/Save button
             Flexible(
-              child: ElevatedButton.icon(
-                onPressed: currentIndex < totalTabs - 1
-                    ? () {
+              child: currentIndex == totalTabs - 1
+                  ? FilledButton.icon(
+                      onPressed:
+                          onFinalSave ??
+                          () {
+                            HapticFeedback.mediumImpact();
+                            // Show message if no callback
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('استخدم زر الحفظ في الأعلى'),
+                              ),
+                            );
+                          },
+                      label: const Text('مراجعة وحفظ'),
+                      icon: Icon(Icons.save_rounded, size: 16.sp),
+                      style: FilledButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 10.h,
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: () {
                         HapticFeedback.selectionClick();
                         controller.animateTo(currentIndex + 1);
-                      }
-                    : null,
-                label: const Text('التالي'),
-                icon: Icon(Icons.arrow_forward_rounded, size: 16.sp),
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 10.h,
-                  ),
-                ),
-              ),
+                      },
+                      label: const Text('التالي'),
+                      icon: Icon(Icons.arrow_forward_rounded, size: 16.sp),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 10.h,
+                        ),
+                      ),
+                    ),
             ),
           ],
         ),

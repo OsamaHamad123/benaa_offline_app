@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../domain/entities/civil_db_status.dart';
 import '../providers/civil_db_download_notifier.dart';
 

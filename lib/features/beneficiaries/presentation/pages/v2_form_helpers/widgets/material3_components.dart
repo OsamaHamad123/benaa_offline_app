@@ -23,6 +23,7 @@ class M3TextField extends StatelessWidget {
   final bool enabled;
   final String? helperText;
   final bool obscureText;
+  final String? tooltip; // 🆕 New
 
   const M3TextField({
     super.key,
@@ -44,13 +45,14 @@ class M3TextField extends StatelessWidget {
     this.enabled = true,
     this.helperText,
     this.obscureText = false,
+    this.tooltip, // 🆕 New
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return TextFormField(
+    final textField = TextFormField(
       controller: controller,
       validator: validator,
       keyboardType: keyboardType,
@@ -140,6 +142,13 @@ class M3TextField extends StatelessWidget {
         ),
       ),
     );
+
+    // 🆕 Wrap with Tooltip if provided
+    if (tooltip != null) {
+      return Tooltip(message: tooltip!, child: textField);
+    }
+
+    return textField;
   }
 }
 

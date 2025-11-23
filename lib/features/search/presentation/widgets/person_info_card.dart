@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../domain/entities/civil_person.dart';
 import 'gender_badge.dart';
 import 'location_chip.dart';

@@ -18,7 +18,7 @@ import '../widgets/beneficiaries_loading_shimmer.dart';
 import '../widgets/beneficiaries_states.dart';
 import '../widgets/advanced_search_dialog.dart';
 import '../services/export_service.dart';
-import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/swipeable_card_widget.dart';
 import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../../../core/widgets/quick_actions_menu.dart';

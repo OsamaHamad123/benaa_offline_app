@@ -4,32 +4,61 @@ import 'package:flutter/services.dart';
 ///
 /// Real-time validation for form fields
 class FieldValidators {
-  /// Validate National ID (11 digits)
+  /// Validate Arabic Name
+  static String? validateArabicName(String? value, String fieldName) {
+    if (value == null || value.trim().isEmpty) {
+      return 'الرجاء إدخال $fieldName';
+    }
+
+    if (value.trim().length < 2) {
+      return '$fieldName يجب أن يكون حرفين على الأقل';
+    }
+
+    if (value.trim().length > 50) {
+      return '$fieldName طويل جداً (الحد الأقصى 50 حرف)';
+    }
+
+    // Check for Arabic characters only (allows spaces)
+    if (!RegExp(r'^[\u0600-\u06FF\s]+$').hasMatch(value.trim())) {
+      return 'الرجاء استخدام الأحرف العربية فقط في $fieldName';
+    }
+
+    return null;
+  }
+
+  /// Validate National ID (9 digits)
   static String? validateNationalId(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'الرقم الوطني مطلوب';
+      return 'الرجاء إدخال الرقم الوطني';
     }
 
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (cleaned.length != 9) {
-      return 'الرقم الوطني يجب أن يتكون من 9 رقم';
+      return 'الرقم الوطني يجب أن يكون 9 أرقام بالضبط';
     }
 
     return null;
   }
 
   /// Validate Phone Number (Iraqi format)
-  static String? validatePhone(String? value) {
+  static String? validatePhone(String? value, {bool isRequired = false}) {
     if (value == null || value.trim().isEmpty) {
+      if (isRequired) {
+        return 'الرجاء إدخال رقم الهاتف';
+      }
       return null; // Optional field
     }
 
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
 
+    if (cleaned.length != 10) {
+      return 'رقم الهاتف يجب أن يكون 10 أرقام';
+    }
+
     // Iraqi phone: 059xxxxxxxx (10 digits)
-    if (!cleaned.startsWith('059') || cleaned.length != 10) {
-      return 'رقم الهاتف غير صحيح (مثال: 059XXXXXXXXX)';
+    if (!cleaned.startsWith('059')) {
+      return 'رقم الهاتف يجب أن يبدأ بـ 059';
     }
 
     return null;
@@ -45,11 +74,36 @@ class FieldValidators {
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     );
 
-    if (!emailRegex.hasMatch(value)) {
-      return 'البريد الإلكتروني غير صحيح';
+    if (!emailRegex.hasMatch(value.trim())) {
+      return 'الرجاء إدخال بريد إلكتروني صحيح (مثال: example@email.com)';
     }
 
     return null;
+  }
+
+  /// Validate Birth Date
+  static String? validateBirthDate(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'الرجاء إدخال تاريخ الميلاد';
+    }
+
+    try {
+      final date = DateTime.parse(value);
+      final now = DateTime.now();
+
+      if (date.isAfter(now)) {
+        return 'تاريخ الميلاد لا يمكن أن يكون في المستقبل';
+      }
+
+      final age = now.year - date.year;
+      if (age > 120) {
+        return 'تاريخ الميلاد غير منطقي';
+      }
+
+      return null;
+    } catch (e) {
+      return 'تاريخ الميلاد غير صحيح';
+    }
   }
 
   /// Validate Required Field

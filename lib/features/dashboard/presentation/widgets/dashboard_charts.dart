@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../domain/entities/dashboard_statistics.dart';
 
 /// Growth Chart - Clean Architecture Version

@@ -5,10 +5,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
-import '../components/v2_section_card.dart';
+import '../../../pages/v2_form_helpers/widgets/enhanced_section_widgets.dart'; // 🎨
 import '../../../providers/beneficiary_dependencies.dart';
 import '../../../providers/civil_registry_provider.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
+import '../../../pages/v2_form_helpers/field_validators.dart'; // 🆕
+import '../../../pages/v2_form_helpers/smart_helpers.dart'; // 🧠 Smart suggestions
+import '../../../pages/v2_form_helpers/widgets/smart_widgets.dart'; // 💡 Smart widgets
 import '../../civil_registry_status_indicator.dart';
 import '../../autofill_button.dart';
 import '../../civil_registry_preview_card.dart';
@@ -55,6 +58,7 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
 class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
   Timer? _debounceTimer;
   bool _showPreview = false;
+  bool _dismissedSuggestion = false; // Track if user dismissed suggestion
 
   @override
   void initState() {
@@ -123,12 +127,24 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
   Widget build(BuildContext context) {
     final civilRegistryState = ref.watch(civilRegistryProvider);
 
+    // Check completion status
+    final isNameComplete =
+        widget.firstNameController.text.trim().isNotEmpty &&
+        widget.fatherNameController.text.trim().isNotEmpty &&
+        widget.lastNameController.text.trim().isNotEmpty;
+
+    final isPersonalInfoComplete =
+        widget.nationalIdController.text.length == 9 &&
+        widget.selectedGender != null &&
+        widget.selectedCategory != null;
+
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
       children: [
-        V2SectionCard(
+        AnimatedSectionCard(
           title: 'الاسم الكامل',
           icon: Icons.person_rounded,
+          isComplete: isNameComplete,
           children: [
             V2CustomTextField(
               controller: widget.firstNameController,
@@ -137,7 +153,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               isRequired: true,
               focusNode: widget.firstFieldFocusNode,
               validator: (value) =>
-                  value?.isEmpty ?? true ? 'الحقل مطلوب' : null,
+                  FieldValidators.validateArabicName(value, 'الاسم الأول'),
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -146,7 +162,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               prefixIcon: Icons.person_outline_rounded,
               isRequired: true,
               validator: (value) =>
-                  value?.isEmpty ?? true ? 'الحقل مطلوب' : null,
+                  FieldValidators.validateArabicName(value, 'اسم الأب'),
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -161,7 +177,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               prefixIcon: Icons.family_restroom_rounded,
               isRequired: true,
               validator: (value) =>
-                  value?.isEmpty ?? true ? 'الحقل مطلوب' : null,
+                  FieldValidators.validateArabicName(value, 'اللقب'),
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -171,9 +187,10 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
             ),
           ],
         ),
-        V2SectionCard(
+        AnimatedSectionCard(
           title: 'معلومات شخصية',
           icon: Icons.info_rounded,
+          isComplete: isPersonalInfoComplete,
           children: [
             V2CustomTextField(
               controller: widget.nationalIdController,
@@ -186,11 +203,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(9),
               ],
-              validator: (value) {
-                if (value?.isEmpty ?? true) return 'الحقل مطلوب';
-                if (value!.length != 9) return 'يجب أن يكون 9 أرقام';
-                return null;
-              },
+              validator: FieldValidators.validateNationalId,
             ),
 
             // 🆕 Civil Registry Status Indicator
@@ -294,6 +307,56 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                 DropdownMenuItem(value: 'other', child: Text('أخرى')),
               ],
             ),
+
+            // 🧠 Smart Category Suggestion
+            if (widget.formControllers != null && !_dismissedSuggestion)
+              Builder(
+                builder: (context) {
+                  final suggestion = CategorySuggester.suggestCategory(
+                    widget.formControllers!,
+                  );
+
+                  if (suggestion == null || widget.selectedCategory != null) {
+                    return const SizedBox.shrink();
+                  }
+
+                  final reason = CategorySuggester.getSuggestionReason(
+                    widget.formControllers!,
+                    suggestion,
+                  );
+
+                  return Padding(
+                    padding: EdgeInsets.only(top: 12.h),
+                    child: SmartSuggestionsCard(
+                      suggestion: 'الفئة المقترحة: $suggestion',
+                      description: reason,
+                      icon: Icons.lightbulb_outline_rounded,
+                      onApply: () {
+                        HapticFeedback.lightImpact();
+                        // Map suggestion to dropdown value
+                        String? categoryValue;
+                        if (suggestion.contains('يتيم')) {
+                          categoryValue = 'orphan';
+                        } else if (suggestion.contains('أرملة')) {
+                          categoryValue = 'widow';
+                        } else if (suggestion.contains('نازح')) {
+                          categoryValue = 'displaced';
+                        } else if (suggestion.contains('ذوي احتياجات خاصة')) {
+                          categoryValue = 'disabled';
+                        }
+
+                        if (categoryValue != null) {
+                          widget.onCategoryChanged(categoryValue);
+                          setState(() => _dismissedSuggestion = true);
+                        }
+                      },
+                      onDismiss: () {
+                        setState(() => _dismissedSuggestion = true);
+                      },
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ],

@@ -321,21 +321,18 @@ class _OrphansSection extends StatelessWidget {
                 if (orphansCount > 0) ...[
                   SizedBox(height: 16.h),
 
-                  // قائمة الأيتام
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: orphansCount,
-                    separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                    itemBuilder: (context, index) {
-                      final orphan = formControllers.livingMembers[index];
-                      return _OrphanCard(
+                  // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
+                  ...List.generate(
+                    orphansCount,
+                    (index) => Padding(
+                      padding: EdgeInsets.only(bottom: 8.h),
+                      child: _OrphanCard(
                         key: ValueKey('orphan_$index'),
-                        data: orphan,
+                        data: formControllers.livingMembers[index],
                         index: index,
                         formControllers: formControllers,
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ],
               ],

@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../../data/db/drift_database.dart';
 import '../../providers/list/selection_provider.dart';
 import '../../../../../../core/widgets/cached_avatar.dart';
-import '../../../../../../core/utils/responsive_utils.dart';
+import '../../../../../../core/utils/responsive_utils_v2.dart';
 
 // Helpers & Services
 import 'helpers/beneficiary_helpers.dart';

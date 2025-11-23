@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕
 import '../../../../../../core/theme/app_dimensions.dart';
 import '../../../../../../core/theme/app_breakpoints.dart';
+import '../../../providers/beneficiary_dependencies.dart'; // 🆕 For civilRegistryProvider
 
 /// 🚀 Compact Family Member Dialog - أداء عالي + Responsive
 ///
@@ -12,7 +14,8 @@ import '../../../../../../core/theme/app_breakpoints.dart';
 /// - Responsive للموبايل والتابلت (AppBreakpoints)
 /// - حقول كاملة بدون تعقيد
 /// - يستخدم AppDimensions للـ spacing الموحد
-class CompactFamilyMemberDialog extends StatefulWidget {
+/// - تكامل مع السجل المدني
+class CompactFamilyMemberDialog extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingMember;
   final bool isDeceased;
   final int? presetDeceasedType;
@@ -27,11 +30,12 @@ class CompactFamilyMemberDialog extends StatefulWidget {
   });
 
   @override
-  State<CompactFamilyMemberDialog> createState() =>
+  ConsumerState<CompactFamilyMemberDialog> createState() =>
       _CompactFamilyMemberDialogState();
 }
 
-class _CompactFamilyMemberDialogState extends State<CompactFamilyMemberDialog> {
+class _CompactFamilyMemberDialogState
+    extends ConsumerState<CompactFamilyMemberDialog> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers
@@ -48,6 +52,8 @@ class _CompactFamilyMemberDialogState extends State<CompactFamilyMemberDialog> {
   int? _healthStatus;
   int? _deathCause;
   int? _documentType;
+  bool _isFetchingCivilRegistry = false;
+  String? _civilRegistryStatus;
 
   @override
   void initState() {
@@ -82,6 +88,61 @@ class _CompactFamilyMemberDialogState extends State<CompactFamilyMemberDialog> {
     super.dispose();
   }
 
+  /// 🔍 Fetch from Civil Registry
+  Future<void> _fetchFromCivilRegistry(String nationalId) async {
+    if (nationalId.length != 9) {
+      setState(() {
+        _civilRegistryStatus = 'الرقم الوطني يجب أن يكون 9 أرقام';
+      });
+      return;
+    }
+
+    setState(() {
+      _isFetchingCivilRegistry = true;
+      _civilRegistryStatus = 'جاري البحث في السجل المدني...';
+    });
+
+    try {
+      // 🔥 استخدام الـ provider الحقيقي
+      await ref
+          .read(civilRegistryProvider.notifier)
+          .fetchByNationalId(nationalId); // ✅ الاسم الصحيح
+
+      final civilRegistryState = ref.read(civilRegistryProvider);
+
+      if (civilRegistryState.isSuccess && civilRegistryState.person != null) {
+        final person = civilRegistryState.person!;
+
+        // Auto-fill fields
+        setState(() {
+          _firstNameController.text = person.firstName;
+          _secondNameController.text = person.fatherName;
+          _thirdNameController.text = person.grandfatherName ?? '';
+          _familyNameController.text =
+              person.lastName; // ✅ lastName بدل familyName
+          _selectedGender = person.gender == 'ذكر' ? 1 : 2;
+          if (!widget.isDeceased && person.birthDate != null) {
+            _selectedDate = person.birthDate;
+          }
+          _isFetchingCivilRegistry = false;
+          _civilRegistryStatus = '✅ تم العثور على البيانات وملؤها تلقائياً';
+        });
+
+        HapticFeedback.lightImpact();
+      } else {
+        setState(() {
+          _isFetchingCivilRegistry = false;
+          _civilRegistryStatus = '❌ لم يتم العثور على بيانات في السجل المدني';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isFetchingCivilRegistry = false;
+        _civilRegistryStatus = '❌ خطأ في البحث: ${e.toString()}';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -95,28 +156,32 @@ class _CompactFamilyMemberDialogState extends State<CompactFamilyMemberDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(context),
+            RepaintBoundary(child: _buildHeader(context)),
             Expanded(
               child: Form(
                 key: _formKey,
                 child: ListView(
                   padding: AppDimensions.paddingLG,
+                  physics: const BouncingScrollPhysics(),
+                  cacheExtent: 500, // تحسين أداء التمرير
                   children: [
-                    _buildNameFields(),
+                    RepaintBoundary(child: _buildNameFields()),
                     SizedBox(height: AppDimensions.md),
-                    _buildNationalIdAndGender(),
+                    RepaintBoundary(child: _buildNationalIdAndGender()),
                     SizedBox(height: AppDimensions.md),
-                    _buildDatePicker(),
+                    RepaintBoundary(child: _buildDatePicker()),
                     SizedBox(height: AppDimensions.md),
-                    if (widget.isDeceased) _buildDeceasedFields(),
-                    if (!widget.isDeceased) _buildOrphanFields(),
+                    if (widget.isDeceased)
+                      RepaintBoundary(child: _buildDeceasedFields()),
+                    if (!widget.isDeceased)
+                      RepaintBoundary(child: _buildOrphanFields()),
                     SizedBox(height: AppDimensions.md),
-                    _buildNotesField(),
+                    RepaintBoundary(child: _buildNotesField()),
                   ],
                 ),
               ),
             ),
-            _buildFooter(),
+            RepaintBoundary(child: _buildFooter()),
           ],
         ),
       ),
@@ -224,23 +289,99 @@ class _CompactFamilyMemberDialogState extends State<CompactFamilyMemberDialog> {
   Widget _buildNationalIdAndGender() {
     return Column(
       children: [
-        // الرقم الوطني
-        TextFormField(
-          controller: _nationalIdController,
-          decoration: const InputDecoration(
-            labelText: 'الرقم الوطني *',
-            border: OutlineInputBorder(),
-            isDense: true,
-            prefixIcon: Icon(Icons.badge, size: 20),
-          ),
-          keyboardType: TextInputType.number,
-          maxLength: 9,
-          validator: (v) {
-            if (v?.trim().isEmpty ?? true) return 'مطلوب';
-            if (v!.length != 9) return '9 أرقام';
-            return null;
-          },
+        // الرقم الوطني مع زر السجل المدني
+        Row(
+          children: [
+            Expanded(
+              flex: 3,
+              child: TextFormField(
+                controller: _nationalIdController,
+                decoration: const InputDecoration(
+                  labelText: 'الرقم الوطني *',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  prefixIcon: Icon(Icons.badge, size: 20),
+                ),
+                keyboardType: TextInputType.number,
+                maxLength: 9,
+                onChanged: (value) {
+                  // Auto-fetch when 9 digits entered
+                  if (value.length == 9 && !_isFetchingCivilRegistry) {
+                    _fetchFromCivilRegistry(value);
+                  }
+                },
+                validator: (v) {
+                  if (v?.trim().isEmpty ?? true) return 'مطلوب';
+                  if (v!.length != 9) return '9 أرقام';
+                  return null;
+                },
+              ),
+            ),
+            SizedBox(width: 8.w),
+            // زر السجل المدني
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: _isFetchingCivilRegistry
+                    ? null
+                    : () => _fetchFromCivilRegistry(_nationalIdController.text),
+                icon: _isFetchingCivilRegistry
+                    ? SizedBox(
+                        width: 16.sp,
+                        height: 16.sp,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.search, size: 18.sp),
+                label: Text('بحث', style: TextStyle(fontSize: 11.sp)),
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8.w,
+                    vertical: 12.h,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
+
+        // Civil Registry Status
+        if (_civilRegistryStatus != null) ...[
+          SizedBox(height: 8.h),
+          Container(
+            padding: EdgeInsets.all(8.w),
+            decoration: BoxDecoration(
+              color: _civilRegistryStatus!.contains('نجح')
+                  ? Colors.green.shade50
+                  : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(
+                color: _civilRegistryStatus!.contains('نجح')
+                    ? Colors.green
+                    : Colors.orange,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _civilRegistryStatus!.contains('نجح')
+                      ? Icons.check_circle
+                      : Icons.info,
+                  size: 16.sp,
+                  color: _civilRegistryStatus!.contains('نجح')
+                      ? Colors.green
+                      : Colors.orange,
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    _civilRegistryStatus!,
+                    style: TextStyle(fontSize: 11.sp),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         SizedBox(height: AppDimensions.md),
 
         // الجنس

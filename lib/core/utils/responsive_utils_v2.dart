@@ -198,6 +198,38 @@ class ResponsiveUtils {
     return 2;
   }
 
+  /// Get cross axis count for grid (alias for getGridColumns)
+  static int getCrossAxisCount(
+    BuildContext context, {
+    int mobile = 2,
+    int tablet = 3,
+    int desktop = 4,
+  }) {
+    if (isDesktop(context)) return desktop;
+    if (isTablet(context)) return tablet;
+    return mobile;
+  }
+
+  /// Get responsive value based on screen size (generic helper)
+  static T getResponsiveValue<T>(
+    BuildContext context, {
+    required T mobile,
+    T? tablet,
+    T? desktop,
+  }) {
+    if (isDesktop(context) && desktop != null) {
+      return desktop;
+    } else if (isTablet(context) && tablet != null) {
+      return tablet;
+    }
+    return mobile;
+  }
+
+  /// Get ResponsiveValues object for caching (backward compatibility)
+  static ResponsiveValues getValues(BuildContext context) {
+    return ResponsiveValues(context);
+  }
+
   /// Get grid spacing
   static double getGridSpacing(BuildContext context) {
     if (isDesktop(context)) return 24.r;
@@ -284,5 +316,34 @@ class ResponsiveUtils {
         child: child,
       ),
     );
+  }
+}
+
+/// 📦 Responsive Values Cache Class
+///
+/// Caches commonly used responsive values for better performance
+class ResponsiveValues {
+  final BuildContext context;
+
+  late final EdgeInsets padding;
+  late final double spacing;
+  late final double spacing15;
+  late final double fontScale;
+  late final double fontSize;
+  late final int crossAxisCount;
+  late final bool isTablet;
+  late final bool isMobile;
+  late final bool isDesktop;
+
+  ResponsiveValues(this.context) {
+    isTablet = ResponsiveUtils.isTablet(context);
+    isMobile = ResponsiveUtils.isMobile(context);
+    isDesktop = ResponsiveUtils.isDesktop(context);
+    padding = ResponsiveUtils.getResponsivePadding(context);
+    spacing = ResponsiveUtils.getResponsiveSpacing(context);
+    spacing15 = isMobile ? 12.0 : 15.0;
+    fontScale = isMobile ? 1.0 : 1.1;
+    fontSize = ResponsiveUtils.bodyFont;
+    crossAxisCount = ResponsiveUtils.getGridColumns(context);
   }
 }

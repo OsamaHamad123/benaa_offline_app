@@ -65,13 +65,18 @@ class _BeneficiaryFormTabs4MergedState
   Widget build(BuildContext context) {
     return IndexedStack(
       index: widget.controller.index,
+      sizing: StackFit.loose, // تحسين الأداء
       children: List.generate(FormConstants.totalTabs, (index) {
         // Lazy load: only build tabs that have been visited
         if (!_loadedTabs.contains(index)) {
           return const SizedBox.shrink();
         }
 
-        return _buildTabAtIndex(index);
+        // Wrap with RepaintBoundary for better performance
+        return RepaintBoundary(
+          key: ValueKey('tab_$index'),
+          child: _buildTabAtIndex(index),
+        );
       }),
     );
   }
@@ -93,48 +98,40 @@ class _BeneficiaryFormTabs4MergedState
 
   /// 👤 Tab 1: معلومات شخصية (Basic + Additional)
   Widget _buildPersonalInfoMergedTab() {
-    return RepaintBoundary(
-      child: V2PersonalInfoMergedTab(
-        key: const ValueKey('personal_info_merged_tab'),
-        formControllers: widget.formControllers,
-        onBirthDateTap: widget.onBirthDateTap,
-        firstFieldFocusNode: widget.firstFieldFocusNode,
-      ),
+    return V2PersonalInfoMergedTab(
+      key: const ValueKey('personal_info_merged_tab'),
+      formControllers: widget.formControllers,
+      onBirthDateTap: widget.onBirthDateTap,
+      firstFieldFocusNode: widget.firstFieldFocusNode,
     );
   }
 
   /// 👨‍👩‍👧 Tab 2: العائلة (Family Info + Family Members)
   Widget _buildFamilyMergedTab() {
-    return RepaintBoundary(
-      child: V2FamilyMergedTab(
-        key: const ValueKey('family_merged_tab'),
-        formControllers: widget.formControllers,
-      ),
+    return V2FamilyMergedTab(
+      key: const ValueKey('family_merged_tab'),
+      formControllers: widget.formControllers,
     );
   }
 
   /// 📞 Tab 3: التواصل والملاحظات (Contact + Notes)
   Widget _buildContactNotesMergedTab() {
-    return RepaintBoundary(
-      child: V2ContactNotesMergedTab(
-        key: const ValueKey('contact_notes_merged_tab'),
-        formControllers: widget.formControllers,
-      ),
+    return V2ContactNotesMergedTab(
+      key: const ValueKey('contact_notes_merged_tab'),
+      formControllers: widget.formControllers,
     );
   }
 
   /// 📎 Tab 4: المرفقات
   Widget _buildAttachmentsTab() {
-    return RepaintBoundary(
-      child: V2UnifiedAttachmentsTab(
-        key: const ValueKey('attachments_tab'),
-        beneficiaryId: widget.beneficiaryId,
-        pendingFiles: widget.formControllers.pendingAttachmentFiles,
-        onPendingFilesChanged: (files) {
-          widget.formControllers.updatePendingFiles(files);
-        },
-        formControllers: widget.formControllers,
-      ),
+    return V2UnifiedAttachmentsTab(
+      key: const ValueKey('attachments_tab'),
+      beneficiaryId: widget.beneficiaryId,
+      pendingFiles: widget.formControllers.pendingAttachmentFiles,
+      onPendingFilesChanged: (files) {
+        widget.formControllers.updatePendingFiles(files);
+      },
+      formControllers: widget.formControllers,
     );
   }
 }

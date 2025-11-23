@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../../../../core/theme/app_dimensions.dart';
 
@@ -19,6 +20,7 @@ import 'v2_form_helpers/save_operations_helper.dart';
 import 'v2_form_helpers/family_save_helper.dart';
 import 'v2_form_helpers/form_constants.dart';
 import 'v2_form_helpers/form_history.dart';
+import 'v2_form_helpers/draft_manager.dart'; // 💾 Draft Manager
 
 // Widgets
 import 'v2_form_helpers/widgets/form_tabs_4_merged.dart';
@@ -26,7 +28,16 @@ import 'v2_form_helpers/widgets/loading_overlay.dart';
 import 'v2_form_helpers/widgets/enhanced_snackbar.dart';
 import 'v2_form_helpers/widgets/smart_auto_save_indicator.dart';
 import 'v2_form_helpers/widgets/keyboard_shortcuts_handler.dart';
-import 'v2_form_helpers/widgets/quick_actions_fab.dart';
+import 'v2_form_helpers/widgets/unified_progress_card.dart'; // 📊 Unified Progress
+import 'v2_form_helpers/widgets/bottom_navigation_buttons.dart'; // 🎯 Navigation Buttons
+import 'v2_form_helpers/widgets/final_review_sheet.dart'; // 📋 Final Review
+import 'v2_form_helpers/widgets/draft_save_dialog.dart'; // 💾 Draft Save
+import 'v2_form_helpers/widgets/keyboard_shortcuts_help.dart'; // ⌨️ Shortcuts Help
+import 'v2_form_helpers/widgets/form_statistics_dashboard.dart'; // 📊 Statistics
+import 'v2_form_helpers/widgets/animated_widgets.dart'; // 🎭 Animated Widgets
+import 'v2_form_helpers/widgets/help_widgets.dart'; // 🎓 Help Widgets
+import 'v2_form_helpers/widgets/form_helper_widgets.dart'; // 📝 Form Helpers
+import 'v2_form_helpers/smart_helpers.dart'; // 🧠 Smart suggestions
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -65,6 +76,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   DateTime? _lastSaved;
   bool _hasUnsavedChanges = false;
 
+  // 🆕 New features state
+  bool _showStatistics = false;
+  bool _showTourGuide = false;
+  bool _showFieldHelpers = true; // عرض المساعدات الحقلية
+  String _searchQuery = ''; // البحث السريع في النموذج
+  final TextEditingController _searchController = TextEditingController();
+
   final FocusNode _firstFieldFocusNode = FocusNode();
 
   @override
@@ -83,6 +101,39 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForm();
+      _checkFirstTimeUser();
+    });
+  }
+
+  /// 🎓 Check if first time user and show tour
+  void _checkFirstTimeUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenTour = prefs.getBool('has_seen_form_tour') ?? false;
+
+    if (!hasSeenTour && mounted) {
+      // Show tour after a short delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() => _showTourGuide = true);
+        }
+      });
+    }
+  }
+
+  /// 📊 Toggle Statistics Dashboard
+  void _toggleStatistics() {
+    setState(() => _showStatistics = !_showStatistics);
+  }
+
+  /// 🔍 Toggle Quick Search
+  void _toggleQuickSearch() {
+    setState(() {
+      if (_searchQuery.isEmpty) {
+        _searchQuery = ' '; // تفعيل البحث
+      } else {
+        _searchQuery = '';
+        _searchController.clear();
+      }
     });
   }
 
@@ -249,6 +300,354 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     if (_tabController.index > 0) {
       _tabController.animateTo(_tabController.index - 1);
     }
+  }
+
+  /// 📋 Show final review before saving
+  Future<void> _showFinalReview() async {
+    final shouldSave = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+            ),
+            child: FinalReviewSheet(
+              formControllers: _controllers,
+              scrollController: scrollController,
+              onConfirm: () => Navigator.pop(context, true),
+              onEdit: () => Navigator.pop(context, false),
+            ),
+          );
+        },
+      ),
+    );
+
+    if (shouldSave == true) {
+      await _handleSave();
+    }
+  }
+
+  /// 💾 Handle Draft Save
+  Future<void> _handleDraftSave() async {
+    final result = await showDraftSaveDialog(context);
+
+    if (result != null) {
+      final draftName = result['name']!;
+      final draftNotes = result['notes']!;
+
+      setState(() => _isSaving = true);
+
+      try {
+        // 📦 Prepare draft data
+        final formData = {
+          'firstName': _controllers.firstNameController.text,
+          'fatherName': _controllers.fatherNameController.text,
+          'grandfatherName': _controllers.grandfatherNameController.text,
+          'lastName': _controllers.lastNameController.text,
+          'motherName': _controllers.motherNameController.text,
+          'nationalId': _controllers.nationalIdController.text,
+          'birthDate': _controllers.birthDateController.text,
+          'phone': _controllers.phoneController.text,
+          'altPhone': _controllers.altPhoneController.text,
+          'address': _controllers.addressController.text,
+          'neighborhood': _controllers.neighborhoodController.text,
+          'notes': _controllers.notesController.text,
+          'gender': _controllers.selectedGender,
+          'maritalStatus': _controllers.selectedMaritalStatus,
+          'educationLevel': _controllers.selectedEducationLevel,
+        };
+
+        // 💾 Save to local storage using DraftManager
+        final draftId = 'draft_${DateTime.now().millisecondsSinceEpoch}';
+        await DraftManager.saveDraft(
+          draftId: draftId,
+          formData: {
+            'name': draftName,
+            'notes': draftNotes,
+            'formData': formData,
+            'currentTab': _tabController.index,
+            'beneficiaryId': widget.beneficiaryId,
+          },
+        );
+
+        setState(() {
+          _lastSaved = DateTime.now();
+          _hasUnsavedChanges = false;
+          _isSaving = false;
+        });
+
+        if (mounted) {
+          HapticFeedback.mediumImpact();
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: 'تم حفظ المسودة "$draftName" بنجاح ✓',
+          );
+
+          // Show button to view drafts
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('يمكنك عرض المسودات المحفوظة من القائمة'),
+              action: SnackBarAction(
+                label: 'عرض',
+                onPressed: () => _showDraftsList(),
+              ),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() => _isSaving = false);
+        if (mounted) {
+          HapticFeedback.heavyImpact();
+          EnhancedSnackbar.showError(context, message: 'فشل حفظ المسودة: $e');
+        }
+      }
+    }
+  }
+
+  /// 📋 Show Drafts List
+  Future<void> _showDraftsList() async {
+    try {
+      final drafts = await DraftManager.getAllDrafts();
+
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                // Header
+                Padding(
+                  padding: EdgeInsets.all(16.w),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.drafts,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        'المسودات المحفوظة (${drafts.length})',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+
+                // Drafts List
+                Expanded(
+                  child: drafts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.inbox_outlined,
+                                size: 64,
+                                color: Colors.grey[400],
+                              ),
+                              SizedBox(height: 16.h),
+                              Text(
+                                'لا توجد مسودات محفوظة',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          controller: scrollController,
+                          padding: EdgeInsets.all(16.w),
+                          itemCount: drafts.length,
+                          separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                          itemBuilder: (context, index) {
+                            final draft = drafts[index];
+                            final savedAt = DateTime.parse(draft['savedAt']);
+                            final draftName = draft['name'] ?? 'مسودة';
+
+                            return Card(
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                                  child: Icon(
+                                    Icons.description,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                                  ),
+                                ),
+                                title: Text(
+                                  draftName,
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Text(
+                                  'حُفظت: ${_formatDateTime(savedAt)}',
+                                  style: TextStyle(fontSize: 12.sp),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      color: Colors.red,
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text('حذف المسودة'),
+                                            content: Text(
+                                              'هل تريد حذف هذه المسودة؟',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  false,
+                                                ),
+                                                child: Text('إلغاء'),
+                                              ),
+                                              FilledButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  true,
+                                                ),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                                child: Text('حذف'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirm == true) {
+                                          await DraftManager.deleteDraft(
+                                            draft['draftId'],
+                                          );
+                                          Navigator.pop(context);
+                                          _showDraftsList();
+                                        }
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                onTap: () async {
+                                  Navigator.pop(context);
+                                  await _loadDraft(draft);
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: 'فشل تحميل المسودات: $e');
+      }
+    }
+  }
+
+  /// 📥 Load Draft
+  Future<void> _loadDraft(Map<String, dynamic> draft) async {
+    try {
+      setState(() => _isLoading = true);
+
+      final formData = draft['formData'] as Map<String, dynamic>;
+
+      // Fill controllers with draft data
+      _controllers.firstNameController.text = formData['firstName'] ?? '';
+      _controllers.fatherNameController.text = formData['fatherName'] ?? '';
+      _controllers.grandfatherNameController.text =
+          formData['grandfatherName'] ?? '';
+      _controllers.lastNameController.text = formData['lastName'] ?? '';
+      _controllers.motherNameController.text = formData['motherName'] ?? '';
+      _controllers.nationalIdController.text = formData['nationalId'] ?? '';
+      _controllers.phoneController.text = formData['phone'] ?? '';
+      _controllers.altPhoneController.text = formData['altPhone'] ?? '';
+      _controllers.addressController.text = formData['address'] ?? '';
+      _controllers.neighborhoodController.text = formData['neighborhood'] ?? '';
+      _controllers.notesController.text = formData['notes'] ?? '';
+
+      if (formData['birthDate'] != null) {
+        _controllers.birthDateController.text = formData['birthDate'];
+      }
+
+      // Set dropdowns
+      setState(() {
+        _controllers.selectedGender = formData['gender'];
+        _controllers.selectedMaritalStatus = formData['maritalStatus'];
+        _controllers.selectedEducationLevel = formData['educationLevel'];
+      });
+
+      // Navigate to saved tab
+      final savedTab = draft['currentTab'] ?? 0;
+      _tabController.animateTo(savedTab);
+
+      setState(() {
+        _isLoading = false;
+        _hasUnsavedChanges = true;
+      });
+
+      if (mounted) {
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: 'تم تحميل المسودة "${draft['name']}" بنجاح',
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: 'فشل تحميل المسودة: $e');
+      }
+    }
+  }
+
+  /// 📅 Format DateTime
+  String _formatDateTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+
+    if (diff.inMinutes < 1) return 'الآن';
+    if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
+    if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
+    if (diff.inDays < 7) return 'منذ ${diff.inDays} يوم';
+
+    return '${dt.year}/${dt.month}/${dt.day}';
   }
 
   @override
@@ -508,22 +907,51 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
               ],
             ),
             actions: [
+              // Quick Search Button 🔍
+              IconButton(
+                icon: Icon(Icons.search, size: 22.sp),
+                onPressed: _toggleQuickSearch,
+                tooltip: 'بحث سريع',
+              ),
+
+              // Statistics Button 📊
+              IconButton(
+                icon: Icon(
+                  _showStatistics ? Icons.analytics : Icons.analytics_outlined,
+                  size: 22.sp,
+                  color: _showStatistics ? theme.colorScheme.primary : null,
+                ),
+                onPressed: _toggleStatistics,
+                tooltip: 'الإحصائيات',
+              ),
+
+              // View Drafts Button
+              IconButton(
+                icon: Icon(Icons.drafts_outlined, size: 22.sp),
+                onPressed: _showDraftsList,
+                tooltip: 'المسودات المحفوظة',
+              ),
+
+              // Draft Save Button
+              IconButton(
+                icon: Icon(Icons.save_outlined, size: 22.sp),
+                onPressed: _hasUnsavedChanges ? _handleDraftSave : null,
+                tooltip: 'حفظ كمسودة',
+              ),
+
+              // Keyboard Shortcuts Help
+              IconButton(
+                icon: Icon(Icons.help_outline_rounded, size: 22.sp),
+                onPressed: () => showKeyboardShortcutsHelp(context),
+                tooltip: 'اختصارات لوحة المفاتيح',
+              ),
+
               if (widget.beneficiaryId != null)
                 IconButton(
                   icon: Icon(Icons.delete_outline_rounded, size: 22.sp),
                   onPressed: _handleDelete,
                   tooltip: 'حذف',
                 ),
-              IconButton(
-                icon: Icon(Icons.keyboard_rounded, size: 22.sp),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => const KeyboardShortcutsHelp(),
-                  );
-                },
-                tooltip: 'اختصارات لوحة المفاتيح',
-              ),
             ],
           ),
           body: _isLoading
@@ -542,6 +970,29 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                                   .clearError(),
                             ),
 
+                          // 🔍 Quick Search Bar
+                          if (_searchQuery.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 8.h,
+                              ),
+                              color: theme.colorScheme.primaryContainer,
+                              child: SearchField(
+                                controller: _searchController,
+                                hint: 'ابحث في الحقول...',
+                                onSearch: (query) {
+                                  setState(() => _searchQuery = query);
+                                },
+                                onClear: () {
+                                  setState(() {
+                                    _searchQuery = '';
+                                    _searchController.clear();
+                                  });
+                                },
+                              ),
+                            ),
+
                           ListenableBuilder(
                             listenable: _tabController,
                             builder: (context, _) {
@@ -551,8 +1002,144 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                                     controller: _tabController,
                                     currentIndex: _tabController.index,
                                   ),
-                                  FormProgress4Tabs(
-                                    currentStep: _tabController.index,
+                                  // 📊 Unified Progress Card with Animated Counter
+                                  ListenableBuilder(
+                                    listenable: _controllers,
+                                    builder: (context, child) {
+                                      final completed =
+                                          FormCompletionCalculator.getCompletedCount(
+                                            _controllers,
+                                          );
+                                      final total =
+                                          FormCompletionCalculator.getTotalRequired();
+
+                                      return Column(
+                                        children: [
+                                          UnifiedProgressCard(
+                                            currentTab: _tabController.index,
+                                            totalTabs: FormConstants.totalTabs,
+                                            completedFields: completed,
+                                            totalFields: total,
+                                            currentTabTitle: FormTabs
+                                                .tabs[_tabController.index]
+                                                .fullTitle,
+                                          ),
+
+                                          // 🎯 Quick Stats with Animated Counters
+                                          Container(
+                                            margin: EdgeInsets.symmetric(
+                                              horizontal: 16.w,
+                                              vertical: 8.h,
+                                            ),
+                                            padding: EdgeInsets.all(12.w),
+                                            decoration: BoxDecoration(
+                                              color: theme
+                                                  .colorScheme
+                                                  .surfaceContainerHighest
+                                                  .withOpacity(0.5),
+                                              borderRadius:
+                                                  BorderRadius.circular(12.r),
+                                              border: Border.all(
+                                                color: theme.colorScheme.outline
+                                                    .withOpacity(0.1),
+                                              ),
+                                            ),
+                                            child: Column(
+                                              children: [
+                                                // Stats Row
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceAround,
+                                                  children: [
+                                                    _buildQuickStat(
+                                                      context,
+                                                      Icons.checklist_rtl,
+                                                      'مُكتمل',
+                                                      completed,
+                                                      Colors.green,
+                                                    ),
+                                                    Container(
+                                                      width: 1,
+                                                      height: 30.h,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .outline
+                                                          .withOpacity(0.2),
+                                                    ),
+                                                    _buildQuickStat(
+                                                      context,
+                                                      Icons.pending_outlined,
+                                                      'متبقي',
+                                                      total - completed,
+                                                      Colors.orange,
+                                                    ),
+                                                    Container(
+                                                      width: 1,
+                                                      height: 30.h,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .outline
+                                                          .withOpacity(0.2),
+                                                    ),
+                                                    _buildQuickStat(
+                                                      context,
+                                                      Icons.analytics_outlined,
+                                                      'إجمالي',
+                                                      total,
+                                                      theme.colorScheme.primary,
+                                                    ),
+                                                  ],
+                                                ),
+
+                                                // Toggle Field Helpers
+                                                SizedBox(height: 8.h),
+                                                InkWell(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _showFieldHelpers =
+                                                          !_showFieldHelpers;
+                                                    });
+                                                  },
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      Icon(
+                                                        _showFieldHelpers
+                                                            ? Icons
+                                                                  .visibility_off_outlined
+                                                            : Icons
+                                                                  .visibility_outlined,
+                                                        size: 14,
+                                                        color: theme
+                                                            .colorScheme
+                                                            .primary,
+                                                      ),
+                                                      SizedBox(width: 6.w),
+                                                      Text(
+                                                        _showFieldHelpers
+                                                            ? 'إخفاء المساعدات'
+                                                            : 'عرض المساعدات',
+                                                        style: TextStyle(
+                                                          fontSize: 11.sp,
+                                                          color: theme
+                                                              .colorScheme
+                                                              .primary,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ],
                               );
@@ -560,13 +1147,82 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                           ),
 
                           Expanded(
-                            child: BeneficiaryFormTabs4Merged(
-                              controller: _tabController,
-                              formControllers: _controllers,
-                              onBirthDateTap: () => _selectDate(context),
-                              firstFieldFocusNode: _firstFieldFocusNode,
-                              beneficiaryId: widget.beneficiaryId,
+                            child: Column(
+                              children: [
+                                // 🎓 Field Helpers (if enabled)
+                                if (_showFieldHelpers &&
+                                    _tabController.index == 0)
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                      vertical: 8.h,
+                                    ),
+                                    child: FormFieldHelper(
+                                      title: 'نصائح للمعلومات الشخصية',
+                                      description:
+                                          'تأكد من إدخال الاسم الثلاثي كاملاً والرقم الوطني صحيح',
+                                      examples: [
+                                        'الاسم: محمد أحمد علي',
+                                        'الرقم الوطني: 12 رقم',
+                                        'التاريخ: YYYY-MM-DD',
+                                      ],
+                                      tips: [
+                                        'استخدم الاسم الكامل كما في الوثائق',
+                                        'تحقق من الرقم الوطني مرتين',
+                                      ],
+                                    ),
+                                  ),
+                                if (_showFieldHelpers &&
+                                    _tabController.index == 2)
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                      vertical: 8.h,
+                                    ),
+                                    child: FormFieldHelper(
+                                      title: 'نصائح التواصل',
+                                      description:
+                                          'تأكد من صحة أرقام الهواتف والعناوين',
+                                      examples: [
+                                        'رقم الهاتف: 07XXXXXXXXX',
+                                        'العنوان: المحافظة، المدينة، الحي',
+                                      ],
+                                      tips: [
+                                        'أضف رقم بديل للطوارئ',
+                                        'كن دقيقاً في العنوان',
+                                      ],
+                                    ),
+                                  ),
+
+                                // Main Form Tabs
+                                Expanded(
+                                  child: BeneficiaryFormTabs4Merged(
+                                    controller: _tabController,
+                                    formControllers: _controllers,
+                                    onBirthDateTap: () => _selectDate(context),
+                                    firstFieldFocusNode: _firstFieldFocusNode,
+                                    beneficiaryId: widget.beneficiaryId,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+
+                          // 🎯 Bottom Navigation Buttons
+                          ListenableBuilder(
+                            listenable: _tabController,
+                            builder: (context, _) {
+                              return RepaintBoundary(
+                                child: BottomNavigationButtons(
+                                  currentTab: _tabController.index,
+                                  totalTabs: FormConstants.totalTabs,
+                                  onPrevious: _handlePreviousTab,
+                                  onNext: _handleNextTab,
+                                  onSave: _showFinalReview,
+                                  isLoading: _isSaving,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -578,25 +1234,140 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                           ? FormConstants.savingMessage
                           : FormConstants.deletingMessage,
                     ),
+
+                    // 📊 Statistics Dashboard (Sliding Panel)
+                    if (_showStatistics)
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 320.w,
+                        child: Material(
+                          elevation: 8,
+                          child: Container(
+                            color: theme.colorScheme.surface,
+                            child: Column(
+                              children: [
+                                // Header
+                                Container(
+                                  padding: EdgeInsets.all(16.w),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primaryContainer,
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: theme.colorScheme.outline
+                                            .withOpacity(0.2),
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.analytics,
+                                        color: theme
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Text(
+                                        'الإحصائيات',
+                                        style: TextStyle(
+                                          fontSize: 18.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.close,
+                                          color: theme
+                                              .colorScheme
+                                              .onPrimaryContainer,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _showStatistics = false,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Statistics Content
+                                Expanded(
+                                  child: ListView(
+                                    padding: EdgeInsets.all(16.w),
+                                    children: [
+                                      FormStatisticsDashboard(
+                                        totalFields:
+                                            FormCompletionCalculator.getTotalRequired(),
+                                        completedFields:
+                                            FormCompletionCalculator.getCompletedCount(
+                                              _controllers,
+                                            ),
+                                        requiredFields:
+                                            FormCompletionCalculator.getTotalRequired(),
+                                        optionalFields: 5,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // 🎓 Tour Guide for First Time Users
+                    if (_showTourGuide)
+                      TourGuide(
+                        steps: [
+                          TourStep(
+                            title: 'مرحباً بك! 👋',
+                            description:
+                                'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
+                            icon: Icons.waving_hand,
+                          ),
+                          TourStep(
+                            title: 'التبويبات 📑',
+                            description:
+                                'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
+                            icon: Icons.tab,
+                          ),
+                          TourStep(
+                            title: 'كارد التقدم 📊',
+                            description:
+                                'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
+                            icon: Icons.analytics,
+                          ),
+                          TourStep(
+                            title: 'حفظ المسودة 💾',
+                            description:
+                                'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
+                            icon: Icons.save,
+                          ),
+                          TourStep(
+                            title: 'المراجعة النهائية 📋',
+                            description:
+                                'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
+                            icon: Icons.checklist,
+                          ),
+                        ],
+                        onComplete: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('has_seen_form_tour', true);
+                          setState(() => _showTourGuide = false);
+                        },
+                        onSkip: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('has_seen_form_tour', true);
+                          setState(() => _showTourGuide = false);
+                        },
+                      ),
                   ],
                 ),
-          floatingActionButton: QuickActionsFab(
-            onCapture: () {
-              // TODO: Implement camera capture
-            },
-            onSaveDraft: () {
-              // TODO: Implement draft save
-            },
-            onCopy: () {
-              // TODO: Implement copy
-            },
-            onPaste: () {
-              // TODO: Implement paste
-            },
-            onQuickSearch: () {
-              // TODO: Implement search
-            },
-          ),
         ),
       ),
     );
@@ -626,5 +1397,37 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       _controllers.birthDateController.text =
           '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
     }
+  }
+
+  /// 🎯 Build Quick Stat Widget with Animated Counter
+  Widget _buildQuickStat(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int value,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Icon(icon, size: 20, color: color),
+        SizedBox(height: 4.h),
+        AnimatedCounter(
+          value: value,
+          duration: const Duration(milliseconds: 600),
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ],
+    );
   }
 }
