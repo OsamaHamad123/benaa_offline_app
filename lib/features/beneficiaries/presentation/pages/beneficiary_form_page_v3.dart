@@ -23,22 +23,28 @@ import 'v2_form_helpers/form_history.dart';
 import 'v2_form_helpers/draft_manager.dart'; // 💾 Draft Manager
 
 // Widgets
-import 'v2_form_helpers/widgets/form_tabs_4_merged.dart';
 import 'v2_form_helpers/widgets/loading_overlay.dart';
 import 'v2_form_helpers/widgets/skeleton_loader.dart'; // 💀 Skeleton screens
 import 'v2_form_helpers/widgets/enhanced_snackbar.dart';
-import 'v2_form_helpers/widgets/smart_auto_save_indicator.dart';
 import 'v2_form_helpers/widgets/keyboard_shortcuts_handler.dart';
-import 'v2_form_helpers/widgets/unified_progress_card.dart'; // 📊 Unified Progress
-import 'v2_form_helpers/widgets/bottom_navigation_buttons.dart'; // 🎯 Navigation Buttons
 import 'v2_form_helpers/widgets/final_review_sheet.dart'; // 📋 Final Review
 import 'v2_form_helpers/widgets/draft_save_dialog.dart'; // 💾 Draft Save
 import 'v2_form_helpers/widgets/keyboard_shortcuts_help.dart'; // ⌨️ Shortcuts Help
 import 'v2_form_helpers/widgets/help_widgets.dart'; // 🎓 Help Widgets
-import 'v2_form_helpers/widgets/form_helper_widgets.dart'; // 📝 Form Helpers
-import 'v2_form_helpers/smart_helpers.dart'; // 🧠 Smart suggestions
 import 'v2_form_helpers/widgets/form_page_widgets.dart'; // 📦 Extracted Form Widgets
 import 'v2_form_helpers/widgets/success_animation.dart'; // ✅ Success Animation
+
+// 🚀 Performance-optimized widgets
+import 'v2_form_helpers/widgets/form_error_banner_widget.dart';
+import 'v2_form_helpers/widgets/form_app_bar_widget.dart';
+import 'v2_form_helpers/widgets/form_content_widget.dart';
+import 'v2_form_helpers/widgets/form_bottom_nav_widget.dart';
+
+// 🚀 Phase 3 - Advanced UX Features
+import 'v2_form_helpers/widgets/field_dependency_system.dart'; // 🔗 Field Dependencies
+import 'v2_form_helpers/widgets/smart_field_hints.dart'; // 💡 Smart Hints
+// Disabled for performance: import 'v2_form_helpers/widgets/form_progress_tracker.dart';
+import 'v2_form_helpers/widgets/mobile_quick_actions.dart'; // 📱 Mobile Quick Actions
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -81,18 +87,20 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   bool _showStatistics = false;
   bool _showTourGuide = false;
   bool _showFieldHelpers = false; // ✅ مخفية افتراضياً - تبسيط
-  String _searchQuery = ''; // البحث السريع في النموذج
-  final TextEditingController _searchController = TextEditingController();
+  // ⚠️ Search moved to FormContentWidget local state for performance
 
   final FocusNode _firstFieldFocusNode = FocusNode();
 
   // 🔄 Debouncing Timer for auto-save
   Timer? _autoSaveDebouncer;
 
+  // 🚀 Phase 3 - Advanced UX Features
+  late final FieldDependencyController _dependencyController;
+  final Map<String, SmartHint> _fieldHints = {}; // Smart hints for fields
+
   @override
   void initState() {
     super.initState();
-
     _controllers = BeneficiaryFormControllers(onAutoSave: _performAutoSave);
     _formHistory = FormHistory<FormStateSnapshot>(maxHistorySize: 50);
     _tabController = TabController(
@@ -100,8 +108,14 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       vsync: this,
     );
 
+    // 🚀 Initialize Phase 3 features
+    _dependencyController = FieldDependencyController();
+    _setupFieldDependencies();
+    _setupSmartHints();
+
+    // ⚠️ DISABLED for performance - causes setState on every keystroke
     // Listen to controller changes for history
-    _controllers.addListener(_onFormChanged);
+    // _controllers.addListener(_onFormChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForm();
@@ -129,17 +143,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     setState(() => _showStatistics = !_showStatistics);
   }
 
-  /// 🔍 Toggle Quick Search
-  void _toggleQuickSearch() {
-    setState(() {
-      if (_searchQuery.isEmpty) {
-        _searchQuery = ' '; // تفعيل البحث
-      } else {
-        _searchQuery = '';
-        _searchController.clear();
-      }
-    });
-  }
+  /// ⚠️ Search functionality moved to FormContentWidget for performance
+  /// Prevents parent setState on every keystroke
 
   void _onFormChanged() {
     setState(() {
@@ -199,6 +204,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       });
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
@@ -303,12 +309,218 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     }
   }
 
+  /// 🔗 Setup Field Dependencies (Phase 3)
+  void _setupFieldDependencies() {
+    // Add common dependency scenarios
+    final scenarios = DependencyScenarios.getAllCommonScenarios();
+    for (final scenario in scenarios) {
+      _dependencyController.addDependency(scenario);
+    }
+
+    // Listen to text field changes
+    _controllers.firstNameController.addListener(() {
+      _dependencyController.updateField(
+        'maritalStatus',
+        _controllers.selectedMaritalStatus,
+      );
+    });
+  }
+
+  /// 💡 Setup Smart Hints (Phase 3)
+  void _setupSmartHints() {
+    _fieldHints['nationalId'] = SmartHint.nationalId();
+    _fieldHints['phoneNumber'] = SmartHint.phoneNumber();
+    _fieldHints['email'] = SmartHint.email();
+    _fieldHints['dateOfBirth'] = SmartHint.dateOfBirth();
+    _fieldHints['address'] = SmartHint.address();
+    _fieldHints['occupation'] = SmartHint.occupation();
+    _fieldHints['income'] = SmartHint.income();
+    _fieldHints['familyMembers'] = SmartHint.familyMembers();
+    _fieldHints['unhcrNumber'] = SmartHint.unhcrNumber();
+    _fieldHints['rationCard'] = SmartHint.rationCard();
+  }
+
+  /// 📊 Calculate Form Progress (Phase 3) - DISABLED for performance
+  // Uncomment if re-enabling Progress Tracker
+  /*
+  List<FormSection> _calculateFormProgress() {
+    return [
+      FormSection(
+        name: 'المعلومات الشخصية',
+        icon: Icons.person,
+        requiredFields: 5,
+        completedRequiredFields: _countCompletedFields([
+          _controllers.firstNameController.text,
+          _controllers.fatherNameController.text,
+          _controllers.lastNameController.text,
+          _controllers.nationalIdController.text,
+          _controllers.selectedGender?.toString(),
+        ]),
+        optionalFields: 3,
+        completedOptionalFields: _countCompletedFields([
+          _controllers.grandfatherNameController.text,
+          _controllers.motherNameController.text,
+          _controllers.birthDateController.text,
+        ]),
+        color: Colors.blue,
+      ),
+      FormSection(
+        name: 'معلومات الاتصال',
+        icon: Icons.phone,
+        requiredFields: 1,
+        completedRequiredFields: _countCompletedFields([
+          _controllers.phoneController.text,
+        ]),
+        optionalFields: 2,
+        completedOptionalFields: _countCompletedFields([
+          _controllers.altPhoneController.text,
+          _controllers.addressController.text,
+        ]),
+        color: Colors.green,
+      ),
+      FormSection(
+        name: 'الحالة الاجتماعية',
+        icon: Icons.family_restroom,
+        requiredFields: 2,
+        completedRequiredFields: _countCompletedFields([
+          _controllers.selectedMaritalStatus?.toString(),
+          _controllers.selectedEducationLevel?.toString(),
+        ]),
+        optionalFields: 1,
+        completedOptionalFields: _countCompletedFields([
+          _controllers.numberOfDependentsController.text,
+        ]),
+        color: Colors.purple,
+      ),
+      FormSection(
+        name: 'العائلة',
+        icon: Icons.groups,
+        requiredFields: 0,
+        completedRequiredFields: 0,
+        optionalFields: 2,
+        completedOptionalFields:
+            0, // We'll update this when we have access to family members
+        color: Colors.orange,
+      ),
+    ];
+  }
+
+  int _countCompletedFields(List<String?> fields) {
+    return fields.where((f) => f != null && f.isNotEmpty).length;
+  }
+  */
+
+  /// 📱 Mobile Quick Actions Handlers
+  Future<void> _handleCopyFromBeneficiary() async {
+    // Temporarily show message - will implement after database method is available
+    if (mounted) {
+      EnhancedSnackbar.showInfo(
+        context,
+        message: 'هذه الميزة ستكون متاحة قريباً',
+      );
+    }
+
+    // TODO: Implement after adding getAllBeneficiaries to database
+    /*
+    final database = ref.read(databaseProvider);
+    final allBeneficiaries = await database.getAllBeneficiaries();
+
+    if (allBeneficiaries.isEmpty) {
+      if (mounted) {
+        EnhancedSnackbar.showInfo(
+          context,
+          message: 'لا يوجد مستفيدون لنسخ البيانات منهم',
+        );
+      }
+      return;
+    }
+
+    final previews = allBeneficiaries.map((b) {
+      return BeneficiaryPreview(
+        id: b.id,
+        name: '${b.firstName} ${b.fatherName} ${b.lastName}',
+        nationalId: b.nationalId,
+        phoneNumber: b.phoneNumber,
+      );
+    }).toList();
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => CopyFromBeneficiaryDialog(
+          beneficiaries: previews,
+          onSelect: (beneficiaryId) async {
+            final beneficiary = allBeneficiaries.firstWhere(
+              (b) => b.id == beneficiaryId,
+            );
+            _populateControllers(beneficiary);
+            
+            _controllers.nationalIdController.clear();
+            
+            if (mounted) {
+              EnhancedSnackbar.showSuccess(
+                context,
+                message: 'تم نسخ البيانات بنجاح',
+              );
+            }
+          },
+        ),
+      );
+    }
+    */
+  }
+
+  void _handleClearAllFields() {
+    showDialog(
+      context: context,
+      builder: (context) => ClearFieldsDialog(
+        onConfirm: () {
+          _clearAllControllers();
+          HapticFeedback.mediumImpact();
+          EnhancedSnackbar.showSuccess(context, message: 'تم مسح جميع الحقول');
+        },
+      ),
+    );
+  }
+
+  Future<void> _handlePasteData() async {
+    final clipboardData = await Clipboard.getData('text/plain');
+    if (clipboardData == null || clipboardData.text == null) {
+      if (mounted) {
+        EnhancedSnackbar.showInfo(context, message: 'الحافظة فارغة');
+      }
+      return;
+    }
+
+    // Simple paste - just paste into first field
+    _controllers.firstNameController.text = clipboardData.text!;
+
+    if (mounted) {
+      EnhancedSnackbar.showSuccess(context, message: 'تم اللصق من الحافظة');
+    }
+  }
+
+  void _handleFillDemoData() {
+    _controllers.firstNameController.text = 'محمد';
+    _controllers.fatherNameController.text = 'أحمد';
+    _controllers.grandfatherNameController.text = 'علي';
+    _controllers.lastNameController.text = 'الأحمدي';
+    _controllers.motherNameController.text = 'فاطمة';
+    _controllers.nationalIdController.text = '123456789012345678';
+    _controllers.phoneController.text = '07701234567';
+    _controllers.addressController.text = 'بغداد - الكرادة';
+    _controllers.selectedGender = 'ذكر';
+    _controllers.selectedMaritalStatus = 'متزوج';
+
+    setState(() {});
+
+    EnhancedSnackbar.showSuccess(context, message: 'تم ملء البيانات التجريبية');
+  }
+
   /// ⬅️ التالي - الانتقال للتاب التالي (يمين في RTL)
   void _handleNextTab() {
     if (_tabController.index < FormConstants.totalTabs - 1) {
-      setState(() {
-        _tabController.animateTo(_tabController.index + 1);
-      });
+      _tabController.animateTo(_tabController.index + 1);
       HapticFeedback.selectionClick();
     }
   }
@@ -316,9 +528,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   /// ➡️ السابق - الرجوع للتاب السابق (يسار في RTL)
   void _handlePreviousTab() {
     if (_tabController.index > 0) {
-      setState(() {
-        _tabController.animateTo(_tabController.index - 1);
-      });
+      _tabController.animateTo(_tabController.index - 1);
       HapticFeedback.selectionClick();
     }
   }
@@ -398,6 +608,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
           },
         );
 
+        if (!mounted) return;
         setState(() {
           _lastSaved = DateTime.now();
           _hasUnsavedChanges = false;
@@ -424,6 +635,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
           );
         }
       } catch (e) {
+        if (!mounted) return;
         setState(() => _isSaving = false);
         if (mounted) {
           HapticFeedback.heavyImpact();
@@ -629,6 +841,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       }
 
       // Set dropdowns
+      if (!mounted) return;
       setState(() {
         _controllers.selectedGender = formData['gender'];
         _controllers.selectedMaritalStatus = formData['maritalStatus'];
@@ -639,6 +852,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       final savedTab = draft['currentTab'] ?? 0;
       _tabController.animateTo(savedTab);
 
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _hasUnsavedChanges = true;
@@ -651,6 +865,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       if (mounted) {
         EnhancedSnackbar.showError(context, message: 'فشل تحميل المسودة: $e');
@@ -679,7 +894,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     _tabController.dispose();
     _firstFieldFocusNode.dispose();
     _formHistory.dispose();
-    _searchController.dispose();
+    // ⚠️ _searchController moved to FormContentWidget
     super.dispose();
   }
 
@@ -744,6 +959,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       );
 
       if (hasDuplicate) {
+        if (!mounted) return;
         setState(() => _isSaving = false);
         return;
       }
@@ -756,6 +972,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       if (success && mounted) {
         final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
         if (savedBeneficiary == null) {
+          if (!mounted) return;
           setState(() => _isSaving = false);
           return;
         }
@@ -776,6 +993,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         _controllers.pendingAttachmentFiles.clear();
         await _saveFamilyMembers(savedBeneficiary.id);
 
+        if (!mounted) return;
         setState(() {
           _lastSaved = DateTime.now();
           _hasUnsavedChanges = false;
@@ -791,6 +1009,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
             );
           }
 
+          if (!mounted) return;
           setState(() => _isSaving = false);
           await Future.delayed(const Duration(milliseconds: 1500));
 
@@ -798,9 +1017,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
             context.pop(true);
           }
         } else {
+          if (!mounted) return;
           setState(() => _isSaving = false);
         }
       } else {
+        if (!mounted) return;
         setState(() => _isSaving = false);
         if (!isAutoSave && mounted) {
           HapticFeedback.heavyImpact();
@@ -843,6 +1064,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         await deleteUseCase.execute(beneficiary.id);
 
         if (mounted) {
+          if (!mounted) return;
           setState(() => _isDeleting = false);
           HapticFeedback.lightImpact();
           EnhancedSnackbar.showSuccess(
@@ -856,6 +1078,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         }
       } catch (e) {
         if (mounted) {
+          if (!mounted) return;
           setState(() => _isDeleting = false);
           HapticFeedback.heavyImpact();
           EnhancedSnackbar.showError(
@@ -870,7 +1093,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(beneficiaryFormProvider);
+    // ⚠️ DON'T use ref.watch here - causes rebuild on every provider change!
+    // Use Consumer only where needed
     final theme = Theme.of(context);
 
     return FormKeyboardShortcuts(
@@ -895,231 +1119,56 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         },
         child: Scaffold(
           backgroundColor: theme.colorScheme.surface,
-          appBar: PreferredSize(
-            preferredSize: Size.fromHeight(kToolbarHeight),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withOpacity(0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: AppBar(
-                elevation: 0,
-                backgroundColor: Colors.transparent,
-                foregroundColor: Colors.white,
-                title: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.beneficiaryId == null
-                            ? 'إضافة مستفيد'
-                            : 'تعديل مستفيد',
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    SmartAutoSaveIndicator(
-                      isSaving: _isSaving,
-                      lastSaved: _lastSaved,
-                      hasUnsavedChanges: _hasUnsavedChanges,
-                    ),
-                  ],
-                ),
-                actions: [
-                  FormAppBarActions(
-                    showStatistics: _showStatistics,
-                    showFieldHelpers: _showFieldHelpers,
-                    onToggleSearch: _toggleQuickSearch,
-                    onToggleStatistics: _toggleStatistics,
-                    onToggleFieldHelpers: () {
-                      setState(() => _showFieldHelpers = !_showFieldHelpers);
-                    },
-                    onViewDrafts: _showDraftsList,
-                    onSaveDraft: _hasUnsavedChanges ? _handleDraftSave : null,
-                    onShowHelp: () => showKeyboardShortcutsHelp(context),
-                    onDelete: widget.beneficiaryId != null
-                        ? _handleDelete
-                        : null,
-                  ),
-                  SizedBox(width: 8.w),
-                ],
-              ),
-            ),
+
+          // 📱 AppBar - Separated widget
+          appBar: FormAppBarWidget(
+            beneficiaryId: widget.beneficiaryId,
+            isSaving: _isSaving,
+            lastSaved: _lastSaved,
+            hasUnsavedChanges: _hasUnsavedChanges,
+            showStatistics: _showStatistics,
+            showFieldHelpers: _showFieldHelpers,
+            // onToggleSearch removed - search is local to FormContentWidget
+            onToggleStatistics: _toggleStatistics,
+            onToggleFieldHelpers: () {
+              setState(() => _showFieldHelpers = !_showFieldHelpers);
+            },
+            onViewDrafts: _showDraftsList,
+            onSaveDraft: _hasUnsavedChanges ? _handleDraftSave : null,
+            onShowHelp: () => showKeyboardShortcutsHelp(context),
+            onDelete: widget.beneficiaryId != null ? _handleDelete : null,
           ),
+
           body: _isLoading
-              ? const SkeletonFormScreen() // Enhanced skeleton instead of basic loading
+              ? const SkeletonFormScreen()
               : Stack(
                   children: [
                     Form(
                       key: _formKey,
                       child: Column(
                         children: [
-                          if (state.errorMessage != null)
-                            V2ErrorBanner(
-                              message: state.errorMessage!,
-                              onDismiss: () => ref
-                                  .read(beneficiaryFormProvider.notifier)
-                                  .clearError(),
-                            ),
+                          // 🚨 Error Banner - Separated widget
+                          const FormErrorBanner(),
 
-                          // 🔍 Quick Search Bar
-                          if (_searchQuery.isNotEmpty)
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.w,
-                                vertical: 8.h,
-                              ),
-                              color: theme.colorScheme.primaryContainer,
-                              child: SearchField(
-                                controller: _searchController,
-                                hint: 'ابحث في الحقول...',
-                                onSearch: (query) {
-                                  setState(() => _searchQuery = query);
-                                },
-                                onClear: () {
-                                  setState(() {
-                                    _searchQuery = '';
-                                    _searchController.clear();
-                                  });
-                                },
-                              ),
-                            ),
-
-                          ListenableBuilder(
-                            listenable: _tabController,
-                            builder: (context, _) {
-                              return Column(
-                                children: [
-                                  // 🏆 Enhanced TabBar with Completion Badges
-                                  ListenableBuilder(
-                                    listenable: _controllers,
-                                    builder: (context, _) {
-                                      final tabStats =
-                                          FormCompletionCalculator.calculateTabStats(
-                                            _controllers,
-                                          );
-
-                                      return BeneficiaryFormTabBar4(
-                                        controller: _tabController,
-                                        currentIndex: _tabController.index,
-                                        tabStats: tabStats,
-                                      );
-                                    },
-                                  ),
-                                  // 📊 Unified Progress Card with Animated Counter
-                                  RepaintBoundary(
-                                    child: ListenableBuilder(
-                                      listenable: _controllers,
-                                      builder: (context, child) {
-                                        final completed =
-                                            FormCompletionCalculator.getCompletedCount(
-                                              _controllers,
-                                            );
-                                        final total =
-                                            FormCompletionCalculator.getTotalRequired();
-
-                                        return UnifiedProgressCard(
-                                          currentTab: _tabController.index,
-                                          totalTabs: FormConstants.totalTabs,
-                                          completedFields: completed,
-                                          totalFields: total,
-                                          currentTabTitle: FormTabs
-                                              .tabs[_tabController.index]
-                                              .fullTitle,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-
+                          // 📝 Form Content - Separated widget
                           Expanded(
-                            child: Column(
-                              children: [
-                                // 🎓 Field Helpers (if enabled) - Optimized with const
-                                if (_showFieldHelpers &&
-                                    _tabController.index == 0)
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: const FormFieldHelper(
-                                      title: 'نصائح للمعلومات الشخصية',
-                                      description:
-                                          'تأكد من إدخال الاسم الثلاثي كاملاً والرقم الوطني صحيح',
-                                      examples: [
-                                        'الاسم: محمد أحمد علي',
-                                        'الرقم الوطني: 12 رقم',
-                                        'التاريخ: YYYY-MM-DD',
-                                      ],
-                                      tips: [
-                                        'استخدم الاسم الكامل كما في الوثائق',
-                                        'تحقق من الرقم الوطني مرتين',
-                                      ],
-                                    ),
-                                  ),
-                                if (_showFieldHelpers &&
-                                    _tabController.index == 2)
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 16.w,
-                                      vertical: 8.h,
-                                    ),
-                                    child: const FormFieldHelper(
-                                      title: 'نصائح التواصل',
-                                      description:
-                                          'تأكد من صحة أرقام الهواتف والعناوين',
-                                      examples: [
-                                        'رقم الهاتف: 07XXXXXXXXX',
-                                        'العنوان: المحافظة، المدينة، الحي',
-                                      ],
-                                      tips: [
-                                        'أضف رقم بديل للطوارئ',
-                                        'كن دقيقاً في العنوان',
-                                      ],
-                                    ),
-                                  ),
-
-                                // Main Form Tabs
-                                Expanded(
-                                  child: BeneficiaryFormTabs4Merged(
-                                    controller: _tabController,
-                                    formControllers: _controllers,
-                                    onBirthDateTap: () => _selectDate(context),
-                                    firstFieldFocusNode: _firstFieldFocusNode,
-                                    beneficiaryId: widget.beneficiaryId,
-                                  ),
-                                ),
-                              ],
+                            child: FormContentWidget(
+                              tabController: _tabController,
+                              controllers: _controllers,
+                              onBirthDateTap: () => _selectDate(context),
+                              firstFieldFocusNode: _firstFieldFocusNode,
+                              beneficiaryId: widget.beneficiaryId,
+                              showFieldHelpers: _showFieldHelpers,
                             ),
                           ),
 
-                          // 🎯 Bottom Navigation Buttons
-                          ListenableBuilder(
-                            listenable: _tabController,
-                            builder: (context, _) {
-                              return RepaintBoundary(
-                                child: BottomNavigationButtons(
-                                  currentTab: _tabController.index,
-                                  totalTabs: FormConstants.totalTabs,
-                                  onPrevious: _handlePreviousTab,
-                                  onNext: _handleNextTab,
-                                  onSave: _showFinalReview,
-                                  isLoading: _isSaving,
-                                ),
-                              );
-                            },
+                          // 🎯 Bottom Navigation - Separated widget
+                          FormBottomNavWidget(
+                            tabController: _tabController,
+                            onPrevious: _handlePreviousTab,
+                            onNext: _handleNextTab,
+                            onSave: _showFinalReview,
+                            isLoading: _isSaving,
                           ),
                         ],
                       ),
@@ -1132,7 +1181,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                           : FormConstants.deletingMessage,
                     ),
 
-                    // 🎓 Tour Guide for First Time Users
+                    // 🎓 Tour Guide
                     if (_showTourGuide)
                       TourGuide(
                         steps: [
@@ -1178,6 +1227,15 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                           setState(() => _showTourGuide = false);
                         },
                       ),
+
+                    // 📱 Mobile Quick Actions
+                    MobileQuickActions(
+                      onCopyFromBeneficiary: _handleCopyFromBeneficiary,
+                      onClearAllFields: _handleClearAllFields,
+                      onPasteData: _handlePasteData,
+                      onFillDemoData: _handleFillDemoData,
+                      enabled: !_isSaving && !_isDeleting,
+                    ),
                   ],
                 ),
         ),

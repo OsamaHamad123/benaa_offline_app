@@ -109,7 +109,7 @@ class ConnectionStatusManager extends StatelessWidget {
       padding: EdgeInsets.all(16.w),
       margin: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
       ),

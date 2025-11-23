@@ -283,7 +283,7 @@ class LargeTouchRadioGroup extends StatelessWidget {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

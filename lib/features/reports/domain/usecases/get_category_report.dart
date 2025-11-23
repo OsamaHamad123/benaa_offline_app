@@ -1,5 +1,6 @@
 /// Get Category Report Use Case
 /// Clean Architecture - Domain Layer
+library;
 
 import '../entities/report_data.dart';
 import '../repositories/reports_repository.dart';

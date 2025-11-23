@@ -1,5 +1,6 @@
 /// Governorate Bar Chart Widget
 /// Reusable widget for displaying governorate distribution as bar chart
+library;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';

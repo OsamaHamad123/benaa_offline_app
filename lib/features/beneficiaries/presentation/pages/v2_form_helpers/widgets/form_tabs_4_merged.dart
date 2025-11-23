@@ -5,7 +5,6 @@ import '../form_constants.dart';
 import '../beneficiary_form_colors.dart'; // 🎨 Material 3 Colors
 import 'tab_completion_badge.dart'; // 🏆 Tab Completion Badges
 import 'tab_completion_celebration.dart'; // 🎉 Success Celebrations
-import 'skeleton_loader.dart'; // 💀 Skeleton screens
 
 // Import redesigned tabs
 import '../../../widgets/v2/tabs/v2_personal_info_merged_tab.dart';
@@ -44,7 +43,6 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
 class _BeneficiaryFormTabs4MergedState
     extends State<BeneficiaryFormTabs4Merged> {
   final Set<int> _loadedTabs = {0}; // Always load first tab
-  final Map<int, bool> _tabsLoading = {}; // Track loading state per tab
 
   @override
   void initState() {
@@ -59,27 +57,21 @@ class _BeneficiaryFormTabs4MergedState
   }
 
   void _onTabChanged() {
-    if (mounted) {
-      final currentTab = widget.controller.index;
-      if (!_loadedTabs.contains(currentTab)) {
-        setState(() {
-          _tabsLoading[currentTab] = true; // Show skeleton
-        });
+    if (!mounted) return;
 
-        // Simulate async loading (could be replaced with actual data loading)
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            setState(() {
-              _loadedTabs.add(currentTab);
-              _tabsLoading[currentTab] = false;
-            });
-          }
-        });
-      } else {
-        // Tab already loaded, just trigger rebuild
+    final currentTab = widget.controller.index;
+
+    // Only load if tab hasn't been loaded yet
+    if (!_loadedTabs.contains(currentTab)) {
+      // Mark as loaded immediately to avoid multiple setState calls
+      _loadedTabs.add(currentTab);
+
+      // Trigger single rebuild
+      if (mounted) {
         setState(() {});
       }
     }
+    // Don't call setState if tab already loaded - avoids unnecessary rebuilds
   }
 
   /// 🎉 Check and celebrate tab completion
@@ -96,15 +88,11 @@ class _BeneficiaryFormTabs4MergedState
 
   @override
   Widget build(BuildContext context) {
-    return IndexedStack(
-      index: widget.controller.index,
-      sizing: StackFit.loose, // تحسين الأداء
+    return TabBarView(
+      controller: widget.controller,
+      physics:
+          const NeverScrollableScrollPhysics(), // Disable swipe - use buttons only
       children: List.generate(FormConstants.totalTabs, (index) {
-        // Show skeleton while loading
-        if (_tabsLoading[index] == true) {
-          return _buildSkeletonForTab(index);
-        }
-
         // Lazy load: only build tabs that have been visited
         if (!_loadedTabs.contains(index)) {
           return const SizedBox.shrink();
@@ -117,16 +105,6 @@ class _BeneficiaryFormTabs4MergedState
         );
       }),
     );
-  }
-
-  /// 💀 Skeleton screen based on tab type
-  Widget _buildSkeletonForTab(int tabIndex) {
-    switch (tabIndex) {
-      case 3: // Attachments tab
-        return const SkeletonAttachmentGrid();
-      default: // Form tabs (0, 1, 2)
-        return const SkeletonFormScreen();
-    }
   }
 
   Widget _buildTabAtIndex(int index) {
@@ -203,7 +181,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         border: Border(
           bottom: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
         ),
@@ -287,7 +265,8 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
                     height: 3,
                     child: LinearProgressIndicator(
                       value: stats.percentage / 100,
-                      backgroundColor: theme.colorScheme.surfaceVariant,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation(
                         BeneficiaryFormColors.getProgressColor(
                           context,

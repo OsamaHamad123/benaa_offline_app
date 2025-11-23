@@ -1,5 +1,6 @@
 /// Domain entities for report data
 /// Clean Architecture - Domain Layer
+library;
 
 /// Gender count entity
 class GenderCount {

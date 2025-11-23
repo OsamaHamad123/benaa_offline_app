@@ -158,7 +158,9 @@ class PerformanceMonitor {
     _metrics[operation]!.record(duration, hasError: hasError);
 
     if (kDebugMode && duration > slowOperationThreshold) {
-      print('⚠️ Slow operation: $operation (${duration.inMilliseconds}ms)');
+      debugPrint(
+        '⚠️ Slow operation: $operation (${duration.inMilliseconds}ms)',
+      );
     }
   }
 
@@ -187,7 +189,7 @@ class PerformanceMonitor {
       }
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           '${severity.emoji} Performance Alert: $operation '
           '(${duration.inMilliseconds}ms)',
         );

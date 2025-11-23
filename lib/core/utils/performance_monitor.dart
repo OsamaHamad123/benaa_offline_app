@@ -85,7 +85,7 @@ class PerformanceMonitor {
   /// Log a performance metric
   static void logMetric(String name, num value, {String? unit}) {
     if (!_enabled) return;
-    developer.log('$name: $value${unit != null ? unit : ""}', name: 'Metrics');
+    developer.log('$name: $value${unit ?? ""}', name: 'Metrics');
   }
 
   /// Log memory usage (approximate)

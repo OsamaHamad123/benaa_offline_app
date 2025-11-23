@@ -29,7 +29,7 @@ class EnhancedProgressIndicator extends StatelessWidget {
     final theme = Theme.of(context);
     final effectiveProgressColor = progressColor ?? theme.primaryColor;
     final effectiveBackgroundColor =
-        backgroundColor ?? theme.colorScheme.surfaceVariant;
+        backgroundColor ?? theme.colorScheme.surfaceContainerHighest;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),

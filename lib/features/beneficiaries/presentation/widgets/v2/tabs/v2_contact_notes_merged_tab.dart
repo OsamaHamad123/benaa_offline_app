@@ -16,6 +16,8 @@ class V2ContactNotesMergedTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
+      physics: const ClampingScrollPhysics(), // ⚡ Smooth scroll
+      cacheExtent: 100, // ⚡ Reduce repaints
       children: [
         // 📱 Contact Information Section
         M3SectionCard(

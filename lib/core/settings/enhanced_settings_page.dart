@@ -438,7 +438,7 @@ class EnhancedSettingsPage extends ConsumerWidget {
           color: isEnabled ? Colors.grey[600] : Colors.grey[400],
         ),
       ),
-      trailing: Switch(value: value, onChanged: onChanged, activeColor: color),
+      trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: color),
     );
   }
 

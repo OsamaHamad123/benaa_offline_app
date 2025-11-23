@@ -748,7 +748,7 @@ class _GovernorateReportSheetState
                             ) /
                             100,
                       );
-                    }).toList(),
+                    }),
                 ],
               );
             },
@@ -886,7 +886,7 @@ class _CategoryReportSheetState extends ConsumerState<_CategoryReportSheet> {
                         progressValue: 0.0, // Not used in this layout
                         indicatorColor: color,
                       );
-                    }).toList(),
+                    }),
                   ],
                 );
               },
@@ -1395,7 +1395,7 @@ class _AgeReportSheetState extends ConsumerState<_AgeReportSheet> {
                       progressColor: color,
                       indicatorColor: color,
                     );
-                  }).toList(),
+                  }),
                 ],
               );
             },

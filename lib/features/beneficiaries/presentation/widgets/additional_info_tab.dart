@@ -72,7 +72,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<MaritalStatus>(
-            value: maritalStatus,
+            initialValue: maritalStatus,
             decoration: InputDecoration(
               labelText: 'الحالة الاجتماعية',
               prefixIcon: const Icon(Icons.favorite),
@@ -91,7 +91,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<EducationLevel>(
-            value: educationLevel,
+            initialValue: educationLevel,
             decoration: InputDecoration(
               labelText: 'المستوى التعليمي',
               prefixIcon: const Icon(Icons.school),
@@ -110,7 +110,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<HealthStatus>(
-            value: healthStatus,
+            initialValue: healthStatus,
             decoration: InputDecoration(
               labelText: 'الحالة الصحية',
               prefixIcon: const Icon(Icons.health_and_safety),
@@ -133,7 +133,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<DisplacementStatus>(
-            value: displacementStatus,
+            initialValue: displacementStatus,
             decoration: InputDecoration(
               labelText: 'حالة النزوح',
               prefixIcon: const Icon(Icons.moving),
@@ -152,7 +152,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<HousingStatus>(
-            value: housingStatus,
+            initialValue: housingStatus,
             decoration: InputDecoration(
               labelText: 'حالة السكن',
               prefixIcon: const Icon(Icons.house),
@@ -171,7 +171,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<HousingType>(
-            value: housingType,
+            initialValue: housingType,
             decoration: InputDecoration(
               labelText: 'نوع السكن',
               prefixIcon: const Icon(Icons.apartment),
@@ -194,7 +194,7 @@ class AdditionalInfoTab extends StatelessWidget {
           SizedBox(height: AppDimensions.md),
 
           DropdownButtonFormField<EmploymentStatus>(
-            value: employmentStatus,
+            initialValue: employmentStatus,
             decoration: InputDecoration(
               labelText: 'حالة التوظيف',
               prefixIcon: const Icon(Icons.business_center),

@@ -151,7 +151,7 @@ class _AdvancedFiltersWidgetState extends State<AdvancedFiltersWidget> {
               title: 'المحافظة',
               icon: Icons.location_on,
               child: DropdownButtonFormField<String>(
-                value: _selectedGovernorate ?? 'الكل',
+                initialValue: _selectedGovernorate ?? 'الكل',
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12.w,

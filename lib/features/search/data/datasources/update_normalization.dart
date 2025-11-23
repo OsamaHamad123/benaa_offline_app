@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/utils/debug_logger.dart';
 import 'civil_registry_database.dart';
@@ -69,9 +70,11 @@ class UpdateNormalizationUtility {
       // Progress
       final progress = ((offset + records.length) / total * 100)
           .toStringAsFixed(1);
-      print(
-        '✅ Progress: $progress% (${_formatNumber(offset + records.length)}/${_formatNumber(total)})',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          '✅ Progress: $progress% (${_formatNumber(offset + records.length)}/${_formatNumber(total)})',
+        );
+      }
     }
 
     stopwatch.stop();
@@ -110,8 +113,10 @@ class UpdateNormalizationUtility {
         for (final row in results) {
           final fullName =
               '${row['CI_FIRST_ARB']} ${row['CI_FATHER_ARB']} ${row['CI_FAMILY_ARB']}';
-          print('  Original: $fullName');
-          print('  Normalized: ${row['full_name_norm']}');
+          if (kDebugMode) {
+            debugPrint('  Original: $fullName');
+            debugPrint('  Normalized: ${row['full_name_norm']}');
+          }
         }
       }
     }
@@ -127,7 +132,7 @@ class UpdateNormalizationUtility {
 
   /// Quick test: Check if normalization is working
   static Future<bool> testNormalization() async {
-    print('🧪 Testing normalization logic...');
+    if (kDebugMode) debugPrint('🧪 Testing normalization logic...');
 
     // Test cases
     final tests = {
@@ -150,18 +155,21 @@ class UpdateNormalizationUtility {
       final passed = actual == expected;
       final status = passed ? '✅' : '❌';
 
-      print('$status "$input" → "$actual" (expected: "$expected")');
+      if (kDebugMode)
+        debugPrint('$status "$input" → "$actual" (expected: "$expected")');
 
       if (!passed) {
         allPassed = false;
       }
     }
 
-    print('');
-    if (allPassed) {
-      print('🎉 All normalization tests passed!');
-    } else {
-      print('⚠️ Some normalization tests failed!');
+    if (kDebugMode) {
+      debugPrint('');
+      if (allPassed) {
+        debugPrint('🎉 All normalization tests passed!');
+      } else {
+        debugPrint('⚠️ Some normalization tests failed!');
+      }
     }
 
     return allPassed;

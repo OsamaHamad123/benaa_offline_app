@@ -115,7 +115,7 @@ class _BatchQueue {
       _processedBatches++;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Batch operation failed: $e');
+        debugPrint('❌ Batch operation failed: $e');
       }
     }
   }

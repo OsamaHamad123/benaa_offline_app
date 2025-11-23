@@ -1,5 +1,6 @@
 /// Category Pie Chart Widget
 /// Reusable widget for displaying category distribution as pie chart
+library;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';

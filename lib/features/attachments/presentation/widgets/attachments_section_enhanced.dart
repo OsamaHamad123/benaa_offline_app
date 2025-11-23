@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -24,12 +25,18 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('🎨 [AttachmentsSectionEnhanced] Building for: $beneficiaryId');
+    if (kDebugMode) {
+      debugPrint(
+        '🎨 [AttachmentsSectionEnhanced] Building for: $beneficiaryId',
+      );
+    }
     final state = ref.watch(attachmentsProvider(beneficiaryId));
 
-    print(
-      '📊 [AttachmentsSectionEnhanced] State - Loading: ${state.isLoading}, Attachments: ${state.attachments.length}, Error: ${state.errorMessage}',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        '📊 [AttachmentsSectionEnhanced] State - Loading: ${state.isLoading}, Attachments: ${state.attachments.length}, Error: ${state.errorMessage}',
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

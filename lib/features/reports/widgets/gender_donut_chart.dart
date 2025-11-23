@@ -1,5 +1,6 @@
 /// Gender Donut Chart Widget
 /// Reusable widget for displaying gender distribution as donut chart
+library;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';

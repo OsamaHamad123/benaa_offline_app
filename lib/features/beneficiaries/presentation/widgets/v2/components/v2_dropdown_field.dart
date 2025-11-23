@@ -31,7 +31,7 @@ class V2DropdownField<T> extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items,
       onChanged: enabled ? onChanged : null,
       validator: validator,

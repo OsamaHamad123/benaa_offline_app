@@ -246,7 +246,7 @@ class SearchHelper {
       return items.where((item) => regex.hasMatch(item)).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Invalid regex pattern: $pattern');
+        debugPrint('Invalid regex pattern: $pattern');
       }
       return [];
     }

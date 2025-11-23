@@ -1,5 +1,6 @@
 /// Age Bar Chart Widget
 /// Reusable widget for displaying age bracket distribution as bar chart
+library;
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';

@@ -369,7 +369,7 @@ class _SwitchTile extends StatelessWidget {
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: Theme.of(context).colorScheme.primary,
+        activeThumbColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }

@@ -2,6 +2,7 @@
 ///
 /// Entry point for the search feature.
 /// Exports all public APIs following Clean Architecture layers.
+library;
 
 // Domain Layer - Entities
 export 'domain/entities/civil_person.dart';

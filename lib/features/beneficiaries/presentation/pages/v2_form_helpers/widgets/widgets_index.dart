@@ -2,6 +2,7 @@
 ///
 /// Central export file for all form helper widgets
 /// Import this file to access all widgets at once
+library;
 
 // ============================================================================
 // 🎯 Core Form Widgets

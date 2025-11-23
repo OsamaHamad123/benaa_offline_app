@@ -1,6 +1,7 @@
 /// Reports Repository Implementation
 /// Clean Architecture - Data Layer
 /// Converts database query results to domain entities
+library;
 
 import '../db/daos/beneficiaries_dao.dart';
 import '../db/daos/taxonomies_dao.dart';

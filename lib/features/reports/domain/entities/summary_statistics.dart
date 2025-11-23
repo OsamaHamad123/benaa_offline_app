@@ -1,5 +1,6 @@
 /// Summary statistics entity
 /// Clean Architecture - Domain Layer
+library;
 
 class SummaryStatistics {
   final int total;

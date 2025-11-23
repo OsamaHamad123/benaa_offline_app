@@ -102,10 +102,13 @@ class _V2PersonalInfoMergedTabState
 
   @override
   Widget build(BuildContext context) {
-    final civilRegistryState = ref.watch(civilRegistryProvider);
+    // ⚠️ DON'T watch provider in build - causes rebuild on every keystroke!
+    // Use Consumer below only where needed
 
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
+      physics: const ClampingScrollPhysics(), // ⚡ Smooth scroll
+      cacheExtent: 100, // ⚡ Reduce repaints
       children: [
         // 📋 Basic Information Section
         M3SectionCard(
@@ -179,8 +182,9 @@ class _V2PersonalInfoMergedTabState
                 ),
               ],
               validator: (value) {
-                if (value?.isEmpty ?? true)
+                if (value?.isEmpty ?? true) {
                   return FormConstants.requiredFieldMessage;
+                }
                 if (value!.length != FormConstants.nationalIdLength) {
                   return FormConstants.invalidNationalIdMessage;
                 }
@@ -189,62 +193,81 @@ class _V2PersonalInfoMergedTabState
               helperText: 'يجب أن يكون ${FormConstants.nationalIdLength} أرقام',
             ),
 
-            // Civil Registry Status
-            if (civilRegistryState.status != CivilRegistryStatus.initial)
-              Padding(
-                padding: EdgeInsets.only(top: 8.h),
-                child: CivilRegistryStatusIndicator(
-                  state: civilRegistryState,
-                  onRetry: () {
-                    final nationalId =
-                        widget.formControllers.nationalIdController.text;
-                    if (nationalId.length == FormConstants.nationalIdLength) {
-                      ref
-                          .read(civilRegistryProvider.notifier)
-                          .fetchByNationalId(nationalId);
-                    }
-                  },
-                ),
-              ),
+            // Civil Registry widgets wrapped in Consumer to prevent rebuilding entire tab
+            Consumer(
+              builder: (context, ref, _) {
+                final civilRegistryState = ref.watch(civilRegistryProvider);
 
-            // Preview Card
-            if (civilRegistryState.isSuccess &&
-                civilRegistryState.person != null &&
-                _showPreview)
-              Padding(
-                padding: EdgeInsets.only(top: 8.h),
-                child: CivilRegistryPreviewCard(
-                  person: civilRegistryState.person!,
-                  onDismiss: () => setState(() => _showPreview = false),
-                ),
-              ),
-
-            // Autofill Button
-            if (civilRegistryState.isSuccess &&
-                civilRegistryState.person != null)
-              Padding(
-                padding: EdgeInsets.only(top: 12.h),
-                child: Row(
+                return Column(
                   children: [
-                    Expanded(
-                      child: AutofillButton(
-                        onPressed: _handleAutofill,
-                        isEnabled: true,
+                    // Civil Registry Status
+                    if (civilRegistryState.status !=
+                        CivilRegistryStatus.initial)
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.h),
+                        child: CivilRegistryStatusIndicator(
+                          state: civilRegistryState,
+                          onRetry: () {
+                            final nationalId = widget
+                                .formControllers
+                                .nationalIdController
+                                .text;
+                            if (nationalId.length ==
+                                FormConstants.nationalIdLength) {
+                              ref
+                                  .read(civilRegistryProvider.notifier)
+                                  .fetchByNationalId(nationalId);
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 8.w),
-                    IconButton(
-                      onPressed: () =>
-                          setState(() => _showPreview = !_showPreview),
-                      icon: Icon(
-                        _showPreview ? Icons.visibility_off : Icons.visibility,
-                        size: 24.sp,
+
+                    // Preview Card
+                    if (civilRegistryState.isSuccess &&
+                        civilRegistryState.person != null &&
+                        _showPreview)
+                      Padding(
+                        padding: EdgeInsets.only(top: 8.h),
+                        child: CivilRegistryPreviewCard(
+                          person: civilRegistryState.person!,
+                          onDismiss: () => setState(() => _showPreview = false),
+                        ),
                       ),
-                      tooltip: _showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة',
-                    ),
+
+                    // Autofill Button
+                    if (civilRegistryState.isSuccess &&
+                        civilRegistryState.person != null)
+                      Padding(
+                        padding: EdgeInsets.only(top: 12.h),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: AutofillButton(
+                                onPressed: _handleAutofill,
+                                isEnabled: true,
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            IconButton(
+                              onPressed: () =>
+                                  setState(() => _showPreview = !_showPreview),
+                              icon: Icon(
+                                _showPreview
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                size: 24.sp,
+                              ),
+                              tooltip: _showPreview
+                                  ? 'إخفاء المعاينة'
+                                  : 'عرض المعاينة',
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
-                ),
-              ),
+                );
+              },
+            ),
 
             SizedBox(height: 12.h),
             M3TextField(

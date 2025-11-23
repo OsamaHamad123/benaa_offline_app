@@ -24,7 +24,7 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
   String? _selectedMaritalStatus;
   int? _ageMin;
   int? _ageMax;
-  List<int> _selectedSections = [];
+  final List<int> _selectedSections = [];
 
   @override
   void dispose() {

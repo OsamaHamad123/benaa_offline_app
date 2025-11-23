@@ -200,7 +200,7 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _ageRange,
+                      initialValue: _ageRange,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(

@@ -6,10 +6,10 @@ class GenderFilterBottomSheet extends StatefulWidget {
   final Function(String?) onApply;
 
   const GenderFilterBottomSheet({
-    Key? key,
+    super.key,
     this.currentGender,
     required this.onApply,
-  }) : super(key: key);
+  });
 
   @override
   State<GenderFilterBottomSheet> createState() =>

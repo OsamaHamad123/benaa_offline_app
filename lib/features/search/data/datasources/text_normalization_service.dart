@@ -1,6 +1,7 @@
 /// 📝 Text Normalization Service - Enhanced Arabic text processing
 ///
 /// Single Responsibility: Normalize Arabic text for search with phonetic support
+library;
 
 /// Phonetic matching level for Arabic text
 enum PhoneticLevel {
@@ -216,7 +217,7 @@ class TextNormalizationService {
     // Convert compound prefixes to single word AND keep spaced version
     for (final prefix in compoundPrefixes) {
       // Handle "ال" after prefix with multiple spaces
-      result = result.replaceAll(RegExp('$prefix\\s+ال'), '${prefix}ال');
+      result = result.replaceAll(RegExp('$prefix\\s+ال'), '$prefixال');
 
       // DON'T remove space after compound prefix
       // This allows matching both "عبد الله" and "عبدالله"

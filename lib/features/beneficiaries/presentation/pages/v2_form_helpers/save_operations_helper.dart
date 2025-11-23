@@ -17,8 +17,9 @@ class SaveOperationsHelper {
     required String nationalId,
     required bool isNewBeneficiary,
   }) async {
-    if (!isNewBeneficiary)
+    if (!isNewBeneficiary) {
       return false; // Skip check for existing beneficiaries
+    }
 
     try {
       final existing = await repository.getByNationalId(nationalId);

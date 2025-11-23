@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -16,12 +16,12 @@ class PdfExportService {
       try {
         _arabicFont = await PdfGoogleFonts.cairoRegular();
       } catch (e) {
-        print('Error loading Cairo font: $e');
+        if (kDebugMode) debugPrint('Error loading Cairo font: $e');
         // Fallback to Noto Sans Arabic
         try {
           _arabicFont = await PdfGoogleFonts.notoSansArabicRegular();
         } catch (e2) {
-          print('Error loading fallback font: $e2');
+          if (kDebugMode) debugPrint('Error loading fallback font: $e2');
         }
       }
     }
@@ -377,7 +377,7 @@ class PdfExportService {
               );
             }).toList(),
           );
-        }).toList(),
+        }),
       ],
     );
   }

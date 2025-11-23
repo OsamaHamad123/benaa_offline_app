@@ -205,8 +205,9 @@ class FormCompletionCalculator {
 
     if (controllers.firstNameController.text.trim().isNotEmpty) completed++;
     if (controllers.fatherNameController.text.trim().isNotEmpty) completed++;
-    if (controllers.grandfatherNameController.text.trim().isNotEmpty)
+    if (controllers.grandfatherNameController.text.trim().isNotEmpty) {
       completed++;
+    }
     if (controllers.lastNameController.text.trim().isNotEmpty) completed++;
     if (controllers.nationalIdController.text.trim().length == 9) completed++;
     if (controllers.birthDateController.text.isNotEmpty) completed++;
@@ -215,8 +216,9 @@ class FormCompletionCalculator {
     if (controllers.selectedMaritalStatus != null) completed++;
     if (controllers.selectedEducationLevel != null) completed++;
     if (controllers.selectedHealthStatus != null) completed++;
-    if (controllers.chronicDiseasesController.text.trim().isNotEmpty)
+    if (controllers.chronicDiseasesController.text.trim().isNotEmpty) {
       completed++;
+    }
 
     final progress = total > 0 ? completed / total : 0.0;
     return TabCompletionStats(
@@ -234,11 +236,13 @@ class FormCompletionCalculator {
     int completed = 0;
 
     if (controllers.motherNameController.text.trim().isNotEmpty) completed++;
-    if (controllers.numberOfDependentsController.text.trim().isNotEmpty)
+    if (controllers.numberOfDependentsController.text.trim().isNotEmpty) {
       completed++;
+    }
     if (controllers.numberOfMalesController.text.trim().isNotEmpty) completed++;
-    if (controllers.numberOfFemalesController.text.trim().isNotEmpty)
+    if (controllers.numberOfFemalesController.text.trim().isNotEmpty) {
       completed++;
+    }
 
     final progress = total > 0 ? completed / total : 0.0;
     return TabCompletionStats(
@@ -259,8 +263,9 @@ class FormCompletionCalculator {
     if (controllers.altPhoneController.text.trim().isNotEmpty) completed++;
     if (controllers.addressController.text.trim().isNotEmpty) completed++;
     if (controllers.neighborhoodController.text.trim().isNotEmpty) completed++;
-    if (controllers.addressBeforeDisplacementController.text.trim().isNotEmpty)
+    if (controllers.addressBeforeDisplacementController.text.trim().isNotEmpty) {
       completed++;
+    }
     if (controllers.selectedDisplacementStatus != null) completed++;
     if (controllers.selectedEmploymentStatus != null) completed++;
 

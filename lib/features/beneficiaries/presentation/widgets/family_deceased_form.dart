@@ -204,7 +204,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
             // نوع المتوفى (أب/أم) - اخفيه إذا كان محدد مسبقاً
             if (widget.presetDeceasedType == null)
               DropdownButtonFormField<int>(
-                value: _selectedDeceasedType,
+                initialValue: _selectedDeceasedType,
                 decoration: const InputDecoration(
                   labelText: 'نوع المتوفى *',
                   border: OutlineInputBorder(),
@@ -335,7 +335,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
 
             // سبب الوفاة
             DropdownButtonFormField<int>(
-              value: _selectedDeathCause,
+              initialValue: _selectedDeathCause,
               decoration: const InputDecoration(
                 labelText: 'سبب الوفاة',
                 border: OutlineInputBorder(),
@@ -372,7 +372,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
 
             // نوع الوثيقة
             DropdownButtonFormField<int>(
-              value: _selectedDocumentType,
+              initialValue: _selectedDocumentType,
               decoration: const InputDecoration(
                 labelText: 'نوع الوثيقة',
                 border: OutlineInputBorder(),

@@ -35,6 +35,8 @@ class V2UnifiedAttachmentsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: EdgeInsets.all(16.w),
+      physics: const ClampingScrollPhysics(), // ⚡ Smooth scroll
+      cacheExtent: 100, // ⚡ Reduce repaints
       children: [
         // 📄 مرفقات المستفيد الرئيسية
         _MainBeneficiaryAttachmentsSection(

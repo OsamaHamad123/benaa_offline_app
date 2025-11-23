@@ -85,7 +85,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                 onChanged: (value) {
                   setState(() => _isEnabled = value);
                 },
-                activeColor: Colors.blue.shade700,
+                activeThumbColor: Colors.blue.shade700,
               ),
             ],
           ),

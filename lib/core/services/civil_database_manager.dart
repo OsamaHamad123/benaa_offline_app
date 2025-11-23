@@ -241,7 +241,7 @@ class CivilDatabaseManager {
     final sizeFormatted = _formatBytes(size);
     final version = await getDatabaseVersion();
     final lastSync = await getLastSyncTime();
-    final downloaded = await this.isDownloaded();
+    final downloaded = await isDownloaded();
 
     return {
       'exists': exists,

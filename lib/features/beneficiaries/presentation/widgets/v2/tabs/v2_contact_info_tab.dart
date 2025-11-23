@@ -55,8 +55,9 @@ class V2ContactInfoTab extends StatelessWidget {
                 LengthLimitingTextInputFormatter(10),
               ],
               validator: (value) {
-                if (value == null || value.isEmpty)
+                if (value == null || value.isEmpty) {
                   return null; // Optional field
+                }
                 // Palية يجيب البيانات من السجل المدني ويعبيهم بالحقو estinian phone format: 059XXXXXXX or 056XXXXXXX (10 digits)
                 if (!RegExp(r'^(059|056)\d{7}$').hasMatch(value)) {
                   return 'رقم غير صحيح (مثال: 0595735352 أو 0565735352)';
@@ -77,8 +78,9 @@ class V2ContactInfoTab extends StatelessWidget {
                 LengthLimitingTextInputFormatter(10),
               ],
               validator: (value) {
-                if (value == null || value.isEmpty)
+                if (value == null || value.isEmpty) {
                   return null; // Optional field
+                }
                 // Palestinian phone format: 059XXXXXXX or 056XXXXXXX (10 digits)
                 if (!RegExp(r'^(059|056)\d{7}$').hasMatch(value)) {
                   return 'رقم غير صحيح (مثال: 0595735352 أو 0565735352)';

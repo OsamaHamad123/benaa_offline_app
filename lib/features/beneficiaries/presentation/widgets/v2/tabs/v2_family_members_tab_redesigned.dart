@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../core/utils/ux_helpers.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import 'zero_lag_family_dialog.dart'; // ⚡ Optimized version
+import '../../../pages/v2_form_helpers/widgets/empty_state_widget.dart'
+    as BeneficiaryEmpty; // ✅ Avoid conflict with Reports widget
 
 /// 👥 تبويب أفراد العائلة - تصميم محسّن بدون AppBar
 ///
@@ -305,38 +307,43 @@ class _OrphansSection extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.all(16.w),
-            child: Column(
-              children: [
-                // زر إضافة يتيم
-                OutlinedButton.icon(
-                  onPressed: () => _showAddOrphanDialog(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة يتيم جديد'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 48.h),
-                    side: BorderSide(color: Colors.green.shade700, width: 1.5),
-                  ),
-                ),
-
-                if (orphansCount > 0) ...[
-                  SizedBox(height: 16.h),
-
-                  // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
-                  ...List.generate(
-                    orphansCount,
-                    (index) => Padding(
-                      padding: EdgeInsets.only(bottom: 8.h),
-                      child: _OrphanCard(
-                        key: ValueKey('orphan_$index'),
-                        data: formControllers.livingMembers[index],
-                        index: index,
-                        formControllers: formControllers,
+            child: orphansCount == 0
+                ? BeneficiaryEmpty.EmptyStateWidget.noFamilyMembers(
+                    onAdd: () => _showAddOrphanDialog(context),
+                  )
+                : Column(
+                    children: [
+                      // زر إضافة يتيم
+                      OutlinedButton.icon(
+                        onPressed: () => _showAddOrphanDialog(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text('إضافة يتيم جديد'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 48.h),
+                          side: BorderSide(
+                            color: Colors.green.shade700,
+                            width: 1.5,
+                          ),
+                        ),
                       ),
-                    ),
+
+                      SizedBox(height: 16.h),
+
+                      // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
+                      ...List.generate(
+                        orphansCount,
+                        (index) => Padding(
+                          padding: EdgeInsets.only(bottom: 8.h),
+                          child: _OrphanCard(
+                            key: ValueKey('orphan_$index'),
+                            data: formControllers.livingMembers[index],
+                            index: index,
+                            formControllers: formControllers,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ],
-            ),
           ),
         ],
       ),

@@ -456,7 +456,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
 
             // الجنس
             DropdownButtonFormField<int>(
-              value: _selectedGender,
+              initialValue: _selectedGender,
               decoration: const InputDecoration(
                 labelText: 'الجنس *',
                 border: OutlineInputBorder(),
@@ -482,7 +482,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
 
             // الحالة الصحية
             DropdownButtonFormField<int>(
-              value: _selectedHealthStatus,
+              initialValue: _selectedHealthStatus,
               decoration: const InputDecoration(
                 labelText: 'الحالة الصحية *',
                 border: OutlineInputBorder(),

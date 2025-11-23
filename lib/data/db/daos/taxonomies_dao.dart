@@ -11,7 +11,7 @@ part 'taxonomies_dao.g.dart';
 @DriftAccessor(tables: [Taxonomies])
 class TaxonomiesDao extends DatabaseAccessor<AppDatabase>
     with _$TaxonomiesDaoMixin {
-  TaxonomiesDao(AppDatabase db) : super(db);
+  TaxonomiesDao(super.db);
 
   // ═══════════════════════════════════════════════════════════════════════
   // 📖 READ Operations

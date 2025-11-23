@@ -145,7 +145,7 @@ class ShimmerWrapper extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Shimmer.fromColors(
-      baseColor: baseColor ?? theme.colorScheme.surfaceVariant.withOpacity(0.3),
+      baseColor: baseColor ?? theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
       highlightColor:
           highlightColor ?? theme.colorScheme.surface.withOpacity(0.8),
       period: const Duration(milliseconds: 1500),

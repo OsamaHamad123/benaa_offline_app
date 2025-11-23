@@ -640,7 +640,7 @@ class CivilRegistrySearchQueries {
           WHERE CI_FIRST_ARB LIKE ? AND CI_FIRST_ARB >= ? AND CI_FIRST_ARB < ?
           $filterClause
           ''',
-              ['$word%', word, word + '\uffff', ...filterArgs],
+              ['$word%', word, '$word\uffff', ...filterArgs],
             ),
           ) ??
           0;

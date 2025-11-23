@@ -14,7 +14,7 @@ class AppAnalytics {
     _screenStartTimes[screenName] = DateTime.now();
 
     if (kDebugMode) {
-      print(
+      debugPrint(
         '📊 Screen View: $screenName (${_screenVisits[screenName]} visits)',
       );
     }
@@ -30,7 +30,9 @@ class AppAnalytics {
       _screenStartTimes.remove(screenName);
 
       if (kDebugMode) {
-        print('📊 Screen Exit: $screenName (duration: ${duration.inSeconds}s)');
+        debugPrint(
+          '📊 Screen Exit: $screenName (duration: ${duration.inSeconds}s)',
+        );
       }
     }
   }
@@ -38,7 +40,7 @@ class AppAnalytics {
   /// تسجيل إجراء مستخدم
   static void logEvent(String eventName, {Map<String, dynamic>? parameters}) {
     if (kDebugMode) {
-      print(
+      debugPrint(
         '📊 Event: $eventName ${parameters != null ? parameters.toString() : ''}',
       );
     }
@@ -65,7 +67,9 @@ class AppAnalytics {
     }
 
     if (kDebugMode && duration.inMilliseconds > 100) {
-      print('⚠️  Slow Operation: $operation took ${duration.inMilliseconds}ms');
+      debugPrint(
+        '⚠️  Slow Operation: $operation took ${duration.inMilliseconds}ms',
+      );
     }
   }
 

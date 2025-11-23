@@ -179,7 +179,7 @@ class BasicInfoTab extends StatelessWidget {
 
   Widget _buildCategorySelector(ColorScheme colorScheme) {
     return DropdownButtonFormField<BeneficiaryCategory>(
-      value: category,
+      initialValue: category,
       decoration: InputDecoration(
         labelText: 'فئة المستفيد *',
         prefixIcon: const Icon(Icons.category),

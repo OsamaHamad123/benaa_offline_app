@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widget_performance_analyzer.dart';
 import 'state_optimizer.dart';
@@ -28,7 +29,8 @@ class PerformanceSuite {
       _isInitialized = true;
     } catch (e) {
       // تسجيل الخطأ ولكن عدم إيقاف التطبيق
-      print('⚠️ Performance Suite initialization warning: $e');
+      if (kDebugMode)
+        debugPrint('⚠️ Performance Suite initialization warning: $e');
     }
   }
 

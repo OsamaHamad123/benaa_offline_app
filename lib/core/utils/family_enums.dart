@@ -1,5 +1,6 @@
 /// 🏷️ Family Related Enums
 /// جميع الـ enums المتعلقة بالعائلة موحدة مع جدول المستفيدين
+library;
 
 /// نوع المتوفى
 class DeceasedType {

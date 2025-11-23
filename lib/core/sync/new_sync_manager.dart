@@ -517,7 +517,7 @@ class NewSyncManager {
           .into(_db.syncQueue)
           .insertOnConflictUpdate(
             SyncQueueCompanion.insert(
-              id: '${entityType}_${entityId}_${operation}',
+              id: '${entityType}_${entityId}_$operation',
               entity: entityType,
               entityId: entityId,
               operation: operation,

@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
+import '../../../beneficiaries/presentation/pages/v2_form_helpers/widgets/empty_state_widget.dart'
+    as BeneficiaryEmpty; // ✅ Avoid conflict
 
 /// 📎 Pending Attachments Section - للاستخدام في نموذج إضافة مستفيد
 ///
@@ -102,36 +104,8 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
   }
 
   Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.attach_file_outlined,
-              size: 64.sp,
-              color: Colors.grey[400],
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'لا توجد مرفقات',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            Text(
-              'اضغط على الزر أدناه لإضافة مرفقات',
-              style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
-            ),
-            SizedBox(height: 16.h),
-            _buildAddButton(context),
-          ],
-        ),
-      ),
+    return BeneficiaryEmpty.EmptyStateWidget.noAttachments(
+      onAdd: () => _showAddOptions(context),
     );
   }
 

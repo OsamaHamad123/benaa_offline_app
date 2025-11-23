@@ -165,7 +165,7 @@ class _ConfettiOverlayState extends State<_ConfettiOverlay>
         return Positioned.fill(
           child: IgnorePointer(
             child: Opacity(
-              opacity: _fadeAnimation.value,
+              opacity: _fadeAnimation.value.clamp(0.0, 1.0),
               child: Center(
                 child: Transform.scale(
                   scale: _scaleAnimation.value,

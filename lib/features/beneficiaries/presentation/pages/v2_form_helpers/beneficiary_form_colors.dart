@@ -17,7 +17,7 @@ class BeneficiaryFormColors {
       Theme.of(context).colorScheme.onSurfaceVariant;
 
   static Color tabBackground(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceVariant;
+      Theme.of(context).colorScheme.surfaceContainerHighest;
 
   static Color tabIndicator(BuildContext context) =>
       Theme.of(context).colorScheme.primary;
@@ -54,7 +54,7 @@ class BeneficiaryFormColors {
   // ═══════════════════════════════════════════════════════════════════════════
 
   static Color progressEmpty(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceVariant;
+      Theme.of(context).colorScheme.surfaceContainerHighest;
 
   static Color progressPartial(BuildContext context) =>
       Theme.of(context).colorScheme.primary;

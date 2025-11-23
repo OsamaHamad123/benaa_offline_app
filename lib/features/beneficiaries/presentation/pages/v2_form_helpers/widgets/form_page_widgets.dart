@@ -308,7 +308,7 @@ class FormPageTitle extends StatelessWidget {
 class FormAppBarActions extends StatelessWidget {
   final bool showStatistics;
   final bool showFieldHelpers;
-  final VoidCallback onToggleSearch;
+  // onToggleSearch removed - search is local to FormContentWidget
   final VoidCallback onToggleStatistics;
   final VoidCallback onToggleFieldHelpers;
   final VoidCallback onViewDrafts;
@@ -320,7 +320,6 @@ class FormAppBarActions extends StatelessWidget {
     super.key,
     required this.showStatistics,
     required this.showFieldHelpers,
-    required this.onToggleSearch,
     required this.onToggleStatistics,
     required this.onToggleFieldHelpers,
     required this.onViewDrafts,
@@ -367,9 +366,7 @@ class FormAppBarActions extends StatelessWidget {
           tooltip: 'المزيد',
           onSelected: (value) {
             switch (value) {
-              case 'search':
-                onToggleSearch();
-                break;
+              // search removed - local to FormContentWidget
               case 'statistics':
                 onToggleStatistics();
                 break;
@@ -385,16 +382,7 @@ class FormAppBarActions extends StatelessWidget {
             }
           },
           itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'search',
-              child: Row(
-                children: [
-                  Icon(Icons.search, size: 20.sp),
-                  SizedBox(width: 12.w),
-                  const Text('بحث سريع'),
-                ],
-              ),
-            ),
+            // Search menu item removed - search is local to FormContentWidget
             PopupMenuItem(
               value: 'drafts',
               child: Row(

@@ -55,7 +55,7 @@ part 'drift_database.g.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase(QueryExecutor e) : super(e);
+  AppDatabase(super.e);
 
   // DAOs are automatically available as getters after generation:
   // - beneficiariesDao: All beneficiary operations

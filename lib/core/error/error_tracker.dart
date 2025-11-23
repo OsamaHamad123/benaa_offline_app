@@ -137,23 +137,25 @@ class ErrorTracker {
   }
 
   static void _printError(AppError error) {
-    print(
-      '\n${error.severity.emoji} ${error.severity.name.toUpperCase()} '
-      '${error.context != null ? '[${error.context}]' : ''}',
-    );
-    print('Error: ${error.error}');
-    if (error.metadata != null) {
-      print('Metadata: ${error.metadata}');
-    }
-    if (error.stackTrace != null) {
-      print('Stack Trace:\n${error.stackTrace}');
+    if (kDebugMode) {
+      debugPrint(
+        '\n${error.severity.emoji} ${error.severity.name.toUpperCase()} '
+        '${error.context != null ? '[${error.context}]' : ''}',
+      );
+      debugPrint('Error: ${error.error}');
+      if (error.metadata != null) {
+        debugPrint('Metadata: ${error.metadata}');
+      }
+      if (error.stackTrace != null) {
+        debugPrint('Stack Trace:\n${error.stackTrace}');
+      }
     }
   }
 
   static void _reportToExternalService(AppError error) {
     // TODO: إرسال للـ Sentry أو Firebase Crashlytics
     if (kDebugMode) {
-      print('📤 Would report to external service: ${error.error}');
+      debugPrint('📤 Would report to external service: ${error.error}');
     }
   }
 }

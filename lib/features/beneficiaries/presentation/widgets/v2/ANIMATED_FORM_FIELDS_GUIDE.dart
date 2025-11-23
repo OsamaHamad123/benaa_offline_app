@@ -2,6 +2,7 @@
 ///
 /// هذا الملف يوضح كيفية استبدال TextFormField العادي بـ AnimatedFormField
 /// لإضافة focus animations جميلة
+library;
 
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/animated_form_fields.dart';
 import 'package:flutter/material.dart';
@@ -93,7 +94,7 @@ class BeforeAfterExample4 {
   // ❌ قبل
   Widget oldDropdown(String? value, ValueChanged<String?>? onChanged) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       decoration: const InputDecoration(
         labelText: 'الفئة',
@@ -150,6 +151,8 @@ class BeforeAfterExample5 {
 
 /// مثال 6: استخدام كامل في Tab
 class PersonalInfoTabExample extends StatefulWidget {
+  const PersonalInfoTabExample({super.key});
+
   @override
   State<PersonalInfoTabExample> createState() => _PersonalInfoTabExampleState();
 }

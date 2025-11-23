@@ -7,7 +7,7 @@ part 'family_deceased_dao.g.dart';
 @DriftAccessor(tables: [FamilyDeceasedTable])
 class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
     with _$FamilyDeceasedDaoMixin {
-  FamilyDeceasedDao(AppDatabase db) : super(db);
+  FamilyDeceasedDao(super.db);
 
   /// 📋 الحصول على جميع الأموات (الأب/الأم) لمستفيد معين
   Future<List<FamilyDeceased>> getDeceasedByBeneficiary(int beneficiaryId) {

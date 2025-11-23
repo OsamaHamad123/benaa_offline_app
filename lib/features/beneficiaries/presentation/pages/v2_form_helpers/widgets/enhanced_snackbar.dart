@@ -30,7 +30,7 @@ class EnhancedSnackbar {
             return Transform.translate(
               offset: Offset(0, 15 * (1 - value)),
               child: Opacity(
-                opacity: value,
+                opacity: value.clamp(0.0, 1.0),
                 child: Row(
                   children: [
                     Icon(
@@ -90,7 +90,7 @@ class EnhancedSnackbar {
             return Transform.translate(
               offset: Offset(shakeOffset, 0),
               child: Opacity(
-                opacity: value,
+                opacity: value.clamp(0.0, 1.0),
                 child: Row(
                   children: [
                     Icon(Icons.error_rounded, color: Colors.white, size: 20.sp),

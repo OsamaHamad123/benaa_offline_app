@@ -32,7 +32,7 @@ class AutoSaveManager {
       final jsonData = jsonEncode(data);
       await prefs.setString('$_keyPrefix$draftId', jsonData);
       await prefs.setString(
-        '${_keyPrefix}${draftId}_timestamp',
+        '$_keyPrefix${draftId}_timestamp',
         DateTime.now().toIso8601String(),
       );
     } catch (e) {
@@ -59,7 +59,7 @@ class AutoSaveManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('$_keyPrefix$draftId');
-      await prefs.remove('${_keyPrefix}${draftId}_timestamp');
+      await prefs.remove('$_keyPrefix${draftId}_timestamp');
     } catch (e) {
       // Silent fail
     }
@@ -79,7 +79,7 @@ class AutoSaveManager {
   Future<DateTime?> getLastSaveTime(String draftId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final timestamp = prefs.getString('${_keyPrefix}${draftId}_timestamp');
+      final timestamp = prefs.getString('$_keyPrefix${draftId}_timestamp');
       if (timestamp != null) {
         return DateTime.parse(timestamp);
       }

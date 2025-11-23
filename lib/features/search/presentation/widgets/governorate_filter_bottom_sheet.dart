@@ -7,11 +7,11 @@ class GovernorateFilterBottomSheet extends StatefulWidget {
   final Function(String?) onApply;
 
   const GovernorateFilterBottomSheet({
-    Key? key,
+    super.key,
     this.currentGovernorate,
     required this.availableGovernorates,
     required this.onApply,
-  }) : super(key: key);
+  });
 
   @override
   State<GovernorateFilterBottomSheet> createState() =>
@@ -165,7 +165,7 @@ class _GovernorateFilterBottomSheetState
                       });
                     },
                   );
-                }).toList(),
+                }),
               ],
             ),
           ),

@@ -184,7 +184,7 @@ class M3DropdownField<T> extends StatelessWidget {
     final safeValue = items.any((item) => item.value == value) ? value : null;
 
     return DropdownButtonFormField<T>(
-      value: safeValue,
+      initialValue: safeValue,
       items: items,
       onChanged: onChanged,
       validator: validator,

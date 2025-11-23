@@ -106,7 +106,7 @@ class AnimatedResponsiveTabView extends StatelessWidget {
             final opacity = (1 - delta).clamp(0.0, 1.0);
 
             return Opacity(
-              opacity: opacity,
+              opacity: opacity.clamp(0.0, 1.0), // Double clamp for safety
               child: Transform.translate(
                 offset: Offset(delta * 20, 0), // Subtle slide effect
                 child: child,

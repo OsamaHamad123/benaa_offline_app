@@ -1,6 +1,7 @@
 /// Reports Repository Interface
 /// Clean Architecture - Domain Layer
 /// This defines the contract that data layer must implement
+library;
 
 import '../entities/report_data.dart';
 import '../entities/summary_statistics.dart';

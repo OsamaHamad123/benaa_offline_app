@@ -47,7 +47,7 @@ class ConnectivityMonitor {
       _handleConnectivityChange,
       onError: (error) {
         if (kDebugMode) {
-          print('❌ Connectivity Error: $error');
+          debugPrint('❌ Connectivity Error: $error');
         }
       },
     );
@@ -59,7 +59,7 @@ class ConnectivityMonitor {
       _handleConnectivityChange(results);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Failed to check connectivity: $e');
+        debugPrint('❌ Failed to check connectivity: $e');
       }
       _updateStatus(ConnectivityStatus.offline);
     }
