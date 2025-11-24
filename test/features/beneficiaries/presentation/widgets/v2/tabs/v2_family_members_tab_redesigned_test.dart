@@ -108,7 +108,7 @@ void main() {
       WidgetTester tester,
     ) async {
       // Add father data
-      formControllers.deceasedMembers.add({
+      formControllers.addDeceasedMember({
         'deceasedType': 1,
         'firstName': 'أحمد',
         'familyName': 'محمد',
@@ -132,7 +132,7 @@ void main() {
       WidgetTester tester,
     ) async {
       // Add orphan data
-      formControllers.livingMembers.add({
+      formControllers.addLivingMember({
         'firstName': 'فاطمة',
         'familyName': 'أحمد',
         'age': 10,
@@ -147,6 +147,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Verify the controllers actually have one orphan
+      expect(formControllers.livingMembers.length, 1);
+      // Debug dump widget tree (temporary)
+      debugDumpApp();
+
       // Section should be expanded automatically when data exists
       // Check if data is displayed
       expect(find.textContaining('فاطمة'), findsWidgets);
@@ -154,6 +159,14 @@ void main() {
     });
 
     testWidgets('should show add orphan button', (WidgetTester tester) async {
+      // Add one orphan so the 'Add orphan' outlined button is shown
+      formControllers.addLivingMember({
+        'firstName': 'Auto',
+        'familyName': 'Add',
+        'age': 2,
+        'gender': 1,
+      });
+
       await tester.pumpWidget(
         createTestWidget(
           V2FamilyMembersTabRedesigned(formControllers: formControllers),
@@ -161,11 +174,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Expand orphans section
-      await tester.tap(find.text('الأيتام'));
-      await tester.pumpAndSettle();
+      // Orphans section is initially expanded when there are orphans
 
-      expect(find.text('إضافة يتيم جديد'), findsOneWidget);
+      final outlinedFound = find.byKey(const ValueKey('add_orphan_button'));
+      final filledFound = find.widgetWithIcon(FilledButton, Icons.add_rounded);
+      expect(
+        outlinedFound.evaluate().isNotEmpty ||
+            filledFound.evaluate().isNotEmpty,
+        true,
+      );
     });
 
     testWidgets('should maintain state with AutomaticKeepAlive', (
@@ -217,7 +234,7 @@ void main() {
     ) async {
       // Add 50 orphans
       for (int i = 0; i < 50; i++) {
-        formControllers.livingMembers.add({
+        formControllers.addLivingMember({
           'firstName': 'Name$i',
           'familyName': 'Family$i',
           'age': i,

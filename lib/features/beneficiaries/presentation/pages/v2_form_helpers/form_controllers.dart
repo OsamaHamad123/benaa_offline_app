@@ -171,8 +171,15 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final List<Map<String, dynamic>> _livingMembers = [];
   List<Map<String, dynamic>> get livingMembers => _livingMembers;
 
+  // Notifiers to allow fine-grained UI updates without parent setState
+  final ValueNotifier<List<Map<String, dynamic>>> livingMembersNotifier =
+      ValueNotifier(const []);
+
   final List<Map<String, dynamic>> _deceasedMembers = [];
   List<Map<String, dynamic>> get deceasedMembers => _deceasedMembers;
+
+  final ValueNotifier<List<Map<String, dynamic>>> deceasedMembersNotifier =
+      ValueNotifier(const []);
 
   /// Setter for pending files (used by PendingAttachmentsSection callback)
   set pendingAttachmentFiles(List<File> files) {
@@ -212,6 +219,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void updateLivingMembers(List<Map<String, dynamic>> members) {
     _livingMembers.clear();
     _livingMembers.addAll(members);
+    livingMembersNotifier.value = List.unmodifiable(_livingMembers);
     _notifyAndScheduleAutoSave();
   }
 
@@ -219,18 +227,21 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void updateDeceasedMembers(List<Map<String, dynamic>> members) {
     _deceasedMembers.clear();
     _deceasedMembers.addAll(members);
+    deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
     _notifyAndScheduleAutoSave();
   }
 
   /// Add a living family member
   void addLivingMember(Map<String, dynamic> member) {
     _livingMembers.add(member);
+    livingMembersNotifier.value = List.unmodifiable(_livingMembers);
     _notifyAndScheduleAutoSave();
   }
 
   /// Add a deceased family member
   void addDeceasedMember(Map<String, dynamic> member) {
     _deceasedMembers.add(member);
+    deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
     _notifyAndScheduleAutoSave();
   }
 
@@ -238,6 +249,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void removeLivingMember(int index) {
     if (index >= 0 && index < _livingMembers.length) {
       _livingMembers.removeAt(index);
+      livingMembersNotifier.value = List.unmodifiable(_livingMembers);
       _notifyAndScheduleAutoSave();
     }
   }
@@ -246,6 +258,23 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void removeDeceasedMember(int index) {
     if (index >= 0 && index < _deceasedMembers.length) {
       _deceasedMembers.removeAt(index);
+      deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  void updateDeceasedMember(int index, Map<String, dynamic> member) {
+    if (index >= 0 && index < _deceasedMembers.length) {
+      _deceasedMembers[index] = member;
+      deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  void updateLivingMember(int index, Map<String, dynamic> member) {
+    if (index >= 0 && index < _livingMembers.length) {
+      _livingMembers[index] = member;
+      livingMembersNotifier.value = List.unmodifiable(_livingMembers);
       _notifyAndScheduleAutoSave();
     }
   }
@@ -354,6 +383,9 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _selectedRelationship = map['selectedRelationship'];
     _hasDisability = map['hasDisability'] ?? false;
 
+    // update notifiers too
+    livingMembersNotifier.value = List.unmodifiable(_livingMembers);
+    deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
     notifyListeners();
   }
 
@@ -382,6 +414,9 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     notesController.dispose();
     chronicDiseasesController.dispose();
     addressBeforeDisplacementController.dispose();
+
+    livingMembersNotifier.dispose();
+    deceasedMembersNotifier.dispose();
 
     super.dispose(); // ✅ Call super
   }

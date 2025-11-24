@@ -40,21 +40,24 @@ class _V2FamilyMembersTabRedesignedState
   Widget build(BuildContext context) {
     super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
 
-    return Column(
-      children: [
-        // 🪦 قسم الوالدين المتوفيين
-        _DeceasedParentsSection(
-          key: const ValueKey('deceased_section'),
-          formControllers: widget.formControllers,
-        ),
-        SizedBox(height: ResponsiveUtils.mediumSpace),
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(12),
+      child: Column(
+        children: [
+          // 🪦 قسم الوالدين المتوفيين
+          _DeceasedParentsSection(
+            key: const ValueKey('deceased_section'),
+            formControllers: widget.formControllers,
+          ),
+          SizedBox(height: ResponsiveUtils.mediumSpace),
 
-        // 👶 قسم الأيتام
-        _OrphansSection(
-          key: const ValueKey('orphans_section'),
-          formControllers: widget.formControllers,
-        ),
-      ],
+          // 👶 قسم الأيتام
+          _OrphansSection(
+            key: const ValueKey('orphans_section'),
+            formControllers: widget.formControllers,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -73,62 +76,65 @@ class _DeceasedParentsSection extends StatefulWidget {
 class _DeceasedParentsSectionState extends State<_DeceasedParentsSection> {
   @override
   Widget build(BuildContext context) {
-    final father = widget.formControllers.deceasedMembers
-        .where((d) => d['deceasedType'] == 1)
-        .firstOrNull;
-    final mother = widget.formControllers.deceasedMembers
-        .where((d) => d['deceasedType'] == 2)
-        .firstOrNull;
+    return ValueListenableBuilder<List<Map<String, dynamic>>>(
+      valueListenable: widget.formControllers.deceasedMembersNotifier,
+      builder: (context, deceasedMembers, _) {
+        final father = deceasedMembers
+            .where((d) => d['deceasedType'] == 1)
+            .firstOrNull;
+        final mother = deceasedMembers
+            .where((d) => d['deceasedType'] == 2)
+            .firstOrNull;
 
-    return Card(
-      elevation: 2,
-      child: ExpansionTile(
-        initiallyExpanded: father != null || mother != null,
-        leading: Icon(Icons.local_hospital, color: Colors.red.shade700),
-        title: Text(
-          'الوالدين المتوفيين',
-          style: TextStyle(
-            fontSize: ResponsiveUtils.mediumFont,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          _getSubtitle(father, mother),
-          style: TextStyle(
-            fontSize: ResponsiveUtils.smallFont,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        children: [
-          Padding(
-            padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
-            child: Column(
-              children: [
-                // كارت الأب
-                _ParentCard(
-                  type: 'أب',
-                  icon: Icons.man,
-                  color: Colors.blue,
-                  data: father,
-                  formControllers: widget.formControllers,
-                  onUpdate: () => setState(() {}), // تحديث الواجهة
-                ),
-                SizedBox(height: ResponsiveUtils.smallSpace),
-
-                // كارت الأم
-                _ParentCard(
-                  type: 'أم',
-                  icon: Icons.woman,
-                  color: Colors.pink,
-                  data: mother,
-                  formControllers: widget.formControllers,
-                  onUpdate: () => setState(() {}), // تحديث الواجهة
-                ),
-              ],
+        return Card(
+          elevation: 2,
+          child: ExpansionTile(
+            initiallyExpanded: father != null || mother != null,
+            leading: Icon(Icons.local_hospital, color: Colors.red.shade700),
+            title: Text(
+              'الوالدين المتوفيين',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.mediumFont,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+            subtitle: Text(
+              _getSubtitle(father, mother),
+              style: TextStyle(
+                fontSize: ResponsiveUtils.smallFont,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            children: [
+              Padding(
+                padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
+                child: Column(
+                  children: [
+                    // كارت الأب
+                    _ParentCard(
+                      type: 'أب',
+                      icon: Icons.man,
+                      color: Colors.blue,
+                      data: father,
+                      formControllers: widget.formControllers,
+                    ),
+                    SizedBox(height: ResponsiveUtils.smallSpace),
+
+                    // كارت الأم
+                    _ParentCard(
+                      type: 'أم',
+                      icon: Icons.woman,
+                      color: Colors.pink,
+                      data: mother,
+                      formControllers: widget.formControllers,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -150,7 +156,7 @@ class _ParentCard extends StatelessWidget {
   final Color color;
   final Map<String, dynamic>? data;
   final BeneficiaryFormControllers formControllers;
-  final VoidCallback onUpdate; // callback لتحديث الواجهة
+  // onUpdate removed: use formControllers notifiers instead
 
   const _ParentCard({
     required this.type,
@@ -158,7 +164,7 @@ class _ParentCard extends StatelessWidget {
     required this.color,
     required this.data,
     required this.formControllers,
-    required this.onUpdate,
+    // no onUpdate
   });
 
   @override
@@ -166,6 +172,7 @@ class _ParentCard extends StatelessWidget {
     if (data == null) {
       // زر الإضافة
       return OutlinedButton.icon(
+        key: ValueKey('add_${type}_deceased_button'),
         onPressed: () => _showAddDialog(context),
         icon: Icon(icon, color: color),
         label: Text('إضافة $type المتوفى'),
@@ -240,7 +247,7 @@ class _ParentCard extends StatelessWidget {
         onSave: (memberData) {
           formControllers.addDeceasedMember(memberData);
           ToastHelper.showSuccess('تم الحفظ بنجاح');
-          onUpdate(); // تحديث الواجهة
+          // parent sections listen to controller notifiers and will rebuild
         },
       ),
     );
@@ -263,10 +270,9 @@ class _ParentCard extends StatelessWidget {
             (d) => d['deceasedType'] == deceasedType,
           );
           if (index != -1) {
-            formControllers.deceasedMembers[index] = memberData;
+            formControllers.updateDeceasedMember(index, memberData);
           }
           ToastHelper.showSuccess('تم التحديث بنجاح');
-          onUpdate(); // تحديث الواجهة
         },
       ),
     );
@@ -287,10 +293,10 @@ class _ParentCard extends StatelessWidget {
             onPressed: () {
               HapticFeedback.mediumImpact(); // ✅ Haptic feedback
               final index = formControllers.deceasedMembers.indexOf(data!);
-              formControllers.deceasedMembers.removeAt(index);
+              formControllers.removeDeceasedMember(index);
               Navigator.pop(context);
               ToastHelper.showSuccess('تم الحذف بنجاح');
-              onUpdate(); // تحديث الواجهة
+              // parent listens to notifier
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),
@@ -314,73 +320,78 @@ class _OrphansSection extends StatefulWidget {
 class _OrphansSectionState extends State<_OrphansSection> {
   @override
   Widget build(BuildContext context) {
-    final orphansCount = widget.formControllers.livingMembers.length;
+    return ValueListenableBuilder<List<Map<String, dynamic>>>(
+      valueListenable: widget.formControllers.livingMembersNotifier,
+      builder: (context, livingMembers, _) {
+        final orphansCount = livingMembers.length;
 
-    return Card(
-      elevation: 2,
-      child: ExpansionTile(
-        initiallyExpanded: orphansCount > 0,
-        leading: Icon(Icons.people, color: Colors.green.shade700),
-        title: Text(
-          'الأيتام',
-          style: TextStyle(
-            fontSize: ResponsiveUtils.mediumFont,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        subtitle: Text(
-          orphansCount == 0 ? 'لا يوجد أيتام' : '$orphansCount يتيم/أيتام',
-          style: TextStyle(
-            fontSize: ResponsiveUtils.smallFont,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        children: [
-          Padding(
-            padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
-            child: orphansCount == 0
-                ? BeneficiaryEmpty.EmptyStateWidget.noFamilyMembers(
-                    onAdd: () => _showAddOrphanDialog(context),
-                  )
-                : Column(
-                    children: [
-                      // زر إضافة يتيم
-                      OutlinedButton.icon(
-                        onPressed: () => _showAddOrphanDialog(context),
-                        icon: const Icon(Icons.add),
-                        label: const Text('إضافة يتيم جديد'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 48.h),
-                          side: BorderSide(
-                            color: Colors.green.shade700,
-                            width: 1.5,
+        return Card(
+          elevation: 2,
+          child: ExpansionTile(
+            initiallyExpanded: orphansCount > 0,
+            leading: Icon(Icons.people, color: Colors.green.shade700),
+            title: Text(
+              'الأيتام',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.mediumFont,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              orphansCount == 0 ? 'لا يوجد أيتام' : '$orphansCount يتيم/أيتام',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.smallFont,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            children: [
+              Padding(
+                padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
+                child: orphansCount == 0
+                    ? BeneficiaryEmpty.EmptyStateWidget.noFamilyMembers(
+                        onAdd: () => _showAddOrphanDialog(context),
+                      )
+                    : Column(
+                        children: [
+                          // زر إضافة يتيم
+                          OutlinedButton.icon(
+                            key: const ValueKey('add_orphan_button'),
+                            onPressed: () => _showAddOrphanDialog(context),
+                            icon: const Icon(Icons.add),
+                            label: const Text('إضافة يتيم جديد'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 48.h),
+                              side: BorderSide(
+                                color: Colors.green.shade700,
+                                width: 1.5,
+                              ),
+                            ),
                           ),
-                        ),
+
+                          SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                          // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
+                          ...List.generate(
+                            orphansCount,
+                            (index) => Padding(
+                              padding: EdgeInsets.only(
+                                bottom: ResponsiveUtils.smallSpace,
+                              ),
+                              child: _OrphanCard(
+                                key: ValueKey('orphan_$index'),
+                                data: livingMembers[index],
+                                index: index,
+                                formControllers: widget.formControllers,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-
-                      SizedBox(height: ResponsiveUtils.mediumSpace),
-
-                      // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
-                      ...List.generate(
-                        orphansCount,
-                        (index) => Padding(
-                          padding: EdgeInsets.only(
-                            bottom: ResponsiveUtils.smallSpace,
-                          ),
-                          child: _OrphanCard(
-                            key: ValueKey('orphan_$index'),
-                            data: widget.formControllers.livingMembers[index],
-                            index: index,
-                            formControllers: widget.formControllers,
-                            onUpdate: () => setState(() {}),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -392,7 +403,6 @@ class _OrphansSectionState extends State<_OrphansSection> {
         onSave: (memberData) {
           widget.formControllers.addLivingMember(memberData);
           ToastHelper.showSuccess('تمت الإضافة بنجاح');
-          setState(() {}); // تحديث الواجهة
         },
       ),
     );
@@ -404,14 +414,14 @@ class _OrphanCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final int index;
   final BeneficiaryFormControllers formControllers;
-  final VoidCallback onUpdate;
+  // Notifier-based: onUpdate removed
 
   const _OrphanCard({
     super.key,
     required this.data,
     required this.index,
     required this.formControllers,
-    required this.onUpdate,
+    // no onUpdate
   });
 
   @override
@@ -499,9 +509,8 @@ class _OrphanCard extends StatelessWidget {
         isDeceased: false,
         existingMember: data,
         onSave: (memberData) {
-          formControllers.livingMembers[index] = memberData;
+          formControllers.updateLivingMember(index, memberData);
           ToastHelper.showSuccess('تم التحديث بنجاح');
-          onUpdate(); // تحديث الواجهة
         },
       ),
     );
@@ -521,10 +530,10 @@ class _OrphanCard extends StatelessWidget {
           FilledButton(
             onPressed: () {
               HapticFeedback.mediumImpact();
-              formControllers.livingMembers.removeAt(index);
+              formControllers.removeLivingMember(index);
               Navigator.pop(context);
               ToastHelper.showSuccess('تم الحذف بنجاح');
-              onUpdate(); // تحديث الواجهة
+              // parent listens to notifier
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),
