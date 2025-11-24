@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import '../utils/arabic_normalizer.dart';
@@ -16,19 +15,17 @@ class DirectCivilSearchService {
     try {
       // الحصول على مسار التطبيق
       final appDir = await getApplicationDocumentsDirectory();
-      final dbPath = '${appDir.path}/civil_registry.db';
+      final dbDir = Directory('${appDir.path}/databases');
+      final dbPath = '${dbDir.path}/civil_registry.db';
       final dbFile = File(dbPath);
 
-      // نسخ من assets إذا لم تكن موجودة
+      // التحقق من وجود القاعدة (لا نحتاج نسخ من assets)
       if (!await dbFile.exists()) {
-        print('📦 نسخ قاعدة البيانات من assets...');
-        final data = await rootBundle.load(
-          'assets/databases/civil_registry.db',
+        throw Exception(
+          'قاعدة بيانات السجل المدني غير موجودة.\n'
+          'الرجاء الذهاب إلى صفحة "تنزيل قاعدة بيانات السجل المدني" أولاً.\n'
+          'سيتم نسخ القاعدة تلقائياً من الملفات.',
         );
-        final bytes = data.buffer.asUint8List();
-        await dbFile.create(recursive: true);
-        await dbFile.writeAsBytes(bytes);
-        print('✅ تم نسخ القاعدة بنجاح');
       }
 
       // فتح القاعدة

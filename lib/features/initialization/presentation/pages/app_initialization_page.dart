@@ -14,6 +14,8 @@ class AppInitializationPage extends ConsumerStatefulWidget {
 }
 
 class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
+  String _statusMessage = 'جاري التهيئة...';
+
   @override
   void initState() {
     super.initState();
@@ -21,20 +23,37 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
   }
 
   Future<void> _initialize() async {
-    // Show splash for at least 2 seconds
-    await Future.delayed(const Duration(seconds: 2));
+    // Show splash for at least 1.5 seconds
+    await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
+
+    setState(() {
+      _statusMessage = 'التحقق من قاعدة البيانات...';
+    });
+
+    // Explicitly check database (refresh status)
+    await ref.read(databaseDownloadProvider.notifier).checkDatabase();
 
     // Check if database is available
     final dbState = ref.read(databaseDownloadProvider);
 
     if (dbState.isAvailable) {
+      setState(() {
+        _statusMessage = 'تم العثور على قاعدة البيانات ✓';
+      });
+      await Future.delayed(const Duration(milliseconds: 500));
+
       // Database exists - go to main app
       if (mounted && context.mounted) {
         context.go('/dashboard');
       }
     } else {
+      setState(() {
+        _statusMessage = 'قاعدة البيانات غير موجودة - التوجيه للتنزيل...';
+      });
+      await Future.delayed(const Duration(milliseconds: 500));
+
       // Database doesn't exist - go to download page
       if (mounted && context.mounted) {
         context.go('/database-download');
@@ -97,7 +116,7 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
               SizedBox(height: 24.h),
 
               Text(
-                'جاري التهيئة...',
+                _statusMessage,
                 style: TextStyle(
                   fontSize: 16.sp,
                   color: Colors.white.withOpacity(0.8),

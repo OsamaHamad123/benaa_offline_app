@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/datasources/database_download_service.dart';
 import '../../domain/entities/download_progress.dart';
@@ -50,10 +51,19 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     final isAvailable = await _downloadService.isDatabaseAvailable();
     final size = await _downloadService.getDatabaseSize();
 
+    if (kDebugMode) {
+      debugPrint('📊 Database check: isAvailable=$isAvailable, size=$size');
+    }
+
     state = state.copyWith(
       isAvailable: isAvailable,
       databaseSize: size > 0 ? size : null,
     );
+  }
+
+  /// Public method to refresh database status
+  Future<void> checkDatabase() async {
+    await _checkDatabase();
   }
 
   Future<void> downloadDatabase(String url) async {

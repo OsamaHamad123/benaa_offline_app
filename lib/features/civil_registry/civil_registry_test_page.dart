@@ -30,23 +30,24 @@ class _CivilRegistryTestPageState extends ConsumerState<CivilRegistryTestPage> {
   Future<void> _initDatabase() async {
     try {
       setState(() {
-        _status = 'نسخ قاعدة البيانات من assets...';
+        _status = 'جاري البحث عن قاعدة البيانات...';
       });
 
       // الحصول على مسار التطبيق
       final appDir = await getApplicationDocumentsDirectory();
-      final dbPath = '${appDir.path}/civil_registry.db';
+      final dbDir = Directory('${appDir.path}/databases');
+      final dbPath = '${dbDir.path}/civil_registry.db';
 
       // التحقق من وجود القاعدة
       final dbFile = File(dbPath);
       if (!await dbFile.exists()) {
-        // نسخ من assets
-        final data = await rootBundle.load(
-          'assets/databases/civil_registry.db',
-        );
-        final bytes = data.buffer.asUint8List();
-        await dbFile.create(recursive: true);
-        await dbFile.writeAsBytes(bytes);
+        setState(() {
+          _isLoading = false;
+          _status =
+              'قاعدة بيانات السجل المدني غير موجودة.\n'
+              'الرجاء الذهاب إلى صفحة "تنزيل قاعدة بيانات السجل المدني" أولاً.';
+        });
+        return;
       }
 
       setState(() {

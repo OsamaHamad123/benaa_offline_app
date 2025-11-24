@@ -153,22 +153,27 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
     switch (status) {
       case DownloadStatus.downloading:
         description =
-            'يتم الآن تحميل قاعدة بيانات السجل المدني\nالرجاء الانتظار...';
+            'يتم الآن تحميل قاعدة بيانات السجل المدني (ملف مضغوط)\nالرجاء الانتظار...';
         break;
       case DownloadStatus.extracting:
-        description = 'يتم الآن استخراج الملفات\nهذا قد يستغرق بضع دقائق...';
+        description =
+            'يتم الآن فك ضغط الملف واستخراج قاعدة البيانات\nهذا قد يستغرق بضع دقائق... الرجاء عدم إغلاق التطبيق';
+        break;
+      case DownloadStatus.verifying:
+        description =
+            'يتم الآن التحقق من سلامة قاعدة البيانات\nتقريباً انتهينا...';
         break;
       case DownloadStatus.completed:
         description =
-            'تم تحميل جميع البيانات بنجاح\nيمكنك الآن البدء باستخدام التطبيق';
+            'تم تحميل واستخراج جميع البيانات بنجاح ✓\nيمكنك الآن البدء باستخدام التطبيق';
         break;
       case DownloadStatus.failed:
         description =
-            'حدث خطأ أثناء التحميل\nالرجاء التحقق من الاتصال بالإنترنت';
+            'حدث خطأ أثناء التحميل أو الاستخراج\nالرجاء التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى';
         break;
       default:
         description =
-            'لاستخدام التطبيق، يجب تحميل قاعدة بيانات السجل المدني\nالحجم المتوقع: ~${DownloadConfig.expectedSizeMB} MB';
+            'لاستخدام التطبيق، يجب تحميل قاعدة بيانات السجل المدني\nالحجم المتوقع: ~${DownloadConfig.expectedSizeMB} MB (مضغوط ~150 MB)';
     }
 
     return Text(
@@ -351,20 +356,41 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
   }
 
   Widget _buildRetryButton() {
-    return ElevatedButton.icon(
-      onPressed: () {
-        ref
-            .read(databaseDownloadProvider.notifier)
-            .downloadDatabase(_downloadUrl);
-      },
-      icon: const Icon(Icons.refresh),
-      label: const Text('إعادة المحاولة'),
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
+    final state = ref.read(databaseDownloadProvider);
+    final hasPartialDownload = state.progress.downloadedBytes > 0;
+
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          onPressed: () {
+            ref
+                .read(databaseDownloadProvider.notifier)
+                .downloadDatabase(_downloadUrl);
+          },
+          icon: Icon(hasPartialDownload ? Icons.play_arrow : Icons.refresh),
+          label: Text(
+            hasPartialDownload ? 'استكمال التنزيل' : 'إعادة المحاولة',
+          ),
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
         ),
-      ),
+        if (hasPartialDownload) ...[
+          SizedBox(height: 12.h),
+          Text(
+            'تم تنزيل ${state.progress.downloadedSize} - سيتم الاستكمال من حيث توقفت',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.green[700],
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
     );
   }
 }

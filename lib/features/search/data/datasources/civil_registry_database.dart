@@ -45,7 +45,7 @@ class CivilRegistryDatabase {
   Future<Database> _initDatabase() async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
-      final dbPath = p.join(appDir.path, 'persons.db');
+      final dbPath = p.join(appDir.path, 'databases', 'civil_registry.db');
 
       final file = File(dbPath);
       final exists = await file.exists();
