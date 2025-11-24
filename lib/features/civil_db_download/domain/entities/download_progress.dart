@@ -6,11 +6,12 @@ class DownloadProgress {
   final DownloadStatus status;
   final String? errorMessage;
 
-  const DownloadProgress({
+   DownloadProgress({
     required this.downloadedBytes,
     required this.totalBytes,
     required this.percentage,
     required this.status,
+     
     this.errorMessage,
   });
 
