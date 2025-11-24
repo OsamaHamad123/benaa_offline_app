@@ -3,6 +3,7 @@ import 'package:flutter/services.dart'; // ✅ Haptic Feedback
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../../core/utils/ux_helpers.dart';
+import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📐 Responsive sizing
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import 'zero_lag_family_dialog.dart'; // ⚡ Optimized version
 import '../../../pages/v2_form_helpers/widgets/empty_state_widget.dart'
@@ -46,7 +47,7 @@ class _V2FamilyMembersTabRedesignedState
           key: const ValueKey('deceased_section'),
           formControllers: widget.formControllers,
         ),
-        SizedBox(height: 16.h),
+        SizedBox(height: ResponsiveUtils.mediumSpace),
 
         // 👶 قسم الأيتام
         _OrphansSection(
@@ -59,17 +60,23 @@ class _V2FamilyMembersTabRedesignedState
 }
 
 /// 🪦 قسم الوالدين المتوفيين
-class _DeceasedParentsSection extends StatelessWidget {
+class _DeceasedParentsSection extends StatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
   const _DeceasedParentsSection({super.key, required this.formControllers});
 
   @override
+  State<_DeceasedParentsSection> createState() =>
+      _DeceasedParentsSectionState();
+}
+
+class _DeceasedParentsSectionState extends State<_DeceasedParentsSection> {
+  @override
   Widget build(BuildContext context) {
-    final father = formControllers.deceasedMembers
+    final father = widget.formControllers.deceasedMembers
         .where((d) => d['deceasedType'] == 1)
         .firstOrNull;
-    final mother = formControllers.deceasedMembers
+    final mother = widget.formControllers.deceasedMembers
         .where((d) => d['deceasedType'] == 2)
         .firstOrNull;
 
@@ -80,15 +87,21 @@ class _DeceasedParentsSection extends StatelessWidget {
         leading: Icon(Icons.local_hospital, color: Colors.red.shade700),
         title: Text(
           'الوالدين المتوفيين',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: ResponsiveUtils.mediumFont,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Text(
           _getSubtitle(father, mother),
-          style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: ResponsiveUtils.smallFont,
+            color: Colors.grey.shade600,
+          ),
         ),
         children: [
           Padding(
-            padding: EdgeInsets.all(16.w),
+            padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
             child: Column(
               children: [
                 // كارت الأب
@@ -97,9 +110,10 @@ class _DeceasedParentsSection extends StatelessWidget {
                   icon: Icons.man,
                   color: Colors.blue,
                   data: father,
-                  formControllers: formControllers,
+                  formControllers: widget.formControllers,
+                  onUpdate: () => setState(() {}), // تحديث الواجهة
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: ResponsiveUtils.smallSpace),
 
                 // كارت الأم
                 _ParentCard(
@@ -107,7 +121,8 @@ class _DeceasedParentsSection extends StatelessWidget {
                   icon: Icons.woman,
                   color: Colors.pink,
                   data: mother,
-                  formControllers: formControllers,
+                  formControllers: widget.formControllers,
+                  onUpdate: () => setState(() {}), // تحديث الواجهة
                 ),
               ],
             ),
@@ -135,6 +150,7 @@ class _ParentCard extends StatelessWidget {
   final Color color;
   final Map<String, dynamic>? data;
   final BeneficiaryFormControllers formControllers;
+  final VoidCallback onUpdate; // callback لتحديث الواجهة
 
   const _ParentCard({
     required this.type,
@@ -142,6 +158,7 @@ class _ParentCard extends StatelessWidget {
     required this.color,
     required this.data,
     required this.formControllers,
+    required this.onUpdate,
   });
 
   @override
@@ -161,20 +178,20 @@ class _ParentCard extends StatelessWidget {
 
     // عرض البيانات
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(ResponsiveUtils.smallSpace),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         border: Border.all(color: color.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
       ),
       child: Row(
         children: [
           CircleAvatar(
             backgroundColor: color,
-            radius: 24.r,
-            child: Icon(icon, color: Colors.white, size: 24.sp),
+            radius: 20.r,
+            child: Icon(icon, color: Colors.white, size: 20.sp),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: ResponsiveUtils.smallSpace),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,15 +199,15 @@ class _ParentCard extends StatelessWidget {
                 Text(
                   '${data!['firstName'] ?? ''} ${data!['familyName'] ?? ''}',
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: ResponsiveUtils.bodyFont,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: ResponsiveUtils.xSmallSpace),
                 Text(
                   'هوية: ${data!['nationalId'] ?? 'غير محدد'}',
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize: ResponsiveUtils.smallFont,
                     color: Colors.grey.shade600,
                   ),
                 ),
@@ -223,6 +240,7 @@ class _ParentCard extends StatelessWidget {
         onSave: (memberData) {
           formControllers.addDeceasedMember(memberData);
           ToastHelper.showSuccess('تم الحفظ بنجاح');
+          onUpdate(); // تحديث الواجهة
         },
       ),
     );
@@ -248,6 +266,7 @@ class _ParentCard extends StatelessWidget {
             formControllers.deceasedMembers[index] = memberData;
           }
           ToastHelper.showSuccess('تم التحديث بنجاح');
+          onUpdate(); // تحديث الواجهة
         },
       ),
     );
@@ -271,6 +290,7 @@ class _ParentCard extends StatelessWidget {
               formControllers.deceasedMembers.removeAt(index);
               Navigator.pop(context);
               ToastHelper.showSuccess('تم الحذف بنجاح');
+              onUpdate(); // تحديث الواجهة
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),
@@ -282,14 +302,19 @@ class _ParentCard extends StatelessWidget {
 }
 
 /// 👶 قسم الأيتام
-class _OrphansSection extends StatelessWidget {
+class _OrphansSection extends StatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
   const _OrphansSection({super.key, required this.formControllers});
 
   @override
+  State<_OrphansSection> createState() => _OrphansSectionState();
+}
+
+class _OrphansSectionState extends State<_OrphansSection> {
+  @override
   Widget build(BuildContext context) {
-    final orphansCount = formControllers.livingMembers.length;
+    final orphansCount = widget.formControllers.livingMembers.length;
 
     return Card(
       elevation: 2,
@@ -298,15 +323,21 @@ class _OrphansSection extends StatelessWidget {
         leading: Icon(Icons.people, color: Colors.green.shade700),
         title: Text(
           'الأيتام',
-          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: ResponsiveUtils.mediumFont,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Text(
           orphansCount == 0 ? 'لا يوجد أيتام' : '$orphansCount يتيم/أيتام',
-          style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade600),
+          style: TextStyle(
+            fontSize: ResponsiveUtils.smallFont,
+            color: Colors.grey.shade600,
+          ),
         ),
         children: [
           Padding(
-            padding: EdgeInsets.all(16.w),
+            padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
             child: orphansCount == 0
                 ? BeneficiaryEmpty.EmptyStateWidget.noFamilyMembers(
                     onAdd: () => _showAddOrphanDialog(context),
@@ -327,18 +358,21 @@ class _OrphansSection extends StatelessWidget {
                         ),
                       ),
 
-                      SizedBox(height: 16.h),
+                      SizedBox(height: ResponsiveUtils.mediumSpace),
 
                       // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
                       ...List.generate(
                         orphansCount,
                         (index) => Padding(
-                          padding: EdgeInsets.only(bottom: 8.h),
+                          padding: EdgeInsets.only(
+                            bottom: ResponsiveUtils.smallSpace,
+                          ),
                           child: _OrphanCard(
                             key: ValueKey('orphan_$index'),
-                            data: formControllers.livingMembers[index],
+                            data: widget.formControllers.livingMembers[index],
                             index: index,
-                            formControllers: formControllers,
+                            formControllers: widget.formControllers,
+                            onUpdate: () => setState(() {}),
                           ),
                         ),
                       ),
@@ -356,8 +390,9 @@ class _OrphansSection extends StatelessWidget {
       builder: (context) => ZeroLagFamilyDialog(
         isDeceased: false,
         onSave: (memberData) {
-          formControllers.addLivingMember(memberData);
+          widget.formControllers.addLivingMember(memberData);
           ToastHelper.showSuccess('تمت الإضافة بنجاح');
+          setState(() {}); // تحديث الواجهة
         },
       ),
     );
@@ -369,12 +404,14 @@ class _OrphanCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final int index;
   final BeneficiaryFormControllers formControllers;
+  final VoidCallback onUpdate;
 
   const _OrphanCard({
     super.key,
     required this.data,
     required this.index,
     required this.formControllers,
+    required this.onUpdate,
   });
 
   @override
@@ -385,20 +422,20 @@ class _OrphanCard extends StatelessWidget {
     final icon = isMale ? Icons.boy : Icons.girl;
 
     return Container(
-      padding: EdgeInsets.all(12.w),
+      padding: EdgeInsets.all(ResponsiveUtils.smallSpace),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         border: Border.all(color: color.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
       ),
       child: Row(
         children: [
           CircleAvatar(
             backgroundColor: color,
-            radius: 24.r,
-            child: Icon(icon, color: Colors.white, size: 24.sp),
+            radius: 20.r,
+            child: Icon(icon, color: Colors.white, size: 20.sp),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: ResponsiveUtils.smallSpace),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,30 +443,30 @@ class _OrphanCard extends StatelessWidget {
                 Text(
                   '${data['firstName'] ?? ''} ${data['familyName'] ?? ''}',
                   style: TextStyle(
-                    fontSize: 15.sp,
+                    fontSize: ResponsiveUtils.bodyFont,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h),
                 Row(
                   children: [
-                    Icon(Icons.cake, size: 14.sp, color: Colors.grey.shade600),
-                    SizedBox(width: 4.w),
+                    Icon(Icons.cake, size: 12.sp, color: Colors.grey.shade600),
+                    SizedBox(width: 2.w),
                     Text(
                       '${data['age'] ?? '؟'} سنة',
                       style: TextStyle(
-                        fontSize: 13.sp,
+                        fontSize: 11.sp,
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    SizedBox(width: 12.w),
-                    Icon(Icons.badge, size: 14.sp, color: Colors.grey.shade600),
-                    SizedBox(width: 4.w),
+                    SizedBox(width: 6.w),
+                    Icon(Icons.badge, size: 12.sp, color: Colors.grey.shade600),
+                    SizedBox(width: 2.w),
                     Flexible(
                       child: Text(
                         '${data['orphanNationalId'] ?? 'غير محدد'}',
                         style: TextStyle(
-                          fontSize: 13.sp,
+                          fontSize: 11.sp,
                           color: Colors.grey.shade600,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -464,6 +501,7 @@ class _OrphanCard extends StatelessWidget {
         onSave: (memberData) {
           formControllers.livingMembers[index] = memberData;
           ToastHelper.showSuccess('تم التحديث بنجاح');
+          onUpdate(); // تحديث الواجهة
         },
       ),
     );
@@ -486,6 +524,7 @@ class _OrphanCard extends StatelessWidget {
               formControllers.livingMembers.removeAt(index);
               Navigator.pop(context);
               ToastHelper.showSuccess('تم الحذف بنجاح');
+              onUpdate(); // تحديث الواجهة
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),

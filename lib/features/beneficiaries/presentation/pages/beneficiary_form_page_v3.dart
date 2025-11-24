@@ -153,6 +153,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   }
 
   /// 🔄 Debounced Auto-Save (2 seconds delay)
+  /// ✅ Changed to save as draft instead of direct database save
   Future<void> _performAutoSave() async {
     if (_isSaving || _isDeleting || _isLoading) return;
 
@@ -169,15 +170,66 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
       if (!hasChanges) return;
 
-      if (_controllers.firstNameController.text.trim().isEmpty ||
-          _controllers.nationalIdController.text.trim().isEmpty ||
-          _controllers.nationalIdController.text.trim().length !=
-              FormConstants.nationalIdLength) {
-        return;
+      // ✅ Auto-save as draft instead of full save
+      // This prevents validation errors and allows partial forms
+      await _autoSaveDraft();
+    });
+  }
+
+  /// 💾 Auto-save as draft (silent, no validation required)
+  Future<void> _autoSaveDraft() async {
+    try {
+      final formData = {
+        'firstName': _controllers.firstNameController.text,
+        'fatherName': _controllers.fatherNameController.text,
+        'grandfatherName': _controllers.grandfatherNameController.text,
+        'lastName': _controllers.lastNameController.text,
+        'motherName': _controllers.motherNameController.text,
+        'nationalId': _controllers.nationalIdController.text,
+        'birthDate': _controllers.birthDateController.text,
+        'phone': _controllers.phoneController.text,
+        'altPhone': _controllers.altPhoneController.text,
+        'address': _controllers.addressController.text,
+        'neighborhood': _controllers.neighborhoodController.text,
+        'notes': _controllers.notesController.text,
+        'gender': _controllers.selectedGender,
+        'maritalStatus': _controllers.selectedMaritalStatus,
+        'educationLevel': _controllers.selectedEducationLevel,
+        'employmentStatus': _controllers.selectedEmploymentStatus,
+        'category': _controllers.selectedCategory,
+        'displacementStatus': _controllers.selectedDisplacementStatus,
+        'healthStatus': _controllers.selectedHealthStatus,
+        'housingStatus': _controllers.selectedHousingStatus,
+        'housingType': _controllers.selectedHousingType,
+        'hasDisability': _controllers.hasDisability,
+      };
+
+      final draftId =
+          widget.beneficiaryId ??
+          'auto_draft_${DateTime.now().millisecondsSinceEpoch}';
+
+      await DraftManager.saveDraft(
+        draftId: draftId,
+        formData: {
+          'name': 'حفظ تلقائي - ${_controllers.firstNameController.text}',
+          'notes': 'تم الحفظ تلقائياً في ${DateTime.now().toString()}',
+          'formData': formData,
+          'currentTab': _tabController.index,
+          'beneficiaryId': widget.beneficiaryId,
+          'isAutoSaved': true, // علامة للحفظ التلقائي
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _lastSaved = DateTime.now();
+        });
       }
 
-      await _handleSave(isAutoSave: true);
-    });
+      debugPrint('✅ Auto-saved draft successfully');
+    } catch (e) {
+      debugPrint('❌ Error auto-saving draft: $e');
+    }
   }
 
   void _initializeForm() async {
@@ -197,8 +249,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       _clearAllControllers();
       ref.read(beneficiaryFormProvider.notifier).createNew();
 
-      Future.delayed(const Duration(milliseconds: 300), () {
+      // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم
+      Future.delayed(const Duration(milliseconds: 500), () async {
         if (mounted) {
+          await _checkAndOfferAutoSavedDrafts();
           _firstFieldFocusNode.requestFocus();
         }
       });
@@ -206,6 +260,120 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
     if (!mounted) return;
     setState(() => _isLoading = false);
+  }
+
+  /// 💾 Check for auto-saved drafts and offer to restore
+  Future<void> _checkAndOfferAutoSavedDrafts() async {
+    try {
+      final drafts = await DraftManager.getAllDrafts();
+
+      // تصفية المسودات التلقائية فقط
+      final autoSavedDrafts = drafts
+          .where((d) => d['isAutoSaved'] == true)
+          .toList();
+
+      if (autoSavedDrafts.isEmpty) return;
+
+      // عرض أحدث مسودة تلقائية فقط
+      final latestDraft = autoSavedDrafts.first;
+      final draftName = latestDraft['name'] ?? 'مسودة';
+      final savedAt = DateTime.parse(latestDraft['savedAt']);
+      final timeSince = _formatDateTime(savedAt);
+
+      if (!mounted) return;
+
+      final shouldRestore = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: Icon(Icons.restore_outlined, color: Colors.blue, size: 48.sp),
+          title: const Text('استعادة مسودة تلقائية'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'تم العثور على مسودة محفوظة تلقائياً:',
+                style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700),
+              ),
+              SizedBox(height: 12.h),
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8.r),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person,
+                          size: 16.sp,
+                          color: Colors.blue.shade700,
+                        ),
+                        SizedBox(width: 6.w),
+                        Expanded(
+                          child: Text(
+                            draftName,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6.h),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 14.sp,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          timeSince,
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'هل تريد استعادة هذه المسودة؟',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('بدء جديد'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(context, true),
+              icon: const Icon(Icons.restore),
+              label: const Text('استعادة المسودة'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRestore == true && mounted) {
+        await _loadDraft(latestDraft);
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking auto-saved drafts: $e');
+    }
   }
 
   void _clearAllControllers() {
@@ -507,7 +675,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     _controllers.lastNameController.text = 'الأحمدي';
     _controllers.motherNameController.text = 'فاطمة';
     _controllers.nationalIdController.text = '123456789012345678';
-    _controllers.phoneController.text = '07701234567';
+    _controllers.phoneController.text = '0595735352';
     _controllers.addressController.text = 'بغداد - الكرادة';
     _controllers.selectedGender = 'ذكر';
     _controllers.selectedMaritalStatus = 'متزوج';
@@ -898,18 +1066,70 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     super.dispose();
   }
 
+  /// 🔍 Scroll to first error and show detailed message
   void _scrollToFirstError() {
-    final hasBasicInfoError =
-        _controllers.firstNameController.text.trim().isEmpty ||
-        _controllers.nationalIdController.text.trim().isEmpty ||
-        _controllers.nationalIdController.text.trim().length !=
-            FormConstants.nationalIdLength;
+    // تحديد الحقول الفارغة في كل تبويب
+    final Map<int, List<String>> errorsByTab = {};
 
-    if (hasBasicInfoError && _tabController.index != 0) {
-      _tabController.animateTo(0);
+    // تبويب 0: المعلومات الأساسية
+    final basicErrors = <String>[];
+    if (_controllers.firstNameController.text.trim().isEmpty) {
+      basicErrors.add('الاسم الأول');
+    }
+    if (_controllers.fatherNameController.text.trim().isEmpty) {
+      basicErrors.add('اسم الأب');
+    }
+    if (_controllers.lastNameController.text.trim().isEmpty) {
+      basicErrors.add('اسم العائلة');
+    }
+    if (_controllers.nationalIdController.text.trim().isEmpty) {
+      basicErrors.add('الرقم الوطني');
+    } else if (_controllers.nationalIdController.text.trim().length !=
+        FormConstants.nationalIdLength) {
+      basicErrors.add('الرقم الوطني (غير صحيح)');
+    }
+    if (_controllers.selectedGender == null) {
+      basicErrors.add('الجنس');
+    }
+    if (basicErrors.isNotEmpty) {
+      errorsByTab[0] = basicErrors;
+    }
+
+    // تبويب 1: معلومات الاتصال
+    final contactErrors = <String>[];
+    if (_controllers.phoneController.text.trim().isEmpty) {
+      contactErrors.add('رقم الهاتف');
+    }
+    if (contactErrors.isNotEmpty) {
+      errorsByTab[1] = contactErrors;
+    }
+
+    // إيجاد أول تبويب به أخطاء
+    if (errorsByTab.isNotEmpty) {
+      final firstErrorTab = errorsByTab.keys.first;
+      final errorFields = errorsByTab[firstErrorTab]!;
+
+      // الانتقال للتبويب
+      if (_tabController.index != firstErrorTab) {
+        _tabController.animateTo(firstErrorTab);
+      }
+
+      // عرض رسالة مفصلة
       Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted && _firstFieldFocusNode.canRequestFocus) {
-          _firstFieldFocusNode.requestFocus();
+        if (mounted) {
+          final tabName = firstErrorTab == 0
+              ? 'المعلومات الأساسية'
+              : 'معلومات الاتصال';
+          EnhancedSnackbar.showError(
+            context,
+            message:
+                'الحقول المطلوبة في "$tabName":\n${errorFields.join(', ')}',
+          );
+
+          // تحريك التركيز للحقل الأول
+          if (firstErrorTab == 0 && _firstFieldFocusNode.canRequestFocus) {
+            _firstFieldFocusNode.requestFocus();
+          }
         }
       });
     }
@@ -956,6 +1176,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         repository: repository,
         nationalId: _controllers.nationalIdController.text.trim(),
         isNewBeneficiary: widget.beneficiaryId == null,
+        currentBeneficiaryId: widget.beneficiaryId,
       );
 
       if (hasDuplicate) {

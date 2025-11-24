@@ -48,19 +48,31 @@ class V2ContactInfoTab extends StatelessWidget {
               label: 'رقم الهاتف',
               prefixIcon: Icons.smartphone_rounded,
               keyboardType: TextInputType.phone,
-              hint: 'مثال: 0595735352',
-              maxLength: 10,
+              hint: 'مثال: 0595735352 أو +970595735352',
+              maxLength: 16, // لدعم +970XXXXXXXXX
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                LengthLimitingTextInputFormatter(16),
               ],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return null; // Optional field
                 }
-                // Palية يجيب البيانات من السجل المدني ويعبيهم بالحقو estinian phone format: 059XXXXXXX or 056XXXXXXX (10 digits)
-                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(value)) {
-                  return 'رقم غير صحيح (مثال: 0595735352 أو 0565735352)';
+                // Gaza/Palestine format: 059XXXXXXX or 056XXXXXXX or +972/+970
+                final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
+                String phoneDigits = cleaned;
+
+                if (cleaned.startsWith('+972') || cleaned.startsWith('+970')) {
+                  phoneDigits = '0' + cleaned.substring(4);
+                } else if (cleaned.startsWith('00972') ||
+                    cleaned.startsWith('00970')) {
+                  phoneDigits = '0' + cleaned.substring(5);
+                }
+
+                phoneDigits = phoneDigits.replaceAll('+', '');
+
+                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
+                  return 'رقم غير صحيح\nمثال: 0595735352 أو +970595735352';
                 }
                 return null;
               },
@@ -72,18 +84,30 @@ class V2ContactInfoTab extends StatelessWidget {
               prefixIcon: Icons.phone_android_rounded,
               keyboardType: TextInputType.phone,
               hint: 'اختياري',
-              maxLength: 10,
+              maxLength: 16,
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                LengthLimitingTextInputFormatter(16),
               ],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return null; // Optional field
                 }
-                // Palestinian phone format: 059XXXXXXX or 056XXXXXXX (10 digits)
-                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(value)) {
-                  return 'رقم غير صحيح (مثال: 0595735352 أو 0565735352)';
+                // Gaza/Palestine format
+                final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
+                String phoneDigits = cleaned;
+
+                if (cleaned.startsWith('+972') || cleaned.startsWith('+970')) {
+                  phoneDigits = '0' + cleaned.substring(4);
+                } else if (cleaned.startsWith('00972') ||
+                    cleaned.startsWith('00970')) {
+                  phoneDigits = '0' + cleaned.substring(5);
+                }
+
+                phoneDigits = phoneDigits.replaceAll('+', '');
+
+                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
+                  return 'رقم غير صحيح\nمثال: 0567654321 أو +972567654321';
                 }
                 return null;
               },

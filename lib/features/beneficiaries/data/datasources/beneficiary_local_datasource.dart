@@ -59,10 +59,15 @@ class BeneficiaryLocalDataSource {
 
   /// Get beneficiary by National ID
   Future<BeneficiaryModel?> getByNationalId(int nationalId) async {
-    final query = db.select(db.beneficiaries)
-      ..where((b) => b.idNumber.equals(nationalId));
-    final data = await query.getSingleOrNull();
-    return data != null ? BeneficiaryModel.fromDrift(data) : null;
+    try {
+      final query = db.select(db.beneficiaries)
+        ..where((b) => b.idNumber.equals(nationalId));
+      final data = await query.getSingleOrNull();
+      return data != null ? BeneficiaryModel.fromDrift(data) : null;
+    } catch (e) {
+      // إذا حدث خطأ في الاستعلام، إرجاع null (لا يوجد مستفيد)
+      return null;
+    }
   }
 
   /// Delete beneficiary

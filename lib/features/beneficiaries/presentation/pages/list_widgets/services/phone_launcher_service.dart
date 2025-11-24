@@ -22,14 +22,25 @@ class PhoneLauncherService {
   }
 
   /// فتح محادثة واتساب
+  /// يدعم أرقام قطاع غزة مع مفاتيح +972 و +970
   static Future<bool> openWhatsApp(String phoneNumber) async {
     try {
-      // تنظيف الرقم وإضافة مفتاح الدولة إذا لزم الأمر
+      // تنظيف الرقم
       String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
-      // إضافة +964 إذا كان رقم عراقي يبدأ بـ 07
-      if (cleanPhone.startsWith('07')) {
-        cleanPhone = '964${cleanPhone.substring(1)}';
+      // معالجة أرقام قطاع غزة/فلسطين
+      if (cleanPhone.startsWith('059') || cleanPhone.startsWith('056')) {
+        // استخدام +970 كمفتاح افتراضي لأرقام تبدأ ب 0
+        cleanPhone = '970${cleanPhone.substring(1)}';
+      } else if (cleanPhone.startsWith('+972')) {
+        // إزالة + للاستخدام مع WhatsApp
+        cleanPhone = cleanPhone.substring(1);
+      } else if (cleanPhone.startsWith('+970')) {
+        cleanPhone = cleanPhone.substring(1);
+      } else if (cleanPhone.startsWith('00972')) {
+        cleanPhone = '972' + cleanPhone.substring(5);
+      } else if (cleanPhone.startsWith('00970')) {
+        cleanPhone = '970' + cleanPhone.substring(5);
       } else if (cleanPhone.startsWith('+')) {
         cleanPhone = cleanPhone.substring(1);
       }

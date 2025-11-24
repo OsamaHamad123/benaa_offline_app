@@ -26,13 +26,27 @@ class BeneficiaryFormValidationHelper {
     return null;
   }
 
-  /// Validate phone number (Syrian format)
+  /// Validate phone number (Gaza/Palestine format)
+  /// يدعم: 056XXXXXXX و 059XXXXXXX مع مفاتيح +972 و +970
   static String? validatePhone(String? value) {
     if (value == null || value.trim().isEmpty) {
       return null; // Phone is optional
     }
-    if (!RegExp(r'^059\d{8}$').hasMatch(value)) {
-      return 'رقم الهاتف يجب أن يبدأ بـ 059 ويتكون من 10 أرقام';
+
+    final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
+    String phoneDigits = cleaned;
+
+    // إزالة مفتاح الدولة
+    if (cleaned.startsWith('+972') || cleaned.startsWith('+970')) {
+      phoneDigits = '0' + cleaned.substring(4);
+    } else if (cleaned.startsWith('00972') || cleaned.startsWith('00970')) {
+      phoneDigits = '0' + cleaned.substring(5);
+    }
+
+    phoneDigits = phoneDigits.replaceAll('+', '');
+
+    if (!RegExp(r'^(056|059)\d{7}$').hasMatch(phoneDigits)) {
+      return 'رقم الهاتف غير صحيح\nمثال: 0595735352 أو +970595735352';
     }
     return null;
   }

@@ -74,6 +74,11 @@ class BeneficiaryDomainHelpers {
     return status?.arabicLabel ?? '-';
   }
 
+  /// Get request status label
+  static String getRequestStatusLabel(RequestStatus? status) {
+    return status?.arabicLabel ?? '-';
+  }
+
   /// Get governorate name
   static String getGovernorateName(String? governorate) {
     if (governorate == null || governorate.isEmpty) return '-';

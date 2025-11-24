@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 /// ⚡ ZERO LAG - Absolute Maximum Performance
 ///
@@ -43,6 +45,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   late final ValueNotifier<int?> _healthStatus;
   late final ValueNotifier<int?> _deathCause;
   late final ValueNotifier<int?> _docType;
+  late final ValueNotifier<File?> _selectedFile;
 
   @override
   void initState() {
@@ -65,6 +68,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _healthStatus = ValueNotifier<int?>(m?['healthStatus']);
     _deathCause = ValueNotifier<int?>(m?['deathCause']);
     _docType = ValueNotifier<int?>(m?['documentType']);
+    _selectedFile = ValueNotifier<File?>(null);
   }
 
   @override
@@ -80,7 +84,31 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _healthStatus.dispose();
     _deathCause.dispose();
     _docType.dispose();
+    _selectedFile.dispose();
     super.dispose();
+  }
+
+  /// Pick document file
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        allowMultiple: false,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = File(result.files.single.path!);
+        _selectedFile.value = file;
+        HapticFeedback.mediumImpact();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('خطأ في اختيار الملف: $e')));
+      }
+    }
   }
 
   void _save() {
@@ -109,6 +137,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
         'deathDate': _date.value ?? DateTime.now(),
         'deathCause': _deathCause.value ?? 8,
         'documentType': _docType.value,
+        'documentFile': _selectedFile.value, // ملف الوثيقة
       });
     } else {
       data.addAll({
@@ -318,6 +347,71 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                         },
                         selected: status,
                         onSelect: (v) => _healthStatus.value = v,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+
+                  // Document Upload Section
+                  if (widget.isDeceased) ...[
+                    const Text(
+                      'رفع الوثيقة',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                    ValueListenableBuilder<File?>(
+                      valueListenable: _selectedFile,
+                      builder: (context, file, _) => Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: file == null
+                            ? InkWell(
+                                onTap: _pickFile,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.upload_file,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'اضغط لرفع الوثيقة (PDF, JPG, PNG)',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Row(
+                                children: [
+                                  Icon(Icons.check_circle, color: Colors.green),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      file.path.split('/').last,
+                                      style: const TextStyle(fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red.shade700,
+                                    ),
+                                    onPressed: () {
+                                      _selectedFile.value = null;
+                                    },
+                                    tooltip: 'حذف',
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
                   ],

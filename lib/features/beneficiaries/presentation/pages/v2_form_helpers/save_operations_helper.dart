@@ -16,15 +16,34 @@ class SaveOperationsHelper {
     required BeneficiaryRepository repository,
     required String nationalId,
     required bool isNewBeneficiary,
+    String? currentBeneficiaryId,
   }) async {
-    if (!isNewBeneficiary) {
-      return false; // Skip check for existing beneficiaries
-    }
+    // تنظيف الرقم الوطني
+    final cleanedNationalId = nationalId.trim();
+    if (cleanedNationalId.isEmpty) return false;
+
+    debugPrint('🔍 checkDuplicate: Starting check...');
+    debugPrint('🔍 National ID: $cleanedNationalId');
+    debugPrint('🔍 Is New: $isNewBeneficiary');
+    debugPrint('🔍 Current ID: $currentBeneficiaryId');
 
     try {
-      final existing = await repository.getByNationalId(nationalId);
+      final existing = await repository.getByNationalId(cleanedNationalId);
+      debugPrint(
+        '🔍 Query result: ${existing != null ? "Found (ID: ${existing.id})" : "Not found"}',
+      );
 
       if (existing != null) {
+        // إذا كان تعديل لمستفيد موجود، تجاهل نفس المستفيد
+        if (!isNewBeneficiary && existing.id == currentBeneficiaryId) {
+          debugPrint('✅ checkDuplicate: Same beneficiary, no duplicate');
+          return false; // نفس المستفيد، لا يعتبر تكرار
+        }
+
+        // يوجد مستفيد آخر بنفس الرقم الوطني
+        debugPrint(
+          '⚠️ checkDuplicate: Found duplicate - ID: ${existing.id}, National ID: ${existing.nationalId}',
+        );
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -39,9 +58,11 @@ class SaveOperationsHelper {
         }
         return true; // Duplicate found
       }
+
+      debugPrint('✅ checkDuplicate: No duplicate found');
       return false; // No duplicate
     } catch (e) {
-      debugPrint('Error checking duplicate: $e');
+      debugPrint('❌ Error checking duplicate: $e');
       return false; // Continue with save even if check fails
     }
   }

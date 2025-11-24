@@ -52,6 +52,18 @@ class InfoBuilders {
           value: BeneficiaryDomainHelpers.formatDate(beneficiary.birthDate),
         ),
       );
+
+      // إضافة العمر
+      final age = beneficiary.age;
+      if (age != null) {
+        items.add(
+          InfoItem(
+            icon: Icons.calendar_today_outlined,
+            label: 'العمر',
+            value: '$age سنة',
+          ),
+        );
+      }
     }
 
     if (beneficiary.governorate != null) {
@@ -105,6 +117,16 @@ class InfoBuilders {
   /// Build family info items (father, grandfather, marital status, etc.)
   static List<InfoItem> buildFamilyInfoItems(dynamic beneficiary) {
     final items = <InfoItem>[];
+
+    if (beneficiary.motherName != null && beneficiary.motherName!.isNotEmpty) {
+      items.add(
+        InfoItem(
+          icon: Icons.person_outlined,
+          label: 'اسم الأم',
+          value: beneficiary.motherName!,
+        ),
+      );
+    }
 
     if (beneficiary.fatherName != null && beneficiary.fatherName!.isNotEmpty) {
       items.add(
@@ -185,6 +207,26 @@ class InfoBuilders {
   /// Build location/displacement info items
   static List<InfoItem> buildLocationInfoItems(dynamic beneficiary) {
     final items = <InfoItem>[];
+
+    if (beneficiary.address != null && beneficiary.address!.isNotEmpty) {
+      items.add(
+        InfoItem(
+          icon: Icons.location_on,
+          label: 'العنوان',
+          value: beneficiary.address!,
+        ),
+      );
+    }
+
+    if (beneficiary.district != null && beneficiary.district!.isNotEmpty) {
+      items.add(
+        InfoItem(
+          icon: Icons.map_outlined,
+          label: 'الحي/القضاء',
+          value: beneficiary.district!,
+        ),
+      );
+    }
 
     if (beneficiary.currentAddress != null &&
         beneficiary.currentAddress!.isNotEmpty) {
@@ -285,6 +327,17 @@ class InfoBuilders {
       ),
     );
 
+    if (beneficiary.hasDisability) {
+      items.add(
+        InfoItem(
+          icon: Icons.accessible,
+          label: 'يعاني من إعاقة',
+          value: 'نعم',
+          valueColor: Colors.orange,
+        ),
+      );
+    }
+
     if (beneficiary.chronicDiseasesCount != null &&
         beneficiary.chronicDiseasesCount! > 0) {
       items.add(
@@ -312,7 +365,32 @@ class InfoBuilders {
 
   /// Build system metadata info items
   static List<InfoItem> buildSystemInfoItems(dynamic beneficiary) {
-    return [
+    final items = <InfoItem>[];
+
+    if (beneficiary.associationName != null &&
+        beneficiary.associationName!.isNotEmpty) {
+      items.add(
+        InfoItem(
+          icon: Icons.business_outlined,
+          label: 'اسم الجمعية',
+          value: beneficiary.associationName!,
+        ),
+      );
+    }
+
+    if (beneficiary.requestStatus != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.info_outlined,
+          label: 'حالة الطلب',
+          value: BeneficiaryDomainHelpers.getRequestStatusLabel(
+            beneficiary.requestStatus,
+          ),
+        ),
+      );
+    }
+
+    items.addAll([
       InfoItem(
         icon: Icons.access_time,
         label: 'تاريخ الإنشاء',
@@ -323,6 +401,8 @@ class InfoBuilders {
         label: 'آخر تحديث',
         value: BeneficiaryDomainHelpers.formatDateTime(beneficiary.updatedAt),
       ),
-    ];
+    ]);
+
+    return items;
   }
 }

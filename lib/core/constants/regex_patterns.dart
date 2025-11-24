@@ -12,6 +12,13 @@ class RegexPatterns {
 
   // ========== Phone Numbers ==========
 
+  /// نمط رقم الهاتف الفلسطيني (قطاع غزة): 056XXXXXXX أو 059XXXXXXX (10 أرقام)
+  /// مثال: 0595735352 أو 0567654321
+  /// يدعم: +972 و +970
+  static final RegExp gazaPhone = RegExp(
+    r'^(0)?((56|59)\d{7}|(972|970)(56|59)\d{7}|\+?(972|970)(56|59)\d{7})$',
+  );
+
   /// نمط رقم الهاتف العراقي: 07XXXXXXXXX (11 رقم)
   /// مثال: 07701234567
   static final RegExp iraqiPhone = RegExp(r'^07[0-9]{9}$');
@@ -143,7 +150,17 @@ class RegexPatterns {
     return text.replaceAll(RegExp(r'[^0-9]'), '');
   }
 
-  /// تنسيق رقم الهاتف: 07701234567 → 0770 123 4567
+  /// تنسيق رقم الهاتف الفلسطيني: 0595735352 → 059 573 5352
+  static String formatGazaPhone(String phone) {
+    final cleaned = removeLetters(phone);
+    if (cleaned.length == 10 &&
+        (cleaned.startsWith('056') || cleaned.startsWith('059'))) {
+      return '${cleaned.substring(0, 3)} ${cleaned.substring(3, 6)} ${cleaned.substring(6)}';
+    }
+    return phone;
+  }
+
+  /// تنسيق رقم الهاتف العراقي: 07701234567 → 0770 123 4567
   static String formatIraqiPhone(String phone) {
     if (!iraqiPhone.hasMatch(phone)) return phone;
     return '${phone.substring(0, 4)} ${phone.substring(4, 7)} ${phone.substring(7)}';

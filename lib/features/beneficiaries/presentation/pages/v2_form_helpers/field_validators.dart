@@ -35,13 +35,26 @@ class FieldValidators {
     final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (cleaned.length != 9) {
-      return 'الرقم الوطني يجب أن يكون 9 أرقام بالضبط';
+      return 'الرقم الوطني يجب أن يكون 9 أرقام بالضبط\nمثال: 851234567';
+    }
+
+    // تحقق من الأرقام المتكررة (999999999 غير صحيح)
+    if (RegExp(r'^(\d)\1+$').hasMatch(cleaned)) {
+      return 'الرقم الوطني غير صحيح (لا يمكن أن تكون كل الأرقام متشابهة)';
+    }
+
+    // تحقق من سنة الميلاد (الرقمان الأولان)
+    final yearPrefix = int.tryParse(cleaned.substring(0, 2));
+    if (yearPrefix != null && (yearPrefix < 30 || yearPrefix > 99)) {
+      return 'الرقم الوطني يبدأ بسنة الميلاد (30-99)\nمثال: 85 للمواليد 1985';
     }
 
     return null;
   }
 
-  /// Validate Phone Number (Iraqi format)
+  /// Validate Phone Number (Gaza/Palestine format)
+  /// يدعم: 059XXXXXXX و 056XXXXXXX (10 أرقام)
+  /// مع مفاتيح الدول: +972 و +970
   static String? validatePhone(String? value, {bool isRequired = false}) {
     if (value == null || value.trim().isEmpty) {
       if (isRequired) {
@@ -50,15 +63,33 @@ class FieldValidators {
       return null; // Optional field
     }
 
-    final cleaned = value.replaceAll(RegExp(r'[^0-9]'), '');
+    final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
 
-    if (cleaned.length != 10) {
-      return 'رقم الهاتف يجب أن يكون 10 أرقام';
+    // إزالة مفتاح الدولة للتحقق
+    String phoneDigits = cleaned;
+    if (cleaned.startsWith('+972')) {
+      phoneDigits = '0' + cleaned.substring(4); // +972 59XXXXXXX -> 059XXXXXXX
+    } else if (cleaned.startsWith('+970')) {
+      phoneDigits = '0' + cleaned.substring(4); // +970 59XXXXXXX -> 059XXXXXXX
+    } else if (cleaned.startsWith('00972')) {
+      phoneDigits = '0' + cleaned.substring(5);
+    } else if (cleaned.startsWith('00970')) {
+      phoneDigits = '0' + cleaned.substring(5);
     }
 
-    // Iraqi phone: 059xxxxxxxx (10 digits)
-    if (!cleaned.startsWith('059')) {
-      return 'رقم الهاتف يجب أن يبدأ بـ 059';
+    // إزالة + من البداية
+    phoneDigits = phoneDigits.replaceAll('+', '');
+
+    if (phoneDigits.length != 10) {
+      return 'رقم الهاتف يجب أن يكون 10 أرقام\nمثال: 0595735352 أو 0567654321';
+    }
+
+    // قبول مقدمات قطاع غزة فقط
+    final validPrefixes = ['059', '056'];
+    final prefix = phoneDigits.substring(0, 3);
+
+    if (!validPrefixes.contains(prefix)) {
+      return 'رقم الهاتف غير صحيح. يجب أن يبدأ بـ:\n056 (جوال) | 059 (جوال)\nمثال: 0595735352 أو +970595735352';
     }
 
     return null;

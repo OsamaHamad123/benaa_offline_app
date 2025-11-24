@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/repositories/beneficiary_repository.dart';
 import '../datasources/beneficiary_local_datasource.dart';
@@ -116,10 +117,27 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
 
   @override
   Future<Beneficiary?> getByNationalId(String nationalId) async {
-    final intNationalId = int.tryParse(nationalId);
-    if (intNationalId == null) return null;
-    final result = await localDataSource.getByNationalId(intNationalId);
-    return result as Beneficiary?;
+    // تنظيف الرقم الوطني من الفراغات والأحرف غير الرقمية
+    final cleanedId = nationalId.trim().replaceAll(RegExp(r'\D'), '');
+    if (cleanedId.isEmpty) return null;
+
+    final intNationalId = int.tryParse(cleanedId);
+    if (intNationalId == null) {
+      debugPrint(
+        '⚠️ getByNationalId: Failed to parse national ID: $nationalId (cleaned: $cleanedId)',
+      );
+      return null;
+    }
+
+    try {
+      final result = await localDataSource.getByNationalId(intNationalId);
+      return result as Beneficiary?;
+    } catch (e) {
+      debugPrint(
+        '⚠️ getByNationalId: Error querying national ID $intNationalId: $e',
+      );
+      return null;
+    }
   }
 
   @override
