@@ -127,11 +127,14 @@ class BeneficiaryValidator {
 
   /// التحقق من المدينة للمحافظة
   static String? validateCityForProvince(int province, int city) {
-    // TODO: Implement actual province-city mapping validation
-    // For now, just check if both are positive
+    // Basic validation: ensure both values are selected
     if (province <= 0 || city <= 0) {
       return 'يرجى اختيار المحافظة والمدينة';
     }
+
+    // Note: Province-city mapping validation requires taxonomy data
+    // This can be enhanced when taxonomy service is integrated
+    // For now, we accept any valid positive IDs
 
     return null;
   }

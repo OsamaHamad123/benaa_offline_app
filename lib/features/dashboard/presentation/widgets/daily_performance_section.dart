@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../theme/app_colors.dart';
 import '../providers/dashboard_providers.dart';
 
 /// Daily Performance Section - مؤشر الأداء اليومي
@@ -29,8 +31,8 @@ class DailyPerformanceSection extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16.r),
             side: BorderSide(
               color: isTargetMet
-                  ? Colors.green.withOpacity(0.3)
-                  : Colors.blue.withOpacity(0.3),
+                  ? AppColors.success.withOpacity(0.3)
+                  : AppColors.info.withOpacity(0.3),
               width: 2,
             ),
           ),
@@ -42,201 +44,217 @@ class DailyPerformanceSection extends ConsumerWidget {
                 end: Alignment.bottomRight,
                 colors: isTargetMet
                     ? [
-                        Colors.green.withOpacity(0.05),
-                        Colors.lightGreen.withOpacity(0.05),
+                        AppColors.success.withOpacity(0.05),
+                        AppColors.successLight.withOpacity(0.05),
                       ]
                     : [
-                        Colors.blue.withOpacity(0.05),
-                        Colors.cyan.withOpacity(0.05),
+                        AppColors.info.withOpacity(0.05),
+                        AppColors.infoLight.withOpacity(0.05),
                       ],
               ),
             ),
             padding: EdgeInsets.all(16.w),
-            child: Column(
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(10.w),
-                          decoration: BoxDecoration(
-                            color: isTargetMet
-                                ? Colors.green.withOpacity(0.15)
-                                : Colors.blue.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          child: Icon(
-                            isTargetMet
-                                ? Icons.check_circle
-                                : Icons.trending_up,
-                            color: isTargetMet ? Colors.green : Colors.blue,
-                            size: 24.sp,
-                          ),
-                        ),
-                        SizedBox(width: 12.w),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'الأداء اليومي',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey[800],
-                              ),
-                            ),
-                            Text(
-                              isTargetMet ? 'تم تحقيق الهدف! 🎉' : 'في التقدم',
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: isTargetMet
-                                    ? Colors.green[600]
-                                    : Colors.grey[600],
-                                fontWeight: isTargetMet
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 20.h),
-
-                // Circular Progress Indicator
-                SizedBox(
-                  height: 160.h,
-                  child: Stack(
-                    alignment: Alignment.center,
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Background Circle
-                      SizedBox(
-                        width: 140.w,
-                        height: 140.w,
-                        child: CircularProgressIndicator(
-                          value: 1.0,
-                          strokeWidth: 12.w,
-                          backgroundColor: Colors.transparent,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.grey.withOpacity(0.15),
-                          ),
-                        ),
-                      ),
-                      // Progress Circle
-                      SizedBox(
-                        width: 140.w,
-                        height: 140.w,
-                        child: TweenAnimationBuilder<double>(
-                          duration: const Duration(milliseconds: 1500),
-                          curve: Curves.easeOutCubic,
-                          tween: Tween<double>(begin: 0, end: percentage),
-                          builder: (context, value, child) {
-                            return CircularProgressIndicator(
-                              value: value,
-                              strokeWidth: 12.w,
-                              backgroundColor: Colors.transparent,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isTargetMet ? Colors.green : Colors.blue,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      // Center Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
+                      Row(
                         children: [
-                          Text(
-                            '$visitsToday',
-                            style: TextStyle(
-                              fontSize: 36.sp,
-                              fontWeight: FontWeight.bold,
-                              color: isTargetMet ? Colors.green : Colors.blue,
+                          Container(
+                            padding: EdgeInsets.all(10.w),
+                            decoration: BoxDecoration(
+                              color: isTargetMet
+                                  ? AppColors.success.withOpacity(0.15)
+                                  : AppColors.info.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Icon(
+                              isTargetMet
+                                  ? Icons.check_circle
+                                  : Icons.trending_up,
+                              color: isTargetMet
+                                  ? AppColors.success
+                                  : AppColors.info,
+                              size: 24.sp,
                             ),
                           ),
-                          Text(
-                            'من $dailyTarget',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            'زيارة',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: Colors.grey[500],
-                            ),
+                          SizedBox(width: 12.w),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'الأداء اليومي',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                isTargetMet
+                                    ? 'تم تحقيق الهدف! 🎉'
+                                    : 'في التقدم',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: isTargetMet
+                                      ? AppColors.successDark
+                                      : AppColors.textSecondary,
+                                  fontWeight: isTargetMet
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                ),
 
-                SizedBox(height: 20.h),
+                  SizedBox(height: 20.h),
 
-                // Additional Stats
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatItem(
-                        icon: Icons.person_add,
-                        label: 'مستفيدين جدد',
-                        value: '$newBeneficiariesToday',
-                        color: Colors.purple,
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: _StatItem(
-                        icon: Icons.show_chart,
-                        label: 'المتوسط (7 أيام)',
-                        value: avgVisitsPerDay.toStringAsFixed(1),
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-
-                if (visitsToday < dailyTarget) ...[
-                  SizedBox(height: 16.h),
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                    ),
-                    child: Row(
+                  // Circular Progress Indicator
+                  SizedBox(
+                    height: 160.h,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 18.sp,
-                          color: Colors.amber[700],
-                        ),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            'باقي ${dailyTarget - visitsToday} زيارة لتحقيق الهدف اليومي',
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: Colors.amber[800],
-                              fontWeight: FontWeight.w500,
+                        // Background Circle
+                        SizedBox(
+                          width: 140.w,
+                          height: 140.w,
+                          child: CircularProgressIndicator(
+                            value: 1.0,
+                            strokeWidth: 12.w,
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.divider.withOpacity(0.15),
                             ),
+                          ),
+                        ),
+                        // Progress Circle
+                        SizedBox(
+                          width: 140.w,
+                          height: 140.w,
+                          child: TweenAnimationBuilder<double>(
+                            duration: const Duration(milliseconds: 1500),
+                            curve: Curves.easeOutCubic,
+                            tween: Tween<double>(begin: 0, end: percentage),
+                            builder: (context, value, child) {
+                              return CircularProgressIndicator(
+                                value: value,
+                                strokeWidth: 12.w,
+                                backgroundColor: Colors.transparent,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isTargetMet
+                                      ? AppColors.success
+                                      : AppColors.info,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        // Center Text - allow scaling down when space is tight
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$visitsToday',
+                                style: TextStyle(
+                                  fontSize: 36.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: isTargetMet
+                                      ? AppColors.success
+                                      : AppColors.info,
+                                ),
+                              ),
+                              Text(
+                                'من $dailyTarget',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              Text(
+                                'زيارة',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.textHint,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  SizedBox(height: 20.h),
+
+                  // Additional Stats
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatItem(
+                          icon: Icons.person_add,
+                          label: 'مستفيدين جدد',
+                          value: '$newBeneficiariesToday',
+                          color: AppColors.orphan,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _StatItem(
+                          icon: Icons.show_chart,
+                          label: 'المتوسط (7 أيام)',
+                          value: avgVisitsPerDay.toStringAsFixed(1),
+                          color: AppColors.warning,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  if (visitsToday < dailyTarget) ...[
+                    SizedBox(height: 16.h),
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 18.sp,
+                            color: AppColors.warningDark,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              'باقي ${dailyTarget - visitsToday} زيارة لتحقيق الهدف اليومي',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -246,7 +264,7 @@ class DailyPerformanceSection extends ConsumerWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
-          side: BorderSide(color: Colors.red.withOpacity(0.3), width: 2),
+          side: BorderSide(color: AppColors.error.withOpacity(0.3), width: 2),
         ),
         child: Padding(
           padding: EdgeInsets.all(16.w),
@@ -261,69 +279,100 @@ class DailyPerformanceSection extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey.withOpacity(0.2), width: 2),
+        side: BorderSide(color: AppColors.border.withOpacity(0.2), width: 2),
       ),
-      child: Container(
-        padding: EdgeInsets.all(16.w),
-        height: 350.h,
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 40.w,
-                  height: 40.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12.r),
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Provide a compact skeleton when vertical space is limited to avoid overflow
+            final compact =
+                constraints.maxHeight > 0 && constraints.maxHeight < 260;
+
+            final double iconSize = compact ? 32.w : 40.w;
+            final double headerBarHeight = compact ? 14.h : 20.h;
+            final double circleSize = compact ? 80.w : 140.w;
+            final double statBoxHeight = compact ? 44.h : 60.h;
+            final double spacing = compact ? 12.h : 20.h;
+
+            // Cap sizes based on available vertical space to avoid overflow
+            final availableH = constraints.maxHeight > 0
+                ? constraints.maxHeight
+                : double.infinity;
+            final effectiveCircleSize = math.min(circleSize, availableH * 0.45);
+            final effectiveHeaderBarHeight = math.min(
+              headerBarHeight,
+              availableH * 0.08,
+            );
+            final effectiveStatBoxHeight = math.min(
+              statBoxHeight,
+              availableH * 0.18,
+            );
+
+            return Container(
+              padding: EdgeInsets.all(compact ? 12.w : 16.w),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: iconSize,
+                        height: iconSize,
+                        decoration: BoxDecoration(
+                          color: AppColors.divider,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Container(
+                          height: effectiveHeaderBarHeight,
+                          decoration: BoxDecoration(
+                            color: AppColors.divider,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Container(
-                    height: 20.h,
+                  SizedBox(height: spacing),
+                  Container(
+                    width: effectiveCircleSize,
+                    height: effectiveCircleSize,
                     decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(4.r),
+                      shape: BoxShape.circle,
+                      color: AppColors.background,
                     ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 20.h),
-            Container(
-              width: 140.w,
-              height: 140.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.grey[200],
+                  SizedBox(height: spacing),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: effectiveStatBoxHeight,
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Container(
+                          height: effectiveStatBoxHeight,
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 20.h),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 60.h,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Container(
-                    height: 60.h,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -368,7 +417,7 @@ class _StatItem extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             label,
-            style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 10.sp, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

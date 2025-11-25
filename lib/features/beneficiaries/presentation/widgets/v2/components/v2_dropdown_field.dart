@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Dropdown field with validation
+/// ⚡ Dropdown field optimized for performance
+/// NO ScreenUtil - direct sizes for instant response
 class V2DropdownField<T> extends StatelessWidget {
   final T? value;
   final List<DropdownMenuItem<T>> items;
@@ -31,43 +31,46 @@ class V2DropdownField<T> extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DropdownButtonFormField<T>(
-      initialValue: value,
+      value: value,
       items: items,
       onChanged: enabled ? onChanged : null,
       validator: validator,
       decoration: InputDecoration(
         labelText: isRequired ? '$label *' : label,
         hintText: hint,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22.sp) : null,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22) : null,
         filled: true,
         fillColor: enabled
             ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
             : colorScheme.surfaceContainerHighest.withOpacity(0.1),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: colorScheme.outline.withOpacity(0.2),
             width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
       dropdownColor: colorScheme.surface,
-      borderRadius: BorderRadius.circular(12.r),
-      icon: Icon(Icons.arrow_drop_down_rounded, size: 24.sp),
-      style: TextStyle(fontSize: 15.sp, color: colorScheme.onSurface),
+      borderRadius: BorderRadius.circular(12),
+      icon: const Icon(Icons.arrow_drop_down_rounded, size: 24),
+      style: TextStyle(fontSize: 15, color: colorScheme.onSurface),
     );
   }
 }

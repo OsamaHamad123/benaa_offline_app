@@ -347,3 +347,81 @@ class ResponsiveValues {
     crossAxisCount = ResponsiveUtils.getGridColumns(context);
   }
 }
+
+// ==================== Responsive Form Layout ====================
+
+/// 📱 Form Layout متجاوب للموبايل والتابلت
+///
+/// - موبايل: عمود واحد (Column)
+/// - تابلت+: عمودين (2-column Row)
+class ResponsiveFormLayout extends StatelessWidget {
+  final List<Widget> children;
+  final double spacing;
+
+  const ResponsiveFormLayout({
+    super.key,
+    required this.children,
+    this.spacing = 16,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (ResponsiveUtils.isMobile(context)) {
+      // موبايل: عمود واحد
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: _addSpacing(children, spacing),
+      );
+    }
+
+    // تابلت+: عمودين
+    return _buildTwoColumns();
+  }
+
+  Widget _buildTwoColumns() {
+    final leftColumn = <Widget>[];
+    final rightColumn = <Widget>[];
+
+    for (var i = 0; i < children.length; i++) {
+      if (i % 2 == 0) {
+        leftColumn.add(children[i]);
+      } else {
+        rightColumn.add(children[i]);
+      }
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: _addSpacing(leftColumn, spacing),
+            ),
+          ),
+          SizedBox(width: spacing * 2),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: _addSpacing(rightColumn, spacing),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _addSpacing(List<Widget> widgets, double space) {
+    if (widgets.isEmpty) return widgets;
+
+    final result = <Widget>[];
+    for (var i = 0; i < widgets.length; i++) {
+      result.add(widgets[i]);
+      if (i < widgets.length - 1) {
+        result.add(SizedBox(height: space));
+      }
+    }
+    return result;
+  }
+}

@@ -1,25 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/native.dart';
+import 'package:benaa_offline_app/data/db/drift_database.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/list/filters_provider.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/list_widgets/filters_bottom_sheet.dart';
+import 'test_helpers/widget_wrapper.dart';
+import 'package:benaa_offline_app/core/providers/providers.dart';
 
 /// 🧪 Widget Tests للـ Filters Bottom Sheet
 void main() {
+  late AppDatabase testDb;
+
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    testDb = AppDatabase(NativeDatabase.memory());
+  });
+
+  tearDownAll(() async {
+    await testDb.close();
+  });
+
   testWidgets('FiltersBottomSheet displays category chips', (tester) async {
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (_) => const FiltersBottomSheet(),
-                  );
-                },
-                child: const Text('Show'),
+      appWrapper(
+        testDb: testDb,
+        child: Builder(
+          builder: (context) => MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (_) => const FiltersBottomSheet(),
+                    );
+                  },
+                  child: const Text('Show'),
+                ),
               ),
             ),
           ),
@@ -41,18 +59,21 @@ void main() {
 
   testWidgets('FiltersBottomSheet displays sort options', (tester) async {
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (_) => const FiltersBottomSheet(),
-                  );
-                },
-                child: const Text('Show'),
+      appWrapper(
+        testDb: testDb,
+        child: Builder(
+          builder: (context) => MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (_) => const FiltersBottomSheet(),
+                    );
+                  },
+                  child: const Text('Show'),
+                ),
               ),
             ),
           ),
@@ -71,22 +92,29 @@ void main() {
   });
 
   testWidgets('FiltersBottomSheet toggles pending sync filter', (tester) async {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWithValue(testDb)],
+    );
 
     await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (_) => const FiltersBottomSheet(),
-                  );
-                },
-                child: const Text('Show'),
+      appWrapper(
+        testDb: testDb,
+        child: UncontrolledProviderScope(
+          container: container,
+          child: Builder(
+            builder: (context) => MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (_) => const FiltersBottomSheet(),
+                      );
+                    },
+                    child: const Text('Show'),
+                  ),
+                ),
               ),
             ),
           ),

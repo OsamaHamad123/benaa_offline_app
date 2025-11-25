@@ -370,19 +370,28 @@ class _OrphansSectionState extends State<_OrphansSection> {
 
                           SizedBox(height: ResponsiveUtils.mediumSpace),
 
-                          // 🔥 قائمة الأيتام - Column بدل ListView لتقليل lag
-                          ...List.generate(
-                            orphansCount,
-                            (index) => Padding(
-                              padding: EdgeInsets.only(
-                                bottom: ResponsiveUtils.smallSpace,
-                              ),
-                              child: _OrphanCard(
-                                key: ValueKey('orphan_$index'),
-                                data: livingMembers[index],
-                                index: index,
-                                formControllers: widget.formControllers,
-                              ),
+                          // 🔥 قائمة الأيتام - Virtualized list
+                          SizedBox(
+                            // Constrain height so the internal ListView can layout correctly
+                            // We allow up to 6 items in a visible area before scrolling is required
+                            height: (orphansCount.clamp(0, 6) * 80).toDouble(),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              physics: const ClampingScrollPhysics(),
+                              itemCount: orphansCount,
+                              itemBuilder: (context, index) {
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    bottom: ResponsiveUtils.smallSpace,
+                                  ),
+                                  child: _OrphanCard(
+                                    key: ValueKey('orphan_$index'),
+                                    data: livingMembers[index],
+                                    index: index,
+                                    formControllers: widget.formControllers,
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],

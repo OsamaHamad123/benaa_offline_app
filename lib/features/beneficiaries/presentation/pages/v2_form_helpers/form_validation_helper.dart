@@ -38,9 +38,9 @@ class BeneficiaryFormValidationHelper {
 
     // إزالة مفتاح الدولة
     if (cleaned.startsWith('+972') || cleaned.startsWith('+970')) {
-      phoneDigits = '0' + cleaned.substring(4);
+      phoneDigits = '0${cleaned.substring(4)}';
     } else if (cleaned.startsWith('00972') || cleaned.startsWith('00970')) {
-      phoneDigits = '0' + cleaned.substring(5);
+      phoneDigits = '0${cleaned.substring(5)}';
     }
 
     phoneDigits = phoneDigits.replaceAll('+', '');

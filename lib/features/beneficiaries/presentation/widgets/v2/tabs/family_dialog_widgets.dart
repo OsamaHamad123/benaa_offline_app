@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
+import '../../../../../../core/utils/responsive_utils_v2.dart';
 
 /// 📦 Shared Widgets for Family Member Dialogs
 ///
@@ -15,6 +16,10 @@ class NameFieldsSection extends StatelessWidget {
   final TextEditingController secondNameController;
   final TextEditingController thirdNameController;
   final TextEditingController familyNameController;
+  final FocusNode? firstNameFocus;
+  final FocusNode? secondNameFocus;
+  final FocusNode? thirdNameFocus;
+  final FocusNode? familyNameFocus;
 
   const NameFieldsSection({
     super.key,
@@ -22,83 +27,70 @@ class NameFieldsSection extends StatelessWidget {
     required this.secondNameController,
     required this.thirdNameController,
     required this.familyNameController,
+    this.firstNameFocus,
+    this.secondNameFocus,
+    this.thirdNameFocus,
+    this.familyNameFocus,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return M3SectionCard(
+      title: 'الاسم الكامل',
+      icon: Icons.person_rounded,
       children: [
-        Text(
-          'الاسم الكامل',
-          style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600),
-        ),
-        SizedBox(height: 8.h),
-        Row(
+        ResponsiveFormLayout(
           children: [
-            Expanded(
-              child: _CompactTextField(
-                controller: firstNameController,
-                label: 'الأول *',
-                isRequired: true,
-              ),
+            M3TextField(
+              controller: firstNameController,
+              label: 'الاسم الأول',
+              prefixIcon: Icons.person_rounded,
+              isRequired: true,
+              focusNode: firstNameFocus,
+              keyboardType: TextInputType.name,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\u0600-\u06FF\s]')),
+              ],
             ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: _CompactTextField(
-                controller: secondNameController,
-                label: 'الأب',
-              ),
+            M3TextField(
+              controller: secondNameController,
+              label: 'اسم الأب',
+              prefixIcon: Icons.person_outline_rounded,
+              focusNode: secondNameFocus,
+              keyboardType: TextInputType.name,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\u0600-\u06FF\s]')),
+              ],
             ),
           ],
         ),
-        SizedBox(height: 8.h),
-        Row(
+        SizedBox(height: 12.0),
+        ResponsiveFormLayout(
           children: [
-            Expanded(
-              child: _CompactTextField(
-                controller: thirdNameController,
-                label: 'الجد',
-              ),
+            M3TextField(
+              controller: thirdNameController,
+              label: 'اسم الجد',
+              prefixIcon: Icons.elderly_rounded,
+              focusNode: thirdNameFocus,
+              keyboardType: TextInputType.name,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\u0600-\u06FF\s]')),
+              ],
             ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: _CompactTextField(
-                controller: familyNameController,
-                label: 'العائلة *',
-                isRequired: true,
-              ),
+            M3TextField(
+              controller: familyNameController,
+              label: 'اللقب',
+              prefixIcon: Icons.family_restroom_rounded,
+              isRequired: true,
+              focusNode: familyNameFocus,
+              keyboardType: TextInputType.name,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\u0600-\u06FF\s]')),
+              ],
             ),
           ],
         ),
       ],
-    );
-  }
-}
-
-class _CompactTextField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final bool isRequired;
-
-  const _CompactTextField({
-    required this.controller,
-    required this.label,
-    this.isRequired = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
-      validator: isRequired
-          ? (v) => v?.trim().isEmpty ?? true ? 'مطلوب' : null
-          : null,
     );
   }
 }
@@ -113,6 +105,7 @@ class NationalIdWithCivilRegistry extends StatelessWidget {
   final String? statusMessage;
   final VoidCallback onFetch;
   final ValueChanged<String> onChanged;
+  final bool hideButtonAfterFetch;
 
   const NationalIdWithCivilRegistry({
     super.key,
@@ -121,26 +114,27 @@ class NationalIdWithCivilRegistry extends StatelessWidget {
     required this.statusMessage,
     required this.onFetch,
     required this.onChanged,
+    this.hideButtonAfterFetch = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return M3SectionCard(
+      title: 'الرقم الوطني',
+      icon: Icons.badge_rounded,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               flex: 3,
-              child: TextFormField(
+              child: M3TextField(
                 controller: nationalIdController,
-                decoration: const InputDecoration(
-                  labelText: 'الرقم الوطني *',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                  prefixIcon: Icon(Icons.badge, size: 20),
-                ),
+                label: 'الرقم الوطني',
+                prefixIcon: Icons.badge,
                 keyboardType: TextInputType.number,
                 maxLength: 9,
+                isRequired: true,
                 onChanged: onChanged,
                 validator: (v) {
                   if (v?.trim().isEmpty ?? true) return 'مطلوب';
@@ -149,30 +143,35 @@ class NationalIdWithCivilRegistry extends StatelessWidget {
                 },
               ),
             ),
-            SizedBox(width: 8.w),
-            Expanded(
-              child: FilledButton.tonalIcon(
-                onPressed: isFetching ? null : onFetch,
-                icon: isFetching
-                    ? SizedBox(
-                        width: 16.sp,
-                        height: 16.sp,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(Icons.search, size: 18.sp),
-                label: Text('بحث', style: TextStyle(fontSize: 11.sp)),
-                style: FilledButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 8.w,
-                    vertical: 12.h,
+            if (!hideButtonAfterFetch) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 0.0),
+                  child: FilledButton.tonalIcon(
+                    onPressed: isFetching ? null : onFetch,
+                    icon: isFetching
+                        ? const SizedBox(
+                            width: 16.0,
+                            height: 16.0,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.search, size: 18.0),
+                    label: const Text('بحث', style: TextStyle(fontSize: 11.0)),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0,
+                        vertical: 14.0,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
         if (statusMessage != null) ...[
-          SizedBox(height: 8.h),
+          const SizedBox(height: 12.0),
           CivilRegistryStatus(message: statusMessage!),
         ],
       ],
@@ -190,22 +189,28 @@ class CivilRegistryStatus extends StatelessWidget {
     final isSuccess = message.contains('✅');
 
     return Container(
-      padding: EdgeInsets.all(8.w),
+      padding: EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         color: isSuccess ? Colors.green.shade50 : Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: isSuccess ? Colors.green : Colors.orange),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSuccess ? Colors.green : Colors.orange,
+          width: 1.5,
+        ),
       ),
       child: Row(
         children: [
           Icon(
             isSuccess ? Icons.check_circle : Icons.info,
-            size: 16.sp,
+            size: 18.0,
             color: isSuccess ? Colors.green : Colors.orange,
           ),
-          SizedBox(width: 8.w),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(message, style: TextStyle(fontSize: 11.sp)),
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 12.0, fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),
@@ -232,8 +237,8 @@ class GenderSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('الجنس *', style: TextStyle(fontSize: 13.sp)),
-        SizedBox(height: 8.h),
+        Text('الجنس *', style: TextStyle(fontSize: 13.0)),
+        SizedBox(height: 8.0),
         SegmentedButton<int>(
           segments: const [
             ButtonSegment(
@@ -291,7 +296,7 @@ class DatePickerField extends StatelessWidget {
         );
         if (date != null) onDateSelected(date);
       },
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(8),
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
@@ -303,7 +308,7 @@ class DatePickerField extends StatelessWidget {
           selectedDate != null
               ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
               : 'اضغط للاختيار',
-          style: TextStyle(fontSize: 14.sp),
+          style: TextStyle(fontSize: 14.0),
         ),
       ),
     );
@@ -331,12 +336,12 @@ class HealthStatusSelector extends StatelessWidget {
       children: [
         Text(
           'الحالة الصحية',
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w600),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 8.0),
         Wrap(
-          spacing: 6.w,
-          runSpacing: 6.h,
+          spacing: 6.0,
+          runSpacing: 6.0,
           children: [
             SelectableChip(
               label: 'سليم',
@@ -394,12 +399,12 @@ class DeathCauseSelector extends StatelessWidget {
       children: [
         Text(
           'سبب الوفاة',
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w600),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 8.0),
         Wrap(
-          spacing: 6.w,
-          runSpacing: 6.h,
+          spacing: 6.0,
+          runSpacing: 6.0,
           children: [
             SelectableChip(
               label: 'طبيعية',
@@ -459,9 +464,9 @@ class DocumentTypeSelector extends StatelessWidget {
       children: [
         Text(
           'نوع الوثيقة',
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 14.0, fontWeight: FontWeight.w600),
         ),
-        SizedBox(height: 8.h),
+        SizedBox(height: 8.0),
         Row(
           children: [
             Expanded(
@@ -473,7 +478,7 @@ class DocumentTypeSelector extends StatelessWidget {
                 onTap: onTypeSelected,
               ),
             ),
-            SizedBox(width: 8.w),
+            SizedBox(width: 8.0),
             Expanded(
               child: DocumentCard(
                 label: 'إفادة شهيد',
@@ -520,9 +525,9 @@ class SelectableChip extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap(value);
       },
-      borderRadius: BorderRadius.circular(16.r),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: BoxDecoration(
           color: isSelected
               ? chipColor.withValues(alpha: 0.2)
@@ -531,12 +536,12 @@ class SelectableChip extends StatelessWidget {
             color: isSelected ? chipColor : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(16.r),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13.sp,
+            fontSize: 13.0,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             color: isSelected ? chipColor : Colors.grey.shade700,
           ),
@@ -575,25 +580,25 @@ class DocumentCard extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap(value);
       },
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: EdgeInsets.all(12.w),
+        padding: EdgeInsets.all(12.0),
         decoration: BoxDecoration(
           border: Border.all(
             color: isSelected ? Colors.blue : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(8.r),
+          borderRadius: BorderRadius.circular(8),
           color: isSelected ? Colors.blue.withValues(alpha: 0.1) : null,
         ),
         child: Column(
           children: [
             Icon(icon, color: isSelected ? Colors.blue : Colors.grey),
-            SizedBox(height: 4.h),
+            SizedBox(height: 4.0),
             Text(
               label,
               style: TextStyle(
-                fontSize: 11.sp,
+                fontSize: 11.0,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
               textAlign: TextAlign.center,
@@ -616,13 +621,10 @@ class NotesField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    return M3TextField(
       controller: controller,
-      decoration: const InputDecoration(
-        labelText: 'ملاحظات',
-        border: OutlineInputBorder(),
-        isDense: true,
-      ),
+      label: 'ملاحظات',
+      prefixIcon: Icons.note_rounded,
       maxLines: 2,
       maxLength: 200,
     );
@@ -648,19 +650,19 @@ class FamilyDialogHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Row(
         children: [
           Icon(icon, color: Theme.of(context).primaryColor),
-          SizedBox(width: 12.w),
+          SizedBox(width: 12.0),
           Expanded(
             child: Text(
               title,
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
             ),
           ),
           IconButton(
@@ -691,10 +693,10 @@ class FamilyDialogFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16.r)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
       child: Row(
         children: [
@@ -704,7 +706,7 @@ class FamilyDialogFooter extends StatelessWidget {
               child: const Text('إلغاء'),
             ),
           ),
-          SizedBox(width: 12.w),
+          SizedBox(width: 12.0),
           Expanded(
             flex: 2,
             child: ElevatedButton(onPressed: onSave, child: const Text('حفظ')),

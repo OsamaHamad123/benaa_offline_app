@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
 import '../components/v2_section_card.dart';
+import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱
 
 /// Contact information tab
 class V2ContactInfoTab extends StatelessWidget {
@@ -43,131 +44,147 @@ class V2ContactInfoTab extends StatelessWidget {
           title: 'معلومات الاتصال',
           icon: Icons.phone_rounded,
           children: [
-            V2CustomTextField(
-              controller: phoneController,
-              label: 'رقم الهاتف',
-              prefixIcon: Icons.smartphone_rounded,
-              keyboardType: TextInputType.phone,
-              hint: 'مثال: 0595735352 أو +970595735352',
-              maxLength: 16, // لدعم +970XXXXXXXXX
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                LengthLimitingTextInputFormatter(16),
+            ResponsiveFormLayout(
+              children: [
+                V2CustomTextField(
+                  controller: phoneController,
+                  label: 'رقم الهاتف',
+                  prefixIcon: Icons.smartphone_rounded,
+                  keyboardType: TextInputType.phone,
+                  hint: 'مثال: 0595735352 أو +970595735352',
+                  maxLength: 16, // لدعم +970XXXXXXXXX
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                    LengthLimitingTextInputFormatter(16),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return null; // Optional field
+                    }
+                    // Gaza/Palestine format: 059XXXXXXX or 056XXXXXXX or +972/+970
+                    final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
+                    String phoneDigits = cleaned;
+
+                    if (cleaned.startsWith('+972') ||
+                        cleaned.startsWith('+970')) {
+                      phoneDigits = '0${cleaned.substring(4)}';
+                    } else if (cleaned.startsWith('00972') ||
+                        cleaned.startsWith('00970')) {
+                      phoneDigits = '0${cleaned.substring(5)}';
+                    }
+
+                    phoneDigits = phoneDigits.replaceAll('+', '');
+
+                    if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
+                      return 'رقم غير صحيح\nمثال: 0595735352 أو +970595735352';
+                    }
+                    return null;
+                  },
+                ),
+                V2CustomTextField(
+                  controller: altPhoneController,
+                  label: 'رقم هاتف بديل',
+                  prefixIcon: Icons.phone_android_rounded,
+                  keyboardType: TextInputType.phone,
+                  hint: 'اختياري',
+                  maxLength: 16,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
+                    LengthLimitingTextInputFormatter(16),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return null; // Optional field
+                    }
+                    // Gaza/Palestine format
+                    final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
+                    String phoneDigits = cleaned;
+
+                    if (cleaned.startsWith('+972') ||
+                        cleaned.startsWith('+970')) {
+                      phoneDigits = '0${cleaned.substring(4)}';
+                    } else if (cleaned.startsWith('00972') ||
+                        cleaned.startsWith('00970')) {
+                      phoneDigits = '0${cleaned.substring(5)}';
+                    }
+
+                    phoneDigits = phoneDigits.replaceAll('+', '');
+
+                    if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
+                      return 'رقم غير صحيح\nمثال: 0567654321 أو +972567654321';
+                    }
+                    return null;
+                  },
+                ),
               ],
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return null; // Optional field
-                }
-                // Gaza/Palestine format: 059XXXXXXX or 056XXXXXXX or +972/+970
-                final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
-                String phoneDigits = cleaned;
-
-                if (cleaned.startsWith('+972') || cleaned.startsWith('+970')) {
-                  phoneDigits = '0' + cleaned.substring(4);
-                } else if (cleaned.startsWith('00972') ||
-                    cleaned.startsWith('00970')) {
-                  phoneDigits = '0' + cleaned.substring(5);
-                }
-
-                phoneDigits = phoneDigits.replaceAll('+', '');
-
-                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
-                  return 'رقم غير صحيح\nمثال: 0595735352 أو +970595735352';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 12.h),
-            V2CustomTextField(
-              controller: altPhoneController,
-              label: 'رقم هاتف بديل',
-              prefixIcon: Icons.phone_android_rounded,
-              keyboardType: TextInputType.phone,
-              hint: 'اختياري',
-              maxLength: 16,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                LengthLimitingTextInputFormatter(16),
-              ],
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return null; // Optional field
-                }
-                // Gaza/Palestine format
-                final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
-                String phoneDigits = cleaned;
-
-                if (cleaned.startsWith('+972') || cleaned.startsWith('+970')) {
-                  phoneDigits = '0' + cleaned.substring(4);
-                } else if (cleaned.startsWith('00972') ||
-                    cleaned.startsWith('00970')) {
-                  phoneDigits = '0' + cleaned.substring(5);
-                }
-
-                phoneDigits = phoneDigits.replaceAll('+', '');
-
-                if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
-                  return 'رقم غير صحيح\nمثال: 0567654321 أو +972567654321';
-                }
-                return null;
-              },
-            ),
+            ), // End ResponsiveFormLayout
           ],
         ),
         V2SectionCard(
           title: 'العنوان',
           icon: Icons.location_on_rounded,
           children: [
-            V2DropdownField<String>(
-              value: selectedProvince,
-              label: 'المحافظة',
-              prefixIcon: Icons.map_rounded,
-              onChanged: onProvinceChanged,
-              items: const [
-                DropdownMenuItem(value: 'damascus', child: Text('رفح')),
-                DropdownMenuItem(value: 'aleppo', child: Text('خانيونس')),
-                DropdownMenuItem(value: 'homs', child: Text('القرارة')),
-                DropdownMenuItem(value: 'hama', child: Text('حماة')),
-                DropdownMenuItem(value: 'latakia', child: Text('اللاذقية')),
-                DropdownMenuItem(value: 'tartus', child: Text('طرطوس')),
-                DropdownMenuItem(value: 'idlib', child: Text('إدلب')),
-                DropdownMenuItem(value: 'daraa', child: Text('درعا')),
-                DropdownMenuItem(value: 'quneitra', child: Text('القنيطرة')),
-                DropdownMenuItem(value: 'suwayda', child: Text('السويداء')),
-                DropdownMenuItem(
-                  value: 'deir_ez_zor',
-                  child: Text('دير الزور'),
+            ResponsiveFormLayout(
+              children: [
+                V2DropdownField<String>(
+                  value: selectedProvince,
+                  label: 'المحافظة',
+                  prefixIcon: Icons.map_rounded,
+                  onChanged: onProvinceChanged,
+                  items: const [
+                    DropdownMenuItem(value: 'damascus', child: Text('رفح')),
+                    DropdownMenuItem(value: 'aleppo', child: Text('خانيونس')),
+                    DropdownMenuItem(value: 'homs', child: Text('القرارة')),
+                    DropdownMenuItem(value: 'hama', child: Text('حماة')),
+                    DropdownMenuItem(value: 'latakia', child: Text('اللاذقية')),
+                    DropdownMenuItem(value: 'tartus', child: Text('طرطوس')),
+                    DropdownMenuItem(value: 'idlib', child: Text('إدلب')),
+                    DropdownMenuItem(value: 'daraa', child: Text('درعا')),
+                    DropdownMenuItem(
+                      value: 'quneitra',
+                      child: Text('القنيطرة'),
+                    ),
+                    DropdownMenuItem(value: 'suwayda', child: Text('السويداء')),
+                    DropdownMenuItem(
+                      value: 'deir_ez_zor',
+                      child: Text('دير الزور'),
+                    ),
+                    DropdownMenuItem(value: 'raqqa', child: Text('الرقة')),
+                    DropdownMenuItem(value: 'hasakah', child: Text('الحسكة')),
+                    DropdownMenuItem(
+                      value: 'rif_dimashq',
+                      child: Text('ريف دمشق'),
+                    ),
+                  ],
                 ),
-                DropdownMenuItem(value: 'raqqa', child: Text('الرقة')),
-                DropdownMenuItem(value: 'hasakah', child: Text('الحسكة')),
-                DropdownMenuItem(value: 'rif_dimashq', child: Text('ريف دمشق')),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            V2DropdownField<String>(
-              value: selectedCity,
-              label: 'المدينة',
-              prefixIcon: Icons.location_city_rounded,
-              onChanged: onCityChanged,
-              hint: 'اختر المدينة',
-              items: const [
-                DropdownMenuItem(value: 'damascus_city', child: Text('دمشق')),
-                DropdownMenuItem(value: 'aleppo_city', child: Text('حلب')),
-                DropdownMenuItem(value: 'homs_city', child: Text('حمص')),
-                DropdownMenuItem(value: 'hama_city', child: Text('حماة')),
-                DropdownMenuItem(
-                  value: 'latakia_city',
-                  child: Text('اللاذقية'),
+                V2DropdownField<String>(
+                  value: selectedCity,
+                  label: 'المدينة',
+                  prefixIcon: Icons.location_city_rounded,
+                  onChanged: onCityChanged,
+                  hint: 'اختر المدينة',
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'damascus_city',
+                      child: Text('دمشق'),
+                    ),
+                    DropdownMenuItem(value: 'aleppo_city', child: Text('حلب')),
+                    DropdownMenuItem(value: 'homs_city', child: Text('حمص')),
+                    DropdownMenuItem(value: 'hama_city', child: Text('حماة')),
+                    DropdownMenuItem(
+                      value: 'latakia_city',
+                      child: Text('اللاذقية'),
+                    ),
+                    DropdownMenuItem(value: 'other', child: Text('أخرى')),
+                  ],
                 ),
-                DropdownMenuItem(value: 'other', child: Text('أخرى')),
+                V2CustomTextField(
+                  controller: neighborhoodController,
+                  label: 'الحي',
+                  prefixIcon: Icons.home_work_rounded,
+                ),
               ],
-            ),
-            SizedBox(height: 12.h),
-            V2CustomTextField(
-              controller: neighborhoodController,
-              label: 'الحي',
-              prefixIcon: Icons.home_work_rounded,
-            ),
+            ), // End ResponsiveFormLayout
             SizedBox(height: 12.h),
             V2CustomTextField(
               controller: addressController,

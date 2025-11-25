@@ -2,11 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:drift/native.dart';
+import 'package:benaa_offline_app/data/db/drift_database.dart' as db;
+import 'package:benaa_offline_app/core/providers/providers.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_family_members_tab_redesigned.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/form_controllers.dart';
 
 void main() {
   late BeneficiaryFormControllers formControllers;
+  late db.AppDatabase testDb;
+
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    testDb = db.AppDatabase(NativeDatabase.memory());
+  });
+
+  tearDownAll(() async {
+    await testDb.close();
+  });
 
   setUp(() {
     formControllers = BeneficiaryFormControllers();
@@ -17,7 +30,9 @@ void main() {
   });
 
   Widget createTestWidget(Widget child) {
+    // Use ProviderScope with a DB override and keep the MaterialApp settings
     return ProviderScope(
+      overrides: [databaseProvider.overrideWithValue(testDb)],
       child: ScreenUtilInit(
         designSize: const Size(375, 812),
         builder: (context, _) => MaterialApp(

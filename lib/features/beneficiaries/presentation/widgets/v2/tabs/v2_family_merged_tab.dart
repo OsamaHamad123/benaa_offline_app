@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
 import '../../../pages/v2_form_helpers/form_constants.dart';
+import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱 Responsive utilities
 import 'v2_family_members_tab_redesigned.dart';
 
 /// 👨‍👩‍👧 Family Merged Tab (Family Info + Family Members)
@@ -106,52 +107,50 @@ class _FamilyInfoSectionState extends State<_FamilyInfoSection> {
       icon: Icons.family_restroom_rounded,
       headerColor: FormColors.tabGradients[1]![0].withOpacity(0.2),
       children: [
-        M3DropdownField<String>(
-          value: maritalStatus,
-          label: 'الحالة الاجتماعية',
-          prefixIcon: Icons.people_alt_rounded,
-          isRequired: true,
-          onChanged: (value) {
-            setState(() {
-              widget.formControllers.selectedMaritalStatus = value;
-            });
-          },
-          validator: (value) =>
-              value == null ? FormConstants.requiredFieldMessage : null,
-          items: const [
-            DropdownMenuItem(value: 'أعزب', child: Text('أعزب')),
-            DropdownMenuItem(value: 'متزوج', child: Text('متزوج')),
-            DropdownMenuItem(value: 'مطلق', child: Text('مطلق')),
-            DropdownMenuItem(value: 'أرمل', child: Text('أرمل')),
+        ResponsiveFormLayout(
+          children: [
+            M3DropdownField<String>(
+              value: maritalStatus,
+              label: 'الحالة الاجتماعية',
+              prefixIcon: Icons.people_alt_rounded,
+              isRequired: true,
+              onChanged: (value) {
+                setState(() {
+                  widget.formControllers.selectedMaritalStatus = value;
+                });
+              },
+              validator: (value) =>
+                  value == null ? FormConstants.requiredFieldMessage : null,
+              items: const [
+                DropdownMenuItem(value: 'أعزب', child: Text('أعزب')),
+                DropdownMenuItem(value: 'متزوج', child: Text('متزوج')),
+                DropdownMenuItem(value: 'مطلق', child: Text('مطلق')),
+                DropdownMenuItem(value: 'أرمل', child: Text('أرمل')),
+              ],
+            ),
+            M3TextField(
+              controller: widget.formControllers.numberOfDependentsController,
+              label: 'عدد المعالين',
+              prefixIcon: Icons.people_outline_rounded,
+              keyboardType: TextInputType.number,
+              helperText: 'عدد الأشخاص المعتمدين على المستفيد',
+            ),
           ],
         ),
         SizedBox(height: 12.h),
-        M3TextField(
-          controller: widget.formControllers.numberOfDependentsController,
-          label: 'عدد المعالين',
-          prefixIcon: Icons.people_outline_rounded,
-          keyboardType: TextInputType.number,
-          helperText: 'عدد الأشخاص المعتمدين على المستفيد',
-        ),
-        SizedBox(height: 12.h),
-        Row(
+        ResponsiveFormLayout(
           children: [
-            Expanded(
-              child: M3TextField(
-                controller: widget.formControllers.numberOfMalesController,
-                label: 'عدد الذكور',
-                prefixIcon: Icons.man_rounded,
-                keyboardType: TextInputType.number,
-              ),
+            M3TextField(
+              controller: widget.formControllers.numberOfMalesController,
+              label: 'عدد الذكور',
+              prefixIcon: Icons.man_rounded,
+              keyboardType: TextInputType.number,
             ),
-            SizedBox(width: 12.w),
-            Expanded(
-              child: M3TextField(
-                controller: widget.formControllers.numberOfFemalesController,
-                label: 'عدد الإناث',
-                prefixIcon: Icons.woman_rounded,
-                keyboardType: TextInputType.number,
-              ),
+            M3TextField(
+              controller: widget.formControllers.numberOfFemalesController,
+              label: 'عدد الإناث',
+              prefixIcon: Icons.woman_rounded,
+              keyboardType: TextInputType.number,
             ),
           ],
         ),

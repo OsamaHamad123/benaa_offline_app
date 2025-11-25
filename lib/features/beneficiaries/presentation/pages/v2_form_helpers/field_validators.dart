@@ -68,13 +68,13 @@ class FieldValidators {
     // إزالة مفتاح الدولة للتحقق
     String phoneDigits = cleaned;
     if (cleaned.startsWith('+972')) {
-      phoneDigits = '0' + cleaned.substring(4); // +972 59XXXXXXX -> 059XXXXXXX
+      phoneDigits = '0${cleaned.substring(4)}'; // +972 59XXXXXXX -> 059XXXXXXX
     } else if (cleaned.startsWith('+970')) {
-      phoneDigits = '0' + cleaned.substring(4); // +970 59XXXXXXX -> 059XXXXXXX
+      phoneDigits = '0${cleaned.substring(4)}'; // +970 59XXXXXXX -> 059XXXXXXX
     } else if (cleaned.startsWith('00972')) {
-      phoneDigits = '0' + cleaned.substring(5);
+      phoneDigits = '0${cleaned.substring(5)}';
     } else if (cleaned.startsWith('00970')) {
-      phoneDigits = '0' + cleaned.substring(5);
+      phoneDigits = '0${cleaned.substring(5)}';
     }
 
     // إزالة + من البداية

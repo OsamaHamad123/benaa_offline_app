@@ -19,7 +19,7 @@ final _kOutlineBorder = OutlineInputBorder(borderRadius: _kBorderRadius);
 // ==================== CustomTextField ====================
 
 /// حقل إدخال موحد مع تصميم Material 3
-class CustomTextField extends StatelessWidget {
+class CustomTextField extends StatefulWidget {
   final TextEditingController controller;
   final String label;
   final IconData? prefixIcon;
@@ -37,6 +37,7 @@ class CustomTextField extends StatelessWidget {
   final VoidCallback? onEditingComplete;
   final String? Function(String?)? validator;
   final bool enabled;
+  final bool showValidationIcon;
 
   const CustomTextField({
     super.key,
@@ -57,36 +58,81 @@ class CustomTextField extends StatelessWidget {
     this.onEditingComplete,
     this.validator,
     this.enabled = true,
+    this.showValidationIcon = false,
   });
 
   @override
+  State<CustomTextField> createState() => _CustomTextFieldState();
+}
+
+class _CustomTextFieldState extends State<CustomTextField> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showValidationIcon) {
+      widget.controller.addListener(_onControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.showValidationIcon) {
+      widget.controller.removeListener(_onControllerChanged);
+    }
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // Calculate validation icon
+    Widget? finalSuffixIcon = widget.suffixIcon;
+    if (widget.showValidationIcon && widget.validator != null) {
+      final validationError = widget.validator!(widget.controller.text);
+      if (widget.controller.text.isNotEmpty) {
+        finalSuffixIcon = Icon(
+          validationError == null ? Icons.check_circle : Icons.error,
+          color: validationError == null
+              ? theme.colorScheme.primary
+              : theme.colorScheme.error,
+          size: 20,
+        );
+      }
+    }
+
     return TextFormField(
-      controller: controller,
+      controller: widget.controller,
       decoration: InputDecoration(
-        labelText: required ? '$label *' : label,
-        hintText: hint,
-        helperText: helperText,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
-        suffixIcon: suffixIcon,
+        labelText: widget.required ? '${widget.label} *' : widget.label,
+        hintText: widget.hint,
+        helperText: widget.helperText,
+        prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
+        suffixIcon: finalSuffixIcon,
         border: _kOutlineBorder,
         filled: true,
         isDense: true,
       ),
-      keyboardType: keyboardType,
+      keyboardType: widget.keyboardType,
       textInputAction:
-          textInputAction ??
-          (maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
-      inputFormatters: inputFormatters,
-      maxLines: maxLines,
-      readOnly: readOnly,
-      enabled: enabled,
-      onTap: onTap,
-      onChanged: onChanged,
-      onEditingComplete: onEditingComplete,
+          widget.textInputAction ??
+          (widget.maxLines > 1
+              ? TextInputAction.newline
+              : TextInputAction.next),
+      inputFormatters: widget.inputFormatters,
+      maxLines: widget.maxLines,
+      readOnly: widget.readOnly,
+      enabled: widget.enabled,
+      onTap: widget.onTap,
+      onChanged: widget.onChanged,
+      onEditingComplete: widget.onEditingComplete,
       validator:
-          validator ??
-          (required
+          widget.validator ??
+          (widget.required
               ? (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'هذا الحقل مطلوب';

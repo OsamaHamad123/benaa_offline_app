@@ -1,32 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:drift/native.dart';
+import 'package:benaa_offline_app/data/db/drift_database.dart' as db;
+import '../../../../test_helpers/widget_wrapper.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/widgets/activities_section.dart';
-import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart';
+import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart'
+    as domain_activity;
 
 void main() {
   group('Activities Section Tests', () {
-    setUpAll(() {
+    late db.AppDatabase testDb;
+
+    setUpAll(() async {
       TestWidgetsFlutterBinding.ensureInitialized();
+      testDb = db.AppDatabase(NativeDatabase.memory());
+    });
+
+    tearDownAll(() async {
+      await testDb.close();
     });
 
     testWidgets('RecentActivitiesList shows empty state when no activities', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        ProviderScope(
-          child: ScreenUtilInit(
-            designSize: const Size(375, 812),
-            builder: (context, child) => MaterialApp(
-              home: Scaffold(
-                body: RecentActivitiesList(
-                  activities: const [],
-                  isLoading: false,
-                  hasMore: false,
-                ),
-              ),
-            ),
+        appWrapper(
+          testDb: testDb,
+          child: RecentActivitiesList(
+            activities: const [],
+            isLoading: false,
+            hasMore: false,
           ),
         ),
       );
@@ -42,7 +45,7 @@ void main() {
     });
 
     testWidgets('ActivityItem displays correctly', (WidgetTester tester) async {
-      final testActivity = Activity(
+      final testActivity = domain_activity.Activity(
         id: '1',
         type: 'create',
         description: 'إضافة مستفيد جديد',
@@ -51,12 +54,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: ScreenUtilInit(
-            designSize: const Size(375, 812),
-            builder: (context, child) => MaterialApp(
-              home: Scaffold(body: ActivityItem(activity: testActivity)),
-            ),
+        appWrapper(
+          testDb: testDb,
+          child: MaterialApp(
+            home: Scaffold(body: ActivityItem(activity: testActivity)),
           ),
         ),
       );
@@ -73,18 +74,12 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        ProviderScope(
-          child: ScreenUtilInit(
-            designSize: const Size(375, 812),
-            builder: (context, child) => MaterialApp(
-              home: Scaffold(
-                body: RecentActivitiesList(
-                  activities: const [],
-                  isLoading: true,
-                  hasMore: true,
-                ),
-              ),
-            ),
+        appWrapper(
+          testDb: testDb,
+          child: RecentActivitiesList(
+            activities: const [],
+            isLoading: true,
+            hasMore: true,
           ),
         ),
       );

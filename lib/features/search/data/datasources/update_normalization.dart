@@ -155,8 +155,9 @@ class UpdateNormalizationUtility {
       final passed = actual == expected;
       final status = passed ? '✅' : '❌';
 
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('$status "$input" → "$actual" (expected: "$expected")');
+      }
 
       if (!passed) {
         allPassed = false;

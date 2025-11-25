@@ -96,15 +96,16 @@ class BeneficiaryInfoCard extends StatelessWidget {
   }
 
   Color _getCategoryColor(int? sectionId) {
-    // TODO: Map section IDs to colors based on actual backend codes
+    // Category colors - can be enhanced with taxonomy service integration
+    // These are default colors until backend provides category metadata
     switch (sectionId) {
-      case 1: // Example: orphan
+      case 1: // Orphan
         return Colors.blue;
-      case 2: // Example: widow
+      case 2: // Widow
         return Colors.purple;
-      case 3: // Example: poor
+      case 3: // Poor
         return Colors.orange;
-      case 4: // Example: disabled
+      case 4: // Disabled
         return Colors.teal;
       default:
         return Colors.grey;
@@ -112,12 +113,14 @@ class BeneficiaryInfoCard extends StatelessWidget {
   }
 
   String _getProvinceName(int? province) {
-    // TODO: Map province codes to names
+    // Province names - requires taxonomy service integration
+    // Returns ID for now; can be mapped when taxonomy data is available
     return province?.toString() ?? 'غير محدد';
   }
 
   String _getCityName(int? city) {
-    // TODO: Map city codes to names
+    // City names - requires taxonomy service integration
+    // Returns ID for now; can be mapped when taxonomy data is available
     return city?.toString() ?? 'غير محدد';
   }
 }

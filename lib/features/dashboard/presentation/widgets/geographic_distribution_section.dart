@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../theme/app_colors.dart';
 import '../providers/dashboard_providers.dart';
 
 /// Provider for geographic distribution
@@ -60,7 +61,7 @@ class GeographicDistributionSection extends ConsumerWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
-            side: BorderSide(color: Colors.blue.withOpacity(0.3), width: 1),
+            side: BorderSide(color: AppColors.info.withOpacity(0.3), width: 1),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -69,8 +70,8 @@ class GeographicDistributionSection extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.blue.withOpacity(0.05),
-                  Colors.cyan.withOpacity(0.05),
+                  AppColors.info.withOpacity(0.05),
+                  AppColors.infoLight.withOpacity(0.05),
                 ],
               ),
             ),
@@ -84,12 +85,12 @@ class GeographicDistributionSection extends ConsumerWidget {
                     Container(
                       padding: EdgeInsets.all(10.w),
                       decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.15),
+                        color: AppColors.info.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Icon(
                         Icons.map_outlined,
-                        color: Colors.blue,
+                        color: AppColors.info,
                         size: 24.sp,
                       ),
                     ),
@@ -103,14 +104,14 @@ class GeographicDistributionSection extends ConsumerWidget {
                             style: TextStyle(
                               fontSize: 16.sp,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           Text(
                             '${data.length} محافظة',
                             style: TextStyle(
                               fontSize: 12.sp,
-                              color: Colors.grey[600],
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -152,7 +153,7 @@ class GeographicDistributionSection extends ConsumerWidget {
                       'و ${data.length - 5} محافظات أخرى',
                       style: TextStyle(
                         fontSize: 12.sp,
-                        color: Colors.grey[600],
+                        color: AppColors.textSecondary,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -168,7 +169,7 @@ class GeographicDistributionSection extends ConsumerWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
-          side: BorderSide(color: Colors.red.withOpacity(0.3), width: 1),
+          side: BorderSide(color: AppColors.error.withOpacity(0.3), width: 1),
         ),
         child: Padding(
           padding: EdgeInsets.all(16.w),
@@ -183,26 +184,30 @@ class GeographicDistributionSection extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey.withOpacity(0.3), width: 1),
+        side: BorderSide(color: AppColors.divider.withOpacity(0.3), width: 1),
       ),
       child: Container(
         padding: EdgeInsets.all(24.w),
         child: Column(
           children: [
-            Icon(Icons.map_outlined, size: 48.sp, color: Colors.grey[400]),
+            Icon(
+              Icons.map_outlined,
+              size: 48.sp,
+              color: AppColors.textSecondary,
+            ),
             SizedBox(height: 12.h),
             Text(
               'لا توجد بيانات',
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
               ),
             ),
             SizedBox(height: 4.h),
             Text(
               'لم يتم إضافة مستفيدين بعد',
-              style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 12.sp, color: AppColors.textHint),
             ),
           ],
         ),
@@ -213,16 +218,16 @@ class GeographicDistributionSection extends ConsumerWidget {
   Color _getGovernorateColor(String governorate) {
     // Assign colors based on governorate name hash for consistency
     final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.indigo,
-      Colors.amber,
-      Colors.cyan,
-      Colors.deepOrange,
+      AppColors.info,
+      AppColors.success,
+      AppColors.warning,
+      AppColors.orphan,
+      AppColors.secondary,
+      AppColors.widow,
+      AppColors.primaryDark,
+      AppColors.warningLight,
+      AppColors.infoLight,
+      AppColors.poor,
     ];
 
     final index = governorate.hashCode.abs() % colors.length;
@@ -306,7 +311,6 @@ class GeographicDistributionSection extends ConsumerWidget {
       ),
       child: Container(
         padding: EdgeInsets.all(16.w),
-        height: 250.h,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

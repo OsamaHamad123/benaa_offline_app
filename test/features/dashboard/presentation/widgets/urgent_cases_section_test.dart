@@ -1,22 +1,30 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:drift/native.dart';
+import 'package:benaa_offline_app/data/db/drift_database.dart' as db;
+import '../../../../test_helpers/widget_wrapper.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/widgets/urgent_cases_section.dart';
 
 void main() {
   group('Urgent Cases Section Tests', () {
-    setUpAll(() {
+    late db.AppDatabase testDb;
+
+    setUpAll(() async {
       TestWidgetsFlutterBinding.ensureInitialized();
+      testDb = db.AppDatabase(NativeDatabase.memory());
+    });
+
+    tearDownAll(() async {
+      await testDb.close();
     });
 
     testWidgets('UrgentCasesSection shows skeleton loader while loading', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(375, 812),
-          builder: (context, child) =>
-              MaterialApp(home: Scaffold(body: UrgentCasesSection())),
+        appWrapper(
+          testDb: testDb,
+          child: const SizedBox(height: 400, child: UrgentCasesSection()),
         ),
       );
 

@@ -315,6 +315,8 @@ class FormAppBarActions extends StatelessWidget {
   final VoidCallback? onSaveDraft;
   final VoidCallback onShowHelp;
   final VoidCallback? onDelete;
+  final VoidCallback? onUndo;
+  final VoidCallback? onRedo;
 
   const FormAppBarActions({
     super.key,
@@ -326,6 +328,8 @@ class FormAppBarActions extends StatelessWidget {
     required this.onSaveDraft,
     required this.onShowHelp,
     this.onDelete,
+    this.onUndo,
+    this.onRedo,
   });
 
   @override
@@ -335,38 +339,58 @@ class FormAppBarActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // ⬅️ Undo Button - Now visible in AppBar!
+        IconButton(
+          icon: Icon(Icons.undo, size: 20.sp, color: Colors.white),
+          onPressed: onUndo,
+          tooltip: 'تراجع (Ctrl+Z)',
+        ),
+
+        // ➡️ Redo Button - Now visible in AppBar!
+        IconButton(
+          icon: Icon(Icons.redo, size: 20.sp, color: Colors.white),
+          onPressed: onRedo,
+          tooltip: 'إعادة (Ctrl+Y)',
+        ),
+
+        // Divider
+        Container(
+          height: 24,
+          width: 1,
+          margin: EdgeInsets.symmetric(horizontal: 8.w),
+          color: Colors.white.withOpacity(0.3),
+        ),
+
         // Save Draft (Primary action)
         if (onSaveDraft != null)
           IconButton(
-            icon: Icon(Icons.save_outlined, size: 22.sp),
+            icon: Icon(Icons.save_outlined, size: 22.sp, color: Colors.white),
             onPressed: onSaveDraft,
             tooltip: 'حفظ كمسودة',
-            color: theme.colorScheme.primary,
           ),
-
-        // Help (Important)
-        IconButton(
-          icon: Icon(Icons.help_outline_rounded, size: 22.sp),
-          onPressed: onShowHelp,
-          tooltip: 'مساعدة',
-        ),
 
         // Delete (if editing)
         if (onDelete != null)
           IconButton(
-            icon: Icon(Icons.delete_outline_rounded, size: 22.sp),
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              size: 22.sp,
+              color: Colors.white,
+            ),
             onPressed: onDelete,
             tooltip: 'حذف',
-            color: Colors.red.shade400,
           ),
 
-        // More Menu (Secondary actions)
+        // 🚀 Quick Actions Menu
         PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, size: 22.sp),
+          icon: Icon(Icons.more_vert, size: 22.sp, color: Colors.white),
           tooltip: 'المزيد',
+          color: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
           onSelected: (value) {
             switch (value) {
-              // search removed - local to FormContentWidget
               case 'statistics':
                 onToggleStatistics();
                 break;
@@ -376,62 +400,89 @@ class FormAppBarActions extends StatelessWidget {
               case 'helpers':
                 onToggleFieldHelpers();
                 break;
-              case 'shortcuts':
-                onShowHelp();
-                break;
             }
           },
           itemBuilder: (context) => [
-            // Search menu item removed - search is local to FormContentWidget
+            // المسودات
             PopupMenuItem(
               value: 'drafts',
-              child: Row(
-                children: [
-                  Icon(Icons.drafts_outlined, size: 20.sp),
-                  SizedBox(width: 12.w),
-                  const Text('المسودات'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'helpers',
-              child: Row(
-                children: [
-                  Icon(
-                    showFieldHelpers ? Icons.visibility_off : Icons.visibility,
-                    size: 20.sp,
-                  ),
-                  SizedBox(width: 12.w),
-                  Text(showFieldHelpers ? 'إخفاء المساعدات' : 'عرض المساعدات'),
-                ],
+              child: _QuickActionItem(
+                icon: Icons.drafts_outlined,
+                label: 'المسودات',
+                description: 'عرض وإدارة المسودات',
               ),
             ),
             const PopupMenuDivider(),
+            // المساعدات
             PopupMenuItem(
-              value: 'statistics',
-              child: Row(
-                children: [
-                  Icon(
-                    showStatistics ? Icons.analytics : Icons.analytics_outlined,
-                    size: 20.sp,
-                    color: showStatistics ? theme.colorScheme.primary : null,
-                  ),
-                  SizedBox(width: 12.w),
-                  const Text('الإحصائيات'),
-                ],
+              value: 'helpers',
+              child: _QuickActionItem(
+                icon: showFieldHelpers
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+                label: showFieldHelpers ? 'إخفاء المساعدات' : 'عرض المساعدات',
+                description: 'نصائح وإرشادات للحقول',
               ),
             ),
+            // الإحصائيات
             PopupMenuItem(
-              value: 'shortcuts',
-              child: Row(
-                children: [
-                  Icon(Icons.keyboard_outlined, size: 20.sp),
-                  SizedBox(width: 12.w),
-                  const Text('اختصارات لوحة المفاتيح'),
-                ],
+              value: 'statistics',
+              child: _QuickActionItem(
+                icon: Icons.analytics_outlined,
+                label: showStatistics ? 'إخفاء الإحصائيات' : 'عرض الإحصائيات',
+                description: 'ملخص تقدم النموذج',
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// 🚀 Quick Action Menu Item Widget
+class _QuickActionItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String description;
+
+  const _QuickActionItem({
+    required this.icon,
+    required this.label,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(8.r),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(icon, size: 20.sp, color: theme.colorScheme.primary),
+        ),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                description,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

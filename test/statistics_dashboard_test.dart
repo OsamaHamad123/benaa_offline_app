@@ -3,14 +3,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/list_widgets/statistics_dashboard.dart';
+import 'package:drift/native.dart';
+import 'package:benaa_offline_app/data/db/drift_database.dart';
+import 'package:benaa_offline_app/core/providers/providers.dart';
 
 /// 🧪 Widget Tests للـ Statistics Dashboard
 void main() {
+  late AppDatabase testDb;
+
+  setUpAll(() async {
+    testDb = AppDatabase(NativeDatabase.memory());
+  });
+
+  tearDownAll(() async {
+    await testDb.close();
+  });
   testWidgets('StatisticsDashboard displays using provider data', (
     tester,
   ) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
         child: ScreenUtilInit(
           designSize: const Size(375, 812),
           child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
@@ -28,6 +41,7 @@ void main() {
   testWidgets('StatisticsDashboard has gradient background', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
         child: ScreenUtilInit(
           designSize: const Size(375, 812),
           child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
@@ -45,6 +59,7 @@ void main() {
   testWidgets('StatisticsDashboard contains stat icons', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(testDb)],
         child: ScreenUtilInit(
           designSize: const Size(375, 812),
           child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
@@ -52,6 +67,7 @@ void main() {
       ),
     );
 
+    // Should have icons for stats
     // Should have icons for stats
     expect(find.byIcon(Icons.people), findsOneWidget);
     expect(find.byIcon(Icons.filter_list), findsOneWidget);

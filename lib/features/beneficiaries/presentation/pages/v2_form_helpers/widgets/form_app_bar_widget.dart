@@ -21,6 +21,9 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onSaveDraft;
   final VoidCallback onShowHelp;
   final VoidCallback? onDelete;
+  final VoidCallback? onUndo;
+  final VoidCallback? onRedo;
+  final PreferredSizeWidget? bottom;
 
   const FormAppBarWidget({
     super.key,
@@ -36,6 +39,9 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
     required this.onSaveDraft,
     required this.onShowHelp,
     required this.onDelete,
+    this.onUndo,
+    this.onRedo,
+    this.bottom,
   });
 
   @override
@@ -43,7 +49,7 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
 
     return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight),
+      preferredSize: preferredSize,
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -59,6 +65,7 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
           elevation: 0,
           backgroundColor: Colors.transparent,
           foregroundColor: Colors.white,
+          bottom: bottom,
           title: Row(
             children: [
               Expanded(
@@ -89,6 +96,8 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
               onSaveDraft: onSaveDraft,
               onShowHelp: onShowHelp,
               onDelete: onDelete,
+              onUndo: onUndo,
+              onRedo: onRedo,
             ),
             SizedBox(width: 8.w),
           ],
@@ -98,5 +107,6 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
 }

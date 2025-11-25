@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-/// Custom text field with validation and responsive design
+/// ⚡ Custom text field optimized for maximum performance
+/// NO ScreenUtil - direct sizes for instant keyboard response
 class V2CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -61,40 +61,43 @@ class V2CustomTextField extends StatelessWidget {
       focusNode: focusNode,
       textInputAction:
           textInputAction ?? (readOnly ? null : TextInputAction.next),
-      style: TextStyle(fontSize: 15.sp),
+      style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(
         labelText: isRequired ? '$label *' : label,
         hintText: hint,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22.sp) : null,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22) : null,
         suffixIcon: suffix,
         filled: true,
         fillColor: enabled
             ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
             : colorScheme.surfaceContainerHighest.withOpacity(0.1),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: colorScheme.outline.withOpacity(0.2),
             width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.error, width: 2),
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
     );
   }

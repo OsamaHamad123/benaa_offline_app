@@ -49,13 +49,29 @@ class V2UnifiedAttachmentsTab extends ConsumerWidget {
 
         // 🪦 مرفقات الوالدين المتوفيين
         if (formControllers != null)
-          _DeceasedParentsAttachmentsSection(formControllers: formControllers!),
+          ValueListenableBuilder<List<Map<String, dynamic>>>(
+            valueListenable: formControllers!.deceasedMembersNotifier,
+            builder: (context, deceasedMembers, _) {
+              if (deceasedMembers.isEmpty) return const SizedBox.shrink();
+              return _DeceasedParentsAttachmentsSection(
+                formControllers: formControllers!,
+              );
+            },
+          ),
 
         SizedBox(height: 16.h),
 
         // 👶 مرفقات الأيتام
         if (formControllers != null)
-          _OrphansAttachmentsSection(formControllers: formControllers!),
+          ValueListenableBuilder<List<Map<String, dynamic>>>(
+            valueListenable: formControllers!.livingMembersNotifier,
+            builder: (context, livingMembers, _) {
+              if (livingMembers.isEmpty) return const SizedBox.shrink();
+              return _OrphansAttachmentsSection(
+                formControllers: formControllers!,
+              );
+            },
+          ),
       ],
     );
   }
@@ -140,29 +156,40 @@ class _DeceasedParentsAttachmentsSection extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(16.w),
             child: Column(
-              children: formControllers.deceasedMembers.asMap().entries.map((
-                entry,
-              ) {
-                final index = entry.key;
-                final deceased = entry.value;
-                final type = deceased['deceasedType'] == 1 ? 'الأب' : 'الأم';
-                final name =
-                    '${deceased['firstName'] ?? ''} ${deceased['familyName'] ?? ''}';
+              children: [
+                SizedBox(
+                  height: (deceasedCount.clamp(0, 6) * 88).toDouble(),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: deceasedCount,
+                    itemBuilder: (context, index) {
+                      final deceased = formControllers.deceasedMembers[index];
+                      final type = deceased['deceasedType'] == 1
+                          ? 'الأب'
+                          : 'الأم';
+                      final fullName =
+                          '${deceased['firstName'] ?? ''} ${deceased['familyName'] ?? ''}';
 
-                return _AttachmentSubSection(
-                  key: ValueKey('deceased_attachments_$index'),
-                  title: '$type - $name',
-                  icon: deceased['deceasedType'] == 1 ? Icons.man : Icons.woman,
-                  color: deceased['deceasedType'] == 1
-                      ? Colors.blue
-                      : Colors.pink,
-                  attachmentTypes: const [
-                    'شهادة الوفاة',
-                    'بطاقة الهوية',
-                    'مستندات أخرى',
-                  ],
-                );
-              }).toList(),
+                      return _AttachmentSubSection(
+                        key: ValueKey('deceased_attachments_$index'),
+                        title: '$type - $fullName',
+                        icon: deceased['deceasedType'] == 1
+                            ? Icons.man
+                            : Icons.woman,
+                        color: deceased['deceasedType'] == 1
+                            ? Colors.blue
+                            : Colors.pink,
+                        attachmentTypes: const [
+                          'شهادة الوفاة',
+                          'بطاقة الهوية',
+                          'مستندات أخرى',
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -202,31 +229,38 @@ class _OrphansAttachmentsSection extends StatelessWidget {
           Padding(
             padding: EdgeInsets.all(16.w),
             child: Column(
-              children: formControllers.livingMembers.asMap().entries.map((
-                entry,
-              ) {
-                final index = entry.key;
-                final orphan = entry.value;
-                final name =
-                    '${orphan['firstName'] ?? ''} ${orphan['familyName'] ?? ''}';
-                final gender = orphan['gender'] as int?;
-                final isMale = gender == 1;
+              children: [
+                SizedBox(
+                  height: (orphansCount.clamp(0, 6) * 88).toDouble(),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: orphansCount,
+                    itemBuilder: (context, index) {
+                      final orphan = formControllers.livingMembers[index];
+                      final fullName =
+                          '${orphan['firstName'] ?? ''} ${orphan['familyName'] ?? ''}';
+                      final gender = orphan['gender'] as int?;
+                      final isMale = gender == 1;
 
-                return _AttachmentSubSection(
-                  key: ValueKey('orphan_attachments_$index'),
-                  title: name,
-                  icon: isMale ? Icons.boy : Icons.girl,
-                  color: isMale ? Colors.blue : Colors.pink,
-                  attachmentTypes: const [
-                    'صورة شخصية',
-                    'صورة كاملة',
-                    'بطاقة الهوية',
-                    'شهادة الميلاد',
-                    'تقرير طبي',
-                    'آخر شهادة دراسية',
-                  ],
-                );
-              }).toList(),
+                      return _AttachmentSubSection(
+                        key: ValueKey('orphan_attachments_$index'),
+                        title: fullName,
+                        icon: isMale ? Icons.boy : Icons.girl,
+                        color: isMale ? Colors.blue : Colors.pink,
+                        attachmentTypes: const [
+                          'صورة شخصية',
+                          'صورة كاملة',
+                          'بطاقة الهوية',
+                          'شهادة الميلاد',
+                          'تقرير طبي',
+                          'آخر شهادة دراسية',
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],

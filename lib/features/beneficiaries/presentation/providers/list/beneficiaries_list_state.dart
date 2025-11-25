@@ -110,36 +110,50 @@ class FiltersState {
 
   FiltersState copyWith({
     String? searchQuery,
-    int? categoryId,
-    int? governorateId,
-    int? cityId,
+    Object? categoryId = _unset,
+    Object? governorateId = _unset,
+    Object? cityId = _unset,
     SortBy? sortBy,
     bool? sortAscending,
-    DateTime? dateFrom,
-    DateTime? dateTo,
-    int? ageFrom,
-    int? ageTo,
-    bool? onlyPendingSync,
-    bool? onlyWithPhone,
-    bool? onlyWithLocation,
+    Object? dateFrom = _unset,
+    Object? dateTo = _unset,
+    Object? ageFrom = _unset,
+    Object? ageTo = _unset,
+    Object? onlyPendingSync = _unset,
+    Object? onlyWithPhone = _unset,
+    Object? onlyWithLocation = _unset,
   }) {
     return FiltersState(
       searchQuery: searchQuery ?? this.searchQuery,
-      categoryId: categoryId ?? this.categoryId,
-      governorateId: governorateId ?? this.governorateId,
-      cityId: cityId ?? this.cityId,
+      categoryId: identical(categoryId, _unset)
+          ? this.categoryId
+          : categoryId as int?,
+      governorateId: identical(governorateId, _unset)
+          ? this.governorateId
+          : governorateId as int?,
+      cityId: identical(cityId, _unset) ? this.cityId : cityId as int?,
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
-      dateFrom: dateFrom ?? this.dateFrom,
-      dateTo: dateTo ?? this.dateTo,
-      ageFrom: ageFrom ?? this.ageFrom,
-      ageTo: ageTo ?? this.ageTo,
-      onlyPendingSync: onlyPendingSync ?? this.onlyPendingSync,
-      onlyWithPhone: onlyWithPhone ?? this.onlyWithPhone,
-      onlyWithLocation: onlyWithLocation ?? this.onlyWithLocation,
+      dateFrom: identical(dateFrom, _unset)
+          ? this.dateFrom
+          : dateFrom as DateTime?,
+      dateTo: identical(dateTo, _unset) ? this.dateTo : dateTo as DateTime?,
+      ageFrom: identical(ageFrom, _unset) ? this.ageFrom : ageFrom as int?,
+      ageTo: identical(ageTo, _unset) ? this.ageTo : ageTo as int?,
+      onlyPendingSync: identical(onlyPendingSync, _unset)
+          ? this.onlyPendingSync
+          : onlyPendingSync as bool,
+      onlyWithPhone: identical(onlyWithPhone, _unset)
+          ? this.onlyWithPhone
+          : onlyWithPhone as bool,
+      onlyWithLocation: identical(onlyWithLocation, _unset)
+          ? this.onlyWithLocation
+          : onlyWithLocation as bool,
     );
   }
 }
+
+const _unset = Object();
 
 /// ☑️ Selection State - حالة التحديد المتعدد
 class SelectionState {

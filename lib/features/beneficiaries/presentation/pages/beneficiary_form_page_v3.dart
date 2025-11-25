@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../../core/errors/user_friendly_error.dart';
+import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi ValueListenableBuilder
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -39,12 +41,14 @@ import 'v2_form_helpers/widgets/form_error_banner_widget.dart';
 import 'v2_form_helpers/widgets/form_app_bar_widget.dart';
 import 'v2_form_helpers/widgets/form_content_widget.dart';
 import 'v2_form_helpers/widgets/form_bottom_nav_widget.dart';
+import 'v2_form_helpers/widgets/form_progress_widgets.dart'; // 📊 Progress widgets
 
 // 🚀 Phase 3 - Advanced UX Features
 import 'v2_form_helpers/widgets/field_dependency_system.dart'; // 🔗 Field Dependencies
 import 'v2_form_helpers/widgets/smart_field_hints.dart'; // 💡 Smart Hints
 // Disabled for performance: import 'v2_form_helpers/widgets/form_progress_tracker.dart';
 import 'v2_form_helpers/widgets/mobile_quick_actions.dart'; // 📱 Mobile Quick Actions
+import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -75,13 +79,26 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   late final BeneficiaryFormControllers _controllers;
   late final FormHistory<FormStateSnapshot> _formHistory;
 
-  bool _isSaving = false;
+  // ⚡ Performance: استخدام ValueNotifier بدلاً من setState
+  final ValueNotifier<bool> _isSavingNotifier = ValueNotifier(false);
   bool _isDeleting = false;
   bool _isLoading = false;
   bool _isSavingLocked = false;
 
-  DateTime? _lastSaved;
-  bool _hasUnsavedChanges = false;
+  final ValueNotifier<DateTime?> _lastSavedNotifier = ValueNotifier(null);
+  final ValueNotifier<bool> _hasUnsavedChangesNotifier = ValueNotifier(false);
+
+  // Setters للكتابة السهلة (Getters غير مطلوبة لأننا نستخدم ValueListenableBuilder)
+  bool get _isSaving => _isSavingNotifier.value;
+  set _isSaving(bool value) => _isSavingNotifier.value = value;
+
+  set _lastSaved(DateTime? value) => _lastSavedNotifier.value = value;
+
+  set _hasUnsavedChanges(bool value) =>
+      _hasUnsavedChangesNotifier.value = value;
+
+  // 💾 Auto-draft ID - ثابت لتجنب إنشاء مسودات متكررة
+  String? _autoSaveDraftId;
 
   // 🆕 New features state
   bool _showStatistics = false;
@@ -93,6 +110,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
   // 🔄 Debouncing Timer for auto-save
   Timer? _autoSaveDebouncer;
+  // Timer to check and offer auto-saved drafts (cancelable)
+  Timer? _offerAutoSavedDraftsTimer;
+  // Timer to show first-time user tour (cancelable)
+  Timer? _tourShowTimer;
 
   // 🚀 Phase 3 - Advanced UX Features
   late final FieldDependencyController _dependencyController;
@@ -129,8 +150,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     final hasSeenTour = prefs.getBool('has_seen_form_tour') ?? false;
 
     if (!hasSeenTour && mounted) {
-      // Show tour after a short delay
-      Future.delayed(const Duration(seconds: 1), () {
+      // Show tour after a short delay (cancelable timer)
+      _tourShowTimer = Timer(const Duration(seconds: 1), () {
         if (mounted) {
           setState(() => _showTourGuide = true);
         }
@@ -150,6 +171,31 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     setState(() {
       _hasUnsavedChanges = true;
     });
+  }
+
+  /// 📊 Calculate form progress (filled fields)
+  int _calculateFilledFields() {
+    int filled = 0;
+
+    // Required text fields
+    if (_controllers.firstNameController.text.isNotEmpty) filled++;
+    if (_controllers.fatherNameController.text.isNotEmpty) filled++;
+    if (_controllers.grandfatherNameController.text.isNotEmpty) filled++;
+    if (_controllers.lastNameController.text.isNotEmpty) filled++;
+    if (_controllers.nationalIdController.text.isNotEmpty) filled++;
+    if (_controllers.birthDateController.text.isNotEmpty) filled++;
+    if (_controllers.phoneController.text.isNotEmpty) filled++;
+    if (_controllers.addressController.text.isNotEmpty) filled++;
+    if (_controllers.selectedGender != null) filled++;
+    if (_controllers.selectedMaritalStatus != null) filled++;
+    if (_controllers.selectedEducationLevel != null) filled++;
+
+    // Optional field: family members
+    if (_controllers.livingMembers.isNotEmpty ||
+        _controllers.deceasedMembers.isNotEmpty)
+      filled++;
+
+    return filled;
   }
 
   /// 🔄 Debounced Auto-Save (2 seconds delay)
@@ -204,19 +250,26 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         'hasDisability': _controllers.hasDisability,
       };
 
-      final draftId =
+      // استخدام ID ثابت للمسودة التلقائية - يتم التحديث بدلاً من الإنشاء
+      _autoSaveDraftId ??=
           widget.beneficiaryId ??
-          'auto_draft_${DateTime.now().millisecondsSinceEpoch}';
+          'auto_draft_${_controllers.nationalIdController.text.isNotEmpty ? _controllers.nationalIdController.text : 'temp_${DateTime.now().millisecondsSinceEpoch}'}';
+
+      final firstName = _controllers.firstNameController.text;
+      final lastName = _controllers.lastNameController.text;
+      final draftName = firstName.isNotEmpty
+          ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}'
+          : 'مسودة جديدة';
 
       await DraftManager.saveDraft(
-        draftId: draftId,
+        draftId: _autoSaveDraftId!,
         formData: {
-          'name': 'حفظ تلقائي - ${_controllers.firstNameController.text}',
-          'notes': 'تم الحفظ تلقائياً في ${DateTime.now().toString()}',
+          'name': draftName,
+          'notes': 'آخر تحديث: ${DateTime.now().toString().split('.')[0]}',
           'formData': formData,
           'currentTab': _tabController.index,
           'beneficiaryId': widget.beneficiaryId,
-          'isAutoSaved': true, // علامة للحفظ التلقائي
+          'isAutoSaved': true,
         },
       );
 
@@ -227,8 +280,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       }
 
       debugPrint('✅ Auto-saved draft successfully');
-    } catch (e) {
-      debugPrint('❌ Error auto-saving draft: $e');
+    } catch (e, stackTrace) {
+      final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
+      debugPrint('❌ Auto-save failed: $errorMsg (technical: $e)');
+      // Silent failure - don't disturb user with auto-save errors
     }
   }
 
@@ -249,13 +304,16 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       _clearAllControllers();
       ref.read(beneficiaryFormProvider.notifier).createNew();
 
-      // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم
-      Future.delayed(const Duration(milliseconds: 500), () async {
-        if (mounted) {
-          await _checkAndOfferAutoSavedDrafts();
-          _firstFieldFocusNode.requestFocus();
-        }
-      });
+      // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم (cancelable)
+      _offerAutoSavedDraftsTimer = Timer(
+        const Duration(milliseconds: 500),
+        () async {
+          if (mounted) {
+            await _checkAndOfferAutoSavedDrafts();
+            _firstFieldFocusNode.requestFocus();
+          }
+        },
+      );
     }
 
     if (!mounted) return;
@@ -359,10 +417,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
               onPressed: () => Navigator.pop(context, false),
               child: const Text('بدء جديد'),
             ),
-            FilledButton.icon(
+            AnimatedButton(
               onPressed: () => Navigator.pop(context, true),
-              icon: const Icon(Icons.restore),
-              label: const Text('استعادة المسودة'),
+              child: FilledButton.icon(
+                onPressed: null, // handled by AnimatedButton
+                icon: const Icon(Icons.restore),
+                label: const Text('استعادة المسودة'),
+              ),
             ),
           ],
         ),
@@ -371,8 +432,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       if (shouldRestore == true && mounted) {
         await _loadDraft(latestDraft);
       }
-    } catch (e) {
-      debugPrint('❌ Error checking auto-saved drafts: $e');
+    } catch (e, stackTrace) {
+      final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
+      debugPrint('❌ Error checking drafts: $errorMsg (technical: $e)');
+      // Silent failure - don't block form initialization
     }
   }
 
@@ -741,7 +804,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       final draftName = result['name']!;
       final draftNotes = result['notes']!;
 
-      setState(() => _isSaving = true);
+      _isSaving = true; // ⚡ Direct assignment instead of setState
 
       try {
         // 📦 Prepare draft data
@@ -785,6 +848,22 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
         if (mounted) {
           HapticFeedback.mediumImpact();
+          // 🎬 Show success animation
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            barrierColor: Colors.black26,
+            builder: (context) => Center(
+              child: FormAnimations.successCheckmark(
+                size: 80,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          );
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted) Navigator.of(context, rootNavigator: true).pop();
+          });
+
           EnhancedSnackbar.showSuccess(
             context,
             message: 'تم حفظ المسودة "$draftName" بنجاح ✓',
@@ -802,12 +881,14 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
             ),
           );
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
         if (!mounted) return;
-        setState(() => _isSaving = false);
+        _isSaving = false; // ⚡ Direct assignment
         if (mounted) {
           HapticFeedback.heavyImpact();
-          EnhancedSnackbar.showError(context, message: 'فشل حفظ المسودة: $e');
+          final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
+          EnhancedSnackbar.showError(context, message: errorMsg);
+          debugPrint('❌ Save draft error: $e');
         }
       }
     }
@@ -937,15 +1018,24 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                                                 ),
                                                 child: Text('إلغاء'),
                                               ),
-                                              FilledButton(
+                                              AnimatedButton(
                                                 onPressed: () => Navigator.pop(
                                                   context,
                                                   true,
                                                 ),
-                                                style: FilledButton.styleFrom(
-                                                  backgroundColor: Colors.red,
+                                                child: FilledButton(
+                                                  onPressed:
+                                                      null, // handled by AnimatedButton
+                                                  style: FilledButton.styleFrom(
+                                                    backgroundColor: Theme.of(
+                                                      context,
+                                                    ).colorScheme.error,
+                                                    foregroundColor: Theme.of(
+                                                      context,
+                                                    ).colorScheme.onError,
+                                                  ),
+                                                  child: const Text('حذف'),
                                                 ),
-                                                child: Text('حذف'),
                                               ),
                                             ],
                                           ),
@@ -976,9 +1066,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
           },
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (mounted) {
-        EnhancedSnackbar.showError(context, message: 'فشل تحميل المسودات: $e');
+        final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
+        EnhancedSnackbar.showError(context, message: errorMsg);
+        debugPrint('❌ Load drafts error: $e');
       }
     }
   }
@@ -1032,11 +1124,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
           message: 'تم تحميل المسودة "${draft['name']}" بنجاح',
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       if (mounted) {
-        EnhancedSnackbar.showError(context, message: 'فشل تحميل المسودة: $e');
+        final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
+        EnhancedSnackbar.showError(context, message: errorMsg);
+        debugPrint('❌ Load draft error: $e');
       }
     }
   }
@@ -1057,12 +1151,20 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   @override
   void dispose() {
     _autoSaveDebouncer?.cancel(); // Cancel debouncer on dispose
+    _offerAutoSavedDraftsTimer?.cancel();
+    _tourShowTimer?.cancel();
     _controllers.removeListener(_onFormChanged);
     _controllers.dispose();
     _tabController.dispose();
     _firstFieldFocusNode.dispose();
     _formHistory.dispose();
     // ⚠️ _searchController moved to FormContentWidget
+
+    // ⚡ Dispose ValueNotifiers
+    _isSavingNotifier.dispose();
+    _lastSavedNotifier.dispose();
+    _hasUnsavedChangesNotifier.dispose();
+
     super.dispose();
   }
 
@@ -1160,7 +1262,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         return;
       }
 
-      setState(() => _isSaving = true);
+      _isSaving = true; // ⚡ Direct assignment
 
       final currentBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
       final beneficiary = BeneficiaryEntityBuilder.build(
@@ -1181,7 +1283,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
       if (hasDuplicate) {
         if (!mounted) return;
-        setState(() => _isSaving = false);
+        _isSaving = false; // ⚡ Direct assignment
         return;
       }
 
@@ -1194,7 +1296,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
         if (savedBeneficiary == null) {
           if (!mounted) return;
-          setState(() => _isSaving = false);
+          _isSaving = false; // ⚡ Direct assignment
           return;
         }
 
@@ -1215,10 +1317,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         await _saveFamilyMembers(savedBeneficiary.id);
 
         if (!mounted) return;
-        setState(() {
-          _lastSaved = DateTime.now();
-          _hasUnsavedChanges = false;
-        });
+        // ⚡ Direct assignments instead of setState
+        _lastSaved = DateTime.now();
+        _hasUnsavedChanges = false;
 
         if (!isAutoSave) {
           HapticFeedback.mediumImpact();
@@ -1231,7 +1332,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
           }
 
           if (!mounted) return;
-          setState(() => _isSaving = false);
+          _isSaving = false; // ⚡ Direct assignment
           await Future.delayed(const Duration(milliseconds: 1500));
 
           if (mounted && context.mounted) {
@@ -1239,11 +1340,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
           }
         } else {
           if (!mounted) return;
-          setState(() => _isSaving = false);
+          _isSaving = false; // ⚡ Direct assignment
         }
       } else {
         if (!mounted) return;
-        setState(() => _isSaving = false);
+        _isSaving = false; // ⚡ Direct assignment
         if (!isAutoSave && mounted) {
           HapticFeedback.heavyImpact();
           EnhancedSnackbar.showError(
@@ -1297,16 +1398,18 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
             context.pop();
           }
         }
-      } catch (e) {
+      } catch (e, stackTrace) {
         if (mounted) {
           if (!mounted) return;
           setState(() => _isDeleting = false);
           HapticFeedback.heavyImpact();
+          final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
           EnhancedSnackbar.showError(
             context,
-            message: 'فشل الحذف: $e',
+            message: errorMsg,
             onRetry: _handleDelete,
           );
+          debugPrint('❌ Delete error: $e');
         }
       }
     }
@@ -1324,40 +1427,65 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       onPreviousTab: _handlePreviousTab,
       onUndo: _formHistory.canUndo ? _handleUndo : null,
       onRedo: _formHistory.canRedo ? _handleRedo : null,
-      child: PopScope(
-        canPop: !_hasUnsavedChanges,
-        onPopInvokedWithResult: (bool didPop, dynamic result) async {
-          if (didPop) return;
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _hasUnsavedChangesNotifier,
+        builder: (context, hasUnsavedChanges, child) {
+          return PopScope(
+            canPop: !hasUnsavedChanges,
+            onPopInvokedWithResult: (bool didPop, dynamic result) async {
+              if (didPop) return;
 
-          final shouldPop = await showDialog<bool>(
-            context: context,
-            builder: (context) => const UnsavedChangesDialog(),
+              final shouldPop = await showDialog<bool>(
+                context: context,
+                builder: (context) => const UnsavedChangesDialog(),
+              );
+
+              if (shouldPop == true && context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+            child: child!,
           );
-
-          if (shouldPop == true && context.mounted) {
-            Navigator.of(context).pop();
-          }
         },
         child: Scaffold(
           backgroundColor: theme.colorScheme.surface,
 
-          // 📱 AppBar - Separated widget
-          appBar: FormAppBarWidget(
-            beneficiaryId: widget.beneficiaryId,
-            isSaving: _isSaving,
-            lastSaved: _lastSaved,
-            hasUnsavedChanges: _hasUnsavedChanges,
-            showStatistics: _showStatistics,
-            showFieldHelpers: _showFieldHelpers,
-            // onToggleSearch removed - search is local to FormContentWidget
-            onToggleStatistics: _toggleStatistics,
-            onToggleFieldHelpers: () {
-              setState(() => _showFieldHelpers = !_showFieldHelpers);
-            },
-            onViewDrafts: _showDraftsList,
-            onSaveDraft: _hasUnsavedChanges ? _handleDraftSave : null,
-            onShowHelp: () => showKeyboardShortcutsHelp(context),
-            onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+          // 📱 AppBar - Separated widget with ValueListenableBuilder
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(kToolbarHeight + 52),
+            child: ValueListenableBuilder3<bool, DateTime?, bool>(
+              first: _isSavingNotifier,
+              second: _lastSavedNotifier,
+              third: _hasUnsavedChangesNotifier,
+              builder: (context, isSaving, lastSaved, hasUnsavedChanges, _) {
+                return FormAppBarWidget(
+                  beneficiaryId: widget.beneficiaryId,
+                  isSaving: isSaving,
+                  lastSaved: lastSaved,
+                  hasUnsavedChanges: hasUnsavedChanges,
+                  showStatistics: _showStatistics,
+                  showFieldHelpers: _showFieldHelpers,
+                  // onToggleSearch removed - search is local to FormContentWidget
+                  onToggleStatistics: _toggleStatistics,
+                  onToggleFieldHelpers: () {
+                    setState(() => _showFieldHelpers = !_showFieldHelpers);
+                  },
+                  onViewDrafts: _showDraftsList,
+                  onSaveDraft: hasUnsavedChanges ? _handleDraftSave : null,
+                  onShowHelp: () => showKeyboardShortcutsHelp(context),
+                  onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+                  onUndo: _formHistory.canUndo ? _handleUndo : null,
+                  onRedo: _formHistory.canRedo ? _handleRedo : null,
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(52),
+                    child: FormProgressIndicator(
+                      filledFields: _calculateFilledFields(),
+                      totalRequiredFields: 12,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
 
           body: _isLoading
@@ -1383,23 +1511,34 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                             ),
                           ),
 
-                          // 🎯 Bottom Navigation - Separated widget
-                          FormBottomNavWidget(
-                            tabController: _tabController,
-                            onPrevious: _handlePreviousTab,
-                            onNext: _handleNextTab,
-                            onSave: _showFinalReview,
-                            isLoading: _isSaving,
+                          // 🎯 Bottom Navigation - Separated widget with ValueListenableBuilder
+                          ValueListenableBuilder<bool>(
+                            valueListenable: _isSavingNotifier,
+                            builder: (context, isSaving, _) {
+                              return FormBottomNavWidget(
+                                tabController: _tabController,
+                                onPrevious: _handlePreviousTab,
+                                onNext: _handleNextTab,
+                                onSave: _showFinalReview,
+                                isLoading: isSaving,
+                              );
+                            },
                           ),
                         ],
                       ),
                     ),
 
-                    LoadingOverlay(
-                      isVisible: _isSaving || _isDeleting,
-                      message: _isSaving
-                          ? FormConstants.savingMessage
-                          : FormConstants.deletingMessage,
+                    // ⚡ Loading Overlay with ValueListenableBuilder
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _isSavingNotifier,
+                      builder: (context, isSaving, _) {
+                        return LoadingOverlay(
+                          isVisible: isSaving || _isDeleting,
+                          message: isSaving
+                              ? FormConstants.savingMessage
+                              : FormConstants.deletingMessage,
+                        );
+                      },
                     ),
 
                     // 🎓 Tour Guide

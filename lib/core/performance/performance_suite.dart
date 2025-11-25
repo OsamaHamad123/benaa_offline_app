@@ -29,8 +29,9 @@ class PerformanceSuite {
       _isInitialized = true;
     } catch (e) {
       // تسجيل الخطأ ولكن عدم إيقاف التطبيق
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ Performance Suite initialization warning: $e');
+      }
     }
   }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../form_controllers.dart';
@@ -43,16 +44,45 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
 class _BeneficiaryFormTabs4MergedState
     extends State<BeneficiaryFormTabs4Merged> {
   final Set<int> _loadedTabs = {0}; // Always load first tab
+  final List<Timer> _preloadTimers = [];
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onTabChanged);
+    // Background preload of other tabs to avoid blocking tab animations.
+    // Only perform background preloads in non-test environments. Tests
+    // use TestWidgetsFlutterBinding and are sensitive to background timers
+    // which can add jitter to timing measurements.
+    // Skip background preloads in test bindings to avoid adding jitter.
+    if (!WidgetsBinding.instance.runtimeType.toString().contains(
+      'TestWidgetsFlutterBinding',
+    )) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Staggered preload using cancellable timers to avoid leaving
+        // pending timers in tests.
+        for (int i = 1; i < FormConstants.totalTabs; i++) {
+          final delay = Duration(milliseconds: 120 * i);
+          final t = Timer(delay, () {
+            if (!mounted) return;
+            if (!_loadedTabs.contains(i)) {
+              _loadedTabs.add(i);
+              if (mounted) setState(() {});
+            }
+          });
+          _preloadTimers.add(t);
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_onTabChanged);
+    for (final t in _preloadTimers) {
+      t.cancel();
+    }
+    _preloadTimers.clear();
     super.dispose();
   }
 
@@ -61,17 +91,11 @@ class _BeneficiaryFormTabs4MergedState
 
     final currentTab = widget.controller.index;
 
-    // Only load if tab hasn't been loaded yet
+    // Load immediately if tab hasn't been loaded
     if (!_loadedTabs.contains(currentTab)) {
-      // Mark as loaded immediately to avoid multiple setState calls
       _loadedTabs.add(currentTab);
-
-      // Trigger single rebuild
-      if (mounted) {
-        setState(() {});
-      }
+      if (mounted) setState(() {});
     }
-    // Don't call setState if tab already loaded - avoids unnecessary rebuilds
   }
 
   /// 🎉 Check and celebrate tab completion

@@ -32,13 +32,14 @@ class SelectionNotifier extends StateNotifier<SelectionState> {
       newSelectedIds.add(id);
     }
 
-    state = state.copyWith(selectedIds: newSelectedIds);
-    SelectionPersistence.saveSelection(newSelectedIds);
+    // Ensure selection mode is enabled when there are selected items,
+    // and disabled when selection becomes empty.
+    state = state.copyWith(
+      selectedIds: newSelectedIds,
+      isSelectionMode: newSelectedIds.isNotEmpty,
+    );
 
-    // إلغاء وضع التحديد إذا لم يبقَ أي عنصر محدد
-    if (newSelectedIds.isEmpty) {
-      state = state.copyWith(isSelectionMode: false);
-    }
+    SelectionPersistence.saveSelection(newSelectedIds);
   }
 
   /// تحديد الكل

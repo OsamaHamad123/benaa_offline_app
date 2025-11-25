@@ -38,9 +38,9 @@ class PhoneLauncherService {
       } else if (cleanPhone.startsWith('+970')) {
         cleanPhone = cleanPhone.substring(1);
       } else if (cleanPhone.startsWith('00972')) {
-        cleanPhone = '972' + cleanPhone.substring(5);
+        cleanPhone = '972${cleanPhone.substring(5)}';
       } else if (cleanPhone.startsWith('00970')) {
-        cleanPhone = '970' + cleanPhone.substring(5);
+        cleanPhone = '970${cleanPhone.substring(5)}';
       } else if (cleanPhone.startsWith('+')) {
         cleanPhone = cleanPhone.substring(1);
       }

@@ -1,8 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../domain/entities/dashboard_statistics.dart';
+import '../../../../theme/app_colors.dart';
 
 /// Growth Chart - Clean Architecture Version
 /// Takes GrowthDataPoint list from domain entity
@@ -43,15 +45,15 @@ class GrowthChart extends StatelessWidget {
                       enabled: true,
                       touchTooltipData: LineTouchTooltipData(
                         getTooltipColor: (touchedSpot) =>
-                            Colors.blueAccent.withOpacity(0.8),
+                            AppColors.infoDark.withOpacity(0.8),
                         tooltipPadding: EdgeInsets.all(8.w),
                         getTooltipItems: (List<LineBarSpot> touchedSpots) {
                           return touchedSpots.map((spot) {
                             final date = growthData[spot.x.toInt()].date;
                             return LineTooltipItem(
-                              '${spot.y.toInt()} مستفيد\\n${date.day}/${date.month}/${date.year}',
+                              '${spot.y.toInt()} مستفيد\n${date.day}/${date.month}/${date.year}',
                               TextStyle(
-                                color: Colors.white,
+                                color: AppColors.surface,
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -66,7 +68,7 @@ class GrowthChart extends StatelessWidget {
                       horizontalInterval: 1,
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
-                          color: Colors.grey.withOpacity(0.2),
+                          color: AppColors.divider.withOpacity(0.2),
                           strokeWidth: 1,
                         );
                       },
@@ -94,7 +96,7 @@ class GrowthChart extends StatelessWidget {
                                   '${date.day}/${date.month}',
                                   style: TextStyle(
                                     fontSize: 10.sp,
-                                    color: Colors.grey,
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                               );
@@ -112,7 +114,7 @@ class GrowthChart extends StatelessWidget {
                               value.toInt().toString(),
                               style: TextStyle(
                                 fontSize: 10.sp,
-                                color: Colors.grey,
+                                color: AppColors.textSecondary,
                               ),
                             );
                           },
@@ -137,7 +139,7 @@ class GrowthChart extends StatelessWidget {
                             )
                             .toList(),
                         isCurved: true,
-                        color: Colors.blue,
+                        color: AppColors.primary,
                         barWidth: 3,
                         isStrokeCapRound: true,
                         dotData: FlDotData(
@@ -145,15 +147,15 @@ class GrowthChart extends StatelessWidget {
                           getDotPainter: (spot, percent, barData, index) {
                             return FlDotCirclePainter(
                               radius: 4,
-                              color: Colors.blue,
+                              color: AppColors.primary,
                               strokeWidth: 2,
-                              strokeColor: Colors.white,
+                              strokeColor: AppColors.surface,
                             );
                           },
                         ),
                         belowBarData: BarAreaData(
                           show: true,
-                          color: Colors.blue.withOpacity(0.1),
+                          color: AppColors.primary.withOpacity(0.1),
                         ),
                       ),
                     ],
@@ -207,36 +209,71 @@ class CategoryDistributionChart extends StatelessWidget {
                 style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16.h),
-              SizedBox(
-                height: ResponsiveUtils.getResponsiveValue(
-                  context,
-                  mobile: 200.h,
-                  tablet: 250.h,
-                  desktop: 300.h,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final availableHeight = constraints.maxHeight;
+                  final availableWidth = constraints.maxWidth;
+                  final isVertical =
+                      availableWidth < 360.w || availableHeight < 220.h;
+
+                  // compute a sensible pie radius based on available space
+                  final base = math.min(
+                    availableHeight,
+                    availableWidth / (isVertical ? 1 : 2),
+                  );
+                  final pieRadius = (base * 0.28).clamp(30.r, 120.r);
+
+                  final pie = SizedBox(
+                    height: isVertical ? pieRadius * 2 : double.infinity,
+                    child: Center(
                       child: PieChart(
                         PieChartData(
-                          sections: _buildPieSections(total),
+                          sections: _buildPieSections(total, radius: pieRadius),
                           sectionsSpace: 2,
-                          centerSpaceRadius: 40.r,
+                          centerSpaceRadius: (pieRadius * 0.45).clamp(
+                            16.r,
+                            60.r,
+                          ),
                           borderData: FlBorderData(show: false),
                         ),
                       ),
                     ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: _buildLegend(),
-                      ),
+                  );
+
+                  final legend = Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: _buildLegend(),
                     ),
-                  ],
-                ),
+                  );
+
+                  if (isVertical) {
+                    return Column(
+                      children: [
+                        pie,
+                        SizedBox(height: 12.h),
+                        ..._buildLegend(),
+                      ],
+                    );
+                  }
+
+                  return SizedBox(
+                    height: ResponsiveUtils.getResponsiveValue(
+                      context,
+                      mobile: 200.h,
+                      tablet: 250.h,
+                      desktop: 300.h,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(flex: 2, child: pie),
+                        SizedBox(width: 16.w),
+                        legend,
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -245,12 +282,12 @@ class CategoryDistributionChart extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _buildPieSections(int total) {
+  List<PieChartSectionData> _buildPieSections(int total, {double? radius}) {
     final colors = {
-      'orphan': Colors.purple,
-      'widow': Colors.pink,
-      'poor': Colors.green,
-      'disabled': Colors.orange,
+      'orphan': AppColors.orphan,
+      'widow': AppColors.widow,
+      'poor': AppColors.poor,
+      'disabled': AppColors.disabled,
     };
 
     return categoryCounts.entries.map((entry) {
@@ -258,12 +295,12 @@ class CategoryDistributionChart extends StatelessWidget {
       return PieChartSectionData(
         value: entry.value.toDouble(),
         title: '${percentage.toStringAsFixed(0)}%',
-        color: colors[entry.key] ?? Colors.grey,
-        radius: 50.r,
+        color: colors[entry.key] ?? AppColors.textSecondary,
+        radius: radius ?? 50.r,
         titleStyle: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: AppColors.surface,
         ),
       );
     }).toList();
@@ -278,10 +315,10 @@ class CategoryDistributionChart extends StatelessWidget {
     };
 
     final colors = {
-      'orphan': Colors.purple,
-      'widow': Colors.pink,
-      'poor': Colors.green,
-      'disabled': Colors.orange,
+      'orphan': AppColors.orphan,
+      'widow': AppColors.widow,
+      'poor': AppColors.poor,
+      'disabled': AppColors.disabled,
     };
 
     return categoryCounts.entries.map((entry) {
@@ -293,7 +330,7 @@ class CategoryDistributionChart extends StatelessWidget {
               width: 12.w,
               height: 12.h,
               decoration: BoxDecoration(
-                color: colors[entry.key] ?? Colors.grey,
+                color: colors[entry.key] ?? AppColors.textSecondary,
                 shape: BoxShape.circle,
               ),
             ),
@@ -301,7 +338,7 @@ class CategoryDistributionChart extends StatelessWidget {
             Expanded(
               child: Text(
                 '${labels[entry.key] ?? entry.key}: ${entry.value}',
-                style: TextStyle(fontSize: 12.sp),
+                style: TextStyle(fontSize: 12.sp, color: AppColors.textPrimary),
               ),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../../theme/app_colors.dart';
 import '../../domain/entities/dashboard_statistics.dart';
 
 /// 📊 Interactive Dashboard Charts - Enhanced with drill-down
@@ -97,12 +98,12 @@ class _InteractiveDashboardChartsState
     final total = categories.values.fold<int>(0, (sum, count) => sum + count);
 
     final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
+      AppColors.primary,
+      AppColors.success,
+      AppColors.warning,
+      AppColors.orphan,
+      AppColors.error,
+      AppColors.disabled,
     ];
 
     return categories.entries.toList().asMap().entries.map((entry) {
@@ -117,7 +118,7 @@ class _InteractiveDashboardChartsState
         titleStyle: TextStyle(
           fontSize: isSelected ? 14 : 12,
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: Colors.white,
+          color: AppColors.surface,
         ),
         color: colors[index % colors.length],
       );
@@ -131,9 +132,9 @@ class _InteractiveDashboardChartsState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade50,
+        color: AppColors.primary.withOpacity(0.06),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -141,7 +142,7 @@ class _InteractiveDashboardChartsState
             width: 12,
             height: 12,
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: AppColors.primary,
               shape: BoxShape.circle,
             ),
           ),
@@ -159,7 +160,10 @@ class _InteractiveDashboardChartsState
                 ),
                 Text(
                   '${selectedCategory.value} مستفيد',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -198,22 +202,22 @@ class _InteractiveDashboardChartsState
                     LineChartBarData(
                       spots: _buildGrowthSpots(),
                       isCurved: true,
-                      color: Colors.blue,
+                      color: AppColors.primary,
                       barWidth: 3,
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, bar, index) {
                           return FlDotCirclePainter(
                             radius: index == _selectedGrowthIndex ? 6 : 4,
-                            color: Colors.blue,
+                            color: AppColors.primary,
                             strokeWidth: index == _selectedGrowthIndex ? 2 : 0,
-                            strokeColor: Colors.white,
+                            strokeColor: AppColors.surface,
                           );
                         },
                       ),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: Colors.blue.withOpacity(0.1),
+                        color: AppColors.primary.withOpacity(0.1),
                       ),
                     ),
                   ],
@@ -235,8 +239,8 @@ class _InteractiveDashboardChartsState
                               widget.statistics.growthData[spot.spotIndex].date;
                           return LineTooltipItem(
                             '${date.day}/${date.month}\n${spot.y.toInt()} مستفيد',
-                            const TextStyle(
-                              color: Colors.white,
+                            TextStyle(
+                              color: AppColors.surface,
                               fontWeight: FontWeight.bold,
                             ),
                           );

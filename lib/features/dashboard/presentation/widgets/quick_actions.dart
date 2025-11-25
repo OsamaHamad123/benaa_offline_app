@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/micro_interactions.dart';
+import '../../../../theme/app_colors.dart';
 
 /// Quick Action Button - Reusable action button with Badge support
 class QuickActionButton extends StatelessWidget {
@@ -37,7 +38,7 @@ class QuickActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14.r),
         ),
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -46,7 +47,7 @@ class QuickActionButton extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(12.w),
+                    padding: EdgeInsets.all(6.w),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -58,7 +59,7 @@ class QuickActionButton extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(12.r),
                     ),
-                    child: Icon(icon, color: color, size: 30.sp),
+                    child: Icon(icon, color: color, size: 24.sp),
                   ),
                   // Badge
                   if (badge != null && badge! > 0)
@@ -71,14 +72,17 @@ class QuickActionButton extends StatelessWidget {
                           vertical: 2.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: AppColors.error,
                           borderRadius: BorderRadius.circular(10.r),
-                          border: Border.all(color: Colors.white, width: 2),
+                          border: Border.all(
+                            color: AppColors.surface,
+                            width: 2,
+                          ),
                         ),
                         child: Text(
                           badge! > 99 ? '99+' : '$badge',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.surface,
                             fontSize: 10.sp,
                             fontWeight: FontWeight.bold,
                           ),
@@ -87,17 +91,19 @@ class QuickActionButton extends StatelessWidget {
                     ),
                 ],
               ),
-              SizedBox(height: 10.h),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
+              SizedBox(height: 8.h),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.surface : AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -133,10 +139,11 @@ class QuickActionsGrid extends StatelessWidget {
       desktop: 4,
     );
 
+    // Reduce aspect ratio on smaller screens to allow taller cards (avoid overflow)
     final childAspectRatio = ResponsiveUtils.getResponsiveValue(
       context,
-      mobile: 1.25,
-      tablet: 1.4,
+      mobile: 0.85,
+      tablet: 1.1,
       desktop: 1.25,
     );
 
@@ -153,31 +160,31 @@ class QuickActionsGrid extends StatelessWidget {
         QuickActionButton(
           label: 'إضافة مستفيد',
           icon: Icons.person_add,
-          color: Colors.blue,
+          color: AppColors.info,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
         QuickActionButton(
           label: 'البحث',
           icon: Icons.search,
-          color: Colors.green,
+          color: AppColors.success,
           onTap: onSearchTap ?? () {},
         ),
         QuickActionButton(
           label: 'المزامنة',
           icon: Icons.sync,
-          color: Colors.orange,
+          color: AppColors.warning,
           onTap: onSyncTap ?? () {},
         ),
         QuickActionButton(
           label: 'التقارير',
           icon: Icons.bar_chart,
-          color: Colors.purple,
+          color: AppColors.orphan,
           onTap: onReportsTap ?? () {},
         ),
         QuickActionButton(
           label: 'السجل المدني',
           icon: Icons.account_balance,
-          color: Colors.teal,
+          color: AppColors.disabled,
           onTap: onCivilRegistryTap ?? () {},
         ),
       ],

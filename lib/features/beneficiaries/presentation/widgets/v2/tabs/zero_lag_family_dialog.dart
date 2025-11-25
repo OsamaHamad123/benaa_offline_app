@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-
-// Hoisted static const config to avoid reallocations
-const List<ButtonSegment<int>> _genderSegments = [
-  ButtonSegment(value: 1, label: Text('ذكر'), icon: Icon(Icons.boy, size: 18)),
-  ButtonSegment(
-    value: 2,
-    label: Text('أنثى'),
-    icon: Icon(Icons.girl, size: 18),
-  ),
-];
+import 'family_dialog_widgets.dart';
+import '../../../providers/beneficiary_dependencies.dart';
 
 const Map<int, String> _deathCauseOptions = {
   1: 'حرب',
@@ -37,6 +30,9 @@ const Map<int, String> _healthStatusOptions = {
 };
 
 // Debug helper: lightweight rebuild logger used only for performance investigation.
+// Toggle this during manual debugging to see rebuild counts.
+bool _enableRebuildLogging = false;
+
 class RebuildLogger extends StatefulWidget {
   final String name;
   final Widget child;
@@ -47,16 +43,15 @@ class RebuildLogger extends StatefulWidget {
 }
 
 class _RebuildLoggerState extends State<RebuildLogger> {
-  int _count = 0;
+  // simple counter removed to avoid unused variable lint; rebuild counts
+  // are tracked via the debug map only.
 
   @override
   Widget build(BuildContext context) {
-    _count++;
-    // Only track and print in debug mode to avoid runtime overhead in release.
-    if (kDebugMode) {
+    // Rebuild tracking is enabled in debug mode for tests and instrumentation.
+    if (kDebugMode && _enableRebuildLogging) {
       _debugRebuildCounts[widget.name] =
           (_debugRebuildCounts[widget.name] ?? 0) + 1;
-      debugPrint('RebuildLogger(${widget.name}) build #$_count');
     }
     return widget.child;
   }
@@ -114,6 +109,9 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   late final ValueNotifier<int?> _deathCause;
   late final ValueNotifier<int?> _docType;
   late final ValueNotifier<File?> _selectedFile;
+  late final ValueNotifier<bool> _isFetchingCivil;
+  late final ValueNotifier<String?> _civilStatus;
+  late final ValueNotifier<bool> _hideSearchButton;
   // FocusNodes for fields - reuse to avoid reallocation and reduce focus churn
   late final FocusNode _firstNameFocus;
   late final FocusNode _secondNameFocus;
@@ -136,6 +134,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   late final Stopwatch _syncInitTimer;
   late final Stopwatch _initTimer;
   bool _didLogFirstFrame = false;
+  Timer? _delayedDocumentTimer;
 
   @override
   void initState() {
@@ -162,6 +161,9 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _deathCause = ValueNotifier<int?>(m?['deathCause']);
     _docType = ValueNotifier<int?>(m?['documentType']);
     _selectedFile = ValueNotifier<File?>(null);
+    _isFetchingCivil = ValueNotifier<bool>(false);
+    _civilStatus = ValueNotifier<String?>(null);
+    _hideSearchButton = ValueNotifier<bool>(false);
     // Initialize focus nodes
     _firstNameFocus = FocusNode();
     _secondNameFocus = FocusNode();
@@ -183,11 +185,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       _nationalIdFocus: _nationalIdKey,
     };
     // Ensure focused field is visible when keyboard opens
-    for (final fn in _focusKeyMap.keys) {
-      fn.addListener(() {
-        if (fn.hasFocus) _ensureVisibleFor(fn);
-      });
-    }
+    // Listener registration is deferred until after first frame to avoid
+    // firing ensureVisible during initial focus and causing input lag.
 
     // Initially set lightweight placeholders to avoid heavy widget construction
     _hoistedHeader = const SizedBox.shrink();
@@ -198,6 +197,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     // Defer construction of hoisted heavy widgets until after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Hoist header first frame (lightweight)
       setState(() {
         final title = widget.isDeceased
             ? (widget.presetDeceasedType == 1
@@ -243,84 +243,103 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
             },
           ),
         );
+      });
 
-        _hoistedDocumentSection = Builder(
-          builder: (context) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'رفع الوثيقة',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                RebuildLogger(
-                  name: 'document_upload',
-                  child: ValueListenableBuilder<File?>(
-                    valueListenable: _selectedFile,
-                    builder: (context, file, _) => Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: file == null
-                          ? InkWell(
-                              onTap: _pickFile,
-                              child: Row(
+      // Register focus listeners after the first frame to avoid immediate
+      // ensureVisible work during dialog open typing measurements.
+      for (final fn in _focusKeyMap.keys) {
+        fn.addListener(() {
+          if (fn.hasFocus) {
+            // Defer to microtask to avoid blocking typing
+            Future.microtask(() => _ensureVisibleFor(fn));
+          }
+        });
+      }
+
+      // Defer the document section to a later microtask to avoid adding
+      // extra synchronous work on the first frame. Use a cancellable Timer
+      // so tests can dispose without pending timers.
+      _delayedDocumentTimer = Timer(const Duration(milliseconds: 500), () {
+        if (!mounted) return;
+        setState(() {
+          _hoistedDocumentSection = Builder(
+            builder: (context) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'رفع الوثيقة',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  RebuildLogger(
+                    name: 'document_upload',
+                    child: ValueListenableBuilder<File?>(
+                      valueListenable: _selectedFile,
+                      builder: (context, file, _) => Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: file == null
+                            ? InkWell(
+                                onTap: _pickFile,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.upload_file,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'اضغط لرفع الوثيقة (PDF, JPG, PNG)',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Row(
                                 children: [
-                                  Icon(
-                                    Icons.upload_file,
-                                    color: Colors.grey.shade600,
-                                  ),
+                                  Icon(Icons.check_circle, color: Colors.green),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      'اضغط لرفع الوثيقة (PDF, JPG, PNG)',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 14,
-                                      ),
+                                      file.path.split('/').last,
+                                      style: const TextStyle(fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.red.shade700,
+                                    ),
+                                    onPressed: () {
+                                      _selectedFile.value = null;
+                                    },
+                                    tooltip: 'حذف',
                                   ),
                                 ],
                               ),
-                            )
-                          : Row(
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.green),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    file.path.split('/').last,
-                                    style: const TextStyle(fontSize: 14),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.delete_outline,
-                                    color: Colors.red.shade700,
-                                  ),
-                                  onPressed: () {
-                                    _selectedFile.value = null;
-                                  },
-                                  tooltip: 'حذف',
-                                ),
-                              ],
-                            ),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          },
-        );
+                ],
+              );
+            },
+          );
+        });
       });
     });
     // measure synchronous init work
     _syncInitTimer.stop();
-    if (kDebugMode) {
+    if (kDebugMode && _enableRebuildLogging) {
       debugPrint(
         'ZeroLagFamilyDialog synchronous init took ${_syncInitTimer.elapsedMilliseconds}ms',
       );
@@ -331,6 +350,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
 
   @override
   void dispose() {
+    _delayedDocumentTimer?.cancel();
     _firstNameCtrl.dispose();
     _secondNameCtrl.dispose();
     _thirdNameCtrl.dispose();
@@ -343,6 +363,9 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _deathCause.dispose();
     _docType.dispose();
     _selectedFile.dispose();
+    _isFetchingCivil.dispose();
+    _civilStatus.dispose();
+    _hideSearchButton.dispose();
     _firstNameFocus.dispose();
     _secondNameFocus.dispose();
     _thirdNameFocus.dispose();
@@ -352,19 +375,79 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     super.dispose();
   }
 
+  // Scroll to keep focused field visible
+  // Simplified for maximum performance - removed post-frame delay
   void _ensureVisibleFor(FocusNode node) {
     final key = _focusKeyMap[node];
     final ctx = key?.currentContext;
     if (ctx == null) return;
-    // Slight delay lets the focus settle before scrolling
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 120),
-        alignment: 0.12,
-        curve: Curves.easeInOut,
-      );
-    });
+
+    // Instant scroll without delay for better responsiveness
+    Scrollable.ensureVisible(ctx, duration: Duration.zero, alignment: 0.12);
+  }
+
+  /// 🔍 Fetch from Civil Registry
+  Future<void> _fetchFromCivilRegistry() async {
+    final nationalId = _nationalIdCtrl.text.trim();
+    if (nationalId.length != 9) {
+      _civilStatus.value = 'الرقم الوطني يجب أن يكون 9 أرقام';
+      return;
+    }
+
+    _isFetchingCivil.value = true;
+    _civilStatus.value = 'جاري البحث في السجل المدني...';
+
+    try {
+      await ref
+          .read(civilRegistryProvider.notifier)
+          .fetchByNationalId(nationalId);
+
+      final civilRegistryState = ref.read(civilRegistryProvider);
+
+      if (civilRegistryState.isSuccess && civilRegistryState.person != null) {
+        final person = civilRegistryState.person!;
+
+        _firstNameCtrl.text = person.firstName;
+        _secondNameCtrl.text = person.fatherName;
+        _thirdNameCtrl.text = person.grandfatherName ?? '';
+        _familyNameCtrl.text = person.lastName;
+        _gender.value = person.gender == 'ذكر' ? 1 : 2;
+
+        if (!widget.isDeceased && person.birthDate != null) {
+          _date.value = person.birthDate;
+        }
+
+        _isFetchingCivil.value = false;
+        _civilStatus.value = '✅ تم العثور على البيانات وملؤها تلقائياً';
+
+        // Hide button after 1.5 seconds
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            _hideSearchButton.value = true;
+          }
+        });
+
+        HapticFeedback.lightImpact();
+      } else {
+        _isFetchingCivil.value = false;
+        _civilStatus.value = '❌ لم يتم العثور على بيانات في السجل المدني';
+      }
+    } catch (e) {
+      _isFetchingCivil.value = false;
+      _civilStatus.value = '❌ خطأ في البحث: ${e.toString()}';
+    }
+  }
+
+  void _handleNationalIdChanged(String value) {
+    // Reset button visibility when ID changes
+    if (value.length != 9) {
+      _hideSearchButton.value = false;
+      _civilStatus.value = null;
+    }
+
+    if (value.length == 9 && !_isFetchingCivil.value) {
+      _fetchFromCivilRegistry();
+    }
   }
 
   /// Pick document file
@@ -390,15 +473,91 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     }
   }
 
-  void _save() {
-    if (_firstNameCtrl.text.trim().isEmpty ||
-        _familyNameCtrl.text.trim().isEmpty) {
+  void _save() async {
+    // Validation محسّن
+    if (_firstNameCtrl.text.trim().isEmpty) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال الاسم الأول والعائلة')),
+        const SnackBar(
+          content: Text('⚠️ يرجى إدخال الاسم الأول'),
+          backgroundColor: Colors.orange,
+        ),
       );
+      _firstNameFocus.requestFocus();
       return;
     }
+
+    if (_familyNameCtrl.text.trim().isEmpty) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ يرجى إدخال اسم العائلة'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      _familyNameFocus.requestFocus();
+      return;
+    }
+
+    // Validation للرقم الوطني
+    final nationalId = _nationalIdCtrl.text.trim();
+    if (nationalId.isNotEmpty && nationalId.length != 9) {
+      HapticFeedback.heavyImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ الرقم الوطني يجب أن يكون 9 أرقام'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      _nationalIdFocus.requestFocus();
+      return;
+    }
+
+    // تأكيد قبل الحفظ
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(
+          widget.isDeceased ? Icons.person_off : Icons.child_care,
+          color: Theme.of(context).primaryColor,
+          size: 40,
+        ),
+        title: Text(
+          widget.isDeceased ? 'تأكيد إضافة متوفى' : 'تأكيد إضافة يتيم',
+          textAlign: TextAlign.center,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildConfirmationRow(
+              Icons.person,
+              'الاسم',
+              '${_firstNameCtrl.text} ${_familyNameCtrl.text}',
+            ),
+            if (nationalId.isNotEmpty)
+              _buildConfirmationRow(Icons.badge, 'الرقم الوطني', nationalId),
+            _buildConfirmationRow(
+              _gender.value == 1 ? Icons.male : Icons.female,
+              'الجنس',
+              _gender.value == 1 ? 'ذكر' : 'أنثى',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
 
     final data = <String, dynamic>{
       'firstName': _firstNameCtrl.text.trim(),
@@ -429,8 +588,23 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       });
     }
 
+    // تأكيد النجاح
+    HapticFeedback.mediumImpact();
     widget.onSave(data);
     Navigator.pop(context);
+
+    // رسالة نجاح
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          widget.isDeceased
+              ? '✅ تم إضافة المتوفى بنجاح'
+              : '✅ تم إضافة اليتيم بنجاح',
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -440,9 +614,11 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       _didLogFirstFrame = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _initTimer.stop();
-        debugPrint(
-          'ZeroLagFamilyDialog time-to-first-frame ${_initTimer.elapsedMilliseconds}ms',
-        );
+        if (_enableRebuildLogging) {
+          debugPrint(
+            'ZeroLagFamilyDialog time-to-first-frame ${_initTimer.elapsedMilliseconds}ms',
+          );
+        }
       });
     }
 
@@ -474,113 +650,47 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                     name: 'dialog_content',
                     child: Column(
                       children: [
-                        // Name Fields
-                        const Text(
-                          'الاسم الكامل',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                key: _firstNameKey,
-                                child: _FastField(
-                                  _firstNameCtrl,
-                                  'الأول *',
-                                  focusNode: _firstNameFocus,
-                                  onSubmitted: (_) => FocusScope.of(
-                                    context,
-                                  ).requestFocus(_secondNameFocus),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Container(
-                                key: _secondNameKey,
-                                child: _FastField(
-                                  _secondNameCtrl,
-                                  'الأب',
-                                  focusNode: _secondNameFocus,
-                                  onSubmitted: (_) => FocusScope.of(
-                                    context,
-                                  ).requestFocus(_thirdNameFocus),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                key: _thirdNameKey,
-                                child: _FastField(
-                                  _thirdNameCtrl,
-                                  'الجد',
-                                  focusNode: _thirdNameFocus,
-                                  onSubmitted: (_) => FocusScope.of(
-                                    context,
-                                  ).requestFocus(_familyNameFocus),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Container(
-                                key: _familyNameKey,
-                                child: _FastField(
-                                  _familyNameCtrl,
-                                  'العائلة *',
-                                  focusNode: _familyNameFocus,
-                                  onSubmitted: (_) => FocusScope.of(
-                                    context,
-                                  ).requestFocus(_nationalIdFocus),
-                                ),
-                              ),
-                            ),
-                          ],
+                        // Name Fields - استخدام الـ widget الجديد
+                        NameFieldsSection(
+                          firstNameController: _firstNameCtrl,
+                          secondNameController: _secondNameCtrl,
+                          thirdNameController: _thirdNameCtrl,
+                          familyNameController: _familyNameCtrl,
+                          firstNameFocus: _firstNameFocus,
+                          secondNameFocus: _secondNameFocus,
+                          thirdNameFocus: _thirdNameFocus,
+                          familyNameFocus: _familyNameFocus,
                         ),
                         const SizedBox(height: 16),
 
-                        // Gender (minimized rebuild scope)
+                        // National ID - استخدام الـ widget الجديد مع civil registry
+                        ValueListenableBuilder3<bool, String?, bool>(
+                          first: _isFetchingCivil,
+                          second: _civilStatus,
+                          third: _hideSearchButton,
+                          builder:
+                              (context, isFetching, status, hideButton, _) {
+                                return NationalIdWithCivilRegistry(
+                                  nationalIdController: _nationalIdCtrl,
+                                  isFetching: isFetching,
+                                  statusMessage: status,
+                                  hideButtonAfterFetch: hideButton,
+                                  onFetch: _fetchFromCivilRegistry,
+                                  onChanged: _handleNationalIdChanged,
+                                );
+                              },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Gender - استخدام الـ widget الجديد
                         RebuildLogger(
                           name: 'gender_section',
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('الجنس *'),
-                              const SizedBox(height: 8),
-                              ValueListenableBuilder<int>(
-                                valueListenable: _gender,
-                                builder: (_, gender, __) =>
-                                    SegmentedButton<int>(
-                                      segments: _genderSegments,
-                                      selected: {gender},
-                                      onSelectionChanged: (v) {
-                                        HapticFeedback.selectionClick();
-                                        _gender.value = v.first;
-                                      },
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // National ID
-                        Container(
-                          key: _nationalIdKey,
-                          child: _FastField(
-                            _nationalIdCtrl,
-                            'الرقم الوطني (9 أرقام)',
-                            keyboardType: TextInputType.number,
-                            maxLength: 9,
-                            focusNode: _nationalIdFocus,
-                            onSubmitted: (_) =>
-                                FocusScope.of(context).unfocus(),
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: _gender,
+                            builder: (_, gender, __) => GenderSelector(
+                              selectedGender: gender,
+                              onChanged: (value) => _gender.value = value,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -707,66 +817,37 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       ),
     );
   }
+
+  // Helper method للـ confirmation dialog
+  Widget _buildConfirmationRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: Colors.grey.shade600),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ⚡ ZERO LAG TextField - Absolute Minimum Overhead
 // ═══════════════════════════════════════════════════════════════════════════
-
-class _FastField extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final TextInputType? keyboardType;
-  final int? maxLength;
-  final FocusNode? focusNode;
-  final ValueChanged<String>? onSubmitted;
-
-  const _FastField(
-    this.controller,
-    this.label, {
-    this.keyboardType,
-    this.maxLength,
-    this.focusNode,
-    this.onSubmitted,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Lightweight field: label above + container with minimal decoration.
-    // This avoids InputDecorator animations and heavy rebuilds when keyboard appears.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 13, height: 1.1)),
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.transparent,
-          ),
-          child: TextField(
-            focusNode: focusNode,
-            controller: controller,
-            keyboardType: keyboardType,
-            maxLength: maxLength,
-            autocorrect: false,
-            enableSuggestions: false,
-            textInputAction: TextInputAction.next,
-            onSubmitted: onSubmitted,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              counterText: '',
-            ),
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ⚡ Fast Chip Selector
@@ -833,6 +914,45 @@ class _ChipSelector extends StatelessWidget {
           }).toList(),
         ),
       ],
+    );
+  }
+}
+
+/// ⚡ Custom ValueListenableBuilder for 3 values
+class ValueListenableBuilder3<A, B, C> extends StatelessWidget {
+  final ValueNotifier<A> first;
+  final ValueNotifier<B> second;
+  final ValueNotifier<C> third;
+  final Widget Function(BuildContext context, A a, B b, C c, Widget? child)
+  builder;
+  final Widget? child;
+
+  const ValueListenableBuilder3({
+    super.key,
+    required this.first,
+    required this.second,
+    required this.third,
+    required this.builder,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<A>(
+      valueListenable: first,
+      builder: (context, a, _) {
+        return ValueListenableBuilder<B>(
+          valueListenable: second,
+          builder: (context, b, _) {
+            return ValueListenableBuilder<C>(
+              valueListenable: third,
+              builder: (context, c, _) {
+                return builder(context, a, b, c, child);
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

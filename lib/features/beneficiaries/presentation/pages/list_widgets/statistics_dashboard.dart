@@ -58,8 +58,8 @@ class StatisticsDashboard extends ConsumerWidget {
                 child: MicroInteractions.bounceButton(
                   onTap: null,
                   child: _StatCard(
-                    icon: Icons.list,
-                    label: 'المعروض',
+                    icon: Icons.filter_list,
+                    label: 'المعروضة',
                     value: state.items.length.toString(),
                     color: Colors.green,
                   ),
@@ -70,8 +70,8 @@ class StatisticsDashboard extends ConsumerWidget {
                 child: MicroInteractions.bounceButton(
                   onTap: null,
                   child: _StatCard(
-                    icon: Icons.cloud_off,
-                    label: 'معلق',
+                    icon: Icons.cloud_upload,
+                    label: 'قيد المزامنة',
                     value: state.pendingSyncCount.toString(),
                     color: Colors.orange,
                   ),

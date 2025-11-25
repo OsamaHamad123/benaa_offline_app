@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+
+// Toggle form-level debug printing during manual debugging. Keep false
+// in CI/tests to avoid console I/O jitter.
+bool _enableFormDebugPrints = false;
 
 /// 🎯 Form Controllers & State Variables with ChangeNotifier
 ///
@@ -185,9 +190,11 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   set pendingAttachmentFiles(List<File> files) {
     _pendingAttachmentFiles.clear();
     _pendingAttachmentFiles.addAll(files);
-    debugPrint(
-      '📋 [FormControllers] Updated pending files via setter. Count: ${_pendingAttachmentFiles.length}',
-    );
+    if (kDebugMode && _enableFormDebugPrints) {
+      debugPrint(
+        '📋 [FormControllers] Updated pending files via setter. Count: ${_pendingAttachmentFiles.length}',
+      );
+    }
     _notifyAndScheduleAutoSave();
   }
 
@@ -195,9 +202,11 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void updatePendingFiles(List<File> newFiles) {
     _pendingAttachmentFiles.clear();
     _pendingAttachmentFiles.addAll(newFiles);
-    debugPrint(
-      '📋 [FormControllers] Updated pending files. Count: ${_pendingAttachmentFiles.length}',
-    );
+    if (kDebugMode && _enableFormDebugPrints) {
+      debugPrint(
+        '📋 [FormControllers] Updated pending files. Count: ${_pendingAttachmentFiles.length}',
+      );
+    }
     _notifyAndScheduleAutoSave();
   }
 
