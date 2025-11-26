@@ -10,6 +10,7 @@ import '../../data/db/drift_database.dart';
 import '../../features/visits/presentation/pages/record_visit_page_enhanced.dart';
 import '../../features/visits/presentation/providers/visit_providers.dart';
 import '../attachments/presentation/widgets/attachments_section_enhanced.dart';
+import '../../core/design_system/app_animations.dart';
 
 class ViewBeneficiaryPage extends ConsumerWidget {
   final String beneficiaryId;
@@ -141,15 +142,21 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   padding: EdgeInsets.all(20.r),
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 50.r,
-                        backgroundColor: categoryColor.withOpacity(0.2),
-                        child: Icon(
-                          beneficiary.gender == 1
-                              ? Icons.person
-                              : Icons.person_outline,
-                          size: 60.sp,
-                          color: categoryColor,
+                      Hero(
+                        tag: 'beneficiary_avatar_$beneficiaryId',
+                        child: ScaleTransitionWidget(
+                          duration: AppDurations.normal,
+                          child: CircleAvatar(
+                            radius: 50.r,
+                            backgroundColor: categoryColor.withOpacity(0.2),
+                            child: Icon(
+                              beneficiary.gender == 1
+                                  ? Icons.person
+                                  : Icons.person_outline,
+                              size: 60.sp,
+                              color: categoryColor,
+                            ),
+                          ),
                         ),
                       ),
                       SizedBox(height: 16.h),

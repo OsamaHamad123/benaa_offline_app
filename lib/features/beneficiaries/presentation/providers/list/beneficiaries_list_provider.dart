@@ -5,6 +5,7 @@ import '../../../../../core/utils/app_logger.dart';
 import 'beneficiaries_list_state.dart';
 import 'filters_provider.dart';
 import 'cache_manager.dart';
+import '../beneficiary_activity_providers.dart';
 
 /// 📊 Beneficiaries List Provider
 final beneficiariesListProvider =
@@ -202,13 +203,16 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     state = const BeneficiariesListState();
   }
 
-  /// ✅ Optimistic Delete
+  /// ✅ Optimistic Delete with Activity Logging
   Future<void> deleteBeneficiary(int id) async {
     AppLogger.info('Delete beneficiary #$id');
 
     // حفظ النسخة القديمة
     final oldItems = state.items;
     final oldCachedData = _cachedData;
+
+    // احصل على معلومات المستفيد قبل الحذف
+    final beneficiary = state.items.firstWhere((b) => b.id == id);
 
     // حذف فوري من UI
     final newItems = state.items.where((b) => b.id != id).toList();
@@ -217,8 +221,16 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
     final stopwatch = Stopwatch()..start();
     try {
-      // حذف من Database
-      await _db.beneficiariesDao.deleteBeneficiary(id);
+      // 🔥 حذف من Database + تسجيل Activity
+      final deleteBeneficiaryWithActivity = _ref.read(
+        deleteBeneficiaryWithActivityProvider,
+      );
+      await deleteBeneficiaryWithActivity(
+        beneficiaryId: id,
+        beneficiaryName: beneficiary.fullName,
+        fileNo: beneficiary.fileIdNumber,
+      );
+
       await _updateStatistics();
       stopwatch.stop();
       AppLogger.logPerformance(

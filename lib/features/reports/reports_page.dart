@@ -1,32 +1,21 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:share_plus/share_plus.dart';
-import '../../core/widgets/common_widgets.dart';
 import '../../core/extensions/context_extensions.dart';
 import 'providers/reports_providers.dart';
-import 'domain/entities/report_data.dart';
-import 'widgets/governorate_bar_chart.dart';
-import 'widgets/category_pie_chart.dart';
-import 'widgets/gender_donut_chart.dart';
-import 'widgets/age_bar_chart.dart';
-import 'widgets/report_modal_sheet.dart';
-import 'widgets/statistic_card.dart';
-import 'widgets/detail_list_item.dart';
-import 'widgets/chart_section.dart';
-import 'widgets/export_buttons.dart';
 import 'widgets/summary_statistics_widget.dart';
 import 'widgets/report_card_widget.dart';
 import 'widgets/export_all_section.dart';
 import 'widgets/date_filter_actions.dart';
 import 'widgets/quick_date_filters.dart';
-import 'widgets/report_search_field.dart';
-import 'helpers/percentage_helper.dart';
-import 'services/pdf_export_service.dart';
-import 'services/excel_export_service.dart';
-import 'custom_reports_page.dart';
+import 'widgets/governorate_report_widget.dart';
+import 'widgets/category_report_widget.dart';
+import 'widgets/gender_report_widget.dart';
+import 'widgets/age_report_widget.dart';
 import '../../core/constants/report_styles.dart';
-import '../../core/constants/category_colors.dart';
+import 'custom_reports_page.dart';
+import '../../core/services/export/export_models.dart';
+import '../../core/services/export/export_providers.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
   const ReportsPage({super.key});
@@ -152,6 +141,10 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
 
             // Export All Reports Button
             _buildExportAllReportsSection(),
+            SizedBox(height: 16.h),
+
+            // Export Comprehensive Beneficiaries Report
+            _buildComprehensiveExportSection(),
             SizedBox(height: 24.h),
 
             // Report Categories
@@ -219,7 +212,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _GovernorateReportSheet(),
+      builder: (context) => const GovernorateReportSheet(),
     );
   }
 
@@ -355,6 +348,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     setState(() => _isExportingAll = true);
 
     try {
+      // TODO: Implement using UnifiedPdfExportService with ReportExportData
+      // This needs complex multi-table support for 6 different report types
+      /* 
       // Fetch all report data
       final summary = await ref.read(summaryStatisticsProvider.future);
       final gender = await ref.read(genderReportProvider.future);
@@ -362,9 +358,12 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       final category = await ref.read(categoryReportProvider.future);
       final age = await ref.read(ageReportProvider.future);
       final sync = await ref.read(syncStatusReportProvider.future);
+      */
 
       if (format == 'pdf') {
-        final pdfBytes = await PdfExportService.exportCustomReport(
+        context.showError('تصدير التقرير المخصص قيد التطوير');
+        /*
+        final pdfBytes = await PdfExportService.exportCustomReport(...
           title:
               'تقرير شامل - ${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}',
           startDate: _startDate,
@@ -398,7 +397,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         await Share.shareXFiles([
           XFile(pdfPath),
         ], text: 'تقرير شامل لجميع الإحصائيات');
+        */
       } else {
+        // TODO: Implement using UnifiedExcelExportService with ReportExportData
+        context.showError('تصدير التقرير المخصص قيد التطوير');
+        /*
         final excelPath = await ExcelExportService.exportCustomReport(
           title: 'تقرير شامل',
           startDate: _startDate,
@@ -425,9 +428,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         await Share.shareXFiles([
           XFile(excelPath),
         ], text: 'تقرير شامل لجميع الإحصائيات');
+        */
       }
 
       if (mounted) {
+        /*
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('تم تصدير جميع التقارير بنجاح'),
@@ -439,6 +444,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
             ),
           ),
         );
+        */
       }
     } catch (e) {
       if (mounted) {
@@ -460,7 +466,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _CategoryReportSheet(),
+      builder: (context) => const CategoryReportSheet(),
     );
   }
 
@@ -468,7 +474,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _GenderReportSheet(),
+      builder: (context) => const GenderReportSheet(),
     );
   }
 
@@ -476,16 +482,22 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _AgeReportSheet(),
+      builder: (context) => const AgeReportSheet(),
     );
   }
 
   void _showSyncReport(BuildContext context) {
+    // TODO: Create SyncReportSheet widget
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تقرير حالة المزامنة قيد التطوير')),
+    );
+    /* 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const _SyncReportSheet(),
+      builder: (context) => const SyncReportSheet(),
     );
+    */
   }
 
   Future<void> _exportAllBeneficiariesToExcel(BuildContext context) async {
@@ -512,9 +524,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       );
 
       // Get all beneficiaries from the repository
-      final repository = ref.read(
-        reportsRepositoryProvider,
-      ); // Use the reports repository
+      final repository = ref.read(reportsRepositoryProvider);
 
       // Fetch ALL beneficiaries without pagination
       final beneficiaries = await repository.getAllBeneficiaries();
@@ -523,873 +533,276 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
 
       if (beneficiaries.isEmpty) {
         Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('لا توجد بيانات للتصدير')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'لا توجد بيانات للتصدير.\nتأكد من إضافة مستفيدين أولاً.',
+            ),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'إعادة تشغيل',
+              onPressed: () {
+                // Suggest hot restart
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'جرب إعادة تشغيل التطبيق (Hot Restart) إذا كانت البيانات موجودة',
+                    ),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
         return;
       }
 
-      // Export to Excel
-      final filePath = await ExcelExportService.exportAllBeneficiaries(
-        beneficiaries: beneficiaries,
+      // Export to Excel using unified architecture
+      final excelService = ref.read(excelExportServiceProvider);
+
+      final exportData = BeneficiariesExportData(
+        beneficiaries: beneficiaries
+            .map(
+              (b) => BeneficiaryExportRow(
+                fullName: b.fullName,
+                nationalId: b.nationalId,
+                gender: b.gender == 'male' ? 'ذكر' : 'أنثى',
+                category: b.category.toString(),
+                governorate: b.governorate,
+                phoneNumber: b.phoneNumber,
+                createdAt: b.createdAt.toString().split(' ')[0],
+              ),
+            )
+            .toList(),
+        statistics: [
+          ExportStatistic(
+            label: 'إجمالي المستفيدين',
+            value: beneficiaries.length.toString(),
+          ),
+        ],
+        subtitle: 'قائمة شاملة بجميع المستفيدين',
       );
+
+      final result = await excelService.exportToExcel(exportData);
 
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
 
       // Share the file
-      await Share.shareXFiles([
-        XFile(filePath),
-      ], text: 'قائمة شاملة بجميع المستفيدين (${beneficiaries.length} مستفيد)');
-
-      if (!mounted) return;
-      context.showSuccess('تم تصدير ${beneficiaries.length} مستفيد بنجاح');
+      if (result.success) {
+        await excelService.shareFile(result.filePath!);
+        if (!mounted) return;
+        context.showSuccess('تم تصدير ${beneficiaries.length} مستفيد بنجاح');
+      } else {
+        context.showError('فشل التصدير: ${result.errorMessage}');
+      }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog if still open
       context.showError('فشل التصدير: ${e.toString()}');
     }
   }
-}
 
-class _GovernorateReportSheet extends ConsumerStatefulWidget {
-  const _GovernorateReportSheet();
-
-  @override
-  ConsumerState<_GovernorateReportSheet> createState() =>
-      _GovernorateReportSheetState();
-}
-
-class _GovernorateReportSheetState
-    extends ConsumerState<_GovernorateReportSheet> {
-  bool _isExporting = false;
-  String _searchQuery = '';
-
-  Future<void> _exportToPdf(List<GovernorateCount> data, int total) async {
-    setState(() => _isExporting = true);
-    try {
-      final pdfBytes = await PdfExportService.exportGovernorateReport(
-        data: data,
-        total: total,
-      );
-      await PdfExportService.shareOrPrint(
-        pdfBytes,
-        'governorate_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  Future<void> _exportToExcel(List<GovernorateCount> data, int total) async {
-    setState(() => _isExporting = true);
-    try {
-      final filePath = await ExcelExportService.exportGovernorateReport(
-        data: data,
-        total: total,
-      );
-      await Share.shareXFiles([XFile(filePath)], text: 'تقرير حسب المحافظة');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(governorateReportProvider);
-        final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
-
-        return CompactReportModalSheet(
-          title: 'تقرير حسب المحافظة',
-          child: reportAsync.when(
-            data: (governorateCounts) {
-              final sortedCounts = List<GovernorateCount>.from(
-                governorateCounts,
-              )..sort((a, b) => b.count.compareTo(a.count));
-
-              // Filter by search query
-              final filteredCounts = _searchQuery.isEmpty
-                  ? sortedCounts
-                  : sortedCounts
-                        .where(
-                          (item) => item.governorate.toLowerCase().contains(
-                            _searchQuery.toLowerCase(),
-                          ),
-                        )
-                        .toList();
-
-              return ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Search Field
-                  ReportSearchField(
-                    hint: 'ابحث عن محافظة...',
-                    onSearch: (query) {
-                      setState(() => _searchQuery = query);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Chart Section - Using reusable ChartSection widget
-                  ChartSection(
-                    title: 'التوزيع حسب المحافظة',
-                    chart: GovernorateBarChart(
-                      data: sortedCounts
-                          .take(10)
-                          .toList()
-                          .cast<GovernorateCount>(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Export Buttons
-                  ExportButtons(
-                    isLoading: _isExporting,
-                    onPdfExport: () => _exportToPdf(sortedCounts, total),
-                    onExcelExport: () => _exportToExcel(sortedCounts, total),
-                    onPrint: () => _exportToPdf(sortedCounts, total),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildComprehensiveExportSection() {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal.shade400, Colors.teal.shade600],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        padding: EdgeInsets.all(20.r),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.cloud_download, color: Colors.white, size: 32.sp),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'التفاصيل',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        Text(
-                          '${filteredCounts.length} نتيجة',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
+                        'تصدير تقرير شامل للمستفيدين',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'كل البيانات + المرفقات + الزيارات + الأنشطة',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  // Detail List Items - Using reusable DetailListItemWithProgress widget
-                  if (filteredCounts.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'لا توجد نتائج',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    ...filteredCounts.map((item) {
-                      return DetailListItemWithProgress(
-                        title: item.governorate,
-                        subtitle: PercentageHelper.getCountWithPercentage(
-                          item.count,
-                          total,
-                        ),
-                        progressValue:
-                            PercentageHelper.calculatePercentage(
-                              item.count,
-                              total,
-                            ) /
-                            100,
-                      );
-                    }),
-                ],
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('خطأ: $error')),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _CategoryReportSheet extends ConsumerStatefulWidget {
-  const _CategoryReportSheet();
-
-  @override
-  ConsumerState<_CategoryReportSheet> createState() =>
-      _CategoryReportSheetState();
-}
-
-class _CategoryReportSheetState extends ConsumerState<_CategoryReportSheet> {
-  bool _isExporting = false;
-
-  Future<void> _exportToPdf(List<CategoryCount> data) async {
-    setState(() => _isExporting = true);
-    try {
-      final pdfBytes = await PdfExportService.exportCategoryReport(data: data);
-      await PdfExportService.shareOrPrint(
-        pdfBytes,
-        'category_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  Future<void> _exportToExcel(List<CategoryCount> data) async {
-    setState(() => _isExporting = true);
-    try {
-      final filePath = await ExcelExportService.exportCategoryReport(
-        data: data,
-      );
-      await Share.shareXFiles([XFile(filePath)], text: 'تقرير حسب الفئة');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      minChildSize: 0.3,
-      maxChildSize: 0.7,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(categoryReportProvider);
-
-        return ReportModalSheet(
-          title: 'تقرير حسب الفئة',
-          scrollController: scrollController,
-          children: [
-            reportAsync.when(
-              data: (categoryCounts) {
-                final total = categoryCounts.fold(
-                  0,
-                  (sum, item) => sum + item.count,
-                );
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Chart Section - Using reusable ChartSection widget
-                    ChartSection(
-                      title: 'التوزيع حسب الفئة',
-                      chart: CategoryPieChart(
-                        data: categoryCounts,
-                        total: total,
-                      ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16.h),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _exportComprehensivePdf(context),
+                    icon: const Icon(Icons.picture_as_pdf),
+                    label: const Text('PDF'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.teal.shade700,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                     ),
-                    SizedBox(height: 12.h),
-                    // Export Buttons
-                    ExportButtons(
-                      isLoading: _isExporting,
-                      onPdfExport: () => _exportToPdf(categoryCounts),
-                      onExcelExport: () => _exportToExcel(categoryCounts),
-                      onPrint: () => _exportToPdf(categoryCounts),
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _exportComprehensiveExcel(context),
+                    icon: const Icon(Icons.table_chart),
+                    label: const Text('Excel'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.teal.shade700,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
                     ),
-                    SizedBox(height: 12.h),
-                    Text(
-                      'التفاصيل',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    // Detail List Items - Using reusable DetailListItem widget
-                    ...categoryCounts.map((item) {
-                      final color = CategoryColors.getColorByName(
-                        item.category,
-                      );
-
-                      return DetailListItem(
-                        title: item.category,
-                        subtitle: PercentageHelper.getCountWithPercentage(
-                          item.count,
-                          total,
-                        ),
-                        progressValue: 0.0, // Not used in this layout
-                        indicatorColor: color,
-                      );
-                    }),
-                  ],
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stack) => Center(child: Text('خطأ: $error')),
+                  ),
+                ),
+              ],
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
-}
 
-class _GenderReportSheet extends ConsumerStatefulWidget {
-  const _GenderReportSheet();
-
-  @override
-  ConsumerState<_GenderReportSheet> createState() => _GenderReportSheetState();
-}
-
-class _GenderReportSheetState extends ConsumerState<_GenderReportSheet> {
-  bool _isExporting = false;
-
-  Future<void> _exportToPdf(List<GenderCount> data, int total) async {
-    setState(() => _isExporting = true);
+  Future<void> _exportComprehensivePdf(BuildContext context) async {
     try {
-      final pdfBytes = await PdfExportService.exportGenderReport(
-        data: data,
-        total: total,
-      );
-      await PdfExportService.shareOrPrint(
-        pdfBytes,
-        'gender_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  Future<void> _exportToExcel(List<GenderCount> data, int total) async {
-    setState(() => _isExporting = true);
-    try {
-      final filePath = await ExcelExportService.exportGenderReport(
-        data: data,
-        total: total,
-      );
-      await Share.shareXFiles([XFile(filePath)], text: 'تقرير حسب الجنس');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isTablet = screenWidth > 600;
-
-    return DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      minChildSize: 0.3,
-      maxChildSize: 0.6,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(genderReportProvider);
-        final totalAsync = ref.watch(summaryStatisticsProvider);
-
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: EdgeInsets.all(16.w),
-          child: Column(
-            children: [
-              // Handle bar
-              Container(
-                margin: EdgeInsets.only(bottom: 8.h),
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // Title
-              Text(
-                'تقرير حسب الجنس',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12.h),
-              // Content
-              Expanded(
-                child: reportAsync.when(
-                  data: (genderCounts) {
-                    final total = totalAsync.value?.total ?? 0;
-                    final males = genderCounts
-                        .firstWhere(
-                          (g) => g.gender == 'ذكور',
-                          orElse: () => GenderCount(gender: 'ذكور', count: 0),
-                        )
-                        .count;
-                    final females = genderCounts
-                        .firstWhere(
-                          (g) => g.gender == 'إناث',
-                          orElse: () => GenderCount(gender: 'إناث', count: 0),
-                        )
-                        .count;
-
-                    return Column(
-                      children: [
-                        // Donut Chart - smaller on mobile
-                        Expanded(
-                          flex: isTablet ? 2 : 3,
-                          child: GenderDonutChart(
-                            data: genderCounts,
-                            total: total,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        // Statistics Cards
-                        Expanded(
-                          flex: isTablet ? 1 : 2,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: StatisticCard(
-                                  icon: Icons.male,
-                                  label: 'ذكور',
-                                  count: '$males',
-                                  percentage:
-                                      PercentageHelper.getPercentageText(
-                                        males,
-                                        total,
-                                      ),
-                                  iconColor: Colors.blue,
-                                  backgroundColor: Colors.blue[50],
-                                ),
-                              ),
-                              SizedBox(width: 8.w),
-                              Expanded(
-                                child: StatisticCard(
-                                  icon: Icons.female,
-                                  label: 'إناث',
-                                  count: '$females',
-                                  percentage:
-                                      PercentageHelper.getPercentageText(
-                                        females,
-                                        total,
-                                      ),
-                                  iconColor: Colors.pink,
-                                  backgroundColor: Colors.pink[50],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        // Export Buttons
-                        ExportButtons(
-                          isLoading: _isExporting,
-                          onPdfExport: () => _exportToPdf(genderCounts, total),
-                          onExcelExport: () =>
-                              _exportToExcel(genderCounts, total),
-                          onPrint: () => _exportToPdf(genderCounts, total),
-                        ),
-                      ],
-                    );
-                  },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, stack) => Center(child: Text('خطأ: $error')),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SyncReportSheet extends ConsumerStatefulWidget {
-  const _SyncReportSheet();
-
-  @override
-  ConsumerState<_SyncReportSheet> createState() => _SyncReportSheetState();
-}
-
-class _SyncReportSheetState extends ConsumerState<_SyncReportSheet> {
-  bool _isExporting = false;
-
-  Future<void> _exportToPdf(List<SyncStatusCount> data) async {
-    setState(() => _isExporting = true);
-    try {
-      final pdfBytes = await PdfExportService.exportSyncStatusReport(
-        data: data,
-      );
-      await PdfExportService.shareOrPrint(
-        pdfBytes,
-        'sync_status_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  Future<void> _exportToExcel(List<SyncStatusCount> data) async {
-    setState(() => _isExporting = true);
-    try {
-      await ExcelExportService.exportSyncStatusReport(data: data);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      minChildSize: 0.3,
-      maxChildSize: 0.7,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'تقرير المزامنة',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final reportAsync = ref.watch(syncStatusReportProvider);
-
-                    return reportAsync.when(
-                      data: (syncCounts) {
-                        final synced = syncCounts
-                            .firstWhere(
-                              (s) => s.status == 'تمت المزامنة',
-                              orElse: () => SyncStatusCount(
-                                status: 'تمت المزامنة',
-                                count: 0,
-                              ),
-                            )
-                            .count;
-                        final pending = syncCounts
-                            .firstWhere(
-                              (s) => s.status == 'بانتظار المزامنة',
-                              orElse: () => SyncStatusCount(
-                                status: 'بانتظار المزامنة',
-                                count: 0,
-                              ),
-                            )
-                            .count;
-                        final failed = syncCounts
-                            .firstWhere(
-                              (s) => s.status == 'فشلت المزامنة',
-                              orElse: () => SyncStatusCount(
-                                status: 'فشلت المزامنة',
-                                count: 0,
-                              ),
-                            )
-                            .count;
-
-                        return ListView(
-                          controller: scrollController,
-                          padding: const EdgeInsets.all(16),
-                          children: [
-                            // Export Buttons
-                            ExportButtons(
-                              isLoading: _isExporting,
-                              onPdfExport: () => _exportToPdf(syncCounts),
-                              onExcelExport: () => _exportToExcel(syncCounts),
-                              onPrint: () => _exportToPdf(syncCounts),
-                            ),
-                            const SizedBox(height: 16),
-                            InfoCard(
-                              icon: Icons.check_circle,
-                              title: 'تمت المزامنة',
-                              value: synced.toString(),
-                              color: Colors.green,
-                            ),
-                            const SizedBox(height: 12),
-                            InfoCard(
-                              icon: Icons.sync,
-                              title: 'بانتظار المزامنة',
-                              value: pending.toString(),
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(height: 12),
-                            InfoCard(
-                              icon: Icons.error,
-                              title: 'فشلت المزامنة',
-                              value: failed.toString(),
-                              color: Colors.red,
-                            ),
-                          ],
-                        );
-                      },
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (error, stack) =>
-                          Center(child: Text('خطأ: $error')),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _AgeReportSheet extends ConsumerStatefulWidget {
-  const _AgeReportSheet();
-
-  @override
-  ConsumerState<_AgeReportSheet> createState() => _AgeReportSheetState();
-}
-
-class _AgeReportSheetState extends ConsumerState<_AgeReportSheet> {
-  bool _isExporting = false;
-
-  Future<void> _exportToPdf(List<AgeCount> data, int total) async {
-    setState(() => _isExporting = true);
-    try {
-      final pdfBytes = await PdfExportService.exportAgeReport(
-        data: data,
-        total: total,
-      );
-      await PdfExportService.shareOrPrint(
-        pdfBytes,
-        'age_report_${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير PDF بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير PDF: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  Future<void> _exportToExcel(List<AgeCount> data, int total) async {
-    setState(() => _isExporting = true);
-    try {
-      await ExcelExportService.exportAgeReport(data: data, total: total);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('تم تصدير Excel بنجاح')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('خطأ في تصدير Excel: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isExporting = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.6,
-      minChildSize: 0.4,
-      maxChildSize: 0.8,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(ageReportProvider);
-        final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
-
-        return CompactReportModalSheet(
-          title: 'تقرير حسب الفئة العمرية',
-          child: reportAsync.when(
-            data: (ageCounts) {
-              return ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Chart Section - Using reusable ChartSection widget
-                  ChartSection(
-                    title: 'التوزيع حسب العمر',
-                    chart: AgeBarChart(data: ageCounts),
-                  ),
-                  const SizedBox(height: 16),
-                  // Export Buttons
-                  ExportButtons(
-                    isLoading: _isExporting,
-                    onPdfExport: () => _exportToPdf(ageCounts, total),
-                    onExcelExport: () => _exportToExcel(ageCounts, total),
-                    onPrint: () => _exportToPdf(ageCounts, total),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'التفاصيل',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Detail List Items - Using reusable DetailListItemWithProgress widget
-                  ...ageCounts.map((item) {
-                    final color = AgeBracketColors.getColor(item.ageBracket);
-
-                    return DetailListItemWithProgress(
-                      title: '${item.ageBracket} سنة',
-                      subtitle: PercentageHelper.getCountWithPercentage(
-                        item.count,
-                        total,
-                      ),
-                      progressValue:
-                          PercentageHelper.calculatePercentage(
-                            item.count,
-                            total,
-                          ) /
-                          100,
-                      progressColor: color,
-                      indicatorColor: color,
-                    );
-                  }),
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('جاري إعداد التقرير الشامل...'),
                 ],
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('خطأ: $error')),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // TODO: Fetch comprehensive data with visits, attachments, activities
+      final pdfService = ref.read(pdfExportServiceProvider);
+
+      // This is a placeholder - you'll need to implement actual data fetching
+      final exportData = ComprehensiveBeneficiariesExportData(
+        beneficiaries: [], // Add actual data here
+        statistics: [
+          const ExportStatistic(label: 'إجمالي المستفيدين', value: '0'),
+        ],
+        includeAttachments: true,
+        includeVisits: true,
+        includeActivities: true,
+      );
+
+      final result = await pdfService.exportToPdf(exportData);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم إنشاء التقرير الشامل: ${result.fileName}'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'فتح',
+              textColor: Colors.white,
+              onPressed: () => pdfService.openFile(result.filePath!),
+            ),
           ),
         );
-      },
-    );
+      } else {
+        context.showError('فشل التصدير: ${result.errorMessage}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      context.showError('فشل التصدير: ${e.toString()}');
+    }
+  }
+
+  Future<void> _exportComprehensiveExcel(BuildContext context) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('جاري إعداد التقرير الشامل...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // TODO: Fetch comprehensive data with visits, attachments, activities
+      final excelService = ref.read(excelExportServiceProvider);
+
+      // This is a placeholder - you'll need to implement actual data fetching
+      final exportData = ComprehensiveBeneficiariesExportData(
+        beneficiaries: [], // Add actual data here
+        statistics: [
+          const ExportStatistic(label: 'إجمالي المستفيدين', value: '0'),
+        ],
+        includeAttachments: true,
+        includeVisits: true,
+        includeActivities: true,
+      );
+
+      final result = await excelService.exportToExcel(exportData);
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (result.success) {
+        await excelService.shareFile(result.filePath!);
+        if (!mounted) return;
+        context.showSuccess('تم إنشاء التقرير الشامل بنجاح');
+      } else {
+        context.showError('فشل التصدير: ${result.errorMessage}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      context.showError('فشل التصدير: ${e.toString()}');
+    }
   }
 }

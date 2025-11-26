@@ -1,5 +1,3 @@
-import '../../data/db/drift_database.dart';
-
 /// نموذج بيانات للعلاقات العائلية
 class CivilRelation {
   final int id;
@@ -74,8 +72,10 @@ class CivilRelation {
 }
 
 /// نتيجة البحث في السجل المدني مع العلاقات
+/// ⚠️ DEPRECATED: This class is no longer used - Civil Registry moved to separate database
+@Deprecated('Use CivilPerson from features/search/domain/entities instead')
 class CivilRecordWithRelations {
-  final CivilRegistryData person;
+  final Map<String, dynamic> person; // Changed from CivilRegistryData
   final List<CivilRelation> relations;
 
   CivilRecordWithRelations({required this.person, required this.relations});

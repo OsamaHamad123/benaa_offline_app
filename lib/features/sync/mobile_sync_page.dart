@@ -5,8 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
 import '../../core/widgets/modern_sliver_app_bar.dart';
-import '../../core/extensions/context_extensions.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
+import '../../core/error_handling/error_handler.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
@@ -83,10 +83,16 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
       if (result.success) {
         if (!mounted) return;
-        context.showSuccess('✅ تم تنزيل ${result.recordsSynced} مستفيد بنجاح');
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: '✅ تم تنزيل ${result.recordsSynced} مستفيد بنجاح',
+        );
       } else {
         if (!mounted) return;
-        context.showError('❌ فشل التنزيل: ${result.error}');
+        EnhancedSnackbar.showError(
+          context,
+          message: '❌ فشل التنزيل: ${result.error}',
+        );
       }
     }
   }
@@ -105,11 +111,16 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
       if (result.success) {
         if (!mounted) return;
-        context.showSuccess('✅ تم رفع ${result.recordsSynced} مستفيد بنجاح');
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: '✅ تم رفع ${result.recordsSynced} مستفيد بنجاح',
+        );
       } else {
         if (!mounted) return;
-        context.showWarning(
-          '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
+        EnhancedSnackbar.showWarning(
+          context,
+          message:
+              '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
         );
       }
     }

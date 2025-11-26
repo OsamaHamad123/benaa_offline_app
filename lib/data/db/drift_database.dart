@@ -12,7 +12,7 @@ import 'tables/tables.dart';
 import 'daos/beneficiaries_dao.dart';
 import 'daos/visits_dao.dart';
 import 'daos/attachments_dao.dart';
-import 'daos/civil_registry_dao.dart';
+// 🗑️ import 'daos/civil_registry_dao.dart'; - Removed (using separate database)
 import 'daos/sync_dao.dart';
 import 'daos/tracking_dao.dart';
 import 'daos/taxonomies_dao.dart';
@@ -30,14 +30,8 @@ part 'drift_database.g.dart';
     Taxonomies,
     SyncQueue,
     SyncMetadataTable,
-    CivilRegistry,
-    CivilRegistryCity,
-    CivilRegistryRelations,
-    CivilRegistryRelationCategories,
-    CivilRegistryBirthCode,
-    CivilRegistryPersonalCode,
+    // 🗑️ Civil Registry tables removed - using separate database (civil_registry.db)
     Activities,
-    DataRequests,
     FamilyDeceasedTable,
     FamilyMembersTable,
   ],
@@ -45,7 +39,7 @@ part 'drift_database.g.dart';
     BeneficiariesDao,
     VisitsDao,
     AttachmentsDao,
-    CivilRegistryDao,
+    // 🗑️ CivilRegistryDao removed - using CivilRegistryDatabase instead
     SyncDao,
     TrackingDao,
     TaxonomiesDao,
@@ -65,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -75,8 +69,9 @@ class AppDatabase extends _$AppDatabase {
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
-        if (from < 11) {
-          // ⚡ Recreate performance indexes (fixing attachment_type and category_code issues)
+        if (from < 12) {
+          // v12: Removed Civil Registry tables (moved to separate database)
+          // Just recreate indexes - tables already removed from schema
           await _createPerformanceIndexes();
         } else {
           // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
@@ -169,35 +164,12 @@ class AppDatabase extends _$AppDatabase {
       END;
     ''');
 
-    // Civil Registry indexes (existing)
+    // 🗑️ Civil Registry indexes removed - using separate database
     await _createIndexes();
   }
 
   Future<void> _createIndexes() async {
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_national_id ON civil_registry(CI_ID_NUM);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_first_name ON civil_registry(CI_FIRST_ARB);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_family_name ON civil_registry(CI_FAMILY_ARB);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_full_name_norm ON civil_registry(full_name_normalized);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_city ON civil_registry(CITY);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_civil_governorate ON civil_registry(governorate);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_relations_person ON civil_registry_relations(CF_ID_NUM);',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_relations_relative ON civil_registry_relations(CF_ID_RELATIVE);',
-    );
+    // 🗑️ Civil Registry indexes removed - now handled by CivilRegistryDatabase
 
     // ⚡ Family tables indexes for better performance
     await customStatement(

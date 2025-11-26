@@ -9,11 +9,13 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_dimensions.dart';
+import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/ux/ux_widgets.dart';
 import '../../domain/helpers/beneficiary_domain_helpers.dart';
 import '../providers/details/beneficiary_details_provider.dart';
 import 'details_widgets/details_header_card.dart';
 import 'details_widgets/info_section.dart';
-import 'details_widgets/states/reusable_states.dart';
+import 'details_widgets/states/reusable_states.dart' hide EmptyStateWidget;
 import 'details_widgets/quick_stats_card.dart';
 import 'details_widgets/helpers/info_builders.dart';
 import 'details_widgets/helpers/validation_helpers.dart';
@@ -352,18 +354,16 @@ class _BeneficiaryDetailsPageV2State
     return EmptyStateWidget(
       icon: Icons.person_off_outlined,
       title: 'لا توجد بيانات',
-      subtitle: 'لم يتم العثور على معلومات المستفيد',
-      onActionPressed: () => context.pop(),
-      actionLabel: 'رجوع',
+      message: 'لم يتم العثور على معلومات المستفيد',
+      action: ElevatedButton(
+        onPressed: () => context.pop(),
+        child: const Text('رجوع'),
+      ),
     );
   }
 
   Widget _buildErrorState(BuildContext context, String message) {
-    return ErrorStateWidget(
-      message: message,
-      onRetry: _handleRefresh,
-      onBack: () => context.pop(),
-    );
+    return RetryWidget(message: message, onRetry: _handleRefresh);
   }
 
   // ============================================================================
@@ -374,9 +374,7 @@ class _BeneficiaryDetailsPageV2State
     try {
       context.push('/beneficiaries/${widget.beneficiaryId}/edit');
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('خطأ في الانتقال: $e')));
+      EnhancedSnackbar.showError(context, message: 'خطأ في الانتقال: $e');
     }
   }
 
@@ -395,7 +393,10 @@ class _BeneficiaryDetailsPageV2State
 
       if (beneficiaries.isEmpty) {
         if (mounted) {
-          ErrorSnackBar.show(context, 'خطأ: لم يتم العثور على المستفيد');
+          EnhancedSnackbar.showError(
+            context,
+            message: 'خطأ: لم يتم العثور على المستفيد',
+          );
         }
         return;
       }
@@ -417,7 +418,7 @@ class _BeneficiaryDetailsPageV2State
     } catch (e) {
       if (mounted) {
         LoadingDialog.hide(context);
-        ErrorSnackBar.show(context, 'خطأ: $e');
+        EnhancedSnackbar.showError(context, message: 'خطأ: $e');
       }
     }
   }
@@ -448,17 +449,7 @@ class _BeneficiaryDetailsPageV2State
           .refresh(_beneficiaryIntId);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('فشل تحديث البيانات'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'إعادة المحاولة',
-              onPressed: _handleRefresh,
-              textColor: Colors.white,
-            ),
-          ),
-        );
+        EnhancedSnackbar.showError(context, message: 'فشل تحديث البيانات');
       }
     }
   }
@@ -469,8 +460,9 @@ class _BeneficiaryDetailsPageV2State
         _showDeleteDialog(context);
         break;
       case 'print':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('سيتم إضافة الطباعة قريباً')),
+        EnhancedSnackbar.showInfo(
+          context,
+          message: 'سيتم إضافة الطباعة قريباً',
         );
         break;
       case 'timeline':
@@ -499,22 +491,21 @@ class _BeneficiaryDetailsPageV2State
         if (mounted) LoadingDialog.hide(context);
 
         if (success && mounted) {
-          SuccessSnackBar.show(context, '✓ تم حذف المستفيد بنجاح');
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: '✓ تم حذف المستفيد بنجاح',
+          );
           context.pop();
         } else if (mounted) {
           final errorMsg =
               ref.read(beneficiaryDetailsProvider).errorMessage ??
               'خطأ غير معروف';
-          ErrorSnackBar.show(
-            context,
-            'خطأ: $errorMsg',
-            onRetry: () => _showDeleteDialog(context),
-          );
+          EnhancedSnackbar.showError(context, message: 'خطأ: $errorMsg');
         }
       } catch (e) {
         if (mounted) {
           LoadingDialog.hide(context);
-          ErrorSnackBar.show(context, 'خطأ غير متوقع: $e');
+          EnhancedSnackbar.showError(context, message: 'خطأ غير متوقع: $e');
         }
       }
     }
@@ -529,7 +520,7 @@ class _BeneficiaryDetailsPageV2State
       if (image == null) {
         if (mounted) {
           LoadingDialog.hide(context);
-          ErrorSnackBar.show(context, 'فشل التقاط الصورة');
+          EnhancedSnackbar.showError(context, message: 'فشل التقاط الصورة');
         }
         return;
       }
@@ -546,7 +537,7 @@ class _BeneficiaryDetailsPageV2State
     } catch (e) {
       if (mounted) {
         LoadingDialog.hide(context);
-        ErrorSnackBar.show(context, 'خطأ في المشاركة: $e');
+        EnhancedSnackbar.showError(context, message: 'خطأ في المشاركة: $e');
       }
     }
   }

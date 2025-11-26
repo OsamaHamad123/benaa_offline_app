@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../design_system/app_animations.dart';
 
 /// 📦 مكتبة Dialogs الشائعة
 ///
@@ -14,26 +15,35 @@ class CommonDialogs {
     required String itemName,
     String? customMessage,
   }) {
-    return showDialog<bool>(
+    return showGeneralDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text(
-          customMessage ??
-              'هل أنت متأكد من حذف $itemName؟\nلا يمكن التراجع عن هذا الإجراء.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return ScaleTransitionWidget(
+          duration: AppDurations.dialogTransition,
+          child: AlertDialog(
+            title: const Text('تأكيد الحذف'),
+            content: Text(
+              customMessage ??
+                  'هل أنت متأكد من حذف $itemName؟\nلا يمكن التراجع عن هذا الإجراء.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('حذف'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('حذف'),
-          ),
-        ],
-      ),
+        );
+      },
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: AppDurations.dialogTransition,
     );
   }
 
@@ -43,24 +53,33 @@ class CommonDialogs {
     required String title,
     required String message,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.info, color: Colors.blue),
-            const SizedBox(width: 8),
-            Expanded(child: Text(title)),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('حسناً'),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return ScaleTransitionWidget(
+          duration: AppDurations.dialogTransition,
+          child: AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.info, color: Colors.blue),
+                const SizedBox(width: 8),
+                Expanded(child: Text(title)),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: AppDurations.dialogTransition,
     );
   }
 
@@ -70,24 +89,33 @@ class CommonDialogs {
     required String title,
     required String message,
   }) {
-    return showDialog(
+    return showGeneralDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.orange),
-            const SizedBox(width: 8),
-            Expanded(child: Text(title)),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('حسناً'),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return ScaleTransitionWidget(
+          duration: AppDurations.dialogTransition,
+          child: AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.warning, color: Colors.orange),
+                const SizedBox(width: 8),
+                Expanded(child: Text(title)),
+              ],
+            ),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: AppDurations.dialogTransition,
     );
   }
 

@@ -25,6 +25,9 @@ import '../widgets/advanced_filters_widget.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/settings/enhanced_settings_page.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/ux/ux_widgets.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
 /// Uses StateNotifier for state management with performance optimizations
@@ -94,19 +97,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   void _showOnlineSnackbar() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.wifi, color: AppColors.surface),
-            SizedBox(width: 8.w),
-            const Text('تم الاتصال بالإنترنت - جاري المزامنة التلقائية'),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
+    EnhancedSnackbar.showSuccess(
+      context,
+      message: 'تم الاتصال بالإنترنت - جاري المزامنة التلقائية',
     );
   }
 
@@ -140,12 +133,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           // Currently filters are applied when beneficiaries list is loaded
           // Dashboard statistics are recalculated based on filtered data
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('تم تطبيق الفلاتر'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          EnhancedSnackbar.showSuccess(context, message: 'تم تطبيق الفلاتر');
         },
       ),
     );
@@ -318,21 +306,21 @@ class _DashboardHome extends ConsumerWidget {
             ModernActionButton(
               icon: Icons.search_rounded,
               tooltip: 'البحث',
+              iconSize: 28,
               onPressed: () => context.push('/beneficiaries'),
             ),
             ModernActionButton(
               icon: Icons.notifications_outlined,
               tooltip: 'الإشعارات',
+              iconSize: 28,
+              badge: state.todayStats?.pendingTasks,
               onPressed: () {
                 final count = state.todayStats?.pendingTasks ?? 0;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      count > 0
-                          ? 'لديك $count مهمة معلقة'
-                          : 'لا توجد مهام معلقة',
-                    ),
-                  ),
+                EnhancedSnackbar.showInfo(
+                  context,
+                  message: count > 0
+                      ? 'لديك $count مهمة معلقة'
+                      : 'لا توجد مهام معلقة',
                 );
               },
             ),
@@ -346,9 +334,17 @@ class _DashboardHome extends ConsumerWidget {
               await notifier.refresh();
             },
             child: state.isLoadingStats && state.statistics == null
-                ? SizedBox(
-                    height: 400.h,
-                    child: const Center(child: CircularProgressIndicator()),
+                ? Padding(
+                    padding: EdgeInsets.all(16.w),
+                    child: Column(
+                      children: List.generate(
+                        3,
+                        (index) => Padding(
+                          padding: EdgeInsets.only(bottom: 16.h),
+                          child: SkeletonListItem(),
+                        ),
+                      ),
+                    ),
                   )
                 : state.hasError
                 ? _buildErrorView(context, state.errorMessage!, notifier)
@@ -367,26 +363,7 @@ class _DashboardHome extends ConsumerWidget {
   }
 
   Widget _buildErrorView(BuildContext context, String error, dynamic notifier) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64.sp, color: AppColors.error),
-          SizedBox(height: 16.h),
-          Text(
-            error,
-            style: TextStyle(fontSize: 16.sp, color: AppColors.error),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 24.h),
-          ElevatedButton.icon(
-            onPressed: () => notifier.refresh(),
-            icon: const Icon(Icons.refresh),
-            label: const Text('إعادة المحاولة'),
-          ),
-        ],
-      ),
-    );
+    return RetryWidget(message: error, onRetry: () => notifier.refresh());
   }
 
   Widget _buildContent(
@@ -480,11 +457,9 @@ class _DashboardHome extends ConsumerWidget {
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       notifier.refresh();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('تم تحديث البيانات'),
-                          duration: Duration(seconds: 1),
-                        ),
+                      EnhancedSnackbar.showSuccess(
+                        context,
+                        message: 'تم تحديث البيانات',
                       );
                     },
                     tooltip: 'تحديث البيانات',
@@ -550,55 +525,26 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 24.h),
 
           // Dashboard Summary Widget - لوحة المعلومات المصغرة
-          const DashboardSummaryWidget(),
+          FadeSlideTransition(
+            duration: AppDurations.fast,
+            child: const DashboardSummaryWidget(),
+          ),
 
           SizedBox(height: 24.h),
-
-          // Last Refresh Time with modern design
-          if (state.lastRefreshTime != null)
-            Container(
-              margin: EdgeInsets.only(bottom: 16.h),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.orphan.withOpacity(0.06),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16.sp,
-                    color: AppColors.primary,
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'آخر تحديث: ${_formatRefreshTime(state.lastRefreshTime)}',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
           // Section: Quick Actions (الأكثر استخداماً - في الأعلى)
           _SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
           SizedBox(height: 12.h),
-          QuickActionsGrid(
-            onAddBeneficiaryTap: () => context.push('/beneficiaries/add'),
-            onSearchTap: () => context.push('/beneficiaries'),
-            onSyncTap: () => context.push('/sync'),
-            onReportsTap: () => context.push('/reports'),
-            onCivilRegistryTap: () => context.push('/search'),
+          ScaleTransitionWidget(
+            duration: AppDurations.normal,
+            child: QuickActionsGrid(
+              onAddBeneficiaryTap: () => context.push('/beneficiaries/add'),
+              onSearchTap: () => context.push('/beneficiaries'),
+              onSyncTap: () => context.push('/sync'),
+              onReportsTap: () => context.push('/reports'),
+              onCivilRegistryTap: () => context.push('/search'),
+              onVisitsTap: () => context.push('/visits'),
+            ),
           ),
 
           SizedBox(height: 24.h),
@@ -608,18 +554,22 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 12.h),
 
           // Trend Line Chart
-          TrendLineChart(
-            title: 'نمو المستفيدين (آخر 6 أشهر)',
-            data: [
-              stats.totalBeneficiaries * 0.5,
-              stats.totalBeneficiaries * 0.65,
-              stats.totalBeneficiaries * 0.75,
-              stats.totalBeneficiaries * 0.85,
-              stats.totalBeneficiaries * 0.92,
-              stats.totalBeneficiaries.toDouble(),
-            ],
-            labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
-            lineColor: AppColors.primary,
+          FadeSlideTransition(
+            duration: AppDurations.normal,
+            slideOffset: const Offset(0, 0.2),
+            child: TrendLineChart(
+              title: 'نمو المستفيدين (آخر 6 أشهر)',
+              data: [
+                stats.totalBeneficiaries * 0.5,
+                stats.totalBeneficiaries * 0.65,
+                stats.totalBeneficiaries * 0.75,
+                stats.totalBeneficiaries * 0.85,
+                stats.totalBeneficiaries * 0.92,
+                stats.totalBeneficiaries.toDouble(),
+              ],
+              labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
+              lineColor: AppColors.primary,
+            ),
           ),
 
           SizedBox(height: 24.h),
@@ -627,14 +577,20 @@ class _DashboardHome extends ConsumerWidget {
           // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
           _SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
           SizedBox(height: 12.h),
-          const UrgentCasesSection(),
+          ScaleTransitionWidget(
+            duration: AppDurations.fast,
+            child: const UrgentCasesSection(),
+          ),
 
           SizedBox(height: 24.h),
 
           // Section: Daily Performance - مؤشر الأداء اليومي
           _SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
           SizedBox(height: 12.h),
-          const DailyPerformanceSection(),
+          ScaleTransitionWidget(
+            duration: AppDurations.fast,
+            child: const DailyPerformanceSection(),
+          ),
 
           SizedBox(height: 24.h),
 
@@ -690,47 +646,10 @@ class _DashboardHome extends ConsumerWidget {
             ),
           ),
 
-          SizedBox(height: 24.h),
-
-          // Last Refresh Time (في Footer)
-          Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.access_time, size: 14.sp, color: Colors.grey[600]),
-                  SizedBox(width: 8.w),
-                  Text(
-                    'آخر تحديث: ${_formatRefreshTime(state.lastRefreshTime)}',
-                    style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SizedBox(height: 24.h),
+          SizedBox(height: 32.h),
         ],
       ),
     );
-  }
-
-  String _formatRefreshTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-
-    if (diff.inSeconds < 60) {
-      return 'الآن';
-    } else if (diff.inMinutes < 60) {
-      return 'منذ ${diff.inMinutes} دقيقة';
-    } else {
-      return 'منذ ${diff.inHours} ساعة';
-    }
   }
 }
 
@@ -756,6 +675,7 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
   @override
   Widget build(BuildContext context) {
     return Card(
+      margin: EdgeInsets.zero, // إزالة المسافة الخارجية
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),

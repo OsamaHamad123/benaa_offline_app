@@ -8,6 +8,8 @@ import '../../domain/usecases/add_attachment_usecase.dart';
 import '../../domain/usecases/delete_attachment_usecase.dart';
 import '../../data/datasources/attachment_datasource.dart';
 import '../../data/repositories/attachment_repository_impl.dart';
+import '../../../dashboard/domain/usecases/log_activity.dart';
+import '../../../dashboard/presentation/providers/activity_providers.dart';
 
 // ============================================================================
 // PROVIDERS
@@ -77,12 +79,15 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
   final GetBeneficiaryAttachmentsUseCase _getAttachmentsUseCase;
   final AddAttachmentUseCase _addAttachmentUseCase;
   final DeleteAttachmentUseCase _deleteAttachmentUseCase;
+  final LogActivity? _logActivity;
 
   AttachmentsNotifier(
     this._getAttachmentsUseCase,
     this._addAttachmentUseCase,
-    this._deleteAttachmentUseCase,
-  ) : super(const AttachmentsState());
+    this._deleteAttachmentUseCase, {
+    LogActivity? logActivity,
+  }) : _logActivity = logActivity,
+       super(const AttachmentsState());
 
   /// Load attachments for beneficiary
   Future<void> loadAttachments(String beneficiaryId) async {
@@ -112,6 +117,7 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     required String beneficiaryId,
     String? visitId,
     required File sourceFile,
+    String? beneficiaryName,
   }) async {
     try {
       final attachment = await _addAttachmentUseCase.execute(
@@ -122,6 +128,27 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
 
       state = state.copyWith(attachments: [...state.attachments, attachment]);
 
+      // Log activity if available
+      final logActivity = _logActivity;
+      if (logActivity != null) {
+        try {
+          await logActivity(
+            type: 'attachment',
+            description: 'تم إضافة مرفق جديد',
+            beneficiaryId: beneficiaryId,
+            beneficiaryName: beneficiaryName,
+            metadata: {
+              'action': 'add',
+              'attachment_id': attachment.id,
+              'attachment_type': attachment.type.name,
+              'visit_id': visitId,
+            },
+          );
+        } catch (e) {
+          debugPrint('❌ Failed to log activity: $e');
+        }
+      }
+
       return true;
     } catch (e) {
       state = state.copyWith(errorMessage: 'خطأ في إضافة المرفق: $e');
@@ -130,7 +157,11 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
   }
 
   /// Delete attachment
-  Future<bool> deleteAttachment(String attachmentId) async {
+  Future<bool> deleteAttachment(
+    String attachmentId, {
+    String? beneficiaryId,
+    String? beneficiaryName,
+  }) async {
     try {
       final success = await _deleteAttachmentUseCase.execute(attachmentId);
 
@@ -140,6 +171,22 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
               .where((a) => a.id != attachmentId)
               .toList(),
         );
+
+        // Log activity if available
+        final logActivity = _logActivity;
+        if (logActivity != null && beneficiaryId != null) {
+          try {
+            await logActivity(
+              type: 'attachment',
+              description: 'تم حذف مرفق',
+              beneficiaryId: beneficiaryId,
+              beneficiaryName: beneficiaryName,
+              metadata: {'action': 'delete', 'attachment_id': attachmentId},
+            );
+          } catch (e) {
+            debugPrint('❌ Failed to log activity: $e');
+          }
+        }
       }
 
       return success;
@@ -162,11 +209,13 @@ final attachmentsProvider =
         final getUseCase = ref.watch(getBeneficiaryAttachmentsUseCaseProvider);
         final addUseCase = ref.watch(addAttachmentUseCaseProvider);
         final deleteUseCase = ref.watch(deleteAttachmentUseCaseProvider);
+        final logActivity = ref.watch(logActivityUseCaseProvider);
 
         final notifier = AttachmentsNotifier(
           getUseCase,
           addUseCase,
           deleteUseCase,
+          logActivity: logActivity,
         );
 
         // Auto-load attachments

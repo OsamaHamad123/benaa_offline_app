@@ -8,6 +8,7 @@ import 'dart:async';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/errors/user_friendly_error.dart';
 import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi ValueListenableBuilder
+import '../../../../core/error_handling/error_handler.dart';
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -25,9 +26,8 @@ import 'v2_form_helpers/form_history.dart';
 import 'v2_form_helpers/draft_manager.dart'; // 💾 Draft Manager
 
 // Widgets
-import 'v2_form_helpers/widgets/loading_overlay.dart';
+import 'v2_form_helpers/widgets/loading_overlay.dart' as local;
 import 'v2_form_helpers/widgets/skeleton_loader.dart'; // 💀 Skeleton screens
-import 'v2_form_helpers/widgets/enhanced_snackbar.dart';
 import 'v2_form_helpers/widgets/keyboard_shortcuts_handler.dart';
 import 'v2_form_helpers/widgets/final_review_sheet.dart'; // 📋 Final Review
 import 'v2_form_helpers/widgets/draft_save_dialog.dart'; // 💾 Draft Save
@@ -869,16 +869,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
             message: 'تم حفظ المسودة "$draftName" بنجاح ✓',
           );
 
-          // Show button to view drafts
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('يمكنك عرض المسودات المحفوظة من القائمة'),
-              action: SnackBarAction(
-                label: 'عرض',
-                onPressed: () => _showDraftsList(),
-              ),
-              duration: Duration(seconds: 3),
-            ),
+          // Show info about viewing drafts
+          EnhancedSnackbar.showInfo(
+            context,
+            message: 'يمكنك عرض المسودات المحفوظة من القائمة',
           );
         }
       } catch (e, stackTrace) {
@@ -1532,7 +1526,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                     ValueListenableBuilder<bool>(
                       valueListenable: _isSavingNotifier,
                       builder: (context, isSaving, _) {
-                        return LoadingOverlay(
+                        return local.LoadingOverlay(
                           isVisible: isSaving || _isDeleting,
                           message: isSaving
                               ? FormConstants.savingMessage

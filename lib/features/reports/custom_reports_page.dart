@@ -3,10 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
-import 'dart:typed_data';
-import 'services/pdf_export_service.dart';
-import 'services/excel_export_service.dart';
-import 'providers/reports_providers.dart';
 
 /// Custom Reports Page - صفحة التقارير المخصصة
 /// تسمح للمستخدم بإنشاء تقارير حسب احتياجاته
@@ -390,18 +386,30 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
 
       // Generate PDF
       if (_exportFormat == 'pdf' || _exportFormat == 'both') {
+        // TODO: Implement using UnifiedPdfExportService
+        if (mounted) {
+          context.showError('تصدير PDF المخصص قيد التطوير');
+        }
+        /*
         final pdfBytes = await _generatePdfReport();
         final pdfPath = await PdfExportService.savePdfToFile(
           pdfBytes,
           '${_reportTitle}_${DateTime.now().millisecondsSinceEpoch}.pdf',
         );
         files.add(XFile(pdfPath));
+        */
       }
 
       // Generate Excel
       if (_exportFormat == 'excel' || _exportFormat == 'both') {
+        // TODO: Implement using UnifiedExcelExportService
+        if (mounted) {
+          context.showError('تصدير Excel المخصص قيد التطوير');
+        }
+        /*
         final excelPath = await _generateExcelReport();
         files.add(XFile(excelPath));
+        */
       }
 
       // Share files
@@ -421,6 +429,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
     }
   }
 
+  /* TODO: Implement using UnifiedPdfExportService
   Future<Uint8List> _generatePdfReport() async {
     // Fetch data based on selected reports
     final data = await _fetchReportData();
@@ -438,7 +447,9 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
 
     return Uint8List.fromList(pdfBytes);
   }
+  */
 
+  /* TODO: Implement using UnifiedExcelExportService
   Future<String> _generateExcelReport() async {
     // Fetch data based on selected reports
     final data = await _fetchReportData();
@@ -452,7 +463,10 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
       data: data,
     );
   }
+  */
 
+  // Commented out unused method - kept for future reference
+  /*
   Future<Map<String, dynamic>> _fetchReportData() async {
     final data = <String, dynamic>{};
 
@@ -495,6 +509,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
 
     return data;
   }
+  */
 
   void _showError(String message) {
     context.showError(message);

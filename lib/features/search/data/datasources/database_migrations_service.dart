@@ -1,5 +1,4 @@
 import 'package:sqflite/sqflite.dart';
-import 'text_normalization_service.dart';
 import '../../../../core/utils/debug_logger.dart';
 
 /// 🔄 Database Migrations Service - Handles all database migrations
@@ -19,28 +18,6 @@ class DatabaseMigrationsService {
     } catch (e) {
       DebugLogger.warning('Index setup error: $e');
       rethrow;
-    }
-  }
-
-  /// Run other migrations in background (non-blocking)
-  static void runOtherMigrationsAsync(Database db) async {
-    try {
-      await _ensureNameNormColumn(db);
-      await _ensureNameNormIndex(db);
-    } catch (e) {
-      DebugLogger.warning('Background migration error (non-critical): $e');
-    }
-  }
-
-  /// Run all migrations in background (non-blocking)
-  static void runMigrationsAsync(Database db) async {
-    try {
-      await _ensureNameNormColumn(db);
-      await _ensureNameNormIndex(db);
-      // Indexes are expensive - run them last
-      await _ensureOptimizedIndexes(db);
-    } catch (e) {
-      DebugLogger.warning('Background migration error (non-critical): $e');
     }
   }
 
@@ -85,59 +62,6 @@ class DatabaseMigrationsService {
     } catch (e) {
       // Indexes exist, safe to ignore
     }
-  }
-
-  /// Ensure name_norm column exists and is populated
-  static Future<void> _ensureNameNormColumn(Database db) async {
-    final hasColumn = await _columnExists(db, 'persons', 'name_norm');
-    if (!hasColumn) {
-      await db.execute('ALTER TABLE persons ADD COLUMN name_norm TEXT');
-    }
-
-    // Populate missing name_norm values in larger batches
-    const batchSize = 10000;
-    int? lastRowId;
-
-    while (true) {
-      final params = <dynamic>[];
-      var whereClause = '(name_norm IS NULL OR name_norm = "")';
-      if (lastRowId != null) {
-        whereClause += ' AND rowid > ?';
-        params.add(lastRowId);
-      }
-      params.add(batchSize);
-
-      final rows = await db.rawQuery('''
-        SELECT rowid, CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, CI_FAMILY_ARB
-        FROM persons
-        WHERE $whereClause
-        ORDER BY rowid
-        LIMIT ?
-        ''', params);
-
-      if (rows.isEmpty) {
-        break;
-      }
-
-      final batch = db.batch();
-      for (final row in rows) {
-        final normalized = TextNormalizationService.buildNormalizedName(row);
-        batch.rawUpdate('UPDATE persons SET name_norm = ? WHERE rowid = ?', [
-          normalized,
-          row['rowid'],
-        ]);
-      }
-
-      await batch.commit(noResult: true);
-      lastRowId = rows.last['rowid'] as int?;
-    }
-  }
-
-  /// Ensure name_norm index exists
-  static Future<void> _ensureNameNormIndex(Database db) async {
-    await db.execute(
-      'CREATE INDEX IF NOT EXISTS idx_persons_name_norm ON persons(name_norm)',
-    );
   }
 
   /// Create ULTRA-OPTIMIZED composite indexes for 5M+ record searches
@@ -213,16 +137,6 @@ class DatabaseMigrationsService {
       DebugLogger.error('Index creation failed', e);
       rethrow;
     }
-  }
-
-  /// Check if column exists in table
-  static Future<bool> _columnExists(
-    Database db,
-    String table,
-    String column,
-  ) async {
-    final result = await db.rawQuery('PRAGMA table_info($table)');
-    return result.any((row) => row['name'] == column);
   }
 
   /// Check if table exists

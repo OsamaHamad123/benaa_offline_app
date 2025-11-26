@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
+import '../core/design_system/app_animations.dart';
 import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/initialization/presentation/pages/app_initialization_page.dart';
@@ -20,9 +22,59 @@ import '../features/sync/mobile_sync_page.dart';
 import '../features/sync/test_mobile_api_page.dart';
 import '../features/reports/reports_page.dart';
 import '../features/attachments/attachments_page.dart';
+import '../features/visits/presentation/pages/visits_list_page_m3.dart';
+import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
+import '../core/settings/enhanced_settings_page.dart';
 import '../core/storage/secure_store.dart';
 import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
 import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
+
+/// 🎬 Custom Page Transition Helper
+Page<T> _buildPageWithTransition<T>({
+  required Widget child,
+  required GoRouterState state,
+  PageTransitionType type = PageTransitionType.fade,
+}) {
+  return CustomTransitionPage<T>(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      switch (type) {
+        case PageTransitionType.fade:
+          return FadeTransition(opacity: animation, child: child);
+        case PageTransitionType.slideFromBottom:
+          return SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: AppCurves.pageEnter,
+                  ),
+                ),
+            child: child,
+          );
+        case PageTransitionType.slideFromRight:
+          return SlideTransition(
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: AppCurves.pageEnter,
+                  ),
+                ),
+            child: child,
+          );
+        case PageTransitionType.scale:
+          return ScaleTransition(
+            scale: CurvedAnimation(parent: animation, curve: AppCurves.smooth),
+            child: child,
+          );
+      }
+    },
+  );
+}
+
+enum PageTransitionType { fade, slideFromBottom, slideFromRight, scale }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -82,15 +134,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
       GoRoute(
         path: '/dashboard',
-        builder: (context, state) => const DashboardPage(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const DashboardPage(),
+          state: state,
+          type: PageTransitionType.fade,
+        ),
       ),
       GoRoute(
         path: '/beneficiaries',
-        builder: (context, state) => const BeneficiariesListPageV2(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const BeneficiariesListPageV2(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
       ),
       GoRoute(
         path: '/beneficiaries/add',
-        builder: (context, state) => const BeneficiaryFormPageV3(),
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const BeneficiaryFormPageV3(),
+          state: state,
+          type: PageTransitionType.slideFromBottom,
+        ),
       ),
       GoRoute(
         path: '/beneficiaries/:id/edit',
@@ -133,6 +197,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/sync',
         builder: (context, state) => const MobileSyncPage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const EnhancedSettingsPage(),
+      ),
+      GoRoute(
+        path: '/visits',
+        builder: (context, state) => const VisitsListPageM3(),
+      ),
+      GoRoute(
+        path: '/activities',
+        builder: (context, state) => const AllActivitiesPageM3(),
       ),
       GoRoute(
         path: '/import-test',

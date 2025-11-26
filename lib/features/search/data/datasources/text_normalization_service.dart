@@ -146,14 +146,22 @@ class TextNormalizationService {
         return text;
 
       case HamzaMode.smart:
-        // ⚡ FIXED: Keep word-ending hamza for names like "ولاء" "دعاء"
-        // Convert hamza on waw/ya to base letters
+        // ⚡ ENHANCED: Better handling for names ending with hamza (ولاء، دعاء، سناء)
+
+        // Convert hamza variants to normalized form FIRST
         text = text.replaceAll('ؤ', 'وء');
         text = text.replaceAll('ئ', 'يء');
+
+        // For search matching: Create variations to match both with/without hamza
+        // This is handled in search query builder
+        // Here we KEEP word-ending hamza but normalize word-beginning hamza
 
         // Remove standalone hamza ONLY at word start and after spaces
         text = text.replaceAll(RegExp(r'^ء'), ''); // Remove at start
         text = text.replaceAll(RegExp(r'\sء'), ' '); // Remove after space
+
+        // Keep hamza at word end (crucial for ولاء، دعاء، etc.)
+        // Already preserved by not removing it
 
         return text;
     }
@@ -214,16 +222,43 @@ class TextNormalizationService {
     var result = text;
 
     // ⚡ IMPROVED: Better compound name handling
-    // Convert compound prefixes to single word AND keep spaced version
+    // This function normalizes compound names to help search
+    // The search query builder will create variations for matching
+
     for (final prefix in compoundPrefixes) {
-      // Handle "ال" after prefix with multiple spaces
+      // Handle "ال" after prefix: "عبد ال" → "عبدال"
       result = result.replaceAll(RegExp('$prefix\\s+ال'), '$prefixال');
 
-      // DON'T remove space after compound prefix
-      // This allows matching both "عبد الله" and "عبدالله"
+      // Keep space after compound prefix for word splitting
+      // Search will handle both "عبد الله" and "عبدالله" variations
     }
 
     return result;
+  }
+
+  /// Generate compound name variations for search (NEW)
+  /// "عبد الرحمن" → ["عبد الرحمن", "عبدالرحمن", "عبد", "الرحمن", "رحمن"]
+  static List<String> generateCompoundVariations(String name) {
+    final variations = <String>{name}; // Use Set to avoid duplicates
+
+    // Check each compound prefix
+    for (final prefix in compoundPrefixes) {
+      if (name.startsWith('$prefix ')) {
+        // "عبد الرحمن" → "عبدالرحمن"
+        variations.add(name.replaceAll(' ', ''));
+
+        // "عبد الرحمن" → "عبد" + "الرحمن"
+        final parts = name.split(' ');
+        variations.addAll(parts);
+
+        // "عبد الرحمن" → "رحمن" (without ال)
+        if (parts.length > 1 && parts[1].startsWith('ال')) {
+          variations.add(parts[1].substring(2));
+        }
+      }
+    }
+
+    return variations.toList();
   }
 
   /// Calculate Levenshtein distance between two strings
@@ -289,6 +324,52 @@ class TextNormalizationService {
 
     final distance = levenshteinDistance(normalized1, normalized2);
     return 1.0 - (distance / maxLen);
+  }
+
+  /// Generate hamza variations for search (NEW)
+  /// "ولاء" → ["ولاء", "ولا", "ولاا"]
+  /// "دعاء" → ["دعاء", "دعا", "دعاا"]
+  static List<String> generateHamzaVariations(String word) {
+    final variations = <String>{word}; // Use Set to avoid duplicates
+
+    // Check if word ends with hamza
+    if (word.endsWith('ء')) {
+      // Add variation without hamza: "ولاء" → "ولا"
+      variations.add(word.substring(0, word.length - 1));
+
+      // Add variation with alef: "ولاء" → "ولاا"
+      variations.add(word.substring(0, word.length - 1) + 'ا');
+    }
+
+    // Check if word ends with alef + hamza-like chars
+    if (word.endsWith('اء')) {
+      // Already have both versions
+      variations.add(word.substring(0, word.length - 1)); // Remove hamza
+    }
+
+    // Check for hamza on waw/ya at end: "نبوء" → "نبوء", "نبو"
+    if (word.endsWith('وء') || word.endsWith('يء')) {
+      variations.add(word.substring(0, word.length - 1)); // Remove hamza
+    }
+
+    return variations.toList();
+  }
+
+  /// Generate all search variations (compound + hamza) (NEW)
+  /// Combines compound name variations with hamza variations
+  static List<String> generateAllSearchVariations(String name) {
+    final allVariations = <String>{};
+
+    // Start with compound variations
+    final compoundVars = generateCompoundVariations(name);
+
+    // For each compound variation, generate hamza variations
+    for (final compoundVar in compoundVars) {
+      final hamzaVars = generateHamzaVariations(compoundVar);
+      allVariations.addAll(hamzaVars);
+    }
+
+    return allVariations.toList();
   }
 
   /// Build normalized full name from database row

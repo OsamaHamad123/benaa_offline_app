@@ -222,13 +222,17 @@ class CivilRegistrySearchQueries {
         }
 
         if (thirdWord != null) {
-          // Smart: Try compound names both ways ("عبد الغني" OR "عبدالغني")
-          if (thirdWord.contains(' ')) {
-            exactConditions.add(
-              '(CI_GRAND_FATHER_ARB = ? OR CI_GRAND_FATHER_ARB = ?)',
-            );
-            exactParams.add(thirdWord);
-            exactParams.add(thirdWord.replaceAll(' ', ''));
+          // ⚡ ENHANCED: Try compound names AND hamza variations
+          final thirdVariations =
+              TextNormalizationService.generateAllSearchVariations(thirdWord);
+
+          if (thirdVariations.length > 1) {
+            final placeholders = List.filled(
+              thirdVariations.length,
+              '?',
+            ).join(',');
+            exactConditions.add('CI_GRAND_FATHER_ARB IN ($placeholders)');
+            exactParams.addAll(thirdVariations);
           } else {
             exactConditions.add('CI_GRAND_FATHER_ARB = ?');
             exactParams.add(thirdWord);
@@ -236,11 +240,17 @@ class CivilRegistrySearchQueries {
         }
 
         if (fourthWord != null) {
-          // Smart: Try compound names both ways
-          if (fourthWord.contains(' ')) {
-            exactConditions.add('(CI_FAMILY_ARB = ? OR CI_FAMILY_ARB = ?)');
-            exactParams.add(fourthWord);
-            exactParams.add(fourthWord.replaceAll(' ', ''));
+          // ⚡ ENHANCED: Try compound names AND hamza variations
+          final fourthVariations =
+              TextNormalizationService.generateAllSearchVariations(fourthWord);
+
+          if (fourthVariations.length > 1) {
+            final placeholders = List.filled(
+              fourthVariations.length,
+              '?',
+            ).join(',');
+            exactConditions.add('CI_FAMILY_ARB IN ($placeholders)');
+            exactParams.addAll(fourthVariations);
           } else {
             exactConditions.add('CI_FAMILY_ARB = ?');
             exactParams.add(fourthWord);
@@ -487,6 +497,17 @@ class CivilRegistrySearchQueries {
 
         results = allResults;
       }
+
+      // ⚡ NEW: Fuzzy Search Fallback (if still no results)
+      // Try relaxed search with hamza/compound variations
+      if (results.isEmpty && smartWords.isNotEmpty) {
+        results = await _performFuzzySearch(
+          smartWords,
+          filterClause,
+          filterArgs,
+          limit,
+        );
+      }
     } catch (e, st) {
       AppLogger.error('Search query error', error: e, stackTrace: st);
       results = [];
@@ -693,6 +714,84 @@ class CivilRegistrySearchQueries {
     _searchCache.clear();
     _countCache.clear();
     _cacheAccess.clear();
+  }
+
+  /// ⚡ NEW: Fuzzy Search - Try relaxed matching when no exact results
+  /// Handles: compound names, hamza variations, phonetic similarities
+  Future<List<Map<String, Object?>>> _performFuzzySearch(
+    List<String> smartWords,
+    String filterClause,
+    List<dynamic> filterArgs,
+    int limit,
+  ) async {
+    if (smartWords.isEmpty) return [];
+
+    // Try different variations
+    final allResults = <Map<String, Object?>>[];
+
+    // Strategy 1: Try with all hamza/compound variations
+    for (var i = 0; i < smartWords.length && i < 2; i++) {
+      final word = smartWords[i];
+      final variations = TextNormalizationService.generateAllSearchVariations(
+        word,
+      );
+
+      if (variations.length > 1) {
+        final placeholders = List.filled(variations.length, '?').join(',');
+        final columnName = i == 0 ? 'CI_FIRST_ARB' : 'CI_FATHER_ARB';
+
+        final results = await _db.rawQuery(
+          '''
+          SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+                 CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
+          FROM persons 
+          WHERE $columnName IN ($placeholders)
+          $filterClause
+          ORDER BY rowid
+          LIMIT ?
+          ''',
+          [...variations, ...filterArgs, limit],
+        );
+
+        allResults.addAll(results);
+        if (allResults.length >= limit) break;
+      }
+    }
+
+    // Strategy 2: Try LIKE with wildcards (more permissive)
+    if (allResults.isEmpty && smartWords.isNotEmpty) {
+      final firstWord = smartWords[0];
+
+      // Remove common prefixes/suffixes for broader match
+      var relaxedWord = firstWord;
+      if (relaxedWord.length > 4) {
+        // Try without last character (handles hamza issues)
+        relaxedWord = relaxedWord.substring(0, relaxedWord.length - 1);
+      }
+
+      final wildcardResults = await _db.rawQuery(
+        '''
+        SELECT CI_ID_NUM, CI_FIRST_ARB, CI_FATHER_ARB, CI_GRAND_FATHER_ARB, 
+               CI_FAMILY_ARB, MOTHER_NAME1, CI_SEX_CD, CI_BIRTH_DT, CITY
+        FROM persons 
+        WHERE (CI_FIRST_ARB LIKE ? OR CI_FATHER_ARB LIKE ? OR CI_FAMILY_ARB LIKE ?)
+        $filterClause
+        ORDER BY rowid
+        LIMIT ?
+        ''',
+        [
+          '%$relaxedWord%',
+          '%$relaxedWord%',
+          '%$relaxedWord%',
+          ...filterArgs,
+          limit,
+        ],
+      );
+
+      allResults.addAll(wildcardResults);
+    }
+
+    return allResults.take(limit).toList();
   }
 
   /// Get statistics

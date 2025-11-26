@@ -13,6 +13,8 @@ import 'features/search/presentation/providers/search_dependencies.dart'
     as search_providers;
 import 'features/beneficiaries/presentation/providers/beneficiary_dependencies.dart'
     as beneficiary_providers;
+import 'features/dashboard/presentation/providers/activity_providers.dart'
+    as dashboard_providers;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,22 +22,27 @@ void main() async {
   // Initialize SharedPreferences for dashboard caching & recent searches
   final sharedPreferences = await SharedPreferences.getInstance();
 
-  // Initialize Sentry for error tracking (DISABLED - no valid DSN)
-  // TODO: Enable when you have a valid Sentry DSN
-  // await SentryFlutter.init((options) {
-  //   options.dsn = 'YOUR_SENTRY_DSN_HERE'; // Replace with actual DSN
-  //   options.tracesSampleRate = 1.0;
-  //   options.environment = 'production';
-  //   options.enableAutoPerformanceTracing = true;
-  //   options.attachStacktrace = true;
-  //   options.attachScreenshot = true;
-  //   options.beforeSend = (event, hint) {
-  //     if (const bool.fromEnvironment('dart.vm.product', defaultValue: false) == false) {
-  //       return null;
-  //     }
-  //     return event;
-  //   };
-  // }, appRunner: () => _runApp(sharedPreferences));
+  // Initialize Sentry for error tracking (DISABLED)
+  // 👉 To enable: Add your Sentry DSN from https://sentry.io
+  // Uncomment the code below and replace 'YOUR_SENTRY_DSN_HERE' with actual DSN
+  /*
+  await SentryFlutter.init((options) {
+    options.dsn = 'YOUR_SENTRY_DSN_HERE'; // Get from Sentry project settings
+    options.tracesSampleRate = 1.0;
+    options.environment = 'production';
+    options.enableAutoPerformanceTracing = true;
+    options.attachStacktrace = true;
+    options.attachScreenshot = true;
+    options.beforeSend = (event, hint) {
+      // Don't send in debug mode
+      if (const bool.fromEnvironment('dart.vm.product', defaultValue: false) == false) {
+        return null;
+      }
+      return event;
+    };
+  }, appRunner: () => _runApp(sharedPreferences));
+  return; // Exit early when Sentry is enabled
+  */
 
   // Run app directly without Sentry
   _runApp(sharedPreferences);
@@ -59,6 +66,10 @@ void _runApp(SharedPreferences sharedPreferences) {
         ),
         // Override database provider for beneficiaries feature
         beneficiary_providers.databaseProvider.overrideWith(
+          (ref) => ref.watch(core_providers.databaseProvider),
+        ),
+        // Override database provider for dashboard/activities feature
+        dashboard_providers.dashboardDatabaseProvider.overrideWith(
           (ref) => ref.watch(core_providers.databaseProvider),
         ),
         // Override SharedPreferences for search feature (recent searches)

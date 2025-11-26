@@ -3,6 +3,8 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/usecases/beneficiary_usecases.dart';
 import 'beneficiary_dependencies_provider.dart';
+import '../../../dashboard/domain/usecases/log_activity.dart';
+import '../../../dashboard/presentation/providers/activity_providers.dart';
 import '../../../../core/utils/debug_logger.dart';
 
 /// 🎯 Beneficiary Form State
@@ -51,13 +53,16 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
   final UpdateBeneficiaryUseCase _updateUseCase;
   final GetBeneficiaryUseCase _getUseCase;
   final LoadFromCivilRegistryUseCase _loadFromCivilRegistry;
+  final LogActivity? _logActivity;
 
   BeneficiaryFormNotifier(
     this._createUseCase,
     this._updateUseCase,
     this._getUseCase,
-    this._loadFromCivilRegistry,
-  ) : super(const BeneficiaryFormState());
+    this._loadFromCivilRegistry, {
+    LogActivity? logActivity,
+  }) : _logActivity = logActivity,
+       super(const BeneficiaryFormState());
 
   /// Load existing beneficiary by ID
   Future<void> loadBeneficiary(String id) async {
@@ -156,6 +161,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
     try {
       final beneficiary = state.beneficiary!;
       final now = DateTime.now();
+      final fullName = beneficiary.fullName;
 
       if (state.isNew) {
         // Create new
@@ -166,6 +172,27 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
             updatedAt: now,
           ),
         );
+
+        // Log activity if available
+        final logActivity = _logActivity;
+        if (logActivity != null) {
+          try {
+            await logActivity(
+              type: 'beneficiary',
+              description: 'تم إضافة مستفيد جديد',
+              beneficiaryId: created.id,
+              beneficiaryName: fullName,
+              metadata: {
+                'action': 'create',
+                'national_id': created.nationalId,
+                'category': created.category.name,
+              },
+            );
+          } catch (e) {
+            DebugLogger.error('Failed to log activity', e);
+          }
+        }
+
         state = state.copyWith(
           beneficiary: created,
           isSaving: false,
@@ -177,6 +204,23 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         final updated = await _updateUseCase.execute(
           beneficiary.copyWith(updatedAt: now),
         );
+
+        // Log activity if available
+        final logActivity = _logActivity;
+        if (logActivity != null) {
+          try {
+            await logActivity(
+              type: 'beneficiary',
+              description: 'تم تحديث بيانات المستفيد',
+              beneficiaryId: updated.id,
+              beneficiaryName: fullName,
+              metadata: {'action': 'update'},
+            );
+          } catch (e) {
+            DebugLogger.error('Failed to log activity', e);
+          }
+        }
+
         state = state.copyWith(
           beneficiary: updated,
           isSaving: false,
@@ -234,10 +278,13 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 final beneficiaryFormProvider =
     StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
       final dependencies = ref.watch(beneficiaryDependenciesProvider);
+      final logActivity = ref.watch(logActivityUseCaseProvider);
+
       return BeneficiaryFormNotifier(
         dependencies.createUseCase,
         dependencies.updateUseCase,
         dependencies.getUseCase,
         dependencies.loadFromCivilRegistryUseCase,
+        logActivity: logActivity,
       );
     });

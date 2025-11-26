@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../widgets/modern_sliver_app_bar.dart';
 import 'settings_provider.dart';
+import '../error_handling/error_handler.dart';
 
 /// 🎯 Enhanced Settings Page - صفحة الإعدادات المحسّنة
 class EnhancedSettingsPage extends ConsumerWidget {
@@ -438,7 +439,11 @@ class EnhancedSettingsPage extends ConsumerWidget {
           color: isEnabled ? Colors.grey[600] : Colors.grey[400],
         ),
       ),
-      trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: color),
+      trailing: Switch(
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: color,
+      ),
     );
   }
 
@@ -698,29 +703,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
                   await notifier.resetToDefaults();
                   if (context.mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check_circle, color: Colors.white),
-                            SizedBox(width: 12.w),
-                            Flexible(
-                              child: Text(
-                                'تم استعادة الإعدادات الافتراضية',
-                                style: TextStyle(
-                                  fontSize: isTablet ? 16.sp : 14.sp,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: Colors.green,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
+                    EnhancedSnackbar.showSuccess(
+                      context,
+                      message: 'تم استعادة الإعدادات الافتراضية',
                     );
                   }
                 },

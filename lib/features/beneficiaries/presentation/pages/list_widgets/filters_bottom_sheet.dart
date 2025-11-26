@@ -5,6 +5,7 @@ import '../../../../../core/utils/responsive_utils_v2.dart';
 import '../../providers/list/filters_provider.dart';
 import '../../providers/list/beneficiaries_list_state.dart';
 import '../../providers/list/beneficiaries_list_provider.dart';
+import '../../../../../core/design_system/app_animations.dart';
 
 /// 🔍 Filters Bottom Sheet
 class FiltersBottomSheet extends ConsumerStatefulWidget {
@@ -21,238 +22,245 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
     final theme = Theme.of(context);
     final rv = ResponsiveUtils.getValues(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(rv.isTablet ? 28 : 24),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 12),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
+    return SlideTransitionWidget(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+      duration: AppDurations.normal,
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(rv.isTablet ? 28 : 24),
           ),
-
-          // Header
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: rv.isTablet ? 24 : 20,
-              vertical: rv.isTablet ? 10 : 8,
+        ),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.filter_list,
-                  color: theme.colorScheme.primary,
-                  size: rv.isTablet ? 26 : 24,
-                ),
-                SizedBox(width: rv.isTablet ? 14 : 12),
-                Text(
-                  'الفلاتر',
-                  style: TextStyle(
-                    fontSize: rv.isTablet ? 22 : 20,
-                    fontWeight: FontWeight.bold,
+
+            // Header
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: rv.isTablet ? 24 : 20,
+                vertical: rv.isTablet ? 10 : 8,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_list,
+                    color: theme.colorScheme.primary,
+                    size: rv.isTablet ? 26 : 24,
                   ),
-                ),
-                const Spacer(),
-                if (filters.hasActiveFilters)
-                  TextButton(
+                  SizedBox(width: rv.isTablet ? 14 : 12),
+                  Text(
+                    'الفلاتر',
+                    style: TextStyle(
+                      fontSize: rv.isTablet ? 22 : 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (filters.hasActiveFilters)
+                    TextButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        ref.read(filtersProvider.notifier).clearFilters();
+                        ref.read(beneficiariesListProvider.notifier).refresh();
+                      },
+                      child: const Text('مسح الكل'),
+                    ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
                     onPressed: () {
                       HapticFeedback.lightImpact();
-                      ref.read(filtersProvider.notifier).clearFilters();
-                      ref.read(beneficiariesListProvider.notifier).refresh();
+                      Navigator.pop(context);
                     },
-                    child: const Text('مسح الكل'),
                   ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          const Divider(height: 1),
-
-          // Content
-          Flexible(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(rv.isTablet ? 24 : 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category Filter
-                  _buildSectionTitle('الفئة', rv),
-                  SizedBox(height: rv.isTablet ? 14 : 12),
-                  Wrap(
-                    spacing: rv.isTablet ? 10 : 8,
-                    runSpacing: rv.isTablet ? 10 : 8,
-                    children: [
-                      _FilterChip(
-                        label: 'الكل',
-                        isSelected: filters.categoryId == null,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(filtersProvider.notifier).setCategory(null);
-                          ref
-                              .read(beneficiariesListProvider.notifier)
-                              .refresh();
-                        },
-                        rv: rv,
-                      ),
-                      _FilterChip(
-                        label: 'يتيم',
-                        isSelected: filters.categoryId == 1,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(filtersProvider.notifier).setCategory(1);
-                          ref
-                              .read(beneficiariesListProvider.notifier)
-                              .refresh();
-                        },
-                        color: Colors.blue,
-                        rv: rv,
-                      ),
-                      _FilterChip(
-                        label: 'أرملة',
-                        isSelected: filters.categoryId == 2,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(filtersProvider.notifier).setCategory(2);
-                          ref
-                              .read(beneficiariesListProvider.notifier)
-                              .refresh();
-                        },
-                        color: Colors.purple,
-                        rv: rv,
-                      ),
-                      _FilterChip(
-                        label: 'فقير',
-                        isSelected: filters.categoryId == 3,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(filtersProvider.notifier).setCategory(3);
-                          ref
-                              .read(beneficiariesListProvider.notifier)
-                              .refresh();
-                        },
-                        color: Colors.orange,
-                        rv: rv,
-                      ),
-                      _FilterChip(
-                        label: 'معاق',
-                        isSelected: filters.categoryId == 4,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(filtersProvider.notifier).setCategory(4);
-                          ref
-                              .read(beneficiariesListProvider.notifier)
-                              .refresh();
-                        },
-                        color: Colors.red,
-                        rv: rv,
-                      ),
-                    ],
-                  ),
-
-                  SizedBox(height: rv.isTablet ? 28 : 24),
-
-                  // Quick Filters
-                  _buildSectionTitle('فلاتر سريعة', rv),
-                  SizedBox(height: rv.isTablet ? 14 : 12),
-                  _SwitchTile(
-                    title: 'معلق المزامنة فقط',
-                    value: filters.onlyPendingSync,
-                    icon: Icons.cloud_off,
-                    onChanged: (value) {
-                      HapticFeedback.lightImpact();
-                      ref.read(filtersProvider.notifier).togglePendingSync();
-                      ref.read(beneficiariesListProvider.notifier).refresh();
-                    },
-                    rv: rv,
-                  ),
-                  _SwitchTile(
-                    title: 'مع رقم هاتف فقط',
-                    value: filters.onlyWithPhone,
-                    icon: Icons.phone,
-                    onChanged: (value) {
-                      HapticFeedback.lightImpact();
-                      ref.read(filtersProvider.notifier).toggleWithPhone();
-                      ref.read(beneficiariesListProvider.notifier).refresh();
-                    },
-                    rv: rv,
-                  ),
-                  _SwitchTile(
-                    title: 'مع موقع محدد فقط',
-                    value: filters.onlyWithLocation,
-                    icon: Icons.location_on,
-                    onChanged: (value) {
-                      HapticFeedback.lightImpact();
-                      ref.read(filtersProvider.notifier).toggleWithLocation();
-                      ref.read(beneficiariesListProvider.notifier).refresh();
-                    },
-                    rv: rv,
-                  ),
-
-                  SizedBox(height: rv.isTablet ? 28 : 24),
-
-                  // Sort
-                  _buildSectionTitle('الترتيب', rv),
-                  SizedBox(height: rv.isTablet ? 14 : 12),
-                  Wrap(
-                    spacing: rv.isTablet ? 10 : 8,
-                    runSpacing: rv.isTablet ? 10 : 8,
-                    children: SortBy.values.map((sort) {
-                      final isSelected = filters.sortBy == sort;
-                      return _FilterChip(
-                        label: sort.label,
-                        isSelected: isSelected,
-                        icon: isSelected
-                            ? (filters.sortAscending
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward)
-                            : null,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          if (isSelected) {
-                            ref
-                                .read(filtersProvider.notifier)
-                                .toggleSortDirection();
-                          } else {
-                            ref
-                                .read(filtersProvider.notifier)
-                                .setSorting(sort, true);
-                          }
-                          ref
-                              .read(beneficiariesListProvider.notifier)
-                              .refresh();
-                        },
-                        rv: rv,
-                      );
-                    }).toList(),
-                  ),
-
-                  SizedBox(height: rv.isTablet ? 36 : 32),
                 ],
               ),
             ),
-          ),
-        ],
+
+            const Divider(height: 1),
+
+            // Content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(rv.isTablet ? 24 : 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category Filter
+                    _buildSectionTitle('الفئة', rv),
+                    SizedBox(height: rv.isTablet ? 14 : 12),
+                    Wrap(
+                      spacing: rv.isTablet ? 10 : 8,
+                      runSpacing: rv.isTablet ? 10 : 8,
+                      children: [
+                        _FilterChip(
+                          label: 'الكل',
+                          isSelected: filters.categoryId == null,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref
+                                .read(filtersProvider.notifier)
+                                .setCategory(null);
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
+                          },
+                          rv: rv,
+                        ),
+                        _FilterChip(
+                          label: 'يتيم',
+                          isSelected: filters.categoryId == 1,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(filtersProvider.notifier).setCategory(1);
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
+                          },
+                          color: Colors.blue,
+                          rv: rv,
+                        ),
+                        _FilterChip(
+                          label: 'أرملة',
+                          isSelected: filters.categoryId == 2,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(filtersProvider.notifier).setCategory(2);
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
+                          },
+                          color: Colors.purple,
+                          rv: rv,
+                        ),
+                        _FilterChip(
+                          label: 'فقير',
+                          isSelected: filters.categoryId == 3,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(filtersProvider.notifier).setCategory(3);
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
+                          },
+                          color: Colors.orange,
+                          rv: rv,
+                        ),
+                        _FilterChip(
+                          label: 'معاق',
+                          isSelected: filters.categoryId == 4,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(filtersProvider.notifier).setCategory(4);
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
+                          },
+                          color: Colors.red,
+                          rv: rv,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: rv.isTablet ? 28 : 24),
+
+                    // Quick Filters
+                    _buildSectionTitle('فلاتر سريعة', rv),
+                    SizedBox(height: rv.isTablet ? 14 : 12),
+                    _SwitchTile(
+                      title: 'معلق المزامنة فقط',
+                      value: filters.onlyPendingSync,
+                      icon: Icons.cloud_off,
+                      onChanged: (value) {
+                        HapticFeedback.lightImpact();
+                        ref.read(filtersProvider.notifier).togglePendingSync();
+                        ref.read(beneficiariesListProvider.notifier).refresh();
+                      },
+                      rv: rv,
+                    ),
+                    _SwitchTile(
+                      title: 'مع رقم هاتف فقط',
+                      value: filters.onlyWithPhone,
+                      icon: Icons.phone,
+                      onChanged: (value) {
+                        HapticFeedback.lightImpact();
+                        ref.read(filtersProvider.notifier).toggleWithPhone();
+                        ref.read(beneficiariesListProvider.notifier).refresh();
+                      },
+                      rv: rv,
+                    ),
+                    _SwitchTile(
+                      title: 'مع موقع محدد فقط',
+                      value: filters.onlyWithLocation,
+                      icon: Icons.location_on,
+                      onChanged: (value) {
+                        HapticFeedback.lightImpact();
+                        ref.read(filtersProvider.notifier).toggleWithLocation();
+                        ref.read(beneficiariesListProvider.notifier).refresh();
+                      },
+                      rv: rv,
+                    ),
+
+                    SizedBox(height: rv.isTablet ? 28 : 24),
+
+                    // Sort
+                    _buildSectionTitle('الترتيب', rv),
+                    SizedBox(height: rv.isTablet ? 14 : 12),
+                    Wrap(
+                      spacing: rv.isTablet ? 10 : 8,
+                      runSpacing: rv.isTablet ? 10 : 8,
+                      children: SortBy.values.map((sort) {
+                        final isSelected = filters.sortBy == sort;
+                        return _FilterChip(
+                          label: sort.label,
+                          isSelected: isSelected,
+                          icon: isSelected
+                              ? (filters.sortAscending
+                                    ? Icons.arrow_upward
+                                    : Icons.arrow_downward)
+                              : null,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            if (isSelected) {
+                              ref
+                                  .read(filtersProvider.notifier)
+                                  .toggleSortDirection();
+                            } else {
+                              ref
+                                  .read(filtersProvider.notifier)
+                                  .setSorting(sort, true);
+                            }
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
+                          },
+                          rv: rv,
+                        );
+                      }).toList(),
+                    ),
+
+                    SizedBox(height: rv.isTablet ? 36 : 32),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

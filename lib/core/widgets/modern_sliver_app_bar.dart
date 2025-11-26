@@ -105,26 +105,42 @@ class ModernSliverAppBar extends StatelessWidget {
 
 /// 🎯 Modern Action Button - زر action موحد
 ///
-/// يوفر padding محسّن وتجربة مستخدم أفضل
+/// يوفر padding محسّن وتجربة مستخدم أفضل مع دعم badge
 class ModernActionButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback? onPressed;
+  final double iconSize;
+  final int? badge;
 
   const ModernActionButton({
     super.key,
     required this.icon,
     required this.tooltip,
     this.onPressed,
+    this.iconSize = 24,
+    this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon),
+    Widget iconButton = IconButton(
+      icon: Icon(icon, size: iconSize.sp),
       tooltip: tooltip,
       padding: EdgeInsets.symmetric(horizontal: 12.w),
       onPressed: onPressed,
     );
+
+    // إضافة badge إذا كان موجود
+    if (badge != null && badge! > 0) {
+      return Badge(
+        label: Text(badge! > 99 ? '99+' : '$badge'),
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        child: iconButton,
+      );
+    }
+
+    return iconButton;
   }
 }

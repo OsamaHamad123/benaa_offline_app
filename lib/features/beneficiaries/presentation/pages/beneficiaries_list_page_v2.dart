@@ -14,17 +14,17 @@ import 'list_widgets/bulk_actions_bar.dart';
 import '../widgets/animated_list_item.dart';
 import '../widgets/beneficiaries_search_bar.dart';
 import '../widgets/list_app_bar.dart';
-import '../widgets/beneficiaries_loading_shimmer.dart';
-import '../widgets/beneficiaries_states.dart';
 import '../widgets/advanced_search_dialog.dart';
 import '../services/export_service.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/swipeable_card_widget.dart';
-import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../../../core/widgets/quick_actions_menu.dart';
 import '../../../../core/utils/feedback_utils.dart';
 import '../../../../core/monitoring/app_monitoring.dart';
 import '../../../../core/performance/widget_performance_analyzer.dart';
+import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/ux/ux_widgets.dart';
+import '../../../../core/design_system/app_animations.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
 class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
@@ -120,19 +120,18 @@ class _BeneficiariesListPageV2State
 
       if (mounted) {
         HapticPatterns.success();
-        VisualFeedback.showSuccess(context, 'تم الحذف بنجاح');
+        EnhancedSnackbar.showSuccess(context, message: 'تم الحذف بنجاح');
       }
     } catch (e) {
       if (mounted) {
-        VisualFeedback.showError(
+        GlobalErrorHandler.handleError(
           context,
-          'فشل الحذف: ${e.toString()}',
-          action: SnackBarAction(
-            label: 'إعادة المحاولة',
-            textColor: Colors.white,
-            onPressed: () => _handleDelete(id),
+          AppError(
+            type: ErrorType.database,
+            message: 'فشل الحذف',
+            originalError: e,
           ),
-          duration: const Duration(seconds: 4),
+          onRetry: () => _handleDelete(id),
         );
       }
     }
@@ -163,20 +162,37 @@ class _BeneficiariesListPageV2State
       ),
       body: Column(
         children: [
-          // Statistics
-          const StatisticsDashboard(),
+          // Statistics - Lazy loaded for better performance
+          if (!_isSearching) // Hide when searching for better perf
+            RepaintBoundary(
+              child: FadeSlideTransition(
+                duration: AppDurations.fast,
+                child: GestureDetector(
+                  onTap: () {
+                    // Navigate to dedicated statistics page
+                    context.push('/statistics');
+                  },
+                  child: const StatisticsDashboard(),
+                ),
+              ),
+            ),
 
           // Search Bar
-          BeneficiariesSearchBar(
-            controller: _searchController,
-            onChanged: _onSearchChanged,
-            hintText: 'ابحث بالاسم، الرقم الوطني، أو رقم الملف...',
+          RepaintBoundary(
+            child: ScaleTransitionWidget(
+              duration: AppDurations.fast,
+              child: BeneficiariesSearchBar(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                hintText: 'ابحث بالاسم، الرقم الوطني، أو رقم الملف...',
+              ),
+            ),
           ),
 
           // Search Progress Indicator
           if (_isSearching) const LinearProgressIndicator(minHeight: 2),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
           // List
           Expanded(child: _buildList(state, selection, rv)),
@@ -290,12 +306,19 @@ class _BeneficiariesListPageV2State
 
   Widget _buildList(state, selection, ResponsiveValues rv) {
     if (state.isLoading) {
-      return const BeneficiariesLoadingShimmer();
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 5,
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: SkeletonListItem(),
+        ),
+      );
     }
 
     if (state.error != null) {
-      return BeneficiariesErrorState(
-        error: state.error ?? 'خطأ غير معروف',
+      return RetryWidget(
+        message: state.error ?? 'خطأ غير معروف',
         onRetry: () {
           ref.read(beneficiariesListProvider.notifier).refresh();
         },
@@ -303,10 +326,21 @@ class _BeneficiariesListPageV2State
     }
 
     if (state.isEmpty) {
-      return const BeneficiariesEmptyState(actionText: 'إضافة مستفيد');
+      return EmptyStateWidget(
+        icon: Icons.people_outline,
+        title: 'لا يوجد مستفيدين',
+        message: 'ابدأ بإضافة مستفيد جديد',
+        action: ElevatedButton.icon(
+          onPressed: () {
+            context.push('/beneficiaries/add');
+          },
+          icon: Icon(Icons.add),
+          label: Text('إضافة مستفيد'),
+        ),
+      );
     }
 
-    return CustomPullToRefresh(
+    return PullToRefreshWrapper(
       onRefresh: () async {
         HapticFeedback.mediumImpact();
         await ref.read(beneficiariesListProvider.notifier).refresh();
@@ -314,7 +348,6 @@ class _BeneficiariesListPageV2State
           HapticFeedback.lightImpact();
         }
       },
-      primaryColor: Theme.of(context).colorScheme.primary,
       child: rv.isTablet
           ? _buildGridView(state, selection, rv)
           : _buildListView(state, selection, rv),
@@ -334,7 +367,7 @@ class _BeneficiariesListPageV2State
       // ⚡ Performance optimizations
       addAutomaticKeepAlives: false, // Don't keep offscreen items alive
       addRepaintBoundaries: true, // Each item has repaint boundary
-      cacheExtent: 500, // Pre-cache 500px ahead/behind
+      cacheExtent: 800, // Increased cache for smoother scrolling
       itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == state.items.length) {
@@ -391,7 +424,7 @@ class _BeneficiariesListPageV2State
       // ⚡ Performance optimizations
       addAutomaticKeepAlives: false,
       addRepaintBoundaries: true,
-      cacheExtent: 500,
+      cacheExtent: 800, // Increased cache for smoother scrolling
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: _getGridColumns(context),
         crossAxisSpacing: 16,

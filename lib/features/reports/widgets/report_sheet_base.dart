@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
-import '../services/pdf_export_service.dart';
+import '../../../core/services/export/unified_pdf_export_service.dart';
 import 'export_buttons.dart';
 
 /// Base class للـ Report Sheets - يوفر الـ export functionality
@@ -26,7 +26,7 @@ abstract class ReportSheetState<T, W extends ReportSheetBase<T>>
     setState(() => _isExporting = true);
     try {
       final pdfBytes = await pdfGenerator(data);
-      await PdfExportService.shareOrPrint(pdfBytes, filename);
+      await UnifiedPdfExportService.shareOrPrint(pdfBytes, filename);
       if (mounted) {
         _showSuccessSnackBar('تم تصدير PDF بنجاح');
       }

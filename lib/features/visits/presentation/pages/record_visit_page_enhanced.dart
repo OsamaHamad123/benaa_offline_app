@@ -3,13 +3,14 @@ import 'package:flutter/services.dart'; // 🔥 Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:uuid/uuid.dart'; // 🔥 UUID للـ ID الآمن
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../../../core/widgets/beneficiary/beneficiary_info_card.dart';
 import '../../../../core/widgets/beneficiary/date_time_picker_field.dart';
-import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../domain/entities/visit_entity.dart';
 import '../providers/visit_providers.dart';
-import '../../../beneficiaries/presentation/pages/details_widgets/states/reusable_states.dart';
+import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/design_system/app_animations.dart';
 
 /// Record Visit Page - Enhanced Version 🔥
 class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
@@ -56,9 +57,16 @@ class _RecordVisitPageEnhancedState
     _loadLastStaffName();
   }
 
-  void _loadLastStaffName() {
-    // TODO: Load from SharedPreferences
-    // For now, we'll keep it empty
+  void _loadLastStaffName() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastStaffName = prefs.getString('last_staff_name');
+      if (lastStaffName != null && lastStaffName.isNotEmpty) {
+        _staffNameController.text = lastStaffName;
+      }
+    } catch (e) {
+      // Silently fail - not critical
+    }
   }
 
   @override
@@ -123,14 +131,28 @@ class _RecordVisitPageEnhancedState
 
   Future<void> _saveVisit() async {
     if (!_formKey.currentState!.validate()) {
-      context.showWarning('يرجى ملء جميع الحقول المطلوبة');
+      EnhancedSnackbar.showWarning(
+        context,
+        message: 'يرجى ملء جميع الحقول المطلوبة',
+      );
       return;
     }
 
-    // Show loading
-    LoadingDialog.show(context, message: 'جاري حفظ الزيارة...');
+    // Show loading overlay
+    if (!mounted) return;
+
+    setState(() {});
 
     try {
+      // Show loading overlay
+      if (!mounted) return;
+
+      await Future.delayed(
+        const Duration(milliseconds: 100),
+      ); // Allow UI to update
+
+      if (!mounted) return;
+
       // Build notes with categories and type
       String fullNotes = _notesController.text.trim();
       if (_selectedVisitType != null) {
@@ -158,38 +180,97 @@ class _RecordVisitPageEnhancedState
         lastSyncedAt: null,
       );
 
-      final success = await ref
-          .read(visitNotifierProvider.notifier)
-          .createNewVisit(visit);
+      // 🔥 Use CreateVisitWithActivity - يحفظ الزيارة ويسجل النشاط تلقائياً
+      final createVisitWithActivity = ref.read(createVisitWithActivityProvider);
+      await createVisitWithActivity(
+        visit: visit,
+        beneficiaryName: widget.beneficiary.fullName,
+      );
 
-      if (success && mounted) {
-        SuccessSnackBar.show(context, '✓ تم حفظ الزيارة بنجاح');
+      // Save staff name for next time
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('last_staff_name', visit.staffName);
+      } catch (_) {
+        // Ignore cache errors
+      }
+
+      if (mounted) {
+        // Show success dialog with animation
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => ScaleTransitionWidget(
+            duration: AppDurations.fast,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 80.sp),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'تم حفظ الزيارة بنجاح',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'تم حفظ بيانات الزيارة وستتم المزامنة قريباً',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context, true); // Close page
+                  },
+                  child: Text('حسناً'),
+                ),
+              ],
+            ),
+          ),
+        );
 
         HapticFeedback.mediumImpact();
 
         // Save staff name for next time
-        // TODO: Save to SharedPreferences
-
-        // Return to previous screen
-        Navigator.pop(context, true);
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
+            'last_staff_name',
+            _staffNameController.text.trim(),
+          );
+        } catch (e) {
+          // Silently fail - not critical
+        }
       } else if (mounted) {
         HapticFeedback.heavyImpact();
         final errorMessage = ref.read(visitNotifierProvider).errorMessage;
-        ErrorSnackBar.show(
+        EnhancedSnackbar.showError(
           context,
-          errorMessage ?? 'فشل حفظ الزيارة',
-          onRetry: _saveVisit,
+          message: errorMessage ?? 'فشل حفظ الزيارة',
         );
       }
     } catch (e) {
       if (mounted) {
         HapticFeedback.heavyImpact();
-        ErrorSnackBar.show(context, 'خطأ غير متوقع: $e');
-      }
-    } finally {
-      // 🔥 دائماً إخفاء Loading Dialog
-      if (mounted) {
-        LoadingDialog.hide(context);
+        GlobalErrorHandler.handleError(
+          context,
+          AppError(
+            type: ErrorType.unknown,
+            message: 'خطأ غير متوقع',
+            originalError: e,
+          ),
+          onRetry: _saveVisit,
+        );
       }
     }
   }
@@ -201,35 +282,41 @@ class _RecordVisitPageEnhancedState
         title: const Text('تسجيل زيارة'),
         actions: [
           IconButton(
-            icon: Icon(Icons.info_outline),
+            icon: const Icon(Icons.info_outline),
             tooltip: 'معلومات',
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: Row(
-                    children: [
-                      Icon(Icons.info_outline, color: Colors.blue),
-                      SizedBox(width: 8.w),
-                      Text('نصائح لتسجيل الزيارة'),
-                    ],
-                  ),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTip('✍️ اكتب ملاحظات واضحة ومفصلة'),
-                      _buildTip('📅 تأكد من صحة التاريخ والوقت'),
-                      _buildTip('🏷️ حدد نوع الزيارة والفئات المناسبة'),
-                      _buildTip('✅ راجع المعلومات قبل الحفظ'),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('فهمت'),
+                builder: (context) => ScaleTransitionWidget(
+                  duration: AppDurations.fast,
+                  child: AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.r),
                     ),
-                  ],
+                    title: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.blue),
+                        SizedBox(width: 8.w),
+                        const Text('نصائح لتسجيل الزيارة'),
+                      ],
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildTip('✍️ اكتب ملاحظات واضحة ومفصلة'),
+                        _buildTip('📅 تأكد من صحة التاريخ والوقت'),
+                        _buildTip('🏷️ حدد نوع الزيارة والفئات المناسبة'),
+                        _buildTip('✅ راجع المعلومات قبل الحفظ'),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('فهمت'),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
@@ -244,133 +331,183 @@ class _RecordVisitPageEnhancedState
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 👤 Beneficiary Info Card
-              BeneficiaryInfoCard(beneficiary: widget.beneficiary),
+              FadeSlideTransition(
+                duration: AppDurations.fast,
+                child: BeneficiaryInfoCard(beneficiary: widget.beneficiary),
+              ),
               SizedBox(height: 24.h),
 
               // 📅 Date Time Picker
-              DateTimePickerField(
-                label: 'التاریخ والوقت',
-                selectedDate: _selectedDateTime,
-                onTap: _selectDateTime,
+              ScaleTransitionWidget(
+                duration: AppDurations.fast,
+                child: DateTimePickerField(
+                  label: 'التاریخ والوقت',
+                  selectedDate: _selectedDateTime,
+                  onTap: _selectDateTime,
+                ),
               ),
               SizedBox(height: 24.h),
 
               // 🏷️ Visit Type Selector
-              _buildSectionTitle('نوع الزيارة', Icons.category),
-              SizedBox(height: 12.h),
-              _buildVisitTypeSelector(),
+              FadeSlideTransition(
+                duration: AppDurations.normal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('نوع الزيارة', Icons.category),
+                    SizedBox(height: 12.h),
+                    _buildVisitTypeSelector(),
+                  ],
+                ),
+              ),
               SizedBox(height: 24.h),
 
               // 📋 Categories Selector
-              _buildSectionTitle('الفئات (اختياري)', Icons.label_outline),
-              SizedBox(height: 12.h),
-              _buildCategoriesSelector(),
+              FadeSlideTransition(
+                duration: AppDurations.normal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('الفئات (اختياري)', Icons.label_outline),
+                    SizedBox(height: 12.h),
+                    _buildCategoriesSelector(),
+                  ],
+                ),
+              ),
               SizedBox(height: 24.h),
 
               // 👨‍💼 Staff Name Field
-              _buildSectionTitle('اسم الموظف', Icons.person),
-              SizedBox(height: 12.h),
-              TextFormField(
-                controller: _staffNameController,
-                decoration: InputDecoration(
-                  hintText: 'أدخل اسم الموظف',
-                  prefixIcon: Icon(Icons.person, color: Colors.blue),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.blue, width: 2),
-                  ),
+              ScaleTransitionWidget(
+                duration: AppDurations.fast,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('اسم الموظف', Icons.person),
+                    SizedBox(height: 12.h),
+                    TextFormField(
+                      controller: _staffNameController,
+                      decoration: InputDecoration(
+                        hintText: 'أدخل اسم الموظف',
+                        prefixIcon: const Icon(
+                          Icons.person,
+                          color: Colors.blue,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: const BorderSide(
+                            color: Colors.blue,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'يرجى إدخال اسم الموظف';
+                        }
+                        if (value.trim().length < 3) {
+                          return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'يرجى إدخال اسم الموظف';
-                  }
-                  if (value.trim().length < 3) {
-                    return 'الاسم يجب أن يكون 3 أحرف على الأقل';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: 24.h),
 
               // 📝 Notes Field
-              _buildSectionTitle('ملاحظات الزيارة', Icons.note_alt),
-              SizedBox(height: 12.h),
-              TextFormField(
-                controller: _notesController,
-                maxLines: 6,
-                maxLength: 500,
-                decoration: InputDecoration(
-                  hintText: 'اكتب ملاحظات تفصيلية عن الزيارة...',
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide(color: Colors.blue, width: 2),
-                  ),
-                  helperText: 'وصف واضح يساعد في متابعة الحالة',
+              ScaleTransitionWidget(
+                duration: AppDurations.fast,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('ملاحظات الزيارة', Icons.note_alt),
+                    SizedBox(height: 12.h),
+                    TextFormField(
+                      controller: _notesController,
+                      maxLines: 6,
+                      maxLength: 500,
+                      decoration: InputDecoration(
+                        hintText: 'اكتب ملاحظات تفصيلية عن الزيارة...',
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                          borderSide: const BorderSide(
+                            color: Colors.blue,
+                            width: 2,
+                          ),
+                        ),
+                        helperText: 'وصف واضح يساعد في متابعة الحالة',
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'يرجى إدخال ملاحظات الزيارة';
+                        }
+                        if (value.trim().length < 10) {
+                          return 'الملاحظات يجب أن تكون 10 أحرف على الأقل';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'يرجى إدخال ملاحظات الزيارة';
-                  }
-                  if (value.trim().length < 10) {
-                    return 'الملاحظات يجب أن تكون 10 أحرف على الأقل';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: 32.h),
 
               // 💾 Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.close),
-                      label: Text('إلغاء'),
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
+              ScaleTransitionWidget(
+                duration: AppDurations.fast,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                        label: const Text('إلغاء'),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      onPressed: _saveVisit,
-                      icon: Icon(Icons.save),
-                      label: Text('حفظ الزيارة'),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: _saveVisit,
+                        icon: const Icon(Icons.save),
+                        label: const Text('حفظ الزيارة'),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               SizedBox(height: 16.h),
             ],
