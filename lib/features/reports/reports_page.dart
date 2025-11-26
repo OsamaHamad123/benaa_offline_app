@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/extensions/context_extensions.dart';
 import 'providers/reports_providers.dart';
 import 'widgets/summary_statistics_widget.dart';
@@ -195,6 +196,19 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
               color: Colors.teal,
               gradient: ReportStyles.syncGradient,
               onTap: () => _showSyncReport(context),
+            ),
+            // 🆕 NEW: Comprehensive Beneficiaries Report
+            ReportCardWidget(
+              title: 'تقرير المستفيدين الشامل',
+              description: 'عرض تفصيلي لجميع المستفيدين مع الفلاتر المتقدمة',
+              icon: Icons.people,
+              color: Colors.indigo,
+              gradient: LinearGradient(
+                colors: [Colors.indigo.shade400, Colors.indigo.shade600],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              onTap: () => context.push('/reports/beneficiaries'),
             ),
             SizedBox(height: 24.h),
 

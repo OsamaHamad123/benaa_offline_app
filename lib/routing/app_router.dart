@@ -21,6 +21,7 @@ import '../features/sync/test_sync_page.dart';
 import '../features/sync/mobile_sync_page.dart';
 import '../features/sync/test_mobile_api_page.dart';
 import '../features/reports/reports_page.dart';
+import '../features/reports/presentation/pages/beneficiaries_report_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../features/visits/presentation/pages/visits_list_page_m3.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
@@ -193,6 +194,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/reports',
         builder: (context, state) => const ReportsPage(),
+      ),
+      GoRoute(
+        path: '/reports/beneficiaries',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const BeneficiariesReportPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
       ),
       GoRoute(
         path: '/sync',
