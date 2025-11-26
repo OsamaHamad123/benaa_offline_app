@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+
+  # Gradle dependencies
+  - package-ecosystem: "gradle"
+    directory: "/android"
+    schedule:
+      interval: "monthly"
+
+  # Bundler (Ruby/Fastlane) dependencies
+  - package-ecosystem: "bundler"
+    directory: "/android"
+    schedule:
+      interval: "monthly"

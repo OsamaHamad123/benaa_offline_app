@@ -43,3 +43,28 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Fastlane
+android/fastlane/report.xml
+android/fastlane/Preview.html
+android/fastlane/screenshots
+android/fastlane/test_output
+android/Gemfile.lock
+android/.bundle/
+
+# Build outputs
+builds/
+*.apk
+*.aab
+
+# Environment files
+*.env
+.env.*
+!.env.example
+
+# Firebase (IMPORTANT: Never commit these!)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+firebase-credentials.json
+**/firebase-debug.log
+.firebase/

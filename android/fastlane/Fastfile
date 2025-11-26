@@ -1,0 +1,121 @@
+# This file contains the fastlane configuration
+# You can find the documentation at https://docs.fastlane.tools
+
+default_platform(:android)
+
+platform :android do
+  desc "Run all tests"
+  lane :test do
+    # Go to Flutter root directory
+    Dir.chdir("..") do
+      sh("flutter", "test")
+    end
+  end
+
+  desc "Build Debug APK"
+  lane :build_debug do
+    Dir.chdir("..") do
+      sh("flutter", "clean")
+      sh("flutter", "pub", "get")
+      sh("flutter", "build", "apk", "--debug")
+    end
+  end
+
+  desc "Build Release APK"
+  lane :build_release do
+    Dir.chdir("..") do
+      sh("flutter", "clean")
+      sh("flutter", "pub", "get")
+      sh("flutter", "build", "apk", "--release")
+    end
+    
+    # Move APK to a distribution folder
+    sh("mkdir", "-p", "../builds")
+    sh("cp", 
+       "../build/app/outputs/flutter-apk/app-release.apk",
+       "../builds/benaa-#{Time.now.strftime('%Y%m%d-%H%M%S')}.apk"
+    )
+  end
+
+  desc "Run Flutter analyze"
+  lane :analyze do
+    Dir.chdir("..") do
+      sh("flutter", "analyze")
+    end
+  end
+
+  desc "Run all checks (test + analyze)"
+  lane :check do
+    analyze
+    test
+  end
+
+  desc "Deploy to Internal Testing"
+  lane :deploy_internal do
+    check
+    build_release
+    
+    # Add your deployment logic here (Firebase App Distribution, Play Store, etc.)
+    UI.success("✅ Build completed successfully!")
+    UI.message("APK location: builds/")
+  end
+
+  desc "Beta build for testers"
+  lane :beta do
+    UI.message("🚀 Starting beta build...")
+    
+    # Run tests first
+    check
+    
+    # Build release APK
+    build_release
+    
+    UI.success("✅ Beta build ready!")
+    UI.message("To deploy to Firebase, run: fastlane deploy_firebase")
+  end
+
+  desc "Deploy to Firebase App Distribution"
+  lane :deploy_firebase do
+    UI.message("🔥 Deploying to Firebase App Distribution...")
+    
+    # Build release APK first
+    build_release
+    
+    # Get Firebase App ID from environment or use default
+    firebase_app_id = ENV['FIREBASE_APP_ID'] || "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_ID"
+    
+    # Deploy to Firebase
+    firebase_app_distribution(
+      app: firebase_app_id,
+      groups: "testers",
+      release_notes: ENV['RELEASE_NOTES'] || "New version deployed from CI/CD",
+      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      firebase_cli_token: ENV['FIREBASE_TOKEN'],
+      service_credentials_file: ENV['FIREBASE_SERVICE_ACCOUNT_FILE']
+    )
+    
+    UI.success("✅ Successfully deployed to Firebase App Distribution!")
+  end
+
+  desc "Deploy Production to Firebase (from CI/CD)"
+  lane :deploy_production do
+    UI.message("🚀 Deploying PRODUCTION version...")
+    
+    # Run all checks
+    check
+    
+    # Build release APK
+    build_release
+    
+    # Deploy to Firebase for production testers
+    firebase_app_distribution(
+      app: ENV['FIREBASE_APP_ID'],
+      groups: "production-testers",
+      release_notes: "Production release: #{ENV['RELEASE_NOTES'] || 'New production version'}",
+      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      service_credentials_file: ENV['FIREBASE_SERVICE_ACCOUNT_FILE']
+    )
+    
+    UI.success("✅ Production version deployed successfully!")
+  end
+end

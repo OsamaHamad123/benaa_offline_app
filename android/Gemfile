@@ -1,0 +1,13 @@
+# Gemfile for Fastlane
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.219"
+
+# Android specific gems
+gem "fastlane-plugin-flutter_version"
+
+# Firebase App Distribution
+gem "fastlane-plugin-firebase_app_distribution"
+
+# For better terminal output
+gem "colorize"

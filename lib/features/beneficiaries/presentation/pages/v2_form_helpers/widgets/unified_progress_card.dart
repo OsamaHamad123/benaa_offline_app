@@ -43,10 +43,7 @@ class UnifiedProgressCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: progressColor.withOpacity(0.3),
-            width: 1.5,
-          ),
+          border: Border.all(color: progressColor.withOpacity(0.3), width: 1.5),
         ),
         child: Row(
           children: [
@@ -95,7 +92,7 @@ class UnifiedProgressCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   SizedBox(height: 2.h),
-                  
+
                   // Compact Stats
                   Row(
                     children: [
@@ -109,7 +106,11 @@ class UnifiedProgressCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: 12.w),
-                      Icon(Icons.task_alt, size: 12.sp, color: Colors.grey.shade600),
+                      Icon(
+                        Icons.task_alt,
+                        size: 12.sp,
+                        color: Colors.grey.shade600,
+                      ),
                       SizedBox(width: 4.w),
                       Text(
                         '$completedFields/$totalFields',
@@ -129,8 +130,8 @@ class UnifiedProgressCard extends StatelessWidget {
               overallProgress >= 0.8
                   ? Icons.check_circle_rounded
                   : overallProgress >= 0.5
-                      ? Icons.schedule_rounded
-                      : Icons.circle_outlined,
+                  ? Icons.schedule_rounded
+                  : Icons.circle_outlined,
               color: progressColor,
               size: 24.sp,
             ),

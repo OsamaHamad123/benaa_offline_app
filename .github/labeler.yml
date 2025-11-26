@@ -1,0 +1,38 @@
+# Pull Request Labeler Configuration
+# Automatically labels PRs based on changed files
+
+"feature":
+  - lib/features/**/*
+
+"bugfix":
+  - any: ["**/fix/**", "**/bugfix/**"]
+
+"backend":
+  - backend_php/**/*
+
+"documentation":
+  - "**/*.md"
+  - docs/**/*
+
+"dependencies":
+  - pubspec.yaml
+  - android/build.gradle*
+  - android/Gemfile
+
+"ci/cd":
+  - .github/**/*
+  - android/fastlane/**/*
+
+"reports":
+  - lib/features/reports/**/*
+
+"database":
+  - lib/data/database/**/*
+  - assets/database/**/*
+
+"ui":
+  - lib/theme/**/*
+  - lib/**/widgets/**/*
+
+"tests":
+  - test/**/*

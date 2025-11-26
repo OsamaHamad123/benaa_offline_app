@@ -263,7 +263,9 @@ class FormCompletionCalculator {
     if (controllers.altPhoneController.text.trim().isNotEmpty) completed++;
     if (controllers.addressController.text.trim().isNotEmpty) completed++;
     if (controllers.neighborhoodController.text.trim().isNotEmpty) completed++;
-    if (controllers.addressBeforeDisplacementController.text.trim().isNotEmpty) {
+    if (controllers.addressBeforeDisplacementController.text
+        .trim()
+        .isNotEmpty) {
       completed++;
     }
     if (controllers.selectedDisplacementStatus != null) completed++;

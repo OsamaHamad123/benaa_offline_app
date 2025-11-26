@@ -157,7 +157,9 @@ class _AnimatedFormFieldState extends State<AnimatedFormField>
               filled: true,
               fillColor: _isFocused
                   ? theme.colorScheme.primaryContainer.withValues(alpha: 0.1)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  : theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
             ),
           ),
         ),

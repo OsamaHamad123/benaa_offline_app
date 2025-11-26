@@ -1,0 +1,62 @@
+name: Staging Deployment
+
+on:
+    push:
+        branches: [develop]
+    workflow_dispatch: # يمكن تشغيله يدوياً
+
+jobs:
+    deploy-staging:
+        name: Deploy Staging to Firebase
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Flutter
+              uses: subosito/flutter-action@v2
+              with:
+                  flutter-version: "3.24.0"
+                  channel: "stable"
+                  cache: true
+
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: "temurin"
+                  java-version: "17"
+                  cache: "gradle"
+
+            - name: Setup Ruby
+              uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: "3.2"
+                  bundler-cache: true
+                  working-directory: android
+
+            - name: Get dependencies
+              run: flutter pub get
+
+            - name: Setup google-services.json
+              run: |
+                  echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+            - name: Setup Firebase Service Account
+              run: |
+                  echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-credentials.json
+
+            - name: Deploy to Firebase App Distribution (Staging)
+              env:
+                  FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+                  FIREBASE_SERVICE_ACCOUNT_FILE: ${{ github.workspace }}/firebase-credentials.json
+                  RELEASE_NOTES: "Staging build - ${{ github.event.head_commit.message }}"
+              working-directory: android
+              run: |
+                  bundle exec fastlane deploy_firebase
+
+            - name: Clean up credentials
+              if: always()
+              run: |
+                  rm -f firebase-credentials.json
+                  rm -f android/app/google-services.json
