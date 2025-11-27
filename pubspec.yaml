@@ -19,7 +19,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.6.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -28,7 +28,7 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  animations: ^2.0.11
+  animations: ^2.1.1
   badges: ^3.1.2
   cached_network_image: ^3.4.1
   collection: ^1.18.0
@@ -36,7 +36,7 @@ dependencies:
   crypto: ^3.0.6
   csv: ^6.0.0
   cupertino_icons: ^1.0.8
-  device_info_plus: ^10.1.0
+  device_info_plus: ^12.2.0
   dio: ^5.9.0
   drift: ^2.20.3
   drift_sqflite: ^2.0.0
@@ -61,7 +61,7 @@ dependencies:
   flutter_speed_dial: ^7.0.0
   flutter_staggered_animations: ^1.1.1
   go_router: ^14.6.2
-  google_fonts: ^6.1.0
+  google_fonts: ^6.3.2
   hooks_riverpod: ^2.6.1
   image_picker: ^1.1.2
   intl: any
@@ -86,19 +86,18 @@ dependencies:
   share_plus: ^10.1.3
   shared_preferences: ^2.3.3
   shimmer: ^3.0.0
-  sqflite: ^2.3.0
+  sqflite: ^2.4.2
   sqflite_common_ffi: ^2.3.0
-  sqflite_sqlcipher: ^3.0.0
+  sqflite_sqlcipher: ^3.4.0
   sqlite3_flutter_libs: ^0.5.24
   timeline_tile: ^2.0.0
   url_launcher: ^6.3.1
   uuid: ^4.5.1
-  workmanager: ^0.5.2
+  workmanager: ^0.9.0+3
   archive: ^3.6.1
 
 # Force specific versions to avoid Gradle compilation issues
 dependency_overrides:
-  sqflite_sqlcipher: 3.0.0
 
 dev_dependencies:
   # Code Generation
