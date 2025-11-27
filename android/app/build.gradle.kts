@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.benaa_offline_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
