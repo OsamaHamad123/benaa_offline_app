@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:workmanager/workmanager.dart';
+// import 'package:workmanager/workmanager.dart';  // Temporarily disabled
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../utils/debug_logger.dart';
 
 /// 🔄 Background Sync Worker - Smart Background Synchronization
+/// ⚠️ TEMPORARILY DISABLED - workmanager requires Flutter 3.32+
 ///
 /// Features:
 /// - Runs every 15 minutes (configurable)
@@ -23,6 +24,11 @@ class BackgroundSyncWorker {
 
   /// Initialize Background Sync
   static Future<void> initialize() async {
+    // Temporarily disabled - workmanager requires Flutter 3.32+
+    DebugLogger.warning('⚠️ Background Sync Worker temporarily disabled');
+    return;
+
+    /* 
     await Workmanager().initialize(
       callbackDispatcher,
       isInDebugMode: kDebugMode,
@@ -32,10 +38,15 @@ class BackgroundSyncWorker {
     await registerPeriodicSync();
 
     DebugLogger.success('✅ Background Sync Worker initialized');
+    */
   }
 
   /// Register Periodic Sync Task
   static Future<void> registerPeriodicSync() async {
+    // Temporarily disabled
+    return;
+
+    /*
     // Note: workmanager 0.5.2 has different API than 0.9.x
     await Workmanager().registerPeriodicTask(
       syncTaskName,
@@ -56,16 +67,22 @@ class BackgroundSyncWorker {
     DebugLogger.info(
       '⏰ Periodic sync registered: every ${syncInterval.inMinutes} minutes',
     );
+    */
   }
 
   /// Cancel Background Sync
   static Future<void> cancel() async {
-    await Workmanager().cancelByUniqueName(syncTaskName);
-    DebugLogger.info('❌ Background sync cancelled');
+    // Temporarily disabled
+    return;
+    // await Workmanager().cancelByUniqueName(syncTaskName);
+    // DebugLogger.info('❌ Background sync cancelled');
   }
 
   /// Trigger Manual Sync (One-time)
   static Future<void> triggerManualSync() async {
+    // Temporarily disabled
+    return;
+    /*
     await Workmanager().registerOneOffTask(
       'manual_sync',
       syncTaskName,
@@ -75,6 +92,7 @@ class BackgroundSyncWorker {
     );
 
     DebugLogger.info('🚀 Manual sync triggered');
+    */
   }
 
   /// Check if sync should run
@@ -98,8 +116,13 @@ class BackgroundSyncWorker {
 
 /// Background Task Dispatcher
 /// This function runs in isolate - keep it top-level
+/// ⚠️ TEMPORARILY DISABLED
 @pragma('vm:entry-point')
 void callbackDispatcher() {
+  // Temporarily disabled - workmanager requires Flutter 3.32+
+  return;
+
+  /*
   Workmanager().executeTask((task, inputData) async {
     try {
       DebugLogger.info('🔄 Background sync started: $task');
@@ -129,6 +152,7 @@ void callbackDispatcher() {
       return Future.value(false); // Will trigger backoff retry
     }
   });
+  */
 }
 
 /// Sync Status Notifier - For UI updates
