@@ -68,3 +68,7 @@ ios/Runner/GoogleService-Info.plist
 firebase-credentials.json
 **/firebase-debug.log
 .firebase/
+
+# Database files (too large for Git)
+assets/database/*.db
+assets/database/*.db-*
