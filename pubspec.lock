@@ -1502,10 +1502,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqflite_sqlcipher
-      sha256: ba7733c5514cf0ccb0331997b771a890f73678bcd84cdfb5f7487a88a71f1738
+      sha256: "6c7c04608f934d91c74b099ae5cf9ba1a6218d23810569e99c4da68db4cbac7f"
       url: "https://pub.dev"
     source: hosted
-    version: "3.4.0"
+    version: "3.1.0"
   sqlite3:
     dependency: transitive
     description:
