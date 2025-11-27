@@ -36,7 +36,7 @@ dependencies:
   crypto: ^3.0.6
   csv: ^6.0.0
   cupertino_icons: ^1.0.8
-  device_info_plus: ^12.2.0
+  device_info_plus: ^10.1.0
   dio: ^5.9.0
   drift: ^2.20.3
   drift_sqflite: ^2.0.0
