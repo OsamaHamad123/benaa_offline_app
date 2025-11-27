@@ -88,7 +88,7 @@ dependencies:
   shimmer: ^3.0.0
   sqflite: ^2.3.0
   sqflite_common_ffi: ^2.3.0
-  sqflite_sqlcipher: ^3.0.0
+  sqflite_sqlcipher: ^3.2.0
   sqlite3_flutter_libs: ^0.5.24
   timeline_tile: ^2.0.0
   url_launcher: ^6.3.1
