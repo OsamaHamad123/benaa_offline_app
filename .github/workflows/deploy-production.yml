@@ -65,7 +65,7 @@ jobs:
           rm -f android/app/google-services.json
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: production-apk
           path: build/app/outputs/flutter-apk/app-release.apk
