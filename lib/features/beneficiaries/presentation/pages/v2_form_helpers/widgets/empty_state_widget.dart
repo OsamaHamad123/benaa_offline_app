@@ -43,8 +43,7 @@ class EmptyStateWidget extends StatefulWidget {
     return EmptyStateWidget(
       icon: Icons.cloud_upload_rounded,
       title: 'لا توجد مرفقات',
-      subtitle:
-          'أضف المستندات والصور المطلوبة\nمثل الهوية الوطنية، شهادات، صور',
+      subtitle: 'أضف المستندات والصور المطلوبة\nمثل الهوية الوطنية، شهادات، صور',
       actionText: onAdd != null ? 'إضافة مرفق' : null,
       onAction: onAdd,
       emoji: '📎',
@@ -113,8 +112,7 @@ class EmptyStateWidget extends StatefulWidget {
   State<EmptyStateWidget> createState() => _EmptyStateWidgetState();
 }
 
-class _EmptyStateWidgetState extends State<EmptyStateWidget>
-    with SingleTickerProviderStateMixin {
+class _EmptyStateWidgetState extends State<EmptyStateWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -140,13 +138,12 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
       ),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
-          ),
-        );
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
+      ),
+    );
 
     _controller.forward();
   }
@@ -179,17 +176,14 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
                     decoration: BoxDecoration(
                       gradient: RadialGradient(
                         colors: [
-                          (widget.iconColor ?? theme.colorScheme.primary)
-                              .withValues(alpha: 0.15),
-                          (widget.iconColor ?? theme.colorScheme.primary)
-                              .withValues(alpha: 0.05),
+                          (widget.iconColor ?? theme.colorScheme.primary).withOpacity(0.15),
+                          (widget.iconColor ?? theme.colorScheme.primary).withOpacity(0.05),
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: (widget.iconColor ?? theme.colorScheme.primary)
-                              .withValues(alpha: 0.2),
+                          color: (widget.iconColor ?? theme.colorScheme.primary).withOpacity(0.2),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),

@@ -120,17 +120,13 @@ class _AdvancedFiltersSheetState extends State<AdvancedFiltersSheet> {
               spacing: 8.w,
               runSpacing: 8.h,
               children: _categories.map((category) {
-                final isSelected =
-                    _selectedCategory == category ||
-                    (_selectedCategory == null && category == 'الكل');
+                final isSelected = _selectedCategory == category || (_selectedCategory == null && category == 'الكل');
                 return FilterChip(
                   label: Text(category),
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {
-                      _selectedCategory = selected && category != 'الكل'
-                          ? category
-                          : null;
+                      _selectedCategory = selected && category != 'الكل' ? category : null;
                     });
                   },
                   selectedColor: Theme.of(
@@ -148,7 +144,7 @@ class _AdvancedFiltersSheetState extends State<AdvancedFiltersSheet> {
             title: 'المحافظة',
             icon: Icons.location_on,
             child: DropdownButtonFormField<String>(
-              initialValue: _selectedGovernorate ?? 'الكل',
+              value: _selectedGovernorate ?? 'الكل',
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12.w,

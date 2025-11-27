@@ -119,8 +119,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showWarning(
           context,
-          message:
-              '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
+          message: '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
         );
       }
     }
@@ -316,7 +315,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.2),
+              color: color.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: color),
             ),

@@ -47,8 +47,8 @@ class SectionCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  effectiveColor.withValues(alpha: 0.1),
-                  effectiveColor.withValues(alpha: 0.05),
+                  effectiveColor.withOpacity(0.1),
+                  effectiveColor.withOpacity(0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -61,7 +61,7 @@ class SectionCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
-                    color: effectiveColor.withValues(alpha: 0.1),
+                    color: effectiveColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(icon, color: effectiveColor, size: 20.sp),
@@ -152,9 +152,9 @@ class StatusBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1.w),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.w),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -247,7 +247,7 @@ class LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.5),
+      color: Colors.black.withOpacity(0.5),
       child: Center(
         child: Card(
           child: Padding(
@@ -302,8 +302,8 @@ class StatCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(12.r),
             gradient: LinearGradient(
               colors: [
-                color.withValues(alpha: 0.1),
-                color.withValues(alpha: 0.05),
+                color.withOpacity(0.1),
+                color.withOpacity(0.05),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -315,7 +315,7 @@ class StatCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
+                  color: color.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(icon, color: color, size: 24.sp),
@@ -375,7 +375,7 @@ class ActionButtonCard extends StatelessWidget {
               Container(
                 padding: EdgeInsets.all(12.r),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 child: Icon(icon, color: color, size: 28.sp),

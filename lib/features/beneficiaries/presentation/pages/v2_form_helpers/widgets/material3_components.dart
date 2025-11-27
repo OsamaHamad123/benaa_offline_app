@@ -67,42 +67,40 @@ class M3TextField extends StatelessWidget {
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: enabled
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSurface.withOpacity(0.6),
+        color: enabled ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
       ),
       decoration: InputDecoration(
         // Label with required indicator
         label: label != null
             ? (isRequired
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            label!,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label!,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        SizedBox(width: 4),
-                        Icon(
-                          Icons.star,
-                          size: 8,
-                          color: theme.colorScheme.error,
-                        ),
-                      ],
-                    )
-                  : Text(
-                      label!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ))
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.star,
+                        size: 8,
+                        color: theme.colorScheme.error,
+                      ),
+                    ],
+                  )
+                : Text(
+                    label!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ))
             : null,
         hintText: hint,
         hintStyle: TextStyle(
@@ -127,9 +125,7 @@ class M3TextField extends StatelessWidget {
                 child: Icon(
                   prefixIcon,
                   size: 22,
-                  color: enabled
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: enabled ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
               )
             : null,
@@ -238,7 +234,7 @@ class M3DropdownField<T> extends StatelessWidget {
     final safeValue = items.any((item) => item.value == value) ? value : null;
 
     final dropdown = DropdownButtonFormField<T>(
-      initialValue: safeValue,
+      value: safeValue,
       items: items,
       onChanged: onChanged,
       validator: validator,

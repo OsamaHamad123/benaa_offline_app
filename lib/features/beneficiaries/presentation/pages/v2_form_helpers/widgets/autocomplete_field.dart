@@ -54,8 +54,7 @@ class AutocompleteField<T extends Object> extends StatefulWidget {
   State<AutocompleteField<T>> createState() => _AutocompleteFieldState<T>();
 }
 
-class _AutocompleteFieldState<T extends Object>
-    extends State<AutocompleteField<T>> {
+class _AutocompleteFieldState<T extends Object> extends State<AutocompleteField<T>> {
   Timer? _debounceTimer;
   bool _isSearching = false;
 
@@ -81,9 +80,7 @@ class _AutocompleteFieldState<T extends Object>
 
     final filtered = widget.suggestions.where((suggestion) {
       final displayString = _displayStringForOption(suggestion);
-      final normalizedSuggestion = widget.caseSensitive
-          ? displayString
-          : displayString.toLowerCase();
+      final normalizedSuggestion = widget.caseSensitive ? displayString : displayString.toLowerCase();
       return normalizedSuggestion.contains(normalizedQuery);
     });
 
@@ -118,127 +115,123 @@ class _AutocompleteFieldState<T extends Object>
       },
       displayStringForOption: _displayStringForOption,
       onSelected: widget.onSelected,
-      fieldViewBuilder:
-          (
-            BuildContext context,
-            TextEditingController textEditingController,
-            FocusNode focusNode,
-            VoidCallback onFieldSubmitted,
-          ) {
-            // Use provided controller or the auto-generated one
-            final controller = widget.controller ?? textEditingController;
+      fieldViewBuilder: (
+        BuildContext context,
+        TextEditingController textEditingController,
+        FocusNode focusNode,
+        VoidCallback onFieldSubmitted,
+      ) {
+        // Use provided controller or the auto-generated one
+        final controller = widget.controller ?? textEditingController;
 
-            return TextFormField(
-              controller: controller,
-              focusNode: focusNode,
-              decoration: InputDecoration(
-                labelText: widget.label,
-                hintText: widget.hintText ?? 'ابحث...',
-                prefixIcon: widget.prefixIcon != null
-                    ? Icon(widget.prefixIcon)
-                    : const Icon(Icons.search),
-                suffixIcon: _isSearching
-                    ? Padding(
-                        padding: EdgeInsets.all(12.r),
-                        child: SizedBox(
-                          width: 16.w,
-                          height: 16.h,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(color: theme.colorScheme.outline),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12.r),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
-                ),
-              ),
-            );
-          },
-      optionsViewBuilder:
-          (
-            BuildContext context,
-            AutocompleteOnSelected<T> onSelected,
-            Iterable<T> options,
-          ) {
-            return Align(
-              alignment: Alignment.topLeft,
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(12.r),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: 200.h,
-                    maxWidth: MediaQuery.of(context).size.width - 32.w,
-                  ),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                  ),
-                  child: ListView.separated(
-                    padding: EdgeInsets.symmetric(vertical: 8.h),
-                    shrinkWrap: true,
-                    itemCount: options.length,
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      color: theme.colorScheme.outlineVariant.withValues(
-                        alpha: 0.5,
+        return TextFormField(
+          controller: controller,
+          focusNode: focusNode,
+          decoration: InputDecoration(
+            labelText: widget.label,
+            hintText: widget.hintText ?? 'ابحث...',
+            prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : const Icon(Icons.search),
+            suffixIcon: _isSearching
+                ? Padding(
+                    padding: EdgeInsets.all(12.r),
+                    child: SizedBox(
+                      width: 16.w,
+                      height: 16.h,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
                       ),
                     ),
-                    itemBuilder: (BuildContext context, int index) {
-                      final T option = options.elementAt(index);
-                      final displayString = _displayStringForOption(option);
-
-                      return InkWell(
-                        onTap: () => onSelected(option),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 12.h,
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 18.sp,
-                                color: theme.colorScheme.primary,
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Text(
-                                  displayString,
-                                  style: TextStyle(
-                                    fontSize: 15.sp,
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: theme.colorScheme.outline),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary,
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(
+              0.3,
+            ),
+          ),
+        );
+      },
+      optionsViewBuilder: (
+        BuildContext context,
+        AutocompleteOnSelected<T> onSelected,
+        Iterable<T> options,
+      ) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(12.r),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: 200.h,
+                maxWidth: MediaQuery.of(context).size.width - 32.w,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: ListView.separated(
+                padding: EdgeInsets.symmetric(vertical: 8.h),
+                shrinkWrap: true,
+                itemCount: options.length,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: theme.colorScheme.outlineVariant.withOpacity(
+                    0.5,
                   ),
                 ),
+                itemBuilder: (BuildContext context, int index) {
+                  final T option = options.elementAt(index);
+                  final displayString = _displayStringForOption(option);
+
+                  return InkWell(
+                    onTap: () => onSelected(option),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 12.h,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 18.sp,
+                            color: theme.colorScheme.primary,
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Text(
+                              displayString,
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-            );
-          },
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -283,9 +276,8 @@ class SubDistrictAutocomplete extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Filter sub-districts based on parent district if provided
-    final suggestions = parentDistrict != null
-        ? IraqLocations.getSubDistricts(parentDistrict!)
-        : IraqLocations.allSubDistricts;
+    final suggestions =
+        parentDistrict != null ? IraqLocations.getSubDistricts(parentDistrict!) : IraqLocations.allSubDistricts;
 
     return AutocompleteField<String>(
       label: 'الناحية',

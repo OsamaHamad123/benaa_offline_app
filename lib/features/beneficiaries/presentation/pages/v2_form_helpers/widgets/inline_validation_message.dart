@@ -36,12 +36,10 @@ class InlineValidationMessage extends StatefulWidget {
   });
 
   @override
-  State<InlineValidationMessage> createState() =>
-      _InlineValidationMessageState();
+  State<InlineValidationMessage> createState() => _InlineValidationMessageState();
 }
 
-class _InlineValidationMessageState extends State<InlineValidationMessage>
-    with SingleTickerProviderStateMixin {
+class _InlineValidationMessageState extends State<InlineValidationMessage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -154,10 +152,10 @@ class _InlineValidationMessageState extends State<InlineValidationMessage>
               margin: EdgeInsets.only(top: 6.h),
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(
-                  color: color.withValues(alpha: 0.3),
+                  color: color.withOpacity(0.3),
                   width: 1,
                 ),
               ),

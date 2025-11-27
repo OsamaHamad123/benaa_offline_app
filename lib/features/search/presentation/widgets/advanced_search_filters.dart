@@ -200,7 +200,7 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      initialValue: _ageRange,
+                      value: _ageRange,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(
@@ -209,21 +209,20 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
                         ),
                       ),
                       hint: const Text('اختر'),
-                      items:
-                          [
-                            '0-5',
-                            '6-12',
-                            '13-18',
-                            '19-30',
-                            '31-50',
-                            '51-65',
-                            '65+',
-                          ].map((range) {
-                            return DropdownMenuItem(
-                              value: range,
-                              child: Text(range),
-                            );
-                          }).toList(),
+                      items: [
+                        '0-5',
+                        '6-12',
+                        '13-18',
+                        '19-30',
+                        '31-50',
+                        '51-65',
+                        '65+',
+                      ].map((range) {
+                        return DropdownMenuItem(
+                          value: range,
+                          child: Text(range),
+                        );
+                      }).toList(),
                       onChanged: (value) {
                         setState(() => _ageRange = value);
                       },

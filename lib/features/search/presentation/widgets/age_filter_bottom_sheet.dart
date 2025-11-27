@@ -85,7 +85,6 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                 onChanged: (value) {
                   setState(() => _isEnabled = value);
                 },
-                activeThumbColor: Colors.blue.shade700,
               ),
             ],
           ),
@@ -222,10 +221,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
   }
 
   Widget _buildPresetChip(String label, int min, int max) {
-    final isSelected =
-        _isEnabled &&
-        _ageRange.start.round() == min &&
-        _ageRange.end.round() == max;
+    final isSelected = _isEnabled && _ageRange.start.round() == min && _ageRange.end.round() == max;
 
     return InkWell(
       onTap: () {

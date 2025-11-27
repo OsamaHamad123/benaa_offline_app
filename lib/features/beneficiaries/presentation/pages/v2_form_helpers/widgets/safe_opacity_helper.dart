@@ -30,9 +30,9 @@ class SafeOpacityHelper {
     return color.withOpacity(clampOpacity(opacity));
   }
 
-  /// Creates safe color with alpha using withValues
+  /// Creates safe color with alpha using withOpacity
   static Color safeColorWithAlpha(Color color, double? alpha) {
-    return color.withValues(alpha: clampOpacity(alpha));
+    return color.withOpacity(clampOpacity(alpha));
   }
 }
 

@@ -305,9 +305,7 @@ class DatePickerField extends StatelessWidget {
           prefixIcon: Icon(icon, size: 20, color: iconColor),
         ),
         child: Text(
-          selectedDate != null
-              ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
-              : 'اضغط للاختيار',
+          selectedDate != null ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}' : 'اضغط للاختيار',
           style: TextStyle(fontSize: 14.0),
         ),
       ),
@@ -529,9 +527,7 @@ class SelectableChip extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         decoration: BoxDecoration(
-          color: isSelected
-              ? chipColor.withValues(alpha: 0.2)
-              : Colors.grey.shade100,
+          color: isSelected ? chipColor.withOpacity(0.2) : Colors.grey.shade100,
           border: Border.all(
             color: isSelected ? chipColor : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
@@ -589,7 +585,7 @@ class DocumentCard extends StatelessWidget {
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
-          color: isSelected ? Colors.blue.withValues(alpha: 0.1) : null,
+          color: isSelected ? Colors.blue.withOpacity(0.1) : null,
         ),
         child: Column(
           children: [
@@ -652,7 +648,7 @@ class FamilyDialogHeader extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: Row(

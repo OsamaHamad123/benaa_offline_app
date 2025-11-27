@@ -68,12 +68,8 @@ class AppTheme {
   // ═══════════════════════════════════════════════════════════════════════════
 
   static TextTheme _buildTextTheme(bool isDark, double multiplier) {
-    final baseColor = isDark
-        ? const Color(0xFFE3E3E3)
-        : const Color(0xFF1A1A1A);
-    final secondaryColor = isDark
-        ? const Color(0xFFB0B0B0)
-        : const Color(0xFF757575);
+    final baseColor = isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1A1A1A);
+    final secondaryColor = isDark ? const Color(0xFFB0B0B0) : const Color(0xFF757575);
 
     return GoogleFonts.cairoTextTheme(
       TextTheme(
@@ -179,36 +175,28 @@ class AppTheme {
       brightness: Brightness.light,
       fontFamily: GoogleFonts.cairo().fontFamily,
       textTheme: textTheme,
-
       colorScheme: ColorScheme.light(
         primary: primaryColor,
         onPrimary: Colors.white,
         primaryContainer: primaryLight,
         onPrimaryContainer: primaryDark,
-
         secondary: primaryColor.withOpacity(0.8),
         onSecondary: Colors.white,
         secondaryContainer: primaryLight,
         onSecondaryContainer: primaryDark,
-
         tertiary: primaryColor.withOpacity(0.6),
         onTertiary: Colors.white,
-
         error: const Color(0xFFD32F2F),
         onError: Colors.white,
         errorContainer: const Color(0xFFFFCDD2),
         onErrorContainer: const Color(0xFFB71C1C),
-
         surface: Colors.white,
         onSurface: const Color(0xFF1A1A1A),
         surfaceContainerHighest: const Color(0xFFF5F5F5),
-
         outline: const Color(0xFFE0E0E0),
         outlineVariant: const Color(0xFFF0F0F0),
       ),
-
       scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
@@ -221,7 +209,6 @@ class AppTheme {
           color: Colors.white,
         ),
       ),
-
       cardTheme: CardThemeData(
         elevation: 2,
         shadowColor: Colors.black.withOpacity(0.1),
@@ -229,7 +216,6 @@ class AppTheme {
         color: Colors.white,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -254,7 +240,6 @@ class AppTheme {
           vertical: 16,
         ),
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -270,7 +255,6 @@ class AppTheme {
           ),
         ),
       ),
-
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -281,14 +265,12 @@ class AppTheme {
           foregroundColor: primaryColor,
         ),
       ),
-
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         elevation: 4,
       ),
-
       chipTheme: ChipThemeData(
         backgroundColor: const Color(0xFFF0F0F0),
         selectedColor: primaryLight,
@@ -296,13 +278,11 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-
       dividerTheme: const DividerThemeData(
         color: Color(0xFFE0E0E0),
         thickness: 1,
         space: 1,
       ),
-
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: primaryColor,
@@ -348,24 +328,19 @@ class AppTheme {
         onPrimary: Colors.black87,
         primaryContainer: primaryColor,
         onPrimaryContainer: primaryLight,
-
         secondary: primaryLight.withOpacity(0.8),
         onSecondary: Colors.black87,
         secondaryContainer: primaryColor.withOpacity(0.6),
         onSecondaryContainer: primaryLight,
-
         tertiary: primaryLight.withOpacity(0.6),
         onTertiary: Colors.black87,
-
         error: const Color(0xFFEF5350),
         onError: Colors.black87,
         errorContainer: const Color(0xFFB71C1C),
         onErrorContainer: const Color(0xFFFFCDD2),
-
         surface: surfaceDark,
         onSurface: textPrimary,
         surfaceContainerHighest: backgroundDark,
-
         outline: dividerDark,
         outlineVariant: const Color(0xFF2A2A2A),
       ),
@@ -518,16 +493,16 @@ class AppTheme {
   // ═══════════════════════════════════════════════════════════════════════════
 
   static ThemeData get adaptiveTheme => buildTheme(
-    primaryColor: const Color(0xFF2196F3),
-    isDark: false,
-    useMaterial3: true,
-    fontSize: 14.0,
-  );
+        primaryColor: const Color(0xFF2196F3),
+        isDark: false,
+        useMaterial3: true,
+        fontSize: 14.0,
+      );
 
   static ThemeData get adaptiveDarkTheme => buildTheme(
-    primaryColor: const Color(0xFF2196F3),
-    isDark: true,
-    useMaterial3: true,
-    fontSize: 14.0,
-  );
+        primaryColor: const Color(0xFF2196F3),
+        isDark: true,
+        useMaterial3: true,
+        fontSize: 14.0,
+      );
 }

@@ -127,9 +127,7 @@ class QuickStatsPanel extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  showFieldHelpers
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
+                  showFieldHelpers ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                   size: 14,
                   color: theme.colorScheme.primary,
                 ),
@@ -417,9 +415,7 @@ class FormAppBarActions extends StatelessWidget {
             PopupMenuItem(
               value: 'helpers',
               child: _QuickActionItem(
-                icon: showFieldHelpers
-                    ? Icons.visibility_off
-                    : Icons.visibility,
+                icon: showFieldHelpers ? Icons.visibility_off : Icons.visibility,
                 label: showFieldHelpers ? 'إخفاء المساعدات' : 'عرض المساعدات',
                 description: 'نصائح وإرشادات للحقول',
               ),
@@ -460,7 +456,7 @@ class _QuickActionItem extends StatelessWidget {
         Container(
           padding: EdgeInsets.all(8.r),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            color: theme.colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8.r),
           ),
           child: Icon(icon, size: 20.sp, color: theme.colorScheme.primary),
@@ -478,7 +474,7 @@ class _QuickActionItem extends StatelessWidget {
                 description,
                 style: TextStyle(
                   fontSize: 11.sp,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ],

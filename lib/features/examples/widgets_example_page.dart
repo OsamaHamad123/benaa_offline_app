@@ -262,7 +262,7 @@ class WidgetsExamplePage extends StatelessWidget {
                 _buildColorDemo('اللون الأصلي', Colors.blue),
                 _buildColorDemo('مفتّح 20%', Colors.blue.lighten(0.2)),
                 _buildColorDemo('مغمّق 20%', Colors.blue.darken(0.2)),
-                _buildColorDemo('شفاف 50%', Colors.blue.withValues(alpha: 0.5)),
+                _buildColorDemo('شفاف 50%', Colors.blue.withOpacity(0.5)),
               ],
             ),
           ),
@@ -290,8 +290,8 @@ class WidgetsExamplePage extends StatelessWidget {
                   value: context.isSmallScreen
                       ? 'شاشة صغيرة'
                       : context.isMediumScreen
-                      ? 'شاشة متوسطة'
-                      : 'شاشة كبيرة',
+                          ? 'شاشة متوسطة'
+                          : 'شاشة كبيرة',
                 ),
               ],
             ),

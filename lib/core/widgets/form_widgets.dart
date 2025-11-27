@@ -97,9 +97,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       if (widget.controller.text.isNotEmpty) {
         finalSuffixIcon = Icon(
           validationError == null ? Icons.check_circle : Icons.error,
-          color: validationError == null
-              ? theme.colorScheme.primary
-              : theme.colorScheme.error,
+          color: validationError == null ? theme.colorScheme.primary : theme.colorScheme.error,
           size: 20,
         );
       }
@@ -118,11 +116,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         isDense: true,
       ),
       keyboardType: widget.keyboardType,
-      textInputAction:
-          widget.textInputAction ??
-          (widget.maxLines > 1
-              ? TextInputAction.newline
-              : TextInputAction.next),
+      textInputAction: widget.textInputAction ?? (widget.maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
       inputFormatters: widget.inputFormatters,
       maxLines: widget.maxLines,
       readOnly: widget.readOnly,
@@ -130,8 +124,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
       onTap: widget.onTap,
       onChanged: widget.onChanged,
       onEditingComplete: widget.onEditingComplete,
-      validator:
-          widget.validator ??
+      validator: widget.validator ??
           (widget.required
               ? (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -173,7 +166,7 @@ class CustomDropdown<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<T>(
-      initialValue: value,
+      value: value,
       decoration: InputDecoration(
         labelText: required ? '$label *' : label,
         hintText: hint,
@@ -186,8 +179,7 @@ class CustomDropdown<T> extends StatelessWidget {
       onChanged: onChanged,
       isExpanded: true,
       isDense: true,
-      validator:
-          validator ??
+      validator: validator ??
           (required
               ? (value) {
                   if (value == null) {
@@ -265,9 +257,9 @@ class StatCard extends StatelessWidget {
               Text(
                 value,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               SizedBox(height: 4.h),
               Text(
@@ -387,8 +379,8 @@ class EmptyStateCard extends StatelessWidget {
             Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-              ),
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
               textAlign: TextAlign.center,
             ),
             if (actionText != null && onAction != null) ...[
@@ -478,9 +470,9 @@ class AlertCard extends StatelessWidget {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   SizedBox(height: 4.h),
                   Text(message, style: Theme.of(context).textTheme.bodySmall),
@@ -567,9 +559,9 @@ class ActionCard extends StatelessWidget {
                 title,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
@@ -577,8 +569,8 @@ class ActionCard extends StatelessWidget {
                   subtitle!,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                  ),
+                        color: Colors.white.withOpacity(0.9),
+                      ),
                 ),
               ],
             ],
