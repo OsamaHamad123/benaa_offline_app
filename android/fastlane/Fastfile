@@ -26,28 +26,16 @@ platform :android do
       sh("flutter", "build", "apk", "--release")
     end
   end
+
+  desc "Deploy to Production"
+  lane :deploy_production do
+    build_release
+    
+    # Add your deployment logic here
+    UI.success("✅ Production build completed successfully!")
+    UI.message("APK location: ../build/app/outputs/flutter-apk/app-release.apk")
+  end
 end
-  end
-
-  desc "Deploy to Internal Testing"
-  lane :deploy_internal do
-    check
-    build_release
-    
-    # Add your deployment logic here (Firebase App Distribution, Play Store, etc.)
-    UI.success("✅ Build completed successfully!")
-    UI.message("APK location: builds/")
-  end
-
-  desc "Beta build for testers"
-  lane :beta do
-    UI.message("🚀 Starting beta build...")
-    
-    # Run tests first
-    check
-    
-    # Build release APK
-    build_release
     
     UI.success("✅ Beta build ready!")
     UI.message("To deploy to Firebase, run: fastlane deploy_firebase")
