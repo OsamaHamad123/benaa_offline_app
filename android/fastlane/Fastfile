@@ -4,20 +4,6 @@
 default_platform(:android)
 
 platform :android do
-  desc "Lane for Android Firebase App Distribution"
-  lane :firebase_distribution do
-    sh "flutter clean"
-    sh "flutter build apk --release --no-tree-shake-icons"
-    firebase_app_distribution(
-      app: ENV["FIREBASE_APP_ID"],
-      firebase_cli_token: ENV["FIREBASE_CLI_TOKEN"],
-      android_artifact_type: "APK",
-      android_artifact_path: "../build/app/outputs/flutter-apk/app-release.apk",
-      testers: ENV["FIREBASE_TESTERS"] || "osama.hamad.developer@gmail.com",
-      release_notes: "Benaa Offline App - #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}",
-    )
-  end
-
   desc "Build Release APK"
   lane :build_release do
     Dir.chdir("..") do
@@ -27,62 +13,30 @@ platform :android do
     end
   end
 
-  desc "Deploy to Production"
+  desc "Deploy to Production - Build and optionally deploy to Firebase"
   lane :deploy_production do
     build_release
     
-    # Add your deployment logic here
     UI.success("✅ Production build completed successfully!")
     UI.message("APK location: ../build/app/outputs/flutter-apk/app-release.apk")
   end
-end
-    
-    UI.success("✅ Beta build ready!")
-    UI.message("To deploy to Firebase, run: fastlane deploy_firebase")
-  end
 
   desc "Deploy to Firebase App Distribution"
-  lane :deploy_firebase do
-    UI.message("🔥 Deploying to Firebase App Distribution...")
+  lane :firebase_distribution do
+    Dir.chdir("..") do
+      sh("flutter", "clean")
+      sh("flutter", "build", "apk", "--release", "--no-tree-shake-icons")
+    end
     
-    # Build release APK first
-    build_release
-    
-    # Get Firebase App ID from environment or use default
-    firebase_app_id = ENV['FIREBASE_APP_ID'] || "1:YOUR_PROJECT_NUMBER:android:YOUR_APP_ID"
-    
-    # Deploy to Firebase
     firebase_app_distribution(
-      app: firebase_app_id,
-      groups: "testers",
-      release_notes: ENV['RELEASE_NOTES'] || "New version deployed from CI/CD",
-      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
-      firebase_cli_token: ENV['FIREBASE_TOKEN'],
-      service_credentials_file: ENV['FIREBASE_SERVICE_ACCOUNT_FILE']
+      app: ENV["FIREBASE_APP_ID"],
+      firebase_cli_token: ENV["FIREBASE_CLI_TOKEN"],
+      android_artifact_type: "APK",
+      android_artifact_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      testers: ENV["FIREBASE_TESTERS"] || "osama.hamad.developer@gmail.com",
+      release_notes: "Benaa Offline App - #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
     )
     
     UI.success("✅ Successfully deployed to Firebase App Distribution!")
-  end
-
-  desc "Deploy Production to Firebase (from CI/CD)"
-  lane :deploy_production do
-    UI.message("🚀 Deploying PRODUCTION version...")
-    
-    # Temporarily disabled checks for faster deployment
-    # check
-    
-    # Build release APK
-    build_release
-    
-    # Deploy to Firebase for production testers
-    firebase_app_distribution(
-      app: ENV['FIREBASE_APP_ID'],
-      groups: "production-testers",
-      release_notes: "Production release: #{ENV['RELEASE_NOTES'] || 'New production version'}",
-      apk_path: "../build/app/outputs/flutter-apk/app-release.apk",
-      service_credentials_file: ENV['FIREBASE_SERVICE_ACCOUNT_FILE']
-    )
-    
-    UI.success("✅ Production version deployed successfully!")
   end
 end
