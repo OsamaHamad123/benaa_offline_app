@@ -1,13 +1,7 @@
-# Gemfile for Fastlane
 source "https://rubygems.org"
 
-gem "fastlane", "~> 2.219"
-
-# Android specific gems
-gem "fastlane-plugin-flutter_version"
-
-# Firebase App Distribution
+gem "fastlane", "~> 2.0"
+# تثبيت الإضافة إن كنت تستخدم plugin firebase app distribution في Fastfile
 gem "fastlane-plugin-firebase_app_distribution"
-
-# For better terminal output
-gem "colorize"
+# إصلاح لمشكلة LoadError على Ruby 3.4+: يوجد جزء من stdlib لم يعد مضمناً، نضيفه هنا
+gem "abbrev"

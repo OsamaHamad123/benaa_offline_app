@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.benaa_offline_app"
-    compileSdk = 35
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -40,5 +40,3 @@ android {
 
 flutter { source = "../.." }
 
-// Apply Google Services plugin (must be at the bottom)
-apply(plugin = "com.google.gms.google-services")

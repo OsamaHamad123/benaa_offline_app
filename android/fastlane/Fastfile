@@ -4,21 +4,18 @@
 default_platform(:android)
 
 platform :android do
-  desc "Run all tests"
-  lane :test do
-    # Go to Flutter root directory
-    Dir.chdir("..") do
-      sh("flutter", "test")
-    end
-  end
-
-  desc "Build Debug APK"
-  lane :build_debug do
-    Dir.chdir("..") do
-      sh("flutter", "clean")
-      sh("flutter", "pub", "get")
-      sh("flutter", "build", "apk", "--debug")
-    end
+  desc "Lane for Android Firebase App Distribution"
+  lane :firebase_distribution do
+    sh "flutter clean"
+    sh "flutter build apk --release --no-tree-shake-icons"
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID"],
+      firebase_cli_token: ENV["FIREBASE_CLI_TOKEN"],
+      android_artifact_type: "APK",
+      android_artifact_path: "../build/app/outputs/flutter-apk/app-release.apk",
+      testers: ENV["FIREBASE_TESTERS"] || "osama.hamad.developer@gmail.com",
+      release_notes: "Benaa Offline App - #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}",
+    )
   end
 
   desc "Build Release APK"
@@ -28,26 +25,8 @@ platform :android do
       sh("flutter", "pub", "get")
       sh("flutter", "build", "apk", "--release")
     end
-    
-    # Move APK to a distribution folder
-    sh("mkdir", "-p", "../builds")
-    sh("cp", 
-       "../build/app/outputs/flutter-apk/app-release.apk",
-       "../builds/benaa-#{Time.now.strftime('%Y%m%d-%H%M%S')}.apk"
-    )
   end
-
-  desc "Run Flutter analyze"
-  lane :analyze do
-    Dir.chdir("..") do
-      sh("flutter", "analyze")
-    end
-  end
-
-  desc "Run all checks (test + analyze)"
-  lane :check do
-    analyze
-    test
+end
   end
 
   desc "Deploy to Internal Testing"
