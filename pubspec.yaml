@@ -96,6 +96,10 @@ dependencies:
   workmanager: ^0.5.2
   archive: ^3.6.1
 
+# Force specific versions to avoid Gradle compilation issues
+dependency_overrides:
+  sqflite_sqlcipher: 3.0.0
+
 dev_dependencies:
   # Code Generation
   build_runner: ^2.4.13
