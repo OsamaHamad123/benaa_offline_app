@@ -36,23 +36,20 @@ class BackgroundSyncWorker {
 
   /// Register Periodic Sync Task
   static Future<void> registerPeriodicSync() async {
+    // Note: workmanager 0.5.2 has different API than 0.9.x
     await Workmanager().registerPeriodicTask(
       syncTaskName,
       syncTaskName,
       frequency: syncInterval,
       constraints: Constraints(
-        networkType: requireWifi
-            ? NetworkType.unmetered
-            : NetworkType.connected,
+        networkType: requireWifi ? NetworkType.unmetered : NetworkType.connected,
         requiresBatteryNotLow: true,
         requiresCharging: false,
-        requiresDeviceIdle: false,
-        requiresStorageNotLow: false,
       ),
       backoffPolicy: BackoffPolicy.exponential,
       backoffPolicyDelay: const Duration(minutes: 5),
       tag: syncTaskTag,
-      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+      existingWorkPolicy: ExistingWorkPolicy.replace,
       initialDelay: const Duration(seconds: 30), // First run after 30s
     );
 
