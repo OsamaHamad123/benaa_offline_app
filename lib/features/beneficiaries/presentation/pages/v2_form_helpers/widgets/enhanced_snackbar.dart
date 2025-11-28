@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../../../core/utils/haptic_patterns.dart';
 
 /// 📢 Enhanced Snackbar Helper
 ///
@@ -18,7 +18,7 @@ class EnhancedSnackbar {
     VoidCallback? onUndo,
     Duration duration = const Duration(seconds: 3),
   }) {
-    HapticFeedback.lightImpact();
+    HapticPatterns.light();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -60,7 +60,7 @@ class EnhancedSnackbar {
                 label: 'تراجع',
                 textColor: Colors.white,
                 onPressed: () {
-                  HapticFeedback.mediumImpact();
+                  HapticPatterns.selection();
                   onUndo();
                 },
               )
@@ -76,7 +76,7 @@ class EnhancedSnackbar {
     VoidCallback? onRetry,
     Duration duration = const Duration(seconds: 4),
   }) {
-    HapticFeedback.heavyImpact();
+    HapticPatterns.error();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -116,7 +116,7 @@ class EnhancedSnackbar {
                 label: 'إعادة المحاولة',
                 textColor: Colors.white,
                 onPressed: () {
-                  HapticFeedback.mediumImpact();
+                  HapticPatterns.selection();
                   onRetry();
                 },
               )
@@ -133,7 +133,7 @@ class EnhancedSnackbar {
     String? actionLabel,
     Duration duration = const Duration(seconds: 3),
   }) {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.warning();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -158,7 +158,7 @@ class EnhancedSnackbar {
                 label: actionLabel,
                 textColor: Colors.white,
                 onPressed: () {
-                  HapticFeedback.lightImpact();
+                  HapticPatterns.light();
                   onAction();
                 },
               )
@@ -175,7 +175,7 @@ class EnhancedSnackbar {
     String? actionLabel,
     Duration duration = const Duration(seconds: 3),
   }) {
-    HapticFeedback.selectionClick();
+    HapticPatterns.selection();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -200,7 +200,7 @@ class EnhancedSnackbar {
                 label: actionLabel,
                 textColor: Colors.white,
                 onPressed: () {
-                  HapticFeedback.lightImpact();
+                  HapticPatterns.light();
                   onAction();
                 },
               )
