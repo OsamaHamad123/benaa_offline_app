@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 import 'core/settings/settings_provider.dart';
 import 'core/error_handling/error_handler.dart';
 import 'core/design_system/app_animations.dart';
+import 'core/analytics/ux_analytics.dart';
 
 class BenaaApp extends ConsumerWidget {
   const BenaaApp({super.key});
@@ -14,6 +15,9 @@ class BenaaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+
+    // 📊 Start analytics session
+    UxAnalytics.startSession();
 
     // Watch settings for theme configuration
     final settingsAsync = ref.watch(sharedPreferencesProvider);
