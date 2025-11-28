@@ -16,36 +16,39 @@ class QuickStatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _StatItem(
-              icon: Icons.event_available,
-              label: 'الزيارات',
-              value: visitsCount.toString(),
-              color: Colors.blue,
-            ),
-            _VerticalDivider(),
-            _StatItem(
-              icon: Icons.attach_file,
-              label: 'المرفقات',
-              value: attachmentsCount.toString(),
-              color: Colors.orange,
-            ),
-            _VerticalDivider(),
-            _StatItem(
-              icon: Icons.access_time,
-              label: 'آخر زيارة',
-              value: lastVisitDate,
-              color: Colors.green,
-              isSmallText: true,
-            ),
-          ],
+    return Semantics(
+      label: 'إحصائيات سريعة: $visitsCount زيارة, $attachmentsCount مرفق, آخر زيارة $lastVisitDate',
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _StatItem(
+                icon: Icons.event_available,
+                label: 'الزيارات',
+                value: visitsCount.toString(),
+                color: Colors.blue,
+              ),
+              _VerticalDivider(),
+              _StatItem(
+                icon: Icons.attach_file,
+                label: 'المرفقات',
+                value: attachmentsCount.toString(),
+                color: Colors.orange,
+              ),
+              _VerticalDivider(),
+              _StatItem(
+                icon: Icons.access_time,
+                label: 'آخر زيارة',
+                value: lastVisitDate,
+                color: Colors.green,
+                isSmallText: true,
+              ),
+            ],
+          ),
         ),
       ),
     );

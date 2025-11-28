@@ -87,116 +87,122 @@ class _VisitTimelineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: EdgeInsets.only(left: 16.w, bottom: 16.h),
-        child: Card(
-          elevation: isLatest ? 3 : 1,
-          color: isLatest ? Colors.blue[50] : null,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12.r),
-            side: BorderSide(
-              color: isLatest ? Colors.blue : Colors.grey[300]!,
-              width: isLatest ? 2.w : 1.w,
+    final latestText = isLatest ? 'أحدث زيارة, ' : '';
+    return Semantics(
+      label: '${latestText}زيارة من ${visit.staffName}, ${_formatDate(visit.visitDate)}',
+      hint: 'اضغط لعرض تفاصيل الزيارة',
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: EdgeInsets.only(left: 16.w, bottom: 16.h),
+          child: Card(
+            elevation: isLatest ? 3 : 1,
+            color: isLatest ? Colors.blue[50] : null,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              side: BorderSide(
+                color: isLatest ? Colors.blue : Colors.grey[300]!,
+                width: isLatest ? 2.w : 1.w,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(12.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    if (isLatest)
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: Text(
-                          'أحدث زيارة',
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+            child: Padding(
+              padding: EdgeInsets.all(12.r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      if (isLatest)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: Text(
+                            'أحدث زيارة',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    const Spacer(),
-                    Icon(
-                      Icons.access_time,
-                      size: 14.sp,
-                      color: Colors.grey[600],
-                    ),
-                    SizedBox(width: 4.w),
-                    Text(
-                      _formatDate(visit.visitDate),
-                      style: TextStyle(
-                        fontSize: 12.sp,
+                      const Spacer(),
+                      Icon(
+                        Icons.access_time,
+                        size: 14.sp,
                         color: Colors.grey[600],
                       ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8.h),
-
-                // Staff Name
-                Row(
-                  children: [
-                    Icon(Icons.person_outline, size: 16.sp, color: Colors.blue),
-                    SizedBox(width: 6.w),
-                    Expanded(
-                      child: Text(
-                        visit.staffName,
+                      SizedBox(width: 4.w),
+                      Text(
+                        _formatDate(visit.visitDate),
                         style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 12.sp,
+                          color: Colors.grey[600],
                         ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
+
+                  // Staff Name
+                  Row(
+                    children: [
+                      Icon(Icons.person_outline, size: 16.sp, color: Colors.blue),
+                      SizedBox(width: 6.w),
+                      Expanded(
+                        child: Text(
+                          visit.staffName,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Notes
+                  if (visit.notes.isNotEmpty) ...[
+                    SizedBox(height: 8.h),
+                    Container(
+                      padding: EdgeInsets.all(8.r),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.note_outlined,
+                            size: 14.sp,
+                            color: Colors.grey[600],
+                          ),
+                          SizedBox(width: 6.w),
+                          Expanded(
+                            child: Text(
+                              visit.notes,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.grey[700],
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-
-                // Notes
-                if (visit.notes.isNotEmpty) ...[
-                  SizedBox(height: 8.h),
-                  Container(
-                    padding: EdgeInsets.all(8.r),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.note_outlined,
-                          size: 14.sp,
-                          color: Colors.grey[600],
-                        ),
-                        SizedBox(width: 6.w),
-                        Expanded(
-                          child: Text(
-                            visit.notes,
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              color: Colors.grey[700],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
         ),

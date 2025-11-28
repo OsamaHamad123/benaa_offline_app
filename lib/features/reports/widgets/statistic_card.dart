@@ -22,47 +22,50 @@ class StatisticCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: backgroundColor,
-      child: Padding(
-        padding: EdgeInsets.all(6.w),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20.sp, color: iconColor),
-            SizedBox(height: 2.h),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(fontSize: 9.sp, color: Colors.grey[700]),
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(height: 1.h),
-            Flexible(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
+    return Semantics(
+      label: '$label: $count ($percentage)',
+      child: Card(
+        color: backgroundColor,
+        child: Padding(
+          padding: EdgeInsets.all(6.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 20.sp, color: iconColor),
+              SizedBox(height: 2.h),
+              Flexible(
                 child: Text(
-                  count,
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: iconColor,
+                  label,
+                  style: TextStyle(fontSize: 9.sp, color: Colors.grey[700]),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              SizedBox(height: 1.h),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    count,
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: iconColor,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Flexible(
-              child: Text(
-                percentage,
-                style: TextStyle(fontSize: 8.sp, color: Colors.grey[600]),
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+              Flexible(
+                child: Text(
+                  percentage,
+                  style: TextStyle(fontSize: 8.sp, color: Colors.grey[600]),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

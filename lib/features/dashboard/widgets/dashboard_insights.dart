@@ -17,49 +17,53 @@ class PendingSyncAlert extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        return Card(
-          elevation: 0,
-          color: Colors.orange[50],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.orange[200]!, width: 1),
-          ),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.orange,
-                size: 24,
-              ),
+        return Semantics(
+          label: 'تنبيه: لديك $count مستفيد بحاجة للمزامنة مع الخادم',
+          hint: 'اضغط للمزامنة',
+          child: Card(
+            elevation: 0,
+            color: Colors.orange[50],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.orange[200]!, width: 1),
             ),
-            title: Text(
-              'بيانات بحاجة للمزامنة',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.orange[900],
-              ),
-            ),
-            subtitle: Text(
-              'لديك $count مستفيد بحاجة للمزامنة مع الخادم',
-              style: TextStyle(color: Colors.orange[700]),
-            ),
-            trailing: ElevatedButton(
-              onPressed: () {
-                // TODO: Trigger sync
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange[100],
                   borderRadius: BorderRadius.circular(8),
                 ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 24,
+                ),
               ),
-              child: const Text('مزامنة'),
+              title: Text(
+                'بيانات بحاجة للمزامنة',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange[900],
+                ),
+              ),
+              subtitle: Text(
+                'لديك $count مستفيد بحاجة للمزامنة مع الخادم',
+                style: TextStyle(color: Colors.orange[700]),
+              ),
+              trailing: ElevatedButton(
+                onPressed: () {
+                  // TODO: Trigger sync
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('مزامنة'),
+              ),
             ),
           ),
         );
@@ -80,41 +84,46 @@ class LastSyncStatus extends StatelessWidget {
     final lastSyncTime = '3 ساعات';
     final syncedCount = 42;
 
-    return Card(
-      elevation: 0,
-      color: Colors.green[50],
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.green[200]!, width: 1),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.green[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.check_circle_rounded,
-            color: Colors.green,
-            size: 24,
-          ),
+    return Semantics(
+      label: 'آخر مزامنة ناجحة: منذ $lastSyncTime - $syncedCount سجل',
+      hint: 'اضغط لعرض تفاصيل المزامنة',
+      button: true,
+      child: Card(
+        elevation: 0,
+        color: Colors.green[50],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: Colors.green[200]!, width: 1),
         ),
-        title: Text(
-          'آخر مزامنة ناجحة',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.green[900],
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.green[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.green,
+              size: 24,
+            ),
           ),
+          title: Text(
+            'آخر مزامنة ناجحة',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green[900],
+            ),
+          ),
+          subtitle: Text(
+            'منذ $lastSyncTime - $syncedCount سجل',
+            style: TextStyle(color: Colors.green[700]),
+          ),
+          trailing: Icon(Icons.chevron_right, color: Colors.green[700]),
+          onTap: () {
+            // TODO: Navigate to sync details
+          },
         ),
-        subtitle: Text(
-          'منذ $lastSyncTime - $syncedCount سجل',
-          style: TextStyle(color: Colors.green[700]),
-        ),
-        trailing: Icon(Icons.chevron_right, color: Colors.green[700]),
-        onTap: () {
-          // TODO: Navigate to sync details
-        },
       ),
     );
   }
@@ -166,8 +175,8 @@ class DataQualityScore extends ConsumerWidget {
                     Text(
                       'جودة البيانات',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -192,16 +201,14 @@ class DataQualityScore extends ConsumerWidget {
                         children: [
                           Text(
                             '$score%',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
+                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: _getColorForScore(score),
                                 ),
                           ),
                           Text(
                             _getStatusText(score),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.grey[600]),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
                           ),
                         ],
                       ),
@@ -280,9 +287,7 @@ class ConnectionStatusBar extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              isOnline
-                  ? 'متصل بالإنترنت - المزامنة متاحة'
-                  : 'وضع عدم الاتصال - البيانات محلية فقط',
+              isOnline ? 'متصل بالإنترنت - المزامنة متاحة' : 'وضع عدم الاتصال - البيانات محلية فقط',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -290,8 +295,7 @@ class ConnectionStatusBar extends StatelessWidget {
               ),
             ),
           ),
-          if (!isOnline)
-            Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange[700]),
+          if (!isOnline) Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange[700]),
         ],
       ),
     );
@@ -335,8 +339,8 @@ class PerformanceMetricsCard extends StatelessWidget {
                 Text(
                   'كفاءة العمل',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
@@ -396,9 +400,9 @@ class _MetricItem extends StatelessWidget {
         Text(
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.indigo,
-          ),
+                fontWeight: FontWeight.bold,
+                color: Colors.indigo,
+              ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -415,8 +419,8 @@ class _MetricItem extends StatelessWidget {
             color: trendUp == null
                 ? Colors.grey[200]
                 : trendUp!
-                ? Colors.green[50]
-                : Colors.red[50],
+                    ? Colors.green[50]
+                    : Colors.red[50],
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -437,8 +441,8 @@ class _MetricItem extends StatelessWidget {
                   color: trendUp == null
                       ? Colors.grey[600]
                       : trendUp!
-                      ? Colors.green
-                      : Colors.red,
+                          ? Colors.green
+                          : Colors.red,
                 ),
               ),
             ],
