@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import '../core/design_system/app_animations.dart';
 import '../core/analytics/analytics_widgets.dart';
+import '../core/analytics/realtime_performance_monitor.dart';
 import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/initialization/presentation/pages/app_initialization_page.dart';
@@ -209,6 +210,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/analytics',
         builder: (context, state) => const UxAnalyticsDashboard(),
+      ),
+      GoRoute(
+        path: '/performance-monitor',
+        builder: (context, state) => const RealTimePerformanceMonitor(),
       ),
       GoRoute(
         path: '/visits',

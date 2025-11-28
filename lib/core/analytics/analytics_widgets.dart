@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../analytics/ux_analytics.dart';
+import 'analytics_exporter.dart';
 
 /// 🎯 Enhanced Haptic Patterns with Analytics
 ///
@@ -129,16 +130,72 @@ class UxAnalyticsDashboard extends StatelessWidget {
       appBar: AppBar(
         title: const Text('📊 UX Analytics'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              await UxAnalytics.resetAnalytics();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم إعادة تعيين الإحصائيات')),
-                );
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              switch (value) {
+                case 'export_json':
+                  await AnalyticsExporter.shareAnalytics(format: 'json');
+                  break;
+                case 'export_csv':
+                  await AnalyticsExporter.shareAnalytics(format: 'csv');
+                  break;
+                case 'export_txt':
+                  await AnalyticsExporter.shareAnalytics(format: 'txt');
+                  break;
+                case 'reset':
+                  await UxAnalytics.resetAnalytics();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم إعادة تعيين الإحصائيات')),
+                    );
+                  }
+                  break;
               }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'export_json',
+                child: Row(
+                  children: [
+                    Icon(Icons.code, size: 20),
+                    SizedBox(width: 8),
+                    Text('Export JSON'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export_csv',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_chart, size: 20),
+                    SizedBox(width: 8),
+                    Text('Export CSV'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'export_txt',
+                child: Row(
+                  children: [
+                    Icon(Icons.description, size: 20),
+                    SizedBox(width: 8),
+                    Text('Export Report'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'reset',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Reset Data', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -159,6 +216,41 @@ class UxAnalyticsDashboard extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // 💡 Insights Section
+              FutureBuilder<List<String>>(
+                future: AnalyticsExporter.generateInsights(),
+                builder: (context, insightsSnapshot) {
+                  if (insightsSnapshot.hasData && insightsSnapshot.data!.isNotEmpty) {
+                    return Column(
+                      children: [
+                        _buildSection(
+                          '💡 Insights',
+                          insightsSnapshot.data!
+                              .map((insight) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('• ', style: TextStyle(fontSize: 16)),
+                                        Expanded(
+                                          child: Text(
+                                            insight,
+                                            style: const TextStyle(fontSize: 14),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ))
+                              .toList(),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
+
               _buildSection(
                 '🎯 Haptic Feedback',
                 [

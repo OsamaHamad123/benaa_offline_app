@@ -328,6 +328,15 @@ class EnhancedSettingsPage extends ConsumerWidget {
                           color: Colors.teal,
                           onTap: () => context.push('/analytics'),
                         ),
+                        _buildDivider(),
+                        _buildNavigationTile(
+                          context,
+                          title: '📈 Performance Monitor',
+                          subtitle: 'مراقبة الأداء في الوقت الفعلي (FPS, Frame Time)',
+                          icon: Icons.monitor_heart_rounded,
+                          color: Colors.purple,
+                          onTap: () => context.push('/performance-monitor'),
+                        ),
                       ],
                     ]),
 
