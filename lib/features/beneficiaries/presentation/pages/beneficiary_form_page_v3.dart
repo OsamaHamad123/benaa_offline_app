@@ -10,6 +10,8 @@ import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/errors/user_friendly_error.dart';
 import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi ValueListenableBuilder
 import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -741,16 +743,24 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   /// ⬅️ التالي - الانتقال للتاب التالي (يمين في RTL)
   void _handleNextTab() {
     if (_tabController.index < FormConstants.totalTabs - 1) {
-      _tabController.animateTo(_tabController.index + 1);
-      HapticFeedback.selectionClick();
+      HapticPatterns.selection();
+      _tabController.animateTo(
+        _tabController.index + 1,
+        duration: AppDurations.fast,
+        curve: AppCurves.smooth,
+      );
     }
   }
 
   /// ➡️ السابق - الرجوع للتاب السابق (يسار في RTL)
   void _handlePreviousTab() {
     if (_tabController.index > 0) {
-      _tabController.animateTo(_tabController.index - 1);
-      HapticFeedback.selectionClick();
+      HapticPatterns.selection();
+      _tabController.animateTo(
+        _tabController.index - 1,
+        duration: AppDurations.fast,
+        curve: AppCurves.smooth,
+      );
     }
   }
 
@@ -1298,7 +1308,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _hasUnsavedChanges = false;
 
         if (!isAutoSave) {
-          HapticFeedback.mediumImpact();
+          HapticPatterns.success();
           if (mounted) {
             // 🎉 Show success animation overlay
             SuccessOverlay.show(
@@ -1322,7 +1332,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         if (!mounted) return;
         _isSaving = false; // ⚡ Direct assignment
         if (!isAutoSave && mounted) {
-          HapticFeedback.heavyImpact();
+          HapticPatterns.error();
           EnhancedSnackbar.showError(
             context,
             message: 'فشل في حفظ البيانات',
@@ -1339,7 +1349,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
     if (beneficiary == null) return;
 
-    HapticFeedback.mediumImpact();
+    HapticPatterns.warning();
 
     final confirmed = await showDialog<bool>(
       context: context,

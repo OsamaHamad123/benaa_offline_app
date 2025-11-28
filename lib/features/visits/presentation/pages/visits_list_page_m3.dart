@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../../../core/utils/haptic_patterns.dart';
@@ -268,7 +269,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
 
     final dates = groupedByDate.keys.toList()..sort((a, b) => b.compareTo(a));
 
-    return RefreshIndicator(
+    return EnhancedRefreshIndicator(
       onRefresh: _loadVisits,
       child: ListView.builder(
         padding: EdgeInsets.all(16.r),

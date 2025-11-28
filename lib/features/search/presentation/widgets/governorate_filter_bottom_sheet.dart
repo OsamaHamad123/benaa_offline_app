@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// 🏛️ Governorate Filter Bottom Sheet
 class GovernorateFilterBottomSheet extends StatefulWidget {
@@ -40,43 +42,48 @@ class _GovernorateFilterBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.location_city, color: Colors.blue.shade700),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'اختر المحافظة',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade900,
+    return ScaleTransitionWidget(
+      duration: AppDurations.fast,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            FadeSlideTransition(
+              duration: AppDurations.fast,
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_city, color: Colors.blue.shade700),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'اختر المحافظة',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade900,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      color: Colors.grey.shade600,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                  color: Colors.grey.shade600,
-                ),
-              ],
+              ),
             ),
-          ),
 
           // Search Box
           Padding(
@@ -130,6 +137,7 @@ class _GovernorateFilterBottomSheetState
                       ? Colors.blue.shade50
                       : null,
                   onTap: () {
+                    HapticPatterns.selection();
                     setState(() {
                       _selectedGovernorate = null;
                     });
@@ -160,6 +168,7 @@ class _GovernorateFilterBottomSheetState
                         : null,
                     tileColor: isSelected ? Colors.blue.shade50 : null,
                     onTap: () {
+                      HapticPatterns.selection();
                       setState(() {
                         _selectedGovernorate = governorate;
                       });
@@ -193,6 +202,7 @@ class _GovernorateFilterBottomSheetState
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
+                      HapticPatterns.success();
                       widget.onApply(_selectedGovernorate);
                       Navigator.pop(context);
                     },
@@ -209,7 +219,8 @@ class _GovernorateFilterBottomSheetState
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

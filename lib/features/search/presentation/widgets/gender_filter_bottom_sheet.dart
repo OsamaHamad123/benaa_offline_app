@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// 👥 Gender Filter Bottom Sheet
 class GenderFilterBottomSheet extends StatefulWidget {
@@ -27,43 +29,48 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.purple.shade50,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.people_alt, color: Colors.purple.shade700),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'اختر الجنس',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple.shade900,
+    return ScaleTransitionWidget(
+      duration: AppDurations.fast,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            FadeSlideTransition(
+              duration: AppDurations.fast,
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.people_alt, color: Colors.purple.shade700),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'اختر الجنس',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade900,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      color: Colors.grey.shade600,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                  color: Colors.grey.shade600,
-                ),
-              ],
+              ),
             ),
-          ),
 
           // Gender Options
           Padding(
@@ -120,6 +127,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
+                      HapticPatterns.success();
                       widget.onApply(_selectedGender);
                       Navigator.pop(context);
                     },
@@ -136,7 +144,8 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -151,6 +160,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
 
     return InkWell(
       onTap: () {
+        HapticPatterns.selection();
         setState(() {
           _selectedGender = value;
         });

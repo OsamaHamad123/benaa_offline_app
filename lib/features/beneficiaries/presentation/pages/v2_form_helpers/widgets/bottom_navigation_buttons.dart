@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // 🎮 Haptic Feedback
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart';
+import '../../../../../../core/utils/haptic_patterns.dart'; // 🎮 Haptic Patterns
 
 /// Bottom navigation buttons for form tabs
 ///
@@ -63,10 +63,10 @@ class BottomNavigationButtons extends StatelessWidget {
                       ? null
                       : () {
                           if (isLastTab) {
-                            HapticFeedback.mediumImpact(); // حفظ
+                            HapticPatterns.success(); // حفظ
                             onSave();
                           } else {
-                            HapticFeedback.selectionClick(); // التالي
+                            HapticPatterns.selection(); // التالي
                             onNext();
                           }
                         },
@@ -116,7 +116,7 @@ class BottomNavigationButtons extends StatelessWidget {
                     onPressed: isLoading
                         ? null
                         : () {
-                            HapticFeedback.selectionClick();
+                            HapticPatterns.selection();
                             onPrevious();
                           },
                     icon: const Icon(
@@ -144,3 +144,4 @@ class BottomNavigationButtons extends StatelessWidget {
     );
   }
 }
+

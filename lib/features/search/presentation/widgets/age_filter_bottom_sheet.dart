@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// 🎯 Age Filter Bottom Sheet
 /// Allows filtering search results by age range
@@ -37,7 +39,9 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ScaleTransitionWidget(
+      duration: AppDurations.fast,
+      child: Container(
       padding: EdgeInsets.only(
         top: 20,
         left: 20,
@@ -83,6 +87,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
               Switch(
                 value: _isEnabled,
                 onChanged: (value) {
+                  HapticPatterns.selection();
                   setState(() => _isEnabled = value);
                 },
               ),
@@ -139,6 +144,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
               activeColor: Colors.blue.shade700,
               inactiveColor: Colors.blue.shade100,
               onChanged: (values) {
+                HapticPatterns.light();
                 setState(() => _ageRange = values);
               },
             ),
@@ -196,6 +202,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                     } else {
                       widget.onApply(null, null);
                     }
+                    HapticPatterns.success();
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
@@ -217,6 +224,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
           ),
         ],
       ),
+      ),
     );
   }
 
@@ -225,6 +233,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
 
     return InkWell(
       onTap: () {
+        HapticPatterns.selection();
         setState(() {
           _isEnabled = true;
           _ageRange = RangeValues(min.toDouble(), max.toDouble());
