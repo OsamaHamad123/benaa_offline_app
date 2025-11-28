@@ -2,39 +2,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart';
 import 'package:benaa_offline_app/features/dashboard/domain/repositories/activity_repository.dart';
 import 'package:benaa_offline_app/features/dashboard/domain/usecases/log_activity.dart';
+import 'package:benaa_offline_app/core/error_handling/result.dart';
 
 class MockActivityRepository implements ActivityRepository {
   final List<Activity> activities = [];
 
   @override
-  Future<List<Activity>> getAllActivities() async => activities;
+  Future<Result<List<Activity>>> getAllActivities() async => Success(activities);
 
   @override
-  Future<List<Activity>> getActivitiesByType(String type) async =>
-      activities.where((a) => a.type == type).toList();
+  Future<Result<List<Activity>>> getActivitiesByType(String type) async =>
+      Success(activities.where((a) => a.type == type).toList());
 
   @override
-  Future<List<Activity>> getActivitiesForBeneficiary(
+  Future<Result<List<Activity>>> getActivitiesForBeneficiary(
     String beneficiaryId,
-  ) async => activities.where((a) => a.beneficiaryId == beneficiaryId).toList();
+  ) async =>
+      Success(activities.where((a) => a.beneficiaryId == beneficiaryId).toList());
 
   @override
-  Future<void> logActivity(Activity activity) async {
+  Future<Result<void>> logActivity(Activity activity) async {
     activities.add(activity);
+    return const Success(null);
   }
 
   @override
-  Future<void> deleteActivity(String activityId) async {
+  Future<Result<void>> deleteActivity(String activityId) async {
     activities.removeWhere((a) => a.id == activityId);
+    return const Success(null);
   }
 
   @override
-  Future<void> clearAllActivities() async {
+  Future<Result<void>> clearAllActivities() async {
     activities.clear();
+    return const Success(null);
   }
 
   @override
-  Future<int> getActivitiesCount() async => activities.length;
+  Future<Result<int>> getActivitiesCount() async => Success(activities.length);
 }
 
 void main() {
@@ -116,29 +121,27 @@ void main() {
 
 class _FailingRepository implements ActivityRepository {
   @override
-  Future<List<Activity>> getAllActivities() async =>
-      throw Exception('Database error');
+  Future<Result<List<Activity>>> getAllActivities() async => const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<List<Activity>> getActivitiesByType(String type) async =>
-      throw Exception('Database error');
+  Future<Result<List<Activity>>> getActivitiesByType(String type) async =>
+      const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<List<Activity>> getActivitiesForBeneficiary(
+  Future<Result<List<Activity>>> getActivitiesForBeneficiary(
     String beneficiaryId,
-  ) async => throw Exception('Database error');
+  ) async =>
+      const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<void> logActivity(Activity activity) async =>
-      throw Exception('Database error');
+  Future<Result<void>> logActivity(Activity activity) async => const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<void> deleteActivity(String activityId) async =>
-      throw Exception('Database error');
+  Future<Result<void>> deleteActivity(String activityId) async => const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<void> clearAllActivities() async => throw Exception('Database error');
+  Future<Result<void>> clearAllActivities() async => const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<int> getActivitiesCount() async => throw Exception('Database error');
+  Future<Result<int>> getActivitiesCount() async => const Failure(DatabaseFailure('Database error'));
 }
