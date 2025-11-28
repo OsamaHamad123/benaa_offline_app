@@ -10,6 +10,7 @@ import '../../data/datasources/attachment_datasource.dart';
 import '../../data/repositories/attachment_repository_impl.dart';
 import '../../../dashboard/domain/usecases/log_activity.dart';
 import '../../../dashboard/presentation/providers/activity_providers.dart';
+import '../../../../core/error_handling/result.dart';
 
 // ============================================================================
 // PROVIDERS
@@ -86,8 +87,8 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     this._addAttachmentUseCase,
     this._deleteAttachmentUseCase, {
     LogActivity? logActivity,
-  }) : _logActivity = logActivity,
-       super(const AttachmentsState());
+  })  : _logActivity = logActivity,
+        super(const AttachmentsState());
 
   /// Load attachments for beneficiary
   Future<void> loadAttachments(String beneficiaryId) async {
@@ -97,11 +98,17 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final attachments = await _getAttachmentsUseCase.execute(beneficiaryId);
-      debugPrint(
-        '✅ [AttachmentsProvider] Loaded ${attachments.length} attachments',
-      );
-      state = state.copyWith(attachments: attachments, isLoading: false);
+      final result = await _getAttachmentsUseCase.execute(beneficiaryId);
+
+      if (result is Success<List<Attachment>>) {
+        final attachments = result.value;
+        debugPrint(
+          '✅ [AttachmentsProvider] Loaded ${attachments.length} attachments',
+        );
+        state = state.copyWith(attachments: attachments, isLoading: false);
+      } else if (result is Failure<List<Attachment>>) {
+        throw Exception(result.error.message);
+      }
     } catch (e, stackTrace) {
       debugPrint('❌ [AttachmentsProvider] Error loading attachments: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -120,12 +127,17 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     String? beneficiaryName,
   }) async {
     try {
-      final attachment = await _addAttachmentUseCase.execute(
+      final result = await _addAttachmentUseCase.execute(
         beneficiaryId: beneficiaryId,
         visitId: visitId,
         sourceFile: sourceFile,
       );
 
+      if (result is Failure<Attachment>) {
+        throw Exception(result.error.message);
+      }
+
+      final attachment = (result as Success<Attachment>).value;
       state = state.copyWith(attachments: [...state.attachments, attachment]);
 
       // Log activity if available
@@ -163,13 +175,16 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     String? beneficiaryName,
   }) async {
     try {
-      final success = await _deleteAttachmentUseCase.execute(attachmentId);
+      final result = await _deleteAttachmentUseCase.execute(attachmentId);
 
+      if (result is Failure<bool>) {
+        throw Exception(result.error.message);
+      }
+
+      final success = (result as Success<bool>).value;
       if (success) {
         state = state.copyWith(
-          attachments: state.attachments
-              .where((a) => a.id != attachmentId)
-              .toList(),
+          attachments: state.attachments.where((a) => a.id != attachmentId).toList(),
         );
 
         // Log activity if available
@@ -203,24 +218,23 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
 }
 
 /// Attachments Provider
-final attachmentsProvider =
-    StateNotifierProvider.family<AttachmentsNotifier, AttachmentsState, String>(
-      (ref, beneficiaryId) {
-        final getUseCase = ref.watch(getBeneficiaryAttachmentsUseCaseProvider);
-        final addUseCase = ref.watch(addAttachmentUseCaseProvider);
-        final deleteUseCase = ref.watch(deleteAttachmentUseCaseProvider);
-        final logActivity = ref.watch(logActivityUseCaseProvider);
+final attachmentsProvider = StateNotifierProvider.family<AttachmentsNotifier, AttachmentsState, String>(
+  (ref, beneficiaryId) {
+    final getUseCase = ref.watch(getBeneficiaryAttachmentsUseCaseProvider);
+    final addUseCase = ref.watch(addAttachmentUseCaseProvider);
+    final deleteUseCase = ref.watch(deleteAttachmentUseCaseProvider);
+    final logActivity = ref.watch(logActivityUseCaseProvider);
 
-        final notifier = AttachmentsNotifier(
-          getUseCase,
-          addUseCase,
-          deleteUseCase,
-          logActivity: logActivity,
-        );
-
-        // Auto-load attachments
-        Future.microtask(() => notifier.loadAttachments(beneficiaryId));
-
-        return notifier;
-      },
+    final notifier = AttachmentsNotifier(
+      getUseCase,
+      addUseCase,
+      deleteUseCase,
+      logActivity: logActivity,
     );
+
+    // Auto-load attachments
+    Future.microtask(() => notifier.loadAttachments(beneficiaryId));
+
+    return notifier;
+  },
+);

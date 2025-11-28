@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/utils/debouncer.dart';
 import '../providers/infinite_scroll_provider.dart';
 
 /// 📜 Optimized Infinite List with Smart Prefetching
@@ -7,16 +8,17 @@ class OptimizedInfiniteList extends ConsumerStatefulWidget {
   const OptimizedInfiniteList({super.key});
 
   @override
-  ConsumerState<OptimizedInfiniteList> createState() =>
-      _OptimizedInfiniteListState();
+  ConsumerState<OptimizedInfiniteList> createState() => _OptimizedInfiniteListState();
 }
 
 class _OptimizedInfiniteListState extends ConsumerState<OptimizedInfiniteList> {
   final ScrollController _scrollController = ScrollController();
+  late final Throttler _scrollThrottler; // ✅ Throttler for scroll
 
   @override
   void initState() {
     super.initState();
+    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
     _scrollController.addListener(_onScroll);
     // Load initial data
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -31,14 +33,16 @@ class _OptimizedInfiniteListState extends ConsumerState<OptimizedInfiniteList> {
   }
 
   void _onScroll() {
-    final notifier = ref.read(infiniteScrollProvider.notifier);
-    final scrollPosition = _scrollController.position.pixels;
-    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    _scrollThrottler(() {
+      final notifier = ref.read(infiniteScrollProvider.notifier);
+      final scrollPosition = _scrollController.position.pixels;
+      final maxScrollExtent = _scrollController.position.maxScrollExtent;
 
-    // Smart prefetching at 80% scroll
-    if (notifier.shouldPrefetch(scrollPosition, maxScrollExtent)) {
-      notifier.loadNextPage();
-    }
+      // Smart prefetching at 80% scroll
+      if (notifier.shouldPrefetch(scrollPosition, maxScrollExtent)) {
+        notifier.loadNextPage();
+      }
+    });
   }
 
   @override

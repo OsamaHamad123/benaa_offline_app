@@ -3,6 +3,7 @@ import '../state/visit_state.dart';
 import '../../domain/entities/visit_entity.dart';
 import '../../domain/usecases/create_visit.dart';
 import '../../domain/usecases/get_beneficiary_visits.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// Visit Notifier for State Management
 class VisitNotifier extends StateNotifier<VisitState> {
@@ -12,16 +13,22 @@ class VisitNotifier extends StateNotifier<VisitState> {
   VisitNotifier({
     required CreateVisit createVisit,
     required GetBeneficiaryVisits getBeneficiaryVisits,
-  }) : _createVisit = createVisit,
-       _getBeneficiaryVisits = getBeneficiaryVisits,
-       super(const VisitState());
+  })  : _createVisit = createVisit,
+        _getBeneficiaryVisits = getBeneficiaryVisits,
+        super(const VisitState());
 
   /// Load visits for a beneficiary
   Future<void> loadBeneficiaryVisits(String beneficiaryId) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final visits = await _getBeneficiaryVisits(beneficiaryId);
+      final result = await _getBeneficiaryVisits(beneficiaryId);
+
+      if (result is Failure<List<VisitEntity>>) {
+        throw Exception(result.error.message);
+      }
+
+      final visits = (result as Success<List<VisitEntity>>).value;
       state = state.copyWith(
         visits: visits,
         isLoading: false,

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/usecases/beneficiary_usecases.dart';
 import 'beneficiary_dependencies_provider.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// 🔍 Beneficiary List State
 class BeneficiaryListState {
@@ -43,12 +44,8 @@ class BeneficiaryListState {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategory: clearCategoryFilter
-          ? null
-          : (selectedCategory ?? this.selectedCategory),
-      selectedGender: clearGenderFilter
-          ? null
-          : (selectedGender ?? this.selectedGender),
+      selectedCategory: clearCategoryFilter ? null : (selectedCategory ?? this.selectedCategory),
+      selectedGender: clearGenderFilter ? null : (selectedGender ?? this.selectedGender),
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
     );
@@ -72,9 +69,9 @@ class BeneficiaryListNotifier extends StateNotifier<BeneficiaryListState> {
   BeneficiaryListNotifier({
     required ListBeneficiariesUseCase listUseCase,
     required DeleteBeneficiaryUseCase deleteUseCase,
-  }) : _listUseCase = listUseCase,
-       _deleteUseCase = deleteUseCase,
-       super(const BeneficiaryListState()) {
+  })  : _listUseCase = listUseCase,
+        _deleteUseCase = deleteUseCase,
+        super(const BeneficiaryListState()) {
     loadBeneficiaries();
   }
 
@@ -83,12 +80,17 @@ class BeneficiaryListNotifier extends StateNotifier<BeneficiaryListState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final beneficiaries = await _listUseCase.execute(
+      final result = await _listUseCase.execute(
         searchQuery: state.searchQuery.isEmpty ? null : state.searchQuery,
         category: state.selectedCategory,
         gender: state.selectedGender,
       );
 
+      if (result is Failure<List<Beneficiary>>) {
+        throw Exception(result.error.message);
+      }
+
+      final beneficiaries = (result as Success<List<Beneficiary>>).value;
       // Apply sorting
       final sorted = _sortBeneficiaries(beneficiaries);
 
@@ -185,20 +187,23 @@ class BeneficiaryListNotifier extends StateNotifier<BeneficiaryListState> {
 }
 
 /// Provider for beneficiary list
-final beneficiaryListProvider =
-    StateNotifierProvider<BeneficiaryListNotifier, BeneficiaryListState>((ref) {
-      final dependencies = ref.watch(beneficiaryDependenciesProvider);
+final beneficiaryListProvider = StateNotifierProvider<BeneficiaryListNotifier, BeneficiaryListState>((ref) {
+  final dependencies = ref.watch(beneficiaryDependenciesProvider);
 
-      return BeneficiaryListNotifier(
-        listUseCase: dependencies.listUseCase,
-        deleteUseCase: dependencies.deleteUseCase,
-      );
-    });
+  return BeneficiaryListNotifier(
+    listUseCase: dependencies.listUseCase,
+    deleteUseCase: dependencies.deleteUseCase,
+  );
+});
 
 /// Provider for statistics
-final beneficiaryStatisticsProvider = FutureProvider<Map<String, int>>((
-  ref,
-) async {
+final beneficiaryStatisticsProvider = FutureProvider<Map<String, int>>((ref) async {
   final dependencies = ref.watch(beneficiaryDependenciesProvider);
-  return await dependencies.statsUseCase.execute();
+  final result = await dependencies.statsUseCase.execute();
+
+  if (result is Failure<Map<String, int>>) {
+    throw Exception(result.error.message);
+  }
+
+  return (result as Success<Map<String, int>>).value;
 });

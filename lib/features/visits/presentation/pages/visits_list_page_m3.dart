@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/services/export/export_models.dart';
 import '../../../../core/services/export/export_providers.dart';
 import '../../../../theme/app_colors.dart';
@@ -24,8 +25,7 @@ class VisitsListPageM3 extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPageM3> createState() => _VisitsListPageM3State();
 }
 
-class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
-    with SingleTickerProviderStateMixin {
+class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedFilter = 'all'; // all, pending, synced
   bool _showCalendar = false;
@@ -45,9 +45,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
 
   Future<void> _loadVisits() async {
     if (widget.beneficiaryId != null) {
-      await ref
-          .read(visitNotifierProvider.notifier)
-          .loadBeneficiaryVisits(widget.beneficiaryId!);
+      await ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId!);
     }
   }
 
@@ -62,7 +60,8 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
         default:
           return true;
       }
-    }).toList()..sort((a, b) => b.visitDate.compareTo(a.visitDate));
+    }).toList()
+      ..sort((a, b) => b.visitDate.compareTo(a.visitDate));
   }
 
   @override
@@ -85,7 +84,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
             tooltip: _showCalendar ? 'عرض القائمة' : 'عرض التقويم',
             onPressed: () {
               setState(() => _showCalendar = !_showCalendar);
-              HapticFeedback.selectionClick();
+              HapticPatterns.selection();
             },
           ),
           // Filter Menu
@@ -97,7 +96,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
             ),
             onSelected: (value) {
               setState(() => _selectedFilter = value);
-              HapticFeedback.selectionClick();
+              HapticPatterns.selection();
             },
             itemBuilder: (context) => [
               const PopupMenuItem(value: 'all', child: Text('🔹 الكل')),
@@ -181,13 +180,13 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
       body: state.isLoading
           ? _buildLoadingSkeleton()
           : visits.isEmpty
-          ? _buildEmptyState()
-          : _showCalendar
-          ? _buildCalendarView(visits)
-          : _buildTimelineView(visits),
+              ? _buildEmptyState()
+              : _showCalendar
+                  ? _buildCalendarView(visits)
+                  : _buildTimelineView(visits),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          HapticFeedback.mediumImpact();
+          HapticPatterns.submit();
           // Navigate to record visit page
           context.push('/visits/record');
         },
@@ -217,7 +216,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
       ),
       onSelected: (_) {
         setState(() => _selectedFilter = value);
-        HapticFeedback.selectionClick();
+        HapticPatterns.selection();
       },
       selectedColor: AppColors.primary.withOpacity(0.2),
       checkmarkColor: AppColors.primary,
@@ -358,7 +357,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
         child: InkWell(
           borderRadius: BorderRadius.circular(16.r),
           onTap: () {
-            HapticFeedback.selectionClick();
+            HapticPatterns.selection();
             _showVisitDetails(visit);
           },
           child: Padding(
@@ -372,9 +371,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        visit.syncState == 'synced'
-                            ? AppColors.success
-                            : AppColors.warning,
+                        visit.syncState == 'synced' ? AppColors.success : AppColors.warning,
                         visit.syncState == 'synced'
                             ? AppColors.success.withOpacity(0.6)
                             : AppColors.warning.withOpacity(0.6),
@@ -385,9 +382,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    visit.syncState == 'synced'
-                        ? Icons.check_circle
-                        : Icons.sync,
+                    visit.syncState == 'synced' ? Icons.check_circle : Icons.sync,
                     color: Colors.white,
                     size: 24.sp,
                   ),
@@ -455,9 +450,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: isSynced
-            ? AppColors.success.withOpacity(0.1)
-            : AppColors.warning.withOpacity(0.1),
+        color: isSynced ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
@@ -535,8 +528,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
                 'الحالة',
                 visit.syncState == 'synced' ? 'مزامنة ✅' : 'قيد المزامنة ⏳',
               ),
-              if (visit.notes.isNotEmpty)
-                _buildDetailRow('الملاحظات', visit.notes),
+              if (visit.notes.isNotEmpty) _buildDetailRow('الملاحظات', visit.notes),
               SizedBox(height: 24.h),
               Row(
                 children: [
@@ -604,7 +596,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
 
   Future<void> _exportVisits() async {
     try {
-      HapticFeedback.mediumImpact();
+      HapticPatterns.submit();
 
       final visits = _filteredVisits;
       if (visits.isEmpty) {
@@ -623,8 +615,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
         visits: visits
             .map(
               (v) => VisitExportRow(
-                beneficiaryName: v
-                    .staffName, // Will be replaced with actual beneficiary name if available
+                beneficiaryName: v.staffName, // Will be replaced with actual beneficiary name if available
                 visitDate: DateFormat('yyyy-MM-dd').format(v.visitDate),
                 visitType: _getVisitTypeArabic(v),
                 staffName: v.staffName,
@@ -639,22 +630,14 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
           ),
           ExportStatistic(
             label: 'قيد المزامنة',
-            value: visits
-                .where((v) => v.syncState == 'pending')
-                .length
-                .toString(),
+            value: visits.where((v) => v.syncState == 'pending').length.toString(),
           ),
           ExportStatistic(
             label: 'مزامنة',
-            value: visits
-                .where((v) => v.syncState == 'synced')
-                .length
-                .toString(),
+            value: visits.where((v) => v.syncState == 'synced').length.toString(),
           ),
         ],
-        subtitle: _selectedFilter != 'all'
-            ? 'تمت التصفية: ${_getFilterName(_selectedFilter)}'
-            : null,
+        subtitle: _selectedFilter != 'all' ? 'تمت التصفية: ${_getFilterName(_selectedFilter)}' : null,
       );
 
       final result = await excelService.exportToExcel(exportData);

@@ -6,6 +6,7 @@ import 'beneficiary_dependencies_provider.dart';
 import '../../../dashboard/domain/usecases/log_activity.dart';
 import '../../../dashboard/presentation/providers/activity_providers.dart';
 import '../../../../core/utils/debug_logger.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// 🎯 Beneficiary Form State
 class BeneficiaryFormState {
@@ -61,15 +62,21 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
     this._getUseCase,
     this._loadFromCivilRegistry, {
     LogActivity? logActivity,
-  }) : _logActivity = logActivity,
-       super(const BeneficiaryFormState());
+  })  : _logActivity = logActivity,
+        super(const BeneficiaryFormState());
 
   /// Load existing beneficiary by ID
   Future<void> loadBeneficiary(String id) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final beneficiary = await _getUseCase.execute(id);
+      final result = await _getUseCase.execute(id);
+
+      if (result is Failure<Beneficiary>) {
+        throw Exception(result.error.message);
+      }
+
+      final beneficiary = (result as Success<Beneficiary>).value;
       state = state.copyWith(
         beneficiary: beneficiary,
         isLoading: false,
@@ -105,15 +112,17 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
 
     try {
-      final data = await _loadFromCivilRegistry.execute(nationalId);
+      final result = await _loadFromCivilRegistry.execute(nationalId);
 
-      if (data == null) {
+      if (result is Failure<Map<String, dynamic>>) {
         state = state.copyWith(
           isLoading: false,
           errorMessage: 'لم يتم العثور على بيانات للرقم الوطني: $nationalId',
         );
         return;
       }
+
+      final data = (result as Success<Map<String, dynamic>>).value;
 
       // Update current beneficiary with civil registry data
       final updated = state.beneficiary?.copyWith(
@@ -165,13 +174,19 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
       if (state.isNew) {
         // Create new
-        final created = await _createUseCase.execute(
+        final createResult = await _createUseCase.execute(
           beneficiary.copyWith(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
             createdAt: now,
             updatedAt: now,
           ),
         );
+
+        if (createResult is Failure<Beneficiary>) {
+          throw Exception(createResult.error.message);
+        }
+
+        final created = (createResult as Success<Beneficiary>).value;
 
         // Log activity if available
         final logActivity = _logActivity;
@@ -201,9 +216,15 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         );
       } else {
         // Update existing
-        final updated = await _updateUseCase.execute(
+        final updateResult = await _updateUseCase.execute(
           beneficiary.copyWith(updatedAt: now),
         );
+
+        if (updateResult is Failure<Beneficiary>) {
+          throw Exception(updateResult.error.message);
+        }
+
+        final updated = (updateResult as Success<Beneficiary>).value;
 
         // Log activity if available
         final logActivity = _logActivity;
@@ -275,16 +296,15 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 }
 
 /// Provider for beneficiary form
-final beneficiaryFormProvider =
-    StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
-      final dependencies = ref.watch(beneficiaryDependenciesProvider);
-      final logActivity = ref.watch(logActivityUseCaseProvider);
+final beneficiaryFormProvider = StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
+  final dependencies = ref.watch(beneficiaryDependenciesProvider);
+  final logActivity = ref.watch(logActivityUseCaseProvider);
 
-      return BeneficiaryFormNotifier(
-        dependencies.createUseCase,
-        dependencies.updateUseCase,
-        dependencies.getUseCase,
-        dependencies.loadFromCivilRegistryUseCase,
-        logActivity: logActivity,
-      );
-    });
+  return BeneficiaryFormNotifier(
+    dependencies.createUseCase,
+    dependencies.updateUseCase,
+    dependencies.getUseCase,
+    dependencies.loadFromCivilRegistryUseCase,
+    logActivity: logActivity,
+  );
+});

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/entities/beneficiary.dart';
 import '../../providers/beneficiary_dependencies.dart';
+import '../../../../../core/error_handling/result.dart';
 
 /// 💾 Form Save Handler
 ///
@@ -22,10 +23,17 @@ class BeneficiaryFormSaveHandler {
       final repository = ref.read(beneficiaryRepositoryProvider);
 
       // Search for existing beneficiary with same national ID
-      final existingList = await repository.list(
+      final result = await repository.list(
         searchQuery: nationalId,
         limit: 5,
       );
+
+      if (result is Failure<List<Beneficiary>>) {
+        debugPrint('Error checking duplicate: ${result.error}');
+        return false; // Continue with save even if check fails
+      }
+
+      final existingList = (result as Success<List<Beneficiary>>).value;
 
       // Check if any result has exact match of national ID
       for (final b in existingList) {
