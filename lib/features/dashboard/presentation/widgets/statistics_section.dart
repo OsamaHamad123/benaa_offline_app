@@ -40,195 +40,202 @@ class StatCard extends StatelessWidget {
     }
     final trend = trendPercentage ?? calculatedTrend;
 
-    return Card(
-      elevation: 2,
-      shadowColor: color.withOpacity(0.25),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.06), color.withOpacity(0.12)],
+    return Semantics(
+      label:
+          '$title: $value${subtitle != null ? ', $subtitle' : ''}${trend != null ? ', تغير بنسبة ${trend.toStringAsFixed(1)}%' : ''}',
+      hint: onTap != null ? 'اضغط لعرض التفاصيل' : null,
+      button: onTap != null,
+      enabled: onTap != null,
+      child: Card(
+        elevation: 2,
+        shadowColor: color.withOpacity(0.25),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16.r),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [color.withOpacity(0.06), color.withOpacity(0.12)],
+            ),
           ),
-        ),
-        child: MicroInteractions.bounceButton(
-          onTap: onTap != null
-              ? () {
-                  HapticPatterns.selection();
-                  onTap!();
-                }
-              : null,
-          child: Padding(
-            padding: EdgeInsets.all(14.w),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Very tight vertical constraints occur in some test environments
-                // and on very small tiles. Render a compact horizontal layout
-                // when the available height is too small to fit the full card.
-                // Treat very small heights or very narrow widths as "compact" cases.
-                if (constraints.maxHeight < 110 || constraints.maxWidth < 80) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8.w),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10.r),
+          child: MicroInteractions.bounceButton(
+            onTap: onTap != null
+                ? () {
+                    HapticPatterns.selection();
+                    onTap!();
+                  }
+                : null,
+            child: Padding(
+              padding: EdgeInsets.all(14.w),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Very tight vertical constraints occur in some test environments
+                  // and on very small tiles. Render a compact horizontal layout
+                  // when the available height is too small to fit the full card.
+                  // Treat very small heights or very narrow widths as "compact" cases.
+                  if (constraints.maxHeight < 110 || constraints.maxWidth < 80) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8.w),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Icon(icon, color: color, size: 18.sp),
                         ),
-                        child: Icon(icon, color: color, size: 18.sp),
-                      ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Value (scale down if needed)
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  value,
-                                  style: TextStyle(
-                                    fontSize: 20.sp,
-                                    fontWeight: FontWeight.bold,
-                                    color: color,
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Value (scale down if needed)
+                              Flexible(
+                                fit: FlexFit.loose,
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    value,
+                                    style: TextStyle(
+                                      fontSize: 20.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: color,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: 2.h),
-                            Flexible(
-                              fit: FlexFit.loose,
-                              child: Text(
-                                title,
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: Colors.grey[700],
+                              SizedBox(height: 2.h),
+                              Flexible(
+                                fit: FlexFit.loose,
+                                child: Text(
+                                  title,
+                                  style: TextStyle(
+                                    fontSize: 10.sp,
+                                    color: Colors.grey[700],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (trend != null)
-                        Padding(
-                          padding: EdgeInsets.only(left: 6.w),
-                          child: TrendIndicator(
-                            percentChange: trend,
-                            isPositive: trend >= 0,
-                          ),
-                        )
-                      else if (onTap != null)
-                        Padding(
-                          padding: EdgeInsets.only(left: 6.w),
-                          child: Icon(
-                            Icons.arrow_forward_ios,
-                            size: 12.sp,
-                            color: color,
+                            ],
                           ),
                         ),
-                    ],
-                  );
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(10.w),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          child: Icon(icon, color: color, size: 22.sp),
-                        ),
-                        // Trend Indicator or Arrow
                         if (trend != null)
-                          TrendIndicator(
-                            percentChange: trend,
-                            isPositive: trend >= 0,
+                          Padding(
+                            padding: EdgeInsets.only(left: 6.w),
+                            child: TrendIndicator(
+                              percentChange: trend,
+                              isPositive: trend >= 0,
+                            ),
                           )
                         else if (onTap != null)
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 12.sp,
-                            color: color,
+                          Padding(
+                            padding: EdgeInsets.only(left: 6.w),
+                            child: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12.sp,
+                              color: color,
+                            ),
                           ),
                       ],
-                    ),
-                    // Use fixed small spacing instead of Spacer() to avoid overflow
-                    SizedBox(height: 6.h),
-                    // Use FittedBox to scale the numeric value down in very tight constraints
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          value,
-                          style: TextStyle(
-                            fontSize: 28.sp,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                            height: 1.0,
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(10.w),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Icon(icon, color: color, size: 22.sp),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          // Trend Indicator or Arrow
+                          if (trend != null)
+                            TrendIndicator(
+                              percentChange: trend,
+                              isPositive: trend >= 0,
+                            )
+                          else if (onTap != null)
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12.sp,
+                              color: color,
+                            ),
+                        ],
+                      ),
+                      // Use fixed small spacing instead of Spacer() to avoid overflow
+                      SizedBox(height: 6.h),
+                      // Use FittedBox to scale the numeric value down in very tight constraints
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            value,
+                            style: TextStyle(
+                              fontSize: 28.sp,
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                              height: 1.0,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Flexible(
-                      fit: FlexFit.loose,
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.grey[700],
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
                       SizedBox(height: 4.h),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6.w,
-                          vertical: 3.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
+                      Flexible(
+                        fit: FlexFit.loose,
                         child: Text(
-                          subtitle!,
+                          title,
                           style: TextStyle(
-                            fontSize: 10.sp,
-                            color: color,
+                            fontSize: 12.sp,
+                            color: Colors.grey[700],
                             fontWeight: FontWeight.w500,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      if (subtitle != null) ...[
+                        SizedBox(height: 4.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 3.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Text(
+                            subtitle!,
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: color,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ),

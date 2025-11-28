@@ -43,34 +43,39 @@ class PersonInfoCard extends StatelessWidget {
     // ⚡ Get ResponsiveValues once - avoid recalculating on every build
     final rv = ResponsiveUtils.getValues(context);
 
-    return Card(
-      elevation: 2,
-      shadowColor: _shadowColor,
-      margin: EdgeInsets.only(bottom: rv.spacing),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: _borderColor, width: 1.5),
-      ),
-      child: InkWell(
-        onTap: onAddAsBeneficiary,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: rv.padding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              const SizedBox(height: 16),
-              _buildDivider(),
-              const SizedBox(height: 16),
-              _buildPersonDetails(context),
-              if (expanded) ...[
+    return Semantics(
+      label: 'بطاقة معلومات ${person.fullName}, الرقم الوطني ${person.nationalId}',
+      hint: 'اضغط لإضافة كمستفيد',
+      button: true,
+      child: Card(
+        elevation: 2,
+        shadowColor: _shadowColor,
+        margin: EdgeInsets.only(bottom: rv.spacing),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: _borderColor, width: 1.5),
+        ),
+        child: InkWell(
+          onTap: onAddAsBeneficiary,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: rv.padding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
                 const SizedBox(height: 16),
-                _buildAdditionalInfo(context),
+                _buildDivider(),
+                const SizedBox(height: 16),
+                _buildPersonDetails(context),
+                if (expanded) ...[
+                  const SizedBox(height: 16),
+                  _buildAdditionalInfo(context),
+                ],
+                const SizedBox(height: 16),
+                _buildActions(context, rv),
               ],
-              const SizedBox(height: 16),
-              _buildActions(context, rv),
-            ],
+            ),
           ),
         ),
       ),
@@ -183,15 +188,19 @@ class PersonInfoCard extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => _copyNationalId(context),
-            icon: const Icon(Icons.copy, size: 18),
-            color: Colors.blue,
-            tooltip: 'نسخ الرقم',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.blue.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          Semantics(
+            label: 'نسخ الرقم الوطني ${person.nationalId}',
+            button: true,
+            child: IconButton(
+              onPressed: () => _copyNationalId(context),
+              icon: const Icon(Icons.copy, size: 18),
+              color: Colors.blue,
+              tooltip: 'نسخ الرقم',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.blue.withOpacity(0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
@@ -304,10 +313,8 @@ class PersonInfoCard extends StatelessWidget {
 
   /// Additional info (mother name, birth date)
   Widget _buildAdditionalInfo(BuildContext context) {
-    final hasMotherName =
-        person.motherName != null && person.motherName!.isNotEmpty;
-    final hasBirthDate =
-        person.birthDate != null && person.birthDate!.isNotEmpty;
+    final hasMotherName = person.motherName != null && person.motherName!.isNotEmpty;
+    final hasBirthDate = person.birthDate != null && person.birthDate!.isNotEmpty;
 
     if (!hasMotherName && !hasBirthDate) {
       return const SizedBox.shrink();
@@ -395,8 +402,7 @@ class PersonInfoCard extends StatelessWidget {
 
   /// Copy to clipboard
   void _copyToClipboard(BuildContext context) {
-    final text =
-        '''
+    final text = '''
 الاسم الكامل: ${person.fullName}
 الرقم الوطني: ${person.nationalId}
 الجنس: ${person.gender.arabicLabel}

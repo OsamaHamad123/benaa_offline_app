@@ -17,11 +17,19 @@ class LoadMoreButton extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: isSearching
-            ? const CircularProgressIndicator()
-            : ElevatedButton.icon(
-                onPressed: onPressed,
-                icon: const Icon(Icons.arrow_downward),
-                label: const Text('تحميل المزيد'),
+            ? Semantics(
+                label: 'جاري تحميل المزيد من النتائج',
+                child: const CircularProgressIndicator(),
+              )
+            : Semantics(
+                label: 'تحميل المزيد من النتائج',
+                hint: 'اضغط لعرض المزيد',
+                button: true,
+                child: ElevatedButton.icon(
+                  onPressed: onPressed,
+                  icon: const Icon(Icons.arrow_downward),
+                  label: const Text('تحميل المزيد'),
+                ),
               ),
       ),
     );

@@ -99,33 +99,44 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => ScaleTransitionWidget(
-        duration: AppDurations.fast,
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.r),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.delete_sweep, color: Colors.orange),
-              SizedBox(width: 12.w),
-              const Text('مسح الذاكرة المؤقتة'),
+      builder: (context) => Semantics(
+        label: 'مربع حوار تأكيد مسح الذاكرة المؤقتة',
+        child: ScaleTransitionWidget(
+          duration: AppDurations.fast,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.delete_sweep, color: Colors.orange),
+                SizedBox(width: 12.w),
+                const Text('مسح الذاكرة المؤقتة'),
+              ],
+            ),
+            content: const Text(
+              'سيتم مسح جميع الأنشطة المخزنة مؤقتاً. هل تريد المتابعة؟',
+            ),
+            actions: [
+              Semantics(
+                label: 'إلغاء مسح الذاكرة المؤقتة',
+                button: true,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('إلغاء'),
+                ),
+              ),
+              Semantics(
+                label: 'تأكيد مسح الذاكرة المؤقتة',
+                button: true,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  child: const Text('مسح'),
+                ),
+              ),
             ],
           ),
-          content: const Text(
-            'سيتم مسح جميع الأنشطة المخزنة مؤقتاً. هل تريد المتابعة؟',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: const Text('مسح'),
-            ),
-          ],
         ),
       ),
     );
