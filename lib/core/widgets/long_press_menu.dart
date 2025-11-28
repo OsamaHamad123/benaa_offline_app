@@ -128,7 +128,7 @@ class LongPressContextMenu {
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    HapticFeedback.selectionClick();
+                    HapticPatterns.selection();
                     item.onTap();
                   },
                 );

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../../../core/utils/haptic_patterns.dart';
 
 /// 🎯 Quick Actions Floating Action Button
 class QuickActionsFab extends StatefulWidget {
@@ -60,17 +60,17 @@ class _QuickActionsFabState extends State<QuickActionsFab>
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
         _controller.forward();
-        HapticFeedback.mediumImpact();
+        HapticPatterns.selection();
       } else {
         _controller.reverse();
-        HapticFeedback.lightImpact();
+        HapticPatterns.light();
       }
     });
   }
 
   void _handleAction(VoidCallback? action) {
     if (action != null) {
-      HapticFeedback.lightImpact();
+      HapticPatterns.light();
       action();
       _toggle();
     }
@@ -253,7 +253,7 @@ class QuickActionsSheet extends StatelessWidget {
   Widget _buildActionTile(BuildContext context, QuickAction action) {
     return InkWell(
       onTap: () {
-        HapticFeedback.lightImpact();
+        HapticPatterns.light();
         Navigator.pop(context);
         action.onTap();
       },

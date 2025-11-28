@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../utils/haptic_patterns.dart';
 
 /// 🎯 Quick Actions Menu - قائمة إجراءات سريعة
 ///
@@ -61,7 +61,7 @@ class _QuickActionsMenuState extends State<QuickActionsMenu>
   }
 
   void _toggle() {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.selection();
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
@@ -73,7 +73,7 @@ class _QuickActionsMenuState extends State<QuickActionsMenu>
   }
 
   void _handleActionTap(QuickAction action) {
-    HapticFeedback.lightImpact();
+    HapticPatterns.light();
     _toggle(); // Close menu
     action.onTap();
   }
