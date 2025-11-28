@@ -26,6 +26,7 @@ import '../../../../core/monitoring/app_monitoring.dart';
 import '../../../../core/performance/widget_performance_analyzer.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
+import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/design_system/app_animations.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
@@ -374,7 +375,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
+              child: SmallLoadingIndicator(),
             ),
           );
         }
@@ -437,7 +438,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
+              child: SmallLoadingIndicator(),
             ),
           );
         }
