@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
+import '../../core/widgets/loading_state.dart';
 
 /// Custom Reports Page - صفحة التقارير المخصصة
 /// تسمح للمستخدم بإنشاء تقارير حسب احتياجاته
@@ -198,16 +199,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
             height: 50.h,
             child: ElevatedButton.icon(
               onPressed: _isGenerating ? null : _generateReport,
-              icon: _isGenerating
-                  ? SizedBox(
-                      width: 20.w,
-                      height: 20.h,
-                      child: const CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.download),
+              icon: _isGenerating ? const SmallLoadingIndicator(color: Colors.white) : const Icon(Icons.download),
               label: Text(
                 _isGenerating ? 'جاري الإنشاء...' : 'إنشاء وتصدير التقرير',
                 style: TextStyle(fontSize: 16.sp),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/widgets/beneficiary/beneficiary_info_card.dart';
 import '../../../../core/widgets/beneficiary/date_time_picker_field.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
@@ -15,8 +16,7 @@ class RecordVisitPageClean extends ConsumerStatefulWidget {
   const RecordVisitPageClean({super.key, required this.beneficiary});
 
   @override
-  ConsumerState<RecordVisitPageClean> createState() =>
-      _RecordVisitPageCleanState();
+  ConsumerState<RecordVisitPageClean> createState() => _RecordVisitPageCleanState();
 }
 
 class _RecordVisitPageCleanState extends ConsumerState<RecordVisitPageClean> {
@@ -79,9 +79,7 @@ class _RecordVisitPageCleanState extends ConsumerState<RecordVisitPageClean> {
       syncState: 'pending',
     );
 
-    final success = await ref
-        .read(visitNotifierProvider.notifier)
-        .createNewVisit(visit);
+    final success = await ref.read(visitNotifierProvider.notifier).createNewVisit(visit);
 
     if (success && mounted) {
       context.showSuccess('تم حفظ الزيارة بنجاح');
@@ -197,11 +195,7 @@ class _RecordVisitPageCleanState extends ConsumerState<RecordVisitPageClean> {
                   ),
                 ),
                 child: visitState.isLoading
-                    ? SizedBox(
-                        height: 20.h,
-                        width: 20.w,
-                        child: const CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const SmallLoadingIndicator()
                     : Text('حفظ الزيارة', style: TextStyle(fontSize: 16.sp)),
               ),
             ],

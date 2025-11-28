@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/debouncer.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../theme/app_colors.dart';
@@ -316,7 +317,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.all(16.r),
-                        child: const CircularProgressIndicator(),
+                        child: const SmallLoadingIndicator(),
                       ),
                     );
                   }
