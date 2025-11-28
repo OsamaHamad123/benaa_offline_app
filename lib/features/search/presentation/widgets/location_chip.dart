@@ -31,32 +31,35 @@ class LocationChip extends StatelessWidget {
 
     final locationText = _buildLocationText();
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.teal.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.teal.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showIcon) ...[
-            Icon(Icons.location_on, color: Colors.teal, size: 16),
-            SizedBox(width: 6),
-          ],
-          Flexible(
-            child: Text(
-              locationText,
-              style: TextStyle(
-                color: Colors.teal.shade700,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+    return Semantics(
+      label: 'الموقع: $locationText',
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.teal.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.teal.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showIcon) ...[
+              Icon(Icons.location_on, color: Colors.teal, size: 16),
+              SizedBox(width: 6),
+            ],
+            Flexible(
+              child: Text(
+                locationText,
+                style: TextStyle(
+                  color: Colors.teal.shade700,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

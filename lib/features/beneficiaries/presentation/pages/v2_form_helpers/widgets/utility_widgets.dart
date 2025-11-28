@@ -31,8 +31,7 @@ class LoadingOverlay extends StatelessWidget {
         if (isLoading)
           Positioned.fill(
             child: Container(
-              color:
-                  backgroundColor ?? theme.colorScheme.surface.withOpacity(0.8),
+              color: backgroundColor ?? theme.colorScheme.surface.withOpacity(0.8),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -87,9 +86,7 @@ class DateRangePickerButton extends StatelessWidget {
       onPressed: () => _showDateRangePicker(context),
       icon: Icon(icon, size: 18),
       label: Text(
-        selectedRange != null
-            ? '${_formatDate(selectedRange!.start)} - ${_formatDate(selectedRange!.end)}'
-            : label,
+        selectedRange != null ? '${_formatDate(selectedRange!.start)} - ${_formatDate(selectedRange!.end)}' : label,
         style: TextStyle(fontSize: 13.sp),
       ),
       style: OutlinedButton.styleFrom(
@@ -160,8 +157,7 @@ class ColorPickerButton extends StatelessWidget {
   }
 
   void _showColorPicker(BuildContext context) {
-    final defaultColors =
-        colors ??
+    final defaultColors = colors ??
         [
           Colors.red,
           Colors.pink,
@@ -209,9 +205,7 @@ class ColorPickerButton extends StatelessWidget {
                     width: isSelected ? 3 : 1,
                   ),
                 ),
-                child: isSelected
-                    ? const Icon(Icons.check, color: Colors.white)
-                    : null,
+                child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
               ),
             );
           }).toList(),
@@ -443,37 +437,40 @@ class NotificationBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        child,
-        if (count > 0)
-          Positioned(
-            top: -4.h,
-            left: -4.w,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: count > 9 ? 6.w : 4.w,
-                vertical: 2.h,
-              ),
-              decoration: BoxDecoration(
-                color: backgroundColor ?? theme.colorScheme.error,
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: theme.colorScheme.surface, width: 2),
-              ),
-              constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
-              child: Text(
-                count > 99 ? '99+' : count.toString(),
-                style: TextStyle(
-                  fontSize: 10.sp,
-                  color: textColor ?? Colors.white,
-                  fontWeight: FontWeight.bold,
+    return Semantics(
+      label: count > 0 ? 'لديك $count إشعار' : null,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          child,
+          if (count > 0)
+            Positioned(
+              top: -4.h,
+              left: -4.w,
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: count > 9 ? 6.w : 4.w,
+                  vertical: 2.h,
                 ),
-                textAlign: TextAlign.center,
+                decoration: BoxDecoration(
+                  color: backgroundColor ?? theme.colorScheme.error,
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: theme.colorScheme.surface, width: 2),
+                ),
+                constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
+                child: Text(
+                  count > 99 ? '99+' : count.toString(),
+                  style: TextStyle(
+                    fontSize: 10.sp,
+                    color: textColor ?? Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -497,8 +494,7 @@ class SkeletonLoader extends StatefulWidget {
   State<SkeletonLoader> createState() => _SkeletonLoaderState();
 }
 
-class _SkeletonLoaderState extends State<SkeletonLoader>
-    with SingleTickerProviderStateMixin {
+class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 

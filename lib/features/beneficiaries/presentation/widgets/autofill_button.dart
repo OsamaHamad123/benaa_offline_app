@@ -68,38 +68,46 @@ class _AutofillButtonState extends State<AutofillButton> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: Transform.rotate(
-            angle: _rotationAnimation.value,
-            child: ElevatedButton.icon(
-              onPressed: widget.isEnabled
-                  ? () {
-                      HapticPatterns.selection();
-                      widget.onPressed();
-                    }
-                  : null,
-              icon: Icon(Icons.bolt_rounded, size: 20.sp),
-              label: Text(
-                widget.filledFieldsCount > 0 ? 'تعبئة ${widget.filledFieldsCount} حقل تلقائياً' : 'تعبئة تلقائية',
-                style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber.shade600,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r),
+    return Semantics(
+      label: widget.filledFieldsCount > 0
+          ? 'تعبئة ${widget.filledFieldsCount} حقل تلقائياً من السجل المدني'
+          : 'تعبئة تلقائية من السجل المدني',
+      hint: 'اضغط لملء البيانات تلقائياً',
+      button: true,
+      enabled: widget.isEnabled,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: Transform.rotate(
+              angle: _rotationAnimation.value,
+              child: ElevatedButton.icon(
+                onPressed: widget.isEnabled
+                    ? () {
+                        HapticPatterns.selection();
+                        widget.onPressed();
+                      }
+                    : null,
+                icon: Icon(Icons.bolt_rounded, size: 20.sp),
+                label: Text(
+                  widget.filledFieldsCount > 0 ? 'تعبئة ${widget.filledFieldsCount} حقل تلقائياً' : 'تعبئة تلقائية',
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
                 ),
-                elevation: 4,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber.shade600,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  elevation: 4,
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
