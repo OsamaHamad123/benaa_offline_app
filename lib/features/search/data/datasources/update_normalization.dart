@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/utils/debug_logger.dart';
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
+
 import 'civil_registry_database.dart';
 import 'text_normalization_service.dart';
 
@@ -12,7 +13,7 @@ class UpdateNormalizationUtility {
   static Future<void> updateAllNormalization() async {
     final db = await CivilRegistryDatabase.instance.database;
 
-    DebugLogger.info('🔄 Starting normalization update...');
+    UnifiedLogger.info('🔄 Starting normalization update...');
     final stopwatch = Stopwatch()..start();
 
     // Get total count
@@ -20,7 +21,7 @@ class UpdateNormalizationUtility {
       'SELECT COUNT(*) as total FROM persons',
     );
     final total = countResult.first['total'] as int;
-    DebugLogger.info('📊 Total records to update: ${_formatNumber(total)}');
+    UnifiedLogger.info('📊 Total records to update: ${_formatNumber(total)}');
 
     // Process in batches to avoid memory issues
     const batchSize = 10000;
@@ -28,7 +29,7 @@ class UpdateNormalizationUtility {
     var batch = db.batch();
 
     for (var offset = 0; offset < total; offset += batchSize) {
-      DebugLogger.info(
+      UnifiedLogger.info(
         '📦 Processing batch: ${offset + 1} to ${offset + batchSize}...',
       );
 
@@ -68,8 +69,7 @@ class UpdateNormalizationUtility {
       batch = db.batch();
 
       // Progress
-      final progress = ((offset + records.length) / total * 100)
-          .toStringAsFixed(1);
+      final progress = ((offset + records.length) / total * 100).toStringAsFixed(1);
       if (kDebugMode) {
         debugPrint(
           '✅ Progress: $progress% (${_formatNumber(offset + records.length)}/${_formatNumber(total)})',
@@ -78,12 +78,12 @@ class UpdateNormalizationUtility {
     }
 
     stopwatch.stop();
-    DebugLogger.log('');
-    DebugLogger.success('🎉 Normalization update completed!');
-    DebugLogger.info('📊 Updated records: ${_formatNumber(updated)}');
-    DebugLogger.info('⏱️ Time taken: ${stopwatch.elapsed.inSeconds}s');
-    DebugLogger.log('');
-    DebugLogger.info('🔍 Testing sample records:');
+    UnifiedLogger.log('');
+    UnifiedLogger.success('🎉 Normalization update completed!');
+    UnifiedLogger.info('📊 Updated records: ${_formatNumber(updated)}');
+    UnifiedLogger.info('⏱️ Time taken: ${stopwatch.elapsed.inSeconds}s');
+    UnifiedLogger.log('');
+    UnifiedLogger.info('🔍 Testing sample records:');
     await _testSampleRecords(db);
   }
 
@@ -108,11 +108,10 @@ class UpdateNormalizationUtility {
       );
 
       if (results.isNotEmpty) {
-        DebugLogger.log('');
-        DebugLogger.info('🔍 Testing: $name');
+        UnifiedLogger.log('');
+        UnifiedLogger.info('🔍 Testing: $name');
         for (final row in results) {
-          final fullName =
-              '${row['CI_FIRST_ARB']} ${row['CI_FATHER_ARB']} ${row['CI_FAMILY_ARB']}';
+          final fullName = '${row['CI_FIRST_ARB']} ${row['CI_FATHER_ARB']} ${row['CI_FAMILY_ARB']}';
           if (kDebugMode) {
             debugPrint('  Original: $fullName');
             debugPrint('  Normalized: ${row['full_name_norm']}');
@@ -125,9 +124,9 @@ class UpdateNormalizationUtility {
   /// Format number with thousands separator
   static String _formatNumber(int number) {
     return number.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
   }
 
   /// Quick test: Check if normalization is working

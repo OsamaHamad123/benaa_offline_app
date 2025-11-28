@@ -1,8 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:benaa_offline_app/core/constants/search_constants.dart';
-import 'package:benaa_offline_app/core/utils/app_logger.dart';
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'package:benaa_offline_app/features/search/domain/failures/search_failures.dart';
-import 'package:benaa_offline_app/core/utils/debug_logger.dart';
 import 'person_mapper.dart';
 import 'text_normalization_service.dart';
 import 'search_query_builder.dart';
@@ -49,9 +48,8 @@ class CivilRegistrySearchQueries {
     try {
       final cleaned = nationalId.trim().replaceAll(' ', '').replaceAll('-', '');
 
-      if (cleaned.isEmpty ||
-          cleaned.length < SearchConstants.minNationalIdLength) {
-        AppLogger.logSearch(
+      if (cleaned.isEmpty || cleaned.length < SearchConstants.minNationalIdLength) {
+        UnifiedLogger.logSearch(
           query: 'NID: $nationalId',
           resultsCount: 0,
           durationMs: stopwatch.elapsedMilliseconds,
@@ -74,7 +72,7 @@ class CivilRegistrySearchQueries {
 
       if (results.isNotEmpty) {
         final person = PersonMapper.fromDatabase(results.first);
-        AppLogger.logSearch(
+        UnifiedLogger.logSearch(
           query: 'NID: $nationalId',
           resultsCount: 1,
           durationMs: stopwatch.elapsedMilliseconds,
@@ -82,7 +80,7 @@ class CivilRegistrySearchQueries {
         return person;
       }
 
-      AppLogger.logSearch(
+      UnifiedLogger.logSearch(
         query: 'NID: $nationalId',
         resultsCount: 0,
         durationMs: stopwatch.elapsedMilliseconds,
@@ -90,7 +88,7 @@ class CivilRegistrySearchQueries {
       return null;
     } catch (e, st) {
       stopwatch.stop();
-      AppLogger.error('Error in searchByNationalId', error: e, stackTrace: st);
+      UnifiedLogger.error('Error in searchByNationalId', error: e, stackTrace: st);
       throw DatabaseQueryFailure(e.toString());
     }
   }
@@ -123,19 +121,18 @@ class CivilRegistrySearchQueries {
     final stopwatch = Stopwatch()..start();
 
     // Cache key with age filter
-    final cacheKey =
-        '$normalized|$governorate|$genderCode|$minAge|$maxAge|$limit|$offset';
+    final cacheKey = '$normalized|$governorate|$genderCode|$minAge|$maxAge|$limit|$offset';
 
     // Check cache (instant 0-2ms)
     if (_searchCache.containsKey(cacheKey)) {
       final cached = _searchCache[cacheKey]!;
       stopwatch.stop();
-      AppLogger.logCache(
+      UnifiedLogger.logCache(
         key: cacheKey,
         hit: true,
         cacheSize: _searchCache.length,
       );
-      AppLogger.logSearch(
+      UnifiedLogger.logSearch(
         query: query,
         resultsCount: cached.length,
         durationMs: stopwatch.elapsedMilliseconds,
@@ -143,7 +140,7 @@ class CivilRegistrySearchQueries {
       return cached;
     }
 
-    AppLogger.logCache(
+    UnifiedLogger.logCache(
       key: cacheKey,
       hit: false,
       cacheSize: _searchCache.length,
@@ -223,8 +220,7 @@ class CivilRegistrySearchQueries {
 
         if (thirdWord != null) {
           // ⚡ ENHANCED: Try compound names AND hamza variations
-          final thirdVariations =
-              TextNormalizationService.generateAllSearchVariations(thirdWord);
+          final thirdVariations = TextNormalizationService.generateAllSearchVariations(thirdWord);
 
           if (thirdVariations.length > 1) {
             final placeholders = List.filled(
@@ -241,8 +237,7 @@ class CivilRegistrySearchQueries {
 
         if (fourthWord != null) {
           // ⚡ ENHANCED: Try compound names AND hamza variations
-          final fourthVariations =
-              TextNormalizationService.generateAllSearchVariations(fourthWord);
+          final fourthVariations = TextNormalizationService.generateAllSearchVariations(fourthWord);
 
           if (fourthVariations.length > 1) {
             final placeholders = List.filled(
@@ -278,18 +273,18 @@ class CivilRegistrySearchQueries {
 
         if (allResults.isNotEmpty) {
           if (elapsedMs > 200) {
-            DebugLogger.warning(
+            UnifiedLogger.warning(
               '│ Indexed search took ${elapsedMs}ms for "$query"',
             );
           } else {
-            DebugLogger.info(
+            UnifiedLogger.info(
               '│ ✅ Indexed search: ${elapsedMs}ms for "$query" (${allResults.length} results)',
             );
           }
 
           final persons = PersonMapper.fromDatabaseListFast(allResults);
           _searchCache[cacheKey] = persons;
-          AppLogger.logSearch(
+          UnifiedLogger.logSearch(
             query: query,
             resultsCount: persons.length,
             durationMs: elapsedMs,
@@ -300,8 +295,7 @@ class CivilRegistrySearchQueries {
         // 🚀 SMART FALLBACK: If no exact matches, try progressive relaxation
         if (allResults.isEmpty) {
           // Skip Phase 2 for very common names (too slow!)
-          final isVeryCommonName =
-              firstWord.length <= 4 &&
+          final isVeryCommonName = firstWord.length <= 4 &&
               [
                 'محمد',
                 'احمد',
@@ -376,9 +370,7 @@ class CivilRegistrySearchQueries {
           // Phase 3: Prefix all (ONLY if still no results)
           if (allResults.isEmpty) {
             // 🚀 SMART: For 4 words, try reducing to 3 first (MUCH faster!)
-            final wordsToSearch = smartWords.length >= 4
-                ? 3
-                : smartWords.length;
+            final wordsToSearch = smartWords.length >= 4 ? 3 : smartWords.length;
 
             final prefixConditions = <String>[];
             final prefixParams = <dynamic>[];
@@ -427,8 +419,8 @@ class CivilRegistrySearchQueries {
             final smartLimit = searchComplexity >= 4
                 ? 50 // 4 words = very specific, need more results
                 : searchComplexity == 3
-                ? 100 // 3 words = specific enough
-                : (isVeryCommonName ? 50 : limit);
+                    ? 100 // 3 words = specific enough
+                    : (isVeryCommonName ? 50 : limit);
 
             final prefixResults = await _db.rawQuery(
               '''
@@ -509,7 +501,7 @@ class CivilRegistrySearchQueries {
         );
       }
     } catch (e, st) {
-      AppLogger.error('Search query error', error: e, stackTrace: st);
+      UnifiedLogger.error('Search query error', error: e, stackTrace: st);
       results = [];
     }
 
@@ -518,7 +510,7 @@ class CivilRegistrySearchQueries {
     _cacheResults(cacheKey, persons);
 
     stopwatch.stop();
-    AppLogger.logSearch(
+    UnifiedLogger.logSearch(
       query: query,
       resultsCount: persons.length,
       durationMs: stopwatch.elapsedMilliseconds,
@@ -581,7 +573,7 @@ class CivilRegistrySearchQueries {
     if (_countCache.containsKey(cacheKey)) {
       final count = _countCache[cacheKey]!;
       stopwatch.stop();
-      AppLogger.logCache(
+      UnifiedLogger.logCache(
         key: 'COUNT:$cacheKey',
         hit: true,
         cacheSize: _countCache.length,
@@ -589,7 +581,7 @@ class CivilRegistrySearchQueries {
       return count;
     }
 
-    AppLogger.logCache(
+    UnifiedLogger.logCache(
       key: 'COUNT:$cacheKey',
       hit: false,
       cacheSize: _countCache.length,
@@ -634,8 +626,7 @@ class CivilRegistrySearchQueries {
 
     // 🚀 OPTIMIZED: Fast indexed count with range optimization
     // Use exact match first, then bounded prefix for speed
-    final exactCount =
-        Sqflite.firstIntValue(
+    final exactCount = Sqflite.firstIntValue(
           await _db.rawQuery(
             '''
         SELECT COUNT(*) as count
@@ -652,8 +643,7 @@ class CivilRegistrySearchQueries {
       count = exactCount;
     } else {
       // Try prefix with range bounds (faster than unbounded LIKE)
-      count =
-          Sqflite.firstIntValue(
+      count = Sqflite.firstIntValue(
             await _db.rawQuery(
               '''
           SELECT COUNT(*) as count
@@ -670,7 +660,7 @@ class CivilRegistrySearchQueries {
     _cacheCount(cacheKey, count);
 
     stopwatch.stop();
-    AppLogger.logQuery(
+    UnifiedLogger.logQuery(
       query: 'COUNT: $query',
       durationMs: stopwatch.elapsedMilliseconds,
       resultCount: count,

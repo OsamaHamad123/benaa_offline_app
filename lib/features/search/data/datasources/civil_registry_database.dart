@@ -2,7 +2,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/utils/debug_logger.dart';
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
+
 import 'database_migrations_service.dart';
 import 'civil_registry_search_queries.dart';
 import '../../domain/entities/civil_person.dart';
@@ -77,19 +78,19 @@ class CivilRegistryDatabase {
       final needsOptimization = await _needsOptimization(db);
 
       if (needsOptimization) {
-        DebugLogger.info('⏳ Optimizing database for first use...');
+        UnifiedLogger.info('⏳ Optimizing database for first use...');
         await _optimizeDatabase(db);
-        DebugLogger.success('✅ Database optimization complete!');
+        UnifiedLogger.success('✅ Database optimization complete!');
       } else {
-        DebugLogger.info('✅ Database already optimized, skipping...');
+        UnifiedLogger.info('✅ Database already optimized, skipping...');
       }
 
       // ⚡ Optimized indexes setup - MUST run synchronously for fast search!
-      DebugLogger.info(
+      UnifiedLogger.info(
         '⏳ Setting up optimized indexes for ultra-fast search...',
       );
       await DatabaseMigrationsService.ensureOptimizedIndexes(db);
-      DebugLogger.success('Optimized indexes ready!');
+      UnifiedLogger.success('Optimized indexes ready!');
 
       // ⚠️ Background migrations DISABLED to prevent lag after fetch
       // These were causing heavy GC and app slowdown:
@@ -104,7 +105,7 @@ class CivilRegistryDatabase {
 
       return db;
     } catch (e) {
-      DebugLogger.error('Database error', e);
+      UnifiedLogger.error('Database error', error: e);
       rethrow;
     }
   }
@@ -179,16 +180,16 @@ class CivilRegistryDatabase {
   Future<void> _optimizeDatabase(Database db) async {
     try {
       // 1️⃣ ANALYZE - Update query optimizer statistics
-      DebugLogger.info('  📊 Running ANALYZE...');
+      UnifiedLogger.info('  📊 Running ANALYZE...');
       await db.rawQuery('ANALYZE');
 
       // 2️⃣ Set optimization marker to avoid re-running
-      DebugLogger.info('  ✅ Setting optimization marker...');
+      UnifiedLogger.info('  ✅ Setting optimization marker...');
       await db.rawQuery('PRAGMA application_id = 0xBEAA'); // BEAA = بناء
 
-      DebugLogger.success('Database optimization complete! 🚀');
+      UnifiedLogger.success('Database optimization complete! 🚀');
     } catch (e) {
-      DebugLogger.error('Database optimization failed', e);
+      UnifiedLogger.error('Database optimization failed', error: e);
       // Don't rethrow - app should still work even if optimization fails
     }
   }

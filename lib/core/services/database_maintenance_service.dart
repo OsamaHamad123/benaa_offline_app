@@ -1,6 +1,6 @@
-﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_constants.dart';
-import '../utils/debug_logger.dart';
 import '../../data/db/drift_database.dart';
 
 /// Database Maintenance Service
@@ -25,9 +25,7 @@ class DatabaseMaintenanceService {
   /// VACUUM - Rebuild database file to reduce size and improve performance
   Future<void> _checkAndVacuum() async {
     final lastVacuum = prefs.getString(_lastVacuumKey);
-    final shouldVacuum =
-        lastVacuum == null ||
-        DateTime.now().difference(DateTime.parse(lastVacuum)) > _vacuumInterval;
+    final shouldVacuum = lastVacuum == null || DateTime.now().difference(DateTime.parse(lastVacuum)) > _vacuumInterval;
     if (shouldVacuum) {
       await vacuum();
       await prefs.setString(_lastVacuumKey, DateTime.now().toIso8601String());
@@ -38,9 +36,7 @@ class DatabaseMaintenanceService {
   Future<void> _checkAndAnalyze() async {
     final lastAnalyze = prefs.getString(_lastAnalyzeKey);
     final shouldAnalyze =
-        lastAnalyze == null ||
-        DateTime.now().difference(DateTime.parse(lastAnalyze)) >
-            _analyzeInterval;
+        lastAnalyze == null || DateTime.now().difference(DateTime.parse(lastAnalyze)) > _analyzeInterval;
     if (shouldAnalyze) {
       await analyze();
       await prefs.setString(_lastAnalyzeKey, DateTime.now().toIso8601String());
@@ -51,9 +47,9 @@ class DatabaseMaintenanceService {
   Future<void> vacuum() async {
     try {
       await database.customStatement('VACUUM;');
-      DebugLogger.success('Database VACUUM completed successfully');
+      UnifiedLogger.success('Database VACUUM completed successfully');
     } catch (e) {
-      DebugLogger.error('Database VACUUM failed', e);
+      UnifiedLogger.error('Database VACUUM failed', error: e);
     }
   }
 
@@ -61,9 +57,9 @@ class DatabaseMaintenanceService {
   Future<void> analyze() async {
     try {
       await database.customStatement('ANALYZE;');
-      DebugLogger.success('Database ANALYZE completed successfully');
+      UnifiedLogger.success('Database ANALYZE completed successfully');
     } catch (e) {
-      DebugLogger.error('Database ANALYZE failed', e);
+      UnifiedLogger.error('Database ANALYZE failed', error: e);
     }
   }
 
@@ -78,7 +74,7 @@ class DatabaseMaintenanceService {
       final bytes = result.read<int>('size');
       return bytes / (1024 * 1024); // Convert to MB
     } catch (e) {
-      DebugLogger.error('Failed to get database size', e);
+      UnifiedLogger.error('Failed to get database size', error: e);
       return 0.0;
     }
   }
@@ -107,12 +103,8 @@ class DatabaseMaintenanceService {
       'databaseSize': dbSize,
       'lastVacuum': lastVacuum != null ? DateTime.parse(lastVacuum) : null,
       'lastAnalyze': lastAnalyze != null ? DateTime.parse(lastAnalyze) : null,
-      'daysSinceVacuum': lastVacuum != null
-          ? DateTime.now().difference(DateTime.parse(lastVacuum)).inDays
-          : null,
-      'daysSinceAnalyze': lastAnalyze != null
-          ? DateTime.now().difference(DateTime.parse(lastAnalyze)).inDays
-          : null,
+      'daysSinceVacuum': lastVacuum != null ? DateTime.now().difference(DateTime.parse(lastVacuum)).inDays : null,
+      'daysSinceAnalyze': lastAnalyze != null ? DateTime.now().difference(DateTime.parse(lastAnalyze)).inDays : null,
     };
   }
 }

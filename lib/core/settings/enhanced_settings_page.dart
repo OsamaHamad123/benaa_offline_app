@@ -4,7 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../widgets/modern_sliver_app_bar.dart';
 import 'settings_provider.dart';
-import '../error_handling/error_handler.dart'; // For EnhancedSnackbar
+import '../error_handling/error_handler.dart';
 
 /// 🎯 Enhanced Settings Page - صفحة الإعدادات المحسّنة
 class EnhancedSettingsPage extends ConsumerWidget {
