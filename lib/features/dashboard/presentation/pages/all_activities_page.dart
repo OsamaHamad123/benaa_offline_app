@@ -7,7 +7,7 @@ import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/ux/ux_widgets.dart';
-import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/error_handling/error_handler.dart'; // For EnhancedSnackbar
 import '../../../../theme/app_colors.dart';
 import '../../domain/entities/activity.dart';
 import '../widgets/activities_section.dart';
