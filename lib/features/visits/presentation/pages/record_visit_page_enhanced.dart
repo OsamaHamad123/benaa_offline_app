@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // 🔥 Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:uuid/uuid.dart'; // 🔥 UUID للـ ID الآمن
@@ -11,6 +10,7 @@ import '../../domain/entities/visit_entity.dart';
 import '../providers/visit_providers.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// Record Visit Page - Enhanced Version 🔥
 class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
@@ -19,12 +19,10 @@ class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
   const RecordVisitPageEnhanced({super.key, required this.beneficiary});
 
   @override
-  ConsumerState<RecordVisitPageEnhanced> createState() =>
-      _RecordVisitPageEnhancedState();
+  ConsumerState<RecordVisitPageEnhanced> createState() => _RecordVisitPageEnhancedState();
 }
 
-class _RecordVisitPageEnhancedState
-    extends ConsumerState<RecordVisitPageEnhanced> {
+class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhanced> {
   final _formKey = GlobalKey<FormState>();
   final _staffNameController = TextEditingController();
   final _notesController = TextEditingController();
@@ -239,7 +237,7 @@ class _RecordVisitPageEnhancedState
           ),
         );
 
-        HapticFeedback.mediumImpact();
+        HapticPatterns.success();
 
         // Save staff name for next time
         try {
@@ -252,7 +250,7 @@ class _RecordVisitPageEnhancedState
           // Silently fail - not critical
         }
       } else if (mounted) {
-        HapticFeedback.heavyImpact();
+        HapticPatterns.error();
         final errorMessage = ref.read(visitNotifierProvider).errorMessage;
         EnhancedSnackbar.showError(
           context,
@@ -261,7 +259,7 @@ class _RecordVisitPageEnhancedState
       }
     } catch (e) {
       if (mounted) {
-        HapticFeedback.heavyImpact();
+        HapticPatterns.error();
         GlobalErrorHandler.handleError(
           context,
           AppError(

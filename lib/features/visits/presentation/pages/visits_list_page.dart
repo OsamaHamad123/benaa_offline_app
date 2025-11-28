@@ -1,12 +1,12 @@
 import 'package:benaa_offline_app/theme/app_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../domain/entities/visit_entity.dart';
 import '../providers/visit_providers.dart';
@@ -21,8 +21,7 @@ class VisitsListPage extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPage> createState() => _VisitsListPageState();
 }
 
-class _VisitsListPageState extends ConsumerState<VisitsListPage>
-    with SingleTickerProviderStateMixin {
+class _VisitsListPageState extends ConsumerState<VisitsListPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   DateTime _selectedMonth = DateTime.now();
   String _selectedFilter = 'all'; // all, pending, submitted
@@ -47,9 +46,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
     try {
       // Load visits from provider
       if (widget.beneficiaryId != null) {
-        await ref
-            .read(visitNotifierProvider.notifier)
-            .loadBeneficiaryVisits(widget.beneficiaryId!);
+        await ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId!);
       }
 
       final state = ref.read(visitNotifierProvider);
@@ -80,7 +77,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
   }
 
   Future<void> _exportVisits() async {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.selection();
 
     await showDialog(
       context: context,
@@ -295,8 +292,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
                     size: 20.sp,
                   ),
                 ),
-                if (index < _visits.length - 1)
-                  Container(width: 2, height: 60.h, color: Colors.grey[300]),
+                if (index < _visits.length - 1) Container(width: 2, height: 60.h, color: Colors.grey[300]),
               ],
             ),
           ),
