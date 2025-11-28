@@ -61,9 +61,9 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
           child: Text(
             'المرفقات${state.attachments.isNotEmpty ? ' (${state.attachments.length})' : ''}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.blueGrey,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey,
+                ),
           ),
         ),
         if (!readOnly && state.attachments.isNotEmpty)
@@ -71,9 +71,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
             icon: Icon(Icons.refresh, size: 20.sp),
             tooltip: 'تحديث',
             onPressed: () {
-              ref
-                  .read(attachmentsProvider(beneficiaryId).notifier)
-                  .loadAttachments(beneficiaryId);
+              ref.read(attachmentsProvider(beneficiaryId).notifier).loadAttachments(beneficiaryId);
             },
           ),
       ],
@@ -136,9 +134,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
             SizedBox(height: 16.h),
             OutlinedButton.icon(
               onPressed: () {
-                ref
-                    .read(attachmentsProvider(beneficiaryId).notifier)
-                    .loadAttachments(beneficiaryId);
+                ref.read(attachmentsProvider(beneficiaryId).notifier).loadAttachments(beneficiaryId);
               },
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
@@ -212,9 +208,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
               attachment: attachment,
               onTap: () => _openAttachment(context, attachment),
               onShare: () => _shareAttachment(context, attachment),
-              onDelete: readOnly
-                  ? null
-                  : () => _deleteAttachment(context, ref, attachment),
+              onDelete: readOnly ? null : () => _deleteAttachment(context, ref, attachment),
             );
           },
         ),
@@ -239,6 +233,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   Future<void> _showAddOptions(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
@@ -705,9 +700,8 @@ class _EnhancedAttachmentCard extends StatelessWidget {
 
   Widget _buildThumbnail(BuildContext context) {
     if (attachment.isImage) {
-      final thumbnailFile = attachment.thumbnailPath != null
-          ? File(attachment.thumbnailPath!)
-          : File(attachment.filePath);
+      final thumbnailFile =
+          attachment.thumbnailPath != null ? File(attachment.thumbnailPath!) : File(attachment.filePath);
 
       return Container(
         width: double.infinity,
@@ -718,8 +712,7 @@ class _EnhancedAttachmentCard extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (_, __, ___) =>
-              _buildIcon(Icons.broken_image, Colors.red),
+          errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, Colors.red),
         ),
       );
     } else if (attachment.isPdf) {
