@@ -225,6 +225,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const GovernorateReportSheet(),
     );
   }
@@ -475,6 +476,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const CategoryReportSheet(),
     );
   }
@@ -483,6 +485,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const GenderReportSheet(),
     );
   }
@@ -491,6 +494,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const AgeReportSheet(),
     );
   }
