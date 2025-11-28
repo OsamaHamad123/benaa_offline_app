@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 // import 'package:device_info_plus/device_info_plus.dart'; // سيتم تفعيلها لاحقاً
@@ -6,7 +7,6 @@ import '../../data/dto/sync_dto.dart';
 import '../../data/db/drift_database.dart';
 import '../storage/secure_storage.dart';
 import '../config/api_config.dart';
-import '../utils/debug_logger.dart';
 import '../utils/family_enums.dart';
 import 'background_sync_worker.dart';
 import 'package:drift/drift.dart' as drift;
@@ -54,7 +54,7 @@ class NewSyncManager {
     _apiClient = SyncApiClient(baseUrl: serverUrl, authToken: token);
 
     _isInitialized = true;
-    DebugLogger.success('✅ NewSyncManager initialized');
+    UnifiedLogger.success('✅ NewSyncManager initialized');
   }
 
   // ===========================
@@ -64,12 +64,12 @@ class NewSyncManager {
   /// 🔄 مزامنة كاملة
   Future<bool> syncAll() async {
     if (_isSyncing) {
-      DebugLogger.warning('⚠️ Sync already in progress');
+      UnifiedLogger.warning('⚠️ Sync already in progress');
       return false;
     }
 
     if (!_isInitialized) {
-      DebugLogger.warning('⚠️ SyncManager not initialized');
+      UnifiedLogger.warning('⚠️ SyncManager not initialized');
       return false;
     }
 
@@ -77,7 +77,7 @@ class NewSyncManager {
 
     try {
       _syncStatusNotifier.startSync();
-      DebugLogger.info('🔄 Starting full sync...');
+      UnifiedLogger.info('🔄 Starting full sync...');
 
       final startTime = DateTime.now();
 
@@ -86,9 +86,9 @@ class NewSyncManager {
       _syncStatusNotifier.updatePendingItems(pendingChanges.length);
 
       if (pendingChanges.isEmpty) {
-        DebugLogger.info('ℹ️ No pending changes to sync');
+        UnifiedLogger.info('ℹ️ No pending changes to sync');
       } else {
-        DebugLogger.info('📦 Found ${pendingChanges.length} pending changes');
+        UnifiedLogger.info('📦 Found ${pendingChanges.length} pending changes');
       }
 
       // 2️⃣ إعداد طلب المزامنة
@@ -121,12 +121,12 @@ class NewSyncManager {
         pendingItems: response.failedChanges?.length ?? 0,
       );
 
-      DebugLogger.success(
+      UnifiedLogger.success(
         '✅ Sync completed successfully in ${duration.inSeconds}s',
       );
 
       if (response.stats != null) {
-        DebugLogger.info(
+        UnifiedLogger.info(
           '📊 Stats: Received=${response.stats!.receivedCount}, '
           'Sent=${response.stats!.sentCount}, '
           'Failed=${response.stats!.failedCount}',
@@ -135,7 +135,7 @@ class NewSyncManager {
 
       return true;
     } catch (e) {
-      DebugLogger.error('❌ Sync failed', e);
+      UnifiedLogger.error('❌ Sync failed', error: e);
       _syncStatusNotifier.failSync(e.toString());
       return false;
     } finally {
@@ -149,15 +149,15 @@ class NewSyncManager {
 
     try {
       // جمع من جدول sync_queue
-      final pendingRows =
-          await (_db.select(_db.syncQueue)..orderBy([
-                (t) => drift.OrderingTerm(
-                  expression: t.priority,
-                  mode: drift.OrderingMode.desc,
-                ),
-                (t) => drift.OrderingTerm(expression: t.createdAt),
-              ]))
-              .get();
+      final pendingRows = await (_db.select(_db.syncQueue)
+            ..orderBy([
+              (t) => drift.OrderingTerm(
+                    expression: t.priority,
+                    mode: drift.OrderingMode.desc,
+                  ),
+              (t) => drift.OrderingTerm(expression: t.createdAt),
+            ]))
+          .get();
 
       for (final row in pendingRows) {
         // تحويل البيانات من JSON string إلى Map
@@ -169,7 +169,7 @@ class NewSyncManager {
             data.addAll({'raw': row.payload});
           }
         } catch (e) {
-          DebugLogger.warning('⚠️ Failed to parse payload for ${row.id}');
+          UnifiedLogger.warning('⚠️ Failed to parse payload for ${row.id}');
         }
 
         // 🔄 تحويل البيانات من Local Integer إلى API String/Text
@@ -194,7 +194,7 @@ class NewSyncManager {
 
       return changes;
     } catch (e) {
-      DebugLogger.error('❌ Failed to collect pending changes', e);
+      UnifiedLogger.error('❌ Failed to collect pending changes', error: e);
       return [];
     }
   }
@@ -202,7 +202,7 @@ class NewSyncManager {
   /// 📥 تطبيق التحديثات من السيرفر
   Future<void> _applyServerUpdates(SyncResponseDto response) async {
     try {
-      DebugLogger.info(
+      UnifiedLogger.info(
         '📥 Applying ${response.updatedData.length} server updates...',
       );
 
@@ -233,21 +233,21 @@ class NewSyncManager {
             break;
 
           default:
-            DebugLogger.warning('⚠️ Unknown entity type: ${entity.entityType}');
+            UnifiedLogger.warning('⚠️ Unknown entity type: ${entity.entityType}');
         }
       }
 
       // حذف البيانات المحذوفة على السيرفر
       if (response.deletedIds.isNotEmpty) {
-        DebugLogger.info(
+        UnifiedLogger.info(
           '🗑️ Processing ${response.deletedIds.length} deletions...',
         );
         await _processDeletedItems(response.deletedIds);
       }
 
-      DebugLogger.success('✅ Server updates applied successfully');
+      UnifiedLogger.success('✅ Server updates applied successfully');
     } catch (e) {
-      DebugLogger.error('❌ Failed to apply server updates', e);
+      UnifiedLogger.error('❌ Failed to apply server updates', error: e);
       rethrow;
     }
   }
@@ -256,7 +256,7 @@ class NewSyncManager {
   Future<void> _updateBeneficiary(ServerEntityDto entity) async {
     // TODO: Implement beneficiary update
     // Note: Schema uses IntColumn for id, needs mapping from server String IDs
-    DebugLogger.info(
+    UnifiedLogger.info(
       '⏭️ Beneficiary update not fully implemented yet - ID: ${entity.id}',
     );
   }
@@ -264,19 +264,19 @@ class NewSyncManager {
   /// 🔄 تحديث زيارة
   Future<void> _updateVisit(ServerEntityDto entity) async {
     // TODO: Implement visit update
-    DebugLogger.info('⏭️ Visit update not implemented yet');
+    UnifiedLogger.info('⏭️ Visit update not implemented yet');
   }
 
   /// 🔄 تحديث مرفق
   Future<void> _updateAttachment(ServerEntityDto entity) async {
     // TODO: Implement attachment update
-    DebugLogger.info('⏭️ Attachment update not implemented yet');
+    UnifiedLogger.info('⏭️ Attachment update not implemented yet');
   }
 
   /// 🔄 تحديث taxonomy
   Future<void> _updateTaxonomy(ServerEntityDto entity) async {
     // TODO: Implement taxonomy update
-    DebugLogger.info('⏭️ Taxonomy update not implemented yet');
+    UnifiedLogger.info('⏭️ Taxonomy update not implemented yet');
   }
 
   /// 🔄 تحديث فرد متوفى
@@ -286,7 +286,7 @@ class NewSyncManager {
       final serverId = int.tryParse(entity.id);
 
       if (serverId == null) {
-        DebugLogger.warning(
+        UnifiedLogger.warning(
           '⚠️ Invalid family_deceased server ID: ${entity.id}',
         );
         return;
@@ -300,15 +300,11 @@ class NewSyncManager {
       final deathCauseInt = DeathCause.fromArabic(deathCauseStr);
 
       final documentTypeStr = data['document_type'] as String?;
-      final documentTypeInt = documentTypeStr != null
-          ? DocumentType.fromArabic(documentTypeStr)
-          : null;
+      final documentTypeInt = documentTypeStr != null ? DocumentType.fromArabic(documentTypeStr) : null;
 
       // تحويل nationalId إذا كان نص إلى رقم
       final nationalIdRaw = data['national_id'];
-      final nationalIdInt = nationalIdRaw is String
-          ? (int.tryParse(nationalIdRaw) ?? 0)
-          : (nationalIdRaw as int? ?? 0);
+      final nationalIdInt = nationalIdRaw is String ? (int.tryParse(nationalIdRaw) ?? 0) : (nationalIdRaw as int? ?? 0);
 
       final companion = FamilyDeceasedTableCompanion(
         id: drift.Value(serverId),
@@ -319,9 +315,8 @@ class NewSyncManager {
         thirdName: drift.Value(data['third_name'] as String?),
         familyName: drift.Value(data['family_name'] as String? ?? ''),
         nationalId: drift.Value(nationalIdInt),
-        deathDate: data['death_date'] != null
-            ? drift.Value(DateTime.parse(data['death_date']))
-            : drift.Value(DateTime.now()),
+        deathDate:
+            data['death_date'] != null ? drift.Value(DateTime.parse(data['death_date'])) : drift.Value(DateTime.now()),
         deathCause: drift.Value(deathCauseInt),
         documentType: drift.Value(documentTypeInt),
         documentPath: drift.Value(data['document_path'] as String?),
@@ -329,18 +324,16 @@ class NewSyncManager {
         syncState: const drift.Value('synced'),
         serverId: drift.Value(serverId),
         lastSyncedAt: drift.Value(DateTime.now()),
-        createdAt: data['created_at'] != null
-            ? drift.Value(DateTime.parse(data['created_at']))
-            : drift.Value(DateTime.now()),
-        updatedAt: data['updated_at'] != null
-            ? drift.Value(DateTime.parse(data['updated_at']))
-            : drift.Value(DateTime.now()),
+        createdAt:
+            data['created_at'] != null ? drift.Value(DateTime.parse(data['created_at'])) : drift.Value(DateTime.now()),
+        updatedAt:
+            data['updated_at'] != null ? drift.Value(DateTime.parse(data['updated_at'])) : drift.Value(DateTime.now()),
       );
 
       await _db.into(_db.familyDeceasedTable).insertOnConflictUpdate(companion);
-      DebugLogger.info('✅ Updated family_deceased: ${entity.id}');
+      UnifiedLogger.info('✅ Updated family_deceased: ${entity.id}');
     } catch (e) {
-      DebugLogger.error('❌ Failed to update family_deceased', e);
+      UnifiedLogger.error('❌ Failed to update family_deceased', error: e);
     }
   }
 
@@ -351,7 +344,7 @@ class NewSyncManager {
       final serverId = int.tryParse(entity.id);
 
       if (serverId == null) {
-        DebugLogger.warning('⚠️ Invalid family_member server ID: ${entity.id}');
+        UnifiedLogger.warning('⚠️ Invalid family_member server ID: ${entity.id}');
         return;
       }
 
@@ -364,9 +357,8 @@ class NewSyncManager {
 
       // تحويل orphan_national_id إذا كان نص إلى رقم
       final orphanNationalIdRaw = data['orphan_national_id'];
-      final orphanNationalIdInt = orphanNationalIdRaw is String
-          ? (int.tryParse(orphanNationalIdRaw) ?? 0)
-          : (orphanNationalIdRaw as int? ?? 0);
+      final orphanNationalIdInt =
+          orphanNationalIdRaw is String ? (int.tryParse(orphanNationalIdRaw) ?? 0) : (orphanNationalIdRaw as int? ?? 0);
 
       final companion = FamilyMembersTableCompanion(
         id: drift.Value(serverId),
@@ -376,9 +368,8 @@ class NewSyncManager {
         secondName: drift.Value(data['second_name'] as String?),
         thirdName: drift.Value(data['third_name'] as String?),
         familyName: drift.Value(data['family_name'] as String? ?? ''),
-        birthDate: data['birth_date'] != null
-            ? drift.Value(DateTime.parse(data['birth_date']))
-            : drift.Value(DateTime.now()),
+        birthDate:
+            data['birth_date'] != null ? drift.Value(DateTime.parse(data['birth_date'])) : drift.Value(DateTime.now()),
         age: drift.Value(data['age'] as int?),
         gender: drift.Value(genderInt),
         healthStatus: drift.Value(healthStatusInt),
@@ -387,18 +378,16 @@ class NewSyncManager {
         syncState: const drift.Value('synced'),
         serverId: drift.Value(serverId),
         lastSyncedAt: drift.Value(DateTime.now()),
-        createdAt: data['created_at'] != null
-            ? drift.Value(DateTime.parse(data['created_at']))
-            : drift.Value(DateTime.now()),
-        updatedAt: data['updated_at'] != null
-            ? drift.Value(DateTime.parse(data['updated_at']))
-            : drift.Value(DateTime.now()),
+        createdAt:
+            data['created_at'] != null ? drift.Value(DateTime.parse(data['created_at'])) : drift.Value(DateTime.now()),
+        updatedAt:
+            data['updated_at'] != null ? drift.Value(DateTime.parse(data['updated_at'])) : drift.Value(DateTime.now()),
       );
 
       await _db.into(_db.familyMembersTable).insertOnConflictUpdate(companion);
-      DebugLogger.info('✅ Updated family_member: ${entity.id}');
+      UnifiedLogger.info('✅ Updated family_member: ${entity.id}');
     } catch (e) {
-      DebugLogger.error('❌ Failed to update family_member', e);
+      UnifiedLogger.error('❌ Failed to update family_member', error: e);
     }
   }
 
@@ -407,11 +396,11 @@ class NewSyncManager {
     try {
       // TODO: Implement deletion logic based on proper ID mapping
       // Note: Schema uses IntColumn for IDs, need to map String IDs from server
-      DebugLogger.info(
+      UnifiedLogger.info(
         '⏭️ Deletion processing not fully implemented yet - ${deletedIds.length} items',
       );
     } catch (e) {
-      DebugLogger.error('❌ Failed to process deletions', e);
+      UnifiedLogger.error('❌ Failed to process deletions', error: e);
     }
   }
 
@@ -427,15 +416,16 @@ class NewSyncManager {
         if (!failedIds.contains(change.entityId)) {
           await (_db.delete(
             _db.syncQueue,
-          )..where((t) => t.entityId.equals(change.entityId))).go();
+          )..where((t) => t.entityId.equals(change.entityId)))
+              .go();
         }
       }
 
-      DebugLogger.info(
+      UnifiedLogger.info(
         '✅ Cleared ${pendingChanges.length - failedIds.length} successful changes',
       );
     } catch (e) {
-      DebugLogger.error('❌ Failed to clear successful changes', e);
+      UnifiedLogger.error('❌ Failed to clear successful changes', error: e);
     }
   }
 
@@ -513,9 +503,7 @@ class NewSyncManager {
     int priority = 5,
   }) async {
     try {
-      await _db
-          .into(_db.syncQueue)
-          .insertOnConflictUpdate(
+      await _db.into(_db.syncQueue).insertOnConflictUpdate(
             SyncQueueCompanion.insert(
               id: '${entityType}_${entityId}_$operation',
               entity: entityType,
@@ -527,13 +515,13 @@ class NewSyncManager {
             ),
           );
 
-      DebugLogger.info('📝 Added pending change: $entityType.$operation');
+      UnifiedLogger.info('📝 Added pending change: $entityType.$operation');
 
       // تحديث العداد
       final count = await (_db.select(_db.syncQueue)..limit(1000)).get();
       _syncStatusNotifier.updatePendingItems(count.length);
     } catch (e) {
-      DebugLogger.error('❌ Failed to add pending change', e);
+      UnifiedLogger.error('❌ Failed to add pending change', error: e);
     }
   }
 
@@ -585,7 +573,7 @@ class NewSyncManager {
         );
       }
     } catch (e) {
-      DebugLogger.warning('⚠️ Failed to get device info');
+      UnifiedLogger.warning('⚠️ Failed to get device info');
     }
 
     // Fallback
@@ -602,7 +590,8 @@ class NewSyncManager {
     try {
       final pendingCount = await (_db.selectOnly(
         _db.syncQueue,
-      )..addColumns([_db.syncQueue.id.count()])).getSingle();
+      )..addColumns([_db.syncQueue.id.count()]))
+          .getSingle();
 
       final lastSync = await _storage.getLastSyncTime();
 
@@ -620,7 +609,7 @@ class NewSyncManager {
   Future<void> clearAllPending() async {
     await _db.delete(_db.syncQueue).go();
     _syncStatusNotifier.updatePendingItems(0);
-    DebugLogger.info('🗑️ All pending changes cleared');
+    UnifiedLogger.info('🗑️ All pending changes cleared');
   }
 
   /// 🔄 إعادة محاولة التغييرات الفاشلة

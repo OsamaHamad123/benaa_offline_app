@@ -1,5 +1,5 @@
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../utils/debug_logger.dart';
 
 /// 🔐 Secure Storage - تخزين آمن للبيانات الحساسة
 ///
@@ -48,17 +48,14 @@ class SecureStorage {
         _storage.write(key: _userIdKey, value: userId),
         _storage.write(key: _userEmailKey, value: email),
         _storage.write(key: _isLoggedInKey, value: 'true'),
-        if (refreshToken != null)
-          _storage.write(key: _refreshTokenKey, value: refreshToken),
-        if (userName != null)
-          _storage.write(key: _userNameKey, value: userName),
-        if (serverUrl != null)
-          _storage.write(key: _serverUrlKey, value: serverUrl),
+        if (refreshToken != null) _storage.write(key: _refreshTokenKey, value: refreshToken),
+        if (userName != null) _storage.write(key: _userNameKey, value: userName),
+        if (serverUrl != null) _storage.write(key: _serverUrlKey, value: serverUrl),
       ]);
 
-      DebugLogger.success('✅ Auth data saved securely');
+      UnifiedLogger.success('✅ Auth data saved securely');
     } catch (e) {
-      DebugLogger.error('❌ Failed to save auth data', e);
+      UnifiedLogger.error('❌ Failed to save auth data', error: e);
       rethrow;
     }
   }
@@ -68,7 +65,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _authTokenKey);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read auth token', e);
+      UnifiedLogger.error('❌ Failed to read auth token', error: e);
       return null;
     }
   }
@@ -78,7 +75,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _refreshTokenKey);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read refresh token', e);
+      UnifiedLogger.error('❌ Failed to read refresh token', error: e);
       return null;
     }
   }
@@ -88,7 +85,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _userEmailKey);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read user email', e);
+      UnifiedLogger.error('❌ Failed to read user email', error: e);
       return null;
     }
   }
@@ -98,7 +95,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _userNameKey);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read user name', e);
+      UnifiedLogger.error('❌ Failed to read user name', error: e);
       return null;
     }
   }
@@ -108,7 +105,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _userIdKey);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read user ID', e);
+      UnifiedLogger.error('❌ Failed to read user ID', error: e);
       return null;
     }
   }
@@ -118,7 +115,7 @@ class SecureStorage {
     try {
       return await _storage.read(key: _serverUrlKey);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read server URL', e);
+      UnifiedLogger.error('❌ Failed to read server URL', error: e);
       return null;
     }
   }
@@ -131,12 +128,12 @@ class SecureStorage {
       if (deviceId == null || deviceId.isEmpty) {
         deviceId = 'device_${DateTime.now().millisecondsSinceEpoch}';
         await _storage.write(key: _deviceIdKey, value: deviceId);
-        DebugLogger.info('📱 New device ID created: $deviceId');
+        UnifiedLogger.info('📱 New device ID created: $deviceId');
       }
 
       return deviceId;
     } catch (e) {
-      DebugLogger.error('❌ Failed to get device ID', e);
+      UnifiedLogger.error('❌ Failed to get device ID', error: e);
       // Fallback device ID
       return 'device_${DateTime.now().millisecondsSinceEpoch}';
     }
@@ -167,9 +164,9 @@ class SecureStorage {
   Future<void> updateAuthToken(String newToken) async {
     try {
       await _storage.write(key: _authTokenKey, value: newToken);
-      DebugLogger.info('🔄 Auth token updated');
+      UnifiedLogger.info('🔄 Auth token updated');
     } catch (e) {
-      DebugLogger.error('❌ Failed to update auth token', e);
+      UnifiedLogger.error('❌ Failed to update auth token', error: e);
       rethrow;
     }
   }
@@ -185,9 +182,9 @@ class SecureStorage {
         key: _lastSyncTimeKey,
         value: time.toIso8601String(),
       );
-      DebugLogger.info('💾 Last sync time saved: $time');
+      UnifiedLogger.info('💾 Last sync time saved: $time');
     } catch (e) {
-      DebugLogger.error('❌ Failed to save last sync time', e);
+      UnifiedLogger.error('❌ Failed to save last sync time', error: e);
     }
   }
 
@@ -198,7 +195,7 @@ class SecureStorage {
       if (timeStr == null || timeStr.isEmpty) return null;
       return DateTime.parse(timeStr);
     } catch (e) {
-      DebugLogger.error('❌ Failed to read last sync time', e);
+      UnifiedLogger.error('❌ Failed to read last sync time', error: e);
       return null;
     }
   }
@@ -211,9 +208,9 @@ class SecureStorage {
   Future<void> clearAll() async {
     try {
       await _storage.deleteAll();
-      DebugLogger.info('🗑️ All secure storage cleared');
+      UnifiedLogger.info('🗑️ All secure storage cleared');
     } catch (e) {
-      DebugLogger.error('❌ Failed to clear storage', e);
+      UnifiedLogger.error('❌ Failed to clear storage', error: e);
       rethrow;
     }
   }
@@ -229,9 +226,9 @@ class SecureStorage {
         _storage.delete(key: _userNameKey),
         _storage.delete(key: _isLoggedInKey),
       ]);
-      DebugLogger.info('🗑️ Auth data cleared');
+      UnifiedLogger.info('🗑️ Auth data cleared');
     } catch (e) {
-      DebugLogger.error('❌ Failed to clear auth data', e);
+      UnifiedLogger.error('❌ Failed to clear auth data', error: e);
       rethrow;
     }
   }
@@ -245,7 +242,7 @@ class SecureStorage {
     try {
       return await _storage.readAll();
     } catch (e) {
-      DebugLogger.error('❌ Failed to read all data', e);
+      UnifiedLogger.error('❌ Failed to read all data', error: e);
       return {};
     }
   }
@@ -273,7 +270,7 @@ class SecureStorage {
         'serverUrl': await getServerUrl(),
       };
     } catch (e) {
-      DebugLogger.error('❌ Failed to get user info', e);
+      UnifiedLogger.error('❌ Failed to get user info', error: e);
       return {};
     }
   }

@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../data/db/drift_database.dart';
 import '../../../../../core/providers/providers.dart';
-import '../../../../../core/utils/app_logger.dart';
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'beneficiaries_list_state.dart';
 import 'filters_provider.dart';
 import 'cache_manager.dart';
@@ -205,7 +205,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
   /// ✅ Optimistic Delete with Activity Logging
   Future<void> deleteBeneficiary(int id) async {
-    AppLogger.info('Delete beneficiary #$id');
+    UnifiedLogger.info('Delete beneficiary #$id');
 
     // حفظ النسخة القديمة
     final oldItems = state.items;
@@ -233,14 +233,14 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
       await _updateStatistics();
       stopwatch.stop();
-      AppLogger.logPerformance(
+      UnifiedLogger.logPerformance(
         operation: 'Delete beneficiary #$id',
         durationMs: stopwatch.elapsedMilliseconds,
       );
     } catch (e, stackTrace) {
       // استرجاع في حالة الخطأ
       stopwatch.stop();
-      AppLogger.error(
+      UnifiedLogger.error(
         'Failed to delete beneficiary #$id',
         error: e,
         stackTrace: stackTrace,
@@ -253,7 +253,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
   /// ✅ Bulk Delete
   Future<void> bulkDelete(Set<int> ids) async {
-    AppLogger.info('Bulk delete ${ids.length} beneficiaries');
+    UnifiedLogger.info('Bulk delete ${ids.length} beneficiaries');
 
     final oldItems = state.items;
     final oldCachedData = _cachedData;
@@ -269,13 +269,13 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       await _db.beneficiariesDao.batchDeleteBeneficiaries(ids.toList());
       await _updateStatistics();
       stopwatch.stop();
-      AppLogger.logPerformance(
+      UnifiedLogger.logPerformance(
         operation: 'Bulk delete ${ids.length} items',
         durationMs: stopwatch.elapsedMilliseconds,
       );
     } catch (e, stackTrace) {
       stopwatch.stop();
-      AppLogger.error('Bulk delete failed', error: e, stackTrace: stackTrace);
+      UnifiedLogger.error('Bulk delete failed', error: e, stackTrace: stackTrace);
       state = state.copyWith(items: oldItems, error: e.toString());
       _cachedData = oldCachedData;
       rethrow;
