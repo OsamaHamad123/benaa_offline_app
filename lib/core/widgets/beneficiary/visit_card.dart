@@ -16,47 +16,53 @@ class VisitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FadeSlideTransition(
-      duration: AppDurations.fast,
-      slideOffset: const Offset(0, 0.1),
-      child: Card(
-        margin: EdgeInsets.only(bottom: 8.h),
-        child: ListTile(
-          onTap: onTap,
-          leading: CircleAvatar(
-            backgroundColor: Colors.green.withOpacity(0.1),
-            child: Icon(
-              Icons.event_available,
-              color: Colors.green,
-              size: 20.sp,
-            ),
-          ),
-          title: Text(
-            visit.staffName,
-            style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 4.h),
-              Text(
-                formatDateTime(visit.visitDate),
-                style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+    final statusText = visit.isSubmitted ? 'تم الإرسال' : 'قيد الانتظار';
+    return Semantics(
+      label: 'زيارة من ${visit.staffName}, ${formatDateTime(visit.visitDate)}, الحالة: $statusText',
+      hint: 'اضغط لعرض التفاصيل',
+      button: true,
+      child: FadeSlideTransition(
+        duration: AppDurations.fast,
+        slideOffset: const Offset(0, 0.1),
+        child: Card(
+          margin: EdgeInsets.only(bottom: 8.h),
+          child: ListTile(
+            onTap: onTap,
+            leading: CircleAvatar(
+              backgroundColor: Colors.green.withOpacity(0.1),
+              child: Icon(
+                Icons.event_available,
+                color: Colors.green,
+                size: 20.sp,
               ),
-              if (visit.notes.isNotEmpty) ...[
+            ),
+            title: Text(
+              visit.staffName,
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 SizedBox(height: 4.h),
                 Text(
-                  visit.notes,
-                  style: TextStyle(fontSize: 11.sp),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  formatDateTime(visit.visitDate),
+                  style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
                 ),
+                if (visit.notes.isNotEmpty) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    visit.notes,
+                    style: TextStyle(fontSize: 11.sp),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
-            ],
+            ),
+            trailing: visit.isSubmitted
+                ? Icon(Icons.check_circle, color: Colors.green, size: 20.sp)
+                : Icon(Icons.pending, color: Colors.orange, size: 20.sp),
           ),
-          trailing: visit.isSubmitted
-              ? Icon(Icons.check_circle, color: Colors.green, size: 20.sp)
-              : Icon(Icons.pending, color: Colors.orange, size: 20.sp),
         ),
       ),
     );

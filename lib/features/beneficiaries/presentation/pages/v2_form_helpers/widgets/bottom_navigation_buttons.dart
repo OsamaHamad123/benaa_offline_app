@@ -57,46 +57,52 @@ class BottomNavigationButtons extends StatelessWidget {
               // Next or Save Button (Left side in RTL)
               Expanded(
                 flex: isFirstTab ? 1 : 2,
-                child: FilledButton.icon(
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          if (isLastTab) {
-                            HapticPatterns.success(); // حفظ
-                            onSave();
-                          } else {
-                            HapticPatterns.selection(); // التالي
-                            onNext();
-                          }
-                        },
-                  icon: isLoading
-                      ? SizedBox(
-                          width: 20.w,
-                          height: 20.h,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(
-                              colorScheme.onPrimary,
+                child: Semantics(
+                  label: isLastTab ? 'حفظ النموذج' : 'الانتقال إلى التبويب التالي',
+                  hint: isLastTab ? 'اضغط لحفظ جميع البيانات' : 'اضغط للمتابعة',
+                  button: true,
+                  enabled: !isLoading,
+                  child: FilledButton.icon(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            if (isLastTab) {
+                              HapticPatterns.success(); // حفظ
+                              onSave();
+                            } else {
+                              HapticPatterns.selection(); // التالي
+                              onNext();
+                            }
+                          },
+                    icon: isLoading
+                        ? SizedBox(
+                            width: 20.w,
+                            height: 20.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(
+                                colorScheme.onPrimary,
+                              ),
                             ),
+                          )
+                        : Icon(
+                            isLastTab ? Icons.check_circle_rounded : Icons.arrow_back_ios_rounded, // ← للأمام في RTL
+                            size: isTabletOrDesktop ? 22 : 20,
                           ),
-                        )
-                      : Icon(
-                          isLastTab ? Icons.check_circle_rounded : Icons.arrow_back_ios_rounded, // ← للأمام في RTL
-                          size: isTabletOrDesktop ? 22 : 20,
-                        ),
-                  label: Text(
-                    isLoading ? 'جاري الحفظ...' : (isLastTab ? 'حفظ' : 'التالي'),
-                    style: TextStyle(
-                      fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
-                      fontWeight: FontWeight.w600,
+                    label: Text(
+                      isLoading ? 'جاري الحفظ...' : (isLastTab ? 'حفظ' : 'التالي'),
+                      style: TextStyle(
+                        fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
+                    style: FilledButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      backgroundColor: isLastTab ? Colors.green.shade600 : colorScheme.primary,
                     ),
-                    backgroundColor: isLastTab ? Colors.green.shade600 : colorScheme.primary,
                   ),
                 ),
               ),
@@ -105,26 +111,31 @@ class BottomNavigationButtons extends StatelessWidget {
               if (!isFirstTab) ...[
                 SizedBox(width: buttonSpacing),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            HapticPatterns.selection();
-                            onPrevious();
-                          },
-                    icon: const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                    ), // → للخلف في RTL
-                    label: Text(
-                      'السابق',
-                      style: TextStyle(
-                        fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
+                  child: Semantics(
+                    label: 'الرجوع إلى التبويب السابق',
+                    hint: 'اضغط للرجوع',
+                    button: true,
+                    child: OutlinedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () {
+                              HapticPatterns.selection();
+                              onPrevious();
+                            },
+                      icon: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                      ), // → للخلف في RTL
+                      label: Text(
+                        'السابق',
+                        style: TextStyle(
+                          fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
+                        ),
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: verticalPadding),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
                       ),
                     ),
                   ),

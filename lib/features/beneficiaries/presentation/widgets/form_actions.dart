@@ -43,15 +43,21 @@ class FormActions extends StatelessWidget {
           children: [
             // Cancel button
             Expanded(
-              child: OutlinedButton(
-                onPressed: isSaving ? null : onCancel,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Semantics(
+                label: 'إلغاء التعديلات',
+                hint: 'الرجوع بدون حفظ',
+                button: true,
+                enabled: !isSaving,
+                child: OutlinedButton(
+                  onPressed: isSaving ? null : onCancel,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child: const Text('إلغاء'),
                 ),
-                child: const Text('إلغاء'),
               ),
             ),
             const SizedBox(width: 12),
@@ -59,23 +65,29 @@ class FormActions extends StatelessWidget {
             // Save button
             Expanded(
               flex: 2,
-              child: FilledButton.icon(
-                onPressed: canSave && !isSaving ? onSave : null,
-                icon: isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(isSaving ? 'جاري الحفظ...' : 'حفظ'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Semantics(
+                label: isSaving ? 'جاري حفظ البيانات' : 'حفظ البيانات',
+                hint: 'اضغط لحفظ جميع التغييرات',
+                button: true,
+                enabled: canSave && !isSaving,
+                child: FilledButton.icon(
+                  onPressed: canSave && !isSaving ? onSave : null,
+                  icon: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(isSaving ? 'جاري الحفظ...' : 'حفظ'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -84,14 +96,20 @@ class FormActions extends StatelessWidget {
             // Delete button (only for existing records)
             if (!isNew && onDelete != null) ...[
               const SizedBox(width: 12),
-              IconButton(
-                onPressed: isSaving ? null : onDelete,
-                icon: const Icon(Icons.delete_outline),
-                tooltip: 'حذف',
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.errorContainer,
-                  foregroundColor: colorScheme.error,
-                  padding: const EdgeInsets.all(16),
+              Semantics(
+                label: 'حذف المستفيد',
+                hint: 'حذف نهائي للسجل',
+                button: true,
+                enabled: !isSaving,
+                child: IconButton(
+                  onPressed: isSaving ? null : onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'حذف',
+                  style: IconButton.styleFrom(
+                    backgroundColor: colorScheme.errorContainer,
+                    foregroundColor: colorScheme.error,
+                    padding: const EdgeInsets.all(16),
+                  ),
                 ),
               ),
             ],

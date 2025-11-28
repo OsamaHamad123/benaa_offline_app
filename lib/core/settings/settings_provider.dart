@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../analytics/ux_analytics.dart';
 
 /// ⚙️ Settings State - حالة الإعدادات
 class SettingsState {
@@ -100,8 +101,7 @@ class SettingsState {
       itemsPerPage: itemsPerPage ?? this.itemsPerPage,
       defaultSort: defaultSort ?? this.defaultSort,
       showStatistics: showStatistics ?? this.showStatistics,
-      showPerformanceDashboard:
-          showPerformanceDashboard ?? this.showPerformanceDashboard,
+      showPerformanceDashboard: showPerformanceDashboard ?? this.showPerformanceDashboard,
       cacheDurationMinutes: cacheDurationMinutes ?? this.cacheDurationMinutes,
       searchHistorySize: searchHistorySize ?? this.searchHistorySize,
       offlineMode: offlineMode ?? this.offlineMode,
@@ -225,6 +225,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setVibrationEnabled(bool value) async {
     state = state.copyWith(vibrationEnabled: value);
     await _saveSettings();
+
+    // 📊 Track haptic disabled
+    if (!value) {
+      await UxAnalytics.trackHapticDisabled();
+    }
   }
 
   // Sync
@@ -247,6 +252,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setThemeMode(String mode) async {
     state = state.copyWith(themeMode: mode);
     await _saveSettings();
+
+    // 📊 Track dark mode toggle
+    if (mode == 'dark') {
+      await UxAnalytics.trackDarkModeToggle(true);
+    } else if (mode == 'light') {
+      await UxAnalytics.trackDarkModeToggle(false);
+    }
   }
 
   Future<void> setColorScheme(String scheme) async {

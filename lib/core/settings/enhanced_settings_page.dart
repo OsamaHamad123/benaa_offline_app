@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/modern_sliver_app_bar.dart';
 import 'settings_provider.dart';
 import '../error_handling/error_handler.dart';
@@ -317,6 +318,24 @@ class EnhancedSettingsPage extends ConsumerWidget {
                           onChanged: notifier.setShowPerformanceDashboard,
                           icon: Icons.speed_rounded,
                           color: Colors.pink,
+                        ),
+                        _buildDivider(),
+                        _buildNavigationTile(
+                          context,
+                          title: '📊 UX Analytics',
+                          subtitle: 'عرض إحصائيات استخدام التحسينات',
+                          icon: Icons.analytics_rounded,
+                          color: Colors.teal,
+                          onTap: () => context.push('/analytics'),
+                        ),
+                        _buildDivider(),
+                        _buildNavigationTile(
+                          context,
+                          title: '📈 Performance Monitor',
+                          subtitle: 'مراقبة الأداء في الوقت الفعلي (FPS, Frame Time)',
+                          icon: Icons.monitor_heart_rounded,
+                          color: Colors.purple,
+                          onTap: () => context.push('/performance-monitor'),
                         ),
                       ],
                     ]),

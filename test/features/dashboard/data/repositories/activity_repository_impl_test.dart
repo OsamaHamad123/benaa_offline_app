@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart'
-    as domain;
+import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart' as domain;
 import 'package:benaa_offline_app/features/dashboard/data/datasources/activity_local_datasource.dart';
 import 'package:benaa_offline_app/features/dashboard/data/repositories/activity_repository_impl.dart';
 
@@ -85,9 +84,10 @@ void main() {
       final result = await repository.getAllActivities();
 
       // assert
-      expect(result.length, 2);
-      expect(result[0].id, '1');
-      expect(result[1].id, '2');
+      final data = result.getOrThrow();
+      expect(data.length, 2);
+      expect(data[0].id, '1');
+      expect(data[1].id, '2');
     });
 
     test('should throw exception when datasource fails', () async {
@@ -123,8 +123,9 @@ void main() {
       final result = await repository.getActivitiesByType(tType);
 
       // assert
-      expect(result.length, 1);
-      expect(result[0].type, tType);
+      final data = result.getOrThrow();
+      expect(data.length, 1);
+      expect(data[0].type, tType);
     });
 
     test('should throw exception when datasource fails', () async {
@@ -167,8 +168,9 @@ void main() {
       );
 
       // assert
-      expect(result.length, 1);
-      expect(result[0].beneficiaryId, tBeneficiaryId);
+      final data = result.getOrThrow();
+      expect(data.length, 1);
+      expect(data[0].beneficiaryId, tBeneficiaryId);
     });
 
     test('should throw exception when datasource fails', () async {

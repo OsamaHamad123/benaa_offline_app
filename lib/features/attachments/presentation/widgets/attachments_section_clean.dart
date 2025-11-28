@@ -105,14 +105,19 @@ class AttachmentsSectionClean extends ConsumerWidget {
   }
 
   Widget _buildAddButton(BuildContext context, WidgetRef ref) {
-    return OutlinedButton.icon(
-      onPressed: () => _showAddOptions(context, ref),
-      icon: const Icon(Icons.add),
-      label: const Text('إضافة مرفق'),
-      style: OutlinedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
+    return Semantics(
+      label: 'إضافة مرفق جديد',
+      hint: 'اضغط لاختيار الكاميرا، المعرض، أو ملف PDF',
+      button: true,
+      child: OutlinedButton.icon(
+        onPressed: () => _showAddOptions(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('إضافة مرفق'),
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
         ),
       ),
     );

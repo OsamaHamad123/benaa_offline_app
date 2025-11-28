@@ -27,55 +27,58 @@ class TabCompletionBadge extends StatelessWidget {
     final isComplete = percentage >= 80;
     final color = _getColorForProgress(percentage);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Progress Bar
-        SizedBox(
-          width: 45.w,
-          height: 4.h,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2.r),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: color.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation(color),
-            ),
-          ),
-        ),
-
-        SizedBox(width: 6.w),
-
-        // Completion Badge
-        if (isComplete && showCheckmark)
-          Container(
-            padding: EdgeInsets.all(2.w),
-            decoration: BoxDecoration(
-              color: Colors.green,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.check, color: Colors.white, size: 10.sp),
-          )
-        else
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(color: color, width: 1),
-            ),
-            child: Text(
-              '$percentage%',
-              style: TextStyle(
-                fontSize: 9.sp,
-                fontWeight: FontWeight.bold,
-                color: color,
-                height: 1.2,
+    return Semantics(
+      label: 'تم إكمال $completedFields من $totalFields حقل, $percentage%',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Progress Bar
+          SizedBox(
+            width: 45.w,
+            height: 4.h,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(2.r),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: color.withOpacity(0.2),
+                valueColor: AlwaysStoppedAnimation(color),
               ),
             ),
           ),
-      ],
+
+          SizedBox(width: 6.w),
+
+          // Completion Badge
+          if (isComplete && showCheckmark)
+            Container(
+              padding: EdgeInsets.all(2.w),
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.check, color: Colors.white, size: 10.sp),
+            )
+          else
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: color, width: 1),
+              ),
+              child: Text(
+                '$percentage%',
+                style: TextStyle(
+                  fontSize: 9.sp,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  height: 1.2,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -114,9 +117,7 @@ class EnhancedTabWithBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percentage = (progress * 100).round();
-    final color = isActive
-        ? Theme.of(context).primaryColor
-        : Colors.grey.shade600;
+    final color = isActive ? Theme.of(context).primaryColor : Colors.grey.shade600;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),

@@ -26,92 +26,98 @@ class QuickActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return MicroInteractions.bounceButton(
-      onTap: () {
-        HapticPatterns.selection();
-        onTap();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color.withOpacity(0.08), color.withOpacity(0.12)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return Semantics(
+      label: '$label${badge != null && badge! > 0 ? ', لديك $badge إشعار' : ''}',
+      hint: 'اضغط للانتقال إلى $label',
+      button: true,
+      enabled: true,
+      child: MicroInteractions.bounceButton(
+        onTap: () {
+          HapticPatterns.selection();
+          onTap();
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [color.withOpacity(0.08), color.withOpacity(0.12)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
-          child: Row(
-            children: [
-              // Icon Container with Badge
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(12.w),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(12.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
+            child: Row(
+              children: [
+                // Icon Container with Badge
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 24.sp),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 24.sp),
-                  ),
-                  // Badge
-                  if (badge != null && badge! > 0)
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 6.w,
-                          vertical: 2.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.error,
-                          borderRadius: BorderRadius.circular(10.r),
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: Text(
-                          badge! > 99 ? '99+' : '$badge',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.bold,
+                    // Badge
+                    if (badge != null && badge! > 0)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.w,
+                            vertical: 2.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.error,
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Text(
+                            badge! > 99 ? '99+' : '$badge',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 9.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : color,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  ],
                 ),
-              ),
-            ],
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : color,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

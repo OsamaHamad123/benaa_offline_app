@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import '../core/design_system/app_animations.dart';
+import '../core/analytics/analytics_widgets.dart';
+import '../core/analytics/realtime_performance_monitor.dart';
 import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/initialization/presentation/pages/app_initialization_page.dart';
@@ -45,24 +47,22 @@ Page<T> _buildPageWithTransition<T>({
           return FadeTransition(opacity: animation, child: child);
         case PageTransitionType.slideFromBottom:
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: AppCurves.pageEnter,
-                  ),
-                ),
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: AppCurves.pageEnter,
+              ),
+            ),
             child: child,
           );
         case PageTransitionType.slideFromRight:
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: AppCurves.pageEnter,
-                  ),
-                ),
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: AppCurves.pageEnter,
+              ),
+            ),
             child: child,
           );
         case PageTransitionType.scale:
@@ -90,11 +90,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isGoingToLogin = state.matchedLocation == '/login';
 
       // السماح بالذهاب لصفحات التهيئة والتحميل
-      if (isGoingToAppInit ||
-          isGoingToInit ||
-          isGoingToWelcome ||
-          isGoingToDownload ||
-          isGoingToDbDownload) {
+      if (isGoingToAppInit || isGoingToInit || isGoingToWelcome || isGoingToDownload || isGoingToDbDownload) {
         return null;
       }
 
@@ -210,6 +206,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const EnhancedSettingsPage(),
+      ),
+      GoRoute(
+        path: '/analytics',
+        builder: (context, state) => const UxAnalyticsDashboard(),
+      ),
+      GoRoute(
+        path: '/performance-monitor',
+        builder: (context, state) => const RealTimePerformanceMonitor(),
       ),
       GoRoute(
         path: '/visits',
