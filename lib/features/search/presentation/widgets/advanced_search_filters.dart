@@ -85,10 +85,14 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
                       icon: const Icon(Icons.save, size: 18),
                       label: const Text('حفظ البحث'),
                     ),
-                  IconButton(
-                    onPressed: _clearAllFilters,
-                    icon: const Icon(Icons.clear_all),
-                    tooltip: 'مسح الكل',
+                  Semantics(
+                    label: 'مسح جميع الفلاتر',
+                    button: true,
+                    child: IconButton(
+                      onPressed: _clearAllFilters,
+                      icon: const Icon(Icons.clear_all),
+                      tooltip: 'مسح الكل',
+                    ),
                   ),
                 ],
               ),
@@ -273,9 +277,13 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              OutlinedButton(
-                onPressed: _clearAllFilters,
-                child: const Text('إعادة تعيين'),
+              Semantics(
+                label: 'إعادة تعيين جميع الفلاتر',
+                button: true,
+                child: OutlinedButton(
+                  onPressed: _clearAllFilters,
+                  child: const Text('إعادة تعيين'),
+                ),
               ),
               const SizedBox(width: 12),
               ElevatedButton.icon(

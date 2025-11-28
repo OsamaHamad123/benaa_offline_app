@@ -206,12 +206,16 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
               SizedBox(
                 width: double.infinity,
                 height: 48.h,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _refresh();
-                  },
-                  child: const Text('تطبيق'),
+                child: Semantics(
+                  label: 'تطبيق الفلتر وتحديث النتائج',
+                  button: true,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _refresh();
+                    },
+                    child: const Text('تطبيق'),
+                  ),
                 ),
               ),
             ],
@@ -272,10 +276,15 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
       appBar: AppBar(
         title: const Text('جميع الأنشطة'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'فلترة',
-            onPressed: _showFilters,
+          Semantics(
+            label: 'فلترة الأنشطة',
+            hint: 'اضغط لعرض خيارات الفلترة',
+            button: true,
+            child: IconButton(
+              icon: const Icon(Icons.filter_list),
+              tooltip: 'فلترة',
+              onPressed: _showFilters,
+            ),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
