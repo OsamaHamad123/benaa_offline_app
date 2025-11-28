@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/extensions/context_extensions.dart';
+import '../../core/widgets/enhanced_refresh_indicator.dart';
 import 'providers/reports_providers.dart';
 import 'widgets/summary_statistics_widget.dart';
 import 'widgets/report_card_widget.dart';
@@ -119,7 +120,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: EnhancedRefreshIndicator(
         onRefresh: () async {
           _refreshData();
           await Future.delayed(const Duration(milliseconds: 500));

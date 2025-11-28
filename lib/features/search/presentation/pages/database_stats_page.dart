@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
+import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../data/datasources/civil_registry_database.dart';
 import '../../data/services/search_analytics.dart';
 
@@ -209,7 +210,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                 ],
               ),
             )
-          : RefreshIndicator(
+          : EnhancedRefreshIndicator(
               onRefresh: _loadStats,
               child: ListView(
                 padding: EdgeInsets.all(16),

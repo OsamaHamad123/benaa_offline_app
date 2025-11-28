@@ -9,6 +9,8 @@ import '../../../../core/utils/debouncer.dart';
 import '../../../../core/utils/arabic_normalizer.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/enhanced_refresh_indicator.dart';
+import '../../../../core/widgets/loading_state.dart' hide SkeletonLoader;
 import '../../domain/entities/civil_person.dart';
 import '../../data/services/search_analytics.dart';
 import '../providers/search_provider.dart';
@@ -199,7 +201,7 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
           : null,
       backgroundColor: Colors.grey.shade50,
       resizeToAvoidBottomInset: true,
-      body: RefreshIndicator(
+      body: EnhancedRefreshIndicator(
         onRefresh: () async {
           // ⚡ Pull to refresh functionality
           if (searchState.query.isNotEmpty) {
@@ -493,16 +495,7 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                   suffixIcon: searchState.isSearching
                       ? const Padding(
                           padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.blue,
-                              ),
-                            ),
-                          ),
+                          child: SmallLoadingIndicator(),
                         )
                       : searchState.query.isNotEmpty
                           ? IconButton(
