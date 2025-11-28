@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 import 'trend_indicator.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// Stat Card Widget - Reusable statistics card with Trend Indicator
 class StatCard extends StatelessWidget {
@@ -56,7 +56,7 @@ class StatCard extends StatelessWidget {
         child: MicroInteractions.bounceButton(
           onTap: onTap != null
               ? () {
-                  HapticFeedback.mediumImpact();
+                  HapticPatterns.selection();
                   onTap!();
                 }
               : null,

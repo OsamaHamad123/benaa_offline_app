@@ -41,8 +41,7 @@ class SwipeableCardWidget extends StatefulWidget {
   State<SwipeableCardWidget> createState() => _SwipeableCardWidgetState();
 }
 
-class _SwipeableCardWidgetState extends State<SwipeableCardWidget>
-    with SingleTickerProviderStateMixin {
+class _SwipeableCardWidgetState extends State<SwipeableCardWidget> with SingleTickerProviderStateMixin {
   double _dragExtent = 0;
   bool _hasTriggeredHaptic = false;
 
@@ -118,13 +117,11 @@ class _SwipeableCardWidgetState extends State<SwipeableCardWidget>
                 color: _dragExtent > 0
                     ? widget.rightActionColor.withOpacity(0.2)
                     : _dragExtent < 0
-                    ? widget.leftActionColor.withOpacity(0.2)
-                    : Colors.transparent,
+                        ? widget.leftActionColor.withOpacity(0.2)
+                        : Colors.transparent,
               ),
               child: Row(
-                mainAxisAlignment: _dragExtent > 0
-                    ? MainAxisAlignment.start
-                    : MainAxisAlignment.end,
+                mainAxisAlignment: _dragExtent > 0 ? MainAxisAlignment.start : MainAxisAlignment.end,
                 children: [
                   if (_dragExtent > 0)
                     _buildAction(

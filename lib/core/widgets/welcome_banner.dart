@@ -22,8 +22,7 @@ class WelcomeBanner extends StatefulWidget {
   State<WelcomeBanner> createState() => _WelcomeBannerState();
 }
 
-class _WelcomeBannerState extends State<WelcomeBanner>
-    with SingleTickerProviderStateMixin {
+class _WelcomeBannerState extends State<WelcomeBanner> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
