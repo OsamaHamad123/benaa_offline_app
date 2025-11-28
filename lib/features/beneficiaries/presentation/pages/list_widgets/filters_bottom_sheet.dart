@@ -359,4 +359,3 @@ class _SwitchTile extends StatelessWidget {
     );
   }
 }
-
