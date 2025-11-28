@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../utils/haptic_patterns.dart';
 
 /// 🎯 Quick Actions Menu - قائمة إجراءات سريعة
 ///
@@ -28,8 +28,7 @@ class QuickActionsMenu extends StatefulWidget {
   State<QuickActionsMenu> createState() => _QuickActionsMenuState();
 }
 
-class _QuickActionsMenuState extends State<QuickActionsMenu>
-    with SingleTickerProviderStateMixin {
+class _QuickActionsMenuState extends State<QuickActionsMenu> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _rotationAnimation;
   late Animation<double> _opacityAnimation;
@@ -61,7 +60,7 @@ class _QuickActionsMenuState extends State<QuickActionsMenu>
   }
 
   void _toggle() {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.selection();
     setState(() {
       _isExpanded = !_isExpanded;
       if (_isExpanded) {
@@ -73,7 +72,7 @@ class _QuickActionsMenuState extends State<QuickActionsMenu>
   }
 
   void _handleActionTap(QuickAction action) {
-    HapticFeedback.lightImpact();
+    HapticPatterns.light();
     _toggle(); // Close menu
     action.onTap();
   }
@@ -158,10 +157,8 @@ class _QuickActionsMenuState extends State<QuickActionsMenu>
         // Button
         FloatingActionButton.small(
           onPressed: () => _handleActionTap(action),
-          backgroundColor:
-              action.backgroundColor ?? theme.colorScheme.secondary,
-          foregroundColor:
-              action.foregroundColor ?? theme.colorScheme.onSecondary,
+          backgroundColor: action.backgroundColor ?? theme.colorScheme.secondary,
+          foregroundColor: action.foregroundColor ?? theme.colorScheme.onSecondary,
           heroTag: action.label,
           child: Icon(action.icon, size: 20),
         ),

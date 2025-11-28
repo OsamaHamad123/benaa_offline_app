@@ -5,7 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
+import '../../../../core/utils/debouncer.dart';
+import '../../../../core/utils/arabic_normalizer.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/enhanced_refresh_indicator.dart';
+import '../../../../core/widgets/loading_state.dart' hide SkeletonLoader;
 import '../../domain/entities/civil_person.dart';
 import '../../data/services/search_analytics.dart';
 import '../providers/search_provider.dart';
@@ -26,20 +31,18 @@ class CivilSearchPageEnhanced extends ConsumerStatefulWidget {
   const CivilSearchPageEnhanced({super.key});
 
   @override
-  ConsumerState<CivilSearchPageEnhanced> createState() =>
-      _CivilSearchPageEnhancedState();
+  ConsumerState<CivilSearchPageEnhanced> createState() => _CivilSearchPageEnhancedState();
 }
 
-class _CivilSearchPageEnhancedState
-    extends ConsumerState<CivilSearchPageEnhanced> {
+class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhanced> {
   // ⚡ Removed AutomaticKeepAliveClientMixin for better performance
   // This was causing memory issues and lag across the app
 
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   final _searchFocusNode = FocusNode(); // ⚡ Focus control for keyboard
-  Timer? _debounceTimer;
-  Timer? _scrollDebounceTimer; // ⚡ Debounce for scroll events
+  late final Debouncer _searchDebouncer; // ✅ Debouncer for search
+  late final Throttler _scrollThrottler; // ✅ Throttler for scroll events
 
   // ⚡ Track if this is first search (for showing optimization message)
   bool _isFirstSearch = true;
@@ -65,6 +68,9 @@ class _CivilSearchPageEnhancedState
   @override
   void initState() {
     super.initState();
+    // ✅ Initialize Debouncer with smart adaptive delay
+    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 200));
+    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
     // ⚡ Auto-scroll listener for infinite scroll
     _scrollController.addListener(_onScroll);
   }
@@ -74,8 +80,7 @@ class _CivilSearchPageEnhancedState
     _searchController.dispose();
     _scrollController.dispose();
     _searchFocusNode.dispose();
-    _debounceTimer?.cancel();
-    _scrollDebounceTimer?.cancel();
+    _searchDebouncer.dispose(); // ✅ Clean Debouncer
 
     // ⚡ Clean up cache when leaving page to free memory
     // This prevents GC lag when navigating to other pages
@@ -92,9 +97,8 @@ class _CivilSearchPageEnhancedState
   void _onScroll() {
     if (!mounted) return;
 
-    // ⚡ Debounce scroll events to reduce provider reads
-    _scrollDebounceTimer?.cancel();
-    _scrollDebounceTimer = Timer(const Duration(milliseconds: 100), () {
+    // ✅ Use Throttler for smooth scroll handling
+    _scrollThrottler(() {
       if (!mounted) return;
 
       final searchState = ref.read(searchProvider);
@@ -111,10 +115,10 @@ class _CivilSearchPageEnhancedState
   }
 
   void _onSearchChanged(String query) {
-    _debounceTimer?.cancel();
     final notifier = ref.read(searchProvider.notifier);
 
     if (query.trim().isEmpty) {
+      _searchDebouncer.cancel(); // ✅ Cancel any pending search
       notifier.clearSearch();
       // ⚡ Single setState with mounted check
       if (mounted) {
@@ -126,11 +130,13 @@ class _CivilSearchPageEnhancedState
       return;
     }
 
-    notifier.setQuery(query);
+    // ✅ Normalize Arabic text for better search results
+    final normalizedQuery = ArabicNormalizer.normalize(query);
+    notifier.setQuery(normalizedQuery);
 
     // Get autocomplete suggestions
-    if (query.trim().length >= 2) {
-      final suggestions = notifier.getSuggestions(query.trim());
+    if (normalizedQuery.trim().length >= 2) {
+      final suggestions = notifier.getSuggestions(normalizedQuery.trim());
       // ⚡ Single setState with mounted check
       if (mounted) {
         setState(() {
@@ -148,29 +154,12 @@ class _CivilSearchPageEnhancedState
       }
     }
 
-    // ⚡ SMART ADAPTIVE DEBOUNCE - optimized for different query types
-    final trimmedQuery = query.trim();
-    final queryLength = trimmedQuery.length;
-    final isNumeric = RegExp(r'^\d+$').hasMatch(trimmedQuery);
+    // ✅ Use Debouncer for search with smart delay
+    final trimmedQuery = normalizedQuery.trim();
 
-    int debounceMs;
-
-    if (isNumeric) {
-      // National ID: Almost instant (50ms)
-      debounceMs = 50;
-    } else if (queryLength <= 2) {
-      // Very short queries: Fast (100ms)
-      debounceMs = 100;
-    } else if (queryLength <= 4) {
-      // Short queries: Medium (150ms)
-      debounceMs = 150;
-    } else {
-      // Long queries: Normal (200ms)
-      // Longer queries are more specific, less typing expected
-      debounceMs = 200;
-    }
-
-    _debounceTimer = Timer(Duration(milliseconds: debounceMs), () {
+    // Cancel and reschedule search
+    _searchDebouncer.cancel();
+    _searchDebouncer(() {
       if (trimmedQuery.length >= 2) {
         notifier.search(reset: true);
       }
@@ -192,8 +181,7 @@ class _CivilSearchPageEnhancedState
     final rv = _cachedRv!;
 
     // Check if database not found error
-    if (searchState.error != null &&
-        searchState.error!.contains('قاعدة بيانات السجل المدني غير موجودة')) {
+    if (searchState.error != null && searchState.error!.contains('قاعدة بيانات السجل المدني غير موجودة')) {
       return _buildDatabaseNotFoundScreen(rv);
     }
 
@@ -213,7 +201,7 @@ class _CivilSearchPageEnhancedState
           : null,
       backgroundColor: Colors.grey.shade50,
       resizeToAvoidBottomInset: true,
-      body: RefreshIndicator(
+      body: EnhancedRefreshIndicator(
         onRefresh: () async {
           // ⚡ Pull to refresh functionality
           if (searchState.query.isNotEmpty) {
@@ -229,8 +217,7 @@ class _CivilSearchPageEnhancedState
           slivers: [
             _buildModernAppBar(statsAsync, rv),
             _buildSearchSection(searchState, rv),
-            if (searchState.query.isNotEmpty)
-              _buildFiltersSection(searchState, statsAsync, rv),
+            if (searchState.query.isNotEmpty) _buildFiltersSection(searchState, statsAsync, rv),
             _buildResultsSection(searchState, rv),
           ],
         ),
@@ -325,16 +312,13 @@ class _CivilSearchPageEnhancedState
   Widget _buildModernAppBar(AsyncValue statsAsync, ResponsiveValues rv) {
     return statsAsync.when(
       data: (stats) => SliverAppBar(
-        expandedHeight: rv.isMobile
-            ? 200
-            : (rv.isTablet ? 220 : 240), // ⚡ Increased to prevent overlap
+        expandedHeight: rv.isMobile ? 200 : (rv.isTablet ? 220 : 240), // ⚡ Increased to prevent overlap
         floating: false,
         pinned: true,
         elevation: 0,
         stretch: true, // ⚡ Smooth bounce effect
         flexibleSpace: FlexibleSpaceBar(
-          titlePadding: EdgeInsets
-              .zero, // ⚡ Remove title padding - we'll position manually
+          titlePadding: EdgeInsets.zero, // ⚡ Remove title padding - we'll position manually
           centerTitle: false,
           background: Container(
             decoration: const BoxDecoration(
@@ -432,8 +416,7 @@ class _CivilSearchPageEnhancedState
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
       floating: false,
       pinned: true,
-      backgroundColor:
-          Colors.grey.shade400, // ⚡ Simple color instead of gradient
+      backgroundColor: Colors.grey.shade400, // ⚡ Simple color instead of gradient
       flexibleSpace: FlexibleSpaceBar(
         title: Text('السجل المدني', style: TextStyle(fontSize: rv.fontSize)),
         centerTitle: true,
@@ -446,8 +429,7 @@ class _CivilSearchPageEnhancedState
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
       floating: false,
       pinned: true,
-      backgroundColor:
-          Colors.red.shade400, // ⚡ Simple color instead of gradient
+      backgroundColor: Colors.red.shade400, // ⚡ Simple color instead of gradient
       flexibleSpace: FlexibleSpaceBar(
         title: Text('السجل المدني', style: TextStyle(fontSize: rv.fontSize)),
         centerTitle: true,
@@ -494,8 +476,7 @@ class _CivilSearchPageEnhancedState
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  hintText:
-                      'ابحث بالاسم الكامل (مثال: محمد أحمد علي) أو جزء منه، أو الرقم الوطني...',
+                  hintText: 'ابحث بالاسم الكامل (مثال: محمد أحمد علي) أو جزء منه، أو الرقم الوطني...',
                   hintStyle: TextStyle(
                     color: Colors.grey.shade400,
                     fontSize: rv.fontSize,
@@ -514,23 +495,14 @@ class _CivilSearchPageEnhancedState
                   suffixIcon: searchState.isSearching
                       ? const Padding(
                           padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.blue,
-                              ),
-                            ),
-                          ),
+                          child: SmallLoadingIndicator(),
                         )
                       : searchState.query.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: _clearSearch,
-                        )
-                      : null,
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: _clearSearch,
+                            )
+                          : null,
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(
@@ -571,22 +543,16 @@ class _CivilSearchPageEnhancedState
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: searchState.results.isEmpty
-                            ? Colors.orange.shade50
-                            : Colors.blue.shade50,
+                        color: searchState.results.isEmpty ? Colors.orange.shade50 : Colors.blue.shade50,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: searchState.results.isEmpty
-                              ? Colors.orange.shade200
-                              : Colors.blue.shade200,
+                          color: searchState.results.isEmpty ? Colors.orange.shade200 : Colors.blue.shade200,
                         ),
                       ),
                       child: Text(
                         '${searchState.results.length} نتيجة',
                         style: TextStyle(
-                          color: searchState.results.isEmpty
-                              ? Colors.orange.shade700
-                              : Colors.blue.shade700,
+                          color: searchState.results.isEmpty ? Colors.orange.shade700 : Colors.blue.shade700,
                           fontSize: rv.fontSize * 0.93,
                           fontWeight: FontWeight.w600,
                         ),
@@ -767,9 +733,7 @@ class _CivilSearchPageEnhancedState
                           () {
                             ref.read(searchProvider.notifier).clearAgeFilter();
                             if (searchState.query.isNotEmpty) {
-                              ref
-                                  .read(searchProvider.notifier)
-                                  .search(reset: true);
+                              ref.read(searchProvider.notifier).search(reset: true);
                             }
                           },
                         ),
@@ -778,29 +742,21 @@ class _CivilSearchPageEnhancedState
                           Icons.location_city,
                           'المحافظة: ${searchState.filter.governorate}',
                           () {
-                            ref
-                                .read(searchProvider.notifier)
-                                .setGovernorate(null);
+                            ref.read(searchProvider.notifier).setGovernorate(null);
                             if (searchState.query.isNotEmpty) {
-                              ref
-                                  .read(searchProvider.notifier)
-                                  .search(reset: true);
+                              ref.read(searchProvider.notifier).search(reset: true);
                             }
                           },
                           color: Colors.green,
                         ),
                       if (searchState.filter.gender != null)
                         _buildFilterChip(
-                          searchState.filter.gender!.code == 1
-                              ? Icons.male
-                              : Icons.female,
+                          searchState.filter.gender!.code == 1 ? Icons.male : Icons.female,
                           'الجنس: ${searchState.filter.gender!.arabicLabel}',
                           () {
                             ref.read(searchProvider.notifier).setGender(null);
                             if (searchState.query.isNotEmpty) {
-                              ref
-                                  .read(searchProvider.notifier)
-                                  .search(reset: true);
+                              ref.read(searchProvider.notifier).search(reset: true);
                             }
                           },
                           color: Colors.purple,
@@ -895,8 +851,7 @@ class _CivilSearchPageEnhancedState
                 message: searchState.error!,
                 iconColor: Colors.red,
                 action: ElevatedButton.icon(
-                  onPressed: () =>
-                      ref.read(searchProvider.notifier).search(reset: true),
+                  onPressed: () => ref.read(searchProvider.notifier).search(reset: true),
                   icon: const Icon(Icons.refresh),
                   label: const Text('إعادة المحاولة'),
                 ),
@@ -921,9 +876,7 @@ class _CivilSearchPageEnhancedState
             }
 
             // Adjust index for results
-            final resultIndex = searchState.searchDurationMs != null
-                ? index - 1
-                : index;
+            final resultIndex = searchState.searchDurationMs != null ? index - 1 : index;
 
             // Results
             if (resultIndex >= 0 && resultIndex < searchState.results.length) {
@@ -939,8 +892,7 @@ class _CivilSearchPageEnhancedState
             }
 
             // Enhanced loading indicator at bottom with skeleton
-            if (resultIndex == searchState.results.length &&
-                searchState.hasMore) {
+            if (resultIndex == searchState.results.length && searchState.hasMore) {
               return Padding(
                 padding: EdgeInsets.symmetric(vertical: rv.spacing * 2),
                 child: Center(
@@ -980,19 +932,13 @@ class _CivilSearchPageEnhancedState
 
             return const SizedBox.shrink();
           },
-          childCount:
-              searchState.results.length +
+          childCount: searchState.results.length +
               (searchState.hasMore ? 1 : 0) +
-              (searchState.searchDurationMs != null
-                  ? 1
-                  : 0), // ⚡ +1 for performance indicator
+              (searchState.searchDurationMs != null ? 1 : 0), // ⚡ +1 for performance indicator
           // ⚡ Performance optimizations
-          addAutomaticKeepAlives:
-              false, // Don't keep state of scrolled-away items
-          addRepaintBoundaries:
-              true, // ⚡ Isolate card repaints (ResultCard no longer wraps)
-          addSemanticIndexes:
-              false, // Reduce overhead for assistive technologies
+          addAutomaticKeepAlives: false, // Don't keep state of scrolled-away items
+          addRepaintBoundaries: true, // ⚡ Isolate card repaints (ResultCard no longer wraps)
+          addSemanticIndexes: false, // Reduce overhead for assistive technologies
         ),
       ),
     );
@@ -1202,12 +1148,8 @@ class _CivilSearchPageEnhancedState
                         return InkWell(
                           onTap: () {
                             _searchController.text = suggestion;
-                            ref
-                                .read(searchProvider.notifier)
-                                .setQuery(suggestion);
-                            ref
-                                .read(searchProvider.notifier)
-                                .search(reset: true);
+                            ref.read(searchProvider.notifier).setQuery(suggestion);
+                            ref.read(searchProvider.notifier).search(reset: true);
                           },
                           child: Container(
                             padding: EdgeInsets.symmetric(
@@ -1247,9 +1189,7 @@ class _CivilSearchPageEnhancedState
             SizedBox(height: rv.spacing * 0.7),
             _buildSearchTip(
               Icons.abc,
-              rv.isMobile
-                  ? 'استخدم اسم جزئي'
-                  : 'جرب كتابة اسم جزئي (مثال: "محمد" بدلاً من "محمد أحمد")',
+              rv.isMobile ? 'استخدم اسم جزئي' : 'جرب كتابة اسم جزئي (مثال: "محمد" بدلاً من "محمد أحمد")',
               rv,
             ),
             SizedBox(height: rv.spacing * 0.4),
@@ -1339,8 +1279,7 @@ class _CivilSearchPageEnhancedState
   }
 
   void _copyToClipboard(CivilPerson person) {
-    final text =
-        '''
+    final text = '''
 الاسم الكامل: ${person.fullName}
 الرقم الوطني: ${person.nationalId}
 الجنس: ${person.gender.arabicLabel}
@@ -1544,17 +1483,11 @@ class _PerformanceIndicator extends StatelessWidget {
     final isFast = durationMs < 50;
     final isGood = durationMs < 100;
 
-    final color = isFast
-        ? Colors.green.shade700
-        : (isGood ? Colors.orange.shade700 : Colors.red.shade700);
+    final color = isFast ? Colors.green.shade700 : (isGood ? Colors.orange.shade700 : Colors.red.shade700);
 
-    final bgColor = isFast
-        ? Colors.green.shade50
-        : (isGood ? Colors.orange.shade50 : Colors.red.shade50);
+    final bgColor = isFast ? Colors.green.shade50 : (isGood ? Colors.orange.shade50 : Colors.red.shade50);
 
-    final borderColor = isFast
-        ? Colors.green.shade300
-        : (isGood ? Colors.orange.shade300 : Colors.red.shade300);
+    final borderColor = isFast ? Colors.green.shade300 : (isGood ? Colors.orange.shade300 : Colors.red.shade300);
 
     return Padding(
       padding: EdgeInsets.only(bottom: spacing),
@@ -1579,9 +1512,7 @@ class _PerformanceIndicator extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize * 0.85,
                 fontWeight: FontWeight.w600,
-                color: isFast
-                    ? Colors.green.shade900
-                    : (isGood ? Colors.orange.shade900 : Colors.red.shade900),
+                color: isFast ? Colors.green.shade900 : (isGood ? Colors.orange.shade900 : Colors.red.shade900),
               ),
             ),
             const SizedBox(width: 6),
@@ -1734,8 +1665,8 @@ class _FilterButtonsRow extends StatelessWidget {
             icon: filter.gender?.code == 1
                 ? Icons.male
                 : filter.gender?.code == 2
-                ? Icons.female
-                : Icons.people_alt,
+                    ? Icons.female
+                    : Icons.people_alt,
             label: filter.gender?.arabicLabel ?? 'الجنس',
             isActive: filter.gender != null,
             activeColor: Colors.purple,
@@ -1769,7 +1700,7 @@ class _FilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: () {
-        HapticFeedback.lightImpact(); // ⚡ Tactile feedback
+        HapticPatterns.light(); // ⚡ Tactile feedback
         onPressed();
       },
       icon: Icon(

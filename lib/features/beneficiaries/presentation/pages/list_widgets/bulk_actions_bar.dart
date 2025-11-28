@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../../../../../core/utils/haptic_patterns.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/utils/responsive_utils_v2.dart';
 import '../../providers/list/selection_provider.dart';
@@ -39,7 +39,7 @@ class BulkActionsBar extends ConsumerWidget {
             IconButton(
               icon: Icon(Icons.close, size: rv.isTablet ? 26 : 24),
               onPressed: () {
-                HapticFeedback.lightImpact();
+                HapticPatterns.selection();
                 ref.read(selectionProvider.notifier).deselectAll();
               },
             ),
@@ -56,7 +56,7 @@ class BulkActionsBar extends ConsumerWidget {
               icon: Icon(Icons.delete_outline, size: rv.isTablet ? 26 : 24),
               tooltip: 'حذف',
               onPressed: () {
-                HapticFeedback.mediumImpact();
+                HapticPatterns.warning();
                 _showDeleteConfirmation(context, ref);
               },
             ),
@@ -67,7 +67,7 @@ class BulkActionsBar extends ConsumerWidget {
               ),
               tooltip: 'تصدير',
               onPressed: () {
-                HapticFeedback.lightImpact();
+                HapticPatterns.selection();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('قريباً: تصدير المحددة')),
                 );
@@ -77,7 +77,7 @@ class BulkActionsBar extends ConsumerWidget {
               icon: Icon(Icons.sync, size: rv.isTablet ? 26 : 24),
               tooltip: 'مزامنة',
               onPressed: () {
-                HapticFeedback.lightImpact();
+                HapticPatterns.selection();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('قريباً: مزامنة المحددة')),
                 );
@@ -102,14 +102,14 @@ class BulkActionsBar extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () {
-              HapticFeedback.lightImpact();
+              HapticPatterns.selection();
               Navigator.pop(context, false);
             },
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
             onPressed: () {
-              HapticFeedback.heavyImpact();
+              HapticPatterns.error();
               Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -121,7 +121,7 @@ class BulkActionsBar extends ConsumerWidget {
 
     if (confirmed == true) {
       try {
-        HapticFeedback.mediumImpact();
+        HapticPatterns.warning();
 
         await ref
             .read(beneficiariesListProvider.notifier)
@@ -130,7 +130,7 @@ class BulkActionsBar extends ConsumerWidget {
         ref.read(selectionProvider.notifier).deselectAll();
 
         if (context.mounted) {
-          HapticFeedback.lightImpact();
+          HapticPatterns.selection();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('تم حذف ${selection.selectedCount} مستفيد بنجاح'),
@@ -141,7 +141,7 @@ class BulkActionsBar extends ConsumerWidget {
         }
       } catch (e) {
         if (context.mounted) {
-          HapticFeedback.heavyImpact();
+          HapticPatterns.error();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('فشل الحذف: ${e.toString()}'),
@@ -159,3 +159,4 @@ class BulkActionsBar extends ConsumerWidget {
     }
   }
 }
+

@@ -24,8 +24,7 @@ class PendingAttachmentsSection extends StatefulWidget {
   });
 
   @override
-  State<PendingAttachmentsSection> createState() =>
-      _PendingAttachmentsSectionState();
+  State<PendingAttachmentsSection> createState() => _PendingAttachmentsSectionState();
 }
 
 class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
@@ -63,9 +62,9 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
           child: Text(
             'المرفقات${_pendingFiles.isNotEmpty ? ' (${_pendingFiles.length})' : ''}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Colors.blueGrey,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey,
+                ),
           ),
         ),
       ],
@@ -154,6 +153,7 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
   Future<void> _showAddOptions(BuildContext context) async {
     await showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
@@ -273,8 +273,8 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
                     e.toString().contains('camera_access_denied')
                         ? 'لا يوجد صلاحية للوصول إلى الكاميرا'
                         : e.toString().contains('already_active')
-                        ? 'الكاميرا مشغولة بالفعل، أغلق التطبيق الآخر أولاً'
-                        : 'فشل فتح الكاميرا: ${e.toString()}',
+                            ? 'الكاميرا مشغولة بالفعل، أغلق التطبيق الآخر أولاً'
+                            : 'فشل فتح الكاميرا: ${e.toString()}',
                   ),
                 ),
               ],
@@ -672,8 +672,7 @@ class _PendingFileCard extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (_, __, ___) =>
-              _buildIcon(Icons.broken_image, Colors.red),
+          errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, Colors.red),
         ),
       );
     } else if (_isPdf()) {

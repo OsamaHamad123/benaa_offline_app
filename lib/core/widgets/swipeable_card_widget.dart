@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../utils/haptic_patterns.dart';
 
 /// 👆 Swipeable Card Widget - بطاقة قابلة للسحب
 ///
@@ -41,8 +41,7 @@ class SwipeableCardWidget extends StatefulWidget {
   State<SwipeableCardWidget> createState() => _SwipeableCardWidgetState();
 }
 
-class _SwipeableCardWidgetState extends State<SwipeableCardWidget>
-    with SingleTickerProviderStateMixin {
+class _SwipeableCardWidgetState extends State<SwipeableCardWidget> with SingleTickerProviderStateMixin {
   double _dragExtent = 0;
   bool _hasTriggeredHaptic = false;
 
@@ -64,7 +63,7 @@ class _SwipeableCardWidgetState extends State<SwipeableCardWidget>
     // Haptic feedback عند الوصول للـ threshold
     final threshold = MediaQuery.of(context).size.width * widget.swipeThreshold;
     if (_dragExtent.abs() > threshold && !_hasTriggeredHaptic) {
-      HapticFeedback.mediumImpact();
+      HapticPatterns.warning();
       _hasTriggeredHaptic = true;
     } else if (_dragExtent.abs() <= threshold) {
       _hasTriggeredHaptic = false;
@@ -78,12 +77,12 @@ class _SwipeableCardWidgetState extends State<SwipeableCardWidget>
 
     if (_dragExtent > threshold && widget.onSwipeRight != null) {
       // Swipe Right (تعديل)
-      HapticFeedback.lightImpact();
+      HapticPatterns.light();
       widget.onSwipeRight!();
       _resetPosition();
     } else if (_dragExtent < -threshold && widget.onSwipeLeft != null) {
       // Swipe Left (حذف)
-      HapticFeedback.mediumImpact();
+      HapticPatterns.error();
       widget.onSwipeLeft!();
       _resetPosition();
     } else {
@@ -118,13 +117,11 @@ class _SwipeableCardWidgetState extends State<SwipeableCardWidget>
                 color: _dragExtent > 0
                     ? widget.rightActionColor.withOpacity(0.2)
                     : _dragExtent < 0
-                    ? widget.leftActionColor.withOpacity(0.2)
-                    : Colors.transparent,
+                        ? widget.leftActionColor.withOpacity(0.2)
+                        : Colors.transparent,
               ),
               child: Row(
-                mainAxisAlignment: _dragExtent > 0
-                    ? MainAxisAlignment.start
-                    : MainAxisAlignment.end,
+                mainAxisAlignment: _dragExtent > 0 ? MainAxisAlignment.start : MainAxisAlignment.end,
                 children: [
                   if (_dragExtent > 0)
                     _buildAction(

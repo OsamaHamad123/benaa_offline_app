@@ -5,10 +5,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import '../../../../core/utils/debouncer.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/errors/user_friendly_error.dart';
 import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi ValueListenableBuilder
 import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -67,12 +70,10 @@ class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
   const BeneficiaryFormPageV3({super.key, this.beneficiaryId});
 
   @override
-  ConsumerState<BeneficiaryFormPageV3> createState() =>
-      _BeneficiaryFormPageV3State();
+  ConsumerState<BeneficiaryFormPageV3> createState() => _BeneficiaryFormPageV3State();
 }
 
-class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
-    with SingleTickerProviderStateMixin {
+class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
@@ -94,8 +95,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
   set _lastSaved(DateTime? value) => _lastSavedNotifier.value = value;
 
-  set _hasUnsavedChanges(bool value) =>
-      _hasUnsavedChangesNotifier.value = value;
+  set _hasUnsavedChanges(bool value) => _hasUnsavedChangesNotifier.value = value;
 
   // 💾 Auto-draft ID - ثابت لتجنب إنشاء مسودات متكررة
   String? _autoSaveDraftId;
@@ -108,8 +108,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
   final FocusNode _firstFieldFocusNode = FocusNode();
 
-  // 🔄 Debouncing Timer for auto-save
-  Timer? _autoSaveDebouncer;
+  // 🔄 Debouncing for auto-save
+  late final Debouncer _autoSaveDebouncer; // ✅ Debouncer for auto-save
   // Timer to check and offer auto-saved drafts (cancelable)
   Timer? _offerAutoSavedDraftsTimer;
   // Timer to show first-time user tour (cancelable)
@@ -122,6 +122,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   @override
   void initState() {
     super.initState();
+
+    // ✅ Initialize Debouncer for auto-save (2 seconds)
+    _autoSaveDebouncer = Debouncer(delay: const Duration(seconds: 2));
+
     _controllers = BeneficiaryFormControllers(onAutoSave: _performAutoSave);
     _formHistory = FormHistory<FormStateSnapshot>(maxHistorySize: 50);
     _tabController = TabController(
@@ -191,9 +195,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     if (_controllers.selectedEducationLevel != null) filled++;
 
     // Optional field: family members
-    if (_controllers.livingMembers.isNotEmpty ||
-        _controllers.deceasedMembers.isNotEmpty)
-      filled++;
+    if (_controllers.livingMembers.isNotEmpty || _controllers.deceasedMembers.isNotEmpty) filled++;
 
     return filled;
   }
@@ -203,16 +205,12 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   Future<void> _performAutoSave() async {
     if (_isSaving || _isDeleting || _isLoading) return;
 
-    // Cancel previous debouncer
-    _autoSaveDebouncer?.cancel();
-
-    // Schedule new auto-save with 2-second delay
-    _autoSaveDebouncer = Timer(const Duration(seconds: 2), () async {
+    // Use Debouncer to delay auto-save
+    _autoSaveDebouncer(() async {
       if (!mounted) return;
 
       final hasChanges =
-          _controllers.firstNameController.text.isNotEmpty ||
-          _controllers.nationalIdController.text.isNotEmpty;
+          _controllers.firstNameController.text.isNotEmpty || _controllers.nationalIdController.text.isNotEmpty;
 
       if (!hasChanges) return;
 
@@ -251,15 +249,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       };
 
       // استخدام ID ثابت للمسودة التلقائية - يتم التحديث بدلاً من الإنشاء
-      _autoSaveDraftId ??=
-          widget.beneficiaryId ??
+      _autoSaveDraftId ??= widget.beneficiaryId ??
           'auto_draft_${_controllers.nationalIdController.text.isNotEmpty ? _controllers.nationalIdController.text : 'temp_${DateTime.now().millisecondsSinceEpoch}'}';
 
       final firstName = _controllers.firstNameController.text;
       final lastName = _controllers.lastNameController.text;
-      final draftName = firstName.isNotEmpty
-          ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}'
-          : 'مسودة جديدة';
+      final draftName =
+          firstName.isNotEmpty ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}' : 'مسودة جديدة';
 
       await DraftManager.saveDraft(
         draftId: _autoSaveDraftId!,
@@ -291,9 +287,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     setState(() => _isLoading = true);
 
     if (widget.beneficiaryId != null) {
-      await ref
-          .read(beneficiaryFormProvider.notifier)
-          .loadBeneficiary(widget.beneficiaryId!);
+      await ref.read(beneficiaryFormProvider.notifier).loadBeneficiary(widget.beneficiaryId!);
 
       final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
       if (beneficiary != null) {
@@ -326,9 +320,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       final drafts = await DraftManager.getAllDrafts();
 
       // تصفية المسودات التلقائية فقط
-      final autoSavedDrafts = drafts
-          .where((d) => d['isAutoSaved'] == true)
-          .toList();
+      final autoSavedDrafts = drafts.where((d) => d['isAutoSaved'] == true).toList();
 
       if (autoSavedDrafts.isEmpty) return;
 
@@ -751,16 +743,24 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
   /// ⬅️ التالي - الانتقال للتاب التالي (يمين في RTL)
   void _handleNextTab() {
     if (_tabController.index < FormConstants.totalTabs - 1) {
-      _tabController.animateTo(_tabController.index + 1);
-      HapticFeedback.selectionClick();
+      HapticPatterns.selection();
+      _tabController.animateTo(
+        _tabController.index + 1,
+        duration: AppDurations.fast,
+        curve: AppCurves.smooth,
+      );
     }
   }
 
   /// ➡️ السابق - الرجوع للتاب السابق (يسار في RTL)
   void _handlePreviousTab() {
     if (_tabController.index > 0) {
-      _tabController.animateTo(_tabController.index - 1);
-      HapticFeedback.selectionClick();
+      HapticPatterns.selection();
+      _tabController.animateTo(
+        _tabController.index - 1,
+        duration: AppDurations.fast,
+        curve: AppCurves.smooth,
+      );
     }
   }
 
@@ -1018,8 +1018,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                                                   true,
                                                 ),
                                                 child: FilledButton(
-                                                  onPressed:
-                                                      null, // handled by AnimatedButton
+                                                  onPressed: null, // handled by AnimatedButton
                                                   style: FilledButton.styleFrom(
                                                     backgroundColor: Theme.of(
                                                       context,
@@ -1079,8 +1078,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       // Fill controllers with draft data
       _controllers.firstNameController.text = formData['firstName'] ?? '';
       _controllers.fatherNameController.text = formData['fatherName'] ?? '';
-      _controllers.grandfatherNameController.text =
-          formData['grandfatherName'] ?? '';
+      _controllers.grandfatherNameController.text = formData['grandfatherName'] ?? '';
       _controllers.lastNameController.text = formData['lastName'] ?? '';
       _controllers.motherNameController.text = formData['motherName'] ?? '';
       _controllers.nationalIdController.text = formData['nationalId'] ?? '';
@@ -1144,7 +1142,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
   @override
   void dispose() {
-    _autoSaveDebouncer?.cancel(); // Cancel debouncer on dispose
+    _autoSaveDebouncer.dispose(); // Dispose debouncer
     _offerAutoSavedDraftsTimer?.cancel();
     _tourShowTimer?.cancel();
     _controllers.removeListener(_onFormChanged);
@@ -1180,8 +1178,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     }
     if (_controllers.nationalIdController.text.trim().isEmpty) {
       basicErrors.add('الرقم الوطني');
-    } else if (_controllers.nationalIdController.text.trim().length !=
-        FormConstants.nationalIdLength) {
+    } else if (_controllers.nationalIdController.text.trim().length != FormConstants.nationalIdLength) {
       basicErrors.add('الرقم الوطني (غير صحيح)');
     }
     if (_controllers.selectedGender == null) {
@@ -1213,13 +1210,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       // عرض رسالة مفصلة
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
-          final tabName = firstErrorTab == 0
-              ? 'المعلومات الأساسية'
-              : 'معلومات الاتصال';
+          final tabName = firstErrorTab == 0 ? 'المعلومات الأساسية' : 'معلومات الاتصال';
           EnhancedSnackbar.showError(
             context,
-            message:
-                'الحقول المطلوبة في "$tabName":\n${errorFields.join(', ')}',
+            message: 'الحقول المطلوبة في "$tabName":\n${errorFields.join(', ')}',
           );
 
           // تحريك التركيز للحقل الأول
@@ -1281,9 +1275,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         return;
       }
 
-      ref
-          .read(beneficiaryFormProvider.notifier)
-          .updateField((_) => beneficiary);
+      ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
       final success = await ref.read(beneficiaryFormProvider.notifier).save();
 
       if (success && mounted) {
@@ -1316,7 +1308,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         _hasUnsavedChanges = false;
 
         if (!isAutoSave) {
-          HapticFeedback.mediumImpact();
+          HapticPatterns.success();
           if (mounted) {
             // 🎉 Show success animation overlay
             SuccessOverlay.show(
@@ -1340,7 +1332,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         if (!mounted) return;
         _isSaving = false; // ⚡ Direct assignment
         if (!isAutoSave && mounted) {
-          HapticFeedback.heavyImpact();
+          HapticPatterns.error();
           EnhancedSnackbar.showError(
             context,
             message: 'فشل في حفظ البيانات',
@@ -1357,7 +1349,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
     if (beneficiary == null) return;
 
-    HapticFeedback.mediumImpact();
+    HapticPatterns.warning();
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -1528,9 +1520,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                       builder: (context, isSaving, _) {
                         return local.LoadingOverlay(
                           isVisible: isSaving || _isDeleting,
-                          message: isSaving
-                              ? FormConstants.savingMessage
-                              : FormConstants.deletingMessage,
+                          message: isSaving ? FormConstants.savingMessage : FormConstants.deletingMessage,
                         );
                       },
                     ),
@@ -1541,32 +1531,27 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                         steps: [
                           TourStep(
                             title: 'مرحباً بك! 👋',
-                            description:
-                                'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
+                            description: 'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
                             icon: Icons.waving_hand,
                           ),
                           TourStep(
                             title: 'التبويبات 📑',
-                            description:
-                                'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
+                            description: 'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
                             icon: Icons.tab,
                           ),
                           TourStep(
                             title: 'كارد التقدم 📊',
-                            description:
-                                'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
+                            description: 'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
                             icon: Icons.analytics,
                           ),
                           TourStep(
                             title: 'حفظ المسودة 💾',
-                            description:
-                                'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
+                            description: 'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
                             icon: Icons.save,
                           ),
                           TourStep(
                             title: 'المراجعة النهائية 📋',
-                            description:
-                                'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
+                            description: 'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
                             icon: Icons.checklist,
                           ),
                         ],

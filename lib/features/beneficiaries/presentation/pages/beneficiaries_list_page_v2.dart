@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
+import '../../../../core/utils/debouncer.dart';
+import '../../../../core/utils/arabic_normalizer.dart';
 import '../providers/list/beneficiaries_list_provider.dart';
 import '../providers/list/beneficiaries_list_state.dart';
 import '../providers/list/filters_provider.dart';
@@ -24,6 +26,7 @@ import '../../../../core/monitoring/app_monitoring.dart';
 import '../../../../core/performance/widget_performance_analyzer.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
+import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/design_system/app_animations.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
@@ -31,20 +34,21 @@ class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
   const BeneficiariesListPageV2({super.key});
 
   @override
-  ConsumerState<BeneficiariesListPageV2> createState() =>
-      _BeneficiariesListPageV2State();
+  ConsumerState<BeneficiariesListPageV2> createState() => _BeneficiariesListPageV2State();
 }
 
-class _BeneficiariesListPageV2State
-    extends ConsumerState<BeneficiariesListPageV2> {
+class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV2> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
-  Timer? _debounceTimer;
+  late final Debouncer _searchDebouncer; // ✅ Debouncer for search
+  late final Throttler _scrollThrottler; // ✅ Throttler for scroll
   bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
+    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 300));
+    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
     _scrollController.addListener(_onScroll);
 
     // Track screen view
@@ -70,15 +74,16 @@ class _BeneficiariesListPageV2State
 
     _searchController.dispose();
     _scrollController.dispose();
-    _debounceTimer?.cancel();
+    _searchDebouncer.dispose(); // ✅ Clean up Debouncer
     super.dispose();
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.9) {
-      ref.read(beneficiariesListProvider.notifier).loadMore();
-    }
+    _scrollThrottler(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+        ref.read(beneficiariesListProvider.notifier).loadMore();
+      }
+    });
   }
 
   /// 📐 Dynamic grid columns based on screen width
@@ -100,11 +105,13 @@ class _BeneficiariesListPageV2State
   }
 
   void _onSearchChanged(String value) {
-    _debounceTimer?.cancel();
     setState(() => _isSearching = true);
 
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      ref.read(filtersProvider.notifier).setSearchQuery(value);
+    // ✅ Normalize Arabic text for better search
+    final normalizedQuery = ArabicNormalizer.normalize(value);
+
+    _searchDebouncer(() {
+      ref.read(filtersProvider.notifier).setSearchQuery(normalizedQuery);
       ref.read(beneficiariesListProvider.notifier).refresh();
       if (mounted) {
         setState(() => _isSearching = false);
@@ -211,9 +218,7 @@ class _BeneficiariesListPageV2State
                     final result = await context.push('/beneficiaries/add');
                     if (result == true && mounted) {
                       ref.read(beneficiariesListProvider.notifier).clearCache();
-                      await ref
-                          .read(beneficiariesListProvider.notifier)
-                          .refresh();
+                      await ref.read(beneficiariesListProvider.notifier).refresh();
                       if (mounted) {
                         VisualFeedback.showSuccess(
                           context,
@@ -265,15 +270,13 @@ class _BeneficiariesListPageV2State
   /// ⚡ Build filter button with badge (memoized)
   Widget _buildFilterButton(FiltersState filters) {
     return Semantics(
-      label:
-          'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+      label: 'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
       button: true,
       child: Stack(
         children: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            tooltip:
-                'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+            tooltip: 'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
             onPressed: () => _showFilters(context),
           ),
           if (filters.hasActiveFilters)
@@ -348,9 +351,7 @@ class _BeneficiariesListPageV2State
           HapticFeedback.lightImpact();
         }
       },
-      child: rv.isTablet
-          ? _buildGridView(state, selection, rv)
-          : _buildListView(state, selection, rv),
+      child: rv.isTablet ? _buildGridView(state, selection, rv) : _buildListView(state, selection, rv),
     );
   }
 
@@ -374,7 +375,7 @@ class _BeneficiariesListPageV2State
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
+              child: SmallLoadingIndicator(),
             ),
           );
         }
@@ -437,7 +438,7 @@ class _BeneficiariesListPageV2State
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(),
+              child: SmallLoadingIndicator(),
             ),
           );
         }

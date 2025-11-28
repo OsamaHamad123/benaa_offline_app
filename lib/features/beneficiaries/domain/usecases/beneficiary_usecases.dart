@@ -1,18 +1,19 @@
 import '../entities/beneficiary.dart';
 import '../repositories/beneficiary_repository.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// Create Beneficiary Use Case
 class CreateBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const CreateBeneficiaryUseCase(this.repository);
 
-  Future<Beneficiary> execute(Beneficiary beneficiary) async {
+  Future<Result<Beneficiary>> execute(Beneficiary beneficiary) async {
     // Business validation
     if (beneficiary.fullName.trim().isEmpty) {
-      throw Exception('الاسم الكامل مطلوب');
+      return Failure(ValidationFailure('الاسم الكامل مطلوب'));
     }
     if (beneficiary.nationalId.trim().isEmpty) {
-      throw Exception('الرقم الوطني مطلوب');
+      return Failure(ValidationFailure('الرقم الوطني مطلوب'));
     }
 
     return await repository.create(beneficiary);
@@ -24,7 +25,7 @@ class UpdateBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const UpdateBeneficiaryUseCase(this.repository);
 
-  Future<Beneficiary> execute(Beneficiary beneficiary) async {
+  Future<Result<Beneficiary>> execute(Beneficiary beneficiary) async {
     return await repository.update(beneficiary);
   }
 }
@@ -34,7 +35,7 @@ class GetBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const GetBeneficiaryUseCase(this.repository);
 
-  Future<Beneficiary?> execute(String id) async {
+  Future<Result<Beneficiary>> execute(String id) async {
     return await repository.getById(id);
   }
 }
@@ -44,8 +45,8 @@ class DeleteBeneficiaryUseCase {
   final BeneficiaryRepository repository;
   const DeleteBeneficiaryUseCase(this.repository);
 
-  Future<void> execute(String id) async {
-    await repository.delete(id);
+  Future<Result<void>> execute(String id) async {
+    return await repository.delete(id);
   }
 }
 
@@ -54,7 +55,7 @@ class ListBeneficiariesUseCase {
   final BeneficiaryRepository repository;
   const ListBeneficiariesUseCase(this.repository);
 
-  Future<List<Beneficiary>> execute({
+  Future<Result<List<Beneficiary>>> execute({
     String? searchQuery,
     BeneficiaryCategory? category,
     Gender? gender,
@@ -76,11 +77,21 @@ class GetBeneficiaryStatisticsUseCase {
   final BeneficiaryRepository repository;
   const GetBeneficiaryStatisticsUseCase(this.repository);
 
-  Future<Map<String, int>> execute() async {
-    final total = await repository.count();
-    final pending = await repository.count(); // TODO: Add pendingSync filter
+  Future<Result<Map<String, int>>> execute() async {
+    final totalResult = await repository.count();
+    if (totalResult is Failure<int>) {
+      return Failure(totalResult.error);
+    }
 
-    return {'total': total, 'pending': pending};
+    final pendingResult = await repository.count(); // TODO: Add pendingSync filter
+    if (pendingResult is Failure<int>) {
+      return Failure(pendingResult.error);
+    }
+
+    return Success({
+      'total': (totalResult as Success<int>).value,
+      'pending': (pendingResult as Success<int>).value,
+    });
   }
 }
 
@@ -89,11 +100,11 @@ class LoadFromCivilRegistryUseCase {
   final BeneficiaryRepository repository;
   const LoadFromCivilRegistryUseCase(this.repository);
 
-  Future<Map<String, dynamic>?> execute(String nationalId) async {
+  Future<Result<Map<String, dynamic>>> execute(String nationalId) async {
     // Validate national ID format
     final cleaned = nationalId.replaceAll(RegExp(r'[^\d]'), '');
     if (cleaned.length < 8) {
-      throw Exception('الرقم الوطني غير صحيح');
+      return Failure(ValidationFailure('الرقم الوطني غير صحيح'));
     }
 
     return await repository.loadFromCivilRegistry(cleaned);

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../utils/haptic_patterns.dart';
 
 /// Context Menu Item
 class ContextMenuItem {
@@ -27,11 +28,10 @@ class LongPressContextMenu {
     required List<ContextMenuItem> items,
     Offset? position,
   }) async {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.warning();
 
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final pos =
-        position ??
+    final pos = position ??
         (context.findRenderObject() as RenderBox?)?.localToGlobal(
           Offset.zero,
         ) ??
@@ -51,18 +51,14 @@ class LongPressContextMenu {
               Icon(
                 item.icon,
                 size: 20.sp,
-                color: item.isDangerous
-                    ? Colors.red
-                    : (item.color ?? Colors.grey[700]),
+                color: item.isDangerous ? Colors.red : (item.color ?? Colors.grey[700]),
               ),
               SizedBox(width: 12.w),
               Text(
                 item.label,
                 style: TextStyle(
                   fontSize: 14.sp,
-                  color: item.isDangerous
-                      ? Colors.red
-                      : (item.color ?? Colors.black87),
+                  color: item.isDangerous ? Colors.red : (item.color ?? Colors.black87),
                 ),
               ),
             ],
@@ -80,7 +76,7 @@ class LongPressContextMenu {
     required List<ContextMenuItem> items,
     String? title,
   }) async {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.warning();
 
     await showModalBottomSheet(
       context: context,
@@ -122,21 +118,17 @@ class LongPressContextMenu {
                 return ListTile(
                   leading: Icon(
                     item.icon,
-                    color: item.isDangerous
-                        ? Colors.red
-                        : (item.color ?? Colors.grey[700]),
+                    color: item.isDangerous ? Colors.red : (item.color ?? Colors.grey[700]),
                   ),
                   title: Text(
                     item.label,
                     style: TextStyle(
-                      color: item.isDangerous
-                          ? Colors.red
-                          : (item.color ?? Colors.black87),
+                      color: item.isDangerous ? Colors.red : (item.color ?? Colors.black87),
                     ),
                   ),
                   onTap: () {
                     Navigator.pop(context);
-                    HapticFeedback.selectionClick();
+                    HapticPatterns.selection();
                     item.onTap();
                   },
                 );

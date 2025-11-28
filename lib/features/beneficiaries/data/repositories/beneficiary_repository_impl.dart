@@ -4,6 +4,7 @@ import '../../domain/repositories/beneficiary_repository.dart';
 import '../datasources/beneficiary_local_datasource.dart';
 import '../models/beneficiary_model.dart';
 import '../../../../core/monitoring/performance_monitor.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// 📦 Beneficiary Repository Implementation
 ///
@@ -14,181 +15,232 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
   const BeneficiaryRepositoryImpl(this.localDataSource);
 
   @override
-  Future<Beneficiary> create(Beneficiary beneficiary) async {
-    final companion = BeneficiaryModel(
-      id: beneficiary.id,
-      fullName: beneficiary.fullName,
-      nationalId: beneficiary.nationalId,
-      gender: beneficiary.gender,
-      category: beneficiary.category,
-      birthDate: beneficiary.birthDate,
-      motherName: beneficiary.motherName,
-      fatherName: beneficiary.fatherName,
-      grandFatherName: beneficiary.grandFatherName,
-      familyName: beneficiary.familyName,
-      phoneNumber: beneficiary.phoneNumber,
-      altPhoneNumber: beneficiary.altPhoneNumber,
-      governorate: beneficiary.governorate,
-      district: beneficiary.district,
-      address: beneficiary.address,
-      currentAddress: beneficiary.currentAddress,
-      addressBeforeDisplacement: beneficiary.addressBeforeDisplacement,
-      fileNo: beneficiary.fileNo,
-      associationName: beneficiary.associationName,
-      maritalStatus: beneficiary.maritalStatus,
-      educationLevel: beneficiary.educationLevel,
-      healthStatus: beneficiary.healthStatus,
-      hasDisability: beneficiary.hasDisability,
-      familySize: beneficiary.familySize,
-      numberOfMales: beneficiary.numberOfMales,
-      numberOfFemales: beneficiary.numberOfFemales,
-      chronicDiseasesCount: beneficiary.chronicDiseasesCount,
-      specialNeedsCount: beneficiary.specialNeedsCount,
-      displacementStatus: beneficiary.displacementStatus,
-      employmentStatus: beneficiary.employmentStatus,
-      housingStatus: beneficiary.housingStatus,
-      housingType: beneficiary.housingType,
-      requestStatus: beneficiary.requestStatus,
-      notes: beneficiary.notes,
-      createdAt: beneficiary.createdAt,
-      updatedAt: beneficiary.updatedAt,
-      needsSync: true, // ✅ المستفيدين الجدد يحتاجون مزامنة
-    ).toDrift();
-
-    final result = await localDataSource.create(companion);
-    return result as Beneficiary;
-  }
-
-  @override
-  Future<Beneficiary> update(Beneficiary beneficiary) async {
-    final companion = BeneficiaryModel(
-      id: beneficiary.id,
-      fullName: beneficiary.fullName,
-      nationalId: beneficiary.nationalId,
-      gender: beneficiary.gender,
-      category: beneficiary.category,
-      birthDate: beneficiary.birthDate,
-      motherName: beneficiary.motherName,
-      fatherName: beneficiary.fatherName,
-      grandFatherName: beneficiary.grandFatherName,
-      familyName: beneficiary.familyName,
-      phoneNumber: beneficiary.phoneNumber,
-      altPhoneNumber: beneficiary.altPhoneNumber,
-      governorate: beneficiary.governorate,
-      district: beneficiary.district,
-      address: beneficiary.address,
-      currentAddress: beneficiary.currentAddress,
-      addressBeforeDisplacement: beneficiary.addressBeforeDisplacement,
-      fileNo: beneficiary.fileNo,
-      associationName: beneficiary.associationName,
-      maritalStatus: beneficiary.maritalStatus,
-      educationLevel: beneficiary.educationLevel,
-      healthStatus: beneficiary.healthStatus,
-      displacementStatus: beneficiary.displacementStatus,
-      employmentStatus: beneficiary.employmentStatus,
-      housingStatus: beneficiary.housingStatus,
-      housingType: beneficiary.housingType,
-      familySize: beneficiary.familySize,
-      numberOfMales: beneficiary.numberOfMales,
-      numberOfFemales: beneficiary.numberOfFemales,
-      chronicDiseasesCount: beneficiary.chronicDiseasesCount,
-      specialNeedsCount: beneficiary.specialNeedsCount,
-      hasDisability: beneficiary.hasDisability,
-      notes: beneficiary.notes,
-      requestStatus: beneficiary.requestStatus,
-      createdAt: beneficiary.createdAt,
-      updatedAt: beneficiary.updatedAt,
-      needsSync: true, // ✅ التعديلات تحتاج مزامنة
-    ).toDrift();
-
-    final id = int.tryParse(beneficiary.id);
-    if (id == null) throw Exception('Invalid beneficiary ID');
-    await localDataSource.update(id, companion);
-    return beneficiary;
-  }
-
-  @override
-  Future<Beneficiary?> getById(String id) async {
-    final intId = int.tryParse(id);
-    if (intId == null) return null;
-    final result = await localDataSource.getById(intId);
-    return result as Beneficiary?;
-  }
-
-  @override
-  Future<Beneficiary?> getByNationalId(String nationalId) async {
-    // تنظيف الرقم الوطني من الفراغات والأحرف غير الرقمية
-    final cleanedId = nationalId.trim().replaceAll(RegExp(r'\D'), '');
-    if (cleanedId.isEmpty) return null;
-
-    final intNationalId = int.tryParse(cleanedId);
-    if (intNationalId == null) {
-      debugPrint(
-        '⚠️ getByNationalId: Failed to parse national ID: $nationalId (cleaned: $cleanedId)',
-      );
-      return null;
-    }
-
+  Future<Result<Beneficiary>> create(Beneficiary beneficiary) async {
     try {
-      final result = await localDataSource.getByNationalId(intNationalId);
-      return result as Beneficiary?;
-    } catch (e) {
-      debugPrint(
-        '⚠️ getByNationalId: Error querying national ID $intNationalId: $e',
-      );
-      return null;
+      final companion = BeneficiaryModel(
+        id: beneficiary.id,
+        fullName: beneficiary.fullName,
+        nationalId: beneficiary.nationalId,
+        gender: beneficiary.gender,
+        category: beneficiary.category,
+        birthDate: beneficiary.birthDate,
+        motherName: beneficiary.motherName,
+        fatherName: beneficiary.fatherName,
+        grandFatherName: beneficiary.grandFatherName,
+        familyName: beneficiary.familyName,
+        phoneNumber: beneficiary.phoneNumber,
+        altPhoneNumber: beneficiary.altPhoneNumber,
+        governorate: beneficiary.governorate,
+        district: beneficiary.district,
+        address: beneficiary.address,
+        currentAddress: beneficiary.currentAddress,
+        addressBeforeDisplacement: beneficiary.addressBeforeDisplacement,
+        fileNo: beneficiary.fileNo,
+        associationName: beneficiary.associationName,
+        maritalStatus: beneficiary.maritalStatus,
+        educationLevel: beneficiary.educationLevel,
+        healthStatus: beneficiary.healthStatus,
+        hasDisability: beneficiary.hasDisability,
+        familySize: beneficiary.familySize,
+        numberOfMales: beneficiary.numberOfMales,
+        numberOfFemales: beneficiary.numberOfFemales,
+        chronicDiseasesCount: beneficiary.chronicDiseasesCount,
+        specialNeedsCount: beneficiary.specialNeedsCount,
+        displacementStatus: beneficiary.displacementStatus,
+        employmentStatus: beneficiary.employmentStatus,
+        housingStatus: beneficiary.housingStatus,
+        housingType: beneficiary.housingType,
+        requestStatus: beneficiary.requestStatus,
+        notes: beneficiary.notes,
+        createdAt: beneficiary.createdAt,
+        updatedAt: beneficiary.updatedAt,
+        needsSync: true, // ✅ المستفيدين الجدد يحتاجون مزامنة
+      ).toDrift();
+
+      final result = await localDataSource.create(companion);
+      return Success(result as Beneficiary);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to create beneficiary: $e', stackTrace));
     }
   }
 
   @override
-  Future<void> delete(String id) async {
-    final intId = int.tryParse(id);
-    if (intId == null) throw Exception('Invalid beneficiary ID');
-    await localDataSource.delete(intId);
+  Future<Result<Beneficiary>> update(Beneficiary beneficiary) async {
+    try {
+      final companion = BeneficiaryModel(
+        id: beneficiary.id,
+        fullName: beneficiary.fullName,
+        nationalId: beneficiary.nationalId,
+        gender: beneficiary.gender,
+        category: beneficiary.category,
+        birthDate: beneficiary.birthDate,
+        motherName: beneficiary.motherName,
+        fatherName: beneficiary.fatherName,
+        grandFatherName: beneficiary.grandFatherName,
+        familyName: beneficiary.familyName,
+        phoneNumber: beneficiary.phoneNumber,
+        altPhoneNumber: beneficiary.altPhoneNumber,
+        governorate: beneficiary.governorate,
+        district: beneficiary.district,
+        address: beneficiary.address,
+        currentAddress: beneficiary.currentAddress,
+        addressBeforeDisplacement: beneficiary.addressBeforeDisplacement,
+        fileNo: beneficiary.fileNo,
+        associationName: beneficiary.associationName,
+        maritalStatus: beneficiary.maritalStatus,
+        educationLevel: beneficiary.educationLevel,
+        healthStatus: beneficiary.healthStatus,
+        displacementStatus: beneficiary.displacementStatus,
+        employmentStatus: beneficiary.employmentStatus,
+        housingStatus: beneficiary.housingStatus,
+        housingType: beneficiary.housingType,
+        familySize: beneficiary.familySize,
+        numberOfMales: beneficiary.numberOfMales,
+        numberOfFemales: beneficiary.numberOfFemales,
+        chronicDiseasesCount: beneficiary.chronicDiseasesCount,
+        specialNeedsCount: beneficiary.specialNeedsCount,
+        hasDisability: beneficiary.hasDisability,
+        notes: beneficiary.notes,
+        requestStatus: beneficiary.requestStatus,
+        createdAt: beneficiary.createdAt,
+        updatedAt: beneficiary.updatedAt,
+        needsSync: true, // ✅ التعديلات تحتاج مزامنة
+      ).toDrift();
+
+      final id = int.tryParse(beneficiary.id);
+      if (id == null) {
+        return Failure(ValidationFailure('Invalid beneficiary ID'));
+      }
+
+      await localDataSource.update(id, companion);
+      return Success(beneficiary);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to update beneficiary: $e', stackTrace));
+    }
   }
 
   @override
-  Future<List<Beneficiary>> list({
+  Future<Result<Beneficiary>> getById(String id) async {
+    try {
+      final intId = int.tryParse(id);
+      if (intId == null) {
+        return Failure(ValidationFailure('Invalid beneficiary ID'));
+      }
+
+      final result = await localDataSource.getById(intId);
+      if (result == null) {
+        return Failure(NotFoundFailure('Beneficiary not found with ID: $id'));
+      }
+
+      return Success(result as Beneficiary);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get beneficiary: $e', stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<Beneficiary>> getByNationalId(String nationalId) async {
+    try {
+      // تنظيف الرقم الوطني من الفراغات والأحرف غير الرقمية
+      final cleanedId = nationalId.trim().replaceAll(RegExp(r'\D'), '');
+      if (cleanedId.isEmpty) {
+        return Failure(ValidationFailure('Invalid national ID'));
+      }
+
+      final intNationalId = int.tryParse(cleanedId);
+      if (intNationalId == null) {
+        debugPrint(
+          '⚠️ getByNationalId: Failed to parse national ID: $nationalId (cleaned: $cleanedId)',
+        );
+        return Failure(ValidationFailure('Invalid national ID format'));
+      }
+
+      final result = await localDataSource.getByNationalId(intNationalId);
+      if (result == null) {
+        return Failure(NotFoundFailure('No beneficiary found with national ID: $nationalId'));
+      }
+
+      return Success(result as Beneficiary);
+    } catch (e, stackTrace) {
+      debugPrint(
+        '⚠️ getByNationalId: Error querying national ID $nationalId: $e',
+      );
+      return Failure(DatabaseFailure('Failed to query national ID: $e', stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<void>> delete(String id) async {
+    try {
+      final intId = int.tryParse(id);
+      if (intId == null) {
+        return Failure(ValidationFailure('Invalid beneficiary ID'));
+      }
+
+      await localDataSource.delete(intId);
+      return Success(null);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to delete beneficiary: $e', stackTrace));
+    }
+  }
+
+  @override
+  Future<Result<List<Beneficiary>>> list({
     String? searchQuery,
     BeneficiaryCategory? category,
     Gender? gender,
     int? limit,
     int? offset,
   }) async {
-    return await PerformanceMonitor.measure(
-      'BeneficiaryRepository.list',
-      () async {
-        final results = await localDataSource.list(
-          searchQuery: searchQuery,
-          category: category?.code,
-          gender: gender == Gender.male
-              ? 1
-              : gender == Gender.female
-              ? 2
-              : null,
-          limit: limit,
-          offset: offset,
-        );
-        return results.cast<Beneficiary>();
-      },
-      metadata: {
-        'searchQuery': searchQuery,
-        'category': category?.code,
-        'limit': limit,
-        'offset': offset,
-      },
-    );
+    try {
+      final results = await PerformanceMonitor.measure(
+        'BeneficiaryRepository.list',
+        () async {
+          final results = await localDataSource.list(
+            searchQuery: searchQuery,
+            category: category?.code,
+            gender: gender == Gender.male
+                ? 1
+                : gender == Gender.female
+                    ? 2
+                    : null,
+            limit: limit,
+            offset: offset,
+          );
+          return results.cast<Beneficiary>();
+        },
+        metadata: {
+          'searchQuery': searchQuery,
+          'category': category?.code,
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+
+      return Success(results);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to list beneficiaries: $e', stackTrace));
+    }
   }
 
   @override
-  Future<int> count({BeneficiaryCategory? category}) async {
-    return await localDataSource.count(category: category?.code);
+  Future<Result<int>> count({BeneficiaryCategory? category}) async {
+    try {
+      final result = await localDataSource.count(category: category?.code);
+      return Success(result);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to count beneficiaries: $e', stackTrace));
+    }
   }
 
   @override
-  Future<Map<String, dynamic>?> loadFromCivilRegistry(String nationalId) async {
-    // This will be implemented when we integrate with civil registry feature
-    // For now, return null
-    return null;
+  Future<Result<Map<String, dynamic>>> loadFromCivilRegistry(String nationalId) async {
+    try {
+      // This will be implemented when we integrate with civil registry feature
+      // For now, return not found
+      return Failure(NotFoundFailure('Civil registry integration not yet implemented'));
+    } catch (e, stackTrace) {
+      return Failure(UnknownFailure('Failed to load from civil registry: $e', stackTrace));
+    }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../pages/v2_form_helpers/widgets/inline_validation_message.dart';
+import '../../../../../core/utils/haptic_patterns.dart';
 
 /// 🎯 Animated Form Field - With focus border animation & inline validation
 ///
@@ -80,7 +81,7 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> with SingleTicker
     });
 
     if (_isFocused) {
-      HapticFeedback.selectionClick();
+      HapticPatterns.light();
     }
   }
 

@@ -1,24 +1,25 @@
 import '../entities/beneficiary.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// 📦 Beneficiary Repository Interface - Domain Layer
 abstract class BeneficiaryRepository {
   /// Create new beneficiary
-  Future<Beneficiary> create(Beneficiary beneficiary);
+  Future<Result<Beneficiary>> create(Beneficiary beneficiary);
 
   /// Update existing beneficiary
-  Future<Beneficiary> update(Beneficiary beneficiary);
+  Future<Result<Beneficiary>> update(Beneficiary beneficiary);
 
   /// Get beneficiary by ID
-  Future<Beneficiary?> getById(String id);
+  Future<Result<Beneficiary>> getById(String id);
 
   /// Get beneficiary by National ID
-  Future<Beneficiary?> getByNationalId(String nationalId);
+  Future<Result<Beneficiary>> getByNationalId(String nationalId);
 
   /// Delete beneficiary
-  Future<void> delete(String id);
+  Future<Result<void>> delete(String id);
 
   /// List all beneficiaries with optional filters
-  Future<List<Beneficiary>> list({
+  Future<Result<List<Beneficiary>>> list({
     String? searchQuery,
     BeneficiaryCategory? category,
     Gender? gender,
@@ -27,8 +28,8 @@ abstract class BeneficiaryRepository {
   });
 
   /// Count beneficiaries
-  Future<int> count({BeneficiaryCategory? category});
+  Future<Result<int>> count({BeneficiaryCategory? category});
 
   /// Load data from civil registry by national ID
-  Future<Map<String, dynamic>?> loadFromCivilRegistry(String nationalId);
+  Future<Result<Map<String, dynamic>>> loadFromCivilRegistry(String nationalId);
 }

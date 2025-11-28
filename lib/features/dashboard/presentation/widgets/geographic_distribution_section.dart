@@ -52,8 +52,7 @@ class GeographicDistributionSection extends ConsumerWidget {
         }
 
         // Get top 5 governorates
-        final entries = data.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value));
+        final entries = data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
         final topGovernorates = entries.take(5).toList();
         final maxCount = topGovernorates.first.value;
 
@@ -241,9 +240,7 @@ class GeographicDistributionSection extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.7,
         minChildSize: 0.5,

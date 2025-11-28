@@ -2,6 +2,7 @@ import '../../domain/entities/dashboard_statistics.dart';
 import '../../domain/entities/activity.dart';
 import '../../domain/repositories/dashboard_repository.dart';
 import '../datasources/dashboard_local_datasource.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// Dashboard Repository Implementation
 /// Implements the domain repository interface
@@ -11,35 +12,59 @@ class DashboardRepositoryImpl implements DashboardRepository {
   DashboardRepositoryImpl(this.localDataSource);
 
   @override
-  Future<DashboardStatistics> getStatistics({bool forceRefresh = false}) async {
-    return await localDataSource.getStatistics(forceRefresh: forceRefresh);
+  Future<Result<DashboardStatistics>> getStatistics({bool forceRefresh = false}) async {
+    try {
+      final stats = await localDataSource.getStatistics(forceRefresh: forceRefresh);
+      return Success(stats);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get dashboard statistics: $e', stackTrace));
+    }
   }
 
   @override
-  Future<TodayStats> getTodayStats() async {
-    return await localDataSource.getTodayStatsData();
+  Future<Result<TodayStats>> getTodayStats() async {
+    try {
+      final stats = await localDataSource.getTodayStatsData();
+      return Success(stats);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get today stats: $e', stackTrace));
+    }
   }
 
   @override
-  Future<List<Activity>> getRecentActivities({
+  Future<Result<List<Activity>>> getRecentActivities({
     int limit = 10,
     int offset = 0,
   }) async {
-    return await localDataSource.getRecentActivities(
-      limit: limit,
-      offset: offset,
-    );
+    try {
+      final activities = await localDataSource.getRecentActivities(
+        limit: limit,
+        offset: offset,
+      );
+      return Success(activities);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get recent activities: $e', stackTrace));
+    }
   }
 
   @override
-  Future<int> getNotificationsCount() async {
-    final stats = await localDataSource.getTodayStatsData();
-    return stats.pendingTasks;
+  Future<Result<int>> getNotificationsCount() async {
+    try {
+      final stats = await localDataSource.getTodayStatsData();
+      return Success(stats.pendingTasks);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get notifications count: $e', stackTrace));
+    }
   }
 
   @override
-  Future<void> clearCache() async {
-    await localDataSource.clearCache();
+  Future<Result<void>> clearCache() async {
+    try {
+      await localDataSource.clearCache();
+      return Success(null);
+    } catch (e, stackTrace) {
+      return Failure(CacheFailure('Failed to clear cache: $e', stackTrace));
+    }
   }
 
   @override

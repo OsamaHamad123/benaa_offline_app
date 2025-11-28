@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// 👥 Gender Filter Bottom Sheet
 class GenderFilterBottomSheet extends StatefulWidget {
@@ -12,8 +14,7 @@ class GenderFilterBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<GenderFilterBottomSheet> createState() =>
-      _GenderFilterBottomSheetState();
+  State<GenderFilterBottomSheet> createState() => _GenderFilterBottomSheetState();
 }
 
 class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
@@ -27,116 +28,123 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.purple.shade50,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.people_alt, color: Colors.purple.shade700),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'اختر الجنس',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple.shade900,
+    return ScaleTransitionWidget(
+      duration: AppDurations.fast,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            FadeSlideTransition(
+              duration: AppDurations.fast,
+              child: Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.people_alt, color: Colors.purple.shade700),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'اختر الجنس',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple.shade900,
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                      color: Colors.grey.shade600,
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
-                  color: Colors.grey.shade600,
-                ),
-              ],
+              ),
             ),
-          ),
 
-          // Gender Options
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Clear Filter Option
-                _buildGenderOption(
-                  icon: Icons.clear_all,
-                  label: 'الكل (ذكور وإناث)',
-                  value: null,
-                  color: Colors.grey,
-                ),
-                SizedBox(height: 12),
-                // Male Option
-                _buildGenderOption(
-                  icon: Icons.male,
-                  label: 'ذكور فقط',
-                  value: 'ذكر',
-                  color: Colors.blue,
-                ),
-                SizedBox(height: 12),
-                // Female Option
-                _buildGenderOption(
-                  icon: Icons.female,
-                  label: 'إناث فقط',
-                  value: 'أنثى',
-                  color: Colors.pink,
-                ),
-              ],
+            // Gender Options
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Clear Filter Option
+                  _buildGenderOption(
+                    icon: Icons.clear_all,
+                    label: 'الكل (ذكور وإناث)',
+                    value: null,
+                    color: Colors.grey,
+                  ),
+                  SizedBox(height: 12),
+                  // Male Option
+                  _buildGenderOption(
+                    icon: Icons.male,
+                    label: 'ذكور فقط',
+                    value: 'ذكر',
+                    color: Colors.blue,
+                  ),
+                  SizedBox(height: 12),
+                  // Female Option
+                  _buildGenderOption(
+                    icon: Icons.female,
+                    label: 'إناث فقط',
+                    value: 'أنثى',
+                    color: Colors.pink,
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Action Buttons
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              border: Border(top: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      side: BorderSide(color: Colors.grey.shade400),
-                    ),
-                    child: Text('إلغاء', style: TextStyle(fontSize: 16)),
-                  ),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      widget.onApply(_selectedGender);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: Colors.purple.shade700,
-                    ),
-                    child: Text(
-                      'تطبيق',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+            // Action Buttons
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(top: BorderSide(color: Colors.grey.shade300)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      child: Text('إلغاء', style: TextStyle(fontSize: 16)),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        HapticPatterns.success();
+                        widget.onApply(_selectedGender);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: Colors.purple.shade700,
+                      ),
+                      child: Text(
+                        'تطبيق',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -151,6 +159,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
 
     return InkWell(
       onTap: () {
+        HapticPatterns.selection();
         setState(() {
           _selectedGender = value;
         });
@@ -191,8 +200,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                 ),
               ),
             ),
-            if (isSelected)
-              Icon(Icons.check_circle, color: color.shade700, size: 28),
+            if (isSelected) Icon(Icons.check_circle, color: color.shade700, size: 28),
           ],
         ),
       ),

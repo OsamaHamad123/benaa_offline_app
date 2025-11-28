@@ -1,6 +1,7 @@
 import 'package:benaa_offline_app/features/dashboard/domain/entities/dashboard_statistics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/providers.dart' as core_providers;
+import '../../../core/error_handling/result.dart';
 import '../data/datasources/dashboard_local_datasource.dart';
 import '../data/repositories/dashboard_repository_impl.dart';
 import '../domain/repositories/dashboard_repository.dart';
@@ -58,23 +59,22 @@ final getRecentActivitiesProvider = Provider<GetRecentActivities>((ref) {
 // DASHBOARD STATE PROVIDER - Main Dashboard Notifier
 // ============================================================================
 
-final dashboardProvider =
-    StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
-      final getStatistics = ref.watch(getDashboardStatisticsProvider);
-      final getTodayStats = ref.watch(getTodayStatsProvider);
-      final getActivities = ref.watch(getRecentActivitiesProvider);
+final dashboardProvider = StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
+  final getStatistics = ref.watch(getDashboardStatisticsProvider);
+  final getTodayStats = ref.watch(getTodayStatsProvider);
+  final getActivities = ref.watch(getRecentActivitiesProvider);
 
-      final notifier = DashboardNotifier(
-        getDashboardStatistics: getStatistics,
-        getTodayStats: getTodayStats,
-        getRecentActivities: getActivities,
-      );
+  final notifier = DashboardNotifier(
+    getDashboardStatistics: getStatistics,
+    getTodayStats: getTodayStats,
+    getRecentActivities: getActivities,
+  );
 
-      // Auto-initialize when created
-      notifier.initialize();
+  // Auto-initialize when created
+  notifier.initialize();
 
-      return notifier;
-    });
+  return notifier;
+});
 
 // ============================================================================
 // CONVENIENCE PROVIDERS - For specific parts of state
@@ -90,7 +90,13 @@ final todayStatsAutoRefreshProvider = FutureProvider.autoDispose<TodayStats>((
   final link = ref.keepAlive();
   Future.delayed(const Duration(minutes: 2), link.close);
 
-  return await getTodayStats();
+  final result = await getTodayStats();
+
+  if (result is Failure<TodayStats>) {
+    throw Exception(result.error.message);
+  }
+
+  return (result as Success<TodayStats>).value;
 });
 
 /// Notifications count from today's pending tasks

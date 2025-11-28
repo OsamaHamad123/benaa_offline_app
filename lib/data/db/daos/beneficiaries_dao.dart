@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../../core/utils/arabic_normalizer.dart';
 import '../drift_database.dart';
 import '../tables/beneficiaries_table.dart';
 
@@ -7,8 +8,7 @@ part 'beneficiaries_dao.g.dart';
 /// Beneficiaries Data Access Object
 /// يحتوي على جميع عمليات CRUD والاستعلامات الخاصة بالمستفيدين
 @DriftAccessor(tables: [Beneficiaries])
-class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
-    with _$BeneficiariesDaoMixin {
+class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$BeneficiariesDaoMixin {
   BeneficiariesDao(super.db);
 
   // ============================================================================
@@ -74,7 +74,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
       ..limit(limit, offset: offset);
 
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      final normalized = searchQuery.toLowerCase();
+      // ✅ Use ArabicNormalizer for better Arabic search
+      final normalized = ArabicNormalizer.normalize(searchQuery);
       query.where(
         (b) =>
             b.fullName.lower().contains(normalized) |
@@ -127,8 +128,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     ).get();
 
     return {
-      for (final row in results)
-        row.read<int>('province'): row.read<int>('count'),
+      for (final row in results) row.read<int>('province'): row.read<int>('count'),
     };
   }
 
@@ -158,14 +158,16 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   Future<Beneficiary?> getBeneficiaryById(int id) async {
     return await (select(
       beneficiaries,
-    )..where((b) => b.id.equals(id))).getSingleOrNull();
+    )..where((b) => b.id.equals(id)))
+        .getSingleOrNull();
   }
 
   /// Get beneficiary by server ID
   Future<Beneficiary?> getBeneficiaryByServerId(int serverId) async {
     return await (select(
       beneficiaries,
-    )..where((b) => b.serverId.equals(serverId))).getSingleOrNull();
+    )..where((b) => b.serverId.equals(serverId)))
+        .getSingleOrNull();
   }
 
   /// Insert beneficiary
@@ -180,7 +182,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   ) async {
     await (update(
       beneficiaries,
-    )..where((b) => b.id.equals(id))).write(beneficiary);
+    )..where((b) => b.id.equals(id)))
+        .write(beneficiary);
   }
 
   /// Update beneficiary
@@ -206,7 +209,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
         final batch = ids.skip(i).take(batchSize).toList();
         final result = await (delete(
           beneficiaries,
-        )..where((b) => b.id.isIn(batch))).go();
+        )..where((b) => b.id.isIn(batch)))
+            .go();
         deletedCount += result;
       }
 
@@ -224,22 +228,21 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
       return await getAllBeneficiaries();
     }
 
-    final normalized = query.trim().toLowerCase();
+    // ✅ Use ArabicNormalizer for better Arabic search
+    final normalized = ArabicNormalizer.normalize(query.trim());
     final isNumeric = int.tryParse(query.trim()) != null;
 
-    return await (select(beneficiaries)..where((b) {
-          var condition =
-              b.fullNameNorm.like('%$normalized%') |
-              b.fileIdNumber.like('%$normalized%');
+    return await (select(beneficiaries)
+          ..where((b) {
+            var condition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
 
-          // إذا كان رقم، ابحث في id_number أيضاً
-          if (isNumeric) {
-            condition =
-                condition | b.idNumber.cast<String>().contains(query.trim());
-          }
+            // إذا كان رقم، ابحث في id_number أيضاً
+            if (isNumeric) {
+              condition = condition | b.idNumber.cast<String>().contains(query.trim());
+            }
 
-          return condition;
-        }))
+            return condition;
+          }))
         .get();
   }
 
@@ -256,7 +259,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     int limit = 50,
     int offset = 0,
   }) async {
-    final normalized = query.trim().toLowerCase();
+    // ✅ Use ArabicNormalizer for better Arabic search
+    final normalized = ArabicNormalizer.normalize(query.trim());
     final isNumeric = int.tryParse(query.trim()) != null;
 
     var selectQuery = select(beneficiaries);
@@ -267,14 +271,10 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
 
         // 🔍 Search filter
         if (normalized.isNotEmpty) {
-          var searchCondition =
-              b.fullNameNorm.like('%$normalized%') |
-              b.fileIdNumber.like('%$normalized%');
+          var searchCondition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
 
           if (isNumeric) {
-            searchCondition =
-                searchCondition |
-                b.idNumber.cast<String>().contains(query.trim());
+            searchCondition = searchCondition | b.idNumber.cast<String>().contains(query.trim());
           }
 
           condition = condition & searchCondition;
@@ -324,9 +324,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
             default:
               sortColumn = b.fullName;
           }
-          return sortDesc
-              ? OrderingTerm.desc(sortColumn)
-              : OrderingTerm.asc(sortColumn);
+          return sortDesc ? OrderingTerm.desc(sortColumn) : OrderingTerm.asc(sortColumn);
         },
       ])
       ..limit(limit, offset: offset);
@@ -342,7 +340,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     int limit = 50,
     int offset = 0,
   }) async {
-    final normalized = query.trim().toLowerCase();
+    // ✅ Use ArabicNormalizer for better Arabic search
+    final normalized = ArabicNormalizer.normalize(query.trim());
 
     var selectQuery = select(beneficiaries);
 
@@ -353,15 +352,11 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
         // Search filter (search in fullName, fileIdNumber, and idNumber)
         if (normalized.isNotEmpty) {
           final isNumeric = int.tryParse(query.trim()) != null;
-          var searchCondition =
-              b.fullNameNorm.like('%$normalized%') |
-              b.fileIdNumber.like('%$normalized%');
+          var searchCondition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
 
           // إذا كان رقم، ابحث في id_number
           if (isNumeric) {
-            searchCondition =
-                searchCondition |
-                b.idNumber.cast<String>().contains(query.trim());
+            searchCondition = searchCondition | b.idNumber.cast<String>().contains(query.trim());
           }
 
           condition = condition & searchCondition;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/utils/responsive_utils_v2.dart';
+import '../../../../../core/utils/haptic_patterns.dart';
 import '../../providers/list/filters_provider.dart';
 import '../../providers/list/beneficiaries_list_state.dart';
 import '../../providers/list/beneficiaries_list_provider.dart';
@@ -75,7 +75,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                   if (filters.hasActiveFilters)
                     TextButton(
                       onPressed: () {
-                        HapticFeedback.lightImpact();
+                        HapticPatterns.selection();
                         ref.read(filtersProvider.notifier).clearFilters();
                         ref.read(beneficiariesListProvider.notifier).refresh();
                       },
@@ -84,7 +84,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () {
-                      HapticFeedback.lightImpact();
+                      HapticPatterns.selection();
                       Navigator.pop(context);
                     },
                   ),
@@ -112,7 +112,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           label: 'الكل',
                           isSelected: filters.categoryId == null,
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(null);
                             ref.read(beneficiariesListProvider.notifier).refresh();
                           },
@@ -122,7 +122,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           label: 'يتيم',
                           isSelected: filters.categoryId == 1,
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(1);
                             ref.read(beneficiariesListProvider.notifier).refresh();
                           },
@@ -133,7 +133,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           label: 'أرملة',
                           isSelected: filters.categoryId == 2,
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(2);
                             ref.read(beneficiariesListProvider.notifier).refresh();
                           },
@@ -144,7 +144,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           label: 'فقير',
                           isSelected: filters.categoryId == 3,
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(3);
                             ref.read(beneficiariesListProvider.notifier).refresh();
                           },
@@ -155,7 +155,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           label: 'معاق',
                           isSelected: filters.categoryId == 4,
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(4);
                             ref.read(beneficiariesListProvider.notifier).refresh();
                           },
@@ -175,7 +175,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                       value: filters.onlyPendingSync,
                       icon: Icons.cloud_off,
                       onChanged: (value) {
-                        HapticFeedback.lightImpact();
+                        HapticPatterns.selection();
                         ref.read(filtersProvider.notifier).togglePendingSync();
                         ref.read(beneficiariesListProvider.notifier).refresh();
                       },
@@ -186,7 +186,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                       value: filters.onlyWithPhone,
                       icon: Icons.phone,
                       onChanged: (value) {
-                        HapticFeedback.lightImpact();
+                        HapticPatterns.selection();
                         ref.read(filtersProvider.notifier).toggleWithPhone();
                         ref.read(beneficiariesListProvider.notifier).refresh();
                       },
@@ -197,7 +197,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                       value: filters.onlyWithLocation,
                       icon: Icons.location_on,
                       onChanged: (value) {
-                        HapticFeedback.lightImpact();
+                        HapticPatterns.selection();
                         ref.read(filtersProvider.notifier).toggleWithLocation();
                         ref.read(beneficiariesListProvider.notifier).refresh();
                       },
@@ -219,7 +219,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           isSelected: isSelected,
                           icon: isSelected ? (filters.sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : null,
                           onTap: () {
-                            HapticFeedback.lightImpact();
+                            HapticPatterns.selection();
                             if (isSelected) {
                               ref.read(filtersProvider.notifier).toggleSortDirection();
                             } else {

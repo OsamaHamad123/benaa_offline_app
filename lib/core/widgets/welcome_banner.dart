@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/haptic_patterns.dart';
 
 /// Welcome Banner for first-time users
 class WelcomeBanner extends StatefulWidget {
@@ -22,8 +22,7 @@ class WelcomeBanner extends StatefulWidget {
   State<WelcomeBanner> createState() => _WelcomeBannerState();
 }
 
-class _WelcomeBannerState extends State<WelcomeBanner>
-    with SingleTickerProviderStateMixin {
+class _WelcomeBannerState extends State<WelcomeBanner> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -57,7 +56,7 @@ class _WelcomeBannerState extends State<WelcomeBanner>
   }
 
   Future<void> _dismiss() async {
-    HapticFeedback.selectionClick();
+    HapticPatterns.selection();
     await _controller.reverse();
     if (widget.onDismiss != null) {
       widget.onDismiss!();
@@ -152,7 +151,7 @@ class _WelcomeBannerState extends State<WelcomeBanner>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      HapticFeedback.mediumImpact();
+                      HapticPatterns.selection();
                       _dismiss();
                       widget.onGetStarted!();
                     },

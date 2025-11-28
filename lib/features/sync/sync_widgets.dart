@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../core/widgets/loading_state.dart';
 import '../../core/sync/sync_manager.dart';
 
 /// شريط عرض حالة المزامنة
@@ -19,22 +20,14 @@ class SyncStatusBar extends ConsumerWidget {
 
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          color: status.lastError != null
-              ? Colors.red.shade100
-              : Colors.blue.shade100,
+          color: status.lastError != null ? Colors.red.shade100 : Colors.blue.shade100,
           child: Row(
             children: [
               if (status.isSyncing)
-                SizedBox(
-                  width: 16.w,
-                  height: 16.h,
-                  child: CircularProgressIndicator(strokeWidth: 2.w),
-                )
+                const SmallLoadingIndicator()
               else if (status.lastError != null)
                 Icon(Icons.error, color: Colors.red, size: 20.sp),
-
               SizedBox(width: 12.w),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +46,6 @@ class SyncStatusBar extends ConsumerWidget {
                           color: Colors.red,
                         ),
                       ),
-
                     if (status.isSyncing)
                       Text(
                         '${status.completedItems} من ${status.totalItems}',
@@ -72,7 +64,6 @@ class SyncStatusBar extends ConsumerWidget {
                   ],
                 ),
               ),
-
               if (status.isSyncing) ...[
                 SizedBox(width: 8.w),
                 SizedBox(
@@ -103,15 +94,9 @@ class SyncButton extends ConsumerWidget {
       data: (status) {
         return IconButton(
           icon: status.isSyncing
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+              ? const SmallLoadingIndicator()
               : Badge(
-                  label: status.totalItems > 0
-                      ? Text('${status.totalItems}')
-                      : null,
+                  label: status.totalItems > 0 ? Text('${status.totalItems}') : null,
                   isLabelVisible: status.totalItems > 0,
                   child: const Icon(Icons.sync),
                 ),
@@ -167,21 +152,21 @@ class SyncDetailsPage extends ConsumerWidget {
                             status.isSyncing
                                 ? Icons.sync
                                 : status.lastError != null
-                                ? Icons.error
-                                : Icons.check_circle,
+                                    ? Icons.error
+                                    : Icons.check_circle,
                             color: status.isSyncing
                                 ? Colors.blue
                                 : status.lastError != null
-                                ? Colors.red
-                                : Colors.green,
+                                    ? Colors.red
+                                    : Colors.green,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             status.isSyncing
                                 ? 'جاري المزامنة'
                                 : status.lastError != null
-                                ? 'خطأ'
-                                : 'متزامن',
+                                    ? 'خطأ'
+                                    : 'متزامن',
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -189,7 +174,6 @@ class SyncDetailsPage extends ConsumerWidget {
                           ),
                         ],
                       ),
-
                       if (status.isSyncing) ...[
                         const SizedBox(height: 16),
                         LinearProgressIndicator(value: status.progress),
@@ -199,7 +183,6 @@ class SyncDetailsPage extends ConsumerWidget {
                           style: TextStyle(color: Colors.grey.shade600),
                         ),
                       ],
-
                       if (status.lastError != null) ...[
                         const SizedBox(height: 16),
                         Container(
@@ -278,7 +261,7 @@ class SyncDetailsPage extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: SmallLoadingIndicator()),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

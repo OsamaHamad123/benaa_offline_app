@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/widgets/loading_state.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../../../core/providers/providers.dart';
 import '../../services/beneficiaries_export_service.dart';
@@ -10,12 +11,10 @@ class BeneficiariesReportPage extends ConsumerStatefulWidget {
   const BeneficiariesReportPage({super.key});
 
   @override
-  ConsumerState<BeneficiariesReportPage> createState() =>
-      _BeneficiariesReportPageState();
+  ConsumerState<BeneficiariesReportPage> createState() => _BeneficiariesReportPageState();
 }
 
-class _BeneficiariesReportPageState
-    extends ConsumerState<BeneficiariesReportPage> {
+class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPage> {
   String _searchQuery = '';
   String? _selectedGovernorate;
   String? _selectedCategory;
@@ -63,8 +62,7 @@ class _BeneficiariesReportPageState
             icon: const Icon(Icons.bug_report),
             onPressed: () async {
               final db = ref.read(databaseProvider);
-              final beneficiaries = await db.beneficiariesDao
-                  .getAllBeneficiaries();
+              final beneficiaries = await db.beneficiariesDao.getAllBeneficiaries();
               if (!mounted) return;
               showDialog(
                 context: context,
@@ -110,8 +108,7 @@ class _BeneficiariesReportPageState
         future: () async {
           print('🔍 [DEBUG] Starting to fetch beneficiaries...');
           try {
-            final result = await database.beneficiariesDao
-                .getAllBeneficiaries();
+            final result = await database.beneficiariesDao.getAllBeneficiaries();
             print('🔍 [DEBUG] ✅ Fetch successful!');
             print('🔍 [DEBUG] Number of beneficiaries: ${result.length}');
             if (result.isNotEmpty) {
@@ -150,7 +147,7 @@ class _BeneficiariesReportPageState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(color: Colors.blue.shade700),
+                  SmallLoadingIndicator(color: Colors.blue.shade700),
                   const SizedBox(height: 16),
                   const Text(
                     'جاري تحميل البيانات...',
@@ -220,27 +217,23 @@ class _BeneficiariesReportPageState
             // Search filter
             if (_searchQuery.isNotEmpty) {
               final query = _searchQuery.toLowerCase();
-              if (!b.fullName.toLowerCase().contains(query) &&
-                  !b.idNumber.toString().contains(query)) {
+              if (!b.fullName.toLowerCase().contains(query) && !b.idNumber.toString().contains(query)) {
                 return false;
               }
             }
 
             // Governorate filter
-            if (_selectedGovernorate != null &&
-                b.province.toString() != _selectedGovernorate) {
+            if (_selectedGovernorate != null && b.province.toString() != _selectedGovernorate) {
               return false;
             }
 
             // Category filter
-            if (_selectedCategory != null &&
-                b.sectionId.toString() != _selectedCategory) {
+            if (_selectedCategory != null && b.sectionId.toString() != _selectedCategory) {
               return false;
             }
 
             // Sync state filter
-            if (_selectedSyncState != null &&
-                b.syncState != _selectedSyncState) {
+            if (_selectedSyncState != null && b.syncState != _selectedSyncState) {
               return false;
             }
 
@@ -528,8 +521,7 @@ class _BeneficiariesReportPageState
                               child: ListView.separated(
                                 padding: const EdgeInsets.all(8),
                                 itemCount: filteredBeneficiaries.length,
-                                separatorBuilder: (context, index) =>
-                                    const Divider(height: 1),
+                                separatorBuilder: (context, index) => const Divider(height: 1),
                                 itemBuilder: (context, index) {
                                   final b = filteredBeneficiaries[index];
                                   return _BeneficiaryListTile(beneficiary: b);
@@ -563,7 +555,7 @@ class _BeneficiariesReportPageState
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const Center(child: SmallLoadingIndicator()),
       );
 
       final filePath = await BeneficiariesExportService.exportToExcel(
@@ -607,7 +599,7 @@ class _BeneficiariesReportPageState
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const Center(child: SmallLoadingIndicator()),
       );
 
       final filePath = await BeneficiariesExportService.exportToPdf(
@@ -710,8 +702,8 @@ class _BeneficiaryListTile extends StatelessWidget {
     final syncColor = beneficiary.syncState == 'synced'
         ? Colors.green
         : beneficiary.syncState == 'pending'
-        ? Colors.orange
-        : Colors.red;
+            ? Colors.orange
+            : Colors.red;
 
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -785,8 +777,8 @@ class _BeneficiaryListTile extends StatelessWidget {
               beneficiary.syncState == 'synced'
                   ? Icons.cloud_done
                   : beneficiary.syncState == 'pending'
-                  ? Icons.cloud_queue
-                  : Icons.cloud_off,
+                      ? Icons.cloud_queue
+                      : Icons.cloud_off,
               size: 16,
               color: syncColor,
             ),
@@ -795,8 +787,8 @@ class _BeneficiaryListTile extends StatelessWidget {
               beneficiary.syncState == 'synced'
                   ? 'مزامن'
                   : beneficiary.syncState == 'pending'
-                  ? 'معلق'
-                  : 'فشل',
+                      ? 'معلق'
+                      : 'فشل',
               style: TextStyle(
                 color: syncColor,
                 fontWeight: FontWeight.w600,

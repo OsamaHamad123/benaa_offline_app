@@ -1,8 +1,11 @@
+import 'package:benaa_offline_app/features/dashboard/domain/entities/dashboard_statistics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/usecases/get_dashboard_statistics.dart';
 import '../../domain/usecases/get_today_stats.dart';
 import '../../domain/usecases/get_recent_activities.dart';
+import '../../domain/entities/activity.dart';
 import 'dashboard_state.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// Dashboard Notifier - Manages Dashboard State
 class DashboardNotifier extends StateNotifier<DashboardState> {
@@ -37,7 +40,13 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       state = state.copyWith(isLoadingStats: true, errorMessage: null);
 
       // Load full statistics
-      final stats = await getDashboardStatistics(forceRefresh: forceRefresh);
+      final result = await getDashboardStatistics(forceRefresh: forceRefresh);
+
+      if (result is Failure<DashboardStatistics>) {
+        throw Exception(result.error.message);
+      }
+
+      final stats = (result as Success<DashboardStatistics>).value;
 
       state = state.copyWith(
         statistics: stats,
@@ -65,7 +74,13 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       _currentPage = 0;
       state = state.copyWith(isLoadingActivities: true, activities: []);
 
-      final activities = await getRecentActivities(limit: _pageSize, offset: 0);
+      final result = await getRecentActivities(limit: _pageSize, offset: 0);
+
+      if (result is Failure<List<Activity>>) {
+        throw Exception(result.error.message);
+      }
+
+      final activities = (result as Success<List<Activity>>).value;
 
       state = state.copyWith(
         activities: activities,
@@ -86,7 +101,13 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
   Future<void> refreshTodayStats() async {
     try {
-      final todayStats = await getTodayStats();
+      final result = await getTodayStats();
+
+      if (result is Failure<TodayStats>) {
+        throw Exception(result.error.message);
+      }
+
+      final todayStats = (result as Success<TodayStats>).value;
       state = state.copyWith(todayStats: todayStats);
     } catch (e) {
       // Silent fail for today stats refresh
@@ -100,10 +121,16 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       state = state.copyWith(isLoadingActivities: true);
 
       _currentPage++;
-      final newActivities = await getRecentActivities(
+      final result = await getRecentActivities(
         limit: _pageSize,
         offset: _currentPage * _pageSize,
       );
+
+      if (result is Failure<List<Activity>>) {
+        throw Exception(result.error.message);
+      }
+
+      final newActivities = (result as Success<List<Activity>>).value;
 
       state = state.copyWith(
         activities: [...state.activities, ...newActivities],

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/extensions/context_extensions.dart';
+import '../../core/widgets/enhanced_refresh_indicator.dart';
 import 'providers/reports_providers.dart';
 import 'widgets/summary_statistics_widget.dart';
 import 'widgets/report_card_widget.dart';
@@ -25,8 +26,7 @@ class ReportsPage extends ConsumerStatefulWidget {
   ConsumerState<ReportsPage> createState() => _ReportsPageState();
 }
 
-class _ReportsPageState extends ConsumerState<ReportsPage>
-    with AutomaticKeepAliveClientMixin {
+class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAliveClientMixin {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isExportingAll = false;
@@ -39,9 +39,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      initialDateRange: _startDate != null && _endDate != null
-          ? DateTimeRange(start: _startDate!, end: _endDate!)
-          : null,
+      initialDateRange:
+          _startDate != null && _endDate != null ? DateTimeRange(start: _startDate!, end: _endDate!) : null,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -119,7 +118,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: EnhancedRefreshIndicator(
         onRefresh: () async {
           _refreshData();
           await Future.delayed(const Duration(milliseconds: 500));
@@ -226,6 +225,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const GovernorateReportSheet(),
     );
   }
@@ -285,9 +285,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _isExportingAll
-                        ? null
-                        : () => _exportAllReports('pdf'),
+                    onPressed: _isExportingAll ? null : () => _exportAllReports('pdf'),
                     icon: _isExportingAll
                         ? SizedBox(
                             width: 16.w,
@@ -312,9 +310,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
                 SizedBox(width: 12.w),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _isExportingAll
-                        ? null
-                        : () => _exportAllReports('excel'),
+                    onPressed: _isExportingAll ? null : () => _exportAllReports('excel'),
                     icon: Icon(Icons.table_view, size: 20.sp),
                     label: Text('Excel', style: TextStyle(fontSize: 14.sp)),
                     style: ElevatedButton.styleFrom(
@@ -480,6 +476,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const CategoryReportSheet(),
     );
   }
@@ -488,6 +485,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const GenderReportSheet(),
     );
   }
@@ -496,6 +494,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const AgeReportSheet(),
     );
   }

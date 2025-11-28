@@ -1,8 +1,11 @@
+import 'package:benaa_offline_app/core/error_handling/result.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../core/utils/debouncer.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../theme/app_colors.dart';
@@ -20,6 +23,7 @@ class AllActivitiesPage extends ConsumerStatefulWidget {
 
 class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
   final ScrollController _scrollController = ScrollController();
+  late final Throttler _scrollThrottler; // ✅ Throttler for scroll
   final List<Activity> _activities = [];
   bool _isLoading = false;
   bool _hasMore = true;
@@ -31,6 +35,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
   @override
   void initState() {
     super.initState();
+    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
     _scrollController.addListener(_onScroll);
     _loadActivities();
   }
@@ -42,12 +47,13 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoading && _hasMore) {
-        _loadActivities();
+    _scrollThrottler(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+        if (!_isLoading && _hasMore) {
+          _loadActivities();
+        }
       }
-    }
+    });
   }
 
   Future<void> _loadActivities() async {
@@ -58,15 +64,18 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
     try {
       // ✅ Load from database instead of Mock data
       final repository = ref.read(activityRepositoryProvider);
-      final allActivities = await repository.getAllActivities();
+      final result = await repository.getAllActivities();
+
+      if (result is Failure<List<Activity>>) {
+        throw Exception(result.error.message);
+      }
+
+      final allActivities = (result as Success<List<Activity>>).value;
 
       // Pagination logic
       final startIndex = _currentPage * _pageSize;
       final endIndex = startIndex + _pageSize;
-      final newActivities = allActivities
-          .skip(startIndex)
-          .take(_pageSize)
-          .toList();
+      final newActivities = allActivities.skip(startIndex).take(_pageSize).toList();
 
       setState(() {
         _activities.addAll(newActivities);
@@ -86,7 +95,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
   // Activities are loaded from activityRepositoryProvider
 
   Future<void> _clearCache() async {
-    HapticFeedback.mediumImpact();
+    HapticPatterns.refresh();
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -308,7 +317,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
                     return Center(
                       child: Padding(
                         padding: EdgeInsets.all(16.r),
-                        child: const CircularProgressIndicator(),
+                        child: const SmallLoadingIndicator(),
                       ),
                     );
                   }

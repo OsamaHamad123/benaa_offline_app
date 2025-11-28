@@ -7,6 +7,7 @@ import '../../data/db/drift_database.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../providers/providers.dart';
+import '../utils/batch_operations.dart';
 import '../../features/beneficiaries/data/models/beneficiary_data_model.dart';
 import '../network/api_client.dart';
 
@@ -190,41 +191,45 @@ class SyncManager {
         _currentStatus.copyWith(totalItems: items.length, completedItems: 0),
       );
 
-      for (var i = 0; i < items.length; i++) {
-        final item = items[i];
-
-        _updateStatus(
-          _currentStatus.copyWith(
-            currentEntity: item.entity,
-            completedItems: i,
-          ),
-        );
-
-        try {
-          // تنفيذ المزامنة حسب نوع الكيان
-          await _syncItem(item);
-
-          // حذف من الطابور بعد النجاح
-          await _db.syncDao.removeFromSyncQueue(item.id);
-        } catch (e) {
-          // تحديث عدد المحاولات والخطأ
-          await _db.syncDao.updateSyncQueueError(
-            item.id,
-            e.toString(),
-            item.attempts + 1,
+      // استخدام BatchDatabaseHelper لمعالجة العمليات بكفاءة
+      int processedCount = 0;
+      await BatchDatabaseHelper.batchUpdate(
+        items,
+        (item) async {
+          _updateStatus(
+            _currentStatus.copyWith(
+              currentEntity: item.entity,
+              completedItems: processedCount++,
+            ),
           );
 
-          // إعادة جدولة للمحاولة لاحقاً (backoff exponential)
-          final delay = Duration(minutes: (5 * (item.attempts + 1)).toInt());
-          await _db.customStatement(
-            'UPDATE sync_queue SET scheduled_at = ? WHERE id = ?',
-            [
-              drift.Variable.withDateTime(DateTime.now().add(delay)),
-              drift.Variable.withString(item.id),
-            ],
-          );
-        }
-      }
+          try {
+            // تنفيذ المزامنة حسب نوع الكيان
+            await _syncItem(item);
+
+            // حذف من الطابور بعد النجاح
+            await _db.syncDao.removeFromSyncQueue(item.id);
+          } catch (e) {
+            // تحديث عدد المحاولات والخطأ
+            await _db.syncDao.updateSyncQueueError(
+              item.id,
+              e.toString(),
+              item.attempts + 1,
+            );
+
+            // إعادة جدولة للمحاولة لاحقاً (backoff exponential)
+            final delay = Duration(minutes: (5 * (item.attempts + 1)).toInt());
+            await _db.customStatement(
+              'UPDATE sync_queue SET scheduled_at = ? WHERE id = ?',
+              [
+                drift.Variable.withDateTime(DateTime.now().add(delay)),
+                drift.Variable.withString(item.id),
+              ],
+            );
+          }
+        },
+        batchSize: 10, // معالجة 10 عناصر في كل دفعة
+      );
 
       _updateStatus(
         _currentStatus.copyWith(isSyncing: false, completedItems: items.length),
@@ -344,44 +349,45 @@ class SyncManager {
 
       int insertedCount = 0;
 
-      // تحويل وحفظ كل مستفيد
-      for (final item in beneficiariesData) {
-        try {
-          // تحويل من Backend JSON إلى Data Model ثم إلى Drift Companion
-          final dataModel = BeneficiaryDataModel.fromJson(
-            item as Map<String, dynamic>,
-          );
-          final beneficiaryCompanion = dataModel.toDriftCompanion();
+      // استخدام BatchDatabaseHelper لمعالجة البيانات بكفاءة
+      await BatchDatabaseHelper.batchInsert(
+        beneficiariesData.cast<Map<String, dynamic>>(),
+        (item) async {
+          try {
+            // تحويل من Backend JSON إلى Data Model ثم إلى Drift Companion
+            final dataModel = BeneficiaryDataModel.fromJson(item);
+            final beneficiaryCompanion = dataModel.toDriftCompanion();
 
-          // البحث عن مستفيد موجود بنفس الـ serverId
-          final serverId = item['id'] as int?;
-          if (serverId != null) {
-            final existing = await _db.beneficiariesDao
-                .getBeneficiaryByServerId(serverId);
+            // البحث عن مستفيد موجود بنفس الـ serverId
+            final serverId = item['id'] as int?;
+            if (serverId != null) {
+              final existing = await _db.beneficiariesDao.getBeneficiaryByServerId(serverId);
 
-            if (existing != null) {
-              // تحديث الموجود
-              await _db.beneficiariesDao.updateBeneficiaryCompanion(
-                existing.id,
-                beneficiaryCompanion,
-              );
+              if (existing != null) {
+                // تحديث الموجود
+                await _db.beneficiariesDao.updateBeneficiaryCompanion(
+                  existing.id,
+                  beneficiaryCompanion,
+                );
+              } else {
+                // إدراج جديد
+                await _db.beneficiariesDao.insertBeneficiary(
+                  beneficiaryCompanion,
+                );
+                insertedCount++;
+              }
             } else {
-              // إدراج جديد
-              await _db.beneficiariesDao.insertBeneficiary(
-                beneficiaryCompanion,
-              );
+              // إدراج جديد (بدون serverId)
+              await _db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
               insertedCount++;
             }
-          } else {
-            // إدراج جديد (بدون serverId)
-            await _db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
-            insertedCount++;
+          } catch (e) {
+            // تسجيل الخطأ والمتابعة
+            debugPrint('Error processing beneficiary: $e');
           }
-        } catch (e) {
-          // تسجيل الخطأ والمتابعة
-          debugPrint('Error processing beneficiary: $e');
-        }
-      }
+        },
+        batchSize: 50, // معالجة 50 مستفيد في كل دفعة
+      );
 
       return insertedCount;
     } catch (e) {

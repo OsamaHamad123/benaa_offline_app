@@ -1,5 +1,6 @@
 import '../entities/attachment.dart';
 import '../repositories/attachment_repository.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// Get Beneficiary Attachments Use Case
 class GetBeneficiaryAttachmentsUseCase {
@@ -7,7 +8,7 @@ class GetBeneficiaryAttachmentsUseCase {
 
   GetBeneficiaryAttachmentsUseCase(this._repository);
 
-  Future<List<Attachment>> execute(String beneficiaryId) async {
+  Future<Result<List<Attachment>>> execute(String beneficiaryId) async {
     return await _repository.getBeneficiaryAttachments(beneficiaryId);
   }
 }

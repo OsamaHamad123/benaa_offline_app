@@ -1,6 +1,7 @@
 import 'dart:io';
 import '../entities/attachment.dart';
 import '../repositories/attachment_repository.dart';
+import '../../../../core/error_handling/result.dart';
 
 /// Add Attachment Use Case
 class AddAttachmentUseCase {
@@ -8,7 +9,7 @@ class AddAttachmentUseCase {
 
   AddAttachmentUseCase(this._repository);
 
-  Future<Attachment> execute({
+  Future<Result<Attachment>> execute({
     required String beneficiaryId,
     String? visitId,
     required File sourceFile,

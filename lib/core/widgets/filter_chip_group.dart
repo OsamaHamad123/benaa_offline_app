@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../utils/haptic_patterns.dart';
 
 /// Filter Chip Group - Multiple selection chips
 class FilterChipGroup extends StatefulWidget {
@@ -33,7 +34,7 @@ class _FilterChipGroupState extends State<FilterChipGroup> {
   }
 
   void _onFilterTapped(String filter) {
-    HapticFeedback.selectionClick();
+    HapticPatterns.selection();
     setState(() {
       if (widget.multiSelect) {
         if (_selectedFilters.contains(filter)) {
@@ -137,9 +138,7 @@ class _FilterChipWidget extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white.withOpacity(0.3)
-                        : chipColor.withOpacity(0.2),
+                    color: isSelected ? Colors.white.withOpacity(0.3) : chipColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(

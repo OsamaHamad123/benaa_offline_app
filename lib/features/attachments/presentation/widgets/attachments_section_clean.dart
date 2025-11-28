@@ -138,9 +138,7 @@ class AttachmentsSectionClean extends ConsumerWidget {
         return _AttachmentCard(
           attachment: attachment,
           onTap: () => _openAttachment(context, attachment),
-          onDelete: readOnly
-              ? null
-              : () => _deleteAttachment(context, ref, attachment),
+          onDelete: readOnly ? null : () => _deleteAttachment(context, ref, attachment),
         );
       },
     );
@@ -149,6 +147,7 @@ class AttachmentsSectionClean extends ConsumerWidget {
   Future<void> _showAddOptions(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
@@ -405,17 +404,15 @@ class _AttachmentCard extends StatelessWidget {
 
   Widget _buildThumbnail() {
     if (attachment.isImage) {
-      final thumbnailFile = attachment.thumbnailPath != null
-          ? File(attachment.thumbnailPath!)
-          : File(attachment.filePath);
+      final thumbnailFile =
+          attachment.thumbnailPath != null ? File(attachment.thumbnailPath!) : File(attachment.filePath);
 
       return Image.file(
         thumbnailFile,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) =>
-            _buildIcon(Icons.broken_image, Colors.red),
+        errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, Colors.red),
       );
     } else if (attachment.isPdf) {
       return _buildIcon(Icons.picture_as_pdf, Colors.red);

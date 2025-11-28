@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../utils/haptic_patterns.dart';
 
 /// Swipeable Card with left and right actions
 class SwipeableCard extends StatelessWidget {
@@ -34,12 +34,11 @@ class SwipeableCard extends StatelessWidget {
     return Dismissible(
       key: UniqueKey(),
       confirmDismiss: (direction) async {
-        HapticFeedback.mediumImpact();
+        HapticPatterns.warning();
         if (direction == DismissDirection.endToStart && onSwipeLeft != null) {
           onSwipeLeft!();
           return false;
-        } else if (direction == DismissDirection.startToEnd &&
-            onSwipeRight != null) {
+        } else if (direction == DismissDirection.startToEnd && onSwipeRight != null) {
           onSwipeRight!();
           return false;
         }
@@ -123,7 +122,7 @@ class SwipeableListItem extends StatelessWidget {
       key: UniqueKey(),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.endToStart && actions.isNotEmpty) {
-          HapticFeedback.mediumImpact();
+          HapticPatterns.warning();
           // Show actions menu
           await _showActionsBottomSheet(context);
         }
@@ -171,7 +170,7 @@ class SwipeableListItem extends StatelessWidget {
                   title: Text(action.label),
                   onTap: () {
                     Navigator.pop(context);
-                    HapticFeedback.selectionClick();
+                    HapticPatterns.selection();
                     action.onTap();
                   },
                 );

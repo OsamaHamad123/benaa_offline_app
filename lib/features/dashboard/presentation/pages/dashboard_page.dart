@@ -9,6 +9,8 @@ import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 import '../../../../core/widgets/charts.dart';
 import '../../../../core/widgets/modern_sliver_app_bar.dart';
+import '../../../../core/widgets/enhanced_refresh_indicator.dart';
+import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../../core/monitoring/app_monitoring.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -27,7 +29,7 @@ import '../../../../core/settings/enhanced_settings_page.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
-import '../../../../core/ux/ux_widgets.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
 /// Uses StateNotifier for state management with performance optimizations
@@ -198,12 +200,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       floatingActionButton: _selectedIndex == 0
           ? MicroInteractions.bounceButton(
               onTap: () {
-                HapticFeedback.mediumImpact();
+                HapticPatterns.submit();
                 context.push('/beneficiaries/add');
               },
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  HapticFeedback.mediumImpact();
+                  HapticPatterns.submit();
                   context.push('/beneficiaries/add');
                 },
                 icon: const Icon(Icons.person_add),
@@ -217,7 +219,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          HapticFeedback.selectionClick();
+          HapticPatterns.selection();
           setState(() {
             _selectedIndex = index;
           });
@@ -318,9 +320,7 @@ class _DashboardHome extends ConsumerWidget {
                 final count = state.todayStats?.pendingTasks ?? 0;
                 EnhancedSnackbar.showInfo(
                   context,
-                  message: count > 0
-                      ? 'لديك $count مهمة معلقة'
-                      : 'لا توجد مهام معلقة',
+                  message: count > 0 ? 'لديك $count مهمة معلقة' : 'لا توجد مهام معلقة',
                 );
               },
             ),
@@ -329,10 +329,12 @@ class _DashboardHome extends ConsumerWidget {
 
         // Content
         SliverToBoxAdapter(
-          child: RefreshIndicator(
+          child: EnhancedRefreshIndicator(
             onRefresh: () async {
+              HapticPatterns.refresh();
               await notifier.refresh();
             },
+            color: AppColors.primary,
             child: state.isLoadingStats && state.statistics == null
                 ? Padding(
                     padding: EdgeInsets.all(16.w),
@@ -341,21 +343,21 @@ class _DashboardHome extends ConsumerWidget {
                         3,
                         (index) => Padding(
                           padding: EdgeInsets.only(bottom: 16.h),
-                          child: SkeletonListItem(),
+                          child: const SkeletonCard(),
                         ),
                       ),
                     ),
                   )
                 : state.hasError
-                ? _buildErrorView(context, state.errorMessage!, notifier)
-                : _buildContent(
-                    context,
-                    ref,
-                    state,
-                    notifier,
-                    padding,
-                    isOnline,
-                  ),
+                    ? _buildErrorView(context, state.errorMessage!, notifier)
+                    : _buildContent(
+                        context,
+                        ref,
+                        state,
+                        notifier,
+                        padding,
+                        isOnline,
+                      ),
           ),
         ),
       ],
@@ -467,10 +469,7 @@ class _DashboardHome extends ConsumerWidget {
                   // Advanced Filters
                   IconButton(
                     icon: Badge(
-                      isLabelVisible:
-                          selectedCategory != null ||
-                          selectedGovernorate != null ||
-                          syncedOnly != null,
+                      isLabelVisible: selectedCategory != null || selectedGovernorate != null || syncedOnly != null,
                       label: Text(
                         '${(selectedCategory != null ? 1 : 0) + (selectedGovernorate != null ? 1 : 0) + (syncedOnly != null ? 1 : 0)}',
                       ),
@@ -710,7 +709,7 @@ class _CollapsibleSectionState extends State<_CollapsibleSection> {
             setState(() {
               _isExpanded = expanded;
             });
-            HapticFeedback.selectionClick();
+            HapticPatterns.selection();
           },
           children: [
             Padding(padding: EdgeInsets.all(16.w), child: widget.child),

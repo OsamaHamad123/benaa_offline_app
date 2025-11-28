@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:excel/excel.dart';
@@ -64,17 +63,11 @@ class BeneficiariesExportService {
                 _buildStatBox('Total', beneficiaries.length.toString()),
                 _buildStatBox(
                   'Synced',
-                  beneficiaries
-                      .where((b) => b.syncState == 'synced')
-                      .length
-                      .toString(),
+                  beneficiaries.where((b) => b.syncState == 'synced').length.toString(),
                 ),
                 _buildStatBox(
                   'Pending',
-                  beneficiaries
-                      .where((b) => b.syncState == 'pending')
-                      .length
-                      .toString(),
+                  beneficiaries.where((b) => b.syncState == 'pending').length.toString(),
                 ),
               ],
             ),
@@ -192,9 +185,7 @@ class BeneficiariesExportService {
 
       // Alternate row colors
       final rowStyle = CellStyle(
-        backgroundColorHex: i % 2 == 0
-            ? ExcelColor.fromHexString('#F5F5F5')
-            : ExcelColor.fromHexString('#FFFFFF'),
+        backgroundColorHex: i % 2 == 0 ? ExcelColor.fromHexString('#F5F5F5') : ExcelColor.fromHexString('#FFFFFF'),
       );
 
       final rowData = [
@@ -204,9 +195,7 @@ class BeneficiariesExportService {
         b.phoneNumber != 0 ? b.phoneNumber.toString() : '-',
         b.altPhoneNumber != 0 ? b.altPhoneNumber.toString() : '-',
         _getSyncStateArabic(b.syncState),
-        b.createdAt != null
-            ? DateFormat('yyyy-MM-dd').format(b.createdAt!)
-            : '-',
+        b.createdAt != null ? DateFormat('yyyy-MM-dd').format(b.createdAt!) : '-',
       ];
 
       for (var j = 0; j < rowData.length; j++) {

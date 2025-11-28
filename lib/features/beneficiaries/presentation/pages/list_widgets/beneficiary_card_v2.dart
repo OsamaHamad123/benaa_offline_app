@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../../data/db/drift_database.dart';
 import '../../providers/list/selection_provider.dart';
 import '../../../../../../core/widgets/cached_avatar.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart';
+import '../../../../../../core/utils/haptic_patterns.dart';
 
 // Helpers & Services
 import 'helpers/beneficiary_helpers.dart';
@@ -44,8 +44,7 @@ class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   ConsumerState<BeneficiaryCardV2> createState() => _BeneficiaryCardV2State();
 }
 
-class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
-    with AutomaticKeepAliveClientMixin {
+class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true; // Keep card alive during scroll
 
@@ -70,29 +69,22 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
           margin: EdgeInsets.only(bottom: rv.spacing),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: widget.isSelected
-                ? BorderSide(color: theme.colorScheme.primary, width: 3)
-                : BorderSide.none,
+            side: widget.isSelected ? BorderSide(color: theme.colorScheme.primary, width: 3) : BorderSide.none,
           ),
           child: InkWell(
             onTap: widget.isSelectionMode
                 ? () {
-                    HapticFeedback.lightImpact();
-                    ref
-                        .read(selectionProvider.notifier)
-                        .toggleItem(widget.beneficiary.id);
+                    HapticPatterns.selection();
+                    ref.read(selectionProvider.notifier).toggleItem(widget.beneficiary.id);
                   }
                 : (widget.onTap ??
-                      () => context.push(
-                        '/beneficiaries/${widget.beneficiary.id}',
-                      )),
-            onLongPress:
-                widget.onLongPress ??
+                    () => context.push(
+                          '/beneficiaries/${widget.beneficiary.id}',
+                        )),
+            onLongPress: widget.onLongPress ??
                 () {
-                  HapticFeedback.mediumImpact();
-                  ref
-                      .read(selectionProvider.notifier)
-                      .startSelectionWith(widget.beneficiary.id);
+                  HapticPatterns.selection();
+                  ref.read(selectionProvider.notifier).startSelectionWith(widget.beneficiary.id);
                 },
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -151,18 +143,14 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
       height: size,
       margin: EdgeInsets.only(left: rv.spacing),
       decoration: BoxDecoration(
-        color: widget.isSelected
-            ? theme.colorScheme.primary
-            : Colors.transparent,
+        color: widget.isSelected ? theme.colorScheme.primary : Colors.transparent,
         border: Border.all(
           color: widget.isSelected ? theme.colorScheme.primary : Colors.grey,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: widget.isSelected
-          ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20)
-          : null,
+      child: widget.isSelected ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20) : null,
     );
   }
 
@@ -393,24 +381,24 @@ class _QuickActionsButton extends StatelessWidget {
 
     switch (action) {
       case 'call':
-        HapticFeedback.lightImpact();
+        HapticPatterns.selection();
         await PhoneLauncherService.makeCall(phoneStr);
         break;
 
       case 'whatsapp':
-        HapticFeedback.lightImpact();
+        HapticPatterns.selection();
         await PhoneLauncherService.openWhatsApp(phoneStr);
         break;
 
       case 'edit':
-        HapticFeedback.lightImpact();
+        HapticPatterns.selection();
         if (context.mounted) {
           context.push('/beneficiaries/edit/${beneficiary.id}');
         }
         break;
 
       case 'delete':
-        HapticFeedback.heavyImpact();
+        HapticPatterns.error();
         if (onDelete != null) {
           onDelete!();
         }

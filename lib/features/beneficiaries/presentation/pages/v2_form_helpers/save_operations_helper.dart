@@ -5,6 +5,7 @@ import '../../../domain/repositories/beneficiary_repository.dart';
 import '../../../../../data/db/drift_database.dart';
 import '../../../../attachments/data/datasources/attachment_datasource.dart';
 import 'file_size_validator.dart';
+import '../../../../../core/error_handling/result.dart';
 
 /// 💾 Save Operations Helper
 ///
@@ -28,39 +29,48 @@ class SaveOperationsHelper {
     debugPrint('🔍 Current ID: $currentBeneficiaryId');
 
     try {
-      final existing = await repository.getByNationalId(cleanedNationalId);
-      debugPrint(
-        '🔍 Query result: ${existing != null ? "Found (ID: ${existing.id})" : "Not found"}',
-      );
+      final result = await repository.getByNationalId(cleanedNationalId);
 
-      if (existing != null) {
-        // إذا كان تعديل لمستفيد موجود، تجاهل نفس المستفيد
-        if (!isNewBeneficiary && existing.id == currentBeneficiaryId) {
-          debugPrint('✅ checkDuplicate: Same beneficiary, no duplicate');
-          return false; // نفس المستفيد، لا يعتبر تكرار
+      if (result is Failure<Beneficiary>) {
+        final failure = result as Failure<Beneficiary>;
+        // NotFoundFailure means no duplicate
+        if (failure.error is NotFoundFailure) {
+          debugPrint('✅ checkDuplicate: No duplicate found');
+          return false;
         }
-
-        // يوجد مستفيد آخر بنفس الرقم الوطني
-        debugPrint(
-          '⚠️ checkDuplicate: Found duplicate - ID: ${existing.id}, National ID: ${existing.nationalId}',
-        );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('يوجد مستفيد بنفس الرقم الوطني'),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-          );
-        }
-        return true; // Duplicate found
+        // Other failures - log and continue
+        debugPrint('❌ Error checking duplicate: ${failure.error}');
+        return false;
       }
 
-      debugPrint('✅ checkDuplicate: No duplicate found');
-      return false; // No duplicate
+      final existing = (result as Success<Beneficiary>).value;
+      debugPrint(
+        '🔍 Query result: Found (ID: ${existing.id})',
+      );
+
+      // إذا كان تعديل لمستفيد موجود، تجاهل نفس المستفيد
+      if (!isNewBeneficiary && existing.id == currentBeneficiaryId) {
+        debugPrint('✅ checkDuplicate: Same beneficiary, no duplicate');
+        return false; // نفس المستفيد، لا يعتبر تكرار
+      }
+
+      // يوجد مستفيد آخر بنفس الرقم الوطني
+      debugPrint(
+        '⚠️ checkDuplicate: Found duplicate - ID: ${existing.id}',
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('يوجد مستفيد بنفس الرقم الوطني'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+        );
+      }
+      return true; // Duplicate found
     } catch (e) {
       debugPrint('❌ Error checking duplicate: $e');
       return false; // Continue with save even if check fails

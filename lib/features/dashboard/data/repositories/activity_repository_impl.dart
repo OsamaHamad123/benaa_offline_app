@@ -1,6 +1,7 @@
 import '../../domain/entities/activity.dart';
 import '../../domain/repositories/activity_repository.dart';
 import '../datasources/activity_local_datasource.dart';
+import '../../../../core/error_handling/result.dart';
 
 class ActivityRepositoryImpl implements ActivityRepository {
   final ActivityLocalDataSource localDataSource;
@@ -8,67 +9,74 @@ class ActivityRepositoryImpl implements ActivityRepository {
   ActivityRepositoryImpl(this.localDataSource);
 
   @override
-  Future<List<Activity>> getAllActivities() async {
+  Future<Result<List<Activity>>> getAllActivities() async {
     try {
-      return await localDataSource.getAllActivities();
-    } catch (e) {
-      throw Exception('Failed to get all activities: $e');
+      final activities = await localDataSource.getAllActivities();
+      return Success(activities);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get all activities: $e', stackTrace));
     }
   }
 
   @override
-  Future<List<Activity>> getActivitiesByType(String type) async {
+  Future<Result<List<Activity>>> getActivitiesByType(String type) async {
     try {
-      return await localDataSource.getActivitiesByType(type);
-    } catch (e) {
-      throw Exception('Failed to get activities by type: $e');
+      final activities = await localDataSource.getActivitiesByType(type);
+      return Success(activities);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get activities by type: $e', stackTrace));
     }
   }
 
   @override
-  Future<List<Activity>> getActivitiesForBeneficiary(
+  Future<Result<List<Activity>>> getActivitiesForBeneficiary(
     String beneficiaryId,
   ) async {
     try {
-      return await localDataSource.getActivitiesForBeneficiary(beneficiaryId);
-    } catch (e) {
-      throw Exception('Failed to get activities for beneficiary: $e');
+      final activities = await localDataSource.getActivitiesForBeneficiary(beneficiaryId);
+      return Success(activities);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get activities for beneficiary: $e', stackTrace));
     }
   }
 
   @override
-  Future<void> logActivity(Activity activity) async {
+  Future<Result<void>> logActivity(Activity activity) async {
     try {
       await localDataSource.logActivity(activity);
-    } catch (e) {
-      throw Exception('Failed to log activity: $e');
+      return Success(null);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to log activity: $e', stackTrace));
     }
   }
 
   @override
-  Future<void> deleteActivity(String activityId) async {
+  Future<Result<void>> deleteActivity(String activityId) async {
     try {
       await localDataSource.deleteActivity(activityId);
-    } catch (e) {
-      throw Exception('Failed to delete activity: $e');
+      return Success(null);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to delete activity: $e', stackTrace));
     }
   }
 
   @override
-  Future<void> clearAllActivities() async {
+  Future<Result<void>> clearAllActivities() async {
     try {
       await localDataSource.clearAllActivities();
-    } catch (e) {
-      throw Exception('Failed to clear activities: $e');
+      return Success(null);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to clear activities: $e', stackTrace));
     }
   }
 
   @override
-  Future<int> getActivitiesCount() async {
+  Future<Result<int>> getActivitiesCount() async {
     try {
-      return await localDataSource.getActivitiesCount();
-    } catch (e) {
-      throw Exception('Failed to get activities count: $e');
+      final count = await localDataSource.getActivitiesCount();
+      return Success(count);
+    } catch (e, stackTrace) {
+      return Failure(DatabaseFailure('Failed to get activities count: $e', stackTrace));
     }
   }
 }
