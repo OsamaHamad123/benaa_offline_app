@@ -148,7 +148,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/beneficiaries/add',
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const BeneficiaryFormPageV3(),
+          child: BeneficiaryFormPageV3(
+            civilRegistryData: state.extra as Map<String, dynamic>?,
+          ),
           state: state,
           type: PageTransitionType.slideFromBottom,
         ),

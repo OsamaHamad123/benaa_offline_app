@@ -64,10 +64,16 @@ import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
 /// ✅ Undo/Redo Support
 /// ✅ Enhanced Validation Messages
 /// ✅ Better Performance
+/// ✅ Auto-fill from Civil Registry
 class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
   final String? beneficiaryId;
+  final Map<String, dynamic>? civilRegistryData; // ✨ بيانات السجل المدني
 
-  const BeneficiaryFormPageV3({super.key, this.beneficiaryId});
+  const BeneficiaryFormPageV3({
+    super.key,
+    this.beneficiaryId,
+    this.civilRegistryData,
+  });
 
   @override
   ConsumerState<BeneficiaryFormPageV3> createState() => _BeneficiaryFormPageV3State();
@@ -298,16 +304,30 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       _clearAllControllers();
       ref.read(beneficiaryFormProvider.notifier).createNew();
 
-      // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم (cancelable)
-      _offerAutoSavedDraftsTimer = Timer(
-        const Duration(milliseconds: 500),
-        () async {
+      // ✨ ملء البيانات من السجل المدني إذا كانت موجودة
+      if (widget.civilRegistryData != null) {
+        debugPrint('📋 Civil Registry Data received: ${widget.civilRegistryData}');
+        // تأخير بسيط للسماح للـ controllers بالتحميل
+        Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
-            await _checkAndOfferAutoSavedDrafts();
-            _firstFieldFocusNode.requestFocus();
+            _fillFromCivilRegistry(widget.civilRegistryData!);
+            setState(() {
+              _hasUnsavedChanges = true;
+            });
           }
-        },
-      );
+        });
+      } else {
+        // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم (cancelable)
+        _offerAutoSavedDraftsTimer = Timer(
+          const Duration(milliseconds: 500),
+          () async {
+            if (mounted) {
+              await _checkAndOfferAutoSavedDrafts();
+              _firstFieldFocusNode.requestFocus();
+            }
+          },
+        );
+      }
     }
 
     if (!mounted) return;
@@ -738,6 +758,116 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     setState(() {});
 
     EnhancedSnackbar.showSuccess(context, message: 'تم ملء البيانات التجريبية');
+  }
+
+  /// ✨ Fill form from Civil Registry data
+  void _fillFromCivilRegistry(Map<String, dynamic> data) {
+    try {
+      debugPrint('🔄 Starting to fill form with data: $data');
+      int filledFieldsCount = 0;
+
+      // Parse fullName into parts
+      final fullName = data['name'] as String?;
+      if (fullName != null && fullName.isNotEmpty) {
+        debugPrint('📝 Filling name: $fullName');
+        final nameParts = fullName.trim().split(RegExp(r'\s+'));
+        if (nameParts.isNotEmpty) {
+          _controllers.firstNameController.text = nameParts[0];
+          filledFieldsCount++;
+          debugPrint('✅ First name: ${nameParts[0]}');
+        }
+        if (nameParts.length > 1) {
+          _controllers.fatherNameController.text = nameParts[1];
+          filledFieldsCount++;
+          debugPrint('✅ Father name: ${nameParts[1]}');
+        }
+        if (nameParts.length > 2) {
+          _controllers.grandfatherNameController.text = nameParts[2];
+          filledFieldsCount++;
+          debugPrint('✅ Grandfather name: ${nameParts[2]}');
+        }
+        if (nameParts.length > 3) {
+          _controllers.lastNameController.text = nameParts.sublist(3).join(' ');
+          filledFieldsCount++;
+          debugPrint('✅ Last name: ${nameParts.sublist(3).join(' ')}');
+        }
+      }
+
+      // National ID
+      final nationalId = data['nationalId'] as String?;
+      if (nationalId != null && nationalId.isNotEmpty) {
+        _controllers.nationalIdController.text = nationalId;
+        filledFieldsCount++;
+        debugPrint('✅ National ID: $nationalId');
+      }
+
+      // Gender
+      final gender = data['gender'] as String?;
+      if (gender != null && gender.isNotEmpty) {
+        _controllers.selectedGender = gender;
+        filledFieldsCount++;
+        debugPrint('✅ Gender: $gender');
+      }
+
+      // Mother Name
+      final motherName = data['motherName'] as String?;
+      if (motherName != null && motherName.isNotEmpty) {
+        _controllers.motherNameController.text = motherName;
+        filledFieldsCount++;
+        debugPrint('✅ Mother name: $motherName');
+      }
+
+      // Birth Date
+      final birthDate = data['birthDate'] as String?;
+      if (birthDate != null && birthDate.isNotEmpty) {
+        _controllers.birthDateController.text = birthDate;
+        filledFieldsCount++;
+        debugPrint('✅ Birth date: $birthDate');
+      }
+
+      // Address/Location
+      final city = data['city'] as String?;
+      final governorate = data['governorate'] as String?;
+
+      if (city != null || governorate != null) {
+        final addressParts = <String>[];
+        if (governorate != null && governorate.isNotEmpty) {
+          addressParts.add(governorate);
+          _controllers.selectedProvince = governorate;
+        }
+        if (city != null && city.isNotEmpty) {
+          addressParts.add(city);
+          _controllers.selectedCity = city;
+        }
+        if (addressParts.isNotEmpty) {
+          _controllers.addressController.text = addressParts.join(' - ');
+        }
+      }
+
+      // Show success message with count
+      debugPrint('✅ Successfully filled $filledFieldsCount fields from civil registry');
+
+      if (mounted && filledFieldsCount > 0) {
+        // Force UI update
+        setState(() {});
+
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: '✅ تم ملء $filledFieldsCount حقل من السجل المدني',
+          duration: const Duration(seconds: 3),
+        );
+      } else if (filledFieldsCount == 0) {
+        debugPrint('⚠️ No fields were filled - data might be incomplete');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error filling form from civil registry: $e\n$stackTrace');
+      if (mounted) {
+        EnhancedSnackbar.showError(
+          context,
+          message: 'حدث خطأ أثناء ملء البيانات',
+        );
+      }
+    }
   }
 
   /// ⬅️ التالي - الانتقال للتاب التالي (يمين في RTL)

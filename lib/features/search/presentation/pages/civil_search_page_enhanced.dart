@@ -45,11 +45,11 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   late final Throttler _scrollThrottler; // ✅ Throttler for scroll events
 
   // ⚡ Track if this is first search (for showing optimization message)
-  bool _isFirstSearch = true;
+  final ValueNotifier<bool> _isFirstSearchNotifier = ValueNotifier(true);
 
-  // 🎯 Autocomplete suggestions
-  List<String> _suggestions = [];
-  bool _showSuggestions = false;
+  // 🎯 Autocomplete suggestions - using ValueNotifier for better performance
+  final ValueNotifier<List<String>> _suggestionsNotifier = ValueNotifier([]);
+  final ValueNotifier<bool> _showSuggestionsNotifier = ValueNotifier(false);
 
   // ⚡ Performance: Cache responsive values to avoid recalculating every frame
   ResponsiveValues? _cachedRv;
@@ -68,9 +68,9 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   @override
   void initState() {
     super.initState();
-    // ✅ Initialize Debouncer with smart adaptive delay
-    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 200));
-    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
+    // ✅ Initialize Debouncer with optimized delay (400ms لتقليل الـ lag)
+    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 400));
+    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 150));
     // ⚡ Auto-scroll listener for infinite scroll
     _scrollController.addListener(_onScroll);
   }
@@ -81,6 +81,11 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     _scrollController.dispose();
     _searchFocusNode.dispose();
     _searchDebouncer.dispose(); // ✅ Clean Debouncer
+
+    // ⚡ Clean up ValueNotifiers
+    _isFirstSearchNotifier.dispose();
+    _suggestionsNotifier.dispose();
+    _showSuggestionsNotifier.dispose();
 
     // ⚡ Clean up cache when leaving page to free memory
     // This prevents GC lag when navigating to other pages
@@ -120,47 +125,42 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     if (query.trim().isEmpty) {
       _searchDebouncer.cancel(); // ✅ Cancel any pending search
       notifier.clearSearch();
-      // ⚡ Single setState with mounted check
-      if (mounted) {
-        setState(() {
-          _suggestions = [];
-          _showSuggestions = false;
-        });
-      }
+      // ⚡ Update ValueNotifiers instead of setState
+      _suggestionsNotifier.value = [];
+      _showSuggestionsNotifier.value = false;
       return;
     }
 
     // ✅ Normalize Arabic text for better search results
     final normalizedQuery = ArabicNormalizer.normalize(query);
+
+    // ⚡ تحديث بدون setState إذا ممكن
     notifier.setQuery(normalizedQuery);
 
-    // Get autocomplete suggestions
-    if (normalizedQuery.trim().length >= 2) {
-      final suggestions = notifier.getSuggestions(normalizedQuery.trim());
-      // ⚡ Single setState with mounted check
-      if (mounted) {
-        setState(() {
-          _suggestions = suggestions;
-          _showSuggestions = suggestions.isNotEmpty;
-        });
-      }
-    } else {
-      // ⚡ Single setState with mounted check
-      if (mounted) {
-        setState(() {
-          _suggestions = [];
-          _showSuggestions = false;
-        });
-      }
-    }
-
-    // ✅ Use Debouncer for search with smart delay
+    // Get autocomplete suggestions - بدون setState
     final trimmedQuery = normalizedQuery.trim();
 
-    // Cancel and reschedule search
+    if (trimmedQuery.length >= 2) {
+      // ⚡ تأخير الـ suggestions لتقليل الـ lag
+      Future.microtask(() {
+        if (!mounted) return;
+        final suggestions = notifier.getSuggestions(trimmedQuery);
+        if (mounted) {
+          // ⚡ Update ValueNotifiers - no rebuild needed
+          _suggestionsNotifier.value = suggestions;
+          _showSuggestionsNotifier.value = suggestions.isNotEmpty;
+        }
+      });
+    } else if (_showSuggestionsNotifier.value) {
+      // فقط إذا كانت مفتوحة
+      _suggestionsNotifier.value = [];
+      _showSuggestionsNotifier.value = false;
+    }
+
+    // ✅ Use Debouncer for search with smart delay (300ms لتقليل الـ lag)
     _searchDebouncer.cancel();
     _searchDebouncer(() {
-      if (trimmedQuery.length >= 2) {
+      if (mounted && trimmedQuery.length >= 2) {
         notifier.search(reset: true);
       }
     });
@@ -615,25 +615,34 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
               onGenderFilterTap: _showGenderFilterBottomSheet,
             ),
             // 🎯 AUTOCOMPLETE SUGGESTIONS
-            if (_showSuggestions && searchState.query.isNotEmpty)
-              RepaintBoundary(
-                child: AutocompleteSuggestions(
-                  suggestions: _suggestions,
-                  fontSize: rv.fontSize,
-                  onSuggestionTap: (suggestion) {
-                    _searchController.text = suggestion;
-                    if (mounted) {
-                      setState(() {
-                        _showSuggestions = false;
-                        _suggestions = [];
-                      });
-                    }
-                    final notifier = ref.read(searchProvider.notifier);
-                    notifier.setQuery(suggestion);
-                    notifier.search(reset: true);
-                  },
-                ),
-              ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _showSuggestionsNotifier,
+              builder: (context, showSuggestions, _) {
+                if (!showSuggestions || searchState.query.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return RepaintBoundary(
+                  child: ValueListenableBuilder<List<String>>(
+                    valueListenable: _suggestionsNotifier,
+                    builder: (context, suggestions, _) {
+                      return AutocompleteSuggestions(
+                        suggestions: suggestions,
+                        fontSize: rv.fontSize,
+                        onSuggestionTap: (suggestion) {
+                          _searchController.text = suggestion;
+                          // ⚡ Update ValueNotifiers
+                          _showSuggestionsNotifier.value = false;
+                          _suggestionsNotifier.value = [];
+                          final notifier = ref.read(searchProvider.notifier);
+                          notifier.setQuery(suggestion);
+                          notifier.search(reset: true);
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
             // 🔍 RECENT SEARCHES (only when search bar is empty)
             if (searchState.query.isEmpty) _buildRecentSearches(rv),
           ],
@@ -791,9 +800,9 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     // ⚡ Skeleton loading - modern shimmer effect with optimization tip
     if (searchState.isSearching && searchState.results.isEmpty) {
       // Mark that we've started searching
-      if (_isFirstSearch) {
+      if (_isFirstSearchNotifier.value) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _isFirstSearch = false);
+          _isFirstSearchNotifier.value = false;
         });
       }
 
@@ -822,13 +831,18 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                     ),
                     SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'جاري البحث في 5 مليون سجل...\n${_isFirstSearch ? "قد يستغرق البحث الأول ثوانٍ لتحسين الأداء" : "البحث سريع الآن ⚡"}',
-                        style: TextStyle(
-                          fontSize: rv.fontSize * 0.9,
-                          color: Colors.blue.shade800,
-                          height: 1.4,
-                        ),
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _isFirstSearchNotifier,
+                        builder: (context, isFirstSearch, _) {
+                          return Text(
+                            'جاري البحث في 5 مليون سجل...\n${isFirstSearch ? "قد يستغرق البحث الأول ثوانٍ لتحسين الأداء" : "البحث سريع الآن ⚡"}',
+                            style: TextStyle(
+                              fontSize: rv.fontSize * 0.9,
+                              color: Colors.blue.shade800,
+                              height: 1.4,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
