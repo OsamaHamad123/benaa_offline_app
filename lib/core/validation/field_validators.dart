@@ -46,16 +46,16 @@ class FieldValidators {
   /// National ID validator (9 digits)
   static String? nationalId(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ الرقم الوطني مطلوب';
+      return '🆔 الرقم الوطني مطلوب';
     }
 
     final cleaned = value.trim();
     if (cleaned.length != nationalIdLength) {
-      return '⚠️ يجب أن يكون الرقم الوطني $nationalIdLength أرقام';
+      return '🆔 الرقم الوطني يجب أن يكون $nationalIdLength أرقام\n💡 مثال: 123456789';
     }
 
     if (!RegExp(r'^\d+$').hasMatch(cleaned)) {
-      return '⚠️ الرقم الوطني يجب أن يحتوي على أرقام فقط';
+      return '🆔 الرقم الوطني يجب أن يحتوي على أرقام فقط\n💡 مثال: 123456789';
     }
 
     return null;
@@ -69,7 +69,7 @@ class FieldValidators {
   /// - +972XXXXXXXXX (with country code)
   static String? phone(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ رقم الهاتف مطلوب';
+      return '📱 رقم الهاتف مطلوب';
     }
 
     // Remove common formatting characters
@@ -88,12 +88,12 @@ class FieldValidators {
 
     // Check if contains only digits
     if (!RegExp(r'^\d+$').hasMatch(phoneDigits)) {
-      return '⚠️ رقم الهاتف يجب أن يحتوي على أرقام فقط';
+      return '📱 رقم الهاتف يجب أن يحتوي على أرقام فقط\n💡 مثال: 0595735352';
     }
 
     // Validate Gaza/Palestine format: 059XXXXXXX or 056XXXXXXX
     if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
-      return '⚠️ رقم غير صحيح\nمثال: 0595735352 أو +970595735352';
+      return '📱 رقم غير صحيح - يجب أن يبدأ بـ 059 أو 056\n💡 مثال: 0595735352 أو +970595735352';
     }
 
     return null;
@@ -110,7 +110,7 @@ class FieldValidators {
   /// Email validator
   static String? email(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ البريد الإلكتروني مطلوب';
+      return '📧 البريد الإلكتروني مطلوب';
     }
 
     final emailRegex = RegExp(
@@ -118,7 +118,7 @@ class FieldValidators {
     );
 
     if (!emailRegex.hasMatch(value.trim())) {
-      return '⚠️ البريد الإلكتروني غير صحيح\nمثال: example@email.com';
+      return '📧 البريد الإلكتروني غير صحيح\n💡 مثال: example@email.com';
     }
 
     return null;
@@ -135,7 +135,7 @@ class FieldValidators {
   /// Birth date validator
   static String? birthDate(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ تاريخ الميلاد مطلوب';
+      return '📅 تاريخ الميلاد مطلوب';
     }
 
     try {
@@ -143,21 +143,21 @@ class FieldValidators {
       final now = DateTime.now();
 
       if (date.isAfter(now)) {
-        return '⚠️ تاريخ الميلاد لا يمكن أن يكون في المستقبل';
+        return '📅 تاريخ الميلاد لا يمكن أن يكون في المستقبل\n💡 تحقق من التاريخ المدخل';
       }
 
       final age = now.year - date.year;
       if (age > 120) {
-        return '⚠️ تاريخ الميلاد غير منطقي (العمر أكثر من 120 سنة)';
+        return '📅 تاريخ الميلاد غير منطقي\n💡 العمر يجب أن يكون أقل من 120 سنة';
       }
 
       if (age < 0) {
-        return '⚠️ تاريخ الميلاد غير صحيح';
+        return '📅 تاريخ الميلاد غير صحيح\n💡 تحقق من التاريخ المدخل';
       }
 
       return null;
     } catch (e) {
-      return '⚠️ تاريخ الميلاد غير صحيح';
+      return '📅 تاريخ الميلاد غير صحيح\n💡 تحقق من صيغة التاريخ';
     }
   }
 
@@ -177,16 +177,16 @@ class FieldValidators {
     String fieldName = 'الرقم',
   }) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ $fieldName مطلوب';
+      return '🔢 $fieldName مطلوب';
     }
 
     final number = int.tryParse(value.trim());
     if (number == null) {
-      return '⚠️ $fieldName يجب أن يكون رقماً صحيحاً';
+      return '🔢 $fieldName يجب أن يكون رقماً صحيحاً\n💡 أدخل أرقاماً فقط';
     }
 
     if (number < min || number > max) {
-      return '⚠️ $fieldName يجب أن يكون بين $min و $max';
+      return '🔢 $fieldName يجب أن يكون بين $min و $max\n💡 القيمة المدخلة: $number';
     }
 
     return null;
@@ -195,20 +195,20 @@ class FieldValidators {
   /// Name validator (Arabic/English, min 2 chars)
   static String? name(String? value, {String fieldName = 'الاسم'}) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ $fieldName مطلوب';
+      return '👤 $fieldName مطلوب';
     }
 
     if (value.trim().length < 2) {
-      return '⚠️ $fieldName يجب أن يكون حرفين على الأقل';
+      return '👤 $fieldName يجب أن يكون حرفين على الأقل\n💡 الطول الحالي: ${value.trim().length}';
     }
 
     if (value.trim().length > 50) {
-      return '⚠️ $fieldName طويل جداً (الحد الأقصى 50 حرف)';
+      return '👤 $fieldName طويل جداً\n💡 الحد الأقصى: 50 حرف (الطول الحالي: ${value.trim().length})';
     }
 
     // Allow Arabic, English, spaces, and some special chars
     if (!RegExp(r'^[\u0600-\u06FFa-zA-Z\s\-\.]+$').hasMatch(value.trim())) {
-      return '⚠️ $fieldName يحتوي على رموز غير مسموحة';
+      return '👤 $fieldName يحتوي على رموز غير مسموحة\n💡 استخدم أحرف عربية أو إنجليزية فقط';
     }
 
     return null;
@@ -217,20 +217,20 @@ class FieldValidators {
   /// Arabic name validator (Arabic only, min 2 chars)
   static String? arabicName(String? value, {String fieldName = 'الاسم'}) {
     if (value == null || value.trim().isEmpty) {
-      return '⚠️ الرجاء إدخال $fieldName';
+      return '👤 الرجاء إدخال $fieldName';
     }
 
     if (value.trim().length < 2) {
-      return '⚠️ $fieldName يجب أن يكون حرفين على الأقل';
+      return '👤 $fieldName يجب أن يكون حرفين على الأقل\n💡 الطول الحالي: ${value.trim().length}';
     }
 
     if (value.trim().length > 50) {
-      return '⚠️ $fieldName طويل جداً (الحد الأقصى 50 حرف)';
+      return '👤 $fieldName طويل جداً\n💡 الحد الأقصى: 50 حرف (الطول الحالي: ${value.trim().length})';
     }
 
     // Arabic characters only
     if (!RegExp(r'^[\u0600-\u06FF\s]+$').hasMatch(value.trim())) {
-      return '⚠️ الرجاء استخدام الأحرف العربية فقط في $fieldName';
+      return '👤 الرجاء استخدام الأحرف العربية فقط في $fieldName\n💡 مثال: محمد أحمد';
     }
 
     return null;
