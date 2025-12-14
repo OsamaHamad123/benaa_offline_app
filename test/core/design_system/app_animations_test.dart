@@ -5,24 +5,24 @@ import 'package:benaa_offline_app/core/design_system/app_animations.dart';
 void main() {
   group('AppDurations Tests', () {
     test('duration values are correct', () {
-      expect(AppDurations.instant, const Duration(milliseconds: 100));
-      expect(AppDurations.fast, const Duration(milliseconds: 200));
-      expect(AppDurations.normal, const Duration(milliseconds: 300));
-      expect(AppDurations.slow, const Duration(milliseconds: 500));
-      expect(AppDurations.verySlow, const Duration(milliseconds: 800));
-      expect(AppDurations.pageTransition, const Duration(milliseconds: 350));
-      expect(AppDurations.shimmer, const Duration(milliseconds: 1200));
+      expect(AppDurations.instant, const Duration(milliseconds: 150));
+      expect(AppDurations.fast, const Duration(milliseconds: 250));
+      expect(AppDurations.normal, const Duration(milliseconds: 350));
+      expect(AppDurations.slow, const Duration(milliseconds: 450));
+      expect(AppDurations.verySlow, const Duration(milliseconds: 600));
+      expect(AppDurations.pageTransition, const Duration(milliseconds: 400));
+      expect(AppDurations.shimmer, const Duration(milliseconds: 1500));
     });
   });
 
   group('AppCurves Tests', () {
     test('curves are defined', () {
-      expect(AppCurves.standard, Curves.easeInOutCubic);
+      expect(AppCurves.standard, Curves.easeInOutCubicEmphasized);
       expect(AppCurves.bounce, Curves.easeOutBack);
       expect(AppCurves.elastic, Curves.elasticOut);
-      expect(AppCurves.smooth, Curves.easeInOutQuart);
-      expect(AppCurves.pageEnter, isA<Curve>());
-      expect(AppCurves.pageExit, isA<Curve>());
+      expect(AppCurves.smooth, Curves.easeInOutQuint);
+      expect(AppCurves.pageEnter, Curves.easeOutCubic);
+      expect(AppCurves.pageExit, Curves.easeInCubic);
     });
   });
 
