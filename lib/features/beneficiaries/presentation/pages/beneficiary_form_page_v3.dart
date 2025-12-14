@@ -985,7 +985,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
             barrierColor: Colors.black26,
             builder: (context) => Center(
               child: FormAnimations.successCheckmark(
-                size: 80,
+                size: 80.sp,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
@@ -1075,15 +1075,15 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                             children: [
                               Icon(
                                 Icons.inbox_outlined,
-                                size: 64,
-                                color: Colors.grey[400],
+                                size: 64.sp,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                               ),
                               SizedBox(height: 16.h),
                               Text(
                                 'لا توجد مسودات محفوظة',
                                 style: TextStyle(
                                   fontSize: 16.sp,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
                               ),
                             ],
@@ -1337,13 +1337,21 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _tabController.animateTo(firstErrorTab);
       }
 
-      // عرض رسالة مفصلة
+      // عرض رسالة مفصلة مع haptic feedback
+      HapticFeedback.mediumImpact();
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
-          final tabName = firstErrorTab == 0 ? 'المعلومات الأساسية' : 'معلومات الاتصال';
+          final tabName = firstErrorTab == 0
+              ? 'المعلومات الأساسية'
+              : firstErrorTab == 1
+                  ? 'معلومات الاتصال'
+                  : firstErrorTab == 2
+                      ? 'العائلة'
+                      : 'المرفقات';
+
           EnhancedSnackbar.showError(
             context,
-            message: 'الحقول المطلوبة في "$tabName":\n${errorFields.join(', ')}',
+            message: '⚠️ يرجى تعبئة الحقول التالية في "$tabName":\n• ${errorFields.join('\n• ')}',
           );
 
           // تحريك التركيز للحقل الأول
@@ -1593,7 +1601,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   onUndo: _formHistory.canUndo ? _handleUndo : null,
                   onRedo: _formHistory.canRedo ? _handleRedo : null,
                   bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(52),
+                    preferredSize: Size.fromHeight(52.h),
                     child: FormProgressIndicator(
                       filledFields: _calculateFilledFields(),
                       totalRequiredFields: 12,

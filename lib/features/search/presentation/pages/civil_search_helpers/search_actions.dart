@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../../core/utils/haptic_patterns.dart';
 import '../../../domain/entities/civil_person.dart';
 
@@ -89,10 +90,36 @@ class SearchActions {
           action: SnackBarAction(
             label: 'مشاركة',
             textColor: Colors.white,
-            onPressed: () {
-              // TODO: Implement share functionality
-            },
+            onPressed: () => _shareResults(context, buffer.toString(), results.length),
           ),
+        ),
+      );
+    });
+  }
+
+  /// Share results via system share dialog
+  static void _shareResults(BuildContext context, String csvData, int count) {
+    HapticPatterns.selection();
+
+    Share.share(
+      csvData,
+      subject: 'نتائج البحث في السجل المدني ($count نتيجة)',
+    ).then((result) {
+      if (result.status == ShareResultStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تمت المشاركة بنجاح'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('خطأ في المشاركة: $error'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
         ),
       );
     });

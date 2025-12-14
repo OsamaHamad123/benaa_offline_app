@@ -18,7 +18,7 @@ class FilterHandlers {
   /// Show age filter bottom sheet
   static void showAgeFilter(BuildContext context, WidgetRef ref) {
     final currentFilter = ref.read(searchProvider).filter;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -43,7 +43,7 @@ class FilterHandlers {
     List<String> availableGovernorates,
   ) async {
     final currentFilter = ref.read(searchProvider).filter;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -64,7 +64,7 @@ class FilterHandlers {
   /// Show gender filter bottom sheet
   static void showGenderFilter(BuildContext context, WidgetRef ref) {
     final currentFilter = ref.read(searchProvider).filter;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -76,3 +76,13 @@ class FilterHandlers {
           if (ref.read(searchProvider).query.isNotEmpty) {
             ref.read(searchProvider.notifier).search(reset: true);
           }
+        },
+      ),
+    );
+  }
+
+  /// Clear all filters
+  static void clearFilters(WidgetRef ref) {
+    ref.read(searchProvider.notifier).clearFilters();
+  }
+}

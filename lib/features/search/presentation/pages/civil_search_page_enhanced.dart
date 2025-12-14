@@ -18,6 +18,11 @@ import '../providers/recent_searches_provider.dart';
 import '../providers/search_dependencies.dart';
 import '../widgets/widgets.dart';
 
+// 🆕 Helper Classes
+import 'civil_search_helpers/search_actions.dart';
+import 'civil_search_helpers/filter_handlers.dart';
+import 'civil_search_helpers/smart_suggestions.dart';
+
 /// 🔍 Civil Search Page - Enhanced Clean Architecture
 ///
 /// Features:
@@ -999,76 +1004,23 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
 
   // 🎯 Age Filter handlers
   void _showAgeFilterBottomSheet() {
-    final currentFilter = ref.read(searchProvider).filter;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AgeFilterBottomSheet(
-        initialMinAge: currentFilter.minAge,
-        initialMaxAge: currentFilter.maxAge,
-        onApply: (minAge, maxAge) {
-          // ⚡ Cache notifier to avoid multiple reads
-          final notifier = ref.read(searchProvider.notifier);
-          notifier.setAgeRange(minAge, maxAge);
-          if (ref.read(searchProvider).query.isNotEmpty) {
-            notifier.search(reset: true);
-          }
-        },
-      ),
-    );
+    FilterHandlers.showAgeFilter(context, ref);
   }
 
   // 🏛️ Governorate Filter handlers
   void _showGovernorateFilterBottomSheet() async {
-    final currentFilter = ref.read(searchProvider).filter;
-
-    // Get available governorates from statistics
     final statsAsync = ref.read(statisticsProvider);
     final governorates = statsAsync.when(
       data: (stats) => stats.governorates,
       loading: () => <String>[],
       error: (_, __) => <String>[],
     );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GovernorateFilterBottomSheet(
-        currentGovernorate: currentFilter.governorate,
-        availableGovernorates: governorates,
-        onApply: (governorate) {
-          ref.read(searchProvider.notifier).setGovernorate(governorate);
-          if (ref.read(searchProvider).query.isNotEmpty) {
-            ref.read(searchProvider.notifier).search(reset: true);
-          }
-        },
-      ),
-    );
+    FilterHandlers.showGovernorateFilter(context, ref, governorates);
   }
 
   // 👥 Gender Filter handlers
   void _showGenderFilterBottomSheet() {
-    final currentFilter = ref.read(searchProvider).filter;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GenderFilterBottomSheet(
-        currentGender: currentFilter.gender?.arabicLabel,
-        onApply: (genderText) {
-          // ⚡ Cache notifier to avoid multiple reads
-          final notifier = ref.read(searchProvider.notifier);
-          notifier.setGender(genderText);
-          if (ref.read(searchProvider).query.isNotEmpty) {
-            ref.read(searchProvider.notifier).search(reset: true);
-          }
-        },
-      ),
-    );
+    FilterHandlers.showGenderFilter(context, ref);
   }
 
   /// 🎨 Enhanced Empty State with helpful tips - Mobile optimized
@@ -1287,146 +1239,33 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   }
 
   void _onClearFilters() {
-    final notifier = ref.read(searchProvider.notifier);
-    notifier.clearFilters();
-    notifier.search(reset: true);
+    FilterHandlers.clearFilters(ref);
   }
 
   void _copyToClipboard(CivilPerson person) {
-    final text = '''
-الاسم الكامل: ${person.fullName}
-الرقم الوطني: ${person.nationalId}
-الجنس: ${person.gender.arabicLabel}
-${person.motherName != null ? 'اسم الأم: ${person.motherName}\n' : ''}${person.birthDate != null ? 'تاريخ الميلاد: ${person.birthDate}\n' : ''}${person.city != null ? 'المدينة: ${person.city}\n' : ''}${person.governorate != null ? 'المحافظة: ${person.governorate}\n' : ''}''';
-
-    Clipboard.setData(ClipboardData(text: text));
-    context.showSuccess('تم النسخ إلى الحافظة ✓');
+    SearchActions.copyToClipboard(context, person);
   }
 
   void _addAsBeneficiary(CivilPerson person) {
     // 📊 تسجيل النقرة في Analytics
     SearchAnalytics.recordClick(ref.read(searchProvider).query);
 
-    context.push(
-      '/beneficiaries/add',
-      extra: {
-        'name': person.fullName,
-        'nationalId': person.nationalId,
-        'gender': person.gender.arabicLabel,
-        'motherName': person.motherName,
-        'birthDate': person.birthDate,
-        'city': person.city,
-        'governorate': person.governorate,
-      },
-    );
+    SearchActions.addAsBeneficiary(context, person);
   }
 
   /// 📤 Export/Share results - Mobile/Tablet optimized with safety limits
   void _exportResults(List<CivilPerson> results, ResponsiveValues rv) {
-    if (results.isEmpty) return;
-
-    try {
-      // ⚡ Safety limit: Max 50 results to prevent clipboard crash
-      const maxResults = 50;
-      final limitedResults = results.take(maxResults).toList();
-
-      final text = StringBuffer();
-      text.writeln('نتائج البحث في السجل المدني');
-      text.writeln('================================');
-      text.writeln('عدد النتائج: ${limitedResults.length}');
-      if (results.length > maxResults) {
-        text.writeln(
-          '(تم تصدير أول $maxResults نتيجة من أصل ${results.length})',
-        );
-      }
-      text.writeln('================================\n');
-
-      for (var i = 0; i < limitedResults.length; i++) {
-        final person = limitedResults[i];
-        text.writeln('${i + 1}. ${person.fullName}');
-        text.writeln('   الرقم الوطني: ${person.nationalId}');
-        text.writeln('   الجنس: ${person.gender.arabicLabel}');
-        if (person.governorate != null) {
-          text.writeln('   المحافظة: ${person.governorate}');
-        }
-        text.writeln('');
-      }
-
-      // Copy to clipboard
-      Clipboard.setData(ClipboardData(text: text.toString()));
-
-      // Show success message
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            results.length > maxResults
-                ? 'تم نسخ أول $maxResults نتيجة من أصل ${results.length}'
-                : 'تم نسخ ${limitedResults.length} نتيجة إلى الحافظة',
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: EdgeInsets.all(rv.spacing),
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'إغلاق',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-        ),
-      );
-    } catch (e) {
-      // Handle export errors gracefully
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('خطأ في تصدير النتائج. حاول تقليل عدد النتائج'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: EdgeInsets.all(rv.spacing),
-        ),
-      );
-    }
+    SearchActions.exportResults(context, results);
   }
 
   /// 💡 Get smart search suggestions based on query
   List<String> _getSmartSuggestions(String query) {
-    final suggestions = <String>[];
-    final normalized = query.trim().toLowerCase();
-
-    // If query is too short, suggest expanding
-    if (normalized.length < 3) {
-      return [];
-    }
-
-    // If query contains multiple words, suggest first word only
-    final words = normalized.split(' ');
-    if (words.length > 1) {
-      suggestions.add(words.first);
-      suggestions.add(words.last);
-    }
-
-    // If query looks like it might have typos, suggest variations
-    if (normalized.contains('عبد ال')) {
-      suggestions.add(normalized.replaceAll('عبد ال', 'عبدال'));
-    }
-    if (normalized.contains('ابو ')) {
-      suggestions.add(normalized.replaceAll('ابو ', 'أبو'));
-    }
-
-    // Suggest removing 'ال' prefix
-    if (normalized.startsWith('ال')) {
-      suggestions.add(normalized.substring(2));
-    }
-
-    // Remove duplicates and return max 3 suggestions
-    return suggestions.toSet().take(3).toList();
+    // Use SmartSuggestionsGenerator for better suggestions
+    return SmartSuggestionsGenerator.generateSuggestions(
+      query: query,
+      recentResults: ref.read(searchProvider).results,
+      maxSuggestions: 5,
+    );
   }
 }
 

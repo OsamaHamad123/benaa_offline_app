@@ -28,11 +28,15 @@ class CivilSearchCache {
   List<CivilPerson>? get(String cacheKey) {
     final entry = _cache[cacheKey];
 
-    if (entry == null) return null;
+    if (entry == null) {
+      _recordMiss();
+      return null;
+    }
 
     // Check if expired
     if (DateTime.now().difference(entry.timestamp) > cacheDuration) {
       _cache.remove(cacheKey);
+      _recordMiss();
       return null;
     }
 
@@ -40,6 +44,7 @@ class CivilSearchCache {
     _cache.remove(cacheKey);
     _cache[cacheKey] = entry;
 
+    _recordHit();
     return entry.results;
   }
 
