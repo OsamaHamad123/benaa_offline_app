@@ -18,6 +18,11 @@ import '../providers/recent_searches_provider.dart';
 import '../providers/search_dependencies.dart';
 import '../widgets/widgets.dart';
 
+// 🆕 Helper Classes
+import 'civil_search_helpers/search_actions.dart';
+import 'civil_search_helpers/filter_handlers.dart';
+import 'civil_search_helpers/smart_suggestions.dart';
+
 /// 🔍 Civil Search Page - Enhanced Clean Architecture
 ///
 /// Features:
@@ -45,11 +50,11 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   late final Throttler _scrollThrottler; // ✅ Throttler for scroll events
 
   // ⚡ Track if this is first search (for showing optimization message)
-  bool _isFirstSearch = true;
+  final ValueNotifier<bool> _isFirstSearchNotifier = ValueNotifier(true);
 
-  // 🎯 Autocomplete suggestions
-  List<String> _suggestions = [];
-  bool _showSuggestions = false;
+  // 🎯 Autocomplete suggestions - using ValueNotifier for better performance
+  final ValueNotifier<List<String>> _suggestionsNotifier = ValueNotifier([]);
+  final ValueNotifier<bool> _showSuggestionsNotifier = ValueNotifier(false);
 
   // ⚡ Performance: Cache responsive values to avoid recalculating every frame
   ResponsiveValues? _cachedRv;
@@ -68,9 +73,9 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   @override
   void initState() {
     super.initState();
-    // ✅ Initialize Debouncer with smart adaptive delay
-    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 200));
-    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
+    // ✅ Initialize Debouncer with optimized delay (400ms لتقليل الـ lag)
+    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 400));
+    _scrollThrottler = Throttler(interval: const Duration(milliseconds: 150));
     // ⚡ Auto-scroll listener for infinite scroll
     _scrollController.addListener(_onScroll);
   }
@@ -81,6 +86,11 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     _scrollController.dispose();
     _searchFocusNode.dispose();
     _searchDebouncer.dispose(); // ✅ Clean Debouncer
+
+    // ⚡ Clean up ValueNotifiers
+    _isFirstSearchNotifier.dispose();
+    _suggestionsNotifier.dispose();
+    _showSuggestionsNotifier.dispose();
 
     // ⚡ Clean up cache when leaving page to free memory
     // This prevents GC lag when navigating to other pages
@@ -120,47 +130,42 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     if (query.trim().isEmpty) {
       _searchDebouncer.cancel(); // ✅ Cancel any pending search
       notifier.clearSearch();
-      // ⚡ Single setState with mounted check
-      if (mounted) {
-        setState(() {
-          _suggestions = [];
-          _showSuggestions = false;
-        });
-      }
+      // ⚡ Update ValueNotifiers instead of setState
+      _suggestionsNotifier.value = [];
+      _showSuggestionsNotifier.value = false;
       return;
     }
 
     // ✅ Normalize Arabic text for better search results
     final normalizedQuery = ArabicNormalizer.normalize(query);
+
+    // ⚡ تحديث بدون setState إذا ممكن
     notifier.setQuery(normalizedQuery);
 
-    // Get autocomplete suggestions
-    if (normalizedQuery.trim().length >= 2) {
-      final suggestions = notifier.getSuggestions(normalizedQuery.trim());
-      // ⚡ Single setState with mounted check
-      if (mounted) {
-        setState(() {
-          _suggestions = suggestions;
-          _showSuggestions = suggestions.isNotEmpty;
-        });
-      }
-    } else {
-      // ⚡ Single setState with mounted check
-      if (mounted) {
-        setState(() {
-          _suggestions = [];
-          _showSuggestions = false;
-        });
-      }
-    }
-
-    // ✅ Use Debouncer for search with smart delay
+    // Get autocomplete suggestions - بدون setState
     final trimmedQuery = normalizedQuery.trim();
 
-    // Cancel and reschedule search
+    if (trimmedQuery.length >= 2) {
+      // ⚡ تأخير الـ suggestions لتقليل الـ lag
+      Future.microtask(() {
+        if (!mounted) return;
+        final suggestions = notifier.getSuggestions(trimmedQuery);
+        if (mounted) {
+          // ⚡ Update ValueNotifiers - no rebuild needed
+          _suggestionsNotifier.value = suggestions;
+          _showSuggestionsNotifier.value = suggestions.isNotEmpty;
+        }
+      });
+    } else if (_showSuggestionsNotifier.value) {
+      // فقط إذا كانت مفتوحة
+      _suggestionsNotifier.value = [];
+      _showSuggestionsNotifier.value = false;
+    }
+
+    // ✅ Use Debouncer for search with smart delay (300ms لتقليل الـ lag)
     _searchDebouncer.cancel();
     _searchDebouncer(() {
-      if (trimmedQuery.length >= 2) {
+      if (mounted && trimmedQuery.length >= 2) {
         notifier.search(reset: true);
       }
     });
@@ -615,25 +620,34 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
               onGenderFilterTap: _showGenderFilterBottomSheet,
             ),
             // 🎯 AUTOCOMPLETE SUGGESTIONS
-            if (_showSuggestions && searchState.query.isNotEmpty)
-              RepaintBoundary(
-                child: AutocompleteSuggestions(
-                  suggestions: _suggestions,
-                  fontSize: rv.fontSize,
-                  onSuggestionTap: (suggestion) {
-                    _searchController.text = suggestion;
-                    if (mounted) {
-                      setState(() {
-                        _showSuggestions = false;
-                        _suggestions = [];
-                      });
-                    }
-                    final notifier = ref.read(searchProvider.notifier);
-                    notifier.setQuery(suggestion);
-                    notifier.search(reset: true);
-                  },
-                ),
-              ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _showSuggestionsNotifier,
+              builder: (context, showSuggestions, _) {
+                if (!showSuggestions || searchState.query.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return RepaintBoundary(
+                  child: ValueListenableBuilder<List<String>>(
+                    valueListenable: _suggestionsNotifier,
+                    builder: (context, suggestions, _) {
+                      return AutocompleteSuggestions(
+                        suggestions: suggestions,
+                        fontSize: rv.fontSize,
+                        onSuggestionTap: (suggestion) {
+                          _searchController.text = suggestion;
+                          // ⚡ Update ValueNotifiers
+                          _showSuggestionsNotifier.value = false;
+                          _suggestionsNotifier.value = [];
+                          final notifier = ref.read(searchProvider.notifier);
+                          notifier.setQuery(suggestion);
+                          notifier.search(reset: true);
+                        },
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
             // 🔍 RECENT SEARCHES (only when search bar is empty)
             if (searchState.query.isEmpty) _buildRecentSearches(rv),
           ],
@@ -791,9 +805,9 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     // ⚡ Skeleton loading - modern shimmer effect with optimization tip
     if (searchState.isSearching && searchState.results.isEmpty) {
       // Mark that we've started searching
-      if (_isFirstSearch) {
+      if (_isFirstSearchNotifier.value) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _isFirstSearch = false);
+          _isFirstSearchNotifier.value = false;
         });
       }
 
@@ -822,13 +836,18 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                     ),
                     SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        'جاري البحث في 5 مليون سجل...\n${_isFirstSearch ? "قد يستغرق البحث الأول ثوانٍ لتحسين الأداء" : "البحث سريع الآن ⚡"}',
-                        style: TextStyle(
-                          fontSize: rv.fontSize * 0.9,
-                          color: Colors.blue.shade800,
-                          height: 1.4,
-                        ),
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _isFirstSearchNotifier,
+                        builder: (context, isFirstSearch, _) {
+                          return Text(
+                            'جاري البحث في 5 مليون سجل...\n${isFirstSearch ? "قد يستغرق البحث الأول ثوانٍ لتحسين الأداء" : "البحث سريع الآن ⚡"}',
+                            style: TextStyle(
+                              fontSize: rv.fontSize * 0.9,
+                              color: Colors.blue.shade800,
+                              height: 1.4,
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -985,76 +1004,23 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
 
   // 🎯 Age Filter handlers
   void _showAgeFilterBottomSheet() {
-    final currentFilter = ref.read(searchProvider).filter;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AgeFilterBottomSheet(
-        initialMinAge: currentFilter.minAge,
-        initialMaxAge: currentFilter.maxAge,
-        onApply: (minAge, maxAge) {
-          // ⚡ Cache notifier to avoid multiple reads
-          final notifier = ref.read(searchProvider.notifier);
-          notifier.setAgeRange(minAge, maxAge);
-          if (ref.read(searchProvider).query.isNotEmpty) {
-            notifier.search(reset: true);
-          }
-        },
-      ),
-    );
+    FilterHandlers.showAgeFilter(context, ref);
   }
 
   // 🏛️ Governorate Filter handlers
   void _showGovernorateFilterBottomSheet() async {
-    final currentFilter = ref.read(searchProvider).filter;
-
-    // Get available governorates from statistics
     final statsAsync = ref.read(statisticsProvider);
     final governorates = statsAsync.when(
       data: (stats) => stats.governorates,
       loading: () => <String>[],
       error: (_, __) => <String>[],
     );
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GovernorateFilterBottomSheet(
-        currentGovernorate: currentFilter.governorate,
-        availableGovernorates: governorates,
-        onApply: (governorate) {
-          ref.read(searchProvider.notifier).setGovernorate(governorate);
-          if (ref.read(searchProvider).query.isNotEmpty) {
-            ref.read(searchProvider.notifier).search(reset: true);
-          }
-        },
-      ),
-    );
+    FilterHandlers.showGovernorateFilter(context, ref, governorates);
   }
 
   // 👥 Gender Filter handlers
   void _showGenderFilterBottomSheet() {
-    final currentFilter = ref.read(searchProvider).filter;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => GenderFilterBottomSheet(
-        currentGender: currentFilter.gender?.arabicLabel,
-        onApply: (genderText) {
-          // ⚡ Cache notifier to avoid multiple reads
-          final notifier = ref.read(searchProvider.notifier);
-          notifier.setGender(genderText);
-          if (ref.read(searchProvider).query.isNotEmpty) {
-            ref.read(searchProvider.notifier).search(reset: true);
-          }
-        },
-      ),
-    );
+    FilterHandlers.showGenderFilter(context, ref);
   }
 
   /// 🎨 Enhanced Empty State with helpful tips - Mobile optimized
@@ -1273,146 +1239,33 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   }
 
   void _onClearFilters() {
-    final notifier = ref.read(searchProvider.notifier);
-    notifier.clearFilters();
-    notifier.search(reset: true);
+    FilterHandlers.clearFilters(ref);
   }
 
   void _copyToClipboard(CivilPerson person) {
-    final text = '''
-الاسم الكامل: ${person.fullName}
-الرقم الوطني: ${person.nationalId}
-الجنس: ${person.gender.arabicLabel}
-${person.motherName != null ? 'اسم الأم: ${person.motherName}\n' : ''}${person.birthDate != null ? 'تاريخ الميلاد: ${person.birthDate}\n' : ''}${person.city != null ? 'المدينة: ${person.city}\n' : ''}${person.governorate != null ? 'المحافظة: ${person.governorate}\n' : ''}''';
-
-    Clipboard.setData(ClipboardData(text: text));
-    context.showSuccess('تم النسخ إلى الحافظة ✓');
+    SearchActions.copyToClipboard(context, person);
   }
 
   void _addAsBeneficiary(CivilPerson person) {
     // 📊 تسجيل النقرة في Analytics
     SearchAnalytics.recordClick(ref.read(searchProvider).query);
 
-    context.push(
-      '/beneficiaries/add',
-      extra: {
-        'name': person.fullName,
-        'nationalId': person.nationalId,
-        'gender': person.gender.arabicLabel,
-        'motherName': person.motherName,
-        'birthDate': person.birthDate,
-        'city': person.city,
-        'governorate': person.governorate,
-      },
-    );
+    SearchActions.addAsBeneficiary(context, person);
   }
 
   /// 📤 Export/Share results - Mobile/Tablet optimized with safety limits
   void _exportResults(List<CivilPerson> results, ResponsiveValues rv) {
-    if (results.isEmpty) return;
-
-    try {
-      // ⚡ Safety limit: Max 50 results to prevent clipboard crash
-      const maxResults = 50;
-      final limitedResults = results.take(maxResults).toList();
-
-      final text = StringBuffer();
-      text.writeln('نتائج البحث في السجل المدني');
-      text.writeln('================================');
-      text.writeln('عدد النتائج: ${limitedResults.length}');
-      if (results.length > maxResults) {
-        text.writeln(
-          '(تم تصدير أول $maxResults نتيجة من أصل ${results.length})',
-        );
-      }
-      text.writeln('================================\n');
-
-      for (var i = 0; i < limitedResults.length; i++) {
-        final person = limitedResults[i];
-        text.writeln('${i + 1}. ${person.fullName}');
-        text.writeln('   الرقم الوطني: ${person.nationalId}');
-        text.writeln('   الجنس: ${person.gender.arabicLabel}');
-        if (person.governorate != null) {
-          text.writeln('   المحافظة: ${person.governorate}');
-        }
-        text.writeln('');
-      }
-
-      // Copy to clipboard
-      Clipboard.setData(ClipboardData(text: text.toString()));
-
-      // Show success message
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            results.length > maxResults
-                ? 'تم نسخ أول $maxResults نتيجة من أصل ${results.length}'
-                : 'تم نسخ ${limitedResults.length} نتيجة إلى الحافظة',
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: EdgeInsets.all(rv.spacing),
-          duration: const Duration(seconds: 3),
-          action: SnackBarAction(
-            label: 'إغلاق',
-            textColor: Colors.white,
-            onPressed: () {},
-          ),
-        ),
-      );
-    } catch (e) {
-      // Handle export errors gracefully
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('خطأ في تصدير النتائج. حاول تقليل عدد النتائج'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: EdgeInsets.all(rv.spacing),
-        ),
-      );
-    }
+    SearchActions.exportResults(context, results);
   }
 
   /// 💡 Get smart search suggestions based on query
   List<String> _getSmartSuggestions(String query) {
-    final suggestions = <String>[];
-    final normalized = query.trim().toLowerCase();
-
-    // If query is too short, suggest expanding
-    if (normalized.length < 3) {
-      return [];
-    }
-
-    // If query contains multiple words, suggest first word only
-    final words = normalized.split(' ');
-    if (words.length > 1) {
-      suggestions.add(words.first);
-      suggestions.add(words.last);
-    }
-
-    // If query looks like it might have typos, suggest variations
-    if (normalized.contains('عبد ال')) {
-      suggestions.add(normalized.replaceAll('عبد ال', 'عبدال'));
-    }
-    if (normalized.contains('ابو ')) {
-      suggestions.add(normalized.replaceAll('ابو ', 'أبو'));
-    }
-
-    // Suggest removing 'ال' prefix
-    if (normalized.startsWith('ال')) {
-      suggestions.add(normalized.substring(2));
-    }
-
-    // Remove duplicates and return max 3 suggestions
-    return suggestions.toSet().take(3).toList();
+    // Use SmartSuggestionsGenerator for better suggestions
+    return SmartSuggestionsGenerator.generateSuggestions(
+      query: query,
+      recentResults: ref.read(searchProvider).results,
+      maxSuggestions: 5,
+    );
   }
 }
 

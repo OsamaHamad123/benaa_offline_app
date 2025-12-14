@@ -5,15 +5,15 @@ import '../../../../core/widgets/micro_interactions.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 
-/// Quick Action Button - Reusable action button with Badge support
-class QuickActionButton extends StatelessWidget {
+/// Quick Action Card - Modern card design for quick actions
+class QuickActionCard extends StatelessWidget {
   final String label;
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
   final int? badge; // Badge counter (optional)
 
-  const QuickActionButton({
+  const QuickActionCard({
     super.key,
     required this.label,
     required this.icon,
@@ -36,87 +36,108 @@ class QuickActionButton extends StatelessWidget {
           HapticPatterns.selection();
           onTap();
         },
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [color.withOpacity(0.08), color.withOpacity(0.12)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.15),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            side: BorderSide(
+              color: color.withOpacity(0.2),
+              width: 1,
+            ),
           ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 16.h),
-            child: Row(
-              children: [
-                // Icon Container with Badge
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(12.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: color.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+          color: isDark ? AppColors.surfaceDark : AppColors.surface,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withOpacity(isDark ? 0.15 : 0.05),
+                  color.withOpacity(isDark ? 0.08 : 0.02),
+                ],
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+              ),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon Container with Badge
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(14.w),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [color, color.withOpacity(0.7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(14.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(icon, color: Colors.white, size: 28.sp),
                       ),
-                      child: Icon(icon, color: Colors.white, size: 24.sp),
-                    ),
-                    // Badge
-                    if (badge != null && badge! > 0)
-                      Positioned(
-                        top: -4,
-                        right: -4,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 6.w,
-                            vertical: 2.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.error,
-                            borderRadius: BorderRadius.circular(10.r),
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Text(
-                            badge! > 99 ? '99+' : '$badge',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
+                      // Badge
+                      if (badge != null && badge! > 0)
+                        Positioned(
+                          top: -6,
+                          right: -6,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7.w,
+                              vertical: 3.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.error,
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: isDark ? AppColors.surfaceDark : Colors.white,
+                                width: 2.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.error.withOpacity(0.4),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              badge! > 99 ? '99+' : '$badge',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Text(
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                  Text(
                     label,
                     style: TextStyle(
                       fontSize: 13.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : color,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                      height: 1.2,
                     ),
+                    textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -125,15 +146,45 @@ class QuickActionButton extends StatelessWidget {
   }
 }
 
-/// Quick Actions Grid - Grid of action buttons
+/// Legacy support - Keep old name for backward compatibility
+class QuickActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final int? badge;
+
+  const QuickActionButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.badge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return QuickActionCard(
+      label: label,
+      icon: icon,
+      color: color,
+      onTap: onTap,
+      badge: badge,
+    );
+  }
+}
+
+/// Quick Actions Grid - Modern Grid Layout for action cards
 class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onAddBeneficiaryTap;
   final VoidCallback? onSearchTap;
   final VoidCallback? onSyncTap;
   final VoidCallback? onReportsTap;
   final VoidCallback? onCivilRegistryTap;
-
   final VoidCallback? onVisitsTap;
+  final int? syncBadge;
+  final int? reportsBadge;
 
   const QuickActionsGrid({
     super.key,
@@ -143,79 +194,8 @@ class QuickActionsGrid extends StatelessWidget {
     this.onReportsTap,
     this.onCivilRegistryTap,
     this.onVisitsTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final spacing = ResponsiveUtils.getResponsiveSpacing(context);
-
-    return Column(
-      children: [
-        QuickActionButton(
-          label: 'إضافة مستفيد',
-          icon: Icons.person_add,
-          color: AppColors.info,
-          onTap: onAddBeneficiaryTap ?? () {},
-        ),
-        SizedBox(height: spacing),
-        QuickActionButton(
-          label: 'البحث',
-          icon: Icons.search,
-          color: AppColors.success,
-          onTap: onSearchTap ?? () {},
-        ),
-        SizedBox(height: spacing),
-        QuickActionButton(
-          label: 'المزامنة',
-          icon: Icons.sync,
-          color: AppColors.warning,
-          onTap: onSyncTap ?? () {},
-        ),
-        SizedBox(height: spacing),
-        QuickActionButton(
-          label: 'التقارير',
-          icon: Icons.bar_chart,
-          color: AppColors.orphan,
-          onTap: onReportsTap ?? () {},
-        ),
-        SizedBox(height: spacing),
-        QuickActionButton(
-          label: 'السجل المدني',
-          icon: Icons.account_balance,
-          color: AppColors.disabled,
-          onTap: onCivilRegistryTap ?? () {},
-        ),
-        if (onVisitsTap != null) ...[
-          SizedBox(height: spacing),
-          QuickActionButton(
-            label: 'الزيارات',
-            icon: Icons.event_note,
-            color: const Color(0xFF9C27B0),
-            onTap: onVisitsTap!,
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// Grid version - للاستخدام في الأماكن التي تحتاج grid
-class QuickActionsGridCompact extends StatelessWidget {
-  final VoidCallback? onAddBeneficiaryTap;
-  final VoidCallback? onSearchTap;
-  final VoidCallback? onSyncTap;
-  final VoidCallback? onReportsTap;
-  final VoidCallback? onCivilRegistryTap;
-  final VoidCallback? onVisitsTap;
-
-  const QuickActionsGridCompact({
-    super.key,
-    this.onAddBeneficiaryTap,
-    this.onSearchTap,
-    this.onSyncTap,
-    this.onReportsTap,
-    this.onCivilRegistryTap,
-    this.onVisitsTap,
+    this.syncBadge,
+    this.reportsBadge,
   });
 
   @override
@@ -229,9 +209,9 @@ class QuickActionsGridCompact extends StatelessWidget {
 
     final childAspectRatio = ResponsiveUtils.getResponsiveValue(
       context,
-      mobile: 2.8,
-      tablet: 3.0,
-      desktop: 3.2,
+      mobile: 1.1,
+      tablet: 1.15,
+      desktop: 1.2,
     );
 
     final spacing = ResponsiveUtils.getResponsiveSpacing(context);
@@ -244,41 +224,136 @@ class QuickActionsGridCompact extends StatelessWidget {
       crossAxisSpacing: spacing,
       childAspectRatio: childAspectRatio,
       children: [
-        QuickActionButton(
+        QuickActionCard(
           label: 'إضافة مستفيد',
-          icon: Icons.person_add,
-          color: AppColors.info,
+          icon: Icons.person_add_rounded,
+          color: AppColors.primary,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
-        QuickActionButton(
+        QuickActionCard(
           label: 'البحث',
-          icon: Icons.search,
+          icon: Icons.search_rounded,
           color: AppColors.success,
           onTap: onSearchTap ?? () {},
         ),
-        QuickActionButton(
+        QuickActionCard(
           label: 'المزامنة',
-          icon: Icons.sync,
-          color: AppColors.warning,
+          icon: Icons.sync_rounded,
+          color: AppColors.secondary,
+          badge: syncBadge,
           onTap: onSyncTap ?? () {},
         ),
-        QuickActionButton(
+        QuickActionCard(
           label: 'التقارير',
-          icon: Icons.bar_chart,
+          icon: Icons.assessment_rounded,
           color: AppColors.orphan,
+          badge: reportsBadge,
           onTap: onReportsTap ?? () {},
         ),
-        QuickActionButton(
+        QuickActionCard(
           label: 'السجل المدني',
-          icon: Icons.account_balance,
-          color: AppColors.disabled,
+          icon: Icons.account_balance_rounded,
+          color: AppColors.info,
           onTap: onCivilRegistryTap ?? () {},
         ),
         if (onVisitsTap != null)
-          QuickActionButton(
+          QuickActionCard(
             label: 'الزيارات',
-            icon: Icons.event_note,
-            color: const Color(0xFF9C27B0),
+            icon: Icons.event_note_rounded,
+            color: AppColors.accent,
+            onTap: onVisitsTap!,
+          ),
+      ],
+    );
+  }
+}
+
+/// Compact Grid version - للاستخدام في الأماكن الضيقة
+class QuickActionsGridCompact extends StatelessWidget {
+  final VoidCallback? onAddBeneficiaryTap;
+  final VoidCallback? onSearchTap;
+  final VoidCallback? onSyncTap;
+  final VoidCallback? onReportsTap;
+  final VoidCallback? onCivilRegistryTap;
+  final VoidCallback? onVisitsTap;
+  final int? syncBadge;
+  final int? reportsBadge;
+
+  const QuickActionsGridCompact({
+    super.key,
+    this.onAddBeneficiaryTap,
+    this.onSearchTap,
+    this.onSyncTap,
+    this.onReportsTap,
+    this.onCivilRegistryTap,
+    this.onVisitsTap,
+    this.syncBadge,
+    this.reportsBadge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final crossAxisCount = ResponsiveUtils.getCrossAxisCount(
+      context,
+      mobile: 3,
+      tablet: 4,
+      desktop: 6,
+    );
+
+    final childAspectRatio = ResponsiveUtils.getResponsiveValue(
+      context,
+      mobile: 0.9,
+      tablet: 1.0,
+      desktop: 1.1,
+    );
+
+    final spacing = ResponsiveUtils.getResponsiveSpacing(context) * 0.8;
+
+    return GridView.count(
+      crossAxisCount: crossAxisCount,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: spacing,
+      crossAxisSpacing: spacing,
+      childAspectRatio: childAspectRatio,
+      children: [
+        QuickActionCard(
+          label: 'إضافة مستفيد',
+          icon: Icons.person_add_rounded,
+          color: AppColors.primary,
+          onTap: onAddBeneficiaryTap ?? () {},
+        ),
+        QuickActionCard(
+          label: 'البحث',
+          icon: Icons.search_rounded,
+          color: AppColors.success,
+          onTap: onSearchTap ?? () {},
+        ),
+        QuickActionCard(
+          label: 'المزامنة',
+          icon: Icons.sync_rounded,
+          color: AppColors.secondary,
+          badge: syncBadge,
+          onTap: onSyncTap ?? () {},
+        ),
+        QuickActionCard(
+          label: 'التقارير',
+          icon: Icons.assessment_rounded,
+          color: AppColors.orphan,
+          badge: reportsBadge,
+          onTap: onReportsTap ?? () {},
+        ),
+        QuickActionCard(
+          label: 'السجل المدني',
+          icon: Icons.account_balance_rounded,
+          color: AppColors.info,
+          onTap: onCivilRegistryTap ?? () {},
+        ),
+        if (onVisitsTap != null)
+          QuickActionCard(
+            label: 'الزيارات',
+            icon: Icons.event_note_rounded,
+            color: AppColors.accent,
             onTap: onVisitsTap!,
           ),
       ],

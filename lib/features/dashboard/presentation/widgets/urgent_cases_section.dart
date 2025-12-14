@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/providers/providers.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/widgets/responsive_bottom_sheet.dart';
 import '../../../../data/db/drift_database.dart';
 
 /// Urgent Cases Section - عرض الحالات التي تحتاج متابعة عاجلة
@@ -305,69 +306,41 @@ class UrgentCasesSection extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
+      builder: (context) => ResponsiveBottomSheet(
+        title: title,
+        icon: Icons.priority_high,
         initialChildSize: 0.7,
         minChildSize: 0.5,
         maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            // Header
-            Padding(
+        builder: (scrollController) => FutureBuilder<List<Beneficiary>>(
+          future: future,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final beneficiaries = snapshot.data!;
+            if (beneficiaries.isEmpty) {
+              return const Center(child: Text('لا توجد حالات'));
+            }
+
+            return ListView.separated(
+              controller: scrollController,
               padding: EdgeInsets.all(16.w),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // List
-            Expanded(
-              child: FutureBuilder<List<Beneficiary>>(
-                future: future,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final beneficiaries = snapshot.data!;
-                  if (beneficiaries.isEmpty) {
-                    return const Center(child: Text('لا توجد حالات'));
-                  }
-
-                  return ListView.separated(
-                    controller: scrollController,
-                    padding: EdgeInsets.all(16.w),
-                    itemCount: beneficiaries.length,
-                    separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                    itemBuilder: (context, index) {
-                      final beneficiary = beneficiaries[index];
-                      return _BeneficiaryCard(
-                        beneficiary: beneficiary,
-                        onTap: () {
-                          Navigator.pop(context);
-                          context.push('/beneficiaries/${beneficiary.id}');
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+              itemCount: beneficiaries.length,
+              separatorBuilder: (_, __) => SizedBox(height: 8.h),
+              itemBuilder: (context, index) {
+                final beneficiary = beneficiaries[index];
+                return _BeneficiaryCard(
+                  beneficiary: beneficiary,
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/beneficiaries/${beneficiary.id}');
+                  },
+                );
+              },
+            );
+          },
         ),
       ),
     );

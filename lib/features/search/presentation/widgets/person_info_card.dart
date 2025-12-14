@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/utils/responsive_utils_v2.dart';
+import '../../../../core/utils/haptic_patterns.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../domain/entities/civil_person.dart';
 import 'gender_badge.dart';
@@ -56,12 +57,18 @@ class PersonInfoCard extends StatelessWidget {
           side: BorderSide(color: _borderColor, width: 1.5),
         ),
         child: InkWell(
-          onTap: onAddAsBeneficiary,
+          onTap: () {
+            HapticPatterns.selection(); // ⚡ خفيف
+            onAddAsBeneficiary();
+          },
           borderRadius: BorderRadius.circular(16),
+          // ⚡ تحسين الأداء - تقليل rebuild area
+          excludeFromSemantics: false,
           child: Padding(
             padding: rv.padding,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // ⚡ تحسين
               children: [
                 _buildHeader(context),
                 const SizedBox(height: 16),
@@ -357,7 +364,10 @@ class PersonInfoCard extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton.icon(
-            onPressed: () => _copyToClipboard(context),
+            onPressed: () {
+              HapticPatterns.selection();
+              _copyToClipboard(context);
+            },
             icon: Icon(Icons.copy, size: 18),
             label: Text('نسخ', style: TextStyle(fontSize: rv.fontSize)),
             style: OutlinedButton.styleFrom(
@@ -373,17 +383,24 @@ class PersonInfoCard extends StatelessWidget {
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
-            onPressed: onAddAsBeneficiary,
-            icon: Icon(Icons.person_add, size: 18),
+            onPressed: () {
+              HapticPatterns.submit(); // ✨ تأثير اهتزازي عند الضغط
+              onAddAsBeneficiary();
+            },
+            icon: Icon(Icons.person_add_rounded, size: 18),
             label: Text(
               'إضافة كمستفيد',
-              style: TextStyle(fontSize: rv.fontSize),
+              style: TextStyle(
+                fontSize: rv.fontSize,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: Colors.blue,
+              padding: EdgeInsets.symmetric(vertical: 14),
+              backgroundColor: Colors.blue.shade700,
               foregroundColor: Colors.white,
-              elevation: 2,
+              elevation: 3,
+              shadowColor: Colors.blue.withOpacity(0.4),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -396,6 +413,7 @@ class PersonInfoCard extends StatelessWidget {
 
   /// Copy national ID only
   void _copyNationalId(BuildContext context) {
+    HapticPatterns.selection();
     Clipboard.setData(ClipboardData(text: person.nationalId));
     context.showSuccess('تم نسخ الرقم الوطني ✓');
   }

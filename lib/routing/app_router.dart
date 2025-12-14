@@ -19,7 +19,6 @@ import '../features/civil_db_download/presentation/pages/download_civil_db_page.
 import '../features/civil_db_download/presentation/pages/database_download_page.dart';
 import '../features/sync/sync_page.dart';
 import '../features/sync/import_test_data_page.dart';
-import '../features/sync/test_sync_page.dart';
 import '../features/sync/mobile_sync_page.dart';
 import '../features/sync/test_mobile_api_page.dart';
 import '../features/reports/reports_page.dart';
@@ -148,7 +147,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/beneficiaries/add',
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const BeneficiaryFormPageV3(),
+          child: BeneficiaryFormPageV3(
+            civilRegistryData: state.extra as Map<String, dynamic>?,
+          ),
           state: state,
           type: PageTransitionType.slideFromBottom,
         ),
@@ -226,10 +227,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/import-test',
         builder: (context, state) => const ImportTestDataPage(),
-      ),
-      GoRoute(
-        path: '/test-sync',
-        builder: (context, state) => const TestSyncPage(),
       ),
       GoRoute(
         path: '/mobile-sync',

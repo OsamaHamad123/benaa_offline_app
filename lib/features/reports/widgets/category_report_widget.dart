@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/export/export_models.dart';
 import '../../../core/services/export/export_providers.dart';
 import '../../../core/constants/category_colors.dart';
+import '../../../core/widgets/responsive_bottom_sheet.dart';
 import '../providers/reports_providers.dart';
 import '../domain/entities/report_data.dart';
 import '../helpers/percentage_helper.dart';
@@ -18,8 +19,7 @@ class CategoryReportSheet extends ConsumerStatefulWidget {
   const CategoryReportSheet({super.key});
 
   @override
-  ConsumerState<CategoryReportSheet> createState() =>
-      _CategoryReportSheetState();
+  ConsumerState<CategoryReportSheet> createState() => _CategoryReportSheetState();
 }
 
 class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
@@ -129,16 +129,17 @@ class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
+    final reportAsync = ref.watch(categoryReportProvider);
+
+    return ResponsiveBottomSheet(
+      title: 'تقرير حسب الفئة',
+      icon: Icons.category,
       initialChildSize: 0.5,
       minChildSize: 0.3,
       maxChildSize: 0.7,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(categoryReportProvider);
-
+      builder: (scrollController) {
         return ReportModalSheet(
-          title: 'تقرير حسب الفئة',
+          title: '',
           scrollController: scrollController,
           children: [
             reportAsync.when(
@@ -169,8 +170,8 @@ class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
                     Text(
                       'التفاصيل',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     SizedBox(height: 8.h),
                     ...categoryCounts.map((item) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/export/export_models.dart';
 import '../../../core/services/export/export_providers.dart';
+import '../../../core/widgets/responsive_bottom_sheet.dart';
 import '../providers/reports_providers.dart';
 import '../domain/entities/report_data.dart';
 import '../helpers/percentage_helper.dart';
@@ -9,7 +10,6 @@ import 'governorate_bar_chart.dart';
 import 'chart_section.dart';
 import 'export_buttons.dart';
 import 'report_search_field.dart';
-import 'report_modal_sheet.dart';
 import 'detail_list_item.dart';
 
 /// Governorate Report Widget - تقرير حسب المحافظة
@@ -17,12 +17,10 @@ class GovernorateReportSheet extends ConsumerStatefulWidget {
   const GovernorateReportSheet({super.key});
 
   @override
-  ConsumerState<GovernorateReportSheet> createState() =>
-      _GovernorateReportSheetState();
+  ConsumerState<GovernorateReportSheet> createState() => _GovernorateReportSheetState();
 }
 
-class _GovernorateReportSheetState
-    extends ConsumerState<GovernorateReportSheet> {
+class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet> {
   bool _isExporting = false;
   String _searchQuery = '';
 
@@ -130,117 +128,113 @@ class _GovernorateReportSheetState
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
+    final reportAsync = ref.watch(governorateReportProvider);
+    final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
+
+    return ResponsiveBottomSheet(
+      title: 'تقرير حسب المحافظة',
+      icon: Icons.location_city,
       initialChildSize: 0.7,
       minChildSize: 0.5,
       maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(governorateReportProvider);
-        final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
+      builder: (scrollController) {
+        return reportAsync.when(
+          data: (governorateCounts) {
+            final sortedCounts = List<GovernorateCount>.from(
+              governorateCounts,
+            )..sort((a, b) => b.count.compareTo(a.count));
 
-        return CompactReportModalSheet(
-          title: 'تقرير حسب المحافظة',
-          child: reportAsync.when(
-            data: (governorateCounts) {
-              final sortedCounts = List<GovernorateCount>.from(
-                governorateCounts,
-              )..sort((a, b) => b.count.compareTo(a.count));
-
-              final filteredCounts = _searchQuery.isEmpty
-                  ? sortedCounts
-                  : sortedCounts
-                        .where(
-                          (item) => item.governorate.toLowerCase().contains(
+            final filteredCounts = _searchQuery.isEmpty
+                ? sortedCounts
+                : sortedCounts
+                    .where(
+                      (item) => item.governorate.toLowerCase().contains(
                             _searchQuery.toLowerCase(),
                           ),
-                        )
-                        .toList();
-
-              return ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ReportSearchField(
-                    hint: 'ابحث عن محافظة...',
-                    onSearch: (query) {
-                      setState(() => _searchQuery = query);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ChartSection(
-                    title: 'التوزيع حسب المحافظة',
-                    chart: GovernorateBarChart(
-                      data: sortedCounts.take(10).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ExportButtons(
-                    isLoading: _isExporting,
-                    onPdfExport: () => _exportToPdf(sortedCounts, total),
-                    onExcelExport: () => _exportToExcel(sortedCounts, total),
-                    onPrint: () => _exportToPdf(sortedCounts, total),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'التفاصيل',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        Text(
-                          '${filteredCounts.length} نتيجة',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (filteredCounts.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'لا توجد نتائج',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
                     )
-                  else
-                    ...filteredCounts.map((item) {
-                      return DetailListItemWithProgress(
-                        title: item.governorate,
-                        subtitle: PercentageHelper.getCountWithPercentage(
-                          item.count,
-                          total,
+                    .toList();
+
+            return ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(16),
+              children: [
+                ReportSearchField(
+                  hint: 'ابحث عن محافظة...',
+                  onSearch: (query) {
+                    setState(() => _searchQuery = query);
+                  },
+                ),
+                const SizedBox(height: 16),
+                ChartSection(
+                  title: 'التوزيع حسب المحافظة',
+                  chart: GovernorateBarChart(
+                    data: sortedCounts.take(10).toList(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ExportButtons(
+                  isLoading: _isExporting,
+                  onPdfExport: () => _exportToPdf(sortedCounts, total),
+                  onExcelExport: () => _exportToExcel(sortedCounts, total),
+                  onPrint: () => _exportToPdf(sortedCounts, total),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'التفاصيل',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    if (_searchQuery.isNotEmpty)
+                      Text(
+                        '${filteredCounts.length} نتيجة',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 14,
                         ),
-                        progressValue:
-                            PercentageHelper.calculatePercentage(
-                              item.count,
-                              total,
-                            ) /
-                            100,
-                      );
-                    }),
-                ],
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('خطأ: $error')),
-          ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (filteredCounts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'لا توجد نتائج',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ...filteredCounts.map((item) {
+                    return DetailListItemWithProgress(
+                      title: item.governorate,
+                      subtitle: PercentageHelper.getCountWithPercentage(
+                        item.count,
+                        total,
+                      ),
+                      progressValue: PercentageHelper.calculatePercentage(
+                            item.count,
+                            total,
+                          ) /
+                          100,
+                    );
+                  }),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('خطأ: $error')),
         );
       },
     );

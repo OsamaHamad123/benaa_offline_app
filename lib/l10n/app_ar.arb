@@ -1,0 +1,205 @@
+{
+  "@@locale": "ar",
+  
+  "appTitle": "بناء - إدارة المستفيدين",
+  "@appTitle": {
+    "description": "Application title"
+  },
+
+  "beneficiariesList": "قائمة المستفيدين",
+  "@beneficiariesList": {
+    "description": "Beneficiaries list page title"
+  },
+
+  "dashboard": "لوحة التحكم",
+  "reports": "التقارير",
+  "settings": "الإعدادات",
+  "search": "بحث",
+  "filter": "تصفية",
+  "add": "إضافة",
+  "edit": "تعديل",
+  "delete": "حذف",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "confirm": "تأكيد",
+  "yes": "نعم",
+  "no": "لا",
+  "ok": "حسناً",
+  "close": "إغلاق",
+  "back": "رجوع",
+  "next": "التالي",
+  "previous": "السابق",
+  "loading": "جاري التحميل...",
+  "noData": "لا توجد بيانات",
+  "error": "خطأ",
+  "success": "نجاح",
+  "warning": "تحذير",
+  "info": "معلومة",
+
+  "nationalId": "الرقم الوطني",
+  "nationalIdRequired": "🆔 الرقم الوطني مطلوب",
+  "@nationalIdRequired": {
+    "description": "Error message for required national ID"
+  },
+  "nationalIdInvalid": "🆔 الرقم الوطني يجب أن يكون {length} أرقام\n💡 مثال: 123456789",
+  "@nationalIdInvalid": {
+    "description": "Error message for invalid national ID",
+    "placeholders": {
+      "length": {
+        "type": "int",
+        "example": "9"
+      }
+    }
+  },
+
+  "phoneNumber": "رقم الهاتف",
+  "phoneRequired": "📱 رقم الهاتف مطلوب",
+  "phoneInvalid": "📱 رقم غير صحيح - يجب أن يبدأ بـ 059 أو 056\n💡 مثال: 0595735352 أو +970595735352",
+
+  "email": "البريد الإلكتروني",
+  "emailRequired": "📧 البريد الإلكتروني مطلوب",
+  "emailInvalid": "📧 البريد الإلكتروني غير صحيح\n💡 مثال: example@email.com",
+
+  "birthDate": "تاريخ الميلاد",
+  "birthDateRequired": "📅 تاريخ الميلاد مطلوب",
+  "birthDateInvalid": "📅 تاريخ الميلاد غير صحيح\n💡 تحقق من صيغة التاريخ",
+  "birthDateFuture": "📅 تاريخ الميلاد لا يمكن أن يكون في المستقبل\n💡 تحقق من التاريخ المدخل",
+  "birthDateTooOld": "📅 تاريخ الميلاد غير منطقي\n💡 العمر يجب أن يكون أقل من 120 سنة",
+
+  "name": "الاسم",
+  "nameRequired": "👤 {fieldName} مطلوب",
+  "@nameRequired": {
+    "description": "Error message for required name field",
+    "placeholders": {
+      "fieldName": {
+        "type": "String",
+        "example": "الاسم"
+      }
+    }
+  },
+  "nameTooShort": "👤 {fieldName} يجب أن يكون حرفين على الأقل\n💡 الطول الحالي: {length}",
+  "@nameTooShort": {
+    "placeholders": {
+      "fieldName": {"type": "String"},
+      "length": {"type": "int"}
+    }
+  },
+  "nameTooLong": "👤 {fieldName} طويل جداً\n💡 الحد الأقصى: 50 حرف (الطول الحالي: {length})",
+  "@nameTooLong": {
+    "placeholders": {
+      "fieldName": {"type": "String"},
+      "length": {"type": "int"}
+    }
+  },
+  "nameInvalidChars": "👤 {fieldName} يحتوي على رموز غير مسموحة\n💡 استخدم أحرف عربية أو إنجليزية فقط",
+  "@nameInvalidChars": {
+    "placeholders": {
+      "fieldName": {"type": "String"}
+    }
+  },
+  "nameArabicOnly": "👤 الرجاء استخدام الأحرف العربية فقط في {fieldName}\n💡 مثال: محمد أحمد",
+  "@nameArabicOnly": {
+    "placeholders": {
+      "fieldName": {"type": "String"}
+    }
+  },
+
+  "fieldRequired": "⚠️ {fieldName} مطلوب",
+  "@fieldRequired": {
+    "placeholders": {
+      "fieldName": {"type": "String"}
+    }
+  },
+
+  "addBeneficiary": "إضافة مستفيد",
+  "editBeneficiary": "تعديل مستفيد",
+  "deleteBeneficiary": "حذف مستفيد",
+  "beneficiaryDetails": "تفاصيل المستفيد",
+  "beneficiaryAdded": "تم إضافة المستفيد بنجاح",
+  "beneficiaryUpdated": "تم تحديث المستفيد بنجاح",
+  "beneficiaryDeleted": "تم حذف المستفيد بنجاح",
+
+  "confirmDelete": "تأكيد الحذف",
+  "confirmDeleteMessage": "هل أنت متأكد من حذف هذا العنصر؟",
+  "deleteWarning": "هذا الإجراء لا يمكن التراجع عنه",
+
+  "networkError": "خطأ في الاتصال بالشبكة",
+  "serverError": "خطأ في الخادم",
+  "unknownError": "حدث خطأ غير متوقع",
+  "tryAgain": "حاول مرة أخرى",
+
+  "male": "ذكر",
+  "female": "أنثى",
+  "married": "متزوج",
+  "single": "أعزب",
+  "divorced": "مطلق",
+  "widowed": "أرمل",
+
+  "statistics": "الإحصائيات",
+  "totalBeneficiaries": "إجمالي المستفيدين",
+  "activeBeneficiaries": "المستفيدين النشطين",
+  "pendingBeneficiaries": "المستفيدين قيد الانتظار",
+  "todayActivities": "أنشطة اليوم",
+
+  "sync": "مزامنة",
+  "syncInProgress": "جاري المزامنة...",
+  "syncCompleted": "تمت المزامنة بنجاح",
+  "syncFailed": "فشلت المزامنة",
+  "lastSyncAt": "آخر مزامنة: {time}",
+  "@lastSyncAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+
+  "draft": "مسودة",
+  "drafts": "المسودات",
+  "saveDraft": "حفظ كمسودة",
+  "loadDraft": "تحميل مسودة",
+  "deleteDraft": "حذف المسودة",
+  "draftSaved": "تم حفظ المسودة",
+  "draftLoaded": "تم تحميل المسودة",
+
+  "attachment": "مرفق",
+  "attachments": "المرفقات",
+  "addAttachment": "إضافة مرفق",
+  "deleteAttachment": "حذف المرفق",
+  "viewAttachment": "عرض المرفق",
+  "noAttachments": "لا توجد مرفقات",
+
+  "camera": "الكاميرا",
+  "gallery": "المعرض",
+  "file": "ملف",
+  "takePhoto": "التقاط صورة",
+  "chooseFromGallery": "اختر من المعرض",
+  "chooseFile": "اختر ملف",
+
+  "governorate": "المحافظة",
+  "city": "المدينة",
+  "address": "العنوان",
+
+  "age": "العمر",
+  "gender": "الجنس",
+  "maritalStatus": "الحالة الاجتماعية",
+  "familyMembers": "أفراد الأسرة",
+
+  "notes": "ملاحظات",
+  "description": "الوصف",
+  "status": "الحالة",
+  "priority": "الأولوية",
+
+  "exportToPdf": "تصدير إلى PDF",
+  "exportToExcel": "تصدير إلى Excel",
+  "exportCompleted": "تم التصدير بنجاح",
+  "exportFailed": "فشل التصدير",
+
+  "language": "اللغة",
+  "arabic": "العربية",
+  "english": "English",
+  "changeLanguage": "تغيير اللغة",
+
+  "theme": "المظهر",
+  "lightTheme": "المظهر الفاتح",
+  "darkTheme": "المظهر الداكن",
+  "systemTheme": "حسب النظام"
+}

@@ -1,5 +1,5 @@
 import 'package:sqflite/sqflite.dart';
-import '../../../../core/utils/debug_logger.dart';
+import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 
 /// 🔄 Database Migrations Service - Handles all database migrations
 ///
@@ -16,7 +16,7 @@ class DatabaseMigrationsService {
     try {
       await _ensureOptimizedIndexes(db);
     } catch (e) {
-      DebugLogger.warning('Index setup error: $e');
+      UnifiedLogger.warning('Index setup error: $e');
       rethrow;
     }
   }
@@ -80,7 +80,7 @@ class DatabaseMigrationsService {
   /// 8. idx_persons_birth_date: For age-based searches
   static Future<void> _ensureOptimizedIndexes(Database db) async {
     try {
-      DebugLogger.info(
+      UnifiedLogger.info(
         '🚀 Creating ULTRA-OPTIMIZED indexes for 5M+ records...',
       );
 
@@ -130,11 +130,11 @@ class DatabaseMigrationsService {
         ON persons(CI_BIRTH_DT)
       ''');
 
-      DebugLogger.success(
+      UnifiedLogger.success(
         '8 optimized indexes created successfully (20-50x speedup)',
       );
     } catch (e) {
-      DebugLogger.error('Index creation failed', e);
+      UnifiedLogger.error('Index creation failed', error: e);
       rethrow;
     }
   }

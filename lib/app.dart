@@ -8,6 +8,7 @@ import 'core/settings/settings_provider.dart';
 import 'core/error_handling/error_handler.dart';
 import 'core/design_system/app_animations.dart';
 import 'core/analytics/ux_analytics.dart';
+import 'l10n/app_localizations.dart';
 
 class BenaaApp extends ConsumerWidget {
   const BenaaApp({super.key});
@@ -67,15 +68,13 @@ class BenaaApp extends ConsumerWidget {
                 themeMode: themeMode,
                 routerConfig: router,
                 debugShowCheckedModeBanner: false,
-                localizationsDelegates: const [
+                localizationsDelegates: [
+                  AppLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
                   GlobalCupertinoLocalizations.delegate,
                 ],
-                supportedLocales: const [
-                  Locale('ar', 'SA'),
-                  Locale('en', 'US'),
-                ],
+                supportedLocales: AppLocalizations.supportedLocales,
                 locale: const Locale('ar', 'SA'),
               );
             },

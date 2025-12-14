@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/export/export_models.dart';
 import '../../../core/services/export/export_providers.dart';
 import '../../../core/constants/category_colors.dart';
+import '../../../core/widgets/responsive_bottom_sheet.dart';
 import '../providers/reports_providers.dart';
 import '../domain/entities/report_data.dart';
 import '../helpers/percentage_helper.dart';
 import 'age_bar_chart.dart';
 import 'chart_section.dart';
 import 'export_buttons.dart';
-import 'report_modal_sheet.dart';
 import 'detail_list_item.dart';
 
 /// Age Report Widget - تقرير حسب الفئة العمرية
@@ -125,67 +125,62 @@ class _AgeReportSheetState extends ConsumerState<AgeReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
+    final reportAsync = ref.watch(ageReportProvider);
+    final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
+
+    return ResponsiveBottomSheet(
+      title: 'تقرير حسب الفئة العمرية',
+      icon: Icons.calendar_today,
       initialChildSize: 0.6,
       minChildSize: 0.4,
       maxChildSize: 0.8,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(ageReportProvider);
-        final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
-
-        return CompactReportModalSheet(
-          title: 'تقرير حسب الفئة العمرية',
-          child: reportAsync.when(
-            data: (ageCounts) {
-              return ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ChartSection(
-                    title: 'التوزيع حسب العمر',
-                    chart: AgeBarChart(data: ageCounts),
-                  ),
-                  const SizedBox(height: 16),
-                  ExportButtons(
-                    isLoading: _isExporting,
-                    onPdfExport: () => _exportToPdf(ageCounts, total),
-                    onExcelExport: () => _exportToExcel(ageCounts, total),
-                    onPrint: () => _exportToPdf(ageCounts, total),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'التفاصيل',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+      builder: (scrollController) {
+        return reportAsync.when(
+          data: (ageCounts) => ListView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(16),
+            children: [
+              ChartSection(
+                title: 'التوزيع حسب العمر',
+                chart: AgeBarChart(data: ageCounts),
+              ),
+              const SizedBox(height: 16),
+              ExportButtons(
+                isLoading: _isExporting,
+                onPdfExport: () => _exportToPdf(ageCounts, total),
+                onExcelExport: () => _exportToExcel(ageCounts, total),
+                onPrint: () => _exportToPdf(ageCounts, total),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'التفاصيل',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...ageCounts.map((item) {
-                    final color = AgeBracketColors.getColor(item.ageBracket);
+              ),
+              const SizedBox(height: 8),
+              ...ageCounts.map((item) {
+                final color = AgeBracketColors.getColor(item.ageBracket);
 
-                    return DetailListItemWithProgress(
-                      title: '${item.ageBracket} سنة',
-                      subtitle: PercentageHelper.getCountWithPercentage(
+                return DetailListItemWithProgress(
+                  title: '${item.ageBracket} سنة',
+                  subtitle: PercentageHelper.getCountWithPercentage(
+                    item.count,
+                    total,
+                  ),
+                  progressValue: PercentageHelper.calculatePercentage(
                         item.count,
                         total,
-                      ),
-                      progressValue:
-                          PercentageHelper.calculatePercentage(
-                            item.count,
-                            total,
-                          ) /
-                          100,
-                      progressColor: color,
-                      indicatorColor: color,
-                    );
-                  }),
-                ],
-              );
-            },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('خطأ: $error')),
+                      ) /
+                      100,
+                  progressColor: color,
+                  indicatorColor: color,
+                );
+              }),
+            ],
           ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('خطأ: $error')),
         );
       },
     );

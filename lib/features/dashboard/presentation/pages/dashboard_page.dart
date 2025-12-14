@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +52,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   String? _selectedGovernorate;
   bool? _syncedOnly;
 
+  // Connectivity subscription - لتجنب memory leak
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +70,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   void dispose() {
+    // Cancel connectivity subscription to prevent memory leak
+    _connectivitySubscription?.cancel();
+
     // Log screen exit with error handling
     try {
       ref.read(appMonitoringProvider).logScreenExit('Dashboard');
@@ -79,20 +86,29 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (mounted) {
       setState(() {
-        _isOnline = connectivityResult != ConnectivityResult.none;
+        _isOnline = !connectivityResult.contains(ConnectivityResult.none);
       });
     }
   }
 
   void _listenToConnectivity() {
-    Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
       if (mounted) {
         final wasOffline = !_isOnline;
+        final isNowOnline = !result.contains(ConnectivityResult.none);
+
         setState(() {
-          _isOnline = result != ConnectivityResult.none;
+          _isOnline = isNowOnline;
         });
-        if (wasOffline && _isOnline) {
+
+        if (wasOffline && isNowOnline) {
           _showOnlineSnackbar();
+          // ✅ أعد تحميل البيانات عند عودة الاتصال
+          try {
+            ref.read(dashboardProvider.notifier).refresh();
+          } catch (_) {
+            // Ignore if provider is not available
+          }
         }
       }
     });
@@ -534,16 +550,33 @@ class _DashboardHome extends ConsumerWidget {
           // Section: Quick Actions (الأكثر استخداماً - في الأعلى)
           _SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
           SizedBox(height: 12.h),
-          ScaleTransitionWidget(
-            duration: AppDurations.normal,
-            child: QuickActionsGrid(
-              onAddBeneficiaryTap: () => context.push('/beneficiaries/add'),
-              onSearchTap: () => context.push('/beneficiaries'),
-              onSyncTap: () => context.push('/sync'),
-              onReportsTap: () => context.push('/reports'),
-              onCivilRegistryTap: () => context.push('/search'),
-              onVisitsTap: () => context.push('/visits'),
-            ),
+          QuickActionsGrid(
+            onAddBeneficiaryTap: () {
+              HapticPatterns.submit();
+              context.push('/beneficiaries/add');
+            },
+            onSearchTap: () {
+              HapticPatterns.selection();
+              context.push('/beneficiaries');
+            },
+            onSyncTap: () {
+              HapticPatterns.selection();
+              context.push('/sync');
+            },
+            onReportsTap: () {
+              HapticPatterns.selection();
+              context.push('/reports');
+            },
+            onCivilRegistryTap: () {
+              HapticPatterns.selection();
+              context.push('/search');
+            },
+            onVisitsTap: () {
+              HapticPatterns.selection();
+              context.push('/visits');
+            },
+            syncBadge: stats.pendingSync,
+            reportsBadge: null,
           ),
 
           SizedBox(height: 24.h),

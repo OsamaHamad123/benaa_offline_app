@@ -12,6 +12,8 @@ import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi Valu
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
+import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsive Bottom Sheet
+import '../../../../core/validation/field_validators.dart'; // 📋 Field Validators
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -64,10 +66,16 @@ import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
 /// ✅ Undo/Redo Support
 /// ✅ Enhanced Validation Messages
 /// ✅ Better Performance
+/// ✅ Auto-fill from Civil Registry
 class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
   final String? beneficiaryId;
+  final Map<String, dynamic>? civilRegistryData; // ✨ بيانات السجل المدني
 
-  const BeneficiaryFormPageV3({super.key, this.beneficiaryId});
+  const BeneficiaryFormPageV3({
+    super.key,
+    this.beneficiaryId,
+    this.civilRegistryData,
+  });
 
   @override
   ConsumerState<BeneficiaryFormPageV3> createState() => _BeneficiaryFormPageV3State();
@@ -298,16 +306,30 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       _clearAllControllers();
       ref.read(beneficiaryFormProvider.notifier).createNew();
 
-      // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم (cancelable)
-      _offerAutoSavedDraftsTimer = Timer(
-        const Duration(milliseconds: 500),
-        () async {
+      // ✨ ملء البيانات من السجل المدني إذا كانت موجودة
+      if (widget.civilRegistryData != null) {
+        debugPrint('📋 Civil Registry Data received: ${widget.civilRegistryData}');
+        // تأخير بسيط للسماح للـ controllers بالتحميل
+        Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
-            await _checkAndOfferAutoSavedDrafts();
-            _firstFieldFocusNode.requestFocus();
+            _fillFromCivilRegistry(widget.civilRegistryData!);
+            setState(() {
+              _hasUnsavedChanges = true;
+            });
           }
-        },
-      );
+        });
+      } else {
+        // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم (cancelable)
+        _offerAutoSavedDraftsTimer = Timer(
+          const Duration(milliseconds: 500),
+          () async {
+            if (mounted) {
+              await _checkAndOfferAutoSavedDrafts();
+              _firstFieldFocusNode.requestFocus();
+            }
+          },
+        );
+      }
     }
 
     if (!mounted) return;
@@ -740,6 +762,116 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     EnhancedSnackbar.showSuccess(context, message: 'تم ملء البيانات التجريبية');
   }
 
+  /// ✨ Fill form from Civil Registry data
+  void _fillFromCivilRegistry(Map<String, dynamic> data) {
+    try {
+      debugPrint('🔄 Starting to fill form with data: $data');
+      int filledFieldsCount = 0;
+
+      // Parse fullName into parts
+      final fullName = data['name'] as String?;
+      if (fullName != null && fullName.isNotEmpty) {
+        debugPrint('📝 Filling name: $fullName');
+        final nameParts = fullName.trim().split(RegExp(r'\s+'));
+        if (nameParts.isNotEmpty) {
+          _controllers.firstNameController.text = nameParts[0];
+          filledFieldsCount++;
+          debugPrint('✅ First name: ${nameParts[0]}');
+        }
+        if (nameParts.length > 1) {
+          _controllers.fatherNameController.text = nameParts[1];
+          filledFieldsCount++;
+          debugPrint('✅ Father name: ${nameParts[1]}');
+        }
+        if (nameParts.length > 2) {
+          _controllers.grandfatherNameController.text = nameParts[2];
+          filledFieldsCount++;
+          debugPrint('✅ Grandfather name: ${nameParts[2]}');
+        }
+        if (nameParts.length > 3) {
+          _controllers.lastNameController.text = nameParts.sublist(3).join(' ');
+          filledFieldsCount++;
+          debugPrint('✅ Last name: ${nameParts.sublist(3).join(' ')}');
+        }
+      }
+
+      // National ID
+      final nationalId = data['nationalId'] as String?;
+      if (nationalId != null && nationalId.isNotEmpty) {
+        _controllers.nationalIdController.text = nationalId;
+        filledFieldsCount++;
+        debugPrint('✅ National ID: $nationalId');
+      }
+
+      // Gender
+      final gender = data['gender'] as String?;
+      if (gender != null && gender.isNotEmpty) {
+        _controllers.selectedGender = gender;
+        filledFieldsCount++;
+        debugPrint('✅ Gender: $gender');
+      }
+
+      // Mother Name
+      final motherName = data['motherName'] as String?;
+      if (motherName != null && motherName.isNotEmpty) {
+        _controllers.motherNameController.text = motherName;
+        filledFieldsCount++;
+        debugPrint('✅ Mother name: $motherName');
+      }
+
+      // Birth Date
+      final birthDate = data['birthDate'] as String?;
+      if (birthDate != null && birthDate.isNotEmpty) {
+        _controllers.birthDateController.text = birthDate;
+        filledFieldsCount++;
+        debugPrint('✅ Birth date: $birthDate');
+      }
+
+      // Address/Location
+      final city = data['city'] as String?;
+      final governorate = data['governorate'] as String?;
+
+      if (city != null || governorate != null) {
+        final addressParts = <String>[];
+        if (governorate != null && governorate.isNotEmpty) {
+          addressParts.add(governorate);
+          _controllers.selectedProvince = governorate;
+        }
+        if (city != null && city.isNotEmpty) {
+          addressParts.add(city);
+          _controllers.selectedCity = city;
+        }
+        if (addressParts.isNotEmpty) {
+          _controllers.addressController.text = addressParts.join(' - ');
+        }
+      }
+
+      // Show success message with count
+      debugPrint('✅ Successfully filled $filledFieldsCount fields from civil registry');
+
+      if (mounted && filledFieldsCount > 0) {
+        // Force UI update
+        setState(() {});
+
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: '✅ تم ملء $filledFieldsCount حقل من السجل المدني',
+          duration: const Duration(seconds: 3),
+        );
+      } else if (filledFieldsCount == 0) {
+        debugPrint('⚠️ No fields were filled - data might be incomplete');
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error filling form from civil registry: $e\n$stackTrace');
+      if (mounted) {
+        EnhancedSnackbar.showError(
+          context,
+          message: 'حدث خطأ أثناء ملء البيانات',
+        );
+      }
+    }
+  }
+
   /// ⬅️ التالي - الانتقال للتاب التالي (يمين في RTL)
   void _handleNextTab() {
     if (_tabController.index < FormConstants.totalTabs - 1) {
@@ -770,24 +902,16 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-            ),
-            child: FinalReviewSheet(
-              formControllers: _controllers,
-              scrollController: scrollController,
-              onConfirm: () => Navigator.pop(context, true),
-              onEdit: () => Navigator.pop(context, false),
-            ),
-          );
-        },
+      builder: (context) => ResponsiveBottomSheet(
+        title: 'المراجعة النهائية',
+        icon: Icons.assignment_turned_in,
+        showCloseButton: false, // FinalReviewSheet has its own buttons
+        builder: (scrollController) => FinalReviewSheet(
+          formControllers: _controllers,
+          scrollController: scrollController,
+          onConfirm: () => Navigator.pop(context, true),
+          onEdit: () => Navigator.pop(context, false),
+        ),
       ),
     );
 
@@ -855,7 +979,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
             barrierColor: Colors.black26,
             builder: (context) => Center(
               child: FormAnimations.successCheckmark(
-                size: 80,
+                size: 80.sp,
                 color: Theme.of(context).colorScheme.primary,
               ),
             ),
@@ -898,165 +1022,124 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-        ),
-        builder: (context) => DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                // Header
-                Padding(
-                  padding: EdgeInsets.all(16.w),
-                  child: Row(
+        backgroundColor: Colors.transparent,
+        builder: (context) => ResponsiveBottomSheet(
+          title: 'المسودات المحفوظة (${drafts.length})',
+          icon: Icons.drafts,
+          child: drafts.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.drafts,
-                        color: Theme.of(context).colorScheme.primary,
+                        Icons.inbox_outlined,
+                        size: 64.sp,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                       ),
-                      SizedBox(width: 12.w),
+                      SizedBox(height: 16.h),
                       Text(
-                        'المسودات المحفوظة (${drafts.length})',
+                        'لا توجد مسودات محفوظة',
                         style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16.sp,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                ),
-                const Divider(height: 1),
+                )
+              : ListView.separated(
+                  padding: EdgeInsets.all(16.w),
+                  itemCount: drafts.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                  itemBuilder: (context, index) {
+                    final draft = drafts[index];
+                    final savedAt = DateTime.parse(draft['savedAt']);
+                    final draftName = draft['name'] ?? 'مسودة';
 
-                // Drafts List
-                Expanded(
-                  child: drafts.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inbox_outlined,
-                                size: 64,
-                                color: Colors.grey[400],
-                              ),
-                              SizedBox(height: 16.h),
-                              Text(
-                                'لا توجد مسودات محفوظة',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.description,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                           ),
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: EdgeInsets.all(16.w),
-                          itemCount: drafts.length,
-                          separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                          itemBuilder: (context, index) {
-                            final draft = drafts[index];
-                            final savedAt = DateTime.parse(draft['savedAt']);
-                            final draftName = draft['name'] ?? 'مسودة';
-
-                            return Card(
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
-                                  child: Icon(
-                                    Icons.description,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
-                                  ),
-                                ),
-                                title: Text(
-                                  draftName,
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: Text(
-                                  'حُفظت: ${_formatDateTime(savedAt)}',
-                                  style: TextStyle(fontSize: 12.sp),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline),
-                                      color: Colors.red,
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: Text('حذف المسودة'),
-                                            content: Text(
-                                              'هل تريد حذف هذه المسودة؟',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  false,
-                                                ),
-                                                child: Text('إلغاء'),
-                                              ),
-                                              AnimatedButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  true,
-                                                ),
-                                                child: FilledButton(
-                                                  onPressed: null, // handled by AnimatedButton
-                                                  style: FilledButton.styleFrom(
-                                                    backgroundColor: Theme.of(
-                                                      context,
-                                                    ).colorScheme.error,
-                                                    foregroundColor: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onError,
-                                                  ),
-                                                  child: const Text('حذف'),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-
-                                        if (confirm == true) {
-                                          await DraftManager.deleteDraft(
-                                            draft['draftId'],
-                                          );
-                                          Navigator.pop(context);
-                                          _showDraftsList();
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                onTap: () async {
-                                  Navigator.pop(context);
-                                  await _loadDraft(draft);
-                                },
-                              ),
-                            );
-                          },
                         ),
+                        title: Text(
+                          draftName,
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          'حُفظت: ${_formatDateTime(savedAt)}',
+                          style: TextStyle(fontSize: 12.sp),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              color: Colors.red,
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('حذف المسودة'),
+                                    content: Text(
+                                      'هل تريد حذف هذه المسودة؟',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(
+                                          context,
+                                          false,
+                                        ),
+                                        child: Text('إلغاء'),
+                                      ),
+                                      AnimatedButton(
+                                        onPressed: () => Navigator.pop(
+                                          context,
+                                          true,
+                                        ),
+                                        child: FilledButton(
+                                          onPressed: null, // handled by AnimatedButton
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                            foregroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.onError,
+                                          ),
+                                          child: const Text('حذف'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  await DraftManager.deleteDraft(
+                                    draft['draftId'],
+                                  );
+                                  Navigator.pop(context);
+                                  _showDraftsList();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await _loadDraft(draft);
+                        },
+                      ),
+                    );
+                  },
                 ),
-              ],
-            );
-          },
         ),
       );
     } catch (e, stackTrace) {
@@ -1207,13 +1290,21 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _tabController.animateTo(firstErrorTab);
       }
 
-      // عرض رسالة مفصلة
+      // عرض رسالة مفصلة مع haptic feedback
+      HapticFeedback.mediumImpact();
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
-          final tabName = firstErrorTab == 0 ? 'المعلومات الأساسية' : 'معلومات الاتصال';
+          final tabName = firstErrorTab == 0
+              ? 'المعلومات الأساسية'
+              : firstErrorTab == 1
+                  ? 'معلومات الاتصال'
+                  : firstErrorTab == 2
+                      ? 'العائلة'
+                      : 'المرفقات';
+
           EnhancedSnackbar.showError(
             context,
-            message: 'الحقول المطلوبة في "$tabName":\n${errorFields.join(', ')}',
+            message: '⚠️ يرجى تعبئة الحقول التالية في "$tabName":\n• ${errorFields.join('\n• ')}',
           );
 
           // تحريك التركيز للحقل الأول
@@ -1463,7 +1554,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   onUndo: _formHistory.canUndo ? _handleUndo : null,
                   onRedo: _formHistory.canRedo ? _handleRedo : null,
                   bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(52),
+                    preferredSize: Size.fromHeight(52.h),
                     child: FormProgressIndicator(
                       filledFields: _calculateFilledFields(),
                       totalRequiredFields: 12,
