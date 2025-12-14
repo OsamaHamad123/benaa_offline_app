@@ -5,6 +5,7 @@ import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
 import '../components/v2_section_card.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱
+import '../../../../../../core/validation/field_validators.dart'; // 📋
 
 /// Contact information tab
 class V2ContactInfoTab extends StatelessWidget {
@@ -52,34 +53,9 @@ class V2ContactInfoTab extends StatelessWidget {
                   prefixIcon: Icons.smartphone_rounded,
                   keyboardType: TextInputType.phone,
                   hint: 'مثال: 0595735352 أو +970595735352',
-                  maxLength: 16, // لدعم +970XXXXXXXXX
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                    LengthLimitingTextInputFormatter(16),
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return null; // Optional field
-                    }
-                    // Gaza/Palestine format: 059XXXXXXX or 056XXXXXXX or +972/+970
-                    final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
-                    String phoneDigits = cleaned;
-
-                    if (cleaned.startsWith('+972') ||
-                        cleaned.startsWith('+970')) {
-                      phoneDigits = '0${cleaned.substring(4)}';
-                    } else if (cleaned.startsWith('00972') ||
-                        cleaned.startsWith('00970')) {
-                      phoneDigits = '0${cleaned.substring(5)}';
-                    }
-
-                    phoneDigits = phoneDigits.replaceAll('+', '');
-
-                    if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
-                      return 'رقم غير صحيح\nمثال: 0595735352 أو +970595735352';
-                    }
-                    return null;
-                  },
+                  maxLength: FieldValidators.phoneMaxLength,
+                  inputFormatters: FieldValidators.phoneFormatters,
+                  validator: FieldValidators.phoneOptional,
                 ),
                 V2CustomTextField(
                   controller: altPhoneController,
@@ -87,34 +63,9 @@ class V2ContactInfoTab extends StatelessWidget {
                   prefixIcon: Icons.phone_android_rounded,
                   keyboardType: TextInputType.phone,
                   hint: 'اختياري',
-                  maxLength: 16,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+]')),
-                    LengthLimitingTextInputFormatter(16),
-                  ],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return null; // Optional field
-                    }
-                    // Gaza/Palestine format
-                    final cleaned = value.replaceAll(RegExp(r'[^0-9+]'), '');
-                    String phoneDigits = cleaned;
-
-                    if (cleaned.startsWith('+972') ||
-                        cleaned.startsWith('+970')) {
-                      phoneDigits = '0${cleaned.substring(4)}';
-                    } else if (cleaned.startsWith('00972') ||
-                        cleaned.startsWith('00970')) {
-                      phoneDigits = '0${cleaned.substring(5)}';
-                    }
-
-                    phoneDigits = phoneDigits.replaceAll('+', '');
-
-                    if (!RegExp(r'^(059|056)\d{7}$').hasMatch(phoneDigits)) {
-                      return 'رقم غير صحيح\nمثال: 0567654321 أو +972567654321';
-                    }
-                    return null;
-                  },
+                  maxLength: FieldValidators.phoneMaxLength,
+                  inputFormatters: FieldValidators.phoneFormatters,
+                  validator: FieldValidators.phoneOptional,
                 ),
               ],
             ), // End ResponsiveFormLayout
@@ -214,8 +165,7 @@ class V2ContactInfoTab extends StatelessWidget {
                 DropdownMenuItem(value: 'returned', child: Text('عائد')),
               ],
             ),
-            if (selectedDisplacementStatus == 'displaced' ||
-                selectedDisplacementStatus == 'refugee') ...[
+            if (selectedDisplacementStatus == 'displaced' || selectedDisplacementStatus == 'refugee') ...[
               SizedBox(height: 12.h),
               V2CustomTextField(
                 controller: addressBeforeDisplacementController!,

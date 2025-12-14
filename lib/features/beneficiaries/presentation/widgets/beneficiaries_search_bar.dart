@@ -62,7 +62,9 @@ class _BeneficiariesSearchBarState extends State<BeneficiariesSearchBar> {
         textDirection: TextDirection.rtl,
         decoration: InputDecoration(
           hintText: widget.hintText,
-          hintStyle: TextStyle(color: Colors.grey[400]),
+          hintStyle: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+          ),
           prefixIcon: const Icon(Icons.search),
           suffixIcon: widget.controller.text.isNotEmpty
               ? IconButton(
@@ -77,7 +79,7 @@ class _BeneficiariesSearchBarState extends State<BeneficiariesSearchBar> {
                 )
               : null,
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

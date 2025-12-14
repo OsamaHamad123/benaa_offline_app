@@ -12,6 +12,8 @@ import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi Valu
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
+import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsive Bottom Sheet
+import '../../../../core/validation/field_validators.dart'; // 📋 Field Validators
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -900,24 +902,16 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-            ),
-            child: FinalReviewSheet(
-              formControllers: _controllers,
-              scrollController: scrollController,
-              onConfirm: () => Navigator.pop(context, true),
-              onEdit: () => Navigator.pop(context, false),
-            ),
-          );
-        },
+      builder: (context) => ResponsiveBottomSheet(
+        title: 'المراجعة النهائية',
+        icon: Icons.assignment_turned_in,
+        showCloseButton: false, // FinalReviewSheet has its own buttons
+        builder: (scrollController) => FinalReviewSheet(
+          formControllers: _controllers,
+          scrollController: scrollController,
+          onConfirm: () => Navigator.pop(context, true),
+          onEdit: () => Navigator.pop(context, false),
+        ),
       ),
     );
 
@@ -1028,165 +1022,124 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-        ),
-        builder: (context) => DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                // Header
-                Padding(
-                  padding: EdgeInsets.all(16.w),
-                  child: Row(
+        backgroundColor: Colors.transparent,
+        builder: (context) => ResponsiveBottomSheet(
+          title: 'المسودات المحفوظة (${drafts.length})',
+          icon: Icons.drafts,
+          child: drafts.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.drafts,
-                        color: Theme.of(context).colorScheme.primary,
+                        Icons.inbox_outlined,
+                        size: 64.sp,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                       ),
-                      SizedBox(width: 12.w),
+                      SizedBox(height: 16.h),
                       Text(
-                        'المسودات المحفوظة (${drafts.length})',
+                        'لا توجد مسودات محفوظة',
                         style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 16.sp,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
                       ),
                     ],
                   ),
-                ),
-                const Divider(height: 1),
+                )
+              : ListView.separated(
+                  padding: EdgeInsets.all(16.w),
+                  itemCount: drafts.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 8.h),
+                  itemBuilder: (context, index) {
+                    final draft = drafts[index];
+                    final savedAt = DateTime.parse(draft['savedAt']);
+                    final draftName = draft['name'] ?? 'مسودة';
 
-                // Drafts List
-                Expanded(
-                  child: drafts.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inbox_outlined,
-                                size: 64.sp,
-                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
-                              ),
-                              SizedBox(height: 16.h),
-                              Text(
-                                'لا توجد مسودات محفوظة',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                                ),
-                              ),
-                            ],
+                    return Card(
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primaryContainer,
+                          child: Icon(
+                            Icons.description,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimaryContainer,
                           ),
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: EdgeInsets.all(16.w),
-                          itemCount: drafts.length,
-                          separatorBuilder: (_, __) => SizedBox(height: 8.h),
-                          itemBuilder: (context, index) {
-                            final draft = drafts[index];
-                            final savedAt = DateTime.parse(draft['savedAt']);
-                            final draftName = draft['name'] ?? 'مسودة';
-
-                            return Card(
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
-                                  child: Icon(
-                                    Icons.description,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
-                                  ),
-                                ),
-                                title: Text(
-                                  draftName,
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: Text(
-                                  'حُفظت: ${_formatDateTime(savedAt)}',
-                                  style: TextStyle(fontSize: 12.sp),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline),
-                                      color: Colors.red,
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: Text('حذف المسودة'),
-                                            content: Text(
-                                              'هل تريد حذف هذه المسودة؟',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  false,
-                                                ),
-                                                child: Text('إلغاء'),
-                                              ),
-                                              AnimatedButton(
-                                                onPressed: () => Navigator.pop(
-                                                  context,
-                                                  true,
-                                                ),
-                                                child: FilledButton(
-                                                  onPressed: null, // handled by AnimatedButton
-                                                  style: FilledButton.styleFrom(
-                                                    backgroundColor: Theme.of(
-                                                      context,
-                                                    ).colorScheme.error,
-                                                    foregroundColor: Theme.of(
-                                                      context,
-                                                    ).colorScheme.onError,
-                                                  ),
-                                                  child: const Text('حذف'),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-
-                                        if (confirm == true) {
-                                          await DraftManager.deleteDraft(
-                                            draft['draftId'],
-                                          );
-                                          Navigator.pop(context);
-                                          _showDraftsList();
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                onTap: () async {
-                                  Navigator.pop(context);
-                                  await _loadDraft(draft);
-                                },
-                              ),
-                            );
-                          },
                         ),
+                        title: Text(
+                          draftName,
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          'حُفظت: ${_formatDateTime(savedAt)}',
+                          style: TextStyle(fontSize: 12.sp),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              color: Colors.red,
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: Text('حذف المسودة'),
+                                    content: Text(
+                                      'هل تريد حذف هذه المسودة؟',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(
+                                          context,
+                                          false,
+                                        ),
+                                        child: Text('إلغاء'),
+                                      ),
+                                      AnimatedButton(
+                                        onPressed: () => Navigator.pop(
+                                          context,
+                                          true,
+                                        ),
+                                        child: FilledButton(
+                                          onPressed: null, // handled by AnimatedButton
+                                          style: FilledButton.styleFrom(
+                                            backgroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.error,
+                                            foregroundColor: Theme.of(
+                                              context,
+                                            ).colorScheme.onError,
+                                          ),
+                                          child: const Text('حذف'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  await DraftManager.deleteDraft(
+                                    draft['draftId'],
+                                  );
+                                  Navigator.pop(context);
+                                  _showDraftsList();
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await _loadDraft(draft);
+                        },
+                      ),
+                    );
+                  },
                 ),
-              ],
-            );
-          },
         ),
       );
     } catch (e, stackTrace) {

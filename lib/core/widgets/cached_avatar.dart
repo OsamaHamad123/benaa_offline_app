@@ -54,7 +54,7 @@ class CachedAvatar extends StatelessWidget {
             ),
           ),
         ),
-        placeholder: (context, url) => _buildShimmerAvatar(),
+        placeholder: (context, url) => _buildShimmerAvatar(context),
         errorWidget: (context, url, error) => _buildInitialsAvatar(),
         memCacheHeight: (size * 2).toInt(), // ✅ 2x الحجم الفعلي
         memCacheWidth: (size * 2).toInt(),
@@ -83,9 +83,7 @@ class CachedAvatar extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: shape == BoxShape.circle
-            ? BorderRadius.circular(size / 2)
-            : BorderRadius.circular(8),
+        borderRadius: shape == BoxShape.circle ? BorderRadius.circular(size / 2) : BorderRadius.circular(8),
         child: child,
       ),
     );
@@ -123,10 +121,11 @@ class CachedAvatar extends StatelessWidget {
     );
   }
 
-  Widget _buildShimmerAvatar() {
+  Widget _buildShimmerAvatar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
       period: const Duration(milliseconds: 1500),
       child: Container(
         width: size,
