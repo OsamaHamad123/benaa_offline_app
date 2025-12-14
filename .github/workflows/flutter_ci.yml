@@ -2,7 +2,7 @@ name: Flutter CI/CD
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, perf-improvements-nov2025]
   pull_request:
     branches: [main]
 
