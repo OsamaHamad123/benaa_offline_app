@@ -112,7 +112,7 @@ void main() {
 
       // act & assert
       expect(
-        () => failingUseCase(type: tType, description: tDescription),
+        () async => await failingUseCase(type: tType, description: tDescription),
         throwsA(isA<Exception>()),
       );
     });
