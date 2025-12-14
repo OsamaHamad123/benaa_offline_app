@@ -37,7 +37,7 @@ class LoadingState extends StatelessWidget {
               message!,
               style: TextStyle(
                 fontSize: 16.sp,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 fontFamily: 'Cairo',
               ),
               textAlign: TextAlign.center,
@@ -168,8 +168,7 @@ class SkeletonLoader extends StatefulWidget {
   State<SkeletonLoader> createState() => _SkeletonLoaderState();
 }
 
-class _SkeletonLoaderState extends State<SkeletonLoader>
-    with SingleTickerProviderStateMixin {
+class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -195,6 +194,11 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark ? theme.colorScheme.surfaceVariant : theme.colorScheme.surface.withOpacity(0.3);
+    final highlightColor = isDark ? theme.colorScheme.surface : theme.colorScheme.surface.withOpacity(0.1);
+
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
@@ -206,7 +210,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [Colors.grey[300]!, Colors.grey[100]!, Colors.grey[300]!],
+              colors: [baseColor, highlightColor, baseColor],
               stops: [
                 _animation.value - 0.3,
                 _animation.value,

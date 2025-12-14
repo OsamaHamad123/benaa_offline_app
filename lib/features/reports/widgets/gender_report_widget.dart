@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/export/export_models.dart';
 import '../../../core/services/export/export_providers.dart';
+import '../../../core/widgets/responsive_bottom_sheet.dart';
 import '../providers/reports_providers.dart';
 import '../domain/entities/report_data.dart';
 import '../helpers/percentage_helper.dart';
@@ -125,21 +126,17 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
+    final reportAsync = ref.watch(genderReportProvider);
+    final totalAsync = ref.watch(summaryStatisticsProvider);
 
-    return DraggableScrollableSheet(
+    return ResponsiveBottomSheet(
+      title: 'تقرير حسب الجنس',
+      icon: Icons.people,
       initialChildSize: 0.5,
       minChildSize: 0.3,
       maxChildSize: 0.6,
-      expand: false,
-      builder: (context, scrollController) {
-        final reportAsync = ref.watch(genderReportProvider);
-        final totalAsync = ref.watch(summaryStatisticsProvider);
-
-        return Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
+      builder: (scrollController) {
+        return Padding(
           padding: EdgeInsets.all(16.w),
           child: Column(
             children: [
@@ -195,11 +192,10 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                                   icon: Icons.male,
                                   label: 'ذكور',
                                   count: '$males',
-                                  percentage:
-                                      PercentageHelper.getPercentageText(
-                                        males,
-                                        total,
-                                      ),
+                                  percentage: PercentageHelper.getPercentageText(
+                                    males,
+                                    total,
+                                  ),
                                   iconColor: Colors.blue,
                                   backgroundColor: Colors.blue[50],
                                 ),
@@ -210,11 +206,10 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                                   icon: Icons.female,
                                   label: 'إناث',
                                   count: '$females',
-                                  percentage:
-                                      PercentageHelper.getPercentageText(
-                                        females,
-                                        total,
-                                      ),
+                                  percentage: PercentageHelper.getPercentageText(
+                                    females,
+                                    total,
+                                  ),
                                   iconColor: Colors.pink,
                                   backgroundColor: Colors.pink[50],
                                 ),
@@ -226,15 +221,13 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                         ExportButtons(
                           isLoading: _isExporting,
                           onPdfExport: () => _exportToPdf(genderCounts, total),
-                          onExcelExport: () =>
-                              _exportToExcel(genderCounts, total),
+                          onExcelExport: () => _exportToExcel(genderCounts, total),
                           onPrint: () => _exportToPdf(genderCounts, total),
                         ),
                       ],
                     );
                   },
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
+                  loading: () => const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => Center(child: Text('خطأ: $error')),
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../core/widgets/responsive_bottom_sheet.dart';
 import '../providers/dashboard_providers.dart';
 
 /// Provider for geographic distribution
@@ -241,58 +242,30 @@ class GeographicDistributionSection extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
+      builder: (context) => ResponsiveBottomSheet(
+        title: 'جميع المحافظات (عدد ${entries.length})',
+        icon: Icons.location_city,
         initialChildSize: 0.7,
         minChildSize: 0.5,
         maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) {
+        builder: (scrollController) {
           final maxCount = entries.first.value;
 
-          return Column(
-            children: [
-              // Header
-              Padding(
-                padding: EdgeInsets.all(16.w),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'جميع المحافظات',
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              // List
-              Expanded(
-                child: ListView.separated(
-                  controller: scrollController,
-                  padding: EdgeInsets.all(16.w),
-                  itemCount: entries.length,
-                  separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                  itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    return _GovernorateBar(
-                      governorate: entry.key,
-                      count: entry.value,
-                      maxCount: maxCount,
-                      color: _getGovernorateColor(entry.key),
-                      showPercentage: true,
-                    );
-                  },
-                ),
-              ),
-            ],
+          return ListView.separated(
+            controller: scrollController,
+            padding: EdgeInsets.all(16.w),
+            itemCount: entries.length,
+            separatorBuilder: (_, __) => SizedBox(height: 12.h),
+            itemBuilder: (context, index) {
+              final entry = entries[index];
+              return _GovernorateBar(
+                governorate: entry.key,
+                count: entry.value,
+                maxCount: maxCount,
+                color: _getGovernorateColor(entry.key),
+                showPercentage: true,
+              );
+            },
           );
         },
       ),

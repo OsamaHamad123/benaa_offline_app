@@ -16,12 +16,15 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return ListView.builder(
       itemCount: itemCount,
       padding: padding ?? const EdgeInsets.all(16),
       itemBuilder: (context, index) => Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
+        baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+        highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
         period: const Duration(milliseconds: 1500),
         child: Card(
           margin: const EdgeInsets.only(bottom: 16),
