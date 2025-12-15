@@ -98,9 +98,10 @@ class SkeletonBox extends StatelessWidget {
 /// Skeleton Card - Card-shaped skeleton
 class SkeletonCard extends StatelessWidget {
   final double? height;
+  final double? width;
   final EdgeInsetsGeometry? padding;
 
-  const SkeletonCard({super.key, this.height, this.padding});
+  const SkeletonCard({super.key, this.height, this.width, this.padding});
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +114,7 @@ class SkeletonCard extends StatelessWidget {
         ),
         child: Container(
           height: height ?? 150.h,
+          width: width,
           padding: padding ?? EdgeInsets.all(16.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

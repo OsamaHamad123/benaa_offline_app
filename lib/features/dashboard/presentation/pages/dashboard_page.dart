@@ -353,13 +353,16 @@ class _DashboardHome extends ConsumerWidget {
             color: AppColors.primary,
             child: state.isLoadingStats && state.statistics == null
                 ? Padding(
-                    padding: EdgeInsets.all(16.w),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                     child: Column(
                       children: List.generate(
                         3,
                         (index) => Padding(
-                          padding: EdgeInsets.only(bottom: 16.h),
-                          child: const SkeletonCard(),
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: SkeletonCard(
+                            width: double.infinity,
+                            height: 80.h,
+                          ),
                         ),
                       ),
                     ),

@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/widgets/responsive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -355,9 +356,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       final shouldRestore = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          icon: Icon(Icons.restore_outlined, color: Colors.blue, size: 48.sp),
-          title: const Text('استعادة مسودة تلقائية'),
+        builder: (context) => ResponsiveDialog(
+          title: 'استعادة مسودة تلقائية',
+          icon: Icons.restore_outlined,
+          iconColor: Colors.blue,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -975,11 +977,28 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           showDialog(
             context: context,
             barrierDismissible: true,
-            barrierColor: Colors.black26,
-            builder: (context) => Center(
-              child: FormAnimations.successCheckmark(
-                size: 80.sp,
-                color: Theme.of(context).colorScheme.primary,
+            barrierColor: Colors.black54,
+            builder: (context) => Material(
+              color: Colors.transparent,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(24.r),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(20.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: FormAnimations.successCheckmark(
+                    size: 80.sp,
+                    color: Colors.green,
+                  ),
+                ),
               ),
             ),
           );
@@ -1085,8 +1104,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('حذف المسودة'),
+                                  builder: (context) => ResponsiveDialog(
+                                    title: 'حذف المسودة',
+                                    icon: Icons.delete_outline,
+                                    iconColor: Colors.red,
                                     content: Text(
                                       'هل تريد حذف هذه المسودة؟',
                                     ),
