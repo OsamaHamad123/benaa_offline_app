@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../core/design_system/app_animations.dart';
 import '../core/analytics/analytics_widgets.dart';
 import '../core/analytics/realtime_performance_monitor.dart';
+import '../core/debug/sentry_test_page.dart';
 import '../features/auth/login_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/initialization/presentation/pages/app_initialization_page.dart';
@@ -215,6 +216,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/performance-monitor',
         builder: (context, state) => const RealTimePerformanceMonitor(),
+      ),
+      GoRoute(
+        path: '/sentry-test',
+        builder: (context, state) => const SentryTestPage(),
       ),
       GoRoute(
         path: '/visits',

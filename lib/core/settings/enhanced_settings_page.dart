@@ -337,6 +337,15 @@ class EnhancedSettingsPage extends ConsumerWidget {
                           color: Colors.purple,
                           onTap: () => context.push('/performance-monitor'),
                         ),
+                        _buildDivider(),
+                        _buildNavigationTile(
+                          context,
+                          title: '🐛 Sentry Test',
+                          subtitle: 'اختبار تقارير الأخطاء والمراقبة',
+                          icon: Icons.bug_report_rounded,
+                          color: Colors.red,
+                          onTap: () => context.push('/sentry-test'),
+                        ),
                       ],
                     ]),
 

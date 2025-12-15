@@ -72,3 +72,7 @@ firebase-credentials.json
 # Database files (too large for Git)
 assets/database/*.db
 assets/database/*.db-*
+
+sentry.properties
+
+sentry.properties
