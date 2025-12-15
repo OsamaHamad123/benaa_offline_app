@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 /// في Sentry والتي تظهر عندما يكون النص أو المحتوى أكبر من المساحة المتاحة
 
 /// Safe Row - صف آمن يمنع overflow
-/// 
+///
 /// استخدمه بدلاً من Row عندما يكون المحتوى قد يتجاوز عرض الشاشة
 class SafeRow extends StatelessWidget {
   final List<Widget> children;
@@ -249,7 +249,7 @@ class FlutterErrorHandler {
   static void initialize() {
     // Capture FlutterError.onError
     final originalOnError = FlutterError.onError;
-    
+
     FlutterError.onError = (FlutterErrorDetails details) {
       // Check if it's a RenderFlex overflow error
       if (details.exception.toString().contains('RenderFlex overflowed') ||
@@ -259,7 +259,7 @@ class FlutterErrorHandler {
         // You can log to ErrorLogger here if needed
         return;
       }
-      
+
       // For other errors, use original handler
       originalOnError?.call(details);
     };

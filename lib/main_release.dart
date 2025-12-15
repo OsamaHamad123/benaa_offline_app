@@ -24,7 +24,7 @@ import 'core/widgets/safe_widgets.dart';
 /// - Optimized for production use
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize safe widgets to prevent overflow errors
   FlutterErrorHandler.initialize();
 

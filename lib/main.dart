@@ -24,7 +24,7 @@ import 'core/widgets/error_boundary.dart';
 /// - Full error stack traces
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize safe widgets to prevent overflow errors
   FlutterErrorHandler.initialize();
 
