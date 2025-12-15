@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
 import 'core/providers/providers.dart' as core_providers;
+import 'core/widgets/safe_widgets.dart';
 import 'core/services/database_maintenance_service.dart';
 import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 import 'features/visits/presentation/providers/visit_providers.dart' as visit_providers;
@@ -23,6 +24,9 @@ import 'core/widgets/error_boundary.dart';
 /// - Full error stack traces
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize safe widgets to prevent overflow errors
+  FlutterErrorHandler.initialize();
 
   // Initialize SharedPreferences for dashboard caching & recent searches
   final sharedPreferences = await SharedPreferences.getInstance();

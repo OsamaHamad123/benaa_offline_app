@@ -14,6 +14,7 @@ import 'features/dashboard/presentation/providers/activity_providers.dart' as da
 import 'core/config/sentry_config.dart';
 import 'core/error_handling/error_logger.dart';
 import 'core/widgets/error_boundary.dart';
+import 'core/widgets/safe_widgets.dart';
 
 /// 🚀 RELEASE MODE ENTRY POINT
 /// This is the production entry point with:
@@ -23,6 +24,9 @@ import 'core/widgets/error_boundary.dart';
 /// - Optimized for production use
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize safe widgets to prevent overflow errors
+  FlutterErrorHandler.initialize();
 
   // Initialize SharedPreferences for dashboard caching & recent searches
   final sharedPreferences = await SharedPreferences.getInstance();

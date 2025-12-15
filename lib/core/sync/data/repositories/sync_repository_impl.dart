@@ -2,6 +2,7 @@ import '../../domain/entities/sync_result.dart';
 import '../../domain/repositories/i_sync_repository.dart';
 import '../datasources/local_sync_datasource.dart';
 import '../datasources/remote_sync_datasource.dart';
+import '../../../error_handling/error_logger.dart';
 
 /// 🔄 Sync Repository Implementation
 ///
@@ -13,8 +14,8 @@ class SyncRepositoryImpl implements ISyncRepository {
   const SyncRepositoryImpl({
     required RemoteSyncDataSource remote,
     required LocalSyncDataSource local,
-  }) : _remote = remote,
-       _local = local;
+  })  : _remote = remote,
+        _local = local;
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🔄 DELTA SYNC Implementation
@@ -65,8 +66,7 @@ class SyncRepositoryImpl implements ISyncRepository {
         conflicts.addAll(pushResult.conflicts);
       }
 
-      final successCount =
-          (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
+      final successCount = (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
           (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
 
       return SyncPartial(
@@ -76,6 +76,16 @@ class SyncRepositoryImpl implements ISyncRepository {
         syncedAt: DateTime.now(),
       );
     } catch (e, stackTrace) {
+      await ErrorLogger.logError(
+        e,
+        stackTrace,
+        context: {
+          'operation': 'smart_sync',
+          'entity_type': entityType,
+        },
+        hint: 'Smart sync failed for entity type',
+      );
+
       await _local.updateSyncFailure(
         entityType: entityType,
         error: e.toString(),
@@ -335,8 +345,7 @@ class SyncRepositoryImpl implements ISyncRepository {
 
       final pushResult = await pushChanges(entityType);
 
-      final totalSynced =
-          (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
+      final totalSynced = (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
           (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
 
       await _local.updateSyncSuccess(
