@@ -26,8 +26,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
     final database = ref.watch(databaseProvider);
 
     // 🔍 DEBUG: Print database instance
-    print('🔍 [DEBUG] Database Provider: $database');
-    print('🔍 [DEBUG] BeneficiariesDao: ${database.beneficiariesDao}');
+    debugPrint('🔍 [DEBUG] Database Provider: $database');
+    debugPrint('🔍 [DEBUG] BeneficiariesDao: ${database.beneficiariesDao}');
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -106,43 +106,43 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
       ),
       body: FutureBuilder<List<Beneficiary>>(
         future: () async {
-          print('🔍 [DEBUG] Starting to fetch beneficiaries...');
+          debugPrint('🔍 [DEBUG] Starting to fetch beneficiaries...');
           try {
             final result = await database.beneficiariesDao.getAllBeneficiaries();
-            print('🔍 [DEBUG] ✅ Fetch successful!');
-            print('🔍 [DEBUG] Number of beneficiaries: ${result.length}');
+            debugPrint('🔍 [DEBUG] ✅ Fetch successful!');
+            debugPrint('🔍 [DEBUG] Number of beneficiaries: ${result.length}');
             if (result.isNotEmpty) {
-              print(
+              debugPrint(
                 '🔍 [DEBUG] First beneficiary: ${result.first.fullName} (ID: ${result.first.idNumber})',
               );
-              print(
+              debugPrint(
                 '🔍 [DEBUG] Sync states: ${result.map((b) => b.syncState).toSet()}',
               );
             }
             return result;
           } catch (e, stackTrace) {
-            print('🔍 [DEBUG] ❌ Error fetching beneficiaries: $e');
-            print('🔍 [DEBUG] StackTrace: $stackTrace');
+            debugPrint('🔍 [DEBUG] ❌ Error fetching beneficiaries: $e');
+            debugPrint('🔍 [DEBUG] StackTrace: $stackTrace');
             rethrow;
           }
         }(),
         builder: (context, snapshot) {
           // 🔍 DEBUG: Print snapshot state
-          print(
+          debugPrint(
             '🔍 [DEBUG] Snapshot ConnectionState: ${snapshot.connectionState}',
           );
-          print('🔍 [DEBUG] Snapshot hasData: ${snapshot.hasData}');
-          print('🔍 [DEBUG] Snapshot hasError: ${snapshot.hasError}');
+          debugPrint('🔍 [DEBUG] Snapshot hasData: ${snapshot.hasData}');
+          debugPrint('🔍 [DEBUG] Snapshot hasError: ${snapshot.hasError}');
           if (snapshot.hasData) {
-            print('🔍 [DEBUG] Snapshot data length: ${snapshot.data?.length}');
+            debugPrint('🔍 [DEBUG] Snapshot data length: ${snapshot.data?.length}');
           }
           if (snapshot.hasError) {
-            print('🔍 [DEBUG] Snapshot error: ${snapshot.error}');
+            debugPrint('🔍 [DEBUG] Snapshot error: ${snapshot.error}');
           }
 
           // Loading State
           if (snapshot.connectionState == ConnectionState.waiting) {
-            print('🔍 [DEBUG] Showing loading state...');
+            debugPrint('🔍 [DEBUG] Showing loading state...');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -160,7 +160,7 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
 
           // Error State
           if (snapshot.hasError) {
-            print('🔍 [DEBUG] Showing error state: ${snapshot.error}');
+            debugPrint('🔍 [DEBUG] Showing error state: ${snapshot.error}');
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -207,10 +207,10 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
           final allBeneficiaries = snapshot.data ?? [];
 
           // 🔍 DEBUG: Print beneficiaries data
-          print(
+          debugPrint(
             '🔍 [DEBUG] All beneficiaries count: ${allBeneficiaries.length}',
           );
-          print('🔍 [DEBUG] Is empty: ${allBeneficiaries.isEmpty}');
+          debugPrint('🔍 [DEBUG] Is empty: ${allBeneficiaries.isEmpty}');
 
           // Apply Filters
           var filteredBeneficiaries = allBeneficiaries.where((b) {
@@ -241,16 +241,16 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
           }).toList();
 
           // 🔍 DEBUG: Print filtered results
-          print(
+          debugPrint(
             '🔍 [DEBUG] Filtered beneficiaries count: ${filteredBeneficiaries.length}',
           );
-          print(
+          debugPrint(
             '🔍 [DEBUG] Active filters: searchQuery=$_searchQuery, syncState=$_selectedSyncState',
           );
 
           // Empty State
           if (allBeneficiaries.isEmpty) {
-            print(
+            debugPrint(
               '🔍 [DEBUG] ⚠️ Showing EMPTY state - no beneficiaries in database',
             );
             return Center(
