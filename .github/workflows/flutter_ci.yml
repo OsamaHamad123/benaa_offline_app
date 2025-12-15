@@ -2,7 +2,7 @@ name: Flutter CI/CD
 
 on:
   push:
-    branches: [main, develop, perf-improvements-nov2025]
+    branches: [main, develop]
   pull_request:
     branches: [main]
 
@@ -200,12 +200,11 @@ jobs:
         with:
           name: release-apk
 
-      - name: 🚀 Deploy to Firebase
-        run: echo "Deploy step (requires Firebase configuration)"
-        # Uncomment and configure when ready:
-        # uses: wzieba/Firebase-Distribution-Github-Action@v1
-        # with:
-        #   appId: ${{secrets.FIREBASE_APP_ID}}
-        #   serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
-        #   groups: testers
-        #   file: app-release.apk
+      - name: 🚀 Deploy to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: ${{ secrets.FIREBASE_TESTERS }}
+          file: app-release.apk
+          releaseNotes: "New release from GitHub Actions CI/CD"
