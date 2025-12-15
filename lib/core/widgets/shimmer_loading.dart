@@ -118,6 +118,7 @@ class SkeletonCard extends StatelessWidget {
           padding: padding ?? EdgeInsets.all(16.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
@@ -126,12 +127,14 @@ class SkeletonCard extends StatelessWidget {
                   Expanded(child: SkeletonBox(height: 20.h)),
                 ],
               ),
-              SizedBox(height: 16.h),
-              SkeletonBox(height: 16.h, width: double.infinity),
-              SizedBox(height: 8.h),
-              SkeletonBox(height: 16.h, width: 200.w),
-              SizedBox(height: 8.h),
-              SkeletonBox(height: 16.h, width: 150.w),
+              if (height == null || (height! > 80.h)) ...[
+                SizedBox(height: 16.h),
+                SkeletonBox(height: 16.h, width: double.infinity),
+                SizedBox(height: 8.h),
+                SkeletonBox(height: 16.h, width: double.infinity),
+                SizedBox(height: 8.h),
+                SkeletonBox(height: 16.h, width: double.infinity),
+              ],
             ],
           ),
         ),
