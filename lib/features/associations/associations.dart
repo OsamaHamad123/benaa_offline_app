@@ -17,7 +17,8 @@ export 'data/repositories/association_repository_impl.dart';
 
 // Presentation Layer Exports
 export 'presentation/providers/associations_provider.dart';
-export 'presentation/pages/associations_list_page.dart';
-export 'presentation/pages/association_form_page.dart';
-export 'presentation/widgets/association_card.dart';
-export 'presentation/widgets/representative_dropdown.dart';
+export 'presentation/pages/associations_list_page_v2.dart';
+export 'presentation/pages/association_form_bottom_sheet.dart';
+export 'presentation/widgets/association_card_v2.dart';
+export 'presentation/widgets/representative_dropdown_v2.dart';
+export 'presentation/widgets/associations_skeleton_loader.dart';
