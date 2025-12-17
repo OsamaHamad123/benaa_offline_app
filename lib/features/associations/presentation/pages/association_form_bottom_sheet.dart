@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✨ Haptic Feedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
@@ -160,9 +161,44 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
         final success = await ref.read(associationsProvider.notifier).updateAssociation(updated);
 
         if (success && mounted) {
+          HapticFeedback.mediumImpact(); // ✨ اهتزاز نجاح
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تحديث الجمعية بنجاح')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 24.r),
+                  SizedBox(width: 12.w),
+                  const Expanded(
+                    child: Text('✅ تم تحديث الجمعية بنجاح', textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              margin: EdgeInsets.all(16.r),
+            ),
+          );
+        } else if (!success && mounted) {
+          HapticFeedback.heavyImpact(); // ❌ اهتزاز خطأ
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white, size: 24.r),
+                  SizedBox(width: 12.w),
+                  const Expanded(
+                    child: Text('❌ فشل في تحديث الجمعية', textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              margin: EdgeInsets.all(16.r),
+            ),
           );
         }
       } else {
@@ -183,9 +219,44 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
         final success = await ref.read(associationsProvider.notifier).createAssociation(params);
 
         if (success && mounted) {
+          HapticFeedback.mediumImpact(); // ✨ اهتزاز نجاح
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إضافة الجمعية بنجاح')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 24.r),
+                  SizedBox(width: 12.w),
+                  const Expanded(
+                    child: Text('✅ تم إضافة الجمعية بنجاح', textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green.shade600,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              margin: EdgeInsets.all(16.r),
+            ),
+          );
+        } else if (!success && mounted) {
+          HapticFeedback.heavyImpact(); // ❌ اهتزاز خطأ
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white, size: 24.r),
+                  SizedBox(width: 12.w),
+                  const Expanded(
+                    child: Text('❌ فشل في إضافة الجمعية', textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+              margin: EdgeInsets.all(16.r),
+            ),
           );
         }
       }
@@ -200,15 +271,18 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
   Widget build(BuildContext context) {
     return ResponsiveBottomSheet(
       title: isEditing ? 'تعديل الجمعية' : 'إضافة جمعية جديدة',
+      icon: Icons.business, // ✨ أيقونة مميزة
       child: Form(
         key: _formKey,
-        child: SafeArea(
-          minimum: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+        child: Padding(
+          padding: EdgeInsets.only(
             left: ResponsiveUtils.mediumSpace,
             right: ResponsiveUtils.mediumSpace,
+            top: ResponsiveUtils.smallSpace,
+            bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
           ),
           child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -226,6 +300,23 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
                 ),
 
                 SizedBox(height: ResponsiveUtils.largeSpace),
+
+                // ✨ Divider
+                Container(
+                  height: 1,
+                  margin: EdgeInsets.symmetric(vertical: 8.h),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.transparent,
+                        Colors.grey.shade300,
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
 
                 // Bank Information Section
                 _BankInfoSection(
@@ -262,6 +353,9 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
                   isEditing: isEditing,
                   onPressed: _submit,
                 ),
+
+                // ✨ مسافة إضافية في النهاية
+                SizedBox(height: ResponsiveUtils.mediumSpace),
               ],
             ),
           ),
@@ -299,9 +393,49 @@ class _BasicInfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ✨ Section Header
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withAlpha(26),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(Icons.info_outline, size: 20.r, color: colorScheme.primary),
+            ),
+            SizedBox(width: 12.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'المعلومات الأساسية',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'بيانات الجمعية الرئيسية',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: colorScheme.onSurface.withAlpha(153),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        SizedBox(height: ResponsiveUtils.mediumSpace),
+
         // Name Field
         TextFormField(
           controller: nameController,
@@ -311,7 +445,17 @@ class _BasicInfoSection extends StatelessWidget {
           onFieldSubmitted: (_) => shortNameFocus.requestFocus(),
           decoration: InputDecoration(
             labelText: 'اسم الجمعية *',
+            hintText: 'أدخل اسم الجمعية',
             prefixIcon: Icon(Icons.business, size: 20.r),
+            suffixIcon: nameController.text.isNotEmpty
+                ? IconButton(
+                    icon: Icon(Icons.clear, size: 20.r),
+                    onPressed: () {
+                      nameController.clear();
+                      nameFocus.requestFocus();
+                    },
+                  )
+                : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
             ),
@@ -362,6 +506,7 @@ class _BasicInfoSection extends StatelessWidget {
           onFieldSubmitted: (_) => emailFocus.requestFocus(),
           decoration: InputDecoration(
             labelText: 'رقم الهاتف *',
+            hintText: '07xxxxxxxxx',
             prefixIcon: Icon(Icons.phone, size: 20.r),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
@@ -436,15 +581,39 @@ class _BankInfoSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Section Header
-        Text(
-          'المعلومات البنكية',
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            fontSize: ResponsiveUtils.mediumFont,
-            fontWeight: FontWeight.bold,
-            color: colorScheme.primary,
-          ),
+        // ✨ Section Header
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withAlpha(26),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(Icons.account_balance, size: 20.r, color: colorScheme.primary),
+            ),
+            SizedBox(width: 12.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'المعلومات البنكية',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  'تفاصيل الحساب البنكي',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: colorScheme.onSurface.withAlpha(153),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
 
         SizedBox(height: ResponsiveUtils.mediumSpace),
@@ -593,7 +762,7 @@ class _CurrencyDropdown extends StatelessWidget {
   }
 }
 
-/// Representative Section - Separated widget with ValueListenableBuilder
+/// Representative Section - Consumer wrapper to access ref
 class _RepresentativeSection extends StatelessWidget {
   final ValueNotifier<String?> representativeNotifier;
 
@@ -601,14 +770,32 @@ class _RepresentativeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<String?>(
-      valueListenable: representativeNotifier,
-      builder: (context, selectedId, _) {
-        return RepresentativeDropdownV2(
-          selectedId: selectedId,
-          onChanged: (value) => representativeNotifier.value = value,
+    return Consumer(
+      builder: (context, ref, _) {
+        final representatives = ref.read(associationsProvider).representatives;
+
+        return ValueListenableBuilder<String?>(
+          valueListenable: representativeNotifier,
+          builder: (context, selectedId, __) {
+            return RepresentativeDropdownV2(
+              selectedId: selectedId,
+              onChanged: (value) => representativeNotifier.value = value,
+              representatives: representatives,
+              onAddNew: () => _showAddRepSheet(context, ref, representativeNotifier),
+            );
+          },
         );
       },
+    );
+  }
+
+  void _showAddRepSheet(BuildContext context, WidgetRef ref, ValueNotifier<String?> notifier) {
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) => _AddRepBottomSheet(representativeNotifier: notifier),
     );
   }
 }
@@ -670,7 +857,12 @@ class _SubmitButton extends StatelessWidget {
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: isLoading ? null : onPressed,
+            onPressed: isLoading
+                ? null
+                : () {
+                    HapticFeedback.mediumImpact(); // ✨ اهتزاز
+                    onPressed();
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
               padding: EdgeInsets.symmetric(vertical: 16.h),
@@ -698,6 +890,158 @@ class _SubmitButton extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Bottom Sheet لإضافة مندوب جديد
+class _AddRepBottomSheet extends StatefulWidget {
+  final ValueNotifier<String?> representativeNotifier;
+
+  const _AddRepBottomSheet({required this.representativeNotifier});
+
+  @override
+  State<_AddRepBottomSheet> createState() => _AddRepBottomSheetState();
+}
+
+class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
+  late final TextEditingController _nameController;
+  late final GlobalKey<FormState> _formKey;
+  late final ValueNotifier<bool> _isLoadingNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _formKey = GlobalKey<FormState>();
+    _isLoadingNotifier = ValueNotifier<bool>(false);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _isLoadingNotifier.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit(WidgetRef ref) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    _isLoadingNotifier.value = true;
+
+    try {
+      final rep = await ref.read(associationsProvider.notifier).createRepresentative(_nameController.text.trim());
+
+      if (!mounted) return;
+
+      if (rep != null) {
+        widget.representativeNotifier.value = rep.id;
+        await ref.read(associationsProvider.notifier).loadRepresentatives();
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم إضافة المندوب بنجاح')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        _isLoadingNotifier.value = false;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ResponsiveBottomSheet(
+      title: 'إضافة مندوب جديد',
+      icon: Icons.person_add, // ✨ أيقونة
+      child: Form(
+        key: _formKey,
+        child: SafeArea(
+          minimum: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+            left: ResponsiveUtils.mediumSpace,
+            right: ResponsiveUtils.mediumSpace,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _nameController,
+                textAlign: TextAlign.right,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
+                decoration: InputDecoration(
+                  labelText: 'اسم المندوب *',
+                  prefixIcon: Icon(Icons.person, size: 20.r),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.mediumSpace,
+                    vertical: 12.h,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'الرجاء إدخال اسم المندوب';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: ResponsiveUtils.largeSpace),
+              Consumer(
+                builder: (context, ref, child) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: _isLoadingNotifier,
+                    builder: (context, isLoading, _) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : () => _submit(ref),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                            ),
+                          ),
+                          child: isLoading
+                              ? SizedBox(
+                                  height: 20.h,
+                                  width: 20.w,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  'إضافة',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveUtils.mediumFont,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

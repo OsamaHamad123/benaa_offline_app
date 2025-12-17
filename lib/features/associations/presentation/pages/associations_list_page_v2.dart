@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
@@ -7,6 +8,11 @@ import '../../../../core/widgets/custom_empty_state.dart';
 import '../providers/associations_provider.dart';
 import '../widgets/association_card_v2.dart';
 import '../widgets/associations_skeleton_loader.dart';
+import '../widgets/associations_search_bar.dart';
+import '../widgets/associations_filter_button.dart';
+import '../widgets/associations_result_counter.dart';
+import '../widgets/associations_empty_state.dart';
+import '../widgets/associations_filter_sheet.dart';
 import 'association_form_bottom_sheet.dart';
 
 /// 🏢 صفحة قائمة الجمعيات - إصدار محسّن
@@ -28,6 +34,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   String _searchQuery = '';
   bool _showOnlyActive = true;
   String? _selectedRepresentativeId;
+  String? _selectedCurrency; // ✨ فلتر العملة
 
   @override
   void initState() {
@@ -52,18 +59,23 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   }
 
   void _showFilterSheet() {
+    HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(ResponsiveUtils.largeRadius),
+        ),
       ),
-      builder: (context) => _FilterSheet(
+      builder: (context) => AssociationsFilterSheet(
         showOnlyActive: _showOnlyActive,
         selectedRepresentativeId: _selectedRepresentativeId,
-        onApply: (showActive, repId) {
+        selectedCurrency: _selectedCurrency,
+        onApply: (showActive, repId, currency) {
           setState(() {
             _showOnlyActive = showActive;
             _selectedRepresentativeId = repId;
+            _selectedCurrency = currency;
           });
           Navigator.pop(context);
         },
@@ -76,7 +88,13 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const AssociationFormBottomSheet(),
+      builder: (context) => Hero(
+        tag: 'association_new',
+        child: Material(
+          type: MaterialType.transparency,
+          child: const AssociationFormBottomSheet(),
+        ),
+      ),
     ).then((created) {
       if (created == true) {
         ref.read(associationsProvider.notifier).loadAssociations();
@@ -88,17 +106,34 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   Widget build(BuildContext context) {
     final state = ref.watch(associationsProvider);
     final colorScheme = Theme.of(context).colorScheme;
+    final isTablet = ResponsiveUtils.isTablet(context);
 
-    // تطبيق الفلاتر
+    // تطبيق الفلاتر والبحث المتقدم
     var filteredAssociations = state.associations;
 
     if (_searchQuery.isNotEmpty) {
-      filteredAssociations = filteredAssociations
-          .where((a) =>
-              a.name.toLowerCase().contains(_searchQuery) ||
-              (a.phone.toLowerCase().contains(_searchQuery)) ||
-              (a.shortName?.toLowerCase().contains(_searchQuery) ?? false))
-          .toList();
+      filteredAssociations = filteredAssociations.where((a) {
+        // البحث في الاسم
+        final nameMatch = a.name.toLowerCase().contains(_searchQuery);
+
+        // البحث في الاسم المختصر
+        final shortNameMatch = a.shortName?.toLowerCase().contains(_searchQuery) ?? false;
+
+        // البحث في الهاتف
+        final phoneMatch = a.phone.toLowerCase().contains(_searchQuery);
+
+        // البحث في اسم المندوب
+        final representative = state.representatives.where((r) => r.id == a.representativeId).firstOrNull;
+        final repMatch = representative?.name.toLowerCase().contains(_searchQuery) ?? false;
+
+        // البحث في اسم البنك
+        final bankMatch = a.bankName.toLowerCase().contains(_searchQuery);
+
+        // البحث في رقم الحساب
+        final accountMatch = a.accountNumber.toLowerCase().contains(_searchQuery);
+
+        return nameMatch || shortNameMatch || phoneMatch || repMatch || bankMatch || accountMatch;
+      }).toList();
     }
 
     if (_showOnlyActive) {
@@ -110,23 +145,49 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
           filteredAssociations.where((a) => a.representativeId == _selectedRepresentativeId).toList();
     }
 
+    if (_selectedCurrency != null) {
+      filteredAssociations = filteredAssociations.where((a) => a.accountCurrency == _selectedCurrency).toList();
+    }
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: CustomAppBar(
         title: 'إدارة الجمعيات',
         showGradient: true,
         actions: [
-          IconButton(
-            icon: Icon(Icons.filter_list, color: Colors.white, size: 24.r),
+          AssociationsFilterButton(
             onPressed: _showFilterSheet,
-            tooltip: 'الفلاتر',
+            hasActiveFilters: !_showOnlyActive || _selectedRepresentativeId != null || _selectedCurrency != null,
           ),
         ],
       ),
       body: Column(
         children: [
           // شريط البحث
-          _buildSearchBar(colorScheme),
+          AssociationsSearchBar(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            searchQuery: _searchQuery,
+            showOnlyActive: _showOnlyActive,
+            selectedRepresentativeId: _selectedRepresentativeId,
+            selectedCurrency: _selectedCurrency,
+            onClearAll: () {
+              setState(() {
+                _searchQuery = '';
+                _showOnlyActive = true;
+                _selectedRepresentativeId = null;
+                _selectedCurrency = null;
+              });
+            },
+          ),
+
+          // ✨ عداد النتائج
+          if (filteredAssociations.isNotEmpty && !state.isLoading)
+            AssociationsResultCounter(
+              count: filteredAssociations.length,
+              hasActiveFilters:
+                  _searchQuery.isNotEmpty || _selectedRepresentativeId != null || _selectedCurrency != null,
+            ),
 
           // المحتوى الرئيسي
           Expanded(
@@ -134,74 +195,38 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
                 ? _buildSkeletonLoader()
                 : filteredAssociations.isEmpty
                     ? _buildEmptyState()
-                    : _buildAssociationsList(filteredAssociations),
+                    : RefreshIndicator(
+                        onRefresh: () async {
+                          await ref.read(associationsProvider.notifier).loadAssociations();
+                        },
+                        color: colorScheme.primary,
+                        backgroundColor: Colors.white,
+                        child: _buildAssociationsList(filteredAssociations),
+                      ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddAssociationSheet,
-        icon: Icon(Icons.add, size: 24.r),
-        label: Text('إضافة جمعية', style: TextStyle(fontSize: 14.sp)),
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+          _showAddAssociationSheet();
+        },
+        icon: Icon(
+          Icons.add_business,
+          size: isTablet ? 24.r : 20.r,
+        ),
+        label: Text(
+          'إضافة جمعية',
+          style: TextStyle(
+            fontSize: isTablet ? ResponsiveUtils.mediumFont : ResponsiveUtils.bodyFont,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: colorScheme.primary,
-      ),
-    );
-  }
-
-  /// شريط البحث
-  Widget _buildSearchBar(ColorScheme colorScheme) {
-    return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              onChanged: _onSearchChanged,
-              textAlign: TextAlign.right,
-              decoration: InputDecoration(
-                hintText: 'بحث عن جمعية...',
-                hintStyle: TextStyle(fontSize: 14.sp, color: Colors.grey),
-                prefixIcon: Icon(Icons.search, color: colorScheme.primary, size: 24.r),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 16.w,
-                  vertical: 12.h,
-                ),
-              ),
-            ),
-          ),
-          if (_searchQuery.isNotEmpty || !_showOnlyActive || _selectedRepresentativeId != null)
-            Padding(
-              padding: EdgeInsets.only(right: 8.w),
-              child: IconButton(
-                icon: Icon(Icons.clear, size: 24.r),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    _searchQuery = '';
-                    _showOnlyActive = true;
-                    _selectedRepresentativeId = null;
-                  });
-                },
-                tooltip: 'مسح البحث',
-              ),
-            ),
-        ],
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(ResponsiveUtils.largeRadius),
+        ),
       ),
     );
   }
@@ -222,7 +247,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       return CustomEmptyState(
         icon: Icons.search_off,
         title: 'لم يتم العثور على نتائج',
-        message: 'لم يتم العثور على جمعيات تطابق "فيلتر $_searchQuery"',
+        message: 'لم يتم العثور على جمعيات تطابق "$_searchQuery"',
         actionLabel: 'مسح البحث',
         onAction: () {
           _searchController.clear();
@@ -231,12 +256,8 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       );
     }
 
-    return CustomEmptyState(
-      icon: Icons.business_outlined,
-      title: 'لا توجد جمعيات',
-      message: 'قم بإضافة جمعية جديدة للبدء',
-      actionLabel: 'إضافة جمعية',
-      onAction: _showAddAssociationSheet,
+    return AssociationsEmptyState(
+      onAddPressed: _showAddAssociationSheet,
     );
   }
 
@@ -248,6 +269,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
       itemCount: associations.length,
       separatorBuilder: (_, __) => SizedBox(height: responsive.spacing),
+      physics: const BouncingScrollPhysics(),
       itemBuilder: (context, index) {
         final association = associations[index];
         final representative = ref
@@ -314,157 +336,5 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
         );
       }
     }
-  }
-}
-
-/// ورقة الفلاتر - FIXED PERFORMANCE
-/// 🚀 المشكلة: ConsumerWidget + ValueNotifier في build تُنشأ في كل rebuild
-/// ✅ الحل: StatefulWidget مع ValueNotifiers في initState
-class _FilterSheet extends StatefulWidget {
-  final bool showOnlyActive;
-  final String? selectedRepresentativeId;
-  final Function(bool, String?) onApply;
-
-  const _FilterSheet({
-    required this.showOnlyActive,
-    required this.selectedRepresentativeId,
-    required this.onApply,
-  });
-
-  @override
-  State<_FilterSheet> createState() => _FilterSheetState();
-}
-
-class _FilterSheetState extends State<_FilterSheet> {
-  late final ValueNotifier<bool> showActiveNotifier;
-  late final ValueNotifier<String?> selectedRepNotifier;
-
-  @override
-  void initState() {
-    super.initState();
-    showActiveNotifier = ValueNotifier<bool>(widget.showOnlyActive);
-    selectedRepNotifier = ValueNotifier<String?>(widget.selectedRepresentativeId);
-  }
-
-  @override
-  void dispose() {
-    showActiveNotifier.dispose();
-    selectedRepNotifier.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.largeSpace),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // عنوان
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-              Text(
-                'الفلاتر',
-                style: TextStyle(
-                  fontSize: ResponsiveUtils.titleFont,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 48),
-            ],
-          ),
-
-          SizedBox(height: ResponsiveUtils.largeSpace),
-
-          // فلتر النشطة فقط
-          ValueListenableBuilder<bool>(
-            valueListenable: showActiveNotifier,
-            builder: (context, showActive, _) => SwitchListTile(
-              value: showActive,
-              onChanged: (value) => showActiveNotifier.value = value,
-              title: const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
-              activeColor: colorScheme.primary,
-            ),
-          ),
-
-          SizedBox(height: ResponsiveUtils.mediumSpace),
-
-          // فلتر المندوب
-          Text(
-            'تصفية حسب المندوب',
-            style: TextStyle(
-              fontSize: ResponsiveUtils.bodyFont,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.right,
-          ),
-
-          SizedBox(height: ResponsiveUtils.smallSpace),
-
-          // Consumer فقط لقراءة الـ representatives
-          Consumer(
-            builder: (context, ref, child) {
-              final representatives = ref.watch(associationsProvider).representatives;
-
-              return ValueListenableBuilder<String?>(
-                valueListenable: selectedRepNotifier,
-                builder: (context, selectedRep, _) => DropdownButtonFormField<String?>(
-                  value: selectedRep,
-                  decoration: InputDecoration(
-                    hintText: 'اختر المندوب',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: ResponsiveUtils.mediumSpace,
-                      vertical: 12.h,
-                    ),
-                  ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('الكل')),
-                    ...representatives.map(
-                      (rep) => DropdownMenuItem(
-                        value: rep.id,
-                        child: Text(rep.name, textAlign: TextAlign.right),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) => selectedRepNotifier.value = value,
-                ),
-              );
-            },
-          ),
-
-          SizedBox(height: ResponsiveUtils.largeSpace),
-
-          // زر التطبيق
-          ElevatedButton(
-            onPressed: () => widget.onApply(showActiveNotifier.value, selectedRepNotifier.value),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-              ),
-            ),
-            child: Text(
-              'تطبيق الفلاتر',
-              style: TextStyle(
-                fontSize: ResponsiveUtils.mediumFont,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

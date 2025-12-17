@@ -93,83 +93,88 @@ class ResponsiveBottomSheet extends StatelessWidget {
       maxChildSize: maxChildSize,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Drag Handle
-              if (showDragHandle)
-                Center(
-                  child: Container(
-                    margin: EdgeInsets.symmetric(vertical: 12.h),
-                    width: 40.w,
-                    height: 4.h,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2.r),
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Drag Handle
+                if (showDragHandle)
+                  Center(
+                    child: Container(
+                      margin: EdgeInsets.symmetric(vertical: 12.h),
+                      width: 40.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
                     ),
                   ),
-                ),
 
-              // Header
-              if (title != null || titleWidget != null)
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  child: Row(
-                    children: [
-                      // Icon
-                      if (icon != null && titleWidget == null) ...[
-                        Icon(
-                          icon,
-                          color: theme.colorScheme.primary,
-                          size: 24.sp,
-                        ),
-                        SizedBox(width: 12.w),
-                      ],
+                // Header
+                if (title != null || titleWidget != null)
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16.w,
+                      vertical: 8.h,
+                    ),
+                    child: Row(
+                      children: [
+                        // Icon
+                        if (icon != null && titleWidget == null) ...[
+                          Icon(
+                            icon,
+                            color: theme.colorScheme.primary,
+                            size: 24.sp,
+                          ),
+                          SizedBox(width: 12.w),
+                        ],
 
-                      // Title
-                      Expanded(
-                        child: titleWidget ??
-                            Text(
-                              title!,
-                              style: TextStyle(
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.bold,
+                        // Title
+                        Expanded(
+                          child: titleWidget ??
+                              Text(
+                                title!,
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                      ),
-
-                      // Actions
-                      if (actions != null) ...actions!,
-
-                      // Close Button
-                      if (showCloseButton)
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                          tooltip: 'إغلاق',
                         ),
-                    ],
+
+                        // Actions
+                        if (actions != null) ...actions!,
+
+                        // Close Button
+                        if (showCloseButton)
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                            tooltip: 'إغلاق',
+                          ),
+                      ],
+                    ),
                   ),
+
+                if (title != null || titleWidget != null) const Divider(height: 1),
+
+                // Content
+                Expanded(
+                  child: builder != null ? builder!(scrollController) : child!,
                 ),
-
-              if (title != null || titleWidget != null) const Divider(height: 1),
-
-              // Content
-              Expanded(
-                child: builder != null ? builder!(scrollController) : child!,
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

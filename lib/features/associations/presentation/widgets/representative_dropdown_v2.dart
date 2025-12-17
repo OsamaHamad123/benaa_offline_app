@@ -11,19 +11,23 @@ import '../providers/associations_provider.dart';
 /// ✅ ResponsiveUtils
 /// ✅ Theme موحد
 /// ✅ ValueNotifier بدلاً من setState (تحسين performance)
-class RepresentativeDropdownV2 extends ConsumerWidget {
+/// 🚀 NO REF.WATCH - يستقبل representatives كـ parameter (performance optimization)
+class RepresentativeDropdownV2 extends StatelessWidget {
   final String? selectedId;
   final ValueChanged<String?> onChanged;
+  final List<dynamic> representatives;
+  final VoidCallback onAddNew;
 
   const RepresentativeDropdownV2({
     super.key,
     required this.selectedId,
     required this.onChanged,
+    required this.representatives,
+    required this.onAddNew,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final representatives = ref.watch(associationsProvider).representatives;
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Column(
@@ -44,11 +48,15 @@ class RepresentativeDropdownV2 extends ConsumerWidget {
             ),
           ),
           items: representatives
-              .map((rep) => DropdownMenuItem(
+              .map((rep) => DropdownMenuItem<String?>(
                     value: rep.id,
                     child: Text(rep.name, textAlign: TextAlign.right),
                   ))
               .toList(),
+          onTap: () {
+            // 🚀 Unfocus لتحسين الأداء عند فتح dropdown
+            FocusScope.of(context).unfocus();
+          },
           onChanged: onChanged,
           validator: (value) {
             if (value == null) {
@@ -62,7 +70,7 @@ class RepresentativeDropdownV2 extends ConsumerWidget {
 
         // زر إضافة مندوب جديد
         TextButton.icon(
-          onPressed: () => _showAddRepresentativeSheet(context, ref),
+          onPressed: onAddNew,
           icon: Icon(Icons.add, size: 18.r, color: colorScheme.primary),
           label: Text(
             'إضافة مندوب جديد',
@@ -73,19 +81,6 @@ class RepresentativeDropdownV2 extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  void _showAddRepresentativeSheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _AddRepresentativeBottomSheet(
-        onAdded: (rep) {
-          onChanged(rep.id);
-        },
-      ),
     );
   }
 }
