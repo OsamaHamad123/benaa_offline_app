@@ -578,6 +578,10 @@ class _DashboardHome extends ConsumerWidget {
               HapticPatterns.selection();
               context.push('/visits');
             },
+            onAssociationsTap: () {
+              HapticPatterns.selection();
+              context.push('/associations');
+            },
             syncBadge: stats.pendingSync,
             reportsBadge: null,
           ),

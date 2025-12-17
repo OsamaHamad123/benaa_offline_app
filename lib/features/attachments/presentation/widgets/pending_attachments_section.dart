@@ -551,7 +551,7 @@ class _PendingFileCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.9),
                           shape: BoxShape.circle,
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black26,
                               blurRadius: 2,

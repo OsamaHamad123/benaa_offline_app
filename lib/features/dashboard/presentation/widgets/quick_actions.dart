@@ -183,8 +183,10 @@ class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onReportsTap;
   final VoidCallback? onCivilRegistryTap;
   final VoidCallback? onVisitsTap;
+  final VoidCallback? onAssociationsTap;
   final int? syncBadge;
   final int? reportsBadge;
+  final int? associationsBadge;
 
   const QuickActionsGrid({
     super.key,
@@ -194,8 +196,10 @@ class QuickActionsGrid extends StatelessWidget {
     this.onReportsTap,
     this.onCivilRegistryTap,
     this.onVisitsTap,
+    this.onAssociationsTap,
     this.syncBadge,
     this.reportsBadge,
+    this.associationsBadge,
   });
 
   @override
@@ -262,6 +266,14 @@ class QuickActionsGrid extends StatelessWidget {
             icon: Icons.event_note_rounded,
             color: AppColors.accent,
             onTap: onVisitsTap!,
+          ),
+        if (onAssociationsTap != null)
+          QuickActionCard(
+            label: 'الجمعيات',
+            icon: Icons.business_rounded,
+            color: const Color(0xFF9C27B0), // Purple
+            badge: associationsBadge,
+            onTap: onAssociationsTap!,
           ),
       ],
     );

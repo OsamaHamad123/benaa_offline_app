@@ -7,15 +7,15 @@ part of 'taxonomy_dto.dart';
 // **************************************************************************
 
 TaxonomyDTO _$TaxonomyDTOFromJson(Map<String, dynamic> json) => TaxonomyDTO(
-  id: json['id'] as String,
-  group: json['group'] as String,
-  code: json['code'] as String,
-  label: json['label'] as String,
-  parentId: json['parent_id'] as String?,
-  sortOrder: (json['sort_order'] as num).toInt(),
-  isActive: json['is_active'] as bool,
-  updatedAt: DateTime.parse(json['updated_at'] as String),
-);
+      id: json['id'] as String,
+      group: json['group'] as String,
+      code: json['code'] as String,
+      label: json['label'] as String,
+      parentId: json['parent_id'] as String?,
+      sortOrder: (json['sort_order'] as num).toInt(),
+      isActive: json['is_active'] as bool,
+      updatedAt: DateTime.parse(json['updated_at'] as String),
+    );
 
 Map<String, dynamic> _$TaxonomyDTOToJson(TaxonomyDTO instance) =>
     <String, dynamic>{

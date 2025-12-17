@@ -26,6 +26,7 @@ import '../features/reports/reports_page.dart';
 import '../features/reports/presentation/pages/beneficiaries_report_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../features/visits/presentation/pages/visits_list_page_m3.dart';
+import '../features/associations/presentation/pages/associations_list_page_v2.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
 import '../core/settings/enhanced_settings_page.dart';
 import '../core/storage/secure_store.dart';
@@ -224,6 +225,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/visits',
         builder: (context, state) => const VisitsListPageM3(),
+      ),
+      GoRoute(
+        path: '/associations',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const AssociationsListPageV2(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
       ),
       GoRoute(
         path: '/activities',

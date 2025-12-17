@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:benaa_offline_app/data/db/tables/associations_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
@@ -19,6 +20,7 @@ import 'daos/taxonomies_dao.dart';
 import 'daos/sync_metadata_dao.dart';
 import 'daos/family_deceased_dao.dart';
 import 'daos/family_members_dao.dart';
+import 'daos/associations_dao.dart';
 
 part 'drift_database.g.dart';
 
@@ -34,6 +36,8 @@ part 'drift_database.g.dart';
     Activities,
     FamilyDeceasedTable,
     FamilyMembersTable,
+    Associations,
+    AssociationRepresentatives,
   ],
   daos: [
     BeneficiariesDao,
@@ -46,6 +50,7 @@ part 'drift_database.g.dart';
     SyncMetadataDao,
     FamilyDeceasedDao,
     FamilyMembersDao,
+    AssociationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -245,8 +250,7 @@ extension BeneficiaryExtension on Beneficiary {
     if (birthDate == null) return null;
     final now = DateTime.now();
     var age = now.year - birthDate!.year;
-    if (now.month < birthDate!.month ||
-        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+    if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
       age--;
     }
     return age;
