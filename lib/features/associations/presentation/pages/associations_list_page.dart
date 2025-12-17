@@ -187,10 +187,9 @@ class _AssociationsListPageState extends ConsumerState<AssociationsListPage> {
                               itemCount: state.associations.length,
                               itemBuilder: (context, index) {
                                 final association = state.associations[index];
-                                final representative = state.representatives.firstWhere(
-                                  (r) => r.id == association.representativeId,
-                                  orElse: () => null as dynamic,
-                                );
+                                final representative = state.representatives
+                                    .where((r) => r.id == association.representativeId)
+                                    .firstOrNull;
 
                                 return AssociationCard(
                                   association: association,

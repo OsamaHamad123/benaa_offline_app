@@ -156,221 +156,288 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
       title: isEditing ? 'تعديل الجمعية' : 'إضافة جمعية جديدة',
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
+        child: SafeArea(
+          minimum: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+            left: ResponsiveUtils.mediumSpace,
+            right: ResponsiveUtils.mediumSpace,
           ),
-          child: Column(
-            children: [
-              // الاسم
-              TextFormField(
-                controller: _nameController,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'اسم الجمعية *',
-                  prefixIcon: Icon(Icons.business, size: 20.r),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'الرجاء إدخال اسم الجمعية';
-                  }
-                  return null;
-                },
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // الاسم المختصر
-              TextFormField(
-                controller: _shortNameController,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'الاسم المختصر',
-                  prefixIcon: Icon(Icons.short_text, size: 20.r),
-                ),
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // الهاتف
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'رقم الهاتف *',
-                  prefixIcon: Icon(Icons.phone, size: 20.r),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'الرجاء إدخال رقم الهاتف';
-                  }
-                  return null;
-                },
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // البريد الإلكتروني
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'البريد الإلكتروني',
-                  prefixIcon: Icon(Icons.email, size: 20.r),
-                ),
-              ),
-
-              SizedBox(height: ResponsiveUtils.largeSpace),
-
-              // عنوان قسم البنك
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  'المعلومات البنكية',
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.mediumFont,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // اسم البنك
-              TextFormField(
-                controller: _bankNameController,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'اسم البنك *',
-                  prefixIcon: Icon(Icons.account_balance, size: 20.r),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'الرجاء إدخال اسم البنك';
-                  }
-                  return null;
-                },
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // رقم الحساب
-              TextFormField(
-                controller: _accountNumberController,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'رقم الحساب *',
-                  prefixIcon: Icon(Icons.credit_card, size: 20.r),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'الرجاء إدخال رقم الحساب';
-                  }
-                  return null;
-                },
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // SWIFT Code
-              TextFormField(
-                controller: _swiftCodeController,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'SWIFT Code',
-                  prefixIcon: Icon(Icons.code, size: 20.r),
-                ),
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // هاتف البنك
-              TextFormField(
-                controller: _bankPhoneController,
-                keyboardType: TextInputType.phone,
-                textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'هاتف البنك',
-                  prefixIcon: Icon(Icons.phone_in_talk, size: 20.r),
-                ),
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // العملة
-              DropdownButtonFormField<String>(
-                value: _selectedCurrency,
-                decoration: InputDecoration(
-                  labelText: 'عملة الحساب *',
-                  prefixIcon: Icon(Icons.attach_money, size: 20.r),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
-                  DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
-                  DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _selectedCurrency = value);
-                  }
-                },
-              ),
-
-              SizedBox(height: ResponsiveUtils.largeSpace),
-
-              // المندوب
-              RepresentativeDropdownV2(
-                selectedId: _selectedRepresentativeId,
-                onChanged: (value) => setState(() => _selectedRepresentativeId = value),
-              ),
-
-              SizedBox(height: ResponsiveUtils.mediumSpace),
-
-              // حالة الجمعية
-              SwitchListTile(
-                value: _isActive,
-                onChanged: (value) => setState(() => _isActive = value),
-                title: const Text('الجمعية نشطة', textAlign: TextAlign.right),
-                activeColor: colorScheme.primary,
-              ),
-
-              SizedBox(height: ResponsiveUtils.largeSpace),
-
-              // زر الحفظ
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    padding: EdgeInsets.symmetric(vertical: 16.h),
-                    shape: RoundedRectangleBorder(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // الاسم
+                TextFormField(
+                  controller: _nameController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'اسم الجمعية *',
+                    prefixIcon: Icon(Icons.business, size: 20.r),
+                    border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                     ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
                   ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20.h,
-                          width: 20.w,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          isEditing ? 'تحديث' : 'إضافة',
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.mediumFont,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'الرجاء إدخال اسم الجمعية';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-            ],
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // الاسم المختصر
+                TextFormField(
+                  controller: _shortNameController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'الاسم المختصر',
+                    prefixIcon: Icon(Icons.short_text, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // الهاتف
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'رقم الهاتف *',
+                    prefixIcon: Icon(Icons.phone, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'الرجاء إدخال رقم الهاتف';
+                    }
+                    return null;
+                  },
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // البريد الإلكتروني
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'البريد الإلكتروني',
+                    prefixIcon: Icon(Icons.email, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: ResponsiveUtils.largeSpace),
+
+                // عنوان قسم البنك
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'المعلومات البنكية',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.mediumFont,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // اسم البنك
+                TextFormField(
+                  controller: _bankNameController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'اسم البنك *',
+                    prefixIcon: Icon(Icons.account_balance, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'الرجاء إدخال اسم البنك';
+                    }
+                    return null;
+                  },
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // رقم الحساب
+                TextFormField(
+                  controller: _accountNumberController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'رقم الحساب *',
+                    prefixIcon: Icon(Icons.credit_card, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'الرجاء إدخال رقم الحساب';
+                    }
+                    return null;
+                  },
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // SWIFT Code
+                TextFormField(
+                  controller: _swiftCodeController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'SWIFT Code',
+                    prefixIcon: Icon(Icons.code, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // هاتف البنك
+                TextFormField(
+                  controller: _bankPhoneController,
+                  keyboardType: TextInputType.phone,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'هاتف البنك',
+                    prefixIcon: Icon(Icons.phone_in_talk, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // العملة
+                DropdownButtonFormField<String>(
+                  value: _selectedCurrency,
+                  decoration: InputDecoration(
+                    labelText: 'عملة الحساب *',
+                    prefixIcon: Icon(Icons.attach_money, size: 20.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
+                    DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
+                    DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedCurrency = value);
+                    }
+                  },
+                ),
+
+                SizedBox(height: ResponsiveUtils.largeSpace),
+
+                // المندوب
+                RepresentativeDropdownV2(
+                  selectedId: _selectedRepresentativeId,
+                  onChanged: (value) => setState(() => _selectedRepresentativeId = value),
+                ),
+
+                SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                // حالة الجمعية
+                SwitchListTile(
+                  value: _isActive,
+                  onChanged: (value) => setState(() => _isActive = value),
+                  title: const Text('الجمعية نشطة', textAlign: TextAlign.right),
+                  activeColor: colorScheme.primary,
+                ),
+
+                SizedBox(height: ResponsiveUtils.largeSpace),
+
+                // زر الحفظ
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? SizedBox(
+                            height: 20.h,
+                            width: 20.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            isEditing ? 'تحديث' : 'إضافة',
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.mediumFont,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -317,7 +317,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   }
 }
 
-/// ورقة الفلاتر
+/// ورقة الفلاتر - محسّنة بـ ValueNotifier بدلاً من setState
 class _FilterSheet extends ConsumerWidget {
   final bool showOnlyActive;
   final String? selectedRepresentativeId;
@@ -334,65 +334,73 @@ class _FilterSheet extends ConsumerWidget {
     final representatives = ref.watch(associationsProvider).representatives;
     final colorScheme = Theme.of(context).colorScheme;
 
-    bool showActive = showOnlyActive;
-    String? selectedRep = selectedRepresentativeId;
+    final showActiveNotifier = ValueNotifier<bool>(showOnlyActive);
+    final selectedRepNotifier = ValueNotifier<String?>(selectedRepresentativeId);
 
-    return StatefulBuilder(
-      builder: (context, setState) => Container(
-        padding: EdgeInsets.all(ResponsiveUtils.largeSpace),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // عنوان
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+    return Container(
+      padding: EdgeInsets.all(ResponsiveUtils.largeSpace),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // عنوان
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+              Text(
+                'الفلاتر',
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.titleFont,
+                  fontWeight: FontWeight.bold,
                 ),
-                Text(
-                  'الفلاتر',
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.titleFont,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 48),
-              ],
-            ),
+              ),
+              const SizedBox(width: 48),
+            ],
+          ),
 
-            SizedBox(height: ResponsiveUtils.largeSpace),
+          SizedBox(height: ResponsiveUtils.largeSpace),
 
-            // فلتر النشطة فقط
-            SwitchListTile(
+          // فلتر النشطة فقط
+          ValueListenableBuilder<bool>(
+            valueListenable: showActiveNotifier,
+            builder: (context, showActive, _) => SwitchListTile(
               value: showActive,
-              onChanged: (value) => setState(() => showActive = value),
+              onChanged: (value) => showActiveNotifier.value = value,
               title: const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
               activeColor: colorScheme.primary,
             ),
+          ),
 
-            SizedBox(height: ResponsiveUtils.mediumSpace),
+          SizedBox(height: ResponsiveUtils.mediumSpace),
 
-            // فلتر المندوب
-            Text(
-              'تصفية حسب المندوب',
-              style: TextStyle(
-                fontSize: ResponsiveUtils.bodyFont,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.right,
+          // فلتر المندوب
+          Text(
+            'تصفية حسب المندوب',
+            style: TextStyle(
+              fontSize: ResponsiveUtils.bodyFont,
+              fontWeight: FontWeight.w600,
             ),
+            textAlign: TextAlign.right,
+          ),
 
-            SizedBox(height: ResponsiveUtils.smallSpace),
+          SizedBox(height: ResponsiveUtils.smallSpace),
 
-            DropdownButtonFormField<String?>(
+          ValueListenableBuilder<String?>(
+            valueListenable: selectedRepNotifier,
+            builder: (context, selectedRep, _) => DropdownButtonFormField<String?>(
               value: selectedRep,
               decoration: InputDecoration(
                 hintText: 'اختر المندوب',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.mediumSpace,
+                  vertical: 12.h,
                 ),
               ),
               items: [
@@ -404,31 +412,31 @@ class _FilterSheet extends ConsumerWidget {
                   ),
                 ),
               ],
-              onChanged: (value) => setState(() => selectedRep = value),
+              onChanged: (value) => selectedRepNotifier.value = value,
             ),
+          ),
 
-            SizedBox(height: ResponsiveUtils.largeSpace),
+          SizedBox(height: ResponsiveUtils.largeSpace),
 
-            // زر التطبيق
-            ElevatedButton(
-              onPressed: () => onApply(showActive, selectedRep),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                padding: EdgeInsets.symmetric(vertical: 16.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                ),
-              ),
-              child: Text(
-                'تطبيق الفلاتر',
-                style: TextStyle(
-                  fontSize: ResponsiveUtils.mediumFont,
-                  color: Colors.white,
-                ),
+          // زر التطبيق
+          ElevatedButton(
+            onPressed: () => onApply(showActiveNotifier.value, selectedRepNotifier.value),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
             ),
-          ],
-        ),
+            child: Text(
+              'تطبيق الفلاتر',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.mediumFont,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

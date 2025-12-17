@@ -10,6 +10,7 @@ import '../providers/associations_provider.dart';
 /// ✅ استخدام ResponsiveBottomSheet لإضافة مندوب
 /// ✅ ResponsiveUtils
 /// ✅ Theme موحد
+/// ✅ ValueNotifier بدلاً من setState (تحسين performance)
 class RepresentativeDropdownV2 extends ConsumerWidget {
   final String? selectedId;
   final ValueChanged<String?> onChanged;
@@ -36,6 +37,10 @@ class RepresentativeDropdownV2 extends ConsumerWidget {
             prefixIcon: Icon(Icons.person, size: 20.r),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: ResponsiveUtils.mediumSpace,
+              vertical: 12.h,
             ),
           ),
           items: representatives
@@ -85,71 +90,61 @@ class RepresentativeDropdownV2 extends ConsumerWidget {
   }
 }
 
-/// ورقة إضافة مندوب جديد
-class _AddRepresentativeBottomSheet extends ConsumerStatefulWidget {
+/// ورقة إضافة مندوب جديد - محسّنة بـ ValueNotifier
+class _AddRepresentativeBottomSheet extends ConsumerWidget {
   final Function(dynamic) onAdded;
 
   const _AddRepresentativeBottomSheet({required this.onAdded});
 
   @override
-  ConsumerState<_AddRepresentativeBottomSheet> createState() => __AddRepresentativeBottomSheetState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final isLoadingNotifier = ValueNotifier<bool>(false);
+    final colorScheme = Theme.of(context).colorScheme;
 
-class __AddRepresentativeBottomSheetState extends ConsumerState<_AddRepresentativeBottomSheet> {
-  final _nameController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _isLoading = false;
+    Future<void> submit() async {
+      if (!formKey.currentState!.validate()) return;
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
-  }
+      isLoadingNotifier.value = true;
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+      try {
+        final rep = await ref.read(associationsProvider.notifier).createRepresentative(nameController.text.trim());
 
-    setState(() => _isLoading = true);
-
-    try {
-      final rep = await ref.read(associationsProvider.notifier).createRepresentative(_nameController.text.trim());
-
-      if (rep != null && mounted) {
-        Navigator.pop(context);
-        widget.onAdded(rep);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إضافة المندوب بنجاح')),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('فشل إضافة المندوب')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+        if (context.mounted) {
+          if (rep != null) {
+            Navigator.pop(context);
+            onAdded(rep);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('تم إضافة المندوب بنجاح')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('فشل إضافة المندوب')),
+            );
+          }
+        }
+      } finally {
+        isLoadingNotifier.value = false;
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
 
     return ResponsiveBottomSheet(
       title: 'إضافة مندوب جديد',
       child: Form(
-        key: _formKey,
-        child: Padding(
-          padding: EdgeInsets.only(
+        key: formKey,
+        child: SafeArea(
+          minimum: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+            left: ResponsiveUtils.mediumSpace,
+            right: ResponsiveUtils.mediumSpace,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // اسم المندوب
               TextFormField(
-                controller: _nameController,
+                controller: nameController,
                 textAlign: TextAlign.right,
                 autofocus: true,
                 decoration: InputDecoration(
@@ -157,6 +152,10 @@ class __AddRepresentativeBottomSheetState extends ConsumerState<_AddRepresentati
                   prefixIcon: Icon(Icons.person, size: 20.r),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.mediumSpace,
+                    vertical: 12.h,
                   ),
                 ),
                 validator: (value) {
@@ -170,34 +169,37 @@ class __AddRepresentativeBottomSheetState extends ConsumerState<_AddRepresentati
               SizedBox(height: ResponsiveUtils.largeSpace),
 
               // زر الحفظ
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary,
-                    padding: EdgeInsets.symmetric(vertical: 16.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ValueListenableBuilder<bool>(
+                valueListenable: isLoadingNotifier,
+                builder: (context, isLoading, _) => SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                      ),
                     ),
+                    child: isLoading
+                        ? SizedBox(
+                            height: 20.h,
+                            width: 20.w,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'إضافة',
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.mediumFont,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20.h,
-                          width: 20.w,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'إضافة',
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.mediumFont,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                 ),
               ),
             ],
