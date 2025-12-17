@@ -90,49 +90,81 @@ class RepresentativeDropdownV2 extends ConsumerWidget {
   }
 }
 
-/// ورقة إضافة مندوب جديد - محسّنة بـ ValueNotifier
-class _AddRepresentativeBottomSheet extends ConsumerWidget {
+/// ورقة إضافة مندوب جديد - FIXED PERFORMANCE
+/// 🚀 المشكلة: ConsumerWidget يعيد البناء باستمرار من Provider
+/// ✅ الحل: StatefulWidget مع Controllers ثابتة
+class _AddRepresentativeBottomSheet extends StatefulWidget {
   final Function(dynamic) onAdded;
 
   const _AddRepresentativeBottomSheet({required this.onAdded});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final isLoadingNotifier = ValueNotifier<bool>(false);
-    final colorScheme = Theme.of(context).colorScheme;
+  State<_AddRepresentativeBottomSheet> createState() => _AddRepresentativeBottomSheetState();
+}
 
-    Future<void> submit() async {
-      if (!formKey.currentState!.validate()) return;
+class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomSheet> {
+  // Controllers - يُنشأ مرة واحدة فقط في initState
+  late final TextEditingController _nameController;
+  late final GlobalKey<FormState> _formKey;
+  late final ValueNotifier<bool> _isLoadingNotifier;
 
-      isLoadingNotifier.value = true;
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _formKey = GlobalKey<FormState>();
+    _isLoadingNotifier = ValueNotifier<bool>(false);
+  }
 
-      try {
-        final rep = await ref.read(associationsProvider.notifier).createRepresentative(nameController.text.trim());
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _isLoadingNotifier.dispose();
+    super.dispose();
+  }
 
-        if (context.mounted) {
-          if (rep != null) {
-            Navigator.pop(context);
-            onAdded(rep);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم إضافة المندوب بنجاح')),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('فشل إضافة المندوب')),
-            );
-          }
-        }
-      } finally {
-        isLoadingNotifier.value = false;
+  Future<void> _submit(WidgetRef ref) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    _isLoadingNotifier.value = true;
+
+    try {
+      final rep = await ref.read(associationsProvider.notifier).createRepresentative(_nameController.text.trim());
+
+      if (!mounted) return;
+
+      if (rep != null) {
+        Navigator.pop(context);
+        widget.onAdded(rep);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم إضافة المندوب بنجاح')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فشل إضافة المندوب')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        _isLoadingNotifier.value = false;
       }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return ResponsiveBottomSheet(
       title: 'إضافة مندوب جديد',
       child: Form(
-        key: formKey,
+        key: _formKey,
         child: SafeArea(
           minimum: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
@@ -144,9 +176,10 @@ class _AddRepresentativeBottomSheet extends ConsumerWidget {
             children: [
               // اسم المندوب
               TextFormField(
-                controller: nameController,
+                controller: _nameController,
                 textAlign: TextAlign.right,
                 autofocus: true,
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   labelText: 'اسم المندوب *',
                   prefixIcon: Icon(Icons.person, size: 20.r),
@@ -168,39 +201,45 @@ class _AddRepresentativeBottomSheet extends ConsumerWidget {
 
               SizedBox(height: ResponsiveUtils.largeSpace),
 
-              // زر الحفظ
-              ValueListenableBuilder<bool>(
-                valueListenable: isLoadingNotifier,
-                builder: (context, isLoading, _) => SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                      ),
-                    ),
-                    child: isLoading
-                        ? SizedBox(
-                            height: 20.h,
-                            width: 20.w,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Text(
-                            'إضافة',
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.mediumFont,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+              // زر الحفظ - Consumer فقط للـ submit
+              Consumer(
+                builder: (context, ref, child) {
+                  return ValueListenableBuilder<bool>(
+                    valueListenable: _isLoadingNotifier,
+                    builder: (context, isLoading, _) {
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isLoading ? null : () => _submit(ref),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            padding: EdgeInsets.symmetric(vertical: 16.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                             ),
                           ),
-                  ),
-                ),
+                          child: isLoading
+                              ? SizedBox(
+                                  height: 20.h,
+                                  width: 20.w,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text(
+                                  'إضافة',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveUtils.mediumFont,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),

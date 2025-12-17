@@ -317,8 +317,10 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   }
 }
 
-/// ورقة الفلاتر - محسّنة بـ ValueNotifier بدلاً من setState
-class _FilterSheet extends ConsumerWidget {
+/// ورقة الفلاتر - FIXED PERFORMANCE
+/// 🚀 المشكلة: ConsumerWidget + ValueNotifier في build تُنشأ في كل rebuild
+/// ✅ الحل: StatefulWidget مع ValueNotifiers في initState
+class _FilterSheet extends StatefulWidget {
   final bool showOnlyActive;
   final String? selectedRepresentativeId;
   final Function(bool, String?) onApply;
@@ -330,12 +332,30 @@ class _FilterSheet extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final representatives = ref.watch(associationsProvider).representatives;
-    final colorScheme = Theme.of(context).colorScheme;
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
 
-    final showActiveNotifier = ValueNotifier<bool>(showOnlyActive);
-    final selectedRepNotifier = ValueNotifier<String?>(selectedRepresentativeId);
+class _FilterSheetState extends State<_FilterSheet> {
+  late final ValueNotifier<bool> showActiveNotifier;
+  late final ValueNotifier<String?> selectedRepNotifier;
+
+  @override
+  void initState() {
+    super.initState();
+    showActiveNotifier = ValueNotifier<bool>(widget.showOnlyActive);
+    selectedRepNotifier = ValueNotifier<String?>(widget.selectedRepresentativeId);
+  }
+
+  @override
+  void dispose() {
+    showActiveNotifier.dispose();
+    selectedRepNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: EdgeInsets.all(ResponsiveUtils.largeSpace),
@@ -389,38 +409,45 @@ class _FilterSheet extends ConsumerWidget {
 
           SizedBox(height: ResponsiveUtils.smallSpace),
 
-          ValueListenableBuilder<String?>(
-            valueListenable: selectedRepNotifier,
-            builder: (context, selectedRep, _) => DropdownButtonFormField<String?>(
-              value: selectedRep,
-              decoration: InputDecoration(
-                hintText: 'اختر المندوب',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                ),
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: ResponsiveUtils.mediumSpace,
-                  vertical: 12.h,
-                ),
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('الكل')),
-                ...representatives.map(
-                  (rep) => DropdownMenuItem(
-                    value: rep.id,
-                    child: Text(rep.name, textAlign: TextAlign.right),
+          // Consumer فقط لقراءة الـ representatives
+          Consumer(
+            builder: (context, ref, child) {
+              final representatives = ref.watch(associationsProvider).representatives;
+
+              return ValueListenableBuilder<String?>(
+                valueListenable: selectedRepNotifier,
+                builder: (context, selectedRep, _) => DropdownButtonFormField<String?>(
+                  value: selectedRep,
+                  decoration: InputDecoration(
+                    hintText: 'اختر المندوب',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: 12.h,
+                    ),
                   ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('الكل')),
+                    ...representatives.map(
+                      (rep) => DropdownMenuItem(
+                        value: rep.id,
+                        child: Text(rep.name, textAlign: TextAlign.right),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) => selectedRepNotifier.value = value,
                 ),
-              ],
-              onChanged: (value) => selectedRepNotifier.value = value,
-            ),
+              );
+            },
           ),
 
           SizedBox(height: ResponsiveUtils.largeSpace),
 
           // زر التطبيق
           ElevatedButton(
-            onPressed: () => onApply(showActiveNotifier.value, selectedRepNotifier.value),
+            onPressed: () => widget.onApply(showActiveNotifier.value, selectedRepNotifier.value),
             style: ElevatedButton.styleFrom(
               backgroundColor: colorScheme.primary,
               padding: EdgeInsets.symmetric(vertical: 16.h),
