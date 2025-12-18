@@ -27,6 +27,8 @@ import '../features/reports/presentation/pages/beneficiaries_report_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../features/visits/presentation/pages/visits_list_page_m3.dart';
 import '../features/associations/presentation/pages/associations_list_page_v2.dart';
+import '../features/kafalat/presentation/pages/kafalat_page.dart';
+import '../features/kafalat/presentation/pages/kafalat_import_page.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
 import '../core/settings/enhanced_settings_page.dart';
 import '../core/storage/secure_store.dart';
@@ -230,6 +232,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/associations',
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const AssociationsListPageV2(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/kafalat',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const KafalatPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/kafalat/import',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const KafalatImportPage(),
           state: state,
           type: PageTransitionType.slideFromRight,
         ),

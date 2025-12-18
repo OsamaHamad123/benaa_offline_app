@@ -21,6 +21,7 @@ import 'daos/sync_metadata_dao.dart';
 import 'daos/family_deceased_dao.dart';
 import 'daos/family_members_dao.dart';
 import 'daos/associations_dao.dart';
+import 'daos/sponsorships_dao.dart';
 
 part 'drift_database.g.dart';
 
@@ -38,6 +39,7 @@ part 'drift_database.g.dart';
     FamilyMembersTable,
     Associations,
     AssociationRepresentatives,
+    Sponsorships,
   ],
   daos: [
     BeneficiariesDao,
@@ -51,6 +53,7 @@ part 'drift_database.g.dart';
     FamilyDeceasedDao,
     FamilyMembersDao,
     AssociationsDao,
+    SponsorshipsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -64,29 +67,59 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+        await _createImportBatchesTable();
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
+        // Keep migrations incremental and non-destructive.
+
         if (from < 12) {
           // v12: Removed Civil Registry tables (moved to separate database)
-          // Just recreate indexes - tables already removed from schema
-          await _createPerformanceIndexes();
-        } else {
-          // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
-          for (final table in allTables) {
-            await m.deleteTable(table.actualTableName);
-          }
-          await m.createAll();
+          // Legacy upgrades are not expected in production, but keep indexes consistent.
           await _createPerformanceIndexes();
         }
+
+        if (from < 13) {
+          // v13: Add Sponsorships (Kafalat) table
+          await m.createTable(sponsorships);
+        }
+
+        if (from < 14) {
+          // v14: Add import_batches table (Excel import audit)
+          await _createImportBatchesTable();
+        }
+
+        await _createPerformanceIndexes();
       },
+    );
+  }
+
+  Future<void> _createImportBatchesTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS import_batches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_name TEXT,
+        imported_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        rows_total INTEGER NOT NULL DEFAULT 0,
+        rows_valid INTEGER NOT NULL DEFAULT 0,
+        rows_invalid INTEGER NOT NULL DEFAULT 0,
+        rows_duplicates INTEGER NOT NULL DEFAULT 0,
+        rows_inserted INTEGER NOT NULL DEFAULT 0,
+        rows_updated INTEGER NOT NULL DEFAULT 0,
+        rows_skipped INTEGER NOT NULL DEFAULT 0,
+        notes TEXT
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_import_batches_imported_at ON import_batches(imported_at DESC);',
     );
   }
 
@@ -221,6 +254,24 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(type);',
     );
 
+    // Sponsorships (Kafalat)
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_beneficiary ON sponsorships(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_association ON sponsorships(association_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_status ON sponsorships(status);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_beneficiary_status ON sponsorships(beneficiary_id, status);',
+    );
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_association_status ON sponsorships(association_id, status);',
+    );
+
     // Sync Queue - critical for sync performance
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity, created_at);',
@@ -236,11 +287,11 @@ class AppDatabase extends _$AppDatabase {
 
   // Civil registry database operations
   Future<void> attachCivilRegistry(String dbPath) async {
-    await customStatement("ATTACH DATABASE ? AS civil_registry", [dbPath]);
+    await customStatement('ATTACH DATABASE ? AS civil_registry', [dbPath]);
   }
 
   Future<void> detachCivilRegistry() async {
-    await customStatement("DETACH DATABASE civil_registry");
+    await customStatement('DETACH DATABASE civil_registry');
   }
 }
 
@@ -275,14 +326,14 @@ LazyDatabase openEncryptedDb() {
       file,
       setup: (db) {
         // Enable SQLCipher encryption
-        db.execute("PRAGMA key = '$key';");
-        db.execute("PRAGMA foreign_keys = ON;");
-        db.execute("PRAGMA journal_mode = WAL;");
+        db.execute('PRAGMA key = \'$key\';');
+        db.execute('PRAGMA foreign_keys = ON;');
+        db.execute('PRAGMA journal_mode = WAL;');
 
         // Performance optimizations
-        db.execute("PRAGMA synchronous = NORMAL;");
-        db.execute("PRAGMA temp_store = MEMORY;");
-        db.execute("PRAGMA mmap_size = 30000000000;");
+        db.execute('PRAGMA synchronous = NORMAL;');
+        db.execute('PRAGMA temp_store = MEMORY;');
+        db.execute('PRAGMA mmap_size = 30000000000;');
       },
     );
   });

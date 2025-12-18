@@ -272,95 +272,97 @@ class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBott
     return ResponsiveBottomSheet(
       title: isEditing ? 'تعديل الجمعية' : 'إضافة جمعية جديدة',
       icon: Icons.business, // ✨ أيقونة مميزة
-      child: Form(
-        key: _formKey,
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: ResponsiveUtils.mediumSpace,
-            right: ResponsiveUtils.mediumSpace,
-            top: ResponsiveUtils.smallSpace,
-            bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
-          ),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Basic Information Section
-                _BasicInfoSection(
-                  nameController: _nameController,
-                  shortNameController: _shortNameController,
-                  phoneController: _phoneController,
-                  emailController: _emailController,
-                  nameFocus: _nameFocus,
-                  shortNameFocus: _shortNameFocus,
-                  phoneFocus: _phoneFocus,
-                  emailFocus: _emailFocus,
-                  bankNameFocus: _bankNameFocus,
-                ),
+      useDraggableScrollableSheet: false,
+      builder: (scrollController) {
+        return Form(
+          key: _formKey,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: ResponsiveUtils.mediumSpace,
+              right: ResponsiveUtils.mediumSpace,
+              top: ResponsiveUtils.smallSpace,
+              bottom: ResponsiveUtils.mediumSpace,
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 720;
+                return Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: isWide ? 920 : double.infinity,
+                    ),
+                    child: ListView(
+                      controller: scrollController,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        // Basic Information Section
+                        _BasicInfoSection(
+                          nameController: _nameController,
+                          shortNameController: _shortNameController,
+                          phoneController: _phoneController,
+                          emailController: _emailController,
+                          nameFocus: _nameFocus,
+                          shortNameFocus: _shortNameFocus,
+                          phoneFocus: _phoneFocus,
+                          emailFocus: _emailFocus,
+                          bankNameFocus: _bankNameFocus,
+                        ),
 
-                SizedBox(height: ResponsiveUtils.largeSpace),
+                        SizedBox(height: ResponsiveUtils.largeSpace),
 
-                // ✨ Divider
-                Container(
-                  height: 1,
-                  margin: EdgeInsets.symmetric(vertical: 8.h),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.grey.shade300,
-                        Colors.transparent,
+                        const Divider(height: 1),
+
+                        SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                        // Bank Information Section
+                        _BankInfoSection(
+                          bankNameController: _bankNameController,
+                          accountNumberController: _accountNumberController,
+                          swiftCodeController: _swiftCodeController,
+                          bankPhoneController: _bankPhoneController,
+                          bankNameFocus: _bankNameFocus,
+                          accountNumberFocus: _accountNumberFocus,
+                          swiftCodeFocus: _swiftCodeFocus,
+                          bankPhoneFocus: _bankPhoneFocus,
+                        ),
+
+                        SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                        // Currency Dropdown
+                        _CurrencyDropdown(currencyNotifier: _selectedCurrencyNotifier),
+
+                        SizedBox(height: ResponsiveUtils.largeSpace),
+
+                        // Representative Dropdown
+                        _RepresentativeSection(
+                          representativeNotifier: _selectedRepresentativeNotifier,
+                        ),
+
+                        SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                        // Active Status Switch
+                        _ActiveStatusSwitch(isActiveNotifier: _isActiveNotifier),
+
+                        SizedBox(height: ResponsiveUtils.largeSpace),
+
+                        // Actions (Save / Cancel)
+                        _SubmitButton(
+                          isLoadingNotifier: _isLoadingNotifier,
+                          isEditing: isEditing,
+                          onPressed: _submit,
+                        ),
+
+                        SizedBox(height: ResponsiveUtils.mediumSpace),
                       ],
                     ),
                   ),
-                ),
-
-                SizedBox(height: ResponsiveUtils.mediumSpace),
-
-                // Bank Information Section
-                _BankInfoSection(
-                  bankNameController: _bankNameController,
-                  accountNumberController: _accountNumberController,
-                  swiftCodeController: _swiftCodeController,
-                  bankPhoneController: _bankPhoneController,
-                  bankNameFocus: _bankNameFocus,
-                  accountNumberFocus: _accountNumberFocus,
-                  swiftCodeFocus: _swiftCodeFocus,
-                  bankPhoneFocus: _bankPhoneFocus,
-                ),
-
-                SizedBox(height: ResponsiveUtils.mediumSpace),
-
-                // Currency Dropdown
-                _CurrencyDropdown(currencyNotifier: _selectedCurrencyNotifier),
-
-                SizedBox(height: ResponsiveUtils.largeSpace),
-
-                // Representative Dropdown
-                _RepresentativeSection(representativeNotifier: _selectedRepresentativeNotifier),
-
-                SizedBox(height: ResponsiveUtils.mediumSpace),
-
-                // Active Status Switch
-                _ActiveStatusSwitch(isActiveNotifier: _isActiveNotifier),
-
-                SizedBox(height: ResponsiveUtils.largeSpace),
-
-                // Submit Button
-                _SubmitButton(
-                  isLoadingNotifier: _isLoadingNotifier,
-                  isEditing: isEditing,
-                  onPressed: _submit,
-                ),
-
-                // ✨ مسافة إضافية في النهاية
-                SizedBox(height: ResponsiveUtils.mediumSpace),
-              ],
+                );
+              },
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -394,6 +396,39 @@ class _BasicInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isWide = ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
+
+    Widget wrapGrid(List<Widget> fields) {
+      if (!isWide) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < fields.length; i++) ...[
+              fields[i],
+              if (i != fields.length - 1) SizedBox(height: ResponsiveUtils.mediumSpace),
+            ],
+          ],
+        );
+      }
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final spacing = 12.w;
+          final colWidth = (constraints.maxWidth - spacing) / 2;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: 12.h,
+            children: [
+              for (final f in fields)
+                SizedBox(
+                  width: colWidth,
+                  child: f,
+                ),
+            ],
+          );
+        },
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -436,116 +471,117 @@ class _BasicInfoSection extends StatelessWidget {
 
         SizedBox(height: ResponsiveUtils.mediumSpace),
 
-        // Name Field
-        TextFormField(
-          controller: nameController,
-          focusNode: nameFocus,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => shortNameFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'اسم الجمعية *',
-            hintText: 'أدخل اسم الجمعية',
-            prefixIcon: Icon(Icons.business, size: 20.r),
-            suffixIcon: nameController.text.isNotEmpty
-                ? IconButton(
-                    icon: Icon(Icons.clear, size: 20.r),
-                    onPressed: () {
-                      nameController.clear();
-                      nameFocus.requestFocus();
-                    },
-                  )
-                : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
+        wrapGrid([
+          // Name Field
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: nameController,
+            builder: (context, value, _) {
+              return TextFormField(
+                controller: nameController,
+                focusNode: nameFocus,
+                textAlign: TextAlign.right,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) => shortNameFocus.requestFocus(),
+                decoration: InputDecoration(
+                  labelText: 'اسم الجمعية *',
+                  hintText: 'أدخل اسم الجمعية',
+                  prefixIcon: Icon(Icons.business, size: 20.r),
+                  suffixIcon: value.text.trim().isNotEmpty
+                      ? IconButton(
+                          icon: Icon(Icons.clear, size: 20.r),
+                          onPressed: () {
+                            nameController.clear();
+                            nameFocus.requestFocus();
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: ResponsiveUtils.mediumSpace,
+                    vertical: 12.h,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'الرجاء إدخال اسم الجمعية';
+                  }
+                  return null;
+                },
+              );
+            },
+          ),
+
+          // Short Name Field
+          TextFormField(
+            controller: shortNameController,
+            focusNode: shortNameFocus,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => phoneFocus.requestFocus(),
+            decoration: InputDecoration(
+              labelText: 'الاسم المختصر',
+              prefixIcon: Icon(Icons.short_text, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
             ),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'الرجاء إدخال اسم الجمعية';
-            }
-            return null;
-          },
-        ),
 
-        SizedBox(height: ResponsiveUtils.mediumSpace),
-
-        // Short Name Field
-        TextFormField(
-          controller: shortNameController,
-          focusNode: shortNameFocus,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => phoneFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'الاسم المختصر',
-            prefixIcon: Icon(Icons.short_text, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+          // Phone Field
+          TextFormField(
+            controller: phoneController,
+            focusNode: phoneFocus,
+            keyboardType: TextInputType.phone,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => emailFocus.requestFocus(),
+            decoration: InputDecoration(
+              labelText: 'رقم الهاتف *',
+              hintText: '07xxxxxxxxx',
+              prefixIcon: Icon(Icons.phone, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
             ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'الرجاء إدخال رقم الهاتف';
+              }
+              return null;
+            },
+          ),
+
+          // Email Field
+          TextFormField(
+            controller: emailController,
+            focusNode: emailFocus,
+            keyboardType: TextInputType.emailAddress,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => bankNameFocus.requestFocus(),
+            decoration: InputDecoration(
+              labelText: 'البريد الإلكتروني',
+              prefixIcon: Icon(Icons.email, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
             ),
           ),
-        ),
-
-        SizedBox(height: ResponsiveUtils.mediumSpace),
-
-        // Phone Field
-        TextFormField(
-          controller: phoneController,
-          focusNode: phoneFocus,
-          keyboardType: TextInputType.phone,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => emailFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'رقم الهاتف *',
-            hintText: '07xxxxxxxxx',
-            prefixIcon: Icon(Icons.phone, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
-            ),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'الرجاء إدخال رقم الهاتف';
-            }
-            return null;
-          },
-        ),
-
-        SizedBox(height: ResponsiveUtils.mediumSpace),
-
-        // Email Field
-        TextFormField(
-          controller: emailController,
-          focusNode: emailFocus,
-          keyboardType: TextInputType.emailAddress,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => bankNameFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'البريد الإلكتروني',
-            prefixIcon: Icon(Icons.email, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
-            ),
-          ),
-        ),
+        ]),
       ],
     );
   }
@@ -576,6 +612,39 @@ class _BankInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isWide = ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
+
+    Widget wrapGrid(List<Widget> fields) {
+      if (!isWide) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < fields.length; i++) ...[
+              fields[i],
+              if (i != fields.length - 1) SizedBox(height: ResponsiveUtils.mediumSpace),
+            ],
+          ],
+        );
+      }
+
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final spacing = 12.w;
+          final colWidth = (constraints.maxWidth - spacing) / 2;
+          return Wrap(
+            spacing: spacing,
+            runSpacing: 12.h,
+            children: [
+              for (final f in fields)
+                SizedBox(
+                  width: colWidth,
+                  child: f,
+                ),
+            ],
+          );
+        },
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -618,103 +687,98 @@ class _BankInfoSection extends StatelessWidget {
 
         SizedBox(height: ResponsiveUtils.mediumSpace),
 
-        // Bank Name
-        TextFormField(
-          controller: bankNameController,
-          focusNode: bankNameFocus,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => accountNumberFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'اسم البنك *',
-            prefixIcon: Icon(Icons.account_balance, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+        wrapGrid([
+          // Bank Name
+          TextFormField(
+            controller: bankNameController,
+            focusNode: bankNameFocus,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => accountNumberFocus.requestFocus(),
+            decoration: InputDecoration(
+              labelText: 'اسم البنك *',
+              prefixIcon: Icon(Icons.account_balance, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
             ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'الرجاء إدخال اسم البنك';
+              }
+              return null;
+            },
+          ),
+
+          // Account Number
+          TextFormField(
+            controller: accountNumberController,
+            focusNode: accountNumberFocus,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => swiftCodeFocus.requestFocus(),
+            decoration: InputDecoration(
+              labelText: 'رقم الحساب *',
+              prefixIcon: Icon(Icons.credit_card, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'الرجاء إدخال رقم الحساب';
+              }
+              return null;
+            },
+          ),
+
+          // SWIFT Code
+          TextFormField(
+            controller: swiftCodeController,
+            focusNode: swiftCodeFocus,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: 'Swift Code',
+              prefixIcon: Icon(Icons.code, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
             ),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'الرجاء إدخال اسم البنك';
-            }
-            return null;
-          },
-        ),
 
-        SizedBox(height: ResponsiveUtils.mediumSpace),
-
-        // Account Number
-        TextFormField(
-          controller: accountNumberController,
-          focusNode: accountNumberFocus,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => swiftCodeFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'رقم الحساب *',
-            prefixIcon: Icon(Icons.credit_card, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
+          // Bank Phone
+          TextFormField(
+            controller: bankPhoneController,
+            focusNode: bankPhoneFocus,
+            keyboardType: TextInputType.phone,
+            textAlign: TextAlign.right,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: 'هاتف البنك',
+              prefixIcon: Icon(Icons.phone_in_talk, size: 20.r),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 12.h,
+              ),
             ),
           ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'الرجاء إدخال رقم الحساب';
-            }
-            return null;
-          },
-        ),
-
-        SizedBox(height: ResponsiveUtils.mediumSpace),
-
-        // SWIFT Code
-        TextFormField(
-          controller: swiftCodeController,
-          focusNode: swiftCodeFocus,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => bankPhoneFocus.requestFocus(),
-          decoration: InputDecoration(
-            labelText: 'SWIFT Code',
-            prefixIcon: Icon(Icons.code, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
-            ),
-          ),
-        ),
-
-        SizedBox(height: ResponsiveUtils.mediumSpace),
-
-        // Bank Phone
-        TextFormField(
-          controller: bankPhoneController,
-          focusNode: bankPhoneFocus,
-          keyboardType: TextInputType.phone,
-          textAlign: TextAlign.right,
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            labelText: 'هاتف البنك',
-            prefixIcon: Icon(Icons.phone_in_talk, size: 20.r),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-            ),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.mediumSpace,
-              vertical: 12.h,
-            ),
-          ),
-        ),
+        ]),
       ],
     );
   }
@@ -825,7 +889,7 @@ class _ActiveStatusSwitch extends StatelessWidget {
           }),
           trackColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return colorScheme.primary.withOpacity(0.5);
+              return colorScheme.primary.withAlpha(128);
             }
             return null;
           }),
@@ -854,40 +918,82 @@ class _SubmitButton extends StatelessWidget {
     return ValueListenableBuilder<bool>(
       valueListenable: isLoadingNotifier,
       builder: (context, isLoading, _) {
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: isLoading
-                ? null
-                : () {
-                    HapticFeedback.mediumImpact(); // ✨ اهتزاز
-                    onPressed();
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colorScheme.primary,
-              padding: EdgeInsets.symmetric(vertical: 16.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isNarrow = constraints.maxWidth < 420;
+
+            final cancel = OutlinedButton(
+              onPressed: isLoading
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                    },
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                ),
               ),
-            ),
-            child: isLoading
-                ? SizedBox(
-                    height: 20.h,
-                    width: 20.w,
-                    child: const CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              child: Text(
+                'إلغاء',
+                style: TextStyle(fontSize: ResponsiveUtils.mediumFont),
+              ),
+            );
+
+            final save = FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      onPressed();
+                    },
+              style: FilledButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                ),
+              ),
+              child: isLoading
+                  ? SizedBox(
+                      height: 20.h,
+                      width: 20.w,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.onPrimary,
+                      ),
+                    )
+                  : Text(
+                      'حفظ',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.mediumFont,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  )
-                : Text(
-                    isEditing ? 'تحديث' : 'إضافة',
-                    style: TextStyle(
-                      fontSize: ResponsiveUtils.mediumFont,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-          ),
+            );
+
+            if (isNarrow) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(width: double.infinity, child: save),
+                  SizedBox(height: 12.h),
+                  SizedBox(width: double.infinity, child: cancel),
+                ],
+              );
+            }
+
+            return Center(
+              child: Wrap(
+                spacing: 12.w,
+                runSpacing: 12.h,
+                alignment: WrapAlignment.center,
+                children: [
+                  SizedBox(width: 180.w, child: cancel),
+                  SizedBox(width: 180.w, child: save),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -968,7 +1074,7 @@ class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
         key: _formKey,
         child: SafeArea(
           minimum: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+            bottom: ResponsiveUtils.mediumSpace,
             left: ResponsiveUtils.mediumSpace,
             right: ResponsiveUtils.mediumSpace,
           ),
@@ -1006,10 +1112,9 @@ class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
                     builder: (context, isLoading, _) {
                       return SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: isLoading ? null : () => _submit(ref),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
+                          style: FilledButton.styleFrom(
                             padding: EdgeInsets.symmetric(vertical: 16.h),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
@@ -1019,16 +1124,15 @@ class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
                               ? SizedBox(
                                   height: 20.h,
                                   width: 20.w,
-                                  child: const CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    color: colorScheme.onPrimary,
                                   ),
                                 )
                               : Text(
                                   'إضافة',
                                   style: TextStyle(
                                     fontSize: ResponsiveUtils.mediumFont,
-                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

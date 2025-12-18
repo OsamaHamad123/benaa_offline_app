@@ -14,12 +14,12 @@ class QuickActionCard extends StatelessWidget {
   final int? badge; // Badge counter (optional)
 
   const QuickActionCard({
-    super.key,
     required this.label,
     required this.icon,
     required this.color,
     required this.onTap,
     this.badge,
+    super.key,
   });
 
   @override
@@ -30,7 +30,6 @@ class QuickActionCard extends StatelessWidget {
       label: '$label${badge != null && badge! > 0 ? ', لديك $badge إشعار' : ''}',
       hint: 'اضغط للانتقال إلى $label',
       button: true,
-      enabled: true,
       child: MicroInteractions.bounceButton(
         onTap: () {
           HapticPatterns.selection();
@@ -41,8 +40,7 @@ class QuickActionCard extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
             side: BorderSide(
-              color: color.withOpacity(0.2),
-              width: 1,
+              color: color.withAlpha(51),
             ),
           ),
           color: isDark ? AppColors.surfaceDark : AppColors.surface,
@@ -50,8 +48,8 @@ class QuickActionCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  color.withOpacity(isDark ? 0.15 : 0.05),
-                  color.withOpacity(isDark ? 0.08 : 0.02),
+                  color.withAlpha(isDark ? 38 : 13),
+                  color.withAlpha(isDark ? 20 : 5),
                 ],
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
@@ -71,14 +69,14 @@ class QuickActionCard extends StatelessWidget {
                         padding: EdgeInsets.all(14.w),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [color, color.withOpacity(0.7)],
+                            colors: [color, color.withAlpha(179)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(14.r),
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.3),
+                              color: color.withAlpha(77),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -105,7 +103,7 @@ class QuickActionCard extends StatelessWidget {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.error.withOpacity(0.4),
+                                  color: AppColors.error.withAlpha(102),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -155,12 +153,12 @@ class QuickActionButton extends StatelessWidget {
   final int? badge;
 
   const QuickActionButton({
-    super.key,
     required this.label,
     required this.icon,
     required this.color,
     required this.onTap,
     this.badge,
+    super.key,
   });
 
   @override
@@ -184,6 +182,7 @@ class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onCivilRegistryTap;
   final VoidCallback? onVisitsTap;
   final VoidCallback? onAssociationsTap;
+  final VoidCallback? onKafalatTap;
   final int? syncBadge;
   final int? reportsBadge;
   final int? associationsBadge;
@@ -197,6 +196,7 @@ class QuickActionsGrid extends StatelessWidget {
     this.onCivilRegistryTap,
     this.onVisitsTap,
     this.onAssociationsTap,
+    this.onKafalatTap,
     this.syncBadge,
     this.reportsBadge,
     this.associationsBadge,
@@ -206,9 +206,6 @@ class QuickActionsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final crossAxisCount = ResponsiveUtils.getCrossAxisCount(
       context,
-      mobile: 2,
-      tablet: 3,
-      desktop: 4,
     );
 
     final childAspectRatio = ResponsiveUtils.getResponsiveValue(
@@ -234,6 +231,13 @@ class QuickActionsGrid extends StatelessWidget {
           color: AppColors.primary,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
+        if (onKafalatTap != null)
+          QuickActionCard(
+            label: 'الكفالات',
+            icon: Icons.volunteer_activism_rounded,
+            color: AppColors.accent,
+            onTap: onKafalatTap!,
+          ),
         QuickActionCard(
           label: 'البحث',
           icon: Icons.search_rounded,
@@ -288,12 +292,14 @@ class QuickActionsGridCompact extends StatelessWidget {
   final VoidCallback? onReportsTap;
   final VoidCallback? onCivilRegistryTap;
   final VoidCallback? onVisitsTap;
+  final VoidCallback? onKafalatTap;
   final int? syncBadge;
   final int? reportsBadge;
 
   const QuickActionsGridCompact({
     super.key,
     this.onAddBeneficiaryTap,
+    this.onKafalatTap,
     this.onSearchTap,
     this.onSyncTap,
     this.onReportsTap,
@@ -335,6 +341,13 @@ class QuickActionsGridCompact extends StatelessWidget {
           color: AppColors.primary,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
+        if (onKafalatTap != null)
+          QuickActionCard(
+            label: 'الكفالات',
+            icon: Icons.volunteer_activism_rounded,
+            color: AppColors.accent,
+            onTap: onKafalatTap!,
+          ),
         QuickActionCard(
           label: 'البحث',
           icon: Icons.search_rounded,

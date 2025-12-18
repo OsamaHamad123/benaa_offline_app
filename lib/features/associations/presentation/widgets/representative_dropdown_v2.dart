@@ -12,7 +12,7 @@ import '../providers/associations_provider.dart';
 /// ✅ Theme موحد
 /// ✅ ValueNotifier بدلاً من setState (تحسين performance)
 /// 🚀 NO REF.WATCH - يستقبل representatives كـ parameter (performance optimization)
-class RepresentativeDropdownV2 extends StatelessWidget {
+class RepresentativeDropdownV2 extends StatefulWidget {
   final String? selectedId;
   final ValueChanged<String?> onChanged;
   final List<dynamic> representatives;
@@ -27,6 +27,40 @@ class RepresentativeDropdownV2 extends StatelessWidget {
   });
 
   @override
+  State<RepresentativeDropdownV2> createState() => _RepresentativeDropdownV2State();
+}
+
+class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
+  late List<DropdownMenuItem<String?>> _items;
+
+  @override
+  void initState() {
+    super.initState();
+    _rebuildItems();
+  }
+
+  @override
+  void didUpdateWidget(covariant RepresentativeDropdownV2 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recompute only when the list reference changes (provider updates),
+    // not on every rebuild caused by keyboard/viewInsets changes.
+    if (!identical(oldWidget.representatives, widget.representatives)) {
+      _rebuildItems();
+    }
+  }
+
+  void _rebuildItems() {
+    _items = widget.representatives
+        .map(
+          (rep) => DropdownMenuItem<String?>(
+            value: rep.id,
+            child: Text(rep.name, textAlign: TextAlign.right),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -35,7 +69,7 @@ class RepresentativeDropdownV2 extends StatelessWidget {
       children: [
         // Dropdown
         DropdownButtonFormField<String?>(
-          value: selectedId,
+          value: widget.selectedId,
           decoration: InputDecoration(
             labelText: 'المندوب *',
             prefixIcon: Icon(Icons.person, size: 20.r),
@@ -47,17 +81,12 @@ class RepresentativeDropdownV2 extends StatelessWidget {
               vertical: 12.h,
             ),
           ),
-          items: representatives
-              .map((rep) => DropdownMenuItem<String?>(
-                    value: rep.id,
-                    child: Text(rep.name, textAlign: TextAlign.right),
-                  ))
-              .toList(),
+          items: _items,
           onTap: () {
             // 🚀 Unfocus لتحسين الأداء عند فتح dropdown
             FocusScope.of(context).unfocus();
           },
-          onChanged: onChanged,
+          onChanged: widget.onChanged,
           validator: (value) {
             if (value == null) {
               return 'الرجاء اختيار المندوب';
@@ -70,7 +99,7 @@ class RepresentativeDropdownV2 extends StatelessWidget {
 
         // زر إضافة مندوب جديد
         TextButton.icon(
-          onPressed: onAddNew,
+          onPressed: widget.onAddNew,
           icon: Icon(Icons.add, size: 18.r, color: colorScheme.primary),
           label: Text(
             'إضافة مندوب جديد',
@@ -162,7 +191,7 @@ class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomS
         key: _formKey,
         child: SafeArea(
           minimum: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+            bottom: ResponsiveUtils.mediumSpace,
             left: ResponsiveUtils.mediumSpace,
             right: ResponsiveUtils.mediumSpace,
           ),
@@ -204,10 +233,9 @@ class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomS
                     builder: (context, isLoading, _) {
                       return SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton(
+                        child: FilledButton(
                           onPressed: isLoading ? null : () => _submit(ref),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
+                          style: FilledButton.styleFrom(
                             padding: EdgeInsets.symmetric(vertical: 16.h),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
@@ -217,16 +245,15 @@ class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomS
                               ? SizedBox(
                                   height: 20.h,
                                   width: 20.w,
-                                  child: const CircularProgressIndicator(
+                                  child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    color: colorScheme.onPrimary,
                                   ),
                                 )
                               : Text(
                                   'إضافة',
                                   style: TextStyle(
                                     fontSize: ResponsiveUtils.mediumFont,
-                                    color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),

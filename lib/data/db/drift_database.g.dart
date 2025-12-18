@@ -7629,6 +7629,697 @@ class AssociationsCompanion extends UpdateCompanion<Association> {
   }
 }
 
+class $SponsorshipsTable extends Sponsorships
+    with TableInfo<$SponsorshipsTable, Sponsorship> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SponsorshipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _fileNoMeta = const VerificationMeta('fileNo');
+  @override
+  late final GeneratedColumn<int> fileNo = GeneratedColumn<int>(
+      'file_no', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _beneficiaryIdMeta =
+      const VerificationMeta('beneficiaryId');
+  @override
+  late final GeneratedColumn<int> beneficiaryId = GeneratedColumn<int>(
+      'beneficiary_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES beneficiaries (id)'));
+  static const VerificationMeta _associationIdMeta =
+      const VerificationMeta('associationId');
+  @override
+  late final GeneratedColumn<String> associationId = GeneratedColumn<String>(
+      'association_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES associations (id)'));
+  static const VerificationMeta _startDateMeta =
+      const VerificationMeta('startDate');
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+      'start_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _endDateMeta =
+      const VerificationMeta('endDate');
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+      'end_date', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
+      'amount', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _currencyMeta =
+      const VerificationMeta('currency');
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+      'currency', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('active'));
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _serverIdMeta =
+      const VerificationMeta('serverId');
+  @override
+  late final GeneratedColumn<int> serverId = GeneratedColumn<int>(
+      'server_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _lastSyncedAtMeta =
+      const VerificationMeta('lastSyncedAt');
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+      'last_synced_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        fileNo,
+        beneficiaryId,
+        associationId,
+        startDate,
+        endDate,
+        amount,
+        currency,
+        status,
+        notes,
+        createdAt,
+        updatedAt,
+        syncState,
+        serverId,
+        lastSyncedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sponsorships';
+  @override
+  VerificationContext validateIntegrity(Insertable<Sponsorship> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('file_no')) {
+      context.handle(_fileNoMeta,
+          fileNo.isAcceptableOrUnknown(data['file_no']!, _fileNoMeta));
+    }
+    if (data.containsKey('beneficiary_id')) {
+      context.handle(
+          _beneficiaryIdMeta,
+          beneficiaryId.isAcceptableOrUnknown(
+              data['beneficiary_id']!, _beneficiaryIdMeta));
+    } else if (isInserting) {
+      context.missing(_beneficiaryIdMeta);
+    }
+    if (data.containsKey('association_id')) {
+      context.handle(
+          _associationIdMeta,
+          associationId.isAcceptableOrUnknown(
+              data['association_id']!, _associationIdMeta));
+    } else if (isInserting) {
+      context.missing(_associationIdMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(_startDateMeta,
+          startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(_endDateMeta,
+          endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta));
+    }
+    if (data.containsKey('amount')) {
+      context.handle(_amountMeta,
+          amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
+    }
+    if (data.containsKey('currency')) {
+      context.handle(_currencyMeta,
+          currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    if (data.containsKey('server_id')) {
+      context.handle(_serverIdMeta,
+          serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta));
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+          _lastSyncedAtMeta,
+          lastSyncedAt.isAcceptableOrUnknown(
+              data['last_synced_at']!, _lastSyncedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {fileNo};
+  @override
+  Sponsorship map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Sponsorship(
+      fileNo: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}file_no'])!,
+      beneficiaryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}beneficiary_id'])!,
+      associationId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}association_id'])!,
+      startDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']),
+      endDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}end_date']),
+      amount: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}amount']),
+      currency: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}currency']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+      serverId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}server_id']),
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime, data['${effectivePrefix}last_synced_at']),
+    );
+  }
+
+  @override
+  $SponsorshipsTable createAlias(String alias) {
+    return $SponsorshipsTable(attachedDatabase, alias);
+  }
+}
+
+class Sponsorship extends DataClass implements Insertable<Sponsorship> {
+  /// رقم الملف (File No) - فريد على مستوى النظام
+  final int fileNo;
+
+  /// Foreign keys
+  final int beneficiaryId;
+  final String associationId;
+
+  /// Optional business fields
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final double? amount;
+  final String? currency;
+
+  /// active | paused | ended
+  final String status;
+  final String? notes;
+
+  /// System fields
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+
+  /// Sync fields (kept consistent with other tables)
+  final String syncState;
+  final int? serverId;
+  final DateTime? lastSyncedAt;
+  const Sponsorship(
+      {required this.fileNo,
+      required this.beneficiaryId,
+      required this.associationId,
+      this.startDate,
+      this.endDate,
+      this.amount,
+      this.currency,
+      required this.status,
+      this.notes,
+      required this.createdAt,
+      this.updatedAt,
+      required this.syncState,
+      this.serverId,
+      this.lastSyncedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['file_no'] = Variable<int>(fileNo);
+    map['beneficiary_id'] = Variable<int>(beneficiaryId);
+    map['association_id'] = Variable<String>(associationId);
+    if (!nullToAbsent || startDate != null) {
+      map['start_date'] = Variable<DateTime>(startDate);
+    }
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
+    if (!nullToAbsent || amount != null) {
+      map['amount'] = Variable<double>(amount);
+    }
+    if (!nullToAbsent || currency != null) {
+      map['currency'] = Variable<String>(currency);
+    }
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    map['sync_state'] = Variable<String>(syncState);
+    if (!nullToAbsent || serverId != null) {
+      map['server_id'] = Variable<int>(serverId);
+    }
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
+    return map;
+  }
+
+  SponsorshipsCompanion toCompanion(bool nullToAbsent) {
+    return SponsorshipsCompanion(
+      fileNo: Value(fileNo),
+      beneficiaryId: Value(beneficiaryId),
+      associationId: Value(associationId),
+      startDate: startDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      amount:
+          amount == null && nullToAbsent ? const Value.absent() : Value(amount),
+      currency: currency == null && nullToAbsent
+          ? const Value.absent()
+          : Value(currency),
+      status: Value(status),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      syncState: Value(syncState),
+      serverId: serverId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverId),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
+    );
+  }
+
+  factory Sponsorship.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Sponsorship(
+      fileNo: serializer.fromJson<int>(json['fileNo']),
+      beneficiaryId: serializer.fromJson<int>(json['beneficiaryId']),
+      associationId: serializer.fromJson<String>(json['associationId']),
+      startDate: serializer.fromJson<DateTime?>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
+      amount: serializer.fromJson<double?>(json['amount']),
+      currency: serializer.fromJson<String?>(json['currency']),
+      status: serializer.fromJson<String>(json['status']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+      serverId: serializer.fromJson<int?>(json['serverId']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'fileNo': serializer.toJson<int>(fileNo),
+      'beneficiaryId': serializer.toJson<int>(beneficiaryId),
+      'associationId': serializer.toJson<String>(associationId),
+      'startDate': serializer.toJson<DateTime?>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
+      'amount': serializer.toJson<double?>(amount),
+      'currency': serializer.toJson<String?>(currency),
+      'status': serializer.toJson<String>(status),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'syncState': serializer.toJson<String>(syncState),
+      'serverId': serializer.toJson<int?>(serverId),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+    };
+  }
+
+  Sponsorship copyWith(
+          {int? fileNo,
+          int? beneficiaryId,
+          String? associationId,
+          Value<DateTime?> startDate = const Value.absent(),
+          Value<DateTime?> endDate = const Value.absent(),
+          Value<double?> amount = const Value.absent(),
+          Value<String?> currency = const Value.absent(),
+          String? status,
+          Value<String?> notes = const Value.absent(),
+          DateTime? createdAt,
+          Value<DateTime?> updatedAt = const Value.absent(),
+          String? syncState,
+          Value<int?> serverId = const Value.absent(),
+          Value<DateTime?> lastSyncedAt = const Value.absent()}) =>
+      Sponsorship(
+        fileNo: fileNo ?? this.fileNo,
+        beneficiaryId: beneficiaryId ?? this.beneficiaryId,
+        associationId: associationId ?? this.associationId,
+        startDate: startDate.present ? startDate.value : this.startDate,
+        endDate: endDate.present ? endDate.value : this.endDate,
+        amount: amount.present ? amount.value : this.amount,
+        currency: currency.present ? currency.value : this.currency,
+        status: status ?? this.status,
+        notes: notes.present ? notes.value : this.notes,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+        syncState: syncState ?? this.syncState,
+        serverId: serverId.present ? serverId.value : this.serverId,
+        lastSyncedAt:
+            lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+      );
+  Sponsorship copyWithCompanion(SponsorshipsCompanion data) {
+    return Sponsorship(
+      fileNo: data.fileNo.present ? data.fileNo.value : this.fileNo,
+      beneficiaryId: data.beneficiaryId.present
+          ? data.beneficiaryId.value
+          : this.beneficiaryId,
+      associationId: data.associationId.present
+          ? data.associationId.value
+          : this.associationId,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      currency: data.currency.present ? data.currency.value : this.currency,
+      status: data.status.present ? data.status.value : this.status,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Sponsorship(')
+          ..write('fileNo: $fileNo, ')
+          ..write('beneficiaryId: $beneficiaryId, ')
+          ..write('associationId: $associationId, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('amount: $amount, ')
+          ..write('currency: $currency, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('serverId: $serverId, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      fileNo,
+      beneficiaryId,
+      associationId,
+      startDate,
+      endDate,
+      amount,
+      currency,
+      status,
+      notes,
+      createdAt,
+      updatedAt,
+      syncState,
+      serverId,
+      lastSyncedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Sponsorship &&
+          other.fileNo == this.fileNo &&
+          other.beneficiaryId == this.beneficiaryId &&
+          other.associationId == this.associationId &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.amount == this.amount &&
+          other.currency == this.currency &&
+          other.status == this.status &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.syncState == this.syncState &&
+          other.serverId == this.serverId &&
+          other.lastSyncedAt == this.lastSyncedAt);
+}
+
+class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
+  final Value<int> fileNo;
+  final Value<int> beneficiaryId;
+  final Value<String> associationId;
+  final Value<DateTime?> startDate;
+  final Value<DateTime?> endDate;
+  final Value<double?> amount;
+  final Value<String?> currency;
+  final Value<String> status;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<String> syncState;
+  final Value<int?> serverId;
+  final Value<DateTime?> lastSyncedAt;
+  const SponsorshipsCompanion({
+    this.fileNo = const Value.absent(),
+    this.beneficiaryId = const Value.absent(),
+    this.associationId = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+  });
+  SponsorshipsCompanion.insert({
+    this.fileNo = const Value.absent(),
+    required int beneficiaryId,
+    required String associationId,
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.currency = const Value.absent(),
+    this.status = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+  })  : beneficiaryId = Value(beneficiaryId),
+        associationId = Value(associationId);
+  static Insertable<Sponsorship> custom({
+    Expression<int>? fileNo,
+    Expression<int>? beneficiaryId,
+    Expression<String>? associationId,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<double>? amount,
+    Expression<String>? currency,
+    Expression<String>? status,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncState,
+    Expression<int>? serverId,
+    Expression<DateTime>? lastSyncedAt,
+  }) {
+    return RawValuesInsertable({
+      if (fileNo != null) 'file_no': fileNo,
+      if (beneficiaryId != null) 'beneficiary_id': beneficiaryId,
+      if (associationId != null) 'association_id': associationId,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (amount != null) 'amount': amount,
+      if (currency != null) 'currency': currency,
+      if (status != null) 'status': status,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncState != null) 'sync_state': syncState,
+      if (serverId != null) 'server_id': serverId,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+    });
+  }
+
+  SponsorshipsCompanion copyWith(
+      {Value<int>? fileNo,
+      Value<int>? beneficiaryId,
+      Value<String>? associationId,
+      Value<DateTime?>? startDate,
+      Value<DateTime?>? endDate,
+      Value<double?>? amount,
+      Value<String?>? currency,
+      Value<String>? status,
+      Value<String?>? notes,
+      Value<DateTime>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<String>? syncState,
+      Value<int?>? serverId,
+      Value<DateTime?>? lastSyncedAt}) {
+    return SponsorshipsCompanion(
+      fileNo: fileNo ?? this.fileNo,
+      beneficiaryId: beneficiaryId ?? this.beneficiaryId,
+      associationId: associationId ?? this.associationId,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncState: syncState ?? this.syncState,
+      serverId: serverId ?? this.serverId,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (fileNo.present) {
+      map['file_no'] = Variable<int>(fileNo.value);
+    }
+    if (beneficiaryId.present) {
+      map['beneficiary_id'] = Variable<int>(beneficiaryId.value);
+    }
+    if (associationId.present) {
+      map['association_id'] = Variable<String>(associationId.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<double>(amount.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (serverId.present) {
+      map['server_id'] = Variable<int>(serverId.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SponsorshipsCompanion(')
+          ..write('fileNo: $fileNo, ')
+          ..write('beneficiaryId: $beneficiaryId, ')
+          ..write('associationId: $associationId, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('amount: $amount, ')
+          ..write('currency: $currency, ')
+          ..write('status: $status, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncState: $syncState, ')
+          ..write('serverId: $serverId, ')
+          ..write('lastSyncedAt: $lastSyncedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7647,6 +8338,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AssociationRepresentativesTable associationRepresentatives =
       $AssociationRepresentativesTable(this);
   late final $AssociationsTable associations = $AssociationsTable(this);
+  late final $SponsorshipsTable sponsorships = $SponsorshipsTable(this);
   late final BeneficiariesDao beneficiariesDao =
       BeneficiariesDao(this as AppDatabase);
   late final VisitsDao visitsDao = VisitsDao(this as AppDatabase);
@@ -7663,6 +8355,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       FamilyMembersDao(this as AppDatabase);
   late final AssociationsDao associationsDao =
       AssociationsDao(this as AppDatabase);
+  late final SponsorshipsDao sponsorshipsDao =
+      SponsorshipsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7678,7 +8372,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         familyDeceasedTable,
         familyMembersTable,
         associationRepresentatives,
-        associations
+        associations,
+        sponsorships
       ];
 }
 
@@ -7766,6 +8461,27 @@ typedef $$BeneficiariesTableUpdateCompanionBuilder = BeneficiariesCompanion
   Value<DateTime?> lastSyncedAt,
   Value<String?> fullNameNorm,
 });
+
+final class $$BeneficiariesTableReferences
+    extends BaseReferences<_$AppDatabase, $BeneficiariesTable, Beneficiary> {
+  $$BeneficiariesTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$SponsorshipsTable, List<Sponsorship>>
+      _sponsorshipsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.sponsorships,
+              aliasName: $_aliasNameGenerator(
+                  db.beneficiaries.id, db.sponsorships.beneficiaryId));
+
+  $$SponsorshipsTableProcessedTableManager get sponsorshipsRefs {
+    final manager = $$SponsorshipsTableTableManager($_db, $_db.sponsorships)
+        .filter((f) => f.beneficiaryId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sponsorshipsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
 
 class $$BeneficiariesTableFilterComposer
     extends Composer<_$AppDatabase, $BeneficiariesTable> {
@@ -7911,6 +8627,27 @@ class $$BeneficiariesTableFilterComposer
 
   ColumnFilters<String> get fullNameNorm => $composableBuilder(
       column: $table.fullNameNorm, builder: (column) => ColumnFilters(column));
+
+  Expression<bool> sponsorshipsRefs(
+      Expression<bool> Function($$SponsorshipsTableFilterComposer f) f) {
+    final $$SponsorshipsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.sponsorships,
+        getReferencedColumn: (t) => t.beneficiaryId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SponsorshipsTableFilterComposer(
+              $db: $db,
+              $table: $db.sponsorships,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$BeneficiariesTableOrderingComposer
@@ -8199,6 +8936,27 @@ class $$BeneficiariesTableAnnotationComposer
 
   GeneratedColumn<String> get fullNameNorm => $composableBuilder(
       column: $table.fullNameNorm, builder: (column) => column);
+
+  Expression<T> sponsorshipsRefs<T extends Object>(
+      Expression<T> Function($$SponsorshipsTableAnnotationComposer a) f) {
+    final $$SponsorshipsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.sponsorships,
+        getReferencedColumn: (t) => t.beneficiaryId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SponsorshipsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.sponsorships,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$BeneficiariesTableTableManager extends RootTableManager<
@@ -8210,12 +8968,9 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
     $$BeneficiariesTableAnnotationComposer,
     $$BeneficiariesTableCreateCompanionBuilder,
     $$BeneficiariesTableUpdateCompanionBuilder,
-    (
-      Beneficiary,
-      BaseReferences<_$AppDatabase, $BeneficiariesTable, Beneficiary>
-    ),
+    (Beneficiary, $$BeneficiariesTableReferences),
     Beneficiary,
-    PrefetchHooks Function()> {
+    PrefetchHooks Function({bool sponsorshipsRefs})> {
   $$BeneficiariesTableTableManager(_$AppDatabase db, $BeneficiariesTable table)
       : super(TableManagerState(
           db: db,
@@ -8395,9 +9150,35 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
             fullNameNorm: fullNameNorm,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map((e) => (
+                    e.readTable(table),
+                    $$BeneficiariesTableReferences(db, table, e)
+                  ))
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({sponsorshipsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (sponsorshipsRefs) db.sponsorships],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (sponsorshipsRefs)
+                    await $_getPrefetchedData<Beneficiary, $BeneficiariesTable,
+                            Sponsorship>(
+                        currentTable: table,
+                        referencedTable: $$BeneficiariesTableReferences
+                            ._sponsorshipsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$BeneficiariesTableReferences(db, table, p0)
+                                .sponsorshipsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.beneficiaryId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
         ));
 }
 
@@ -8410,12 +9191,9 @@ typedef $$BeneficiariesTableProcessedTableManager = ProcessedTableManager<
     $$BeneficiariesTableAnnotationComposer,
     $$BeneficiariesTableCreateCompanionBuilder,
     $$BeneficiariesTableUpdateCompanionBuilder,
-    (
-      Beneficiary,
-      BaseReferences<_$AppDatabase, $BeneficiariesTable, Beneficiary>
-    ),
+    (Beneficiary, $$BeneficiariesTableReferences),
     Beneficiary,
-    PrefetchHooks Function()>;
+    PrefetchHooks Function({bool sponsorshipsRefs})>;
 typedef $$VisitsTableCreateCompanionBuilder = VisitsCompanion Function({
   required String id,
   required String beneficiaryId,
@@ -10904,6 +11682,22 @@ final class $$AssociationsTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
   }
+
+  static MultiTypedResultKey<$SponsorshipsTable, List<Sponsorship>>
+      _sponsorshipsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.sponsorships,
+              aliasName: $_aliasNameGenerator(
+                  db.associations.id, db.sponsorships.associationId));
+
+  $$SponsorshipsTableProcessedTableManager get sponsorshipsRefs {
+    final manager = $$SponsorshipsTableTableManager($_db, $_db.sponsorships)
+        .filter(
+            (f) => f.associationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sponsorshipsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$AssociationsTableFilterComposer
@@ -10983,6 +11777,27 @@ class $$AssociationsTableFilterComposer
                       $removeJoinBuilderFromRootComposer,
                 ));
     return composer;
+  }
+
+  Expression<bool> sponsorshipsRefs(
+      Expression<bool> Function($$SponsorshipsTableFilterComposer f) f) {
+    final $$SponsorshipsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.sponsorships,
+        getReferencedColumn: (t) => t.associationId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SponsorshipsTableFilterComposer(
+              $db: $db,
+              $table: $db.sponsorships,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
   }
 }
 
@@ -11145,6 +11960,27 @@ class $$AssociationsTableAnnotationComposer
                 ));
     return composer;
   }
+
+  Expression<T> sponsorshipsRefs<T extends Object>(
+      Expression<T> Function($$SponsorshipsTableAnnotationComposer a) f) {
+    final $$SponsorshipsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.sponsorships,
+        getReferencedColumn: (t) => t.associationId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SponsorshipsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.sponsorships,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$AssociationsTableTableManager extends RootTableManager<
@@ -11158,7 +11994,7 @@ class $$AssociationsTableTableManager extends RootTableManager<
     $$AssociationsTableUpdateCompanionBuilder,
     (Association, $$AssociationsTableReferences),
     Association,
-    PrefetchHooks Function({bool representativeId})> {
+    PrefetchHooks Function({bool representativeId, bool sponsorshipsRefs})> {
   $$AssociationsTableTableManager(_$AppDatabase db, $AssociationsTable table)
       : super(TableManagerState(
           db: db,
@@ -11255,10 +12091,11 @@ class $$AssociationsTableTableManager extends RootTableManager<
                     $$AssociationsTableReferences(db, table, e)
                   ))
               .toList(),
-          prefetchHooksCallback: ({representativeId = false}) {
+          prefetchHooksCallback: (
+              {representativeId = false, sponsorshipsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [if (sponsorshipsRefs) db.sponsorships],
               addJoins: <
                   T extends TableManagerState<
                       dynamic,
@@ -11287,7 +12124,21 @@ class $$AssociationsTableTableManager extends RootTableManager<
                 return state;
               },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (sponsorshipsRefs)
+                    await $_getPrefetchedData<Association, $AssociationsTable,
+                            Sponsorship>(
+                        currentTable: table,
+                        referencedTable: $$AssociationsTableReferences
+                            ._sponsorshipsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$AssociationsTableReferences(db, table, p0)
+                                .sponsorshipsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.associationId == item.id),
+                        typedResults: items)
+                ];
               },
             );
           },
@@ -11305,7 +12156,491 @@ typedef $$AssociationsTableProcessedTableManager = ProcessedTableManager<
     $$AssociationsTableUpdateCompanionBuilder,
     (Association, $$AssociationsTableReferences),
     Association,
-    PrefetchHooks Function({bool representativeId})>;
+    PrefetchHooks Function({bool representativeId, bool sponsorshipsRefs})>;
+typedef $$SponsorshipsTableCreateCompanionBuilder = SponsorshipsCompanion
+    Function({
+  Value<int> fileNo,
+  required int beneficiaryId,
+  required String associationId,
+  Value<DateTime?> startDate,
+  Value<DateTime?> endDate,
+  Value<double?> amount,
+  Value<String?> currency,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<String> syncState,
+  Value<int?> serverId,
+  Value<DateTime?> lastSyncedAt,
+});
+typedef $$SponsorshipsTableUpdateCompanionBuilder = SponsorshipsCompanion
+    Function({
+  Value<int> fileNo,
+  Value<int> beneficiaryId,
+  Value<String> associationId,
+  Value<DateTime?> startDate,
+  Value<DateTime?> endDate,
+  Value<double?> amount,
+  Value<String?> currency,
+  Value<String> status,
+  Value<String?> notes,
+  Value<DateTime> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<String> syncState,
+  Value<int?> serverId,
+  Value<DateTime?> lastSyncedAt,
+});
+
+final class $$SponsorshipsTableReferences
+    extends BaseReferences<_$AppDatabase, $SponsorshipsTable, Sponsorship> {
+  $$SponsorshipsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BeneficiariesTable _beneficiaryIdTable(_$AppDatabase db) =>
+      db.beneficiaries.createAlias($_aliasNameGenerator(
+          db.sponsorships.beneficiaryId, db.beneficiaries.id));
+
+  $$BeneficiariesTableProcessedTableManager get beneficiaryId {
+    final $_column = $_itemColumn<int>('beneficiary_id')!;
+
+    final manager = $$BeneficiariesTableTableManager($_db, $_db.beneficiaries)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_beneficiaryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $AssociationsTable _associationIdTable(_$AppDatabase db) =>
+      db.associations.createAlias($_aliasNameGenerator(
+          db.sponsorships.associationId, db.associations.id));
+
+  $$AssociationsTableProcessedTableManager get associationId {
+    final $_column = $_itemColumn<String>('association_id')!;
+
+    final manager = $$AssociationsTableTableManager($_db, $_db.associations)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_associationIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$SponsorshipsTableFilterComposer
+    extends Composer<_$AppDatabase, $SponsorshipsTable> {
+  $$SponsorshipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get fileNo => $composableBuilder(
+      column: $table.fileNo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get currency => $composableBuilder(
+      column: $table.currency, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+      column: $table.syncState, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get serverId => $composableBuilder(
+      column: $table.serverId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => ColumnFilters(column));
+
+  $$BeneficiariesTableFilterComposer get beneficiaryId {
+    final $$BeneficiariesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.beneficiaryId,
+        referencedTable: $db.beneficiaries,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BeneficiariesTableFilterComposer(
+              $db: $db,
+              $table: $db.beneficiaries,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$AssociationsTableFilterComposer get associationId {
+    final $$AssociationsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.associationId,
+        referencedTable: $db.associations,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssociationsTableFilterComposer(
+              $db: $db,
+              $table: $db.associations,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$SponsorshipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SponsorshipsTable> {
+  $$SponsorshipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get fileNo => $composableBuilder(
+      column: $table.fileNo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+      column: $table.startDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+      column: $table.endDate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get amount => $composableBuilder(
+      column: $table.amount, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+      column: $table.currency, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncState => $composableBuilder(
+      column: $table.syncState, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get serverId => $composableBuilder(
+      column: $table.serverId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt,
+      builder: (column) => ColumnOrderings(column));
+
+  $$BeneficiariesTableOrderingComposer get beneficiaryId {
+    final $$BeneficiariesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.beneficiaryId,
+        referencedTable: $db.beneficiaries,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BeneficiariesTableOrderingComposer(
+              $db: $db,
+              $table: $db.beneficiaries,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$AssociationsTableOrderingComposer get associationId {
+    final $$AssociationsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.associationId,
+        referencedTable: $db.associations,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssociationsTableOrderingComposer(
+              $db: $db,
+              $table: $db.associations,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$SponsorshipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SponsorshipsTable> {
+  $$SponsorshipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get fileNo =>
+      $composableBuilder(column: $table.fileNo, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<double> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
+
+  GeneratedColumn<int> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+      column: $table.lastSyncedAt, builder: (column) => column);
+
+  $$BeneficiariesTableAnnotationComposer get beneficiaryId {
+    final $$BeneficiariesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.beneficiaryId,
+        referencedTable: $db.beneficiaries,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BeneficiariesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.beneficiaries,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$AssociationsTableAnnotationComposer get associationId {
+    final $$AssociationsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.associationId,
+        referencedTable: $db.associations,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$AssociationsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.associations,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$SponsorshipsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $SponsorshipsTable,
+    Sponsorship,
+    $$SponsorshipsTableFilterComposer,
+    $$SponsorshipsTableOrderingComposer,
+    $$SponsorshipsTableAnnotationComposer,
+    $$SponsorshipsTableCreateCompanionBuilder,
+    $$SponsorshipsTableUpdateCompanionBuilder,
+    (Sponsorship, $$SponsorshipsTableReferences),
+    Sponsorship,
+    PrefetchHooks Function({bool beneficiaryId, bool associationId})> {
+  $$SponsorshipsTableTableManager(_$AppDatabase db, $SponsorshipsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SponsorshipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SponsorshipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SponsorshipsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> fileNo = const Value.absent(),
+            Value<int> beneficiaryId = const Value.absent(),
+            Value<String> associationId = const Value.absent(),
+            Value<DateTime?> startDate = const Value.absent(),
+            Value<DateTime?> endDate = const Value.absent(),
+            Value<double?> amount = const Value.absent(),
+            Value<String?> currency = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int?> serverId = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
+          }) =>
+              SponsorshipsCompanion(
+            fileNo: fileNo,
+            beneficiaryId: beneficiaryId,
+            associationId: associationId,
+            startDate: startDate,
+            endDate: endDate,
+            amount: amount,
+            currency: currency,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            serverId: serverId,
+            lastSyncedAt: lastSyncedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> fileNo = const Value.absent(),
+            required int beneficiaryId,
+            required String associationId,
+            Value<DateTime?> startDate = const Value.absent(),
+            Value<DateTime?> endDate = const Value.absent(),
+            Value<double?> amount = const Value.absent(),
+            Value<String?> currency = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<int?> serverId = const Value.absent(),
+            Value<DateTime?> lastSyncedAt = const Value.absent(),
+          }) =>
+              SponsorshipsCompanion.insert(
+            fileNo: fileNo,
+            beneficiaryId: beneficiaryId,
+            associationId: associationId,
+            startDate: startDate,
+            endDate: endDate,
+            amount: amount,
+            currency: currency,
+            status: status,
+            notes: notes,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncState: syncState,
+            serverId: serverId,
+            lastSyncedAt: lastSyncedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$SponsorshipsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: (
+              {beneficiaryId = false, associationId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (beneficiaryId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.beneficiaryId,
+                    referencedTable:
+                        $$SponsorshipsTableReferences._beneficiaryIdTable(db),
+                    referencedColumn: $$SponsorshipsTableReferences
+                        ._beneficiaryIdTable(db)
+                        .id,
+                  ) as T;
+                }
+                if (associationId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.associationId,
+                    referencedTable:
+                        $$SponsorshipsTableReferences._associationIdTable(db),
+                    referencedColumn: $$SponsorshipsTableReferences
+                        ._associationIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$SponsorshipsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $SponsorshipsTable,
+    Sponsorship,
+    $$SponsorshipsTableFilterComposer,
+    $$SponsorshipsTableOrderingComposer,
+    $$SponsorshipsTableAnnotationComposer,
+    $$SponsorshipsTableCreateCompanionBuilder,
+    $$SponsorshipsTableUpdateCompanionBuilder,
+    (Sponsorship, $$SponsorshipsTableReferences),
+    Sponsorship,
+    PrefetchHooks Function({bool beneficiaryId, bool associationId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11334,4 +12669,6 @@ class $AppDatabaseManager {
               _db, _db.associationRepresentatives);
   $$AssociationsTableTableManager get associations =>
       $$AssociationsTableTableManager(_db, _db.associations);
+  $$SponsorshipsTableTableManager get sponsorships =>
+      $$SponsorshipsTableTableManager(_db, _db.sponsorships);
 }

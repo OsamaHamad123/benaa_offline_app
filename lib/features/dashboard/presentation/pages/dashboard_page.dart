@@ -558,6 +558,10 @@ class _DashboardHome extends ConsumerWidget {
               HapticPatterns.submit();
               context.push('/beneficiaries/add');
             },
+            onKafalatTap: () {
+              HapticPatterns.selection();
+              context.push('/kafalat');
+            },
             onSearchTap: () {
               HapticPatterns.selection();
               context.push('/beneficiaries');

@@ -175,6 +175,21 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
     await into(beneficiaries).insert(beneficiary);
   }
 
+  /// Upsert beneficiary by national ID (idNumber)
+  ///
+  /// Useful for Excel import where the row may already exist.
+  Future<void> upsertBeneficiaryByNationalId(
+    BeneficiariesCompanion beneficiary,
+  ) async {
+    await into(beneficiaries).insert(
+      beneficiary,
+      onConflict: DoUpdate(
+        (old) => beneficiary,
+        target: [beneficiaries.idNumber],
+      ),
+    );
+  }
+
   /// Update beneficiary using Companion
   Future<void> updateBeneficiaryCompanion(
     int id,
