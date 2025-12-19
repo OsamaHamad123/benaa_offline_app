@@ -93,79 +93,36 @@ class EnhancedAssociationsStatsCard extends StatelessWidget {
               ],
             ),
 
-            SizedBox(height: ResponsiveUtils.mediumSpace),
+            SizedBox(height: ResponsiveUtils.smallSpace),
 
-            // الإحصائيات
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 300;
-
-                if (isNarrow) {
-                  // عمودي للشاشات الصغيرة
-                  return Column(
-                    children: [
-                      _StatItem(
-                        icon: Icons.business_center,
-                        label: 'الإجمالي',
-                        value: totalCount.toString(),
-                        color: Colors.blue,
-                        percentage: '100%',
-                      ),
-                      SizedBox(height: ResponsiveUtils.smallSpace),
-                      _StatItem(
-                        icon: Icons.check_circle_outline,
-                        label: 'نشطة',
-                        value: activeCount.toString(),
-                        color: Colors.green,
-                        percentage: '$activePercentage%',
-                      ),
-                      SizedBox(height: ResponsiveUtils.smallSpace),
-                      _StatItem(
-                        icon: Icons.pause_circle_outline,
-                        label: 'معطلة',
-                        value: inactiveCount.toString(),
-                        color: Colors.orange,
-                        percentage: '$inactivePercentage%',
-                      ),
-                    ],
-                  );
-                }
-
-                // أفقي للشاشات الأكبر
-                return Row(
-                  children: [
-                    Expanded(
-                      child: _StatItem(
-                        icon: Icons.business_center,
-                        label: 'الإجمالي',
-                        value: totalCount.toString(),
-                        color: Colors.blue,
-                        percentage: '100%',
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveUtils.smallSpace),
-                    Expanded(
-                      child: _StatItem(
-                        icon: Icons.check_circle_outline,
-                        label: 'نشطة',
-                        value: activeCount.toString(),
-                        color: Colors.green,
-                        percentage: '$activePercentage%',
-                      ),
-                    ),
-                    SizedBox(width: ResponsiveUtils.smallSpace),
-                    Expanded(
-                      child: _StatItem(
-                        icon: Icons.pause_circle_outline,
-                        label: 'معطلة',
-                        value: inactiveCount.toString(),
-                        color: Colors.orange,
-                        percentage: '$inactivePercentage%',
-                      ),
-                    ),
-                  ],
-                );
-              },
+            // الإحصائيات - دائماً أفقية باستخدام Wrap للتكيف
+            Wrap(
+              spacing: ResponsiveUtils.smallSpace,
+              runSpacing: ResponsiveUtils.smallSpace,
+              alignment: WrapAlignment.spaceEvenly,
+              children: [
+                _StatItem(
+                  icon: Icons.business_center,
+                  label: 'الإجمالي',
+                  value: totalCount.toString(),
+                  color: Colors.blue,
+                  percentage: '100%',
+                ),
+                _StatItem(
+                  icon: Icons.check_circle_outline,
+                  label: 'نشطة',
+                  value: activeCount.toString(),
+                  color: Colors.green,
+                  percentage: '$activePercentage%',
+                ),
+                _StatItem(
+                  icon: Icons.pause_circle_outline,
+                  label: 'معطلة',
+                  value: inactiveCount.toString(),
+                  color: Colors.orange,
+                  percentage: '$inactivePercentage%',
+                ),
+              ],
             ),
           ],
         ),
@@ -194,7 +151,14 @@ class _StatItem extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
+      constraints: BoxConstraints(
+        minWidth: 90.w,
+        maxWidth: 120.w,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: 12.w,
+        vertical: 10.h,
+      ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
@@ -204,51 +168,47 @@ class _StatItem extends StatelessWidget {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           // الأيقونة
-          Container(
-            padding: EdgeInsets.all(ResponsiveUtils.xSmallSpace),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: ResponsiveUtils.getIconSize(context),
-            ),
+          Icon(
+            icon,
+            color: color,
+            size: 24.sp,
           ),
-          SizedBox(height: ResponsiveUtils.smallSpace),
+          SizedBox(height: 6.h),
 
           // الرقم
           Text(
             value,
-            style: theme.textTheme.headlineSmall?.copyWith(
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: color,
+              fontSize: 22.sp,
             ),
           ),
 
           // النسبة المئوية
           Container(
             padding: EdgeInsets.symmetric(
-              horizontal: ResponsiveUtils.xSmallSpace,
+              horizontal: 6.w,
               vertical: 2.h,
             ),
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(ResponsiveUtils.smallRadius),
+              borderRadius: BorderRadius.circular(8.r),
             ),
             child: Text(
               percentage,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
+                fontSize: 10.sp,
               ),
             ),
           ),
 
-          SizedBox(height: ResponsiveUtils.xSmallSpace / 2),
+          SizedBox(height: 4.h),
 
           // التسمية
           Text(
@@ -256,6 +216,7 @@ class _StatItem extends StatelessWidget {
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
               fontWeight: FontWeight.w600,
+              fontSize: 11.sp,
             ),
           ),
         ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../domain/entities/association.dart';
 
 /// 🏢 بطاقة جمعية حديثة - تصميم Material 3 فاخر
@@ -33,122 +32,75 @@ class ModernAssociationCard extends StatelessWidget {
       label: 'جمعية ${association.name}, ${isActive ? 'نشطة' : 'معطلة'}',
       button: true,
       child: Card(
-        elevation: 4,
-        shadowColor: primaryColor.withOpacity(0.3),
+        elevation: 2,
+        shadowColor: primaryColor.withOpacity(0.15),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24.r),
+          borderRadius: BorderRadius.circular(16.r),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24.r),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                theme.colorScheme.surface,
-                primaryColor.withOpacity(0.03),
-              ],
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16.r),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [
+                  theme.colorScheme.surface,
+                  primaryColor.withOpacity(0.02),
+                ],
+              ),
             ),
-          ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(24.r),
             child: Padding(
-              padding: EdgeInsets.all(14.w),
+              padding: EdgeInsets.all(10.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Header - الأيقونة والاسم والحالة
+                  // Header مدمج
                   Row(
                     children: [
-                      // أيقونة مع gradient
+                      // أيقونة صغيرة
                       Container(
-                        padding: EdgeInsets.all(12.w),
+                        padding: EdgeInsets.all(8.w),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [primaryColor, primaryColor.withOpacity(0.7)],
-                          ),
-                          borderRadius: BorderRadius.circular(14.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          color: primaryColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10.r),
                         ),
                         child: Icon(
                           _getAssociationIcon(association.name),
-                          color: Colors.white,
-                          size: 24.sp,
-                        ),
-                      ),
-                      SizedBox(width: 14.w),
-                      // الاسم والاسم المختصر
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              association.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                height: 1.2,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (association.shortName != null) ...[
-                              SizedBox(height: 4.h),
-                              Text(
-                                association.shortName!,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ],
+                          color: primaryColor,
+                          size: 18.sp,
                         ),
                       ),
                       SizedBox(width: 8.w),
-                      // شارة الحالة
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20.r),
-                          border: Border.all(
-                            color: statusColor.withOpacity(0.5),
-                            width: 1.5,
+                      // الاسم
+                      Expanded(
+                        child: Text(
+                          association.name,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 8.w,
-                              height: 8.h,
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: statusColor.withOpacity(0.5),
-                                    blurRadius: 4,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: 6.w),
-                            Text(
-                              isActive ? 'نشط' : 'معطل',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: statusColor,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      ),
+                      SizedBox(width: 6.w),
+                      // نقطة الحالة
+                      Container(
+                        width: 8.w,
+                        height: 8.w,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: statusColor.withOpacity(0.4),
+                              blurRadius: 3,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
@@ -156,230 +108,90 @@ class ModernAssociationCard extends StatelessWidget {
                     ],
                   ),
 
-                  SizedBox(height: ResponsiveUtils.smallSpace),
+                  SizedBox(height: 8.h),
 
-                  // معلومات الاتصال - Responsive
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 320;
-
-                      if (isNarrow || association.email == null) {
-                        // عمودي: ضيق أو بدون بريد
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _ModernInfoBox(
-                              icon: Icons.phone_outlined,
-                              label: 'الهاتف',
-                              value: association.phone,
-                              color: Colors.blue,
-                            ),
-                            if (association.email != null) ...[
-                              SizedBox(height: ResponsiveUtils.smallSpace),
-                              _ModernInfoBox(
-                                icon: Icons.email_outlined,
-                                label: 'البريد',
-                                value: association.email!,
-                                color: Colors.purple,
-                              ),
-                            ],
-                          ],
-                        );
-                      }
-
-                      // أفقي: عادي
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: _ModernInfoBox(
-                              icon: Icons.phone_outlined,
-                              label: 'الهاتف',
-                              value: association.phone,
-                              color: Colors.blue,
-                            ),
+                  // معلومات في صفين
+                  Row(
+                    children: [
+                      Icon(Icons.phone, size: 14.sp, color: Colors.blue),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          association.phone,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11.sp,
                           ),
-                          SizedBox(width: ResponsiveUtils.smallSpace),
-                          Expanded(
-                            child: _ModernInfoBox(
-                              icon: Icons.email_outlined,
-                              label: 'البريد',
-                              value: association.email!,
-                              color: Colors.purple,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
 
-                  SizedBox(height: ResponsiveUtils.xSmallSpace),
+                  SizedBox(height: 5.h),
 
-                  // معلومات البنك - Responsive
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 320;
-
-                      if (isNarrow) {
-                        // عمودي
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _ModernInfoBox(
-                              icon: Icons.account_balance_outlined,
-                              label: association.bankName,
-                              value: association.accountNumber,
-                              color: Colors.teal,
-                            ),
-                            SizedBox(height: ResponsiveUtils.smallSpace),
-                            _ModernInfoBox(
-                              icon: Icons.monetization_on_outlined,
-                              label: 'العملة',
-                              value: association.accountCurrency ?? 'غير محددة',
-                              color: Colors.amber,
-                            ),
-                          ],
-                        );
-                      }
-
-                      // أفقي
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: _ModernInfoBox(
-                              icon: Icons.account_balance_outlined,
-                              label: association.bankName,
-                              value: association.accountNumber,
-                              color: Colors.teal,
-                            ),
+                  Row(
+                    children: [
+                      Icon(Icons.account_balance, size: 14.sp, color: Colors.teal),
+                      SizedBox(width: 4.w),
+                      Expanded(
+                        child: Text(
+                          '${association.bankName} • ${association.accountNumber}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontSize: 11.sp,
                           ),
-                          SizedBox(width: ResponsiveUtils.smallSpace),
-                          Expanded(
-                            child: _ModernInfoBox(
-                              icon: Icons.monetization_on_outlined,
-                              label: 'العملة',
-                              value: association.accountCurrency ?? 'غير محددة',
-                              color: Colors.amber,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
 
                   if (representativeName != null) ...[
-                    SizedBox(height: ResponsiveUtils.xSmallSpace),
-                    Container(
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: Colors.deepPurple.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.person_outline,
-                            size: 18.sp,
-                            color: Colors.deepPurple,
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              'المندوب: $representativeName',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.deepPurple,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                    SizedBox(height: 5.h),
+                    Row(
+                      children: [
+                        Icon(Icons.person, size: 14.sp, color: Colors.deepPurple),
+                        SizedBox(width: 4.w),
+                        Expanded(
+                          child: Text(
+                            representativeName!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontSize: 11.sp,
                             ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
 
-                  SizedBox(height: ResponsiveUtils.smallSpace),
+                  SizedBox(height: 8.h),
 
-                  // أزرار الإجراءات - Responsive
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isNarrow = constraints.maxWidth < 300;
+                  Divider(height: 1, thickness: 0.5, color: theme.dividerColor.withOpacity(0.3)),
 
-                      if (isNarrow) {
-                        // موبايل ضيق: أزرار عمودية
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            OutlinedButton.icon(
-                              onPressed: onEdit,
-                              icon: Icon(Icons.edit_outlined, size: ResponsiveUtils.getIconSize(context) * 0.7),
-                              label: const Text('تعديل'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: theme.colorScheme.primary,
-                                side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-                                padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.smallSpace * 1.5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: ResponsiveUtils.smallSpace),
-                            OutlinedButton.icon(
-                              onPressed: onDelete,
-                              icon: Icon(Icons.delete_outline, size: ResponsiveUtils.getIconSize(context) * 0.7),
-                              label: const Text('حذف'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: theme.colorScheme.error,
-                                side: BorderSide(color: theme.colorScheme.error, width: 1.5),
-                                padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.smallSpace),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }
+                  SizedBox(height: 6.h),
 
-                      // عادي: أزرار جنب بعض
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: onEdit,
-                              icon: Icon(Icons.edit_outlined, size: ResponsiveUtils.getIconSize(context) * 0.7),
-                              label: const Text('تعديل'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: theme.colorScheme.primary,
-                                side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-                                padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.smallSpace),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: ResponsiveUtils.smallSpace),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: onDelete,
-                              icon: Icon(Icons.delete_outline, size: ResponsiveUtils.getIconSize(context) * 0.7),
-                              label: const Text('حذف'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: theme.colorScheme.error,
-                                side: BorderSide(color: theme.colorScheme.error, width: 1.5),
-                                padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.smallSpace),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  // أزرار صغيرة
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _MiniActionButton(
+                        icon: Icons.edit,
+                        label: 'تعديل',
+                        color: theme.colorScheme.primary,
+                        onPressed: onEdit,
+                      ),
+                      Container(
+                        width: 1,
+                        height: 20.h,
+                        color: theme.dividerColor.withOpacity(0.3),
+                      ),
+                      _MiniActionButton(
+                        icon: Icons.delete_outline,
+                        label: 'حذف',
+                        color: theme.colorScheme.error,
+                        onPressed: onDelete,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -481,6 +293,49 @@ class _ModernInfoBox extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// زر إجراء صغير
+class _MiniActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _MiniActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16.sp, color: color),
+            SizedBox(width: 4.w),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 11.sp,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

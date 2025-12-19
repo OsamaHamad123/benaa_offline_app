@@ -12,10 +12,13 @@ import '../widgets/associations_filter_button.dart';
 import '../widgets/associations_result_counter.dart';
 import '../widgets/associations_empty_state.dart';
 import '../widgets/associations_filter_sheet.dart';
-import '../widgets/enhanced_associations_stats_card.dart'; // ✨ بطاقة الإحصائيات المحسنة
-import '../widgets/modern_association_card.dart'; // 🎨 البطاقة الحديثة
-import '../widgets/quick_actions_list.dart'; // ⚡ قائمة الإجراءات السريعة
-import 'association_form_bottom_sheet_modern.dart'; // 🆕 النموذج الحديث
+import '../widgets/enhanced_associations_stats_card.dart';
+import '../widgets/professional_association_card.dart'; // 🎨 البطاقة الاحترافية الجديدة
+import '../widgets/swipe_actions_wrapper.dart'; // 👆 Swipe Actions
+import '../widgets/associations_filters_bar.dart'; // 🔍 Quick Filters
+import '../widgets/sorting_menu.dart'; // 🔄 Sorting Menu
+import '../widgets/card_animations.dart'; // 🎬 Animations
+import 'association_form_bottom_sheet_modern.dart';
 
 /// 🏢 صفحة قائمة الجمعيات - إصدار محسّن
 ///
@@ -34,9 +37,17 @@ class AssociationsListPageV2 extends ConsumerStatefulWidget {
 class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _showOnlyActive = true;
+
+  // Quick Filters
+  String? _selectedFilterStatus; // null='الكل', 'active'='النشطة', 'inactive'='المعطلة'
+  String? _selectedBank;
+
+  // Advanced Filters
   String? _selectedRepresentativeId;
-  String? _selectedCurrency; // ✨ فلتر العملة
+  String? _selectedCurrency;
+
+  // Sorting
+  SortOption _currentSort = SortOption.nameAsc;
 
   @override
   void initState() {
@@ -70,12 +81,11 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
         ),
       ),
       builder: (context) => AssociationsFilterSheet(
-        showOnlyActive: _showOnlyActive,
+        showOnlyActive: true,
         selectedRepresentativeId: _selectedRepresentativeId,
         selectedCurrency: _selectedCurrency,
         onApply: (showActive, repId, currency) {
           setState(() {
-            _showOnlyActive = showActive;
             _selectedRepresentativeId = repId;
             _selectedCurrency = currency;
           });
@@ -110,46 +120,61 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
     final colorScheme = Theme.of(context).colorScheme;
     final isTablet = ResponsiveUtils.isTablet(context);
 
-    // تطبيق الفلاتر والبحث المتقدم
+    // تطبيق الفلاتر والبحث
     var filteredAssociations = state.associations;
 
+    // Search filter
     if (_searchQuery.isNotEmpty) {
       filteredAssociations = filteredAssociations.where((a) {
-        // البحث في الاسم
         final nameMatch = a.name.toLowerCase().contains(_searchQuery);
-
-        // البحث في الاسم المختصر
         final shortNameMatch = a.shortName?.toLowerCase().contains(_searchQuery) ?? false;
-
-        // البحث في الهاتف
         final phoneMatch = a.phone.toLowerCase().contains(_searchQuery);
-
-        // البحث في اسم المندوب
         final representative = state.representatives.where((r) => r.id == a.representativeId).firstOrNull;
         final repMatch = representative?.name.toLowerCase().contains(_searchQuery) ?? false;
-
-        // البحث في اسم البنك
         final bankMatch = a.bankName.toLowerCase().contains(_searchQuery);
-
-        // البحث في رقم الحساب
         final accountMatch = a.accountNumber.toLowerCase().contains(_searchQuery);
 
         return nameMatch || shortNameMatch || phoneMatch || repMatch || bankMatch || accountMatch;
       }).toList();
     }
 
-    if (_showOnlyActive) {
+    // Quick Filter - Status
+    if (_selectedFilterStatus == 'active') {
       filteredAssociations = filteredAssociations.where((a) => a.isActive).toList();
+    } else if (_selectedFilterStatus == 'inactive') {
+      filteredAssociations = filteredAssociations.where((a) => !a.isActive).toList();
     }
 
+    // Quick Filter - Bank
+    if (_selectedBank != null) {
+      filteredAssociations = filteredAssociations.where((a) => a.bankName == _selectedBank).toList();
+    }
+
+    // Advanced Filter - Representative
     if (_selectedRepresentativeId != null) {
       filteredAssociations =
           filteredAssociations.where((a) => a.representativeId == _selectedRepresentativeId).toList();
     }
 
+    // Advanced Filter - Currency
     if (_selectedCurrency != null) {
       filteredAssociations = filteredAssociations.where((a) => a.accountCurrency == _selectedCurrency).toList();
     }
+
+    // Sorting - إنشاء نسخة قابلة للتعديل قبل الترتيب
+    final sortedAssociations = List.from(filteredAssociations)
+      ..sort((a, b) {
+        switch (_currentSort) {
+          case SortOption.nameAsc:
+            return a.name.compareTo(b.name);
+          case SortOption.nameDesc:
+            return b.name.compareTo(a.name);
+          case SortOption.dateNewest:
+            return b.createdAt.compareTo(a.createdAt);
+          case SortOption.dateOldest:
+            return a.createdAt.compareTo(b.createdAt);
+        }
+      });
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -157,9 +182,18 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
         title: 'إدارة الجمعيات',
         showGradient: true,
         actions: [
+          // Sorting Menu
+          SortingMenu(
+            currentSort: _currentSort,
+            onSortChanged: (newSort) {
+              setState(() => _currentSort = newSort);
+            },
+          ),
+          SizedBox(width: 8.w),
+          // Advanced Filters Button
           AssociationsFilterButton(
             onPressed: _showFilterSheet,
-            hasActiveFilters: !_showOnlyActive || _selectedRepresentativeId != null || _selectedCurrency != null,
+            hasActiveFilters: _selectedRepresentativeId != null || _selectedCurrency != null,
           ),
         ],
       ),
@@ -170,37 +204,37 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
             controller: _searchController,
             onChanged: _onSearchChanged,
             searchQuery: _searchQuery,
-            showOnlyActive: _showOnlyActive,
-            selectedRepresentativeId: _selectedRepresentativeId,
-            selectedCurrency: _selectedCurrency,
+            showOnlyActive: true,
             onClearAll: () {
               setState(() {
                 _searchQuery = '';
-                _showOnlyActive = true;
+                _searchController.clear();
+                _selectedFilterStatus = null;
+                _selectedBank = null;
                 _selectedRepresentativeId = null;
                 _selectedCurrency = null;
               });
             },
           ),
 
-          // ⚡ قائمة الإجراءات السريعة
-          if (!state.isLoading && filteredAssociations.isNotEmpty)
-            QuickActionsList(
-              onAddAssociation: () {
-                HapticFeedback.mediumImpact();
-                _showAddAssociationSheet();
-              },
-              onRefresh: () async {
-                HapticFeedback.lightImpact();
-                await ref.read(associationsProvider.notifier).loadAssociations();
-              },
-            ),
+          // Quick Filters Bar
+          AssociationsFiltersBar(
+            selectedStatus: _selectedFilterStatus,
+            selectedBank: _selectedBank,
+            availableBanks: _getUniqueBanks(state.associations),
+            onStatusChanged: (status) {
+              setState(() => _selectedFilterStatus = status);
+            },
+            onBankChanged: (bank) {
+              setState(() => _selectedBank = bank);
+            },
+          ),
 
           // المحتوى الرئيسي
           Expanded(
             child: state.isLoading
                 ? _buildSkeletonLoader()
-                : filteredAssociations.isEmpty
+                : sortedAssociations.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
                         onRefresh: () async {
@@ -208,7 +242,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
                         },
                         color: colorScheme.primary,
                         backgroundColor: Colors.white,
-                        child: _buildAssociationsList(filteredAssociations),
+                        child: _buildAssociationsList(sortedAssociations),
                       ),
           ),
         ],
@@ -268,6 +302,13 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
     );
   }
 
+  /// الحصول على قائمة البنوك الفريدة
+  List<String> _getUniqueBanks(List associations) {
+    final banks = associations.map<String>((a) => a.bankName as String).toSet().toList();
+    banks.sort();
+    return banks;
+  }
+
   /// قائمة الجمعيات مع تصميم Responsive Grid
   Widget _buildAssociationsList(List associations) {
     final state = ref.read(associationsProvider);
@@ -324,17 +365,20 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
 
             // 🏢 Grid بطاقات الجمعيات
             SliverPadding(
-              padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.mediumSpace,
+                vertical: 0, // إزالة المسافة العمودية
+              ),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: responsive.spacing,
-                  crossAxisSpacing: responsive.spacing,
+                  mainAxisSpacing: 2.h, // مسافة صغيرة جداً بين البطاقات
+                  crossAxisSpacing: ResponsiveUtils.getListSpacing(context),
                   childAspectRatio: crossAxisCount == 1
-                      ? 1.1 // Mobile: أطول
+                      ? 1.1 // Mobile: compact وعرض أكثر
                       : crossAxisCount == 2
-                          ? 0.95 // Tablet
-                          : 0.85, // Desktop: أعرض
+                          ? 1.15 // Tablet: compact
+                          : 1.2, // Desktop: compact
                 ),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
@@ -342,12 +386,31 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
                     final representative =
                         state.representatives.where((r) => r.id == association.representativeId).firstOrNull;
 
-                    return ModernAssociationCard(
-                      association: association,
-                      representativeName: representative?.name,
-                      onTap: () => _showEditAssociationSheet(association),
-                      onDelete: () => _confirmDelete(association.id, association.name),
-                      onEdit: () => _showEditAssociationSheet(association),
+                    // استخدام البطاقة الاحترافية الجديدة مع Swipe Actions و Animations
+                    return CardAnimationWrapper(
+                      index: index,
+                      child: SwipeActionsWrapper(
+                        itemName: association.name,
+                        onEdit: () => _showEditAssociationSheet(association),
+                        onDelete: () => _confirmDelete(association.id, association.name),
+                        child: ProfessionalAssociationCard(
+                          id: association.id,
+                          name: association.name,
+                          shortName: association.shortName,
+                          phone: association.phone,
+                          email: association.email,
+                          bankName: association.bankName,
+                          accountNumber: association.accountNumber,
+                          currency: association.accountCurrency,
+                          representativeName: representative?.name,
+                          isActive: association.isActive,
+                          createdAt: association.createdAt,
+                          updatedAt: association.updatedAt,
+                          onTap: () => _showEditAssociationSheet(association),
+                          onEdit: () => _showEditAssociationSheet(association),
+                          onDelete: () => _confirmDelete(association.id, association.name),
+                        ),
+                      ),
                     );
                   },
                   childCount: associations.length,

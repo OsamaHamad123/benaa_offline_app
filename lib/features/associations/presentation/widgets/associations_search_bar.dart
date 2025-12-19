@@ -30,16 +30,18 @@ class AssociationsSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isTablet = ResponsiveUtils.isTablet(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? colorScheme.surface : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -54,12 +56,11 @@ class AssociationsSearchBar extends StatelessWidget {
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: ResponsiveUtils.bodyFont),
               decoration: InputDecoration(
-                hintText: isTablet
-                    ? 'بحث عن جمعية... (الاسم، المندوب، البنك، رقم الحساب)'
-                    : 'بحث بالاسم، المندوب، البنك...',
+                hintText:
+                    isTablet ? 'بحث عن جمعية... (الاسم، المندوب، البنك، رقم الحساب)' : 'بحث بالاسم، المندوب، البنك...',
                 hintStyle: TextStyle(
                   fontSize: ResponsiveUtils.smallFont,
-                  color: Colors.grey.shade600,
+                  color: isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade600,
                 ),
                 prefixIcon: Icon(
                   Icons.search,
@@ -67,10 +68,9 @@ class AssociationsSearchBar extends StatelessWidget {
                   size: ResponsiveUtils.getIconSize(context),
                 ),
                 filled: true,
-                fillColor: Colors.grey.shade100,
+                fillColor: isDark ? colorScheme.surfaceContainerHighest : Colors.grey.shade100,
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: EdgeInsets.symmetric(
@@ -80,10 +80,7 @@ class AssociationsSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          if (searchQuery.isNotEmpty ||
-              !showOnlyActive ||
-              selectedRepresentativeId != null ||
-              selectedCurrency != null)
+          if (searchQuery.isNotEmpty || !showOnlyActive || selectedRepresentativeId != null || selectedCurrency != null)
             Padding(
               padding: EdgeInsets.only(right: ResponsiveUtils.smallSpace),
               child: IconButton(

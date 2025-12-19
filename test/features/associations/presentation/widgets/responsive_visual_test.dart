@@ -1,13 +1,19 @@
 import 'package:benaa_offline_app/features/associations/domain/entities/association.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/modern_association_card.dart';
+import 'package:benaa_offline_app/features/associations/presentation/widgets/enhanced_associations_stats_card.dart';
 import 'package:flutter/material.dart';
 
-/// 🧪 Visual Test للـ responsive issues
+/// 🧪 Visual Test للـ responsive issues - UPDATED
 ///
 /// استخدام:
-/// 1. شغل الـ app
-/// 2. انتقل لصفحة الـ associations
-/// 3. جرب تصغير الشاشة
+/// 1. شغل الـ app بـ: flutter run test/features/associations/presentation/widgets/responsive_visual_test.dart
+/// 2. استخدم الـ slider لتغيير عرض البطاقة
+/// 3. جرب الأحجام المختلفة: 280px (ضيق جداً)، 350px (عادي)، 500px (واسع)
+///
+/// التحسينات الجديدة:
+/// ✅ بطاقة الإحصائيات: الآن أفقية باستخدام Wrap
+/// ✅ بطاقة الجمعية: محتوى مدمج وأزرار أفقية
+/// ✅ childAspectRatio محسّن في الصفحة الرئيسية
 ///
 /// هذا الـ file للتوثيق فقط - ليس automated test
 void main() {
@@ -123,6 +129,17 @@ class _ResponsiveTestPageState extends State<ResponsiveTestPage> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                // ✨ NEW: بطاقة الإحصائيات
+                _buildStatsTest(
+                  'Test 0: بطاقة الإحصائيات (NEW)',
+                  totalCount: 15,
+                  activeCount: 10,
+                  inactiveCount: 5,
+                ),
+                const SizedBox(height: 24),
+                const Divider(thickness: 2),
+                const SizedBox(height: 24),
+
                 _buildTestCase(
                   'Test 1: بيانات كاملة',
                   testAssociation,
@@ -154,6 +171,38 @@ class _ResponsiveTestPageState extends State<ResponsiveTestPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatsTest(
+    String title, {
+    required int totalCount,
+    required int activeCount,
+    required int inactiveCount,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.green,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: SizedBox(
+            width: _cardWidth,
+            child: EnhancedAssociationsStatsCard(
+              totalCount: totalCount,
+              activeCount: activeCount,
+              inactiveCount: inactiveCount,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -214,9 +263,10 @@ class _ResponsiveTestPageState extends State<ResponsiveTestPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
               ),
               Text('• لا يوجد overflow (قطع في المحتوى)'),
-              Text('• البطاقة scrollable إذا كان المحتوى كبير'),
-              Text('• الأزرار responsive (عمودي/أفقي)'),
-              Text('• معلومات الاتصال والبنك responsive'),
+              Text('• بطاقة الإحصائيات: أفقية دائماً باستخدام Wrap'),
+              Text('• بطاقة الجمعية: محتوى مدمج ومختصر'),
+              Text('• الأزرار أفقية دائماً (تعديل | حذف)'),
+              Text('• معلومات الاتصال مدمجة في صف واحد'),
               SizedBox(height: 16),
               Text(
                 '❌ المشاكل المحتملة:',

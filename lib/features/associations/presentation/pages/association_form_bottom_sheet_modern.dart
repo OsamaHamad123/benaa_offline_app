@@ -122,6 +122,30 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     super.dispose();
   }
 
+  /// عرض ورقة إضافة مندوب جديد
+  Future<String?> _showAddRepresentativeSheet(
+    BuildContext context,
+    List representatives,
+  ) async {
+    final result = await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          return AddRepresentativeBottomSheet(
+            onAdded: (rep) {
+              // تحديث قائمة المندوبين
+              ref.read(associationsProvider.notifier).loadRepresentatives();
+            },
+          );
+        },
+      ),
+    );
+
+    return result?.id;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ResponsiveBottomSheet(
@@ -386,8 +410,15 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
               onChanged: (newValue) {
                 _selectedRepresentativeNotifier.value = newValue;
               },
-              onAddNew: () {
-                // يمكن إضافة منطق لإضافة مندوب جديد هنا
+              onAddNew: () async {
+                // عرض ورقة إضافة مندوب جديد
+                final newRepId = await _showAddRepresentativeSheet(
+                  context,
+                  representatives,
+                );
+                if (newRepId != null) {
+                  _selectedRepresentativeNotifier.value = newRepId;
+                }
               },
             );
           },

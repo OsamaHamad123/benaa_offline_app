@@ -44,37 +44,30 @@ class ResponsiveUtils {
 
   // ==================== Device Type Detection ====================
 
-  static bool isMobile(BuildContext context) =>
-      MediaQuery.of(context).size.width < 600;
+  static bool isMobile(BuildContext context) => MediaQuery.of(context).size.width < 600;
 
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     return width >= 600 && width < 1200;
   }
 
-  static bool isDesktop(BuildContext context) =>
-      MediaQuery.of(context).size.width >= 1200;
+  static bool isDesktop(BuildContext context) => MediaQuery.of(context).size.width >= 1200;
 
-  static bool isLandscape(BuildContext context) =>
-      MediaQuery.of(context).orientation == Orientation.landscape;
+  static bool isLandscape(BuildContext context) => MediaQuery.of(context).orientation == Orientation.landscape;
 
   // ==================== Responsive Dimensions ====================
 
   /// Get responsive width (0.0 - 1.0 represents percentage)
-  static double width(BuildContext context, double percentage) =>
-      MediaQuery.of(context).size.width * percentage;
+  static double width(BuildContext context, double percentage) => MediaQuery.of(context).size.width * percentage;
 
   /// Get responsive height (0.0 - 1.0 represents percentage)
-  static double height(BuildContext context, double percentage) =>
-      MediaQuery.of(context).size.height * percentage;
+  static double height(BuildContext context, double percentage) => MediaQuery.of(context).size.height * percentage;
 
   /// Screen width
-  static double screenWidth(BuildContext context) =>
-      MediaQuery.of(context).size.width;
+  static double screenWidth(BuildContext context) => MediaQuery.of(context).size.width;
 
   /// Screen height
-  static double screenHeight(BuildContext context) =>
-      MediaQuery.of(context).size.height;
+  static double screenHeight(BuildContext context) => MediaQuery.of(context).size.height;
 
   // ==================== Standard Spacing ====================
 
@@ -235,6 +228,20 @@ class ResponsiveUtils {
     if (isDesktop(context)) return 24.r;
     if (isTablet(context)) return 16.r;
     return 12.r;
+  }
+
+  /// Get list spacing - مسافة أصغر للقوائم
+  static double getListSpacing(BuildContext context) {
+    if (isDesktop(context)) return 12.r;
+    if (isTablet(context)) return 8.r;
+    return 6.r;
+  }
+
+  /// Get compact list spacing - مسافة مدمجة جداً
+  static double getCompactListSpacing(BuildContext context) {
+    if (isDesktop(context)) return 8.r;
+    if (isTablet(context)) return 6.r;
+    return 4.r;
   }
 
   // ==================== Card & Container Sizes ====================
