@@ -113,8 +113,12 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           isSelected: filters.categoryId == null,
                           onTap: () {
                             HapticPatterns.selection();
-                            ref.read(filtersProvider.notifier).setCategory(null);
-                            ref.read(beneficiariesListProvider.notifier).refresh();
+                            ref
+                                .read(filtersProvider.notifier)
+                                .setCategory(null);
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
                           },
                           rv: rv,
                         ),
@@ -124,7 +128,9 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           onTap: () {
                             HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(1);
-                            ref.read(beneficiariesListProvider.notifier).refresh();
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
                           },
                           color: Colors.blue,
                           rv: rv,
@@ -135,7 +141,9 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           onTap: () {
                             HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(2);
-                            ref.read(beneficiariesListProvider.notifier).refresh();
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
                           },
                           color: Colors.purple,
                           rv: rv,
@@ -146,7 +154,9 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           onTap: () {
                             HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(3);
-                            ref.read(beneficiariesListProvider.notifier).refresh();
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
                           },
                           color: Colors.orange,
                           rv: rv,
@@ -157,7 +167,9 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                           onTap: () {
                             HapticPatterns.selection();
                             ref.read(filtersProvider.notifier).setCategory(4);
-                            ref.read(beneficiariesListProvider.notifier).refresh();
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
                           },
                           color: Colors.red,
                           rv: rv,
@@ -217,15 +229,25 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                         return _FilterChip(
                           label: sort.label,
                           isSelected: isSelected,
-                          icon: isSelected ? (filters.sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : null,
+                          icon: isSelected
+                              ? (filters.sortAscending
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward)
+                              : null,
                           onTap: () {
                             HapticPatterns.selection();
                             if (isSelected) {
-                              ref.read(filtersProvider.notifier).toggleSortDirection();
+                              ref
+                                  .read(filtersProvider.notifier)
+                                  .toggleSortDirection();
                             } else {
-                              ref.read(filtersProvider.notifier).setSorting(sort, true);
+                              ref
+                                  .read(filtersProvider.notifier)
+                                  .setSorting(sort, true);
                             }
-                            ref.read(beneficiariesListProvider.notifier).refresh();
+                            ref
+                                .read(beneficiariesListProvider.notifier)
+                                .refresh();
                           },
                           rv: rv,
                         );

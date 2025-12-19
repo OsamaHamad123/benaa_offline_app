@@ -19,10 +19,12 @@ class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
   const RecordVisitPageEnhanced({super.key, required this.beneficiary});
 
   @override
-  ConsumerState<RecordVisitPageEnhanced> createState() => _RecordVisitPageEnhancedState();
+  ConsumerState<RecordVisitPageEnhanced> createState() =>
+      _RecordVisitPageEnhancedState();
 }
 
-class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhanced> {
+class _RecordVisitPageEnhancedState
+    extends ConsumerState<RecordVisitPageEnhanced> {
   final _formKey = GlobalKey<FormState>();
   final _staffNameController = TextEditingController();
   final _notesController = TextEditingController();

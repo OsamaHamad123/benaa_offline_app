@@ -182,8 +182,9 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
     switch (result) {
       case Success(value: final updatedAssociation):
-        final updatedList =
-            state.associations.map((a) => a.id == updatedAssociation.id ? updatedAssociation : a).toList();
+        final updatedList = state.associations
+            .map((a) => a.id == updatedAssociation.id ? updatedAssociation : a)
+            .toList();
 
         state = state.copyWith(
           associations: updatedList,
@@ -208,7 +209,8 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
     switch (result) {
       case Success():
-        final updatedList = state.associations.where((a) => a.id != id).toList();
+        final updatedList =
+            state.associations.where((a) => a.id != id).toList();
 
         state = state.copyWith(
           associations: updatedList,
@@ -257,6 +259,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 }
 
 /// Associations State Provider
-final associationsProvider = StateNotifierProvider<AssociationsNotifier, AssociationsState>((ref) {
+final associationsProvider =
+    StateNotifierProvider<AssociationsNotifier, AssociationsState>((ref) {
   return AssociationsNotifier(ref);
 });

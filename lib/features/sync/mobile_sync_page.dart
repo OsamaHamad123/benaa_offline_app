@@ -41,9 +41,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
     // Count beneficiaries by sync state
     final beneficiaries = await db.select(db.beneficiaries).get();
-    final benPending = beneficiaries.where((b) => b.syncState == 'pending').length;
-    final benModified = beneficiaries.where((b) => b.syncState == 'modified').length;
-    final benSynced = beneficiaries.where((b) => b.syncState == 'synced').length;
+    final benPending =
+        beneficiaries.where((b) => b.syncState == 'pending').length;
+    final benModified =
+        beneficiaries.where((b) => b.syncState == 'modified').length;
+    final benSynced =
+        beneficiaries.where((b) => b.syncState == 'synced').length;
 
     // Count associations (assuming they have similar sync tracking)
     final associations = await db.select(db.associations).get();
@@ -100,7 +103,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message: '✅ تم تنزيل ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
+          message:
+              '✅ تم تنزيل ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
         );
       } else {
         if (!mounted) return;
@@ -128,13 +132,15 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message: '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
+          message:
+              '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
         );
       } else {
         if (!mounted) return;
         EnhancedSnackbar.showWarning(
           context,
-          message: '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
+          message:
+              '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
         );
       }
     }
@@ -288,7 +294,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                   '${_stats!['ben_total']}',
                   Colors.blue,
                 ),
-                _buildStatRow('متزامن', '${_stats!['ben_synced']}', Colors.green),
+                _buildStatRow(
+                    'متزامن', '${_stats!['ben_synced']}', Colors.green),
                 _buildStatRow(
                   'بانتظار الرفع',
                   '${_stats!['ben_pending']}',

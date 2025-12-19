@@ -124,8 +124,8 @@ class ValidatedTextField extends StatelessWidget {
       return value.isEmpty && required
           ? FieldValidationState.error
           : value.isNotEmpty
-          ? FieldValidationState.valid
-          : FieldValidationState.untouched;
+              ? FieldValidationState.valid
+              : FieldValidationState.untouched;
     }
 
     // Use validator

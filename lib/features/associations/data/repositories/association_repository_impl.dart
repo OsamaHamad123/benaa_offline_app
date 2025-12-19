@@ -20,7 +20,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
   @override
   Future<Result<List<domain.Association>>> getAllActiveAssociations() async {
     try {
-      final associations = await database.associationsDao.getAllActiveAssociations();
+      final associations =
+          await database.associationsDao.getAllActiveAssociations();
       return Success(associations.map(_mapToDomain).toList());
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل جلب الجمعيات', stackTrace));
@@ -53,9 +54,11 @@ class AssociationRepositoryImpl implements AssociationRepository {
   }
 
   @override
-  Future<Result<List<domain.Association>>> searchAssociations(String query) async {
+  Future<Result<List<domain.Association>>> searchAssociations(
+      String query) async {
     try {
-      final associations = await database.associationsDao.searchAssociations(query);
+      final associations =
+          await database.associationsDao.searchAssociations(query);
       return Success(associations.map(_mapToDomain).toList());
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل البحث عن الجمعيات', stackTrace));
@@ -125,7 +128,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
         syncState: const drift.Value('pending'),
       );
 
-      final success = await database.associationsDao.updateAssociation(companion);
+      final success =
+          await database.associationsDao.updateAssociation(companion);
 
       if (!success) {
         return Failure(DatabaseFailure('فشل تحديث الجمعية'));
@@ -209,7 +213,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
   }
 
   @override
-  Future<Result<domain.Representative>> createRepresentative(String name) async {
+  Future<Result<domain.Representative>> createRepresentative(
+      String name) async {
     try {
       final id = _uuid.v4();
       final now = DateTime.now();
@@ -248,7 +253,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
         syncState: const drift.Value('pending'),
       );
 
-      final success = await database.associationsDao.updateRepresentative(companion);
+      final success =
+          await database.associationsDao.updateRepresentative(companion);
 
       if (!success) {
         return Failure(DatabaseFailure('فشل تحديث المندوب'));

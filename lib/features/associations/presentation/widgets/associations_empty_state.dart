@@ -101,7 +101,8 @@ class AssociationsEmptyState extends StatelessWidget {
                   vertical: ResponsiveUtils.mediumSpace,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.largeRadius),
+                  borderRadius:
+                      BorderRadius.circular(ResponsiveUtils.largeRadius),
                 ),
                 elevation: 6,
                 shadowColor: colorScheme.primary.withAlpha(102),

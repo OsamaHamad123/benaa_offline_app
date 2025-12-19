@@ -130,8 +130,8 @@ class UnifiedProgressCard extends StatelessWidget {
               overallProgress >= 0.8
                   ? Icons.check_circle_rounded
                   : overallProgress >= 0.5
-                  ? Icons.schedule_rounded
-                  : Icons.circle_outlined,
+                      ? Icons.schedule_rounded
+                      : Icons.circle_outlined,
               color: progressColor,
               size: 24.sp,
             ),

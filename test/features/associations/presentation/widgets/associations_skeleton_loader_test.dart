@@ -4,7 +4,8 @@ import 'package:benaa_offline_app/features/associations/presentation/widgets/ass
 
 void main() {
   group('AssociationsSkeletonLoader Widget Tests', () {
-    testWidgets('should render default number of skeleton items', (WidgetTester tester) async {
+    testWidgets('should render default number of skeleton items',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -18,7 +19,8 @@ void main() {
       expect(find.byType(AnimatedBuilder), findsNWidgets(4));
     });
 
-    testWidgets('should render custom number of skeleton items', (WidgetTester tester) async {
+    testWidgets('should render custom number of skeleton items',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -32,7 +34,8 @@ void main() {
       expect(find.byType(AnimatedBuilder), findsNWidgets(6));
     });
 
-    testWidgets('should create AnimationController', (WidgetTester tester) async {
+    testWidgets('should create AnimationController',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -47,7 +50,8 @@ void main() {
       expect(find.byType(ListView), findsOneWidget);
     });
 
-    testWidgets('should dispose AnimationController properly', (WidgetTester tester) async {
+    testWidgets('should dispose AnimationController properly',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -73,7 +77,8 @@ void main() {
       expect(find.byType(AssociationsSkeletonLoader), findsNothing);
     });
 
-    testWidgets('should have shimmer animation running', (WidgetTester tester) async {
+    testWidgets('should have shimmer animation running',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -96,7 +101,8 @@ void main() {
       expect(find.byType(AnimatedBuilder), findsOneWidget);
     });
 
-    testWidgets('should use NeverScrollableScrollPhysics', (WidgetTester tester) async {
+    testWidgets('should use NeverScrollableScrollPhysics',
+        (WidgetTester tester) async {
       // Act
       await tester.pumpWidget(
         const MaterialApp(

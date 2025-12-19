@@ -227,7 +227,8 @@ class AnalyticsExporter {
       insights.add('🎯 Haptic feedback is actively used ($hapticUsage times)');
     }
     if (hapticDisabled > 0) {
-      insights.add('⚠️ Users disabled haptic $hapticDisabled times - consider making it less intrusive');
+      insights.add(
+          '⚠️ Users disabled haptic $hapticDisabled times - consider making it less intrusive');
     }
 
     // Dark mode insights
@@ -237,27 +238,33 @@ class AnalyticsExporter {
       insights.add('🌙 User prefers Dark Mode');
     }
     if (darkModeToggles > 5) {
-      insights.add('🔄 User frequently switches themes ($darkModeToggles times)');
+      insights
+          .add('🔄 User frequently switches themes ($darkModeToggles times)');
     }
 
     // Animation insights
     final frameDrops = summary['animations']['frameDrops'] as int;
     final avgDuration = summary['animations']['avgDuration'] as int;
     if (frameDrops > 10) {
-      insights.add('⚠️ High frame drops detected ($frameDrops) - animation performance needs optimization');
+      insights.add(
+          '⚠️ High frame drops detected ($frameDrops) - animation performance needs optimization');
     }
     if (avgDuration > 300) {
-      insights.add('⚠️ Animations running slow (avg ${avgDuration}ms) - target < 250ms');
+      insights.add(
+          '⚠️ Animations running slow (avg ${avgDuration}ms) - target < 250ms');
     }
 
     // Accessibility insights
     final screenReader = summary['accessibility']['screenReaderUsed'] as bool;
-    final semanticsInt = summary['accessibility']['semanticsInteractions'] as int;
+    final semanticsInt =
+        summary['accessibility']['semanticsInteractions'] as int;
     if (screenReader) {
-      insights.add('♿ Screen reader detected - accessibility features are being used');
+      insights.add(
+          '♿ Screen reader detected - accessibility features are being used');
     }
     if (semanticsInt > 50) {
-      insights.add('✅ High accessibility engagement ($semanticsInt interactions)');
+      insights
+          .add('✅ High accessibility engagement ($semanticsInt interactions)');
     }
 
     // Session insights

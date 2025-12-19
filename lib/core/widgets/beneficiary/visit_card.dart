@@ -18,7 +18,8 @@ class VisitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusText = visit.isSubmitted ? 'تم الإرسال' : 'قيد الانتظار';
     return Semantics(
-      label: 'زيارة من ${visit.staffName}, ${formatDateTime(visit.visitDate)}, الحالة: $statusText',
+      label:
+          'زيارة من ${visit.staffName}, ${formatDateTime(visit.visitDate)}, الحالة: $statusText',
       hint: 'اضغط لعرض التفاصيل',
       button: true,
       child: FadeSlideTransition(

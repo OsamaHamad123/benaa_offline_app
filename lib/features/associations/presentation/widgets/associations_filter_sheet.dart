@@ -26,7 +26,8 @@ class AssociationsFilterSheet extends StatefulWidget {
   });
 
   @override
-  State<AssociationsFilterSheet> createState() => _AssociationsFilterSheetState();
+  State<AssociationsFilterSheet> createState() =>
+      _AssociationsFilterSheetState();
 }
 
 class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
@@ -38,7 +39,8 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
   void initState() {
     super.initState();
     showActiveNotifier = ValueNotifier<bool>(widget.showOnlyActive);
-    selectedRepNotifier = ValueNotifier<String?>(widget.selectedRepresentativeId);
+    selectedRepNotifier =
+        ValueNotifier<String?>(widget.selectedRepresentativeId);
     selectedCurrencyNotifier = ValueNotifier<String?>(widget.selectedCurrency);
   }
 
@@ -61,7 +63,8 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
           left: ResponsiveUtils.mediumSpace,
           right: ResponsiveUtils.mediumSpace,
           top: ResponsiveUtils.mediumSpace,
-          bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
+          bottom: MediaQuery.of(context).viewInsets.bottom +
+              ResponsiveUtils.mediumSpace,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -116,7 +119,9 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         Text(
           'الفلاتر',
           style: TextStyle(
-            fontSize: isTablet ? ResponsiveUtils.headingFont : ResponsiveUtils.titleFont,
+            fontSize: isTablet
+                ? ResponsiveUtils.headingFont
+                : ResponsiveUtils.titleFont,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -132,7 +137,8 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
       builder: (context, showActive, _) => SwitchListTile(
         value: showActive,
         onChanged: (value) => showActiveNotifier.value = value,
-        title: const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
+        title:
+            const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
         activeColor: colorScheme.primary,
       ),
     );
@@ -154,16 +160,19 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         SizedBox(height: ResponsiveUtils.smallSpace),
         Consumer(
           builder: (context, ref, child) {
-            final representatives = ref.watch(associationsProvider).representatives;
+            final representatives =
+                ref.watch(associationsProvider).representatives;
 
             return ValueListenableBuilder<String?>(
               valueListenable: selectedRepNotifier,
-              builder: (context, selectedRep, _) => DropdownButtonFormField<String?>(
+              builder: (context, selectedRep, _) =>
+                  DropdownButtonFormField<String?>(
                 value: selectedRep,
                 decoration: InputDecoration(
                   hintText: 'اختر المندوب',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    borderRadius:
+                        BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: ResponsiveUtils.mediumSpace,
@@ -204,12 +213,14 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         SizedBox(height: ResponsiveUtils.smallSpace),
         ValueListenableBuilder<String?>(
           valueListenable: selectedCurrencyNotifier,
-          builder: (context, selectedCurrency, _) => DropdownButtonFormField<String?>(
+          builder: (context, selectedCurrency, _) =>
+              DropdownButtonFormField<String?>(
             value: selectedCurrency,
             decoration: InputDecoration(
               hintText: 'اختر العملة',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius:
+                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,

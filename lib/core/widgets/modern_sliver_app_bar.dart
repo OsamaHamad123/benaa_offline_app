@@ -38,7 +38,6 @@ class ModernSliverAppBar extends StatelessWidget {
       elevation: 0,
       backgroundColor: colorScheme.primary,
       automaticallyImplyLeading: false,
-
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: EdgeInsets.only(
           left: isTablet ? 24.w : 20.w,
@@ -92,7 +91,6 @@ class ModernSliverAppBar extends StatelessWidget {
           ),
         ),
       ),
-
       actions: actions != null
           ? [
               ...actions!,

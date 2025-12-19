@@ -9,7 +9,8 @@ part 'sponsorships_dao.g.dart';
 
 /// 🤝 Sponsorships DAO - عمليات الكفالات
 @DriftAccessor(tables: [Sponsorships, Beneficiaries, Associations])
-class SponsorshipsDao extends DatabaseAccessor<AppDatabase> with _$SponsorshipsDaoMixin {
+class SponsorshipsDao extends DatabaseAccessor<AppDatabase>
+    with _$SponsorshipsDaoMixin {
   SponsorshipsDao(super.db);
 
   // ---------------------------------------------------------------------------
@@ -24,20 +25,29 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase> with _$SponsorshipsD
     required int fileNo,
     required SponsorshipsCompanion companion,
   }) async {
-    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo))).write(companion);
+    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo)))
+        .write(companion);
   }
 
   Future<int> endSponsorship({
     required int fileNo,
     DateTime? endDate,
   }) async {
-    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo))).write(
+    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo)))
+        .write(
       SponsorshipsCompanion(
         status: const Value('ended'),
         endDate: Value(endDate ?? DateTime.now()),
         updatedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  Future<int> deleteSponsorship({
+    required int fileNo,
+  }) async {
+    return await (delete(sponsorships)..where((s) => s.fileNo.equals(fileNo)))
+        .go();
   }
 
   // ---------------------------------------------------------------------------
@@ -136,6 +146,62 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase> with _$SponsorshipsD
 
     return result.read<int>('c');
   }
+
+  /// All sponsorships (optionally filtered by association/status/search)
+  Stream<List<SponsorshipWithDetails>> watchSponsorships({
+    String? associationId,
+    String status = 'all',
+    String sponsorshipType = 'all',
+    String query = '',
+  }) {
+    final s = sponsorships;
+    final b = beneficiaries;
+    final a = associations;
+
+    final join = select(s).join([
+      innerJoin(b, b.id.equalsExp(s.beneficiaryId)),
+      leftOuterJoin(a, a.id.equalsExp(s.associationId)),
+    ]);
+
+    if (associationId != null && associationId.isNotEmpty) {
+      join.where(s.associationId.equals(associationId));
+    }
+
+    if (status != 'all') {
+      join.where(s.status.equals(status));
+    }
+
+    if (sponsorshipType != 'all') {
+      join.where(s.sponsorshipType.equals(sponsorshipType));
+    }
+
+    final q = query.trim();
+    if (q.isNotEmpty) {
+      final asInt = int.tryParse(q);
+      if (asInt != null) {
+        join.where(s.fileNo.equals(asInt) |
+            b.idNumber.equals(asInt) |
+            b.fullName.contains(q));
+      } else {
+        join.where(b.fullName.contains(q));
+      }
+    }
+
+    join.orderBy([
+      OrderingTerm.desc(s.updatedAt),
+      OrderingTerm.desc(s.fileNo),
+    ]);
+
+    return join.watch().map((rows) {
+      return rows
+          .map((row) => SponsorshipWithDetails(
+                sponsorship: row.readTable(s),
+                beneficiary: row.readTable(b),
+                association: row.readTableOrNull(a),
+              ))
+          .toList(growable: false);
+    });
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -160,6 +226,20 @@ class SponsorshipWithAssociation {
 
   const SponsorshipWithAssociation({
     required this.sponsorship,
+    required this.association,
+  });
+
+  String get associationName => association?.name ?? 'غير معروف';
+}
+
+class SponsorshipWithDetails {
+  final Sponsorship sponsorship;
+  final Beneficiary beneficiary;
+  final Association? association;
+
+  const SponsorshipWithDetails({
+    required this.sponsorship,
+    required this.beneficiary,
     required this.association,
   });
 

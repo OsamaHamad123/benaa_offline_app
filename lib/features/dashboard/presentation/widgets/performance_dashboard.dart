@@ -495,9 +495,8 @@ class _WidgetMetricsTab extends StatelessWidget {
           margin: EdgeInsets.only(bottom: 8.h),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: metrics.isPerformant
-                  ? Colors.green
-                  : Colors.orange,
+              backgroundColor:
+                  metrics.isPerformant ? Colors.green : Colors.orange,
               child: Text(
                 '${metrics.buildCount}',
                 style: TextStyle(fontSize: 10.sp),
@@ -532,9 +531,8 @@ class _StateMetricsTab extends StatelessWidget {
           margin: EdgeInsets.only(bottom: 8.h),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: metrics.wasteRate < 10
-                  ? Colors.green
-                  : Colors.red,
+              backgroundColor:
+                  metrics.wasteRate < 10 ? Colors.green : Colors.red,
               child: Text(
                 '${metrics.updateCount}',
                 style: TextStyle(fontSize: 10.sp),

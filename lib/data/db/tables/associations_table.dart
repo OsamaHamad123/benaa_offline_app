@@ -21,13 +21,17 @@ class Associations extends Table {
   TextColumn get accountNumber => text()(); // رقم الحساب
   TextColumn get swiftCode => text().nullable()(); // رمز السويفت
   TextColumn get bankPhone => text().nullable()(); // رقم هاتف البنك
-  TextColumn get accountCurrency => text().nullable()(); // عملة الحساب (IQD, USD, EUR)
+  TextColumn get accountCurrency =>
+      text().nullable()(); // عملة الحساب (IQD, USD, EUR)
 
   // Representative Link
-  TextColumn get representativeId => text().nullable().references(AssociationRepresentatives, #id)(); // مندوب الجمعية
+  TextColumn get representativeId => text()
+      .nullable()
+      .references(AssociationRepresentatives, #id)(); // مندوب الجمعية
 
   // Status
-  BoolColumn get isActive => boolean().withDefault(const Constant(true))(); // نشط/معطل
+  BoolColumn get isActive =>
+      boolean().withDefault(const Constant(true))(); // نشط/معطل
 
   // Timestamps
   DateTimeColumn get createdAt => dateTime()();

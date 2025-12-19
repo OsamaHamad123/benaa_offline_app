@@ -94,11 +94,12 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
     int beneficiaryId,
     int healthStatus, // 1=سليم, 2=مريض, 3=مزمن, 4=معاق, 5=غير معروف
   ) {
-    return (select(familyMembersTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              t.healthStatus.equals(healthStatus),
-        ))
+    return (select(familyMembersTable)
+          ..where(
+            (t) =>
+                t.beneficiaryId.equals(beneficiaryId) &
+                t.healthStatus.equals(healthStatus),
+          ))
         .get();
   }
 
@@ -106,15 +107,16 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
   Future<List<FamilyMember>> searchMembers(int beneficiaryId, String query) {
     final searchTerm = '%${query.toLowerCase()}%';
     final nationalIdInt = int.tryParse(query);
-    return (select(familyMembersTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              (t.firstName.lower().like(searchTerm) |
-                  t.familyName.lower().like(searchTerm) |
-                  (nationalIdInt != null
-                      ? t.orphanNationalId.equals(nationalIdInt)
-                      : const Constant(false))),
-        ))
+    return (select(familyMembersTable)
+          ..where(
+            (t) =>
+                t.beneficiaryId.equals(beneficiaryId) &
+                (t.firstName.lower().like(searchTerm) |
+                    t.familyName.lower().like(searchTerm) |
+                    (nationalIdInt != null
+                        ? t.orphanNationalId.equals(nationalIdInt)
+                        : const Constant(false))),
+          ))
         .get();
   }
 
@@ -122,7 +124,8 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
   Future<List<FamilyMember>> getUnsyncedMembers() {
     return (select(
       familyMembersTable,
-    )..where((t) => t.syncState.equals('pending'))).get();
+    )..where((t) => t.syncState.equals('pending')))
+        .get();
   }
 
   /// ✅ تحديث حالة المزامنة

@@ -54,7 +54,8 @@ class AutocompleteField<T extends Object> extends StatefulWidget {
   State<AutocompleteField<T>> createState() => _AutocompleteFieldState<T>();
 }
 
-class _AutocompleteFieldState<T extends Object> extends State<AutocompleteField<T>> {
+class _AutocompleteFieldState<T extends Object>
+    extends State<AutocompleteField<T>> {
   Timer? _debounceTimer;
   bool _isSearching = false;
 
@@ -80,7 +81,8 @@ class _AutocompleteFieldState<T extends Object> extends State<AutocompleteField<
 
     final filtered = widget.suggestions.where((suggestion) {
       final displayString = _displayStringForOption(suggestion);
-      final normalizedSuggestion = widget.caseSensitive ? displayString : displayString.toLowerCase();
+      final normalizedSuggestion =
+          widget.caseSensitive ? displayString : displayString.toLowerCase();
       return normalizedSuggestion.contains(normalizedQuery);
     });
 
@@ -130,7 +132,9 @@ class _AutocompleteFieldState<T extends Object> extends State<AutocompleteField<
           decoration: InputDecoration(
             labelText: widget.label,
             hintText: widget.hintText ?? 'ابحث...',
-            prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : const Icon(Icons.search),
+            prefixIcon: widget.prefixIcon != null
+                ? Icon(widget.prefixIcon)
+                : const Icon(Icons.search),
             suffixIcon: _isSearching
                 ? Padding(
                     padding: EdgeInsets.all(12.r),
@@ -276,8 +280,9 @@ class SubDistrictAutocomplete extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Filter sub-districts based on parent district if provided
-    final suggestions =
-        parentDistrict != null ? IraqLocations.getSubDistricts(parentDistrict!) : IraqLocations.allSubDistricts;
+    final suggestions = parentDistrict != null
+        ? IraqLocations.getSubDistricts(parentDistrict!)
+        : IraqLocations.allSubDistricts;
 
     return AutocompleteField<String>(
       label: 'الناحية',

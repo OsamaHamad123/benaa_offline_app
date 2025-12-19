@@ -10,8 +10,8 @@ import '../beneficiary_activity_providers.dart';
 /// 📊 Beneficiaries List Provider
 final beneficiariesListProvider =
     StateNotifierProvider<BeneficiariesListNotifier, BeneficiariesListState>(
-      (ref) => BeneficiariesListNotifier(ref),
-    );
+  (ref) => BeneficiariesListNotifier(ref),
+);
 
 class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
   final Ref _ref;
@@ -275,7 +275,8 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       );
     } catch (e, stackTrace) {
       stopwatch.stop();
-      UnifiedLogger.error('Bulk delete failed', error: e, stackTrace: stackTrace);
+      UnifiedLogger.error('Bulk delete failed',
+          error: e, stackTrace: stackTrace);
       state = state.copyWith(items: oldItems, error: e.toString());
       _cachedData = oldCachedData;
       rethrow;

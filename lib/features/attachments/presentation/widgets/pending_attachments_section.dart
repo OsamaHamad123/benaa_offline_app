@@ -24,7 +24,8 @@ class PendingAttachmentsSection extends StatefulWidget {
   });
 
   @override
-  State<PendingAttachmentsSection> createState() => _PendingAttachmentsSectionState();
+  State<PendingAttachmentsSection> createState() =>
+      _PendingAttachmentsSectionState();
 }
 
 class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
@@ -177,7 +178,8 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
                 SizedBox(height: 16.h),
                 Text(
                   'إضافة مرفق',
-                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                  style:
+                      TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 16.h),
                 ListTile(
@@ -676,7 +678,8 @@ class _PendingFileCard extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, Colors.red),
+          errorBuilder: (_, __, ___) =>
+              _buildIcon(Icons.broken_image, Colors.red),
         ),
       );
     } else if (_isPdf()) {

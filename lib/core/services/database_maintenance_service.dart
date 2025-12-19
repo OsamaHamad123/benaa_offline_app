@@ -25,7 +25,8 @@ class DatabaseMaintenanceService {
   /// VACUUM - Rebuild database file to reduce size and improve performance
   Future<void> _checkAndVacuum() async {
     final lastVacuum = prefs.getString(_lastVacuumKey);
-    final shouldVacuum = lastVacuum == null || DateTime.now().difference(DateTime.parse(lastVacuum)) > _vacuumInterval;
+    final shouldVacuum = lastVacuum == null ||
+        DateTime.now().difference(DateTime.parse(lastVacuum)) > _vacuumInterval;
     if (shouldVacuum) {
       await vacuum();
       await prefs.setString(_lastVacuumKey, DateTime.now().toIso8601String());
@@ -35,8 +36,9 @@ class DatabaseMaintenanceService {
   /// ANALYZE - Update query planner statistics
   Future<void> _checkAndAnalyze() async {
     final lastAnalyze = prefs.getString(_lastAnalyzeKey);
-    final shouldAnalyze =
-        lastAnalyze == null || DateTime.now().difference(DateTime.parse(lastAnalyze)) > _analyzeInterval;
+    final shouldAnalyze = lastAnalyze == null ||
+        DateTime.now().difference(DateTime.parse(lastAnalyze)) >
+            _analyzeInterval;
     if (shouldAnalyze) {
       await analyze();
       await prefs.setString(_lastAnalyzeKey, DateTime.now().toIso8601String());
@@ -103,8 +105,12 @@ class DatabaseMaintenanceService {
       'databaseSize': dbSize,
       'lastVacuum': lastVacuum != null ? DateTime.parse(lastVacuum) : null,
       'lastAnalyze': lastAnalyze != null ? DateTime.parse(lastAnalyze) : null,
-      'daysSinceVacuum': lastVacuum != null ? DateTime.now().difference(DateTime.parse(lastVacuum)).inDays : null,
-      'daysSinceAnalyze': lastAnalyze != null ? DateTime.now().difference(DateTime.parse(lastAnalyze)).inDays : null,
+      'daysSinceVacuum': lastVacuum != null
+          ? DateTime.now().difference(DateTime.parse(lastVacuum)).inDays
+          : null,
+      'daysSinceAnalyze': lastAnalyze != null
+          ? DateTime.now().difference(DateTime.parse(lastAnalyze)).inDays
+          : null,
     };
   }
 }

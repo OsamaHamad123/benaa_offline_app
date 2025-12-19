@@ -79,8 +79,8 @@ class _BatteryPerformanceMonitorState extends State<BatteryPerformanceMonitor> {
         color: isLow
             ? Colors.red.shade50
             : isMedium
-            ? Colors.orange.shade50
-            : Colors.green.shade50,
+                ? Colors.orange.shade50
+                : Colors.green.shade50,
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
@@ -90,16 +90,16 @@ class _BatteryPerformanceMonitorState extends State<BatteryPerformanceMonitor> {
             widget.isLowPowerMode
                 ? Icons.battery_saver_rounded
                 : isLow
-                ? Icons.battery_alert_rounded
-                : isMedium
-                ? Icons.battery_3_bar_rounded
-                : Icons.battery_full_rounded,
+                    ? Icons.battery_alert_rounded
+                    : isMedium
+                        ? Icons.battery_3_bar_rounded
+                        : Icons.battery_full_rounded,
             size: 18.sp,
             color: isLow
                 ? Colors.red
                 : isMedium
-                ? Colors.orange
-                : Colors.green,
+                    ? Colors.orange
+                    : Colors.green,
           ),
           SizedBox(width: 6.w),
           Text(
@@ -110,8 +110,8 @@ class _BatteryPerformanceMonitorState extends State<BatteryPerformanceMonitor> {
               color: isLow
                   ? Colors.red.shade700
                   : isMedium
-                  ? Colors.orange.shade700
-                  : Colors.green.shade700,
+                      ? Colors.orange.shade700
+                      : Colors.green.shade700,
             ),
           ),
           if (widget.isLowPowerMode) ...[
@@ -242,15 +242,15 @@ class DataSyncProgress extends StatelessWidget {
         color: errorMessage != null
             ? Colors.red.shade50
             : isSyncing
-            ? Colors.blue.shade50
-            : Colors.green.shade50,
+                ? Colors.blue.shade50
+                : Colors.green.shade50,
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: errorMessage != null
               ? Colors.red.shade200
               : isSyncing
-              ? Colors.blue.shade200
-              : Colors.green.shade200,
+                  ? Colors.blue.shade200
+                  : Colors.green.shade200,
         ),
       ),
       child: Column(
@@ -283,8 +283,8 @@ class DataSyncProgress extends StatelessWidget {
                   errorMessage != null
                       ? 'فشل المزامنة'
                       : isSyncing
-                      ? 'جاري المزامنة...'
-                      : 'تمت المزامنة',
+                          ? 'جاري المزامنة...'
+                          : 'تمت المزامنة',
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,

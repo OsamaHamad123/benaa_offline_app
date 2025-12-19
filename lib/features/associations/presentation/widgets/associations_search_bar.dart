@@ -54,8 +54,9 @@ class AssociationsSearchBar extends StatelessWidget {
               textAlign: TextAlign.right,
               style: TextStyle(fontSize: ResponsiveUtils.bodyFont),
               decoration: InputDecoration(
-                hintText:
-                    isTablet ? 'بحث عن جمعية... (الاسم، المندوب، البنك، رقم الحساب)' : 'بحث بالاسم، المندوب، البنك...',
+                hintText: isTablet
+                    ? 'بحث عن جمعية... (الاسم، المندوب، البنك، رقم الحساب)'
+                    : 'بحث بالاسم، المندوب، البنك...',
                 hintStyle: TextStyle(
                   fontSize: ResponsiveUtils.smallFont,
                   color: Colors.grey.shade600,
@@ -68,7 +69,8 @@ class AssociationsSearchBar extends StatelessWidget {
                 filled: true,
                 fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  borderRadius:
+                      BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: EdgeInsets.symmetric(
@@ -78,7 +80,10 @@ class AssociationsSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          if (searchQuery.isNotEmpty || !showOnlyActive || selectedRepresentativeId != null || selectedCurrency != null)
+          if (searchQuery.isNotEmpty ||
+              !showOnlyActive ||
+              selectedRepresentativeId != null ||
+              selectedCurrency != null)
             Padding(
               padding: EdgeInsets.only(right: ResponsiveUtils.smallSpace),
               child: IconButton(

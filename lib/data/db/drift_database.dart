@@ -67,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -96,6 +96,44 @@ class AppDatabase extends _$AppDatabase {
           await _createImportBatchesTable();
         }
 
+        if (from < 15) {
+          // v15: Add sponsorship type + import batch link
+          await m.addColumn(sponsorships, sponsorships.sponsorshipType);
+          await m.addColumn(sponsorships, sponsorships.importBatchId);
+
+          // v15: Extend import_batches audit columns (safe if table exists)
+          await _ensureImportBatchesColumns();
+        }
+
+        if (from < 16) {
+          // v16: Add comprehensive sponsorship fields
+          // معلومات الكافل
+          await m.addColumn(sponsorships, sponsorships.sponsorName);
+
+          // معلومات المكفول
+          await m.addColumn(sponsorships, sponsorships.internalFileNo);
+          await m.addColumn(sponsorships, sponsorships.externalFileNo);
+          await m.addColumn(sponsorships, sponsorships.guardianName);
+          await m.addColumn(sponsorships, sponsorships.guardianIdNumber);
+          await m.addColumn(sponsorships, sponsorships.guardianPhone);
+          await m.addColumn(sponsorships, sponsorships.guardianAltPhone);
+
+          // تفاصيل الكفالة
+          await m.addColumn(sponsorships, sponsorships.durationMonths);
+
+          // معلومات بنكية
+          await m.addColumn(sponsorships, sponsorships.bankName);
+          await m.addColumn(sponsorships, sponsorships.accountHolderName);
+          await m.addColumn(sponsorships, sponsorships.accountHolderIdNumber);
+          await m.addColumn(sponsorships, sponsorships.accountNumber);
+          await m.addColumn(sponsorships, sponsorships.swiftCode);
+
+          // معلومات الموقع
+          await m.addColumn(sponsorships, sponsorships.governorate);
+          await m.addColumn(sponsorships, sponsorships.city);
+          await m.addColumn(sponsorships, sponsorships.address);
+        }
+
         await _createPerformanceIndexes();
       },
     );
@@ -114,6 +152,8 @@ class AppDatabase extends _$AppDatabase {
         rows_inserted INTEGER NOT NULL DEFAULT 0,
         rows_updated INTEGER NOT NULL DEFAULT 0,
         rows_skipped INTEGER NOT NULL DEFAULT 0,
+        sponsorships_inserted INTEGER NOT NULL DEFAULT 0,
+        sponsorships_skipped INTEGER NOT NULL DEFAULT 0,
         notes TEXT
       );
     ''');
@@ -121,6 +161,24 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_import_batches_imported_at ON import_batches(imported_at DESC);',
     );
+  }
+
+  Future<void> _ensureImportBatchesColumns() async {
+    // SQLite doesn't support "ADD COLUMN IF NOT EXISTS", so we inspect PRAGMA table_info.
+    final info = await customSelect('PRAGMA table_info(import_batches);').get();
+    final existing = info.map((r) => r.read<String>('name')).toSet();
+
+    if (!existing.contains('sponsorships_inserted')) {
+      await customStatement(
+        'ALTER TABLE import_batches ADD COLUMN sponsorships_inserted INTEGER NOT NULL DEFAULT 0;',
+      );
+    }
+
+    if (!existing.contains('sponsorships_skipped')) {
+      await customStatement(
+        'ALTER TABLE import_batches ADD COLUMN sponsorships_skipped INTEGER NOT NULL DEFAULT 0;',
+      );
+    }
   }
 
   /// ⚡ إنشاء Indexes للبحث السريع
@@ -272,6 +330,15 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_sponsorships_association_status ON sponsorships(association_id, status);',
     );
 
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_type ON sponsorships(sponsorship_type);',
+    );
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_association_status_type '
+      'ON sponsorships(association_id, status, sponsorship_type);',
+    );
+
     // Sync Queue - critical for sync performance
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity, created_at);',
@@ -301,7 +368,8 @@ extension BeneficiaryExtension on Beneficiary {
     if (birthDate == null) return null;
     final now = DateTime.now();
     var age = now.year - birthDate!.year;
-    if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
+    if (now.month < birthDate!.month ||
+        (now.month == birthDate!.month && now.day < birthDate!.day)) {
       age--;
     }
     return age;

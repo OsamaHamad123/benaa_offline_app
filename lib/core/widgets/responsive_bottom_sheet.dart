@@ -85,7 +85,8 @@ class ResponsiveBottomSheet extends StatefulWidget {
     this.actions,
     this.builder,
     this.useDraggableScrollableSheet = true,
-  }) : assert(child != null || builder != null, 'Either child or builder must be provided');
+  }) : assert(child != null || builder != null,
+            'Either child or builder must be provided');
 
   @override
   State<ResponsiveBottomSheet> createState() => _ResponsiveBottomSheetState();
@@ -106,7 +107,8 @@ class _ResponsiveBottomSheetState extends State<ResponsiveBottomSheet> {
   void didUpdateWidget(covariant ResponsiveBottomSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    final needsController = !widget.useDraggableScrollableSheet && widget.builder != null;
+    final needsController =
+        !widget.useDraggableScrollableSheet && widget.builder != null;
     final hadController = _fixedScrollController != null;
 
     if (needsController && !hadController) {
@@ -123,7 +125,8 @@ class _ResponsiveBottomSheetState extends State<ResponsiveBottomSheet> {
     super.dispose();
   }
 
-  Widget _buildSheetBody(BuildContext context, ScrollController? scrollController) {
+  Widget _buildSheetBody(
+      BuildContext context, ScrollController? scrollController) {
     final theme = Theme.of(context);
     final bgColor = widget.backgroundColor ?? theme.scaffoldBackgroundColor;
 
@@ -201,12 +204,14 @@ class _ResponsiveBottomSheetState extends State<ResponsiveBottomSheet> {
                 ),
               ),
 
-            if (widget.title != null || widget.titleWidget != null) const Divider(height: 1),
+            if (widget.title != null || widget.titleWidget != null)
+              const Divider(height: 1),
 
             // Content
             Expanded(
               child: widget.builder != null
-                  ? widget.builder!(scrollController ?? PrimaryScrollController.of(context))
+                  ? widget.builder!(
+                      scrollController ?? PrimaryScrollController.of(context))
                   : widget.child!,
             ),
           ],

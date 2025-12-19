@@ -60,15 +60,14 @@ class WidgetPerformanceAnalyzer {
   static List<MapEntry<String, WidgetMetrics>> getSlowestWidgets({
     int limit = 10,
   }) {
-    final entries =
-        _metrics.entries
-            .where((e) => e.value.averageBuildDuration != null)
-            .toList()
-          ..sort(
-            (a, b) => b.value.averageBuildDuration!.compareTo(
-              a.value.averageBuildDuration!,
-            ),
-          );
+    final entries = _metrics.entries
+        .where((e) => e.value.averageBuildDuration != null)
+        .toList()
+      ..sort(
+        (a, b) => b.value.averageBuildDuration!.compareTo(
+          a.value.averageBuildDuration!,
+        ),
+      );
     return entries.take(limit).toList();
   }
 

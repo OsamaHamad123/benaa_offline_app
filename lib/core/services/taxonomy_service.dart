@@ -33,11 +33,10 @@ class TaxonomyService {
 
   /// الحصول على آخر تاريخ تحديث للتصنيفات
   Future<DateTime?> _getLastTaxonomyUpdate() async {
-    final result =
-        await (database.select(database.taxonomies)
-              ..orderBy([(t) => drift.OrderingTerm.desc(t.updatedAt)])
-              ..limit(1))
-            .getSingleOrNull();
+    final result = await (database.select(database.taxonomies)
+          ..orderBy([(t) => drift.OrderingTerm.desc(t.updatedAt)])
+          ..limit(1))
+        .getSingleOrNull();
 
     return result?.updatedAt;
   }

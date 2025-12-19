@@ -38,7 +38,8 @@ class SwipeableCard extends StatelessWidget {
         if (direction == DismissDirection.endToStart && onSwipeLeft != null) {
           onSwipeLeft!();
           return false;
-        } else if (direction == DismissDirection.startToEnd && onSwipeRight != null) {
+        } else if (direction == DismissDirection.startToEnd &&
+            onSwipeRight != null) {
           onSwipeRight!();
           return false;
         }

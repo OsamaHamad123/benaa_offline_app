@@ -449,9 +449,7 @@ class _CivilDatabaseDownloadPageState
   }
 
   void _startDownload() {
-    ref
-        .read(civilDatabaseDownloadProvider.notifier)
-        .startDownload(
+    ref.read(civilDatabaseDownloadProvider.notifier).startDownload(
           downloadUrl: widget.downloadUrl,
           dbManager: _dbManager,
           expectedChecksum: widget.expectedChecksum,
@@ -463,9 +461,7 @@ class _CivilDatabaseDownloadPageState
   }
 
   void _resumeDownload() {
-    ref
-        .read(civilDatabaseDownloadProvider.notifier)
-        .resumeDownload(
+    ref.read(civilDatabaseDownloadProvider.notifier).resumeDownload(
           downloadUrl: widget.downloadUrl,
           dbManager: _dbManager,
           expectedChecksum: widget.expectedChecksum,

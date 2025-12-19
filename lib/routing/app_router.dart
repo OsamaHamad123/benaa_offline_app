@@ -50,7 +50,8 @@ Page<T> _buildPageWithTransition<T>({
           return FadeTransition(opacity: animation, child: child);
         case PageTransitionType.slideFromBottom:
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+                .animate(
               CurvedAnimation(
                 parent: animation,
                 curve: AppCurves.pageEnter,
@@ -60,7 +61,8 @@ Page<T> _buildPageWithTransition<T>({
           );
         case PageTransitionType.slideFromRight:
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
               CurvedAnimation(
                 parent: animation,
                 curve: AppCurves.pageEnter,
@@ -93,7 +95,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isGoingToLogin = state.matchedLocation == '/login';
 
       // السماح بالذهاب لصفحات التهيئة والتحميل
-      if (isGoingToAppInit || isGoingToInit || isGoingToWelcome || isGoingToDownload || isGoingToDbDownload) {
+      if (isGoingToAppInit ||
+          isGoingToInit ||
+          isGoingToWelcome ||
+          isGoingToDownload ||
+          isGoingToDbDownload) {
         return null;
       }
 

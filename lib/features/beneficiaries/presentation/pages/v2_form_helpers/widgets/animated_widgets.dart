@@ -47,13 +47,12 @@ class _AnimatedCounterState extends State<AnimatedCounter>
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
       _previousValue = oldWidget.value;
-      _animation =
-          Tween<double>(
-            begin: _previousValue.toDouble(),
-            end: widget.value.toDouble(),
-          ).animate(
-            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-          );
+      _animation = Tween<double>(
+        begin: _previousValue.toDouble(),
+        end: widget.value.toDouble(),
+      ).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+      );
       _controller.reset();
       _controller.forward();
     }

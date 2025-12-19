@@ -49,7 +49,8 @@ class StatCard extends StatelessWidget {
       child: Card(
         elevation: 2,
         shadowColor: color.withOpacity(0.25),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16.r),
@@ -74,7 +75,8 @@ class StatCard extends StatelessWidget {
                   // and on very small tiles. Render a compact horizontal layout
                   // when the available height is too small to fit the full card.
                   // Treat very small heights or very narrow widths as "compact" cases.
-                  if (constraints.maxHeight < 110 || constraints.maxWidth < 80) {
+                  if (constraints.maxHeight < 110 ||
+                      constraints.maxWidth < 80) {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [

@@ -199,7 +199,9 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
             height: 50.h,
             child: ElevatedButton.icon(
               onPressed: _isGenerating ? null : _generateReport,
-              icon: _isGenerating ? const SmallLoadingIndicator(color: Colors.white) : const Icon(Icons.download),
+              icon: _isGenerating
+                  ? const SmallLoadingIndicator(color: Colors.white)
+                  : const Icon(Icons.download),
               label: Text(
                 _isGenerating ? 'جاري الإنشاء...' : 'إنشاء وتصدير التقرير',
                 style: TextStyle(fontSize: 16.sp),

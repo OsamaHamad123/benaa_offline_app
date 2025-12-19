@@ -128,9 +128,8 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: member.gender == 1
-              ? Colors.blue
-              : Colors.pink, // 1=male
+          backgroundColor:
+              member.gender == 1 ? Colors.blue : Colors.pink, // 1=male
           child: Icon(
             member.gender == 1 ? Icons.man : Icons.woman, // 1=male
             color: Colors.white,
@@ -147,14 +146,11 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget>
                   HealthStatus.toArabic(member.healthStatus),
                   style: const TextStyle(fontSize: 10),
                 ),
-                backgroundColor:
-                    member.healthStatus ==
-                        4 // 4=disabled
+                backgroundColor: member.healthStatus == 4 // 4=disabled
                     ? Colors.orange
-                    : member.healthStatus ==
-                          3 // 3=chronic
-                    ? Colors.red
-                    : Colors.yellow.shade700,
+                    : member.healthStatus == 3 // 3=chronic
+                        ? Colors.red
+                        : Colors.yellow.shade700,
                 padding: EdgeInsets.zero,
               ),
           ],

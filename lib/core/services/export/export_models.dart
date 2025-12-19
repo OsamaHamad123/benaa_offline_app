@@ -82,11 +82,11 @@ class BeneficiariesExportData extends ExportData {
     String? subtitle,
     DateTime? timestamp,
   }) : super(
-         contentType: ExportContentType.beneficiaries,
-         title: 'قائمة المستفيدين',
-         subtitle: subtitle,
-         timestamp: timestamp,
-       );
+          contentType: ExportContentType.beneficiaries,
+          title: 'قائمة المستفيدين',
+          subtitle: subtitle,
+          timestamp: timestamp,
+        );
 
   ExportTable toTable() {
     return ExportTable(
@@ -150,11 +150,11 @@ class VisitsExportData extends ExportData {
     String? subtitle,
     DateTime? timestamp,
   }) : super(
-         contentType: ExportContentType.visits,
-         title: 'قائمة الزيارات',
-         subtitle: subtitle,
-         timestamp: timestamp,
-       );
+          contentType: ExportContentType.visits,
+          title: 'قائمة الزيارات',
+          subtitle: subtitle,
+          timestamp: timestamp,
+        );
 
   ExportTable toTable() {
     return ExportTable(
@@ -213,11 +213,11 @@ class ReportExportData extends ExportData {
     String? subtitle,
     DateTime? timestamp,
   }) : super(
-         contentType: ExportContentType.report,
-         title: title,
-         subtitle: subtitle,
-         timestamp: timestamp,
-       );
+          contentType: ExportContentType.report,
+          title: title,
+          subtitle: subtitle,
+          timestamp: timestamp,
+        );
 }
 
 /// بيانات تصدير الأنشطة
@@ -231,11 +231,11 @@ class ActivitiesExportData extends ExportData {
     String? subtitle,
     DateTime? timestamp,
   }) : super(
-         contentType: ExportContentType.visits, // Using visits type for now
-         title: 'سجل الأنشطة',
-         subtitle: subtitle,
-         timestamp: timestamp,
-       );
+          contentType: ExportContentType.visits, // Using visits type for now
+          title: 'سجل الأنشطة',
+          subtitle: subtitle,
+          timestamp: timestamp,
+        );
 
   ExportTable toTable() {
     return ExportTable(
@@ -297,11 +297,11 @@ class ComprehensiveBeneficiariesExportData extends ExportData {
     String? subtitle,
     DateTime? timestamp,
   }) : super(
-         contentType: ExportContentType.beneficiaries,
-         title: 'تقرير شامل للمستفيدين',
-         subtitle: subtitle,
-         timestamp: timestamp,
-       );
+          contentType: ExportContentType.beneficiaries,
+          title: 'تقرير شامل للمستفيدين',
+          subtitle: subtitle,
+          timestamp: timestamp,
+        );
 
   /// جدول المعلومات الأساسية
   ExportTable get basicInfoTable {

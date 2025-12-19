@@ -66,8 +66,9 @@ class SyncRepositoryImpl implements ISyncRepository {
         conflicts.addAll(pushResult.conflicts);
       }
 
-      final successCount = (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
-          (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
+      final successCount =
+          (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
+              (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
 
       return SyncPartial(
         successCount: successCount,
@@ -345,8 +346,9 @@ class SyncRepositoryImpl implements ISyncRepository {
 
       final pushResult = await pushChanges(entityType);
 
-      final totalSynced = (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
-          (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
+      final totalSynced =
+          (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
+              (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
 
       await _local.updateSyncSuccess(
         entityType: entityType,

@@ -25,14 +25,14 @@ class DashboardState extends Equatable {
   });
 
   const DashboardState.initial()
-    : statistics = null,
-      todayStats = null,
-      activities = const [],
-      isLoadingStats = true,
-      isLoadingActivities = false,
-      hasMoreActivities = true,
-      errorMessage = null,
-      lastRefreshTime = null;
+      : statistics = null,
+        todayStats = null,
+        activities = const [],
+        isLoadingStats = true,
+        isLoadingActivities = false,
+        hasMoreActivities = true,
+        errorMessage = null,
+        lastRefreshTime = null;
 
   DashboardState copyWith({
     DashboardStatistics? statistics,
@@ -61,13 +61,13 @@ class DashboardState extends Equatable {
 
   @override
   List<Object?> get props => [
-    statistics,
-    todayStats,
-    activities,
-    isLoadingStats,
-    isLoadingActivities,
-    hasMoreActivities,
-    errorMessage,
-    lastRefreshTime,
-  ];
+        statistics,
+        todayStats,
+        activities,
+        isLoadingStats,
+        isLoadingActivities,
+        hasMoreActivities,
+        errorMessage,
+        lastRefreshTime,
+      ];
 }

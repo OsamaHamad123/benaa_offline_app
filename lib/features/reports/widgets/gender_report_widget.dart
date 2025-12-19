@@ -192,7 +192,8 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                                   icon: Icons.male,
                                   label: 'ذكور',
                                   count: '$males',
-                                  percentage: PercentageHelper.getPercentageText(
+                                  percentage:
+                                      PercentageHelper.getPercentageText(
                                     males,
                                     total,
                                   ),
@@ -206,7 +207,8 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                                   icon: Icons.female,
                                   label: 'إناث',
                                   count: '$females',
-                                  percentage: PercentageHelper.getPercentageText(
+                                  percentage:
+                                      PercentageHelper.getPercentageText(
                                     females,
                                     total,
                                   ),
@@ -221,13 +223,15 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                         ExportButtons(
                           isLoading: _isExporting,
                           onPdfExport: () => _exportToPdf(genderCounts, total),
-                          onExcelExport: () => _exportToExcel(genderCounts, total),
+                          onExcelExport: () =>
+                              _exportToExcel(genderCounts, total),
                           onPrint: () => _exportToPdf(genderCounts, total),
                         ),
                       ],
                     );
                   },
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (error, stack) => Center(child: Text('خطأ: $error')),
                 ),
               ),

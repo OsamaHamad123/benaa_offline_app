@@ -98,7 +98,9 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
   void _handleAutofill() {
     if (widget.formControllers == null) return;
 
-    final result = ref.read(civilRegistryProvider.notifier).autofillForm(widget.formControllers);
+    final result = ref
+        .read(civilRegistryProvider.notifier)
+        .autofillForm(widget.formControllers);
 
     if (result != null) {
       HapticFeedback.lightImpact();
@@ -130,9 +132,10 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
         widget.fatherNameController.text.trim().isNotEmpty &&
         widget.lastNameController.text.trim().isNotEmpty;
 
-    final isPersonalInfoComplete = widget.nationalIdController.text.length == 9 &&
-        widget.selectedGender != null &&
-        widget.selectedCategory != null;
+    final isPersonalInfoComplete =
+        widget.nationalIdController.text.length == 9 &&
+            widget.selectedGender != null &&
+            widget.selectedCategory != null;
 
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -148,7 +151,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               prefixIcon: Icons.badge_rounded,
               isRequired: true,
               focusNode: widget.firstFieldFocusNode,
-              validator: (value) => FieldValidators.validateArabicName(value, 'الاسم الأول'),
+              validator: (value) =>
+                  FieldValidators.validateArabicName(value, 'الاسم الأول'),
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -156,7 +160,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               label: 'اسم الأب',
               prefixIcon: Icons.person_outline_rounded,
               isRequired: true,
-              validator: (value) => FieldValidators.validateArabicName(value, 'اسم الأب'),
+              validator: (value) =>
+                  FieldValidators.validateArabicName(value, 'اسم الأب'),
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -170,7 +175,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               label: 'اللقب',
               prefixIcon: Icons.family_restroom_rounded,
               isRequired: true,
-              validator: (value) => FieldValidators.validateArabicName(value, 'اللقب'),
+              validator: (value) =>
+                  FieldValidators.validateArabicName(value, 'اللقب'),
             ),
             SizedBox(height: 12.h),
             V2CustomTextField(
@@ -208,14 +214,18 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                   onRetry: () {
                     final nationalId = widget.nationalIdController.text;
                     if (nationalId.length == 9) {
-                      ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
+                      ref
+                          .read(civilRegistryProvider.notifier)
+                          .fetchByNationalId(nationalId);
                     }
                   },
                 ),
               ),
 
             // 🆕 Preview Card (when data found)
-            if (civilRegistryState.isSuccess && civilRegistryState.person != null && _showPreview)
+            if (civilRegistryState.isSuccess &&
+                civilRegistryState.person != null &&
+                _showPreview)
               Padding(
                 padding: EdgeInsets.only(top: 8.h),
                 child: CivilRegistryPreviewCard(
@@ -225,7 +235,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               ),
 
             // 🆕 Autofill Button (when data found)
-            if (civilRegistryState.isSuccess && civilRegistryState.person != null)
+            if (civilRegistryState.isSuccess &&
+                civilRegistryState.person != null)
               Padding(
                 padding: EdgeInsets.only(top: 12.h),
                 child: Row(
@@ -238,7 +249,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                     ),
                     SizedBox(width: 8.w),
                     IconButton(
-                      onPressed: () => setState(() => _showPreview = !_showPreview),
+                      onPressed: () =>
+                          setState(() => _showPreview = !_showPreview),
                       icon: Icon(
                         _showPreview ? Icons.visibility_off : Icons.visibility,
                         size: 24.sp,

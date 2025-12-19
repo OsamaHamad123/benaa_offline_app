@@ -115,13 +115,13 @@ class SearchPerformanceAnalytics {
       fastestSearchMs: _recentSearches.isEmpty
           ? 0
           : _recentSearches
-                .map((m) => m.durationMs)
-                .reduce((a, b) => a < b ? a : b),
+              .map((m) => m.durationMs)
+              .reduce((a, b) => a < b ? a : b),
       slowestSearchMs: _recentSearches.isEmpty
           ? 0
           : _recentSearches
-                .map((m) => m.durationMs)
-                .reduce((a, b) => a > b ? a : b),
+              .map((m) => m.durationMs)
+              .reduce((a, b) => a > b ? a : b),
     );
   }
 

@@ -27,7 +27,8 @@ class RepresentativeDropdownV2 extends StatefulWidget {
   });
 
   @override
-  State<RepresentativeDropdownV2> createState() => _RepresentativeDropdownV2State();
+  State<RepresentativeDropdownV2> createState() =>
+      _RepresentativeDropdownV2State();
 }
 
 class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
@@ -123,10 +124,12 @@ class _AddRepresentativeBottomSheet extends StatefulWidget {
   const _AddRepresentativeBottomSheet({required this.onAdded});
 
   @override
-  State<_AddRepresentativeBottomSheet> createState() => _AddRepresentativeBottomSheetState();
+  State<_AddRepresentativeBottomSheet> createState() =>
+      _AddRepresentativeBottomSheetState();
 }
 
-class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomSheet> {
+class _AddRepresentativeBottomSheetState
+    extends State<_AddRepresentativeBottomSheet> {
   // Controllers - يُنشأ مرة واحدة فقط في initState
   late final TextEditingController _nameController;
   late final GlobalKey<FormState> _formKey;
@@ -153,7 +156,9 @@ class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomS
     _isLoadingNotifier.value = true;
 
     try {
-      final rep = await ref.read(associationsProvider.notifier).createRepresentative(_nameController.text.trim());
+      final rep = await ref
+          .read(associationsProvider.notifier)
+          .createRepresentative(_nameController.text.trim());
 
       if (!mounted) return;
 
@@ -208,7 +213,8 @@ class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomS
                   labelText: 'اسم المندوب *',
                   prefixIcon: Icon(Icons.person, size: 20.r),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    borderRadius:
+                        BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: ResponsiveUtils.mediumSpace,
@@ -238,7 +244,8 @@ class _AddRepresentativeBottomSheetState extends State<_AddRepresentativeBottomS
                           style: FilledButton.styleFrom(
                             padding: EdgeInsets.symmetric(vertical: 16.h),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                              borderRadius: BorderRadius.circular(
+                                  ResponsiveUtils.mediumRadius),
                             ),
                           ),
                           child: isLoading

@@ -17,10 +17,12 @@ class GovernorateReportSheet extends ConsumerStatefulWidget {
   const GovernorateReportSheet({super.key});
 
   @override
-  ConsumerState<GovernorateReportSheet> createState() => _GovernorateReportSheetState();
+  ConsumerState<GovernorateReportSheet> createState() =>
+      _GovernorateReportSheetState();
 }
 
-class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet> {
+class _GovernorateReportSheetState
+    extends ConsumerState<GovernorateReportSheet> {
   bool _isExporting = false;
   String _searchQuery = '';
 
@@ -184,7 +186,10 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
                   children: [
                     Text(
                       'التفاصيل',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     if (_searchQuery.isNotEmpty)
                       Text(

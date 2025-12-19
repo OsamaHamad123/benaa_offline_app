@@ -8,35 +8,35 @@ import 'package:benaa_offline_app/features/beneficiaries/domain/usecases/delete_
 /// Provider: CreateBeneficiaryWithActivity UseCase
 final createBeneficiaryWithActivityProvider =
     Provider<CreateBeneficiaryWithActivity>((ref) {
-      final database = ref.watch(databaseProvider);
-      final logActivity = ref.watch(logActivityUseCaseProvider);
+  final database = ref.watch(databaseProvider);
+  final logActivity = ref.watch(logActivityUseCaseProvider);
 
-      return CreateBeneficiaryWithActivity(
-        database: database,
-        logActivity: logActivity,
-      );
-    });
+  return CreateBeneficiaryWithActivity(
+    database: database,
+    logActivity: logActivity,
+  );
+});
 
 /// Provider: UpdateBeneficiaryWithActivity UseCase
 final updateBeneficiaryWithActivityProvider =
     Provider<UpdateBeneficiaryWithActivity>((ref) {
-      final database = ref.watch(databaseProvider);
-      final logActivity = ref.watch(logActivityUseCaseProvider);
+  final database = ref.watch(databaseProvider);
+  final logActivity = ref.watch(logActivityUseCaseProvider);
 
-      return UpdateBeneficiaryWithActivity(
-        database: database,
-        logActivity: logActivity,
-      );
-    });
+  return UpdateBeneficiaryWithActivity(
+    database: database,
+    logActivity: logActivity,
+  );
+});
 
 /// Provider: DeleteBeneficiaryWithActivity UseCase
 final deleteBeneficiaryWithActivityProvider =
     Provider<DeleteBeneficiaryWithActivity>((ref) {
-      final database = ref.watch(databaseProvider);
-      final logActivity = ref.watch(logActivityUseCaseProvider);
+  final database = ref.watch(databaseProvider);
+  final logActivity = ref.watch(logActivityUseCaseProvider);
 
-      return DeleteBeneficiaryWithActivity(
-        database: database,
-        logActivity: logActivity,
-      );
-    });
+  return DeleteBeneficiaryWithActivity(
+    database: database,
+    logActivity: logActivity,
+  );
+});

@@ -204,9 +204,7 @@ class QuickStatsCard extends StatelessWidget {
                     ),
                 ],
               ),
-
               SizedBox(height: ResponsiveUtils.smallSpace),
-
               Text(
                 value,
                 style: TextStyle(
@@ -215,9 +213,7 @@ class QuickStatsCard extends StatelessWidget {
                   color: color,
                 ),
               ),
-
               SizedBox(height: 4.h),
-
               Text(
                 label,
                 style: TextStyle(

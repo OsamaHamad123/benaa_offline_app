@@ -26,7 +26,8 @@ import 'details_widgets/sections/action_buttons.dart';
 import 'details_widgets/sections/sponsorships_section.dart';
 import '../widgets/family_section.dart';
 import '../../../visits/presentation/pages/record_visit_page_enhanced.dart';
-import '../../../visits/presentation/providers/visit_providers.dart' hide databaseProvider;
+import '../../../visits/presentation/providers/visit_providers.dart'
+    hide databaseProvider;
 import '../../../attachments/presentation/providers/attachments_provider.dart';
 import '../../../../core/providers/providers.dart';
 
@@ -39,10 +40,12 @@ class BeneficiaryDetailsPageV2 extends ConsumerStatefulWidget {
   const BeneficiaryDetailsPageV2({required this.beneficiaryId, super.key});
 
   @override
-  ConsumerState<BeneficiaryDetailsPageV2> createState() => _BeneficiaryDetailsPageV2State();
+  ConsumerState<BeneficiaryDetailsPageV2> createState() =>
+      _BeneficiaryDetailsPageV2State();
 }
 
-class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPageV2> {
+class _BeneficiaryDetailsPageV2State
+    extends ConsumerState<BeneficiaryDetailsPageV2> {
   late final int? _beneficiaryIntId;
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _showTimelineView = true;
@@ -56,8 +59,12 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
 
   void _loadData() {
     if (_beneficiaryIntId != null) {
-      ref.read(beneficiaryDetailsProvider.notifier).loadBeneficiary(_beneficiaryIntId);
-      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId);
+      ref
+          .read(beneficiaryDetailsProvider.notifier)
+          .loadBeneficiary(_beneficiaryIntId);
+      ref
+          .read(visitNotifierProvider.notifier)
+          .loadBeneficiaryVisits(widget.beneficiaryId);
     }
   }
 
@@ -104,21 +111,26 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
   // ============================================================================
 
   AppBar _buildAppBar(BuildContext context, beneficiary) {
-    final colorInfo = beneficiary != null ? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category) : null;
+    final colorInfo = beneficiary != null
+        ? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category)
+        : null;
 
     return AppBar(
       title: const Text('تفاصيل المستفيد'),
-      backgroundColor: colorInfo != null ? Color(colorInfo.light) : Colors.transparent,
+      backgroundColor:
+          colorInfo != null ? Color(colorInfo.light) : Colors.transparent,
       actions: [
         IconButton(
           icon: const Icon(Icons.share_outlined),
           tooltip: 'مشاركة',
-          onPressed: beneficiary != null ? () => _shareScreenshot(context) : null,
+          onPressed:
+              beneficiary != null ? () => _shareScreenshot(context) : null,
         ),
         IconButton(
           icon: const Icon(Icons.edit_outlined),
           tooltip: 'تعديل',
-          onPressed: beneficiary != null ? () => _navigateToEdit(context) : null,
+          onPressed:
+              beneficiary != null ? () => _navigateToEdit(context) : null,
         ),
         PopupMenuButton<String>(
           onSelected: (value) => _handleMenuAction(context, value),
@@ -292,7 +304,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     return QuickStatsCard(
       visitsCount: visitState.visits.length,
       attachmentsCount: attachmentsState.attachments.length,
-      lastVisitDate: visitState.visits.isNotEmpty ? _formatDateShort(visitState.visits.first.visitDate) : 'لا توجد',
+      lastVisitDate: visitState.visits.isNotEmpty
+          ? _formatDateShort(visitState.visits.first.visitDate)
+          : 'لا توجد',
     );
   }
 
@@ -393,11 +407,14 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       if (mounted) {
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => RecordVisitPageEnhanced(beneficiary: beneficiary),
+            builder: (context) =>
+                RecordVisitPageEnhanced(beneficiary: beneficiary),
           ),
         );
 
-        ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId);
+        ref
+            .read(visitNotifierProvider.notifier)
+            .loadBeneficiaryVisits(widget.beneficiaryId);
       }
     } catch (e) {
       if (mounted) {
@@ -418,7 +435,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       ),
     );
     if (result == true) {
-      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId);
+      ref
+          .read(visitNotifierProvider.notifier)
+          .loadBeneficiaryVisits(widget.beneficiaryId);
     }
   }
 
@@ -426,7 +445,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     if (_beneficiaryIntId == null) return;
 
     try {
-      await ref.read(beneficiaryDetailsProvider.notifier).refresh(_beneficiaryIntId);
+      await ref
+          .read(beneficiaryDetailsProvider.notifier)
+          .refresh(_beneficiaryIntId);
     } catch (e) {
       if (mounted) {
         EnhancedSnackbar.showError(context, message: 'فشل تحديث البيانات');
@@ -464,7 +485,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       try {
         if (_beneficiaryIntId == null) return;
 
-        final success = await ref.read(beneficiaryDetailsProvider.notifier).deleteBeneficiary(_beneficiaryIntId);
+        final success = await ref
+            .read(beneficiaryDetailsProvider.notifier)
+            .deleteBeneficiary(_beneficiaryIntId);
 
         if (mounted) LoadingDialog.hide(context);
 
@@ -475,7 +498,8 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
           );
           context.pop();
         } else if (mounted) {
-          final errorMsg = ref.read(beneficiaryDetailsProvider).errorMessage ?? 'خطأ غير معروف';
+          final errorMsg = ref.read(beneficiaryDetailsProvider).errorMessage ??
+              'خطأ غير معروف';
           EnhancedSnackbar.showError(context, message: 'خطأ: $errorMsg');
         }
       } catch (e) {
@@ -502,7 +526,8 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       }
 
       final directory = await getTemporaryDirectory();
-      final imagePath = '${directory.path}/beneficiary_${widget.beneficiaryId}.png';
+      final imagePath =
+          '${directory.path}/beneficiary_${widget.beneficiaryId}.png';
       final imageFile = File(imagePath);
       await imageFile.writeAsBytes(image);
 

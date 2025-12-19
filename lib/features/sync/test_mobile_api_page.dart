@@ -39,8 +39,7 @@ class _TestMobileApiPageState extends State<TestMobileApiPage> {
       );
 
       setState(() {
-        _result =
-            'نجح! Status: ${response.statusCode}\n\n'
+        _result = 'نجح! Status: ${response.statusCode}\n\n'
             'Data: ${response.data}';
         _loading = false;
       });
@@ -65,8 +64,7 @@ class _TestMobileApiPageState extends State<TestMobileApiPage> {
       );
 
       setState(() {
-        _result =
-            'نجح! Status: ${response.statusCode}\n\n'
+        _result = 'نجح! Status: ${response.statusCode}\n\n'
             'Data: ${response.data}';
         _loading = false;
       });
@@ -91,8 +89,7 @@ class _TestMobileApiPageState extends State<TestMobileApiPage> {
       );
 
       setState(() {
-        _result =
-            'نجح! Status: ${response.statusCode}\n\n'
+        _result = 'نجح! Status: ${response.statusCode}\n\n'
             'Data: ${response.data}';
         _loading = false;
       });
@@ -118,30 +115,22 @@ class _TestMobileApiPageState extends State<TestMobileApiPage> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-
             ElevatedButton(
               onPressed: _loading ? null : _testFetch,
               child: const Text('Test /fetch endpoint'),
             ),
-
             const SizedBox(height: 12),
-
             ElevatedButton(
               onPressed: _loading ? null : _testDatabaseInfo,
               child: const Text('Test /database/info endpoint'),
             ),
-
             const SizedBox(height: 12),
-
             ElevatedButton(
               onPressed: _loading ? null : _testTables,
               child: const Text('Test /database/tables endpoint'),
             ),
-
             const SizedBox(height: 20),
-
             if (_loading) const Center(child: CircularProgressIndicator()),
-
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(12),

@@ -27,7 +27,8 @@ class QuickActionCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Semantics(
-      label: '$label${badge != null && badge! > 0 ? ', لديك $badge إشعار' : ''}',
+      label:
+          '$label${badge != null && badge! > 0 ? ', لديك $badge إشعار' : ''}',
       hint: 'اضغط للانتقال إلى $label',
       button: true,
       child: MicroInteractions.bounceButton(
@@ -98,7 +99,9 @@ class QuickActionCard extends StatelessWidget {
                               color: AppColors.error,
                               borderRadius: BorderRadius.circular(12.r),
                               border: Border.all(
-                                color: isDark ? AppColors.surfaceDark : Colors.white,
+                                color: isDark
+                                    ? AppColors.surfaceDark
+                                    : Colors.white,
                                 width: 2.5,
                               ),
                               boxShadow: [
@@ -127,7 +130,9 @@ class QuickActionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13.sp,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimary,
                       height: 1.2,
                     ),
                     textAlign: TextAlign.center,

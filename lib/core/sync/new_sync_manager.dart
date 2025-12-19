@@ -233,7 +233,8 @@ class NewSyncManager {
             break;
 
           default:
-            UnifiedLogger.warning('⚠️ Unknown entity type: ${entity.entityType}');
+            UnifiedLogger.warning(
+                '⚠️ Unknown entity type: ${entity.entityType}');
         }
       }
 
@@ -300,11 +301,15 @@ class NewSyncManager {
       final deathCauseInt = DeathCause.fromArabic(deathCauseStr);
 
       final documentTypeStr = data['document_type'] as String?;
-      final documentTypeInt = documentTypeStr != null ? DocumentType.fromArabic(documentTypeStr) : null;
+      final documentTypeInt = documentTypeStr != null
+          ? DocumentType.fromArabic(documentTypeStr)
+          : null;
 
       // تحويل nationalId إذا كان نص إلى رقم
       final nationalIdRaw = data['national_id'];
-      final nationalIdInt = nationalIdRaw is String ? (int.tryParse(nationalIdRaw) ?? 0) : (nationalIdRaw as int? ?? 0);
+      final nationalIdInt = nationalIdRaw is String
+          ? (int.tryParse(nationalIdRaw) ?? 0)
+          : (nationalIdRaw as int? ?? 0);
 
       final companion = FamilyDeceasedTableCompanion(
         id: drift.Value(serverId),
@@ -315,8 +320,9 @@ class NewSyncManager {
         thirdName: drift.Value(data['third_name'] as String?),
         familyName: drift.Value(data['family_name'] as String? ?? ''),
         nationalId: drift.Value(nationalIdInt),
-        deathDate:
-            data['death_date'] != null ? drift.Value(DateTime.parse(data['death_date'])) : drift.Value(DateTime.now()),
+        deathDate: data['death_date'] != null
+            ? drift.Value(DateTime.parse(data['death_date']))
+            : drift.Value(DateTime.now()),
         deathCause: drift.Value(deathCauseInt),
         documentType: drift.Value(documentTypeInt),
         documentPath: drift.Value(data['document_path'] as String?),
@@ -324,10 +330,12 @@ class NewSyncManager {
         syncState: const drift.Value('synced'),
         serverId: drift.Value(serverId),
         lastSyncedAt: drift.Value(DateTime.now()),
-        createdAt:
-            data['created_at'] != null ? drift.Value(DateTime.parse(data['created_at'])) : drift.Value(DateTime.now()),
-        updatedAt:
-            data['updated_at'] != null ? drift.Value(DateTime.parse(data['updated_at'])) : drift.Value(DateTime.now()),
+        createdAt: data['created_at'] != null
+            ? drift.Value(DateTime.parse(data['created_at']))
+            : drift.Value(DateTime.now()),
+        updatedAt: data['updated_at'] != null
+            ? drift.Value(DateTime.parse(data['updated_at']))
+            : drift.Value(DateTime.now()),
       );
 
       await _db.into(_db.familyDeceasedTable).insertOnConflictUpdate(companion);
@@ -344,7 +352,8 @@ class NewSyncManager {
       final serverId = int.tryParse(entity.id);
 
       if (serverId == null) {
-        UnifiedLogger.warning('⚠️ Invalid family_member server ID: ${entity.id}');
+        UnifiedLogger.warning(
+            '⚠️ Invalid family_member server ID: ${entity.id}');
         return;
       }
 
@@ -357,8 +366,9 @@ class NewSyncManager {
 
       // تحويل orphan_national_id إذا كان نص إلى رقم
       final orphanNationalIdRaw = data['orphan_national_id'];
-      final orphanNationalIdInt =
-          orphanNationalIdRaw is String ? (int.tryParse(orphanNationalIdRaw) ?? 0) : (orphanNationalIdRaw as int? ?? 0);
+      final orphanNationalIdInt = orphanNationalIdRaw is String
+          ? (int.tryParse(orphanNationalIdRaw) ?? 0)
+          : (orphanNationalIdRaw as int? ?? 0);
 
       final companion = FamilyMembersTableCompanion(
         id: drift.Value(serverId),
@@ -368,8 +378,9 @@ class NewSyncManager {
         secondName: drift.Value(data['second_name'] as String?),
         thirdName: drift.Value(data['third_name'] as String?),
         familyName: drift.Value(data['family_name'] as String? ?? ''),
-        birthDate:
-            data['birth_date'] != null ? drift.Value(DateTime.parse(data['birth_date'])) : drift.Value(DateTime.now()),
+        birthDate: data['birth_date'] != null
+            ? drift.Value(DateTime.parse(data['birth_date']))
+            : drift.Value(DateTime.now()),
         age: drift.Value(data['age'] as int?),
         gender: drift.Value(genderInt),
         healthStatus: drift.Value(healthStatusInt),
@@ -378,10 +389,12 @@ class NewSyncManager {
         syncState: const drift.Value('synced'),
         serverId: drift.Value(serverId),
         lastSyncedAt: drift.Value(DateTime.now()),
-        createdAt:
-            data['created_at'] != null ? drift.Value(DateTime.parse(data['created_at'])) : drift.Value(DateTime.now()),
-        updatedAt:
-            data['updated_at'] != null ? drift.Value(DateTime.parse(data['updated_at'])) : drift.Value(DateTime.now()),
+        createdAt: data['created_at'] != null
+            ? drift.Value(DateTime.parse(data['created_at']))
+            : drift.Value(DateTime.now()),
+        updatedAt: data['updated_at'] != null
+            ? drift.Value(DateTime.parse(data['updated_at']))
+            : drift.Value(DateTime.now()),
       );
 
       await _db.into(_db.familyMembersTable).insertOnConflictUpdate(companion);

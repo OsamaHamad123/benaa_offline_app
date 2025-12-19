@@ -14,10 +14,12 @@ class AssociationsSkeletonLoader extends StatefulWidget {
   });
 
   @override
-  State<AssociationsSkeletonLoader> createState() => _AssociationsSkeletonLoaderState();
+  State<AssociationsSkeletonLoader> createState() =>
+      _AssociationsSkeletonLoaderState();
 }
 
-class _AssociationsSkeletonLoaderState extends State<AssociationsSkeletonLoader> with SingleTickerProviderStateMixin {
+class _AssociationsSkeletonLoaderState extends State<AssociationsSkeletonLoader>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 

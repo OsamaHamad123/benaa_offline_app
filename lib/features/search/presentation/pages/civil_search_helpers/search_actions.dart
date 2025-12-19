@@ -90,7 +90,8 @@ class SearchActions {
           action: SnackBarAction(
             label: 'مشاركة',
             textColor: Colors.white,
-            onPressed: () => _shareResults(context, buffer.toString(), results.length),
+            onPressed: () =>
+                _shareResults(context, buffer.toString(), results.length),
           ),
         ),
       );

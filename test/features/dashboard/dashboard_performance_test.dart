@@ -44,8 +44,8 @@ void main() {
 
       final uxImprovement =
           ((userWaitTimeWithoutSkeleton - userWaitTimeWithSkeleton) /
-          userWaitTimeWithoutSkeleton *
-          100);
+              userWaitTimeWithoutSkeleton *
+              100);
 
       expect(
         uxImprovement,
@@ -108,8 +108,7 @@ void main() {
       // عدد الـ Rebuilds مع const
       const rebuildsWithConst = 3;
 
-      final rebuildReduction =
-          ((rebuildsWithoutConst - rebuildsWithConst) /
+      final rebuildReduction = ((rebuildsWithoutConst - rebuildsWithConst) /
           rebuildsWithoutConst *
           100);
 
@@ -128,8 +127,7 @@ void main() {
       const scrollRetention = 8.0; // PageStorageKey ✅
       const emptyStates = 9.0; // Better empty states ✅
 
-      final averageScore =
-          (chartPerformance +
+      final averageScore = (chartPerformance +
               loadingUX +
               interactivity +
               scrollRetention +

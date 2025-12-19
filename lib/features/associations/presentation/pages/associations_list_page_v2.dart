@@ -6,14 +6,16 @@ import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/custom_empty_state.dart';
 import '../providers/associations_provider.dart';
-import '../widgets/association_card_v2.dart';
 import '../widgets/associations_skeleton_loader.dart';
 import '../widgets/associations_search_bar.dart';
 import '../widgets/associations_filter_button.dart';
 import '../widgets/associations_result_counter.dart';
 import '../widgets/associations_empty_state.dart';
 import '../widgets/associations_filter_sheet.dart';
-import 'association_form_bottom_sheet.dart';
+import '../widgets/enhanced_associations_stats_card.dart'; // ✨ بطاقة الإحصائيات المحسنة
+import '../widgets/modern_association_card.dart'; // 🎨 البطاقة الحديثة
+import '../widgets/quick_actions_list.dart'; // ⚡ قائمة الإجراءات السريعة
+import 'association_form_bottom_sheet_modern.dart'; // 🆕 النموذج الحديث
 
 /// 🏢 صفحة قائمة الجمعيات - إصدار محسّن
 ///
@@ -92,7 +94,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
         tag: 'association_new',
         child: Material(
           type: MaterialType.transparency,
-          child: const AssociationFormBottomSheet(),
+          child: const AssociationFormBottomSheetModern(),
         ),
       ),
     ).then((created) {
@@ -181,12 +183,17 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
             },
           ),
 
-          // ✨ عداد النتائج
-          if (filteredAssociations.isNotEmpty && !state.isLoading)
-            AssociationsResultCounter(
-              count: filteredAssociations.length,
-              hasActiveFilters:
-                  _searchQuery.isNotEmpty || _selectedRepresentativeId != null || _selectedCurrency != null,
+          // ⚡ قائمة الإجراءات السريعة
+          if (!state.isLoading && filteredAssociations.isNotEmpty)
+            QuickActionsList(
+              onAddAssociation: () {
+                HapticFeedback.mediumImpact();
+                _showAddAssociationSheet();
+              },
+              onRefresh: () async {
+                HapticFeedback.lightImpact();
+                await ref.read(associationsProvider.notifier).loadAssociations();
+              },
             ),
 
           // المحتوى الرئيسي
@@ -261,28 +268,93 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
     );
   }
 
-  /// قائمة الجمعيات
+  /// قائمة الجمعيات مع تصميم Responsive Grid
   Widget _buildAssociationsList(List associations) {
+    final state = ref.read(associationsProvider);
     final responsive = ResponsiveUtils.getValues(context);
 
-    return ListView.separated(
-      padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
-      itemCount: associations.length,
-      separatorBuilder: (_, __) => SizedBox(height: responsive.spacing),
-      physics: const BouncingScrollPhysics(),
-      itemBuilder: (context, index) {
-        final association = associations[index];
-        final representative = ref
-            .read(associationsProvider)
-            .representatives
-            .where((r) => r.id == association.representativeId)
-            .firstOrNull;
+    // حساب الإحصائيات
+    final totalCount = associations.length;
+    final activeCount = associations.where((a) => a.isActive).length;
+    final inactiveCount = totalCount - activeCount;
 
-        return AssociationCardV2(
-          association: association,
-          representativeName: representative?.name,
-          onTap: () => _showEditAssociationSheet(association),
-          onDelete: () => _confirmDelete(association.id, association.name),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // تحديد عدد الأعمدة بناءً على عرض الشاشة
+        final crossAxisCount = constraints.maxWidth > 1200
+            ? 3 // Desktop: 3 أعمدة
+            : constraints.maxWidth > 720
+                ? 2 // Tablet: عمودين
+                : 1; // Mobile: عمود واحد
+
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // 📊 بطاقة الإحصائيات المحسّنة في الأعلى
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                ResponsiveUtils.mediumSpace,
+                ResponsiveUtils.mediumSpace,
+                ResponsiveUtils.mediumSpace,
+                ResponsiveUtils.smallSpace,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: EnhancedAssociationsStatsCard(
+                  totalCount: totalCount,
+                  activeCount: activeCount,
+                  inactiveCount: inactiveCount,
+                ),
+              ),
+            ),
+
+            // 🎯 عداد النتائج (إن وجد فلتر)
+            if (_searchQuery.isNotEmpty || _selectedRepresentativeId != null || _selectedCurrency != null)
+              SliverPadding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.mediumSpace,
+                  vertical: ResponsiveUtils.smallSpace,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: AssociationsResultCounter(
+                    count: totalCount,
+                    hasActiveFilters: true,
+                  ),
+                ),
+              ),
+
+            // 🏢 Grid بطاقات الجمعيات
+            SliverPadding(
+              padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
+              sliver: SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: responsive.spacing,
+                  crossAxisSpacing: responsive.spacing,
+                  childAspectRatio: crossAxisCount == 1
+                      ? 1.1 // Mobile: أطول
+                      : crossAxisCount == 2
+                          ? 0.95 // Tablet
+                          : 0.85, // Desktop: أعرض
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final association = associations[index];
+                    final representative =
+                        state.representatives.where((r) => r.id == association.representativeId).firstOrNull;
+
+                    return ModernAssociationCard(
+                      association: association,
+                      representativeName: representative?.name,
+                      onTap: () => _showEditAssociationSheet(association),
+                      onDelete: () => _confirmDelete(association.id, association.name),
+                      onEdit: () => _showEditAssociationSheet(association),
+                    );
+                  },
+                  childCount: associations.length,
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -294,7 +366,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AssociationFormBottomSheet(association: association),
+      builder: (context) => AssociationFormBottomSheetModern(association: association),
     ).then((updated) {
       if (updated == true) {
         ref.read(associationsProvider.notifier).loadAssociations();

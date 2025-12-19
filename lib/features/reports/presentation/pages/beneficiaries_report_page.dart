@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -11,10 +11,12 @@ class BeneficiariesReportPage extends ConsumerStatefulWidget {
   const BeneficiariesReportPage({super.key});
 
   @override
-  ConsumerState<BeneficiariesReportPage> createState() => _BeneficiariesReportPageState();
+  ConsumerState<BeneficiariesReportPage> createState() =>
+      _BeneficiariesReportPageState();
 }
 
-class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPage> {
+class _BeneficiariesReportPageState
+    extends ConsumerState<BeneficiariesReportPage> {
   String _searchQuery = '';
   String? _selectedGovernorate;
   String? _selectedCategory;
@@ -62,7 +64,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
             icon: const Icon(Icons.bug_report),
             onPressed: () async {
               final db = ref.read(databaseProvider);
-              final beneficiaries = await db.beneficiariesDao.getAllBeneficiaries();
+              final beneficiaries =
+                  await db.beneficiariesDao.getAllBeneficiaries();
               if (!mounted) return;
               showDialog(
                 context: context,
@@ -108,7 +111,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
         future: () async {
           debugPrint('🔍 [DEBUG] Starting to fetch beneficiaries...');
           try {
-            final result = await database.beneficiariesDao.getAllBeneficiaries();
+            final result =
+                await database.beneficiariesDao.getAllBeneficiaries();
             debugPrint('🔍 [DEBUG] ✅ Fetch successful!');
             debugPrint('🔍 [DEBUG] Number of beneficiaries: ${result.length}');
             if (result.isNotEmpty) {
@@ -134,7 +138,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
           debugPrint('🔍 [DEBUG] Snapshot hasData: ${snapshot.hasData}');
           debugPrint('🔍 [DEBUG] Snapshot hasError: ${snapshot.hasError}');
           if (snapshot.hasData) {
-            debugPrint('🔍 [DEBUG] Snapshot data length: ${snapshot.data?.length}');
+            debugPrint(
+                '🔍 [DEBUG] Snapshot data length: ${snapshot.data?.length}');
           }
           if (snapshot.hasError) {
             debugPrint('🔍 [DEBUG] Snapshot error: ${snapshot.error}');
@@ -217,23 +222,27 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
             // Search filter
             if (_searchQuery.isNotEmpty) {
               final query = _searchQuery.toLowerCase();
-              if (!b.fullName.toLowerCase().contains(query) && !b.idNumber.toString().contains(query)) {
+              if (!b.fullName.toLowerCase().contains(query) &&
+                  !b.idNumber.toString().contains(query)) {
                 return false;
               }
             }
 
             // Governorate filter
-            if (_selectedGovernorate != null && b.province.toString() != _selectedGovernorate) {
+            if (_selectedGovernorate != null &&
+                b.province.toString() != _selectedGovernorate) {
               return false;
             }
 
             // Category filter
-            if (_selectedCategory != null && b.sectionId.toString() != _selectedCategory) {
+            if (_selectedCategory != null &&
+                b.sectionId.toString() != _selectedCategory) {
               return false;
             }
 
             // Sync state filter
-            if (_selectedSyncState != null && b.syncState != _selectedSyncState) {
+            if (_selectedSyncState != null &&
+                b.syncState != _selectedSyncState) {
               return false;
             }
 
@@ -521,7 +530,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
                               child: ListView.separated(
                                 padding: const EdgeInsets.all(8),
                                 itemCount: filteredBeneficiaries.length,
-                                separatorBuilder: (context, index) => const Divider(height: 1),
+                                separatorBuilder: (context, index) =>
+                                    const Divider(height: 1),
                                 itemBuilder: (context, index) {
                                   final b = filteredBeneficiaries[index];
                                   return _BeneficiaryListTile(beneficiary: b);

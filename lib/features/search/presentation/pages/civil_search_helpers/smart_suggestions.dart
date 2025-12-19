@@ -104,7 +104,8 @@ class SmartSuggestionsGenerator {
     else {
       final queryWords = lowerQuery.split(' ');
       final nameWords = lowerName.split(' ');
-      final matchCount = queryWords.where((q) => nameWords.any((n) => n.contains(q))).length;
+      final matchCount =
+          queryWords.where((q) => nameWords.any((n) => n.contains(q))).length;
       score = (matchCount / queryWords.length) * 40.0;
     }
 

@@ -76,7 +76,7 @@ class CivilSearchRepositoryImpl implements CivilSearchRepository {
       relationsCount: stats['relations'] as int? ?? 0,
       governorates:
           (stats['governorates'] as List?)?.map((e) => e.toString()).toList() ??
-          [],
+              [],
     );
   }
 

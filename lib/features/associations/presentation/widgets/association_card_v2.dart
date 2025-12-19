@@ -49,7 +49,8 @@ class AssociationCardV2 extends StatelessWidget {
                     height: 48.h,
                     decoration: BoxDecoration(
                       color: colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                      borderRadius:
+                          BorderRadius.circular(ResponsiveUtils.mediumRadius),
                     ),
                     child: Icon(
                       Icons.business,
@@ -100,8 +101,11 @@ class AssociationCardV2 extends StatelessWidget {
                       vertical: 4.h,
                     ),
                     decoration: BoxDecoration(
-                      color: association.isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(ResponsiveUtils.smallRadius),
+                      color: association.isActive
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                      borderRadius:
+                          BorderRadius.circular(ResponsiveUtils.smallRadius),
                     ),
                     child: Text(
                       association.isActive ? 'نشط' : 'معطل',

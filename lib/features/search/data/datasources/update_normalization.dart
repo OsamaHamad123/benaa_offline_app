@@ -69,7 +69,8 @@ class UpdateNormalizationUtility {
       batch = db.batch();
 
       // Progress
-      final progress = ((offset + records.length) / total * 100).toStringAsFixed(1);
+      final progress =
+          ((offset + records.length) / total * 100).toStringAsFixed(1);
       if (kDebugMode) {
         debugPrint(
           '✅ Progress: $progress% (${_formatNumber(offset + records.length)}/${_formatNumber(total)})',
@@ -111,7 +112,8 @@ class UpdateNormalizationUtility {
         UnifiedLogger.log('');
         UnifiedLogger.info('🔍 Testing: $name');
         for (final row in results) {
-          final fullName = '${row['CI_FIRST_ARB']} ${row['CI_FATHER_ARB']} ${row['CI_FAMILY_ARB']}';
+          final fullName =
+              '${row['CI_FIRST_ARB']} ${row['CI_FATHER_ARB']} ${row['CI_FAMILY_ARB']}';
           if (kDebugMode) {
             debugPrint('  Original: $fullName');
             debugPrint('  Normalized: ${row['full_name_norm']}');

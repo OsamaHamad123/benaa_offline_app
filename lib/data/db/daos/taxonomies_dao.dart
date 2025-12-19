@@ -42,7 +42,8 @@ class TaxonomiesDao extends DatabaseAccessor<AppDatabase>
   Future<Taxonomy?> getById(String id) async {
     return (select(
       taxonomies,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    )..where((t) => t.id.equals(id)))
+        .getSingleOrNull();
   }
 
   /// الحصول على تصنيف واحد بالـ code

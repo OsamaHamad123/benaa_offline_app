@@ -91,9 +91,8 @@ class DashboardWidget extends ConsumerWidget {
                             )
                             .count;
                         final total = stats.total;
-                        final percentage = total > 0
-                            ? (synced / total * 100).toDouble()
-                            : 0.0;
+                        final percentage =
+                            total > 0 ? (synced / total * 100).toDouble() : 0.0;
 
                         return _SyncProgressBar(
                           synced: synced,
@@ -307,8 +306,8 @@ class _SyncProgressBar extends StatelessWidget {
                 percentage >= 80
                     ? Colors.green
                     : percentage >= 50
-                    ? Colors.orange
-                    : Colors.red,
+                        ? Colors.orange
+                        : Colors.red,
               ),
             ),
           ),

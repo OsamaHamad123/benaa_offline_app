@@ -165,7 +165,8 @@ class V2ContactInfoTab extends StatelessWidget {
                 DropdownMenuItem(value: 'returned', child: Text('عائد')),
               ],
             ),
-            if (selectedDisplacementStatus == 'displaced' || selectedDisplacementStatus == 'refugee') ...[
+            if (selectedDisplacementStatus == 'displaced' ||
+                selectedDisplacementStatus == 'refugee') ...[
               SizedBox(height: 12.h),
               V2CustomTextField(
                 controller: addressBeforeDisplacementController!,

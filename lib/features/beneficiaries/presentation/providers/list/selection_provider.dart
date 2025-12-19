@@ -5,8 +5,8 @@ import 'selection_persistence.dart';
 /// ☑️ Selection Provider
 final selectionProvider =
     StateNotifierProvider<SelectionNotifier, SelectionState>(
-      (ref) => SelectionNotifier(),
-    );
+  (ref) => SelectionNotifier(),
+);
 
 class SelectionNotifier extends StateNotifier<SelectionState> {
   SelectionNotifier() : super(const SelectionState());

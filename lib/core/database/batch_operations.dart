@@ -50,7 +50,8 @@ class BatchOperations {
     try {
       // Process in batches
       for (int i = 0; i < records.length; i += batchSize) {
-        final end = (i + batchSize < records.length) ? i + batchSize : records.length;
+        final end =
+            (i + batchSize < records.length) ? i + batchSize : records.length;
         final batchRecords = records.sublist(i, end);
 
         try {
@@ -125,7 +126,8 @@ class BatchOperations {
 
     try {
       for (int i = 0; i < records.length; i += batchSize) {
-        final end = (i + batchSize < records.length) ? i + batchSize : records.length;
+        final end =
+            (i + batchSize < records.length) ? i + batchSize : records.length;
         final batchRecords = records.sublist(i, end);
 
         try {
@@ -214,7 +216,8 @@ class BatchOperations {
 
             batch.delete(
               table,
-              where: '$idField IN (${List.filled(batchIds.length, '?').join(', ')})',
+              where:
+                  '$idField IN (${List.filled(batchIds.length, '?').join(', ')})',
               whereArgs: batchIds,
             );
 
@@ -284,7 +287,9 @@ class BatchOperations {
 
     try {
       for (int i = 0; i < sqlStatements.length; i += batchSize) {
-        final end = (i + batchSize < sqlStatements.length) ? i + batchSize : sqlStatements.length;
+        final end = (i + batchSize < sqlStatements.length)
+            ? i + batchSize
+            : sqlStatements.length;
         final batchSql = sqlStatements.sublist(i, end);
         final batchArgs = arguments?.sublist(i, end);
 
@@ -340,7 +345,8 @@ class BatchResult {
   });
 
   /// Success rate percentage
-  double get successRate => totalRecords > 0 ? (successCount / totalRecords * 100) : 0;
+  double get successRate =>
+      totalRecords > 0 ? (successCount / totalRecords * 100) : 0;
 
   /// Whether all operations succeeded
   bool get isFullSuccess => failureCount == 0 && successCount == totalRecords;

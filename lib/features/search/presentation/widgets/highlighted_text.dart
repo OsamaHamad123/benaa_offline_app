@@ -86,10 +86,8 @@ class _HighlightedTextState extends State<HighlightedText> {
     final normalizedQuery = TextNormalizationService.normalize(widget.query);
 
     // Split query into words for multi-word highlighting
-    final queryWords = normalizedQuery
-        .split(' ')
-        .where((w) => w.isNotEmpty)
-        .toList();
+    final queryWords =
+        normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
 
     if (queryWords.isEmpty) {
       return [TextSpan(text: widget.text, style: widget.textStyle)];
@@ -136,8 +134,7 @@ class _HighlightedTextState extends State<HighlightedText> {
       spans.add(
         TextSpan(
           text: widget.text.substring(match.start, match.end),
-          style:
-              widget.highlightStyle ??
+          style: widget.highlightStyle ??
               (widget.textStyle ?? const TextStyle()).copyWith(
                 backgroundColor: Colors.yellow.shade300,
                 fontWeight: FontWeight.bold,

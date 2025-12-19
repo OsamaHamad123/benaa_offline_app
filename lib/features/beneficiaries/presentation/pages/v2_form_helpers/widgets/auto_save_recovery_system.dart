@@ -285,22 +285,23 @@ class Draft {
   });
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'notes': notes,
-    'timestamp': timestamp.millisecondsSinceEpoch,
-    'progress': progress,
-    'data': data,
-  };
+        'id': id,
+        'name': name,
+        'notes': notes,
+        'timestamp': timestamp.millisecondsSinceEpoch,
+        'progress': progress,
+        'data': data,
+      };
 
   factory Draft.fromJson(Map<String, dynamic> json) => Draft(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    notes: json['notes'] as String?,
-    timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int),
-    progress: (json['progress'] as num).toDouble(),
-    data: json['data'] as Map<String, dynamic>,
-  );
+        id: json['id'] as String,
+        name: json['name'] as String,
+        notes: json['notes'] as String?,
+        timestamp:
+            DateTime.fromMillisecondsSinceEpoch(json['timestamp'] as int),
+        progress: (json['progress'] as num).toDouble(),
+        data: json['data'] as Map<String, dynamic>,
+      );
 
   String get timeAgo {
     final diff = DateTime.now().difference(timestamp);
@@ -528,33 +529,34 @@ class _DraftsListDialogState extends State<DraftsListDialog> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _drafts.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.inbox, size: 64.sp, color: Colors.grey),
-                          SizedBox(height: 16.h),
-                          const Text(
-                            'لا توجد مسودات محفوظة',
-                            style: TextStyle(color: Colors.grey),
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.inbox,
+                                  size: 64.sp, color: Colors.grey),
+                              SizedBox(height: 16.h),
+                              const Text(
+                                'لا توجد مسودات محفوظة',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _drafts.length,
-                      itemBuilder: (context, index) {
-                        final draft = _drafts[index];
-                        return _DraftTile(
-                          draft: draft,
-                          onRestore: () {
-                            Navigator.pop(context);
-                            widget.onRestore(draft);
+                        )
+                      : ListView.builder(
+                          itemCount: _drafts.length,
+                          itemBuilder: (context, index) {
+                            final draft = _drafts[index];
+                            return _DraftTile(
+                              draft: draft,
+                              onRestore: () {
+                                Navigator.pop(context);
+                                widget.onRestore(draft);
+                              },
+                              onDelete: () => _deleteDraft(draft.id),
+                            );
                           },
-                          onDelete: () => _deleteDraft(draft.id),
-                        );
-                      },
-                    ),
+                        ),
             ),
           ],
         ),

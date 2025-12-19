@@ -19,7 +19,8 @@ class CategoryReportSheet extends ConsumerStatefulWidget {
   const CategoryReportSheet({super.key});
 
   @override
-  ConsumerState<CategoryReportSheet> createState() => _CategoryReportSheetState();
+  ConsumerState<CategoryReportSheet> createState() =>
+      _CategoryReportSheetState();
 }
 
 class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {

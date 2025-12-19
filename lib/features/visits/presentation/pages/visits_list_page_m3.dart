@@ -26,7 +26,8 @@ class VisitsListPageM3 extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPageM3> createState() => _VisitsListPageM3State();
 }
 
-class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with SingleTickerProviderStateMixin {
+class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedFilter = 'all'; // all, pending, synced
   bool _showCalendar = false;
@@ -46,7 +47,9 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
 
   Future<void> _loadVisits() async {
     if (widget.beneficiaryId != null) {
-      await ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId!);
+      await ref
+          .read(visitNotifierProvider.notifier)
+          .loadBeneficiaryVisits(widget.beneficiaryId!);
     }
   }
 
@@ -372,7 +375,9 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        visit.syncState == 'synced' ? AppColors.success : AppColors.warning,
+                        visit.syncState == 'synced'
+                            ? AppColors.success
+                            : AppColors.warning,
                         visit.syncState == 'synced'
                             ? AppColors.success.withOpacity(0.6)
                             : AppColors.warning.withOpacity(0.6),
@@ -383,7 +388,9 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    visit.syncState == 'synced' ? Icons.check_circle : Icons.sync,
+                    visit.syncState == 'synced'
+                        ? Icons.check_circle
+                        : Icons.sync,
                     color: Colors.white,
                     size: 24.sp,
                   ),
@@ -451,7 +458,9 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: isSynced ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
+        color: isSynced
+            ? AppColors.success.withOpacity(0.1)
+            : AppColors.warning.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
@@ -529,7 +538,8 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
                 'الحالة',
                 visit.syncState == 'synced' ? 'مزامنة ✅' : 'قيد المزامنة ⏳',
               ),
-              if (visit.notes.isNotEmpty) _buildDetailRow('الملاحظات', visit.notes),
+              if (visit.notes.isNotEmpty)
+                _buildDetailRow('الملاحظات', visit.notes),
               SizedBox(height: 24.h),
               Row(
                 children: [
@@ -616,7 +626,8 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
         visits: visits
             .map(
               (v) => VisitExportRow(
-                beneficiaryName: v.staffName, // Will be replaced with actual beneficiary name if available
+                beneficiaryName: v
+                    .staffName, // Will be replaced with actual beneficiary name if available
                 visitDate: DateFormat('yyyy-MM-dd').format(v.visitDate),
                 visitType: _getVisitTypeArabic(v),
                 staffName: v.staffName,
@@ -631,14 +642,18 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
           ),
           ExportStatistic(
             label: 'قيد المزامنة',
-            value: visits.where((v) => v.syncState == 'pending').length.toString(),
+            value:
+                visits.where((v) => v.syncState == 'pending').length.toString(),
           ),
           ExportStatistic(
             label: 'مزامنة',
-            value: visits.where((v) => v.syncState == 'synced').length.toString(),
+            value:
+                visits.where((v) => v.syncState == 'synced').length.toString(),
           ),
         ],
-        subtitle: _selectedFilter != 'all' ? 'تمت التصفية: ${_getFilterName(_selectedFilter)}' : null,
+        subtitle: _selectedFilter != 'all'
+            ? 'تمت التصفية: ${_getFilterName(_selectedFilter)}'
+            : null,
       );
 
       final result = await excelService.exportToExcel(exportData);

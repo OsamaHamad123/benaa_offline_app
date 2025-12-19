@@ -104,13 +104,13 @@ final autofillFromCivilRegistryUseCaseProvider = Provider((ref) {
 // Civil Registry State Provider
 final civilRegistryProvider =
     StateNotifierProvider<CivilRegistryNotifier, CivilRegistryState>((ref) {
-      final fetchUseCase = ref.watch(fetchCivilRegistryDataUseCaseProvider);
-      final autofillUseCase = ref.watch(
-        autofillFromCivilRegistryUseCaseProvider,
-      );
+  final fetchUseCase = ref.watch(fetchCivilRegistryDataUseCaseProvider);
+  final autofillUseCase = ref.watch(
+    autofillFromCivilRegistryUseCaseProvider,
+  );
 
-      return CivilRegistryNotifier(
-        fetchUseCase: fetchUseCase,
-        autofillUseCase: autofillUseCase,
-      );
-    });
+  return CivilRegistryNotifier(
+    fetchUseCase: fetchUseCase,
+    autofillUseCase: autofillUseCase,
+  );
+});

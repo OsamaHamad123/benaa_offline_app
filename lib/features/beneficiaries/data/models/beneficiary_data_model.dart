@@ -51,9 +51,9 @@ class BeneficiaryDataModel {
   // Health & Special Needs
   final int? healthStatus; // data_health_status
   final int?
-  numberOfIndividualsWithChronicDiseases; // data_number_of_individuals_with_chronic_diseases
+      numberOfIndividualsWithChronicDiseases; // data_number_of_individuals_with_chronic_diseases
   final int?
-  numberOfPeopleWithSpecialNeeds; // data_number_of_people_with_special_needs
+      numberOfPeopleWithSpecialNeeds; // data_number_of_people_with_special_needs
 
   // Housing
   final int? housingStatus; // data_housing_status
@@ -493,9 +493,8 @@ class BeneficiaryDataModel {
       createdAt: drift.Value(createdAt),
       updatedAt: drift.Value(updatedAt),
       serverId: drift.Value(id),
-      syncState: isNew
-          ? const drift.Value('pending')
-          : const drift.Value('synced'),
+      syncState:
+          isNew ? const drift.Value('pending') : const drift.Value('synced'),
       lastSyncedAt: drift.Value(isNew ? null : DateTime.now()),
     );
   }

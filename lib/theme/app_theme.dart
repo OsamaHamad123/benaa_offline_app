@@ -68,8 +68,10 @@ class AppTheme {
   // ═══════════════════════════════════════════════════════════════════════════
 
   static TextTheme _buildTextTheme(bool isDark, double multiplier) {
-    final baseColor = isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1A1A1A);
-    final secondaryColor = isDark ? const Color(0xFFB0B0B0) : const Color(0xFF757575);
+    final baseColor =
+        isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1A1A1A);
+    final secondaryColor =
+        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF757575);
 
     return GoogleFonts.cairoTextTheme(
       TextTheme(
@@ -311,7 +313,8 @@ class AppTheme {
     const backgroundDark = Color(
       0xFF0D0D0D,
     ); // True AMOLED black for better contrast
-    const surfaceDark = Color(0xFF1A1A1A); // Elevated surface - improved contrast
+    const surfaceDark =
+        Color(0xFF1A1A1A); // Elevated surface - improved contrast
     const cardDark = Color(0xFF242424); // Card background - better visibility
     const textPrimary = Color(0xFFF5F5F5); // WCAG AAA contrast (21:1)
     const textSecondary = Color(0xFFBDBDBD); // Better readability

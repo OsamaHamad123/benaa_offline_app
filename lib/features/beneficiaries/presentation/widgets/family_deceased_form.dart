@@ -107,7 +107,9 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
     final dao = database.familyDeceasedDao;
 
     final companion = FamilyDeceasedTableCompanion(
-      id: widget.existingDeceased != null ? drift.Value(widget.existingDeceased!.id) : const drift.Value.absent(),
+      id: widget.existingDeceased != null
+          ? drift.Value(widget.existingDeceased!.id)
+          : const drift.Value.absent(),
       beneficiaryId: drift.Value(widget.beneficiaryId),
       deceasedType: drift.Value(_selectedDeceasedType!),
       firstName: drift.Value(_firstNameController.text.trim()),
@@ -121,8 +123,12 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
       nationalId: drift.Value(int.parse(_nationalIdController.text.trim())),
       deathDate: drift.Value(_deathDate!),
       deathCause: drift.Value(_selectedDeathCause ?? DeathCause.unknown),
-      documentType: _selectedDocumentType != null ? drift.Value(_selectedDocumentType) : const drift.Value(null),
-      documentPath: _documentPath != null ? drift.Value(_documentPath) : const drift.Value(null),
+      documentType: _selectedDocumentType != null
+          ? drift.Value(_selectedDocumentType)
+          : const drift.Value(null),
+      documentPath: _documentPath != null
+          ? drift.Value(_documentPath)
+          : const drift.Value(null),
       notes: drift.Value(_notesController.text.trim()),
       syncState: const drift.Value('pending'),
       serverId: const drift.Value(null),
@@ -149,12 +155,17 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
           nationalId: drift.Value(int.parse(_nationalIdController.text.trim())),
           deathDate: drift.Value(_deathDate!),
           deathCause: drift.Value(_selectedDeathCause ?? DeathCause.unknown),
-          documentType: _selectedDocumentType != null ? drift.Value(_selectedDocumentType) : const drift.Value(null),
-          documentPath: _documentPath != null ? drift.Value(_documentPath) : const drift.Value(null),
+          documentType: _selectedDocumentType != null
+              ? drift.Value(_selectedDocumentType)
+              : const drift.Value(null),
+          documentPath: _documentPath != null
+              ? drift.Value(_documentPath)
+              : const drift.Value(null),
           notes: drift.Value(_notesController.text.trim()),
           updatedAt: drift.Value(DateTime.now()),
         );
-        await (database.update(database.familyDeceasedTable)..where((t) => t.id.equals(widget.existingDeceased!.id)))
+        await (database.update(database.familyDeceasedTable)
+              ..where((t) => t.id.equals(widget.existingDeceased!.id)))
             .write(updateCompanion);
       } else {
         await dao.addDeceased(companion);
@@ -177,7 +188,9 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.existingDeceased != null ? 'تعديل بيانات متوفى' : 'إضافة متوفى',
+          widget.existingDeceased != null
+              ? 'تعديل بيانات متوفى'
+              : 'إضافة متوفى',
         ),
         actions: [
           IconButton(icon: const Icon(Icons.save), onPressed: _saveDeceased),
@@ -207,7 +220,8 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
                     child: Text('أم'),
                   ),
                 ],
-                onChanged: (value) => setState(() => _selectedDeceasedType = value),
+                onChanged: (value) =>
+                    setState(() => _selectedDeceasedType = value),
                 validator: (value) {
                   if (value == null) return 'الرجاء اختيار نوع المتوفى';
                   return null;
@@ -374,7 +388,8 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
                   child: Text('إفادة شهيد'),
                 ),
               ],
-              onChanged: (value) => setState(() => _selectedDocumentType = value),
+              onChanged: (value) =>
+                  setState(() => _selectedDocumentType = value),
             ),
             const SizedBox(height: 16),
 

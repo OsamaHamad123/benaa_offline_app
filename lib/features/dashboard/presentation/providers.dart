@@ -59,7 +59,8 @@ final getRecentActivitiesProvider = Provider<GetRecentActivities>((ref) {
 // DASHBOARD STATE PROVIDER - Main Dashboard Notifier
 // ============================================================================
 
-final dashboardProvider = StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
+final dashboardProvider =
+    StateNotifierProvider<DashboardNotifier, DashboardState>((ref) {
   final getStatistics = ref.watch(getDashboardStatisticsProvider);
   final getTodayStats = ref.watch(getTodayStatsProvider);
   final getActivities = ref.watch(getRecentActivitiesProvider);

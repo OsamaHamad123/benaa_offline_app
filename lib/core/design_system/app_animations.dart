@@ -9,23 +9,31 @@ class AppDurations {
   AppDurations._();
 
   // ✨ Fine-tuned animations for micro-interactions (16.67ms per frame)
-  static const Duration instant = Duration(milliseconds: 150); // Slightly slower for visibility
-  static const Duration fast = Duration(milliseconds: 250); // Optimized for 60fps
+  static const Duration instant =
+      Duration(milliseconds: 150); // Slightly slower for visibility
+  static const Duration fast =
+      Duration(milliseconds: 250); // Optimized for 60fps
   static const Duration normal = Duration(milliseconds: 350); // Premium feel
-  static const Duration slow = Duration(milliseconds: 450); // Smooth & noticeable
+  static const Duration slow =
+      Duration(milliseconds: 450); // Smooth & noticeable
   static const Duration verySlow = Duration(milliseconds: 600); // Cinematic
 
   // 📱 Page transitions (120Hz display optimized)
-  static const Duration pageTransition = Duration(milliseconds: 400); // Buttery smooth
-  static const Duration dialogTransition = Duration(milliseconds: 300); // Quick & smooth
-  static const Duration bottomSheetTransition = Duration(milliseconds: 350); // Natural feel
+  static const Duration pageTransition =
+      Duration(milliseconds: 400); // Buttery smooth
+  static const Duration dialogTransition =
+      Duration(milliseconds: 300); // Quick & smooth
+  static const Duration bottomSheetTransition =
+      Duration(milliseconds: 350); // Natural feel
 
   // ⏳ Loading states (optimized for perception)
-  static const Duration shimmer = Duration(milliseconds: 1500); // Slower for premium feel
+  static const Duration shimmer =
+      Duration(milliseconds: 1500); // Slower for premium feel
   static const Duration skeleton = Duration(milliseconds: 1000); // Balanced
 
   // 🎯 Interactive feedback
-  static const Duration buttonPress = Duration(milliseconds: 100); // Instant feedback
+  static const Duration buttonPress =
+      Duration(milliseconds: 100); // Instant feedback
   static const Duration hover = Duration(milliseconds: 200); // Smooth hover
 }
 
@@ -41,7 +49,8 @@ class AppCurves {
   // 🎯 Fine-tuned Custom curves for premium UX
   static const Curve bounce = Curves.easeOutBack; // Gentle bounce
   static const Curve elastic = Curves.elasticOut; // Natural elastic
-  static const Curve smooth = Curves.easeInOutQuint; // Ultra smooth (60fps optimized)
+  static const Curve smooth =
+      Curves.easeInOutQuint; // Ultra smooth (60fps optimized)
   static const Curve butter = Curves.easeInOutExpo; // Buttery smooth
 
   // 📱 Optimized Page transitions (120Hz ready)
@@ -197,13 +206,15 @@ class ShimmerLoading extends StatefulWidget {
   State<ShimmerLoading> createState() => _ShimmerLoadingState();
 }
 
-class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProviderStateMixin {
+class _ShimmerLoadingState extends State<ShimmerLoading>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)..repeat();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat();
   }
 
   @override
@@ -264,7 +275,8 @@ class AppPageRoute {
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(
-          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
+          position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
+              .animate(
             CurvedAnimation(parent: animation, curve: AppCurves.pageEnter),
           ),
           child: child,
@@ -280,7 +292,8 @@ class AppPageRoute {
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(
-          position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
+          position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+              .animate(
             CurvedAnimation(parent: animation, curve: AppCurves.pageEnter),
           ),
           child: child,
@@ -324,13 +337,15 @@ class PulseAnimation extends StatefulWidget {
   State<PulseAnimation> createState() => _PulseAnimationState();
 }
 
-class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProviderStateMixin {
+class _PulseAnimationState extends State<PulseAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat(reverse: true);
   }
 
   @override
@@ -344,7 +359,8 @@ class _PulseAnimationState extends State<PulseAnimation> with SingleTickerProvid
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final scale = widget.minScale + (widget.maxScale - widget.minScale) * _controller.value;
+        final scale = widget.minScale +
+            (widget.maxScale - widget.minScale) * _controller.value;
         return Transform.scale(scale: scale, child: child);
       },
       child: widget.child,
@@ -373,8 +389,10 @@ class RippleCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: splashColor ?? Theme.of(context).primaryColor.withAlpha(51),
-        highlightColor: splashColor ?? Theme.of(context).primaryColor.withAlpha(26),
+        splashColor:
+            splashColor ?? Theme.of(context).primaryColor.withAlpha(51),
+        highlightColor:
+            splashColor ?? Theme.of(context).primaryColor.withAlpha(26),
         borderRadius: borderRadius ?? BorderRadius.circular(12),
         child: child,
       ),

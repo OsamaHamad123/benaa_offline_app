@@ -11,14 +11,13 @@ class DatabaseDownloadService {
   CancelToken? _cancelToken;
 
   DatabaseDownloadService({Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(minutes: 10),
-            ),
-          );
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 30),
+                receiveTimeout: const Duration(minutes: 10),
+              ),
+            );
 
   /// Download database from server
   Future<void> downloadDatabase({

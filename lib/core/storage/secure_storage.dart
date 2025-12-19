@@ -48,9 +48,12 @@ class SecureStorage {
         _storage.write(key: _userIdKey, value: userId),
         _storage.write(key: _userEmailKey, value: email),
         _storage.write(key: _isLoggedInKey, value: 'true'),
-        if (refreshToken != null) _storage.write(key: _refreshTokenKey, value: refreshToken),
-        if (userName != null) _storage.write(key: _userNameKey, value: userName),
-        if (serverUrl != null) _storage.write(key: _serverUrlKey, value: serverUrl),
+        if (refreshToken != null)
+          _storage.write(key: _refreshTokenKey, value: refreshToken),
+        if (userName != null)
+          _storage.write(key: _userNameKey, value: userName),
+        if (serverUrl != null)
+          _storage.write(key: _serverUrlKey, value: serverUrl),
       ]);
 
       UnifiedLogger.success('✅ Auth data saved securely');

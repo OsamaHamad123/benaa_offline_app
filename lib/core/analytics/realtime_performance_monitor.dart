@@ -14,10 +14,12 @@ class RealTimePerformanceMonitor extends StatefulWidget {
   const RealTimePerformanceMonitor({super.key});
 
   @override
-  State<RealTimePerformanceMonitor> createState() => _RealTimePerformanceMonitorState();
+  State<RealTimePerformanceMonitor> createState() =>
+      _RealTimePerformanceMonitorState();
 }
 
-class _RealTimePerformanceMonitorState extends State<RealTimePerformanceMonitor> {
+class _RealTimePerformanceMonitorState
+    extends State<RealTimePerformanceMonitor> {
   final List<double> _fpsHistory = [];
   final List<double> _frameTimeHistory = [];
   final int _maxHistoryLength = 60; // Keep last 60 measurements
@@ -104,10 +106,13 @@ class _RealTimePerformanceMonitorState extends State<RealTimePerformanceMonitor>
 
   @override
   Widget build(BuildContext context) {
-    final avgFps = _fpsHistory.isEmpty ? 0.0 : _fpsHistory.reduce((a, b) => a + b) / _fpsHistory.length;
+    final avgFps = _fpsHistory.isEmpty
+        ? 0.0
+        : _fpsHistory.reduce((a, b) => a + b) / _fpsHistory.length;
 
-    final avgFrameTime =
-        _frameTimeHistory.isEmpty ? 0.0 : _frameTimeHistory.reduce((a, b) => a + b) / _frameTimeHistory.length;
+    final avgFrameTime = _frameTimeHistory.isEmpty
+        ? 0.0
+        : _frameTimeHistory.reduce((a, b) => a + b) / _frameTimeHistory.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -371,13 +376,16 @@ class _RealTimePerformanceMonitorState extends State<RealTimePerformanceMonitor>
     final recommendations = <String>[];
 
     if (fps < 50) {
-      recommendations.add('• Low FPS detected - consider reducing widget rebuilds');
+      recommendations
+          .add('• Low FPS detected - consider reducing widget rebuilds');
     }
     if (frameTime > 20) {
-      recommendations.add('• High frame time - optimize expensive build operations');
+      recommendations
+          .add('• High frame time - optimize expensive build operations');
     }
     if (jank > 15) {
-      recommendations.add('• Many dropped frames - check for heavy computations in build()');
+      recommendations.add(
+          '• Many dropped frames - check for heavy computations in build()');
     }
     if (recommendations.isEmpty) {
       recommendations.add('• Performance is optimal! 🎉');

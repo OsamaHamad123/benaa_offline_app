@@ -40,7 +40,11 @@ class Association extends Equatable {
   String get displayName => shortName?.isNotEmpty == true ? shortName! : name;
 
   /// Is valid for operations
-  bool get isValid => name.isNotEmpty && phone.isNotEmpty && bankName.isNotEmpty && accountNumber.isNotEmpty;
+  bool get isValid =>
+      name.isNotEmpty &&
+      phone.isNotEmpty &&
+      bankName.isNotEmpty &&
+      accountNumber.isNotEmpty;
 
   @override
   List<Object?> get props => [

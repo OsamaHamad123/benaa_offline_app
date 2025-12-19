@@ -40,7 +40,8 @@ class DatabaseMigrationHelper {
       const batchSize = 100;
       for (int i = 0; i < records.length; i += batchSize) {
         final batch = database.batch();
-        final end = (i + batchSize < records.length) ? i + batchSize : records.length;
+        final end =
+            (i + batchSize < records.length) ? i + batchSize : records.length;
 
         for (int j = i; j < end; j++) {
           final record = records[j];
@@ -66,7 +67,8 @@ class DatabaseMigrationHelper {
       return updatedCount;
     } catch (e) {
       // Log error for debugging
-      print('Migration Error: Failed to normalize $tableName.$sourceColumn: $e');
+      print(
+          'Migration Error: Failed to normalize $tableName.$sourceColumn: $e');
       rethrow;
     }
   }
@@ -151,7 +153,8 @@ class DatabaseMigrationHelper {
       'total': total,
       'normalized': normalized,
       'pending': total - normalized,
-      'percentage': total > 0 ? (normalized / total * 100).toStringAsFixed(1) : '0',
+      'percentage':
+          total > 0 ? (normalized / total * 100).toStringAsFixed(1) : '0',
     };
   }
 }

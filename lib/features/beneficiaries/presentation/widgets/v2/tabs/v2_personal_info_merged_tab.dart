@@ -235,9 +235,7 @@ class _V2PersonalInfoMergedTabState
                           state: civilRegistryState,
                           onRetry: () {
                             final nationalId = widget
-                                .formControllers
-                                .nationalIdController
-                                .text;
+                                .formControllers.nationalIdController.text;
                             if (nationalId.length ==
                                 FormConstants.nationalIdLength) {
                               ref

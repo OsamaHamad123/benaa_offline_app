@@ -7662,6 +7662,54 @@ class $SponsorshipsTable extends Sponsorships
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES associations (id)'));
+  static const VerificationMeta _sponsorNameMeta =
+      const VerificationMeta('sponsorName');
+  @override
+  late final GeneratedColumn<String> sponsorName = GeneratedColumn<String>(
+      'sponsor_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _internalFileNoMeta =
+      const VerificationMeta('internalFileNo');
+  @override
+  late final GeneratedColumn<String> internalFileNo = GeneratedColumn<String>(
+      'internal_file_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _externalFileNoMeta =
+      const VerificationMeta('externalFileNo');
+  @override
+  late final GeneratedColumn<String> externalFileNo = GeneratedColumn<String>(
+      'external_file_no', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _guardianNameMeta =
+      const VerificationMeta('guardianName');
+  @override
+  late final GeneratedColumn<String> guardianName = GeneratedColumn<String>(
+      'guardian_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _guardianIdNumberMeta =
+      const VerificationMeta('guardianIdNumber');
+  @override
+  late final GeneratedColumn<int> guardianIdNumber = GeneratedColumn<int>(
+      'guardian_id_number', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _guardianPhoneMeta =
+      const VerificationMeta('guardianPhone');
+  @override
+  late final GeneratedColumn<String> guardianPhone = GeneratedColumn<String>(
+      'guardian_phone', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _guardianAltPhoneMeta =
+      const VerificationMeta('guardianAltPhone');
+  @override
+  late final GeneratedColumn<String> guardianAltPhone = GeneratedColumn<String>(
+      'guardian_alt_phone', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _durationMonthsMeta =
+      const VerificationMeta('durationMonths');
+  @override
+  late final GeneratedColumn<int> durationMonths = GeneratedColumn<int>(
+      'duration_months', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _startDateMeta =
       const VerificationMeta('startDate');
   @override
@@ -7692,6 +7740,67 @@ class $SponsorshipsTable extends Sponsorships
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('active'));
+  static const VerificationMeta _sponsorshipTypeMeta =
+      const VerificationMeta('sponsorshipType');
+  @override
+  late final GeneratedColumn<String> sponsorshipType = GeneratedColumn<String>(
+      'sponsorship_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('monthly'));
+  static const VerificationMeta _bankNameMeta =
+      const VerificationMeta('bankName');
+  @override
+  late final GeneratedColumn<String> bankName = GeneratedColumn<String>(
+      'bank_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _accountHolderNameMeta =
+      const VerificationMeta('accountHolderName');
+  @override
+  late final GeneratedColumn<String> accountHolderName =
+      GeneratedColumn<String>('account_holder_name', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _accountHolderIdNumberMeta =
+      const VerificationMeta('accountHolderIdNumber');
+  @override
+  late final GeneratedColumn<int> accountHolderIdNumber = GeneratedColumn<int>(
+      'account_holder_id_number', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _accountNumberMeta =
+      const VerificationMeta('accountNumber');
+  @override
+  late final GeneratedColumn<String> accountNumber = GeneratedColumn<String>(
+      'account_number', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _swiftCodeMeta =
+      const VerificationMeta('swiftCode');
+  @override
+  late final GeneratedColumn<String> swiftCode = GeneratedColumn<String>(
+      'swift_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _governorateMeta =
+      const VerificationMeta('governorate');
+  @override
+  late final GeneratedColumn<String> governorate = GeneratedColumn<String>(
+      'governorate', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _cityMeta = const VerificationMeta('city');
+  @override
+  late final GeneratedColumn<String> city = GeneratedColumn<String>(
+      'city', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _addressMeta =
+      const VerificationMeta('address');
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+      'address', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _importBatchIdMeta =
+      const VerificationMeta('importBatchId');
+  @override
+  late final GeneratedColumn<int> importBatchId = GeneratedColumn<int>(
+      'import_batch_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -7736,11 +7845,29 @@ class $SponsorshipsTable extends Sponsorships
         fileNo,
         beneficiaryId,
         associationId,
+        sponsorName,
+        internalFileNo,
+        externalFileNo,
+        guardianName,
+        guardianIdNumber,
+        guardianPhone,
+        guardianAltPhone,
+        durationMonths,
         startDate,
         endDate,
         amount,
         currency,
         status,
+        sponsorshipType,
+        bankName,
+        accountHolderName,
+        accountHolderIdNumber,
+        accountNumber,
+        swiftCode,
+        governorate,
+        city,
+        address,
+        importBatchId,
         notes,
         createdAt,
         updatedAt,
@@ -7778,6 +7905,54 @@ class $SponsorshipsTable extends Sponsorships
     } else if (isInserting) {
       context.missing(_associationIdMeta);
     }
+    if (data.containsKey('sponsor_name')) {
+      context.handle(
+          _sponsorNameMeta,
+          sponsorName.isAcceptableOrUnknown(
+              data['sponsor_name']!, _sponsorNameMeta));
+    }
+    if (data.containsKey('internal_file_no')) {
+      context.handle(
+          _internalFileNoMeta,
+          internalFileNo.isAcceptableOrUnknown(
+              data['internal_file_no']!, _internalFileNoMeta));
+    }
+    if (data.containsKey('external_file_no')) {
+      context.handle(
+          _externalFileNoMeta,
+          externalFileNo.isAcceptableOrUnknown(
+              data['external_file_no']!, _externalFileNoMeta));
+    }
+    if (data.containsKey('guardian_name')) {
+      context.handle(
+          _guardianNameMeta,
+          guardianName.isAcceptableOrUnknown(
+              data['guardian_name']!, _guardianNameMeta));
+    }
+    if (data.containsKey('guardian_id_number')) {
+      context.handle(
+          _guardianIdNumberMeta,
+          guardianIdNumber.isAcceptableOrUnknown(
+              data['guardian_id_number']!, _guardianIdNumberMeta));
+    }
+    if (data.containsKey('guardian_phone')) {
+      context.handle(
+          _guardianPhoneMeta,
+          guardianPhone.isAcceptableOrUnknown(
+              data['guardian_phone']!, _guardianPhoneMeta));
+    }
+    if (data.containsKey('guardian_alt_phone')) {
+      context.handle(
+          _guardianAltPhoneMeta,
+          guardianAltPhone.isAcceptableOrUnknown(
+              data['guardian_alt_phone']!, _guardianAltPhoneMeta));
+    }
+    if (data.containsKey('duration_months')) {
+      context.handle(
+          _durationMonthsMeta,
+          durationMonths.isAcceptableOrUnknown(
+              data['duration_months']!, _durationMonthsMeta));
+    }
     if (data.containsKey('start_date')) {
       context.handle(_startDateMeta,
           startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta));
@@ -7797,6 +7972,58 @@ class $SponsorshipsTable extends Sponsorships
     if (data.containsKey('status')) {
       context.handle(_statusMeta,
           status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('sponsorship_type')) {
+      context.handle(
+          _sponsorshipTypeMeta,
+          sponsorshipType.isAcceptableOrUnknown(
+              data['sponsorship_type']!, _sponsorshipTypeMeta));
+    }
+    if (data.containsKey('bank_name')) {
+      context.handle(_bankNameMeta,
+          bankName.isAcceptableOrUnknown(data['bank_name']!, _bankNameMeta));
+    }
+    if (data.containsKey('account_holder_name')) {
+      context.handle(
+          _accountHolderNameMeta,
+          accountHolderName.isAcceptableOrUnknown(
+              data['account_holder_name']!, _accountHolderNameMeta));
+    }
+    if (data.containsKey('account_holder_id_number')) {
+      context.handle(
+          _accountHolderIdNumberMeta,
+          accountHolderIdNumber.isAcceptableOrUnknown(
+              data['account_holder_id_number']!, _accountHolderIdNumberMeta));
+    }
+    if (data.containsKey('account_number')) {
+      context.handle(
+          _accountNumberMeta,
+          accountNumber.isAcceptableOrUnknown(
+              data['account_number']!, _accountNumberMeta));
+    }
+    if (data.containsKey('swift_code')) {
+      context.handle(_swiftCodeMeta,
+          swiftCode.isAcceptableOrUnknown(data['swift_code']!, _swiftCodeMeta));
+    }
+    if (data.containsKey('governorate')) {
+      context.handle(
+          _governorateMeta,
+          governorate.isAcceptableOrUnknown(
+              data['governorate']!, _governorateMeta));
+    }
+    if (data.containsKey('city')) {
+      context.handle(
+          _cityMeta, city.isAcceptableOrUnknown(data['city']!, _cityMeta));
+    }
+    if (data.containsKey('address')) {
+      context.handle(_addressMeta,
+          address.isAcceptableOrUnknown(data['address']!, _addressMeta));
+    }
+    if (data.containsKey('import_batch_id')) {
+      context.handle(
+          _importBatchIdMeta,
+          importBatchId.isAcceptableOrUnknown(
+              data['import_batch_id']!, _importBatchIdMeta));
     }
     if (data.containsKey('notes')) {
       context.handle(
@@ -7839,6 +8066,22 @@ class $SponsorshipsTable extends Sponsorships
           .read(DriftSqlType.int, data['${effectivePrefix}beneficiary_id'])!,
       associationId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}association_id'])!,
+      sponsorName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sponsor_name']),
+      internalFileNo: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}internal_file_no']),
+      externalFileNo: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}external_file_no']),
+      guardianName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}guardian_name']),
+      guardianIdNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}guardian_id_number']),
+      guardianPhone: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}guardian_phone']),
+      guardianAltPhone: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}guardian_alt_phone']),
+      durationMonths: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}duration_months']),
       startDate: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}start_date']),
       endDate: attachedDatabase.typeMapping
@@ -7849,6 +8092,26 @@ class $SponsorshipsTable extends Sponsorships
           .read(DriftSqlType.string, data['${effectivePrefix}currency']),
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      sponsorshipType: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}sponsorship_type'])!,
+      bankName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bank_name']),
+      accountHolderName: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}account_holder_name']),
+      accountHolderIdNumber: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}account_holder_id_number']),
+      accountNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}account_number']),
+      swiftCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}swift_code']),
+      governorate: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}governorate']),
+      city: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}city']),
+      address: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}address']),
+      importBatchId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}import_batch_id']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       createdAt: attachedDatabase.typeMapping
@@ -7871,21 +8134,75 @@ class $SponsorshipsTable extends Sponsorships
 }
 
 class Sponsorship extends DataClass implements Insertable<Sponsorship> {
-  /// رقم الملف (File No) - فريد على مستوى النظام
+  /// رقم الملف (File No) - فريد على مستوى النظام (Auto-generated)
   final int fileNo;
 
   /// Foreign keys
   final int beneficiaryId;
   final String associationId;
 
-  /// Optional business fields
+  /// اسم الكافل (الشخص أو المؤسسة)
+  final String? sponsorName;
+
+  /// رقم الملف الداخلي (Internal File Number)
+  final String? internalFileNo;
+
+  /// رقم الملف الخارجي (External File Number)
+  final String? externalFileNo;
+
+  /// اسم المعيل (Guardian Name)
+  final String? guardianName;
+
+  /// رقم هوية المعيل (Guardian ID Number)
+  final int? guardianIdNumber;
+
+  /// رقم هاتف المعيل (Guardian Phone)
+  final String? guardianPhone;
+
+  /// جوال بديل للمعيل (Guardian Alt Phone)
+  final String? guardianAltPhone;
+
+  /// مدة الكفالة بالأشهر (Sponsorship Duration in Months)
+  final int? durationMonths;
   final DateTime? startDate;
   final DateTime? endDate;
+
+  /// القيمة المالية
   final double? amount;
   final String? currency;
 
   /// active | paused | ended
   final String status;
+
+  /// monthly | one_time | other
+  final String sponsorshipType;
+
+  /// اسم البنك (Bank Name)
+  final String? bankName;
+
+  /// اسم صاحب الحساب (Account Holder Name)
+  final String? accountHolderName;
+
+  /// رقم هوية صاحب الحساب (Account Holder ID)
+  final int? accountHolderIdNumber;
+
+  /// رقم الحساب البنكي (Account Number)
+  final String? accountNumber;
+
+  /// رمز Swift (Swift Code)
+  final String? swiftCode;
+
+  /// المحافظة (Governorate)
+  final String? governorate;
+
+  /// المدينة (City)
+  final String? city;
+
+  /// العنوان التفصيلي (Detailed Address)
+  final String? address;
+
+  /// Optional link to import_batches.id
+  final int? importBatchId;
   final String? notes;
 
   /// System fields
@@ -7900,11 +8217,29 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       {required this.fileNo,
       required this.beneficiaryId,
       required this.associationId,
+      this.sponsorName,
+      this.internalFileNo,
+      this.externalFileNo,
+      this.guardianName,
+      this.guardianIdNumber,
+      this.guardianPhone,
+      this.guardianAltPhone,
+      this.durationMonths,
       this.startDate,
       this.endDate,
       this.amount,
       this.currency,
       required this.status,
+      required this.sponsorshipType,
+      this.bankName,
+      this.accountHolderName,
+      this.accountHolderIdNumber,
+      this.accountNumber,
+      this.swiftCode,
+      this.governorate,
+      this.city,
+      this.address,
+      this.importBatchId,
       this.notes,
       required this.createdAt,
       this.updatedAt,
@@ -7917,6 +8252,30 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
     map['file_no'] = Variable<int>(fileNo);
     map['beneficiary_id'] = Variable<int>(beneficiaryId);
     map['association_id'] = Variable<String>(associationId);
+    if (!nullToAbsent || sponsorName != null) {
+      map['sponsor_name'] = Variable<String>(sponsorName);
+    }
+    if (!nullToAbsent || internalFileNo != null) {
+      map['internal_file_no'] = Variable<String>(internalFileNo);
+    }
+    if (!nullToAbsent || externalFileNo != null) {
+      map['external_file_no'] = Variable<String>(externalFileNo);
+    }
+    if (!nullToAbsent || guardianName != null) {
+      map['guardian_name'] = Variable<String>(guardianName);
+    }
+    if (!nullToAbsent || guardianIdNumber != null) {
+      map['guardian_id_number'] = Variable<int>(guardianIdNumber);
+    }
+    if (!nullToAbsent || guardianPhone != null) {
+      map['guardian_phone'] = Variable<String>(guardianPhone);
+    }
+    if (!nullToAbsent || guardianAltPhone != null) {
+      map['guardian_alt_phone'] = Variable<String>(guardianAltPhone);
+    }
+    if (!nullToAbsent || durationMonths != null) {
+      map['duration_months'] = Variable<int>(durationMonths);
+    }
     if (!nullToAbsent || startDate != null) {
       map['start_date'] = Variable<DateTime>(startDate);
     }
@@ -7930,6 +8289,34 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       map['currency'] = Variable<String>(currency);
     }
     map['status'] = Variable<String>(status);
+    map['sponsorship_type'] = Variable<String>(sponsorshipType);
+    if (!nullToAbsent || bankName != null) {
+      map['bank_name'] = Variable<String>(bankName);
+    }
+    if (!nullToAbsent || accountHolderName != null) {
+      map['account_holder_name'] = Variable<String>(accountHolderName);
+    }
+    if (!nullToAbsent || accountHolderIdNumber != null) {
+      map['account_holder_id_number'] = Variable<int>(accountHolderIdNumber);
+    }
+    if (!nullToAbsent || accountNumber != null) {
+      map['account_number'] = Variable<String>(accountNumber);
+    }
+    if (!nullToAbsent || swiftCode != null) {
+      map['swift_code'] = Variable<String>(swiftCode);
+    }
+    if (!nullToAbsent || governorate != null) {
+      map['governorate'] = Variable<String>(governorate);
+    }
+    if (!nullToAbsent || city != null) {
+      map['city'] = Variable<String>(city);
+    }
+    if (!nullToAbsent || address != null) {
+      map['address'] = Variable<String>(address);
+    }
+    if (!nullToAbsent || importBatchId != null) {
+      map['import_batch_id'] = Variable<int>(importBatchId);
+    }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -7952,6 +8339,30 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       fileNo: Value(fileNo),
       beneficiaryId: Value(beneficiaryId),
       associationId: Value(associationId),
+      sponsorName: sponsorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsorName),
+      internalFileNo: internalFileNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(internalFileNo),
+      externalFileNo: externalFileNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(externalFileNo),
+      guardianName: guardianName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guardianName),
+      guardianIdNumber: guardianIdNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guardianIdNumber),
+      guardianPhone: guardianPhone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guardianPhone),
+      guardianAltPhone: guardianAltPhone == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guardianAltPhone),
+      durationMonths: durationMonths == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMonths),
       startDate: startDate == null && nullToAbsent
           ? const Value.absent()
           : Value(startDate),
@@ -7964,6 +8375,32 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           ? const Value.absent()
           : Value(currency),
       status: Value(status),
+      sponsorshipType: Value(sponsorshipType),
+      bankName: bankName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bankName),
+      accountHolderName: accountHolderName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountHolderName),
+      accountHolderIdNumber: accountHolderIdNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountHolderIdNumber),
+      accountNumber: accountNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(accountNumber),
+      swiftCode: swiftCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(swiftCode),
+      governorate: governorate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(governorate),
+      city: city == null && nullToAbsent ? const Value.absent() : Value(city),
+      address: address == null && nullToAbsent
+          ? const Value.absent()
+          : Value(address),
+      importBatchId: importBatchId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importBatchId),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       createdAt: Value(createdAt),
@@ -7987,11 +8424,31 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       fileNo: serializer.fromJson<int>(json['fileNo']),
       beneficiaryId: serializer.fromJson<int>(json['beneficiaryId']),
       associationId: serializer.fromJson<String>(json['associationId']),
+      sponsorName: serializer.fromJson<String?>(json['sponsorName']),
+      internalFileNo: serializer.fromJson<String?>(json['internalFileNo']),
+      externalFileNo: serializer.fromJson<String?>(json['externalFileNo']),
+      guardianName: serializer.fromJson<String?>(json['guardianName']),
+      guardianIdNumber: serializer.fromJson<int?>(json['guardianIdNumber']),
+      guardianPhone: serializer.fromJson<String?>(json['guardianPhone']),
+      guardianAltPhone: serializer.fromJson<String?>(json['guardianAltPhone']),
+      durationMonths: serializer.fromJson<int?>(json['durationMonths']),
       startDate: serializer.fromJson<DateTime?>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
       amount: serializer.fromJson<double?>(json['amount']),
       currency: serializer.fromJson<String?>(json['currency']),
       status: serializer.fromJson<String>(json['status']),
+      sponsorshipType: serializer.fromJson<String>(json['sponsorshipType']),
+      bankName: serializer.fromJson<String?>(json['bankName']),
+      accountHolderName:
+          serializer.fromJson<String?>(json['accountHolderName']),
+      accountHolderIdNumber:
+          serializer.fromJson<int?>(json['accountHolderIdNumber']),
+      accountNumber: serializer.fromJson<String?>(json['accountNumber']),
+      swiftCode: serializer.fromJson<String?>(json['swiftCode']),
+      governorate: serializer.fromJson<String?>(json['governorate']),
+      city: serializer.fromJson<String?>(json['city']),
+      address: serializer.fromJson<String?>(json['address']),
+      importBatchId: serializer.fromJson<int?>(json['importBatchId']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
@@ -8007,11 +8464,29 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       'fileNo': serializer.toJson<int>(fileNo),
       'beneficiaryId': serializer.toJson<int>(beneficiaryId),
       'associationId': serializer.toJson<String>(associationId),
+      'sponsorName': serializer.toJson<String?>(sponsorName),
+      'internalFileNo': serializer.toJson<String?>(internalFileNo),
+      'externalFileNo': serializer.toJson<String?>(externalFileNo),
+      'guardianName': serializer.toJson<String?>(guardianName),
+      'guardianIdNumber': serializer.toJson<int?>(guardianIdNumber),
+      'guardianPhone': serializer.toJson<String?>(guardianPhone),
+      'guardianAltPhone': serializer.toJson<String?>(guardianAltPhone),
+      'durationMonths': serializer.toJson<int?>(durationMonths),
       'startDate': serializer.toJson<DateTime?>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
       'amount': serializer.toJson<double?>(amount),
       'currency': serializer.toJson<String?>(currency),
       'status': serializer.toJson<String>(status),
+      'sponsorshipType': serializer.toJson<String>(sponsorshipType),
+      'bankName': serializer.toJson<String?>(bankName),
+      'accountHolderName': serializer.toJson<String?>(accountHolderName),
+      'accountHolderIdNumber': serializer.toJson<int?>(accountHolderIdNumber),
+      'accountNumber': serializer.toJson<String?>(accountNumber),
+      'swiftCode': serializer.toJson<String?>(swiftCode),
+      'governorate': serializer.toJson<String?>(governorate),
+      'city': serializer.toJson<String?>(city),
+      'address': serializer.toJson<String?>(address),
+      'importBatchId': serializer.toJson<int?>(importBatchId),
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
@@ -8025,11 +8500,29 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           {int? fileNo,
           int? beneficiaryId,
           String? associationId,
+          Value<String?> sponsorName = const Value.absent(),
+          Value<String?> internalFileNo = const Value.absent(),
+          Value<String?> externalFileNo = const Value.absent(),
+          Value<String?> guardianName = const Value.absent(),
+          Value<int?> guardianIdNumber = const Value.absent(),
+          Value<String?> guardianPhone = const Value.absent(),
+          Value<String?> guardianAltPhone = const Value.absent(),
+          Value<int?> durationMonths = const Value.absent(),
           Value<DateTime?> startDate = const Value.absent(),
           Value<DateTime?> endDate = const Value.absent(),
           Value<double?> amount = const Value.absent(),
           Value<String?> currency = const Value.absent(),
           String? status,
+          String? sponsorshipType,
+          Value<String?> bankName = const Value.absent(),
+          Value<String?> accountHolderName = const Value.absent(),
+          Value<int?> accountHolderIdNumber = const Value.absent(),
+          Value<String?> accountNumber = const Value.absent(),
+          Value<String?> swiftCode = const Value.absent(),
+          Value<String?> governorate = const Value.absent(),
+          Value<String?> city = const Value.absent(),
+          Value<String?> address = const Value.absent(),
+          Value<int?> importBatchId = const Value.absent(),
           Value<String?> notes = const Value.absent(),
           DateTime? createdAt,
           Value<DateTime?> updatedAt = const Value.absent(),
@@ -8040,11 +8533,44 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
         fileNo: fileNo ?? this.fileNo,
         beneficiaryId: beneficiaryId ?? this.beneficiaryId,
         associationId: associationId ?? this.associationId,
+        sponsorName: sponsorName.present ? sponsorName.value : this.sponsorName,
+        internalFileNo:
+            internalFileNo.present ? internalFileNo.value : this.internalFileNo,
+        externalFileNo:
+            externalFileNo.present ? externalFileNo.value : this.externalFileNo,
+        guardianName:
+            guardianName.present ? guardianName.value : this.guardianName,
+        guardianIdNumber: guardianIdNumber.present
+            ? guardianIdNumber.value
+            : this.guardianIdNumber,
+        guardianPhone:
+            guardianPhone.present ? guardianPhone.value : this.guardianPhone,
+        guardianAltPhone: guardianAltPhone.present
+            ? guardianAltPhone.value
+            : this.guardianAltPhone,
+        durationMonths:
+            durationMonths.present ? durationMonths.value : this.durationMonths,
         startDate: startDate.present ? startDate.value : this.startDate,
         endDate: endDate.present ? endDate.value : this.endDate,
         amount: amount.present ? amount.value : this.amount,
         currency: currency.present ? currency.value : this.currency,
         status: status ?? this.status,
+        sponsorshipType: sponsorshipType ?? this.sponsorshipType,
+        bankName: bankName.present ? bankName.value : this.bankName,
+        accountHolderName: accountHolderName.present
+            ? accountHolderName.value
+            : this.accountHolderName,
+        accountHolderIdNumber: accountHolderIdNumber.present
+            ? accountHolderIdNumber.value
+            : this.accountHolderIdNumber,
+        accountNumber:
+            accountNumber.present ? accountNumber.value : this.accountNumber,
+        swiftCode: swiftCode.present ? swiftCode.value : this.swiftCode,
+        governorate: governorate.present ? governorate.value : this.governorate,
+        city: city.present ? city.value : this.city,
+        address: address.present ? address.value : this.address,
+        importBatchId:
+            importBatchId.present ? importBatchId.value : this.importBatchId,
         notes: notes.present ? notes.value : this.notes,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
@@ -8062,11 +8588,55 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       associationId: data.associationId.present
           ? data.associationId.value
           : this.associationId,
+      sponsorName:
+          data.sponsorName.present ? data.sponsorName.value : this.sponsorName,
+      internalFileNo: data.internalFileNo.present
+          ? data.internalFileNo.value
+          : this.internalFileNo,
+      externalFileNo: data.externalFileNo.present
+          ? data.externalFileNo.value
+          : this.externalFileNo,
+      guardianName: data.guardianName.present
+          ? data.guardianName.value
+          : this.guardianName,
+      guardianIdNumber: data.guardianIdNumber.present
+          ? data.guardianIdNumber.value
+          : this.guardianIdNumber,
+      guardianPhone: data.guardianPhone.present
+          ? data.guardianPhone.value
+          : this.guardianPhone,
+      guardianAltPhone: data.guardianAltPhone.present
+          ? data.guardianAltPhone.value
+          : this.guardianAltPhone,
+      durationMonths: data.durationMonths.present
+          ? data.durationMonths.value
+          : this.durationMonths,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       amount: data.amount.present ? data.amount.value : this.amount,
       currency: data.currency.present ? data.currency.value : this.currency,
       status: data.status.present ? data.status.value : this.status,
+      sponsorshipType: data.sponsorshipType.present
+          ? data.sponsorshipType.value
+          : this.sponsorshipType,
+      bankName: data.bankName.present ? data.bankName.value : this.bankName,
+      accountHolderName: data.accountHolderName.present
+          ? data.accountHolderName.value
+          : this.accountHolderName,
+      accountHolderIdNumber: data.accountHolderIdNumber.present
+          ? data.accountHolderIdNumber.value
+          : this.accountHolderIdNumber,
+      accountNumber: data.accountNumber.present
+          ? data.accountNumber.value
+          : this.accountNumber,
+      swiftCode: data.swiftCode.present ? data.swiftCode.value : this.swiftCode,
+      governorate:
+          data.governorate.present ? data.governorate.value : this.governorate,
+      city: data.city.present ? data.city.value : this.city,
+      address: data.address.present ? data.address.value : this.address,
+      importBatchId: data.importBatchId.present
+          ? data.importBatchId.value
+          : this.importBatchId,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -8084,11 +8654,29 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           ..write('fileNo: $fileNo, ')
           ..write('beneficiaryId: $beneficiaryId, ')
           ..write('associationId: $associationId, ')
+          ..write('sponsorName: $sponsorName, ')
+          ..write('internalFileNo: $internalFileNo, ')
+          ..write('externalFileNo: $externalFileNo, ')
+          ..write('guardianName: $guardianName, ')
+          ..write('guardianIdNumber: $guardianIdNumber, ')
+          ..write('guardianPhone: $guardianPhone, ')
+          ..write('guardianAltPhone: $guardianAltPhone, ')
+          ..write('durationMonths: $durationMonths, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('amount: $amount, ')
           ..write('currency: $currency, ')
           ..write('status: $status, ')
+          ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('bankName: $bankName, ')
+          ..write('accountHolderName: $accountHolderName, ')
+          ..write('accountHolderIdNumber: $accountHolderIdNumber, ')
+          ..write('accountNumber: $accountNumber, ')
+          ..write('swiftCode: $swiftCode, ')
+          ..write('governorate: $governorate, ')
+          ..write('city: $city, ')
+          ..write('address: $address, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -8100,21 +8688,40 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      fileNo,
-      beneficiaryId,
-      associationId,
-      startDate,
-      endDate,
-      amount,
-      currency,
-      status,
-      notes,
-      createdAt,
-      updatedAt,
-      syncState,
-      serverId,
-      lastSyncedAt);
+  int get hashCode => Object.hashAll([
+        fileNo,
+        beneficiaryId,
+        associationId,
+        sponsorName,
+        internalFileNo,
+        externalFileNo,
+        guardianName,
+        guardianIdNumber,
+        guardianPhone,
+        guardianAltPhone,
+        durationMonths,
+        startDate,
+        endDate,
+        amount,
+        currency,
+        status,
+        sponsorshipType,
+        bankName,
+        accountHolderName,
+        accountHolderIdNumber,
+        accountNumber,
+        swiftCode,
+        governorate,
+        city,
+        address,
+        importBatchId,
+        notes,
+        createdAt,
+        updatedAt,
+        syncState,
+        serverId,
+        lastSyncedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -8122,11 +8729,29 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           other.fileNo == this.fileNo &&
           other.beneficiaryId == this.beneficiaryId &&
           other.associationId == this.associationId &&
+          other.sponsorName == this.sponsorName &&
+          other.internalFileNo == this.internalFileNo &&
+          other.externalFileNo == this.externalFileNo &&
+          other.guardianName == this.guardianName &&
+          other.guardianIdNumber == this.guardianIdNumber &&
+          other.guardianPhone == this.guardianPhone &&
+          other.guardianAltPhone == this.guardianAltPhone &&
+          other.durationMonths == this.durationMonths &&
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.amount == this.amount &&
           other.currency == this.currency &&
           other.status == this.status &&
+          other.sponsorshipType == this.sponsorshipType &&
+          other.bankName == this.bankName &&
+          other.accountHolderName == this.accountHolderName &&
+          other.accountHolderIdNumber == this.accountHolderIdNumber &&
+          other.accountNumber == this.accountNumber &&
+          other.swiftCode == this.swiftCode &&
+          other.governorate == this.governorate &&
+          other.city == this.city &&
+          other.address == this.address &&
+          other.importBatchId == this.importBatchId &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
@@ -8139,11 +8764,29 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
   final Value<int> fileNo;
   final Value<int> beneficiaryId;
   final Value<String> associationId;
+  final Value<String?> sponsorName;
+  final Value<String?> internalFileNo;
+  final Value<String?> externalFileNo;
+  final Value<String?> guardianName;
+  final Value<int?> guardianIdNumber;
+  final Value<String?> guardianPhone;
+  final Value<String?> guardianAltPhone;
+  final Value<int?> durationMonths;
   final Value<DateTime?> startDate;
   final Value<DateTime?> endDate;
   final Value<double?> amount;
   final Value<String?> currency;
   final Value<String> status;
+  final Value<String> sponsorshipType;
+  final Value<String?> bankName;
+  final Value<String?> accountHolderName;
+  final Value<int?> accountHolderIdNumber;
+  final Value<String?> accountNumber;
+  final Value<String?> swiftCode;
+  final Value<String?> governorate;
+  final Value<String?> city;
+  final Value<String?> address;
+  final Value<int?> importBatchId;
   final Value<String?> notes;
   final Value<DateTime> createdAt;
   final Value<DateTime?> updatedAt;
@@ -8154,11 +8797,29 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     this.fileNo = const Value.absent(),
     this.beneficiaryId = const Value.absent(),
     this.associationId = const Value.absent(),
+    this.sponsorName = const Value.absent(),
+    this.internalFileNo = const Value.absent(),
+    this.externalFileNo = const Value.absent(),
+    this.guardianName = const Value.absent(),
+    this.guardianIdNumber = const Value.absent(),
+    this.guardianPhone = const Value.absent(),
+    this.guardianAltPhone = const Value.absent(),
+    this.durationMonths = const Value.absent(),
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.amount = const Value.absent(),
     this.currency = const Value.absent(),
     this.status = const Value.absent(),
+    this.sponsorshipType = const Value.absent(),
+    this.bankName = const Value.absent(),
+    this.accountHolderName = const Value.absent(),
+    this.accountHolderIdNumber = const Value.absent(),
+    this.accountNumber = const Value.absent(),
+    this.swiftCode = const Value.absent(),
+    this.governorate = const Value.absent(),
+    this.city = const Value.absent(),
+    this.address = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -8170,11 +8831,29 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     this.fileNo = const Value.absent(),
     required int beneficiaryId,
     required String associationId,
+    this.sponsorName = const Value.absent(),
+    this.internalFileNo = const Value.absent(),
+    this.externalFileNo = const Value.absent(),
+    this.guardianName = const Value.absent(),
+    this.guardianIdNumber = const Value.absent(),
+    this.guardianPhone = const Value.absent(),
+    this.guardianAltPhone = const Value.absent(),
+    this.durationMonths = const Value.absent(),
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.amount = const Value.absent(),
     this.currency = const Value.absent(),
     this.status = const Value.absent(),
+    this.sponsorshipType = const Value.absent(),
+    this.bankName = const Value.absent(),
+    this.accountHolderName = const Value.absent(),
+    this.accountHolderIdNumber = const Value.absent(),
+    this.accountNumber = const Value.absent(),
+    this.swiftCode = const Value.absent(),
+    this.governorate = const Value.absent(),
+    this.city = const Value.absent(),
+    this.address = const Value.absent(),
+    this.importBatchId = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -8187,11 +8866,29 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     Expression<int>? fileNo,
     Expression<int>? beneficiaryId,
     Expression<String>? associationId,
+    Expression<String>? sponsorName,
+    Expression<String>? internalFileNo,
+    Expression<String>? externalFileNo,
+    Expression<String>? guardianName,
+    Expression<int>? guardianIdNumber,
+    Expression<String>? guardianPhone,
+    Expression<String>? guardianAltPhone,
+    Expression<int>? durationMonths,
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<double>? amount,
     Expression<String>? currency,
     Expression<String>? status,
+    Expression<String>? sponsorshipType,
+    Expression<String>? bankName,
+    Expression<String>? accountHolderName,
+    Expression<int>? accountHolderIdNumber,
+    Expression<String>? accountNumber,
+    Expression<String>? swiftCode,
+    Expression<String>? governorate,
+    Expression<String>? city,
+    Expression<String>? address,
+    Expression<int>? importBatchId,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
@@ -8203,11 +8900,30 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
       if (fileNo != null) 'file_no': fileNo,
       if (beneficiaryId != null) 'beneficiary_id': beneficiaryId,
       if (associationId != null) 'association_id': associationId,
+      if (sponsorName != null) 'sponsor_name': sponsorName,
+      if (internalFileNo != null) 'internal_file_no': internalFileNo,
+      if (externalFileNo != null) 'external_file_no': externalFileNo,
+      if (guardianName != null) 'guardian_name': guardianName,
+      if (guardianIdNumber != null) 'guardian_id_number': guardianIdNumber,
+      if (guardianPhone != null) 'guardian_phone': guardianPhone,
+      if (guardianAltPhone != null) 'guardian_alt_phone': guardianAltPhone,
+      if (durationMonths != null) 'duration_months': durationMonths,
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (amount != null) 'amount': amount,
       if (currency != null) 'currency': currency,
       if (status != null) 'status': status,
+      if (sponsorshipType != null) 'sponsorship_type': sponsorshipType,
+      if (bankName != null) 'bank_name': bankName,
+      if (accountHolderName != null) 'account_holder_name': accountHolderName,
+      if (accountHolderIdNumber != null)
+        'account_holder_id_number': accountHolderIdNumber,
+      if (accountNumber != null) 'account_number': accountNumber,
+      if (swiftCode != null) 'swift_code': swiftCode,
+      if (governorate != null) 'governorate': governorate,
+      if (city != null) 'city': city,
+      if (address != null) 'address': address,
+      if (importBatchId != null) 'import_batch_id': importBatchId,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -8221,11 +8937,29 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
       {Value<int>? fileNo,
       Value<int>? beneficiaryId,
       Value<String>? associationId,
+      Value<String?>? sponsorName,
+      Value<String?>? internalFileNo,
+      Value<String?>? externalFileNo,
+      Value<String?>? guardianName,
+      Value<int?>? guardianIdNumber,
+      Value<String?>? guardianPhone,
+      Value<String?>? guardianAltPhone,
+      Value<int?>? durationMonths,
       Value<DateTime?>? startDate,
       Value<DateTime?>? endDate,
       Value<double?>? amount,
       Value<String?>? currency,
       Value<String>? status,
+      Value<String>? sponsorshipType,
+      Value<String?>? bankName,
+      Value<String?>? accountHolderName,
+      Value<int?>? accountHolderIdNumber,
+      Value<String?>? accountNumber,
+      Value<String?>? swiftCode,
+      Value<String?>? governorate,
+      Value<String?>? city,
+      Value<String?>? address,
+      Value<int?>? importBatchId,
       Value<String?>? notes,
       Value<DateTime>? createdAt,
       Value<DateTime?>? updatedAt,
@@ -8236,11 +8970,30 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
       fileNo: fileNo ?? this.fileNo,
       beneficiaryId: beneficiaryId ?? this.beneficiaryId,
       associationId: associationId ?? this.associationId,
+      sponsorName: sponsorName ?? this.sponsorName,
+      internalFileNo: internalFileNo ?? this.internalFileNo,
+      externalFileNo: externalFileNo ?? this.externalFileNo,
+      guardianName: guardianName ?? this.guardianName,
+      guardianIdNumber: guardianIdNumber ?? this.guardianIdNumber,
+      guardianPhone: guardianPhone ?? this.guardianPhone,
+      guardianAltPhone: guardianAltPhone ?? this.guardianAltPhone,
+      durationMonths: durationMonths ?? this.durationMonths,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       status: status ?? this.status,
+      sponsorshipType: sponsorshipType ?? this.sponsorshipType,
+      bankName: bankName ?? this.bankName,
+      accountHolderName: accountHolderName ?? this.accountHolderName,
+      accountHolderIdNumber:
+          accountHolderIdNumber ?? this.accountHolderIdNumber,
+      accountNumber: accountNumber ?? this.accountNumber,
+      swiftCode: swiftCode ?? this.swiftCode,
+      governorate: governorate ?? this.governorate,
+      city: city ?? this.city,
+      address: address ?? this.address,
+      importBatchId: importBatchId ?? this.importBatchId,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -8262,6 +9015,30 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     if (associationId.present) {
       map['association_id'] = Variable<String>(associationId.value);
     }
+    if (sponsorName.present) {
+      map['sponsor_name'] = Variable<String>(sponsorName.value);
+    }
+    if (internalFileNo.present) {
+      map['internal_file_no'] = Variable<String>(internalFileNo.value);
+    }
+    if (externalFileNo.present) {
+      map['external_file_no'] = Variable<String>(externalFileNo.value);
+    }
+    if (guardianName.present) {
+      map['guardian_name'] = Variable<String>(guardianName.value);
+    }
+    if (guardianIdNumber.present) {
+      map['guardian_id_number'] = Variable<int>(guardianIdNumber.value);
+    }
+    if (guardianPhone.present) {
+      map['guardian_phone'] = Variable<String>(guardianPhone.value);
+    }
+    if (guardianAltPhone.present) {
+      map['guardian_alt_phone'] = Variable<String>(guardianAltPhone.value);
+    }
+    if (durationMonths.present) {
+      map['duration_months'] = Variable<int>(durationMonths.value);
+    }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
     }
@@ -8276,6 +9053,37 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
+    }
+    if (sponsorshipType.present) {
+      map['sponsorship_type'] = Variable<String>(sponsorshipType.value);
+    }
+    if (bankName.present) {
+      map['bank_name'] = Variable<String>(bankName.value);
+    }
+    if (accountHolderName.present) {
+      map['account_holder_name'] = Variable<String>(accountHolderName.value);
+    }
+    if (accountHolderIdNumber.present) {
+      map['account_holder_id_number'] =
+          Variable<int>(accountHolderIdNumber.value);
+    }
+    if (accountNumber.present) {
+      map['account_number'] = Variable<String>(accountNumber.value);
+    }
+    if (swiftCode.present) {
+      map['swift_code'] = Variable<String>(swiftCode.value);
+    }
+    if (governorate.present) {
+      map['governorate'] = Variable<String>(governorate.value);
+    }
+    if (city.present) {
+      map['city'] = Variable<String>(city.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (importBatchId.present) {
+      map['import_batch_id'] = Variable<int>(importBatchId.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -8304,11 +9112,29 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
           ..write('fileNo: $fileNo, ')
           ..write('beneficiaryId: $beneficiaryId, ')
           ..write('associationId: $associationId, ')
+          ..write('sponsorName: $sponsorName, ')
+          ..write('internalFileNo: $internalFileNo, ')
+          ..write('externalFileNo: $externalFileNo, ')
+          ..write('guardianName: $guardianName, ')
+          ..write('guardianIdNumber: $guardianIdNumber, ')
+          ..write('guardianPhone: $guardianPhone, ')
+          ..write('guardianAltPhone: $guardianAltPhone, ')
+          ..write('durationMonths: $durationMonths, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('amount: $amount, ')
           ..write('currency: $currency, ')
           ..write('status: $status, ')
+          ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('bankName: $bankName, ')
+          ..write('accountHolderName: $accountHolderName, ')
+          ..write('accountHolderIdNumber: $accountHolderIdNumber, ')
+          ..write('accountNumber: $accountNumber, ')
+          ..write('swiftCode: $swiftCode, ')
+          ..write('governorate: $governorate, ')
+          ..write('city: $city, ')
+          ..write('address: $address, ')
+          ..write('importBatchId: $importBatchId, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -12162,11 +12988,29 @@ typedef $$SponsorshipsTableCreateCompanionBuilder = SponsorshipsCompanion
   Value<int> fileNo,
   required int beneficiaryId,
   required String associationId,
+  Value<String?> sponsorName,
+  Value<String?> internalFileNo,
+  Value<String?> externalFileNo,
+  Value<String?> guardianName,
+  Value<int?> guardianIdNumber,
+  Value<String?> guardianPhone,
+  Value<String?> guardianAltPhone,
+  Value<int?> durationMonths,
   Value<DateTime?> startDate,
   Value<DateTime?> endDate,
   Value<double?> amount,
   Value<String?> currency,
   Value<String> status,
+  Value<String> sponsorshipType,
+  Value<String?> bankName,
+  Value<String?> accountHolderName,
+  Value<int?> accountHolderIdNumber,
+  Value<String?> accountNumber,
+  Value<String?> swiftCode,
+  Value<String?> governorate,
+  Value<String?> city,
+  Value<String?> address,
+  Value<int?> importBatchId,
   Value<String?> notes,
   Value<DateTime> createdAt,
   Value<DateTime?> updatedAt,
@@ -12179,11 +13023,29 @@ typedef $$SponsorshipsTableUpdateCompanionBuilder = SponsorshipsCompanion
   Value<int> fileNo,
   Value<int> beneficiaryId,
   Value<String> associationId,
+  Value<String?> sponsorName,
+  Value<String?> internalFileNo,
+  Value<String?> externalFileNo,
+  Value<String?> guardianName,
+  Value<int?> guardianIdNumber,
+  Value<String?> guardianPhone,
+  Value<String?> guardianAltPhone,
+  Value<int?> durationMonths,
   Value<DateTime?> startDate,
   Value<DateTime?> endDate,
   Value<double?> amount,
   Value<String?> currency,
   Value<String> status,
+  Value<String> sponsorshipType,
+  Value<String?> bankName,
+  Value<String?> accountHolderName,
+  Value<int?> accountHolderIdNumber,
+  Value<String?> accountNumber,
+  Value<String?> swiftCode,
+  Value<String?> governorate,
+  Value<String?> city,
+  Value<String?> address,
+  Value<int?> importBatchId,
   Value<String?> notes,
   Value<DateTime> createdAt,
   Value<DateTime?> updatedAt,
@@ -12239,6 +13101,35 @@ class $$SponsorshipsTableFilterComposer
   ColumnFilters<int> get fileNo => $composableBuilder(
       column: $table.fileNo, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get sponsorName => $composableBuilder(
+      column: $table.sponsorName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get internalFileNo => $composableBuilder(
+      column: $table.internalFileNo,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get externalFileNo => $composableBuilder(
+      column: $table.externalFileNo,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get guardianName => $composableBuilder(
+      column: $table.guardianName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get guardianIdNumber => $composableBuilder(
+      column: $table.guardianIdNumber,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get guardianPhone => $composableBuilder(
+      column: $table.guardianPhone, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get guardianAltPhone => $composableBuilder(
+      column: $table.guardianAltPhone,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get durationMonths => $composableBuilder(
+      column: $table.durationMonths,
+      builder: (column) => ColumnFilters(column));
+
   ColumnFilters<DateTime> get startDate => $composableBuilder(
       column: $table.startDate, builder: (column) => ColumnFilters(column));
 
@@ -12253,6 +13144,39 @@ class $$SponsorshipsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sponsorshipType => $composableBuilder(
+      column: $table.sponsorshipType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get bankName => $composableBuilder(
+      column: $table.bankName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get accountHolderName => $composableBuilder(
+      column: $table.accountHolderName,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get accountHolderIdNumber => $composableBuilder(
+      column: $table.accountHolderIdNumber,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get accountNumber => $composableBuilder(
+      column: $table.accountNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get swiftCode => $composableBuilder(
+      column: $table.swiftCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get governorate => $composableBuilder(
+      column: $table.governorate, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get importBatchId => $composableBuilder(
+      column: $table.importBatchId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
@@ -12325,6 +13249,37 @@ class $$SponsorshipsTableOrderingComposer
   ColumnOrderings<int> get fileNo => $composableBuilder(
       column: $table.fileNo, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get sponsorName => $composableBuilder(
+      column: $table.sponsorName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get internalFileNo => $composableBuilder(
+      column: $table.internalFileNo,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get externalFileNo => $composableBuilder(
+      column: $table.externalFileNo,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get guardianName => $composableBuilder(
+      column: $table.guardianName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get guardianIdNumber => $composableBuilder(
+      column: $table.guardianIdNumber,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get guardianPhone => $composableBuilder(
+      column: $table.guardianPhone,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get guardianAltPhone => $composableBuilder(
+      column: $table.guardianAltPhone,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get durationMonths => $composableBuilder(
+      column: $table.durationMonths,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get startDate => $composableBuilder(
       column: $table.startDate, builder: (column) => ColumnOrderings(column));
 
@@ -12339,6 +13294,41 @@ class $$SponsorshipsTableOrderingComposer
 
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sponsorshipType => $composableBuilder(
+      column: $table.sponsorshipType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get bankName => $composableBuilder(
+      column: $table.bankName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get accountHolderName => $composableBuilder(
+      column: $table.accountHolderName,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get accountHolderIdNumber => $composableBuilder(
+      column: $table.accountHolderIdNumber,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get accountNumber => $composableBuilder(
+      column: $table.accountNumber,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get swiftCode => $composableBuilder(
+      column: $table.swiftCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get governorate => $composableBuilder(
+      column: $table.governorate, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get importBatchId => $composableBuilder(
+      column: $table.importBatchId,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
@@ -12412,6 +13402,30 @@ class $$SponsorshipsTableAnnotationComposer
   GeneratedColumn<int> get fileNo =>
       $composableBuilder(column: $table.fileNo, builder: (column) => column);
 
+  GeneratedColumn<String> get sponsorName => $composableBuilder(
+      column: $table.sponsorName, builder: (column) => column);
+
+  GeneratedColumn<String> get internalFileNo => $composableBuilder(
+      column: $table.internalFileNo, builder: (column) => column);
+
+  GeneratedColumn<String> get externalFileNo => $composableBuilder(
+      column: $table.externalFileNo, builder: (column) => column);
+
+  GeneratedColumn<String> get guardianName => $composableBuilder(
+      column: $table.guardianName, builder: (column) => column);
+
+  GeneratedColumn<int> get guardianIdNumber => $composableBuilder(
+      column: $table.guardianIdNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get guardianPhone => $composableBuilder(
+      column: $table.guardianPhone, builder: (column) => column);
+
+  GeneratedColumn<String> get guardianAltPhone => $composableBuilder(
+      column: $table.guardianAltPhone, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMonths => $composableBuilder(
+      column: $table.durationMonths, builder: (column) => column);
+
   GeneratedColumn<DateTime> get startDate =>
       $composableBuilder(column: $table.startDate, builder: (column) => column);
 
@@ -12426,6 +13440,36 @@ class $$SponsorshipsTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get sponsorshipType => $composableBuilder(
+      column: $table.sponsorshipType, builder: (column) => column);
+
+  GeneratedColumn<String> get bankName =>
+      $composableBuilder(column: $table.bankName, builder: (column) => column);
+
+  GeneratedColumn<String> get accountHolderName => $composableBuilder(
+      column: $table.accountHolderName, builder: (column) => column);
+
+  GeneratedColumn<int> get accountHolderIdNumber => $composableBuilder(
+      column: $table.accountHolderIdNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get accountNumber => $composableBuilder(
+      column: $table.accountNumber, builder: (column) => column);
+
+  GeneratedColumn<String> get swiftCode =>
+      $composableBuilder(column: $table.swiftCode, builder: (column) => column);
+
+  GeneratedColumn<String> get governorate => $composableBuilder(
+      column: $table.governorate, builder: (column) => column);
+
+  GeneratedColumn<String> get city =>
+      $composableBuilder(column: $table.city, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<int> get importBatchId => $composableBuilder(
+      column: $table.importBatchId, builder: (column) => column);
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
@@ -12512,11 +13556,29 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             Value<int> fileNo = const Value.absent(),
             Value<int> beneficiaryId = const Value.absent(),
             Value<String> associationId = const Value.absent(),
+            Value<String?> sponsorName = const Value.absent(),
+            Value<String?> internalFileNo = const Value.absent(),
+            Value<String?> externalFileNo = const Value.absent(),
+            Value<String?> guardianName = const Value.absent(),
+            Value<int?> guardianIdNumber = const Value.absent(),
+            Value<String?> guardianPhone = const Value.absent(),
+            Value<String?> guardianAltPhone = const Value.absent(),
+            Value<int?> durationMonths = const Value.absent(),
             Value<DateTime?> startDate = const Value.absent(),
             Value<DateTime?> endDate = const Value.absent(),
             Value<double?> amount = const Value.absent(),
             Value<String?> currency = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String> sponsorshipType = const Value.absent(),
+            Value<String?> bankName = const Value.absent(),
+            Value<String?> accountHolderName = const Value.absent(),
+            Value<int?> accountHolderIdNumber = const Value.absent(),
+            Value<String?> accountNumber = const Value.absent(),
+            Value<String?> swiftCode = const Value.absent(),
+            Value<String?> governorate = const Value.absent(),
+            Value<String?> city = const Value.absent(),
+            Value<String?> address = const Value.absent(),
+            Value<int?> importBatchId = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
@@ -12528,11 +13590,29 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             fileNo: fileNo,
             beneficiaryId: beneficiaryId,
             associationId: associationId,
+            sponsorName: sponsorName,
+            internalFileNo: internalFileNo,
+            externalFileNo: externalFileNo,
+            guardianName: guardianName,
+            guardianIdNumber: guardianIdNumber,
+            guardianPhone: guardianPhone,
+            guardianAltPhone: guardianAltPhone,
+            durationMonths: durationMonths,
             startDate: startDate,
             endDate: endDate,
             amount: amount,
             currency: currency,
             status: status,
+            sponsorshipType: sponsorshipType,
+            bankName: bankName,
+            accountHolderName: accountHolderName,
+            accountHolderIdNumber: accountHolderIdNumber,
+            accountNumber: accountNumber,
+            swiftCode: swiftCode,
+            governorate: governorate,
+            city: city,
+            address: address,
+            importBatchId: importBatchId,
             notes: notes,
             createdAt: createdAt,
             updatedAt: updatedAt,
@@ -12544,11 +13624,29 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             Value<int> fileNo = const Value.absent(),
             required int beneficiaryId,
             required String associationId,
+            Value<String?> sponsorName = const Value.absent(),
+            Value<String?> internalFileNo = const Value.absent(),
+            Value<String?> externalFileNo = const Value.absent(),
+            Value<String?> guardianName = const Value.absent(),
+            Value<int?> guardianIdNumber = const Value.absent(),
+            Value<String?> guardianPhone = const Value.absent(),
+            Value<String?> guardianAltPhone = const Value.absent(),
+            Value<int?> durationMonths = const Value.absent(),
             Value<DateTime?> startDate = const Value.absent(),
             Value<DateTime?> endDate = const Value.absent(),
             Value<double?> amount = const Value.absent(),
             Value<String?> currency = const Value.absent(),
             Value<String> status = const Value.absent(),
+            Value<String> sponsorshipType = const Value.absent(),
+            Value<String?> bankName = const Value.absent(),
+            Value<String?> accountHolderName = const Value.absent(),
+            Value<int?> accountHolderIdNumber = const Value.absent(),
+            Value<String?> accountNumber = const Value.absent(),
+            Value<String?> swiftCode = const Value.absent(),
+            Value<String?> governorate = const Value.absent(),
+            Value<String?> city = const Value.absent(),
+            Value<String?> address = const Value.absent(),
+            Value<int?> importBatchId = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
@@ -12560,11 +13658,29 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             fileNo: fileNo,
             beneficiaryId: beneficiaryId,
             associationId: associationId,
+            sponsorName: sponsorName,
+            internalFileNo: internalFileNo,
+            externalFileNo: externalFileNo,
+            guardianName: guardianName,
+            guardianIdNumber: guardianIdNumber,
+            guardianPhone: guardianPhone,
+            guardianAltPhone: guardianAltPhone,
+            durationMonths: durationMonths,
             startDate: startDate,
             endDate: endDate,
             amount: amount,
             currency: currency,
             status: status,
+            sponsorshipType: sponsorshipType,
+            bankName: bankName,
+            accountHolderName: accountHolderName,
+            accountHolderIdNumber: accountHolderIdNumber,
+            accountNumber: accountNumber,
+            swiftCode: swiftCode,
+            governorate: governorate,
+            city: city,
+            address: address,
+            importBatchId: importBatchId,
             notes: notes,
             createdAt: createdAt,
             updatedAt: updatedAt,

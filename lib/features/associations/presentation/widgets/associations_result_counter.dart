@@ -42,7 +42,8 @@ class AssociationsResultCounter extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 color: colorScheme.primary.withAlpha(26),
-                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius:
+                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               child: Text(
                 'فلاتر نشطة',

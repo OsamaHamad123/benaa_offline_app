@@ -5,8 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../../../core/providers/providers.dart';
 import '../../../../../../../data/db/daos/sponsorships_dao.dart';
 
-final _beneficiarySponsorshipsProvider =
-    StreamProvider.autoDispose.family<List<SponsorshipWithAssociation>, int>((ref, beneficiaryId) {
+final _beneficiarySponsorshipsProvider = StreamProvider.autoDispose
+    .family<List<SponsorshipWithAssociation>, int>((ref, beneficiaryId) {
   final db = ref.watch(databaseProvider);
   return db.sponsorshipsDao.watchSponsorshipsForBeneficiary(beneficiaryId);
 });
@@ -32,11 +32,15 @@ class SponsorshipsSection extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.handshake_outlined, size: 20.sp, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.handshake_outlined,
+                    size: 20.sp, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 10.w),
                 Text(
                   'الكفالات',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -121,25 +125,29 @@ class _SponsorshipTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'رقم الملف: $fileNo',
-                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleSmall
+                        ?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
                 _StatusChip(status: status),
               ],
             ),
             SizedBox(height: 8.h),
-            Text('الجمعية: $associationName', style: theme.textTheme.bodyMedium),
+            Text('الجمعية: $associationName',
+                style: theme.textTheme.bodyMedium),
             SizedBox(height: 6.h),
             Text(
               'البداية: ${_fmtDate(startDate)} • النهاية: ${_fmtDate(endDate)}',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             if (amount != null || (currency != null && currency!.isNotEmpty))
               Padding(
                 padding: EdgeInsets.only(top: 6.h),
                 child: Text(
                   'القيمة: ${amount?.toStringAsFixed(2) ?? '-'} ${currency ?? ''}',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
             if (notes != null && notes!.trim().isNotEmpty)
@@ -147,7 +155,8 @@ class _SponsorshipTile extends StatelessWidget {
                 padding: EdgeInsets.only(top: 6.h),
                 child: Text(
                   'ملاحظات: ${notes!.trim()}',
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
           ],

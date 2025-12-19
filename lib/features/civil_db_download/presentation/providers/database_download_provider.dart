@@ -33,17 +33,17 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
   final DatabaseDownloadService _downloadService;
 
   DatabaseDownloadNotifier(this._downloadService)
-    : super(
-        DatabaseDownloadState(
-          progress: DownloadProgress(
-            downloadedBytes: 0,
-            totalBytes: 0,
-            percentage: 0,
-            status: DownloadStatus.idle,
+      : super(
+          DatabaseDownloadState(
+            progress: DownloadProgress(
+              downloadedBytes: 0,
+              totalBytes: 0,
+              percentage: 0,
+              status: DownloadStatus.idle,
+            ),
+            isAvailable: false,
           ),
-          isAvailable: false,
-        ),
-      ) {
+        ) {
     _checkDatabase();
   }
 
@@ -119,8 +119,8 @@ final databaseDownloadServiceProvider = Provider<DatabaseDownloadService>((
 
 final databaseDownloadProvider =
     StateNotifierProvider<DatabaseDownloadNotifier, DatabaseDownloadState>((
-      ref,
-    ) {
-      final service = ref.watch(databaseDownloadServiceProvider);
-      return DatabaseDownloadNotifier(service);
-    });
+  ref,
+) {
+  final service = ref.watch(databaseDownloadServiceProvider);
+  return DatabaseDownloadNotifier(service);
+});

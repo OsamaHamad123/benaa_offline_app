@@ -173,7 +173,8 @@ class PullChangesResponse<T> {
   factory PullChangesResponse.fromJson(
     Map<String, dynamic> json,
     T Function(Object?) fromJsonT,
-  ) => _$PullChangesResponseFromJson(json, fromJsonT);
+  ) =>
+      _$PullChangesResponseFromJson(json, fromJsonT);
 
   Map<String, dynamic> toJson(Object? Function(T) toJsonT) =>
       _$PullChangesResponseToJson(this, toJsonT);
@@ -220,7 +221,8 @@ class ChangeItem<T> {
   factory ChangeItem.fromJson(
     Map<String, dynamic> json,
     T Function(Object?) fromJsonT,
-  ) => _$ChangeItemFromJson(json, fromJsonT);
+  ) =>
+      _$ChangeItemFromJson(json, fromJsonT);
 
   Map<String, dynamic> toJson(Object? Function(T) toJsonT) =>
       _$ChangeItemToJson(this, toJsonT);

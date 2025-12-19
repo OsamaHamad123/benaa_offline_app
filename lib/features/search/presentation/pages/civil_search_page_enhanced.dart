@@ -36,10 +36,12 @@ class CivilSearchPageEnhanced extends ConsumerStatefulWidget {
   const CivilSearchPageEnhanced({super.key});
 
   @override
-  ConsumerState<CivilSearchPageEnhanced> createState() => _CivilSearchPageEnhancedState();
+  ConsumerState<CivilSearchPageEnhanced> createState() =>
+      _CivilSearchPageEnhancedState();
 }
 
-class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhanced> {
+class _CivilSearchPageEnhancedState
+    extends ConsumerState<CivilSearchPageEnhanced> {
   // ⚡ Removed AutomaticKeepAliveClientMixin for better performance
   // This was causing memory issues and lag across the app
 
@@ -186,7 +188,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
     final rv = _cachedRv!;
 
     // Check if database not found error
-    if (searchState.error != null && searchState.error!.contains('قاعدة بيانات السجل المدني غير موجودة')) {
+    if (searchState.error != null &&
+        searchState.error!.contains('قاعدة بيانات السجل المدني غير موجودة')) {
       return _buildDatabaseNotFoundScreen(rv);
     }
 
@@ -222,7 +225,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
           slivers: [
             _buildModernAppBar(statsAsync, rv),
             _buildSearchSection(searchState, rv),
-            if (searchState.query.isNotEmpty) _buildFiltersSection(searchState, statsAsync, rv),
+            if (searchState.query.isNotEmpty)
+              _buildFiltersSection(searchState, statsAsync, rv),
             _buildResultsSection(searchState, rv),
           ],
         ),
@@ -317,13 +321,16 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
   Widget _buildModernAppBar(AsyncValue statsAsync, ResponsiveValues rv) {
     return statsAsync.when(
       data: (stats) => SliverAppBar(
-        expandedHeight: rv.isMobile ? 200 : (rv.isTablet ? 220 : 240), // ⚡ Increased to prevent overlap
+        expandedHeight: rv.isMobile
+            ? 200
+            : (rv.isTablet ? 220 : 240), // ⚡ Increased to prevent overlap
         floating: false,
         pinned: true,
         elevation: 0,
         stretch: true, // ⚡ Smooth bounce effect
         flexibleSpace: FlexibleSpaceBar(
-          titlePadding: EdgeInsets.zero, // ⚡ Remove title padding - we'll position manually
+          titlePadding: EdgeInsets
+              .zero, // ⚡ Remove title padding - we'll position manually
           centerTitle: false,
           background: Container(
             decoration: const BoxDecoration(
@@ -421,7 +428,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
       floating: false,
       pinned: true,
-      backgroundColor: Colors.grey.shade400, // ⚡ Simple color instead of gradient
+      backgroundColor:
+          Colors.grey.shade400, // ⚡ Simple color instead of gradient
       flexibleSpace: FlexibleSpaceBar(
         title: Text('السجل المدني', style: TextStyle(fontSize: rv.fontSize)),
         centerTitle: true,
@@ -434,7 +442,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
       floating: false,
       pinned: true,
-      backgroundColor: Colors.red.shade400, // ⚡ Simple color instead of gradient
+      backgroundColor:
+          Colors.red.shade400, // ⚡ Simple color instead of gradient
       flexibleSpace: FlexibleSpaceBar(
         title: Text('السجل المدني', style: TextStyle(fontSize: rv.fontSize)),
         centerTitle: true,
@@ -481,7 +490,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'ابحث بالاسم الكامل (مثال: محمد أحمد علي) أو جزء منه، أو الرقم الوطني...',
+                  hintText:
+                      'ابحث بالاسم الكامل (مثال: محمد أحمد علي) أو جزء منه، أو الرقم الوطني...',
                   hintStyle: TextStyle(
                     color: Colors.grey.shade400,
                     fontSize: rv.fontSize,
@@ -548,16 +558,22 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: searchState.results.isEmpty ? Colors.orange.shade50 : Colors.blue.shade50,
+                        color: searchState.results.isEmpty
+                            ? Colors.orange.shade50
+                            : Colors.blue.shade50,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: searchState.results.isEmpty ? Colors.orange.shade200 : Colors.blue.shade200,
+                          color: searchState.results.isEmpty
+                              ? Colors.orange.shade200
+                              : Colors.blue.shade200,
                         ),
                       ),
                       child: Text(
                         '${searchState.results.length} نتيجة',
                         style: TextStyle(
-                          color: searchState.results.isEmpty ? Colors.orange.shade700 : Colors.blue.shade700,
+                          color: searchState.results.isEmpty
+                              ? Colors.orange.shade700
+                              : Colors.blue.shade700,
                           fontSize: rv.fontSize * 0.93,
                           fontWeight: FontWeight.w600,
                         ),
@@ -747,7 +763,9 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                           () {
                             ref.read(searchProvider.notifier).clearAgeFilter();
                             if (searchState.query.isNotEmpty) {
-                              ref.read(searchProvider.notifier).search(reset: true);
+                              ref
+                                  .read(searchProvider.notifier)
+                                  .search(reset: true);
                             }
                           },
                         ),
@@ -756,21 +774,29 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                           Icons.location_city,
                           'المحافظة: ${searchState.filter.governorate}',
                           () {
-                            ref.read(searchProvider.notifier).setGovernorate(null);
+                            ref
+                                .read(searchProvider.notifier)
+                                .setGovernorate(null);
                             if (searchState.query.isNotEmpty) {
-                              ref.read(searchProvider.notifier).search(reset: true);
+                              ref
+                                  .read(searchProvider.notifier)
+                                  .search(reset: true);
                             }
                           },
                           color: Colors.green,
                         ),
                       if (searchState.filter.gender != null)
                         _buildFilterChip(
-                          searchState.filter.gender!.code == 1 ? Icons.male : Icons.female,
+                          searchState.filter.gender!.code == 1
+                              ? Icons.male
+                              : Icons.female,
                           'الجنس: ${searchState.filter.gender!.arabicLabel}',
                           () {
                             ref.read(searchProvider.notifier).setGender(null);
                             if (searchState.query.isNotEmpty) {
-                              ref.read(searchProvider.notifier).search(reset: true);
+                              ref
+                                  .read(searchProvider.notifier)
+                                  .search(reset: true);
                             }
                           },
                           color: Colors.purple,
@@ -870,7 +896,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                 message: searchState.error!,
                 iconColor: Colors.red,
                 action: ElevatedButton.icon(
-                  onPressed: () => ref.read(searchProvider.notifier).search(reset: true),
+                  onPressed: () =>
+                      ref.read(searchProvider.notifier).search(reset: true),
                   icon: const Icon(Icons.refresh),
                   label: const Text('إعادة المحاولة'),
                 ),
@@ -895,7 +922,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
             }
 
             // Adjust index for results
-            final resultIndex = searchState.searchDurationMs != null ? index - 1 : index;
+            final resultIndex =
+                searchState.searchDurationMs != null ? index - 1 : index;
 
             // Results
             if (resultIndex >= 0 && resultIndex < searchState.results.length) {
@@ -911,7 +939,8 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
             }
 
             // Enhanced loading indicator at bottom with skeleton
-            if (resultIndex == searchState.results.length && searchState.hasMore) {
+            if (resultIndex == searchState.results.length &&
+                searchState.hasMore) {
               return Padding(
                 padding: EdgeInsets.symmetric(vertical: rv.spacing * 2),
                 child: Center(
@@ -953,11 +982,16 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
           },
           childCount: searchState.results.length +
               (searchState.hasMore ? 1 : 0) +
-              (searchState.searchDurationMs != null ? 1 : 0), // ⚡ +1 for performance indicator
+              (searchState.searchDurationMs != null
+                  ? 1
+                  : 0), // ⚡ +1 for performance indicator
           // ⚡ Performance optimizations
-          addAutomaticKeepAlives: false, // Don't keep state of scrolled-away items
-          addRepaintBoundaries: true, // ⚡ Isolate card repaints (ResultCard no longer wraps)
-          addSemanticIndexes: false, // Reduce overhead for assistive technologies
+          addAutomaticKeepAlives:
+              false, // Don't keep state of scrolled-away items
+          addRepaintBoundaries:
+              true, // ⚡ Isolate card repaints (ResultCard no longer wraps)
+          addSemanticIndexes:
+              false, // Reduce overhead for assistive technologies
         ),
       ),
     );
@@ -1114,8 +1148,12 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
                         return InkWell(
                           onTap: () {
                             _searchController.text = suggestion;
-                            ref.read(searchProvider.notifier).setQuery(suggestion);
-                            ref.read(searchProvider.notifier).search(reset: true);
+                            ref
+                                .read(searchProvider.notifier)
+                                .setQuery(suggestion);
+                            ref
+                                .read(searchProvider.notifier)
+                                .search(reset: true);
                           },
                           child: Container(
                             padding: EdgeInsets.symmetric(
@@ -1155,7 +1193,9 @@ class _CivilSearchPageEnhancedState extends ConsumerState<CivilSearchPageEnhance
             SizedBox(height: rv.spacing * 0.7),
             _buildSearchTip(
               Icons.abc,
-              rv.isMobile ? 'استخدم اسم جزئي' : 'جرب كتابة اسم جزئي (مثال: "محمد" بدلاً من "محمد أحمد")',
+              rv.isMobile
+                  ? 'استخدم اسم جزئي'
+                  : 'جرب كتابة اسم جزئي (مثال: "محمد" بدلاً من "محمد أحمد")',
               rv,
             ),
             SizedBox(height: rv.spacing * 0.4),
@@ -1336,11 +1376,17 @@ class _PerformanceIndicator extends StatelessWidget {
     final isFast = durationMs < 50;
     final isGood = durationMs < 100;
 
-    final color = isFast ? Colors.green.shade700 : (isGood ? Colors.orange.shade700 : Colors.red.shade700);
+    final color = isFast
+        ? Colors.green.shade700
+        : (isGood ? Colors.orange.shade700 : Colors.red.shade700);
 
-    final bgColor = isFast ? Colors.green.shade50 : (isGood ? Colors.orange.shade50 : Colors.red.shade50);
+    final bgColor = isFast
+        ? Colors.green.shade50
+        : (isGood ? Colors.orange.shade50 : Colors.red.shade50);
 
-    final borderColor = isFast ? Colors.green.shade300 : (isGood ? Colors.orange.shade300 : Colors.red.shade300);
+    final borderColor = isFast
+        ? Colors.green.shade300
+        : (isGood ? Colors.orange.shade300 : Colors.red.shade300);
 
     return Padding(
       padding: EdgeInsets.only(bottom: spacing),
@@ -1365,7 +1411,9 @@ class _PerformanceIndicator extends StatelessWidget {
               style: TextStyle(
                 fontSize: fontSize * 0.85,
                 fontWeight: FontWeight.w600,
-                color: isFast ? Colors.green.shade900 : (isGood ? Colors.orange.shade900 : Colors.red.shade900),
+                color: isFast
+                    ? Colors.green.shade900
+                    : (isGood ? Colors.orange.shade900 : Colors.red.shade900),
               ),
             ),
             const SizedBox(width: 6),

@@ -17,10 +17,12 @@ class QuickStatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'إحصائيات سريعة: $visitsCount زيارة, $attachmentsCount مرفق, آخر زيارة $lastVisitDate',
+      label:
+          'إحصائيات سريعة: $visitsCount زيارة, $attachmentsCount مرفق, آخر زيارة $lastVisitDate',
       child: Card(
         elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
           child: Row(

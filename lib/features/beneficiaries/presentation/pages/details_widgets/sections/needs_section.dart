@@ -21,9 +21,9 @@ class NeedsSection extends StatelessWidget {
             Text(
               'الاحتياجات والملاحظات',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.amber[700],
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber[700],
+                  ),
             ),
           ],
         ),

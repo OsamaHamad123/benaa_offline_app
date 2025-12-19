@@ -31,7 +31,8 @@ class VisitsDao extends DatabaseAccessor<AppDatabase> with _$VisitsDaoMixin {
   Future<Visit?> getVisitById(String id) async {
     return await (select(
       visits,
-    )..where((v) => v.id.equals(id))).getSingleOrNull();
+    )..where((v) => v.id.equals(id)))
+        .getSingleOrNull();
   }
 
   /// Update visit

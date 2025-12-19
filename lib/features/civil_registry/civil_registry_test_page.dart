@@ -42,8 +42,7 @@ class _CivilRegistryTestPageState extends ConsumerState<CivilRegistryTestPage> {
       if (!await dbFile.exists()) {
         setState(() {
           _isLoading = false;
-          _status =
-              'قاعدة بيانات السجل المدني غير موجودة.\n'
+          _status = 'قاعدة بيانات السجل المدني غير موجودة.\n'
               'الرجاء الذهاب إلى صفحة "تنزيل قاعدة بيانات السجل المدني" أولاً.';
         });
         return;
@@ -264,8 +263,8 @@ class _CivilRegistryTestPageState extends ConsumerState<CivilRegistryTestPage> {
                             person['CI_SEX_CD'] == 1
                                 ? '👨'
                                 : person['CI_SEX_CD'] == 2
-                                ? '👩'
-                                : '👤',
+                                    ? '👩'
+                                    : '👤',
                           ),
                         ),
                         title: Text(

@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 🎨 Theme Settings Provider
 final themeSettingsProvider =
     StateNotifierProvider<ThemeSettingsNotifier, ThemeSettings>(
-      (ref) => ThemeSettingsNotifier(),
-    );
+  (ref) => ThemeSettingsNotifier(),
+);
 
 /// 🎨 Theme Settings Model
 class ThemeSettings {
@@ -41,12 +41,12 @@ class ThemeSettings {
   }
 
   Map<String, dynamic> toJson() => {
-    'themeMode': themeMode.index,
-    'primaryColor': primaryColor.value,
-    'useMaterial3': useMaterial3,
-    'fontSize': fontSize,
-    'fontFamily': fontFamily,
-  };
+        'themeMode': themeMode.index,
+        'primaryColor': primaryColor.value,
+        'useMaterial3': useMaterial3,
+        'fontSize': fontSize,
+        'fontFamily': fontFamily,
+      };
 
   factory ThemeSettings.fromJson(Map<String, dynamic> json) {
     return ThemeSettings(

@@ -7,7 +7,8 @@ import '../../../../core/error_handling/result.dart';
 /// Defines the contract for attachment data operations.
 abstract class AttachmentRepository {
   /// Get all attachments for a beneficiary
-  Future<Result<List<Attachment>>> getBeneficiaryAttachments(String beneficiaryId);
+  Future<Result<List<Attachment>>> getBeneficiaryAttachments(
+      String beneficiaryId);
 
   /// Get all attachments for a visit
   Future<Result<List<Attachment>>> getVisitAttachments(String visitId);

@@ -186,7 +186,8 @@ class BottomSheetPicker extends StatelessWidget {
                     option,
                     style: TextStyle(
                       fontSize: 16.sp,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   trailing: isSelected
@@ -280,11 +281,15 @@ class TouchFriendlyCheckbox extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
           border: Border.all(
-            color: value ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+            color: value
+                ? Theme.of(context).colorScheme.primary
+                : Colors.grey.shade300,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(12.r),
-          color: value ? Theme.of(context).colorScheme.primary.withOpacity(0.05) : null,
+          color: value
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.05)
+              : null,
         ),
         child: Row(
           children: [
@@ -292,14 +297,20 @@ class TouchFriendlyCheckbox extends StatelessWidget {
               width: 28.w,
               height: 28.h,
               decoration: BoxDecoration(
-                color: value ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                color: value
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.transparent,
                 border: Border.all(
-                  color: value ? Theme.of(context).colorScheme.primary : Colors.grey,
+                  color: value
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(6.r),
               ),
-              child: value ? Icon(Icons.check, color: Colors.white, size: 20.sp) : null,
+              child: value
+                  ? Icon(Icons.check, color: Colors.white, size: 20.sp)
+                  : null,
             ),
             SizedBox(width: 12.w),
             Expanded(

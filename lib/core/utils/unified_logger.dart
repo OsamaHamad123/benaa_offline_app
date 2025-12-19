@@ -67,7 +67,9 @@ class UnifiedLogger {
   }) {
     if (kDebugMode) {
       final msg = message ??
-          (operation != null && durationMs != null ? '$operation (${durationMs}ms)' : operation ?? 'Performance log');
+          (operation != null && durationMs != null
+              ? '$operation (${durationMs}ms)'
+              : operation ?? 'Performance log');
       print('📊 $msg');
     }
   }
@@ -81,7 +83,9 @@ class UnifiedLogger {
   }) {
     if (kDebugMode) {
       final msg = message ??
-          (query != null ? 'Search: $query → ${resultsCount ?? 0} results (${durationMs ?? 0}ms)' : 'Search executed');
+          (query != null
+              ? 'Search: $query → ${resultsCount ?? 0} results (${durationMs ?? 0}ms)'
+              : 'Search executed');
       print('🔍 $msg');
     }
   }
@@ -95,7 +99,9 @@ class UnifiedLogger {
   }) {
     if (kDebugMode) {
       final msg = message ??
-          (key != null ? 'Cache ${hit == true ? "HIT" : "MISS"}: $key (size: ${cacheSize ?? 0})' : 'Cache operation');
+          (key != null
+              ? 'Cache ${hit == true ? "HIT" : "MISS"}: $key (size: ${cacheSize ?? 0})'
+              : 'Cache operation');
       print('💾 $msg');
     }
   }
@@ -109,7 +115,9 @@ class UnifiedLogger {
   }) {
     if (kDebugMode) {
       final msg = message ??
-          (query != null ? 'Query: $query → ${resultCount ?? 0} results (${durationMs ?? 0}ms)' : 'Query executed');
+          (query != null
+              ? 'Query: $query → ${resultCount ?? 0} results (${durationMs ?? 0}ms)'
+              : 'Query executed');
       print('🗄️ $msg');
     }
   }

@@ -29,8 +29,7 @@ class MockApiServer {
   Future<void> _simulateNetworkDelay() async {
     if (!simulateNetworkDelay) return;
 
-    final delay =
-        minDelayMs +
+    final delay = minDelayMs +
         (maxDelayMs - minDelayMs) * (DateTime.now().millisecond % 1000) / 1000;
     await Future.delayed(Duration(milliseconds: delay.toInt()));
   }
@@ -316,23 +315,19 @@ class MockApiServer {
         'id': 'server_test_1',
         'full_name': 'محمد أحمد علي',
         'national_id': '100200300400',
-        'created_at': DateTime.now()
-            .subtract(const Duration(days: 5))
-            .toIso8601String(),
-        'updated_at': DateTime.now()
-            .subtract(const Duration(days: 1))
-            .toIso8601String(),
+        'created_at':
+            DateTime.now().subtract(const Duration(days: 5)).toIso8601String(),
+        'updated_at':
+            DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
       },
       {
         'id': 'server_test_2',
         'full_name': 'فاطمة حسن محمود',
         'national_id': '200300400500',
-        'created_at': DateTime.now()
-            .subtract(const Duration(days: 3))
-            .toIso8601String(),
-        'updated_at': DateTime.now()
-            .subtract(const Duration(hours: 2))
-            .toIso8601String(),
+        'created_at':
+            DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
+        'updated_at':
+            DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
       },
     ];
 

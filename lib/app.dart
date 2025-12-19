@@ -143,10 +143,12 @@ class _DebouncedKeyboardInsets extends StatefulWidget {
   const _DebouncedKeyboardInsets({required this.child});
 
   @override
-  State<_DebouncedKeyboardInsets> createState() => _DebouncedKeyboardInsetsState();
+  State<_DebouncedKeyboardInsets> createState() =>
+      _DebouncedKeyboardInsetsState();
 }
 
-class _DebouncedKeyboardInsetsState extends State<_DebouncedKeyboardInsets> with WidgetsBindingObserver {
+class _DebouncedKeyboardInsetsState extends State<_DebouncedKeyboardInsets>
+    with WidgetsBindingObserver {
   static const _debounceDuration = Duration(milliseconds: 90);
 
   Timer? _debounceTimer;

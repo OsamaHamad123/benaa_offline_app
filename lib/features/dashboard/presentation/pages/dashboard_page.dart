@@ -92,7 +92,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   void _listenToConnectivity() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((result) {
       if (mounted) {
         final wasOffline = !_isOnline;
         final isNowOnline = !result.contains(ConnectivityResult.none);
@@ -336,7 +337,9 @@ class _DashboardHome extends ConsumerWidget {
                 final count = state.todayStats?.pendingTasks ?? 0;
                 EnhancedSnackbar.showInfo(
                   context,
-                  message: count > 0 ? 'لديك $count مهمة معلقة' : 'لا توجد مهام معلقة',
+                  message: count > 0
+                      ? 'لديك $count مهمة معلقة'
+                      : 'لا توجد مهام معلقة',
                 );
               },
             ),
@@ -353,7 +356,8 @@ class _DashboardHome extends ConsumerWidget {
             color: AppColors.primary,
             child: state.isLoadingStats && state.statistics == null
                 ? Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                     child: Column(
                       children: List.generate(
                         3,
@@ -488,7 +492,9 @@ class _DashboardHome extends ConsumerWidget {
                   // Advanced Filters
                   IconButton(
                     icon: Badge(
-                      isLabelVisible: selectedCategory != null || selectedGovernorate != null || syncedOnly != null,
+                      isLabelVisible: selectedCategory != null ||
+                          selectedGovernorate != null ||
+                          syncedOnly != null,
                       label: Text(
                         '${(selectedCategory != null ? 1 : 0) + (selectedGovernorate != null ? 1 : 0) + (syncedOnly != null ? 1 : 0)}',
                       ),

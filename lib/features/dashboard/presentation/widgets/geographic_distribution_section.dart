@@ -53,7 +53,8 @@ class GeographicDistributionSection extends ConsumerWidget {
         }
 
         // Get top 5 governorates
-        final entries = data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+        final entries = data.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
         final topGovernorates = entries.take(5).toList();
         final maxCount = topGovernorates.first.value;
 

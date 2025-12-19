@@ -40,7 +40,9 @@ void main() {
       final results = await dao.searchBeneficiaries('محمد أحمد');
 
       expect(results.isNotEmpty, true);
-      expect(results.any((b) => b.firstName == 'محمد' && b.fatherName == 'أحمد'), true);
+      expect(
+          results.any((b) => b.firstName == 'محمد' && b.fatherName == 'أحمد'),
+          true);
     });
 
     test('يجب أن يجد المستفيد بالاسم الأول فقط', () async {

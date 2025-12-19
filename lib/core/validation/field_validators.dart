@@ -239,7 +239,8 @@ class FieldValidators {
   // ==================== Backward Compatibility Aliases ====================
 
   /// Alias for backward compatibility
-  static String? validateArabicName(String? value, String fieldName) => arabicName(value, fieldName: fieldName);
+  static String? validateArabicName(String? value, String fieldName) =>
+      arabicName(value, fieldName: fieldName);
 
   /// Alias for backward compatibility
   static String? validateNationalId(String? value) => nationalId(value);
@@ -255,7 +256,8 @@ class FieldValidators {
   static String? validateBirthDate(String? value) => birthDateOptional(value);
 
   /// Alias for backward compatibility
-  static String? validateRequired(String? value, String fieldName) => required(value, fieldName: fieldName);
+  static String? validateRequired(String? value, String fieldName) =>
+      required(value, fieldName: fieldName);
 
   /// Alias for backward compatibility
   static String? validateNumberRange(
@@ -285,7 +287,8 @@ class FieldValidators {
   }
 
   /// Min length validator
-  static String? minLength(String? value, int min, {String fieldName = 'الحقل'}) {
+  static String? minLength(String? value, int min,
+      {String fieldName = 'الحقل'}) {
     if (value == null || value.trim().isEmpty) {
       return '⚠️ $fieldName مطلوب';
     }
@@ -298,7 +301,8 @@ class FieldValidators {
   }
 
   /// Max length validator
-  static String? maxLength(String? value, int max, {String fieldName = 'الحقل'}) {
+  static String? maxLength(String? value, int max,
+      {String fieldName = 'الحقل'}) {
     if (value != null && value.trim().length > max) {
       return '⚠️ $fieldName يجب ألا يتجاوز $max حرف';
     }
@@ -326,7 +330,8 @@ class FieldValidators {
 
   /// Arabic and English letters only
   static List<TextInputFormatter> get arabicEnglishOnly => [
-        FilteringTextInputFormatter.allow(RegExp(r'[\u0600-\u06FFa-zA-Z\s\-\.]')),
+        FilteringTextInputFormatter.allow(
+            RegExp(r'[\u0600-\u06FFa-zA-Z\s\-\.]')),
       ];
 
   /// Positive numbers only

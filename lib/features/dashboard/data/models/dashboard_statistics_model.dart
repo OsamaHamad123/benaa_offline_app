@@ -48,9 +48,8 @@ class DashboardStatisticsModel extends DashboardStatistics {
       'completedVisitsToday': completedVisitsToday,
       'lastSyncTime': lastSyncTime?.toIso8601String(),
       'categoryCounts': categoryCounts,
-      'growthData': growthData
-          .map((e) => (e as GrowthDataPointModel).toJson())
-          .toList(),
+      'growthData':
+          growthData.map((e) => (e as GrowthDataPointModel).toJson()).toList(),
       'todayStats': (todayStats as TodayStatsModel).toJson(),
       'totalFamilyMembers': totalFamilyMembers,
       'totalDeceased': totalDeceased,

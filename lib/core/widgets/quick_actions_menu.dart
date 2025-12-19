@@ -28,7 +28,8 @@ class QuickActionsMenu extends StatefulWidget {
   State<QuickActionsMenu> createState() => _QuickActionsMenuState();
 }
 
-class _QuickActionsMenuState extends State<QuickActionsMenu> with SingleTickerProviderStateMixin {
+class _QuickActionsMenuState extends State<QuickActionsMenu>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _rotationAnimation;
   late Animation<double> _opacityAnimation;
@@ -157,8 +158,10 @@ class _QuickActionsMenuState extends State<QuickActionsMenu> with SingleTickerPr
         // Button
         FloatingActionButton.small(
           onPressed: () => _handleActionTap(action),
-          backgroundColor: action.backgroundColor ?? theme.colorScheme.secondary,
-          foregroundColor: action.foregroundColor ?? theme.colorScheme.onSecondary,
+          backgroundColor:
+              action.backgroundColor ?? theme.colorScheme.secondary,
+          foregroundColor:
+              action.foregroundColor ?? theme.colorScheme.onSecondary,
           heroTag: action.label,
           child: Icon(action.icon, size: 20),
         ),

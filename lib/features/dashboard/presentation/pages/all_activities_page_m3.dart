@@ -39,9 +39,8 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
 
     // Filter by type
     if (_filterType != 'all') {
-      activities = activities
-          .where((activity) => activity.type == _filterType)
-          .toList();
+      activities =
+          activities.where((activity) => activity.type == _filterType).toList();
     }
 
     // Filter by date
@@ -203,8 +202,8 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
       body: state.isLoadingActivities
           ? _buildLoadingSkeleton()
           : _filteredActivities.isEmpty
-          ? _buildEmptyState()
-          : _buildActivitiesList(dates, groupedActivities),
+              ? _buildEmptyState()
+              : _buildActivitiesList(dates, groupedActivities),
     );
   }
 

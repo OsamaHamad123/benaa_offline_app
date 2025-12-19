@@ -151,8 +151,7 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
         final sample = beneficiaries.first;
         setState(() {
           _isLoading = false;
-          _statusMessage =
-              '''
+          _statusMessage = '''
 إجمالي المستفيدين: $count
 
 مثال على أول مستفيد:
@@ -299,8 +298,8 @@ ${sample.serverId != null ? '- Server ID: ${sample.serverId}' : ''}
                   color: _statusMessage.contains('✅')
                       ? Colors.green.shade50
                       : _statusMessage.contains('❌')
-                      ? Colors.red.shade50
-                      : Colors.blue.shade50,
+                          ? Colors.red.shade50
+                          : Colors.blue.shade50,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(

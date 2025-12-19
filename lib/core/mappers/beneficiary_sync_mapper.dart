@@ -69,8 +69,7 @@ class BeneficiaryMapper {
           beneficiary.firstName ?? (nameParts.isNotEmpty ? nameParts[0] : ''),
       'data_father_name':
           beneficiary.fatherName ?? (nameParts.length > 1 ? nameParts[1] : ''),
-      'data_grand_father_name':
-          beneficiary.grandFatherName ??
+      'data_grand_father_name': beneficiary.grandFatherName ??
           (nameParts.length > 2 ? nameParts[2] : ''),
       'data_family_name':
           beneficiary.familyName ?? (nameParts.length > 3 ? nameParts[3] : ''),

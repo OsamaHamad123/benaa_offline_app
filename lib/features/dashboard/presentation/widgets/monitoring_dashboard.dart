@@ -373,8 +373,8 @@ class _ErrorsSection extends StatelessWidget {
               color: error.severity == ErrorSeverity.critical
                   ? Colors.red[50]
                   : error.severity == ErrorSeverity.error
-                  ? Colors.orange[50]
-                  : null,
+                      ? Colors.orange[50]
+                      : null,
               child: ListTile(
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: isSmallScreen ? 12.w : 16.w,

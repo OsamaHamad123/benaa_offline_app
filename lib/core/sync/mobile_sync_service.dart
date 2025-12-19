@@ -32,19 +32,18 @@ class MobileSyncService {
   MobileSyncStatus _currentStatus = MobileSyncStatus();
 
   MobileSyncService(this._db, {Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              baseUrl: 'https://palestine.benaadev.org',
-              connectTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(seconds: 30),
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-              },
-            ),
-          );
+      : _dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: 'https://palestine.benaadev.org',
+                connectTimeout: const Duration(seconds: 30),
+                receiveTimeout: const Duration(seconds: 30),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                },
+              ),
+            );
 
   Stream<MobileSyncStatus> get statusStream => _statusController.stream;
   MobileSyncStatus get currentStatus => _currentStatus;
@@ -154,18 +153,20 @@ class MobileSyncService {
             final serverId = serverIdRaw is int
                 ? serverIdRaw
                 : (serverIdRaw != null
-                      ? int.tryParse(serverIdRaw.toString())
-                      : null);
+                    ? int.tryParse(serverIdRaw.toString())
+                    : null);
             if (serverId != null) {
               final existing = await (_db.select(
                 _db.beneficiaries,
-              )..where((b) => b.serverId.equals(serverId))).getSingleOrNull();
+              )..where((b) => b.serverId.equals(serverId)))
+                  .getSingleOrNull();
 
               if (existing != null) {
                 // Update existing
                 await (_db.update(
                   _db.beneficiaries,
-                )..where((b) => b.id.equals(existing.id))).write(companion);
+                )..where((b) => b.id.equals(existing.id)))
+                    .write(companion);
               } else {
                 // Insert new
                 await _db.into(_db.beneficiaries).insert(companion);
@@ -221,13 +222,13 @@ class MobileSyncService {
 
     try {
       // Get local beneficiaries that need sync (pending or modified)
-      final localBeneficiaries =
-          await (_db.select(_db.beneficiaries)..where(
-                (b) =>
-                    b.syncState.equals('pending') |
-                    b.syncState.equals('modified'),
-              ))
-              .get();
+      final localBeneficiaries = await (_db.select(_db.beneficiaries)
+            ..where(
+              (b) =>
+                  b.syncState.equals('pending') |
+                  b.syncState.equals('modified'),
+            ))
+          .get();
 
       _logger.i('Found ${localBeneficiaries.length} beneficiaries to upload');
 
@@ -271,7 +272,8 @@ class MobileSyncService {
               // Mark as synced
               await (_db.update(
                 _db.beneficiaries,
-              )..where((b) => b.id.equals(beneficiary.id))).write(
+              )..where((b) => b.id.equals(beneficiary.id)))
+                  .write(
                 BeneficiariesCompanion(
                   syncState: const drift.Value('synced'),
                   lastSyncedAt: drift.Value(DateTime.now()),
@@ -300,13 +302,14 @@ class MobileSyncService {
               final serverId = serverIdRaw is int
                   ? serverIdRaw
                   : (serverIdRaw != null
-                        ? int.tryParse(serverIdRaw.toString())
-                        : null);
+                      ? int.tryParse(serverIdRaw.toString())
+                      : null);
 
               // Update with serverId and mark as synced
               await (_db.update(
                 _db.beneficiaries,
-              )..where((b) => b.id.equals(beneficiary.id))).write(
+              )..where((b) => b.id.equals(beneficiary.id)))
+                  .write(
                 BeneficiariesCompanion(
                   serverId: drift.Value(serverId),
                   syncState: const drift.Value('synced'),

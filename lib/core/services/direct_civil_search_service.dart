@@ -99,10 +99,8 @@ class DirectCivilSearchService {
     await initialize();
 
     final normalizedQuery = ArabicNormalizer.normalize(query);
-    final words = normalizedQuery
-        .split(' ')
-        .where((w) => w.isNotEmpty)
-        .toList();
+    final words =
+        normalizedQuery.split(' ').where((w) => w.isNotEmpty).toList();
 
     if (words.isEmpty) return [];
 
@@ -121,8 +119,7 @@ class DirectCivilSearchService {
       params.addAll([likePattern, likePattern, likePattern, likePattern]);
     }
 
-    final sql =
-        '''
+    final sql = '''
       SELECT * FROM persons 
       WHERE ${conditions.join(' AND ')}
       LIMIT ?
@@ -203,8 +200,7 @@ class DirectCivilSearchService {
       params.add('%$city%');
     }
 
-    final sql =
-        '''
+    final sql = '''
       SELECT * FROM persons 
       ${conditions.isNotEmpty ? 'WHERE ${conditions.join(' AND ')}' : ''}
       LIMIT ?
