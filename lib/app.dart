@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
+import 'core/theme/dark_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'core/settings/settings_provider.dart';
 import 'core/error_handling/error_handler.dart';
 import 'core/design_system/app_animations.dart';
@@ -17,6 +19,7 @@ class BenaaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     // 📊 Start analytics session
     UxAnalytics.startSession();
@@ -28,19 +31,6 @@ class BenaaApp extends ConsumerWidget {
       child: settingsAsync.when(
         data: (_) {
           final settings = ref.watch(settingsProvider);
-
-          // Determine ThemeMode based on settings
-          ThemeMode themeMode;
-          switch (settings.themeMode) {
-            case 'light':
-              themeMode = ThemeMode.light;
-              break;
-            case 'dark':
-              themeMode = ThemeMode.dark;
-              break;
-            default:
-              themeMode = ThemeMode.system;
-          }
 
           // Get color scheme
           Color primaryColor = AppTheme.getColorFromScheme(
@@ -71,12 +61,7 @@ class BenaaApp extends ConsumerWidget {
                   useMaterial3: settings.useMaterial3,
                   fontSize: settings.fontSize,
                 ),
-                darkTheme: AppTheme.buildTheme(
-                  primaryColor: primaryColor,
-                  isDark: true,
-                  useMaterial3: settings.useMaterial3,
-                  fontSize: settings.fontSize,
-                ),
+                darkTheme: buildDarkTheme(), // استخدام السمة المخصصة الداكنة
                 themeMode: themeMode,
                 routerConfig: router,
                 debugShowCheckedModeBanner: false,
@@ -143,12 +128,10 @@ class _DebouncedKeyboardInsets extends StatefulWidget {
   const _DebouncedKeyboardInsets({required this.child});
 
   @override
-  State<_DebouncedKeyboardInsets> createState() =>
-      _DebouncedKeyboardInsetsState();
+  State<_DebouncedKeyboardInsets> createState() => _DebouncedKeyboardInsetsState();
 }
 
-class _DebouncedKeyboardInsetsState extends State<_DebouncedKeyboardInsets>
-    with WidgetsBindingObserver {
+class _DebouncedKeyboardInsetsState extends State<_DebouncedKeyboardInsets> with WidgetsBindingObserver {
   static const _debounceDuration = Duration(milliseconds: 90);
 
   Timer? _debounceTimer;
