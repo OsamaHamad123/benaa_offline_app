@@ -231,42 +231,42 @@ class BeneficiaryFormControllers extends ChangeNotifier {
 
   /// Remove pending file by index
   void removePendingFile(int index) {
-    // 🆕 Enhanced Pending Attachments Methods
-    /// Update pending attachments (with metadata)
-    void updatePendingAttachments(List<PendingAttachment> newAttachments) {
-      _pendingAttachments.clear();
-      _pendingAttachments.addAll(newAttachments);
-      // Also update legacy list for backward compatibility
-      _pendingAttachmentFiles.clear();
-      _pendingAttachmentFiles.addAll(newAttachments.map((a) => a.file));
-      if (kDebugMode && _enableFormDebugPrints) {
-        debugPrint(
-          '📋 [FormControllers] Updated pending attachments. Count: ${_pendingAttachments.length}',
-        );
-      }
-      _notifyAndScheduleAutoSave();
-    }
-
-    /// Add single pending attachment
-    void addPendingAttachment(PendingAttachment attachment) {
-      _pendingAttachments.add(attachment);
-      _pendingAttachmentFiles.add(attachment.file);
-      _notifyAndScheduleAutoSave();
-    }
-
-    /// Remove pending attachment by index
-    void removePendingAttachment(int index) {
-      if (index >= 0 && index < _pendingAttachments.length) {
-        _pendingAttachments.removeAt(index);
-        if (index < _pendingAttachmentFiles.length) {
-          _pendingAttachmentFiles.removeAt(index);
-        }
-        _notifyAndScheduleAutoSave();
-      }
-    }
-
     if (index >= 0 && index < _pendingAttachmentFiles.length) {
       _pendingAttachmentFiles.removeAt(index);
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  // 🆕 Enhanced Pending Attachments Methods
+  /// Update pending attachments (with metadata)
+  void updatePendingAttachments(List<PendingAttachment> newAttachments) {
+    _pendingAttachments.clear();
+    _pendingAttachments.addAll(newAttachments);
+    // Also update legacy list for backward compatibility
+    _pendingAttachmentFiles.clear();
+    _pendingAttachmentFiles.addAll(newAttachments.map((a) => a.file));
+    if (kDebugMode && _enableFormDebugPrints) {
+      debugPrint(
+        '📋 [FormControllers] Updated pending attachments. Count: ${_pendingAttachments.length}',
+      );
+    }
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Add single pending attachment
+  void addPendingAttachment(PendingAttachment attachment) {
+    _pendingAttachments.add(attachment);
+    _pendingAttachmentFiles.add(attachment.file);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Remove pending attachment by index
+  void removePendingAttachment(int index) {
+    if (index >= 0 && index < _pendingAttachments.length) {
+      _pendingAttachments.removeAt(index);
+      if (index < _pendingAttachmentFiles.length) {
+        _pendingAttachmentFiles.removeAt(index);
+      }
       _notifyAndScheduleAutoSave();
     }
   }

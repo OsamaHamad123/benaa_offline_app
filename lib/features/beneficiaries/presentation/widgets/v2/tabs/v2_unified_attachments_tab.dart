@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../attachments/presentation/widgets/attachments_section_enhanced.dart';
 import '../../../../../attachments/presentation/widgets/enhanced_pending_attachments_section.dart'; // 🆕 Use enhanced version
-import '../../../../../attachments/domain/models/pending_attachment.dart'; // 🆕 Import model
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 
 /// 📎 تبويب المرفقات الموحد
