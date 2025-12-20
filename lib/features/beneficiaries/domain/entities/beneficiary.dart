@@ -16,6 +16,10 @@ class Beneficiary {
   final String? grandFatherName;
   final String? familyName;
 
+  // 🆕 Added Fields - صلة القرابة والقسم
+  final int? relationship; // صلة القرابة (2=أرملة، 3=أرمل، 4=يتيم، etc)
+  final int? sectionId; // القسم/الشعبة
+
   // Contact Info
   final String? phoneNumber;
   final String? altPhoneNumber;
@@ -48,6 +52,10 @@ class Beneficiary {
   final RequestStatus? requestStatus;
 
   final String? notes;
+
+  // 🆕 System Fields
+  final String? createdByUser; // المستخدم المدخل للبيانات
+
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool needsSync;
@@ -63,6 +71,8 @@ class Beneficiary {
     this.fatherName,
     this.grandFatherName,
     this.familyName,
+    this.relationship,
+    this.sectionId,
     this.phoneNumber,
     this.altPhoneNumber,
     this.governorate,
@@ -87,6 +97,7 @@ class Beneficiary {
     this.housingType,
     this.requestStatus,
     this.notes,
+    this.createdByUser,
     required this.createdAt,
     required this.updatedAt,
     this.needsSync = false,
@@ -97,8 +108,7 @@ class Beneficiary {
     if (birthDate == null) return null;
     final now = DateTime.now();
     int age = now.year - birthDate!.year;
-    if (now.month < birthDate!.month ||
-        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+    if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
       age--;
     }
     return age;
@@ -131,10 +141,7 @@ class Beneficiary {
 
   /// Check if data is complete enough for submission
   bool get isComplete {
-    return fullName.isNotEmpty &&
-        nationalId.isNotEmpty &&
-        phoneNumber != null &&
-        phoneNumber!.isNotEmpty;
+    return fullName.isNotEmpty && nationalId.isNotEmpty && phoneNumber != null && phoneNumber!.isNotEmpty;
   }
 
   /// Calculate completion percentage
@@ -217,8 +224,7 @@ class Beneficiary {
       district: district ?? this.district,
       address: address ?? this.address,
       currentAddress: currentAddress ?? this.currentAddress,
-      addressBeforeDisplacement:
-          addressBeforeDisplacement ?? this.addressBeforeDisplacement,
+      addressBeforeDisplacement: addressBeforeDisplacement ?? this.addressBeforeDisplacement,
       fileNo: fileNo ?? this.fileNo,
       associationName: associationName ?? this.associationName,
       maritalStatus: maritalStatus ?? this.maritalStatus,
@@ -252,8 +258,7 @@ class Beneficiary {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() =>
-      'Beneficiary(id: $id, name: $fullName, nationalId: $nationalId)';
+  String toString() => 'Beneficiary(id: $id, name: $fullName, nationalId: $nationalId)';
 }
 
 /// 🚻 Gender

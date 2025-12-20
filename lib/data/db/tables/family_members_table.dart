@@ -30,6 +30,16 @@ class FamilyMembersTable extends Table {
   IntColumn get healthStatus => integer()();
   // 1=سليم، 2=مريض، 3=مريض مزمن، 4=معاق، 5=غير معروف
 
+  // 🆕 حقول الكفالة (Sponsorship)
+  IntColumn get sponsorshipStatus => integer().nullable()();
+  // 1=مكفول، 2=غير مكفول، 3=قيد الانتظار
+
+  IntColumn get sponsorshipType => integer().nullable()();
+  // 1=كفالة كاملة، 2=كفالة جزئية، 3=كفالة موسمية
+
+  TextColumn get sponsorName => text().nullable()(); // اسم الكفيل
+  DateTimeColumn get sponsorshipStartDate => dateTime().nullable()(); // تاريخ بدء الكفالة
+
   // ملاحظات
   TextColumn get notes => text().nullable()();
 
