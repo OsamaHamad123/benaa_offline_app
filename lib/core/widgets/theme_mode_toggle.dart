@@ -24,7 +24,8 @@ class ThemeModeToggle extends ConsumerWidget {
     final autoSwitch = themeModeNotifier.autoSwitch;
 
     if (compact) {
-      return _buildCompactToggle(context, themeMode, themeModeNotifier, autoSwitch);
+      return _buildCompactToggle(
+          context, themeMode, themeModeNotifier, autoSwitch);
     }
 
     return _buildFullToggle(context, themeMode, themeModeNotifier, autoSwitch);
@@ -39,12 +40,15 @@ class ThemeModeToggle extends ConsumerWidget {
   ) {
     return IconButton(
       icon: Icon(
-        autoSwitch ? Icons.brightness_auto_rounded : ThemeModeSettings.getThemeModeIcon(themeMode),
+        autoSwitch
+            ? Icons.brightness_auto_rounded
+            : ThemeModeSettings.getThemeModeIcon(themeMode),
       ),
       tooltip: autoSwitch
           ? 'تلقائي (${ThemeModeSettings.getThemeModeLabel(themeMode)})'
           : ThemeModeSettings.getThemeModeLabel(themeMode),
-      onPressed: () => _showThemeModeDialog(context, themeMode, notifier, autoSwitch),
+      onPressed: () =>
+          _showThemeModeDialog(context, themeMode, notifier, autoSwitch),
     );
   }
 
@@ -58,7 +62,9 @@ class ThemeModeToggle extends ConsumerWidget {
     return Card(
       child: ListTile(
         leading: Icon(
-          autoSwitch ? Icons.brightness_auto_rounded : ThemeModeSettings.getThemeModeIcon(themeMode),
+          autoSwitch
+              ? Icons.brightness_auto_rounded
+              : ThemeModeSettings.getThemeModeIcon(themeMode),
           size: 28.sp,
         ),
         title: const Text('وضع السمة'),
@@ -68,7 +74,8 @@ class ThemeModeToggle extends ConsumerWidget {
               : ThemeModeSettings.getThemeModeLabel(themeMode),
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-        onTap: () => _showThemeModeDialog(context, themeMode, notifier, autoSwitch),
+        onTap: () =>
+            _showThemeModeDialog(context, themeMode, notifier, autoSwitch),
       ),
     );
   }
@@ -172,11 +179,15 @@ class ThemeModeToggle extends ConsumerWidget {
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
           border: Border.all(
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.outline.withOpacity(0.3),
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.outline.withOpacity(0.3),
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12.r),
-          color: isSelected ? theme.colorScheme.primaryContainer.withOpacity(0.3) : null,
+          color: isSelected
+              ? theme.colorScheme.primaryContainer.withOpacity(0.3)
+              : null,
         ),
         child: Row(
           children: [

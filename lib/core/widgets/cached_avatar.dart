@@ -83,7 +83,9 @@ class CachedAvatar extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: shape == BoxShape.circle ? BorderRadius.circular(size / 2) : BorderRadius.circular(8),
+        borderRadius: shape == BoxShape.circle
+            ? BorderRadius.circular(size / 2)
+            : BorderRadius.circular(8),
         child: child,
       ),
     );

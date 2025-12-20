@@ -23,10 +23,14 @@ class ValidationIndicator extends StatelessWidget {
       curve: Curves.easeInOut,
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: isValid! ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color: isValid!
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
-          color: isValid! ? Colors.green.withOpacity(0.3) : Colors.red.withOpacity(0.3),
+          color: isValid!
+              ? Colors.green.withOpacity(0.3)
+              : Colors.red.withOpacity(0.3),
           width: 1,
         ),
       ),
