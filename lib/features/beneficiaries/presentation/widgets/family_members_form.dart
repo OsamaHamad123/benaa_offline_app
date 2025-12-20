@@ -122,6 +122,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       locale: const Locale('ar'),
     );
     if (picked != null) {
+      HapticFeedback.selectionClick(); // Date selected haptic
       setState(() {
         _birthDate = picked;
         _calculatedAge = DateTime.now().difference(picked).inDays ~/ 365;
@@ -138,6 +139,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       locale: const Locale('ar'),
     );
     if (picked != null) {
+      HapticFeedback.selectionClick(); // Date selected haptic
       setState(() {
         _sponsorshipStartDate = picked;
       });
@@ -191,6 +193,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_birthDate == null) {
+      HapticFeedback.vibrate(); // Warning haptic
       ToastHelper.showError('الرجاء اختيار تاريخ الميلاد');
       return;
     }
@@ -202,6 +205,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
         _lastCertificatePath == null ||
         _personalPhotoPath == null ||
         _fullPhotoPath == null) {
+      HapticFeedback.vibrate(); // Warning haptic
       ToastHelper.showWarning('الرجاء رفع جميع المرفقات المطلوبة');
       return;
     }
@@ -289,12 +293,14 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       }
 
       if (mounted) {
+        HapticFeedback.mediumImpact(); // Success haptic
         ToastHelper.showSuccess('تم الحفظ بنجاح');
         Navigator.of(context).pop();
         widget.onSaved();
       }
     } catch (e) {
       if (mounted) {
+        HapticFeedback.vibrate(); // Error haptic
         ToastHelper.showError('خطأ في الحفظ: $e');
       }
     }
