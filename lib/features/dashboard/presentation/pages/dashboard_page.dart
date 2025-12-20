@@ -4,23 +4,32 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+// Core
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/widgets/micro_interactions.dart';
-import '../../../../theme/app_colors.dart';
-import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
-import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
-import '../providers.dart';
 import '../../../../core/widgets/charts.dart';
 import '../../../../core/widgets/modern_sliver_app_bar.dart';
 import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../../core/monitoring/app_monitoring.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import '../../../sync/mobile_sync_page.dart';
+import '../../../../core/settings/enhanced_settings_page.dart';
+import '../../../../core/design_system/app_animations.dart';
+import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/utils/haptic_patterns.dart';
+import '../../../../theme/app_colors.dart';
+
+// Dashboard
 import '../providers.dart';
+import '../services/dashboard_navigation_service.dart';
+import '../utils/dashboard_colors.dart';
+import '../utils/dashboard_text_styles.dart';
+import '../utils/dashboard_haptics.dart';
+import '../utils/dashboard_spacing.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/activities_section.dart';
 import '../widgets/dashboard_charts.dart';
@@ -29,14 +38,13 @@ import '../widgets/geographic_distribution_section.dart';
 import '../widgets/daily_performance_section.dart';
 import '../widgets/dashboard_summary_widget.dart';
 import '../widgets/advanced_filters_widget.dart';
-import '../../../../core/settings/enhanced_settings_page.dart';
-import '../../../../theme/app_colors.dart';
-import '../../../../core/design_system/app_animations.dart';
-import '../../../../core/error_handling/error_handler.dart';
-import '../../../../core/utils/haptic_patterns.dart';
 import '../widgets/dashboard_widgets.dart';
-import '../services/dashboard_navigation_service.dart';
-import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
+import '../widgets/dashboard_search_delegate.dart';
+import '../widgets/dashboard_export_dialog.dart';
+import 'dashboard_settings_page.dart';
+
+// Other Features
+import '../../../sync/mobile_sync_page.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
 /// Uses StateNotifier for state management with performance optimizations
@@ -239,7 +247,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          HapticPatterns.selection();
+          DashboardHaptics.onNavigation();
           setState(() {
             _selectedIndex = index;
           });
@@ -336,7 +344,32 @@ class _DashboardHome extends ConsumerWidget {
               icon: Icons.search_rounded,
               tooltip: 'البحث',
               iconSize: 28,
-              onPressed: () => DashboardNavigationService.navigateToBeneficiariesList(context),
+              onPressed: () {
+                showSearch(
+                  context: context,
+                  delegate: DashboardSearchDelegate(ref),
+                );
+              },
+            ),
+            ModernActionButton(
+              icon: Icons.file_download_outlined,
+              tooltip: 'تصدير التقرير',
+              iconSize: 28,
+              onPressed: () {
+                // Show export dialog
+                final dashboard = state.statistics;
+                if (dashboard != null) {
+                  showDialog(
+                    context: context,
+                    builder: (_) => DashboardExportDialog(dashboard: dashboard),
+                  );
+                } else {
+                  EnhancedSnackbar.showWarning(
+                    context,
+                    message: 'الرجاء الانتظار حتى يتم تحميل البيانات',
+                  );
+                }
+              },
             ),
             ModernActionButton(
               icon: Icons.notifications_outlined,
@@ -358,7 +391,7 @@ class _DashboardHome extends ConsumerWidget {
         SliverToBoxAdapter(
           child: EnhancedRefreshIndicator(
             onRefresh: () async {
-              HapticPatterns.refresh();
+              DashboardHaptics.onRefresh();
               await notifier.refresh();
             },
             color: DashboardColors.totalBeneficiaries,
@@ -669,7 +702,26 @@ class _SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // استخدم صفحة الإعدادات الجديدة المحسّنة
-    return const EnhancedSettingsPage();
+    // استخدم صفحة الإعدادات الجديدة المحسّنة مع زر Dashboard Settings
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('الإعدادات'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.dashboard_customize),
+            tooltip: 'إعدادات الداشبورد',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DashboardSettingsPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: const EnhancedSettingsPage(),
+    );
   }
 }

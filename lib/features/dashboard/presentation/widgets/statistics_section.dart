@@ -7,6 +7,8 @@ import 'trend_indicator.dart';
 import '../../../../theme/app_colors.dart';
 import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
+import '../utils/dashboard_haptics.dart'; // ✅ Dashboard Haptics
+import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 import '../../../../core/utils/haptic_patterns.dart';
 
 /// Stat Card Widget - Reusable statistics card with Trend Indicator
@@ -109,7 +111,7 @@ class StatCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              SizedBox(height: 2.h),
+                              SizedBox(height: DashboardSpacing.tiny),
                               Flexible(
                                 fit: FlexFit.loose,
                                 child: Text(
@@ -175,7 +177,7 @@ class StatCard extends StatelessWidget {
                         ],
                       ),
                       // Use fixed small spacing instead of Spacer() to avoid overflow
-                      SizedBox(height: 6.h),
+                      SizedBox(height: DashboardSpacing.tiny),
                       // Use FittedBox to scale the numeric value down in very tight constraints
                       Flexible(
                         fit: FlexFit.loose,
@@ -193,7 +195,7 @@ class StatCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: 4.h),
+                      SizedBox(height: DashboardSpacing.tiny),
                       Flexible(
                         fit: FlexFit.loose,
                         child: Text(
@@ -206,7 +208,7 @@ class StatCard extends StatelessWidget {
                         ),
                       ),
                       if (subtitle != null) ...[
-                        SizedBox(height: 4.h),
+                        SizedBox(height: DashboardSpacing.tiny),
                         Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 6.w,

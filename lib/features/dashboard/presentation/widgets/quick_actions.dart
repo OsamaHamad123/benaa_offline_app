@@ -6,6 +6,7 @@ import '../../../../theme/app_colors.dart';
 import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
 import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
+import '../utils/dashboard_haptics.dart'; // ✅ Dashboard Haptics
 import '../../../../core/utils/haptic_patterns.dart';
 
 /// Quick Action Card - Modern card design for quick actions
@@ -35,7 +36,7 @@ class QuickActionCard extends StatelessWidget {
       button: true,
       child: MicroInteractions.bounceButton(
         onTap: () {
-          HapticPatterns.selection();
+          DashboardHaptics.onQuickAction();
           onTap();
         },
         child: Card(

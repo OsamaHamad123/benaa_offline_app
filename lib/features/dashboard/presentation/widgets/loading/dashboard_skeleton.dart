@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../core/widgets/shimmer_loading.dart';
+import '../../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 
 /// Dashboard Skeleton - شاشة تحميل متطابقة مع المحتوى الفعلي
 class DashboardSkeleton extends StatelessWidget {
@@ -15,19 +16,19 @@ class DashboardSkeleton extends StatelessWidget {
         children: [
           // Filters skeleton
           _buildFiltersRow(),
-          SizedBox(height: 24.h),
+          SizedBox(height: DashboardSpacing.large),
 
           // Summary widget skeleton
           _buildSummaryCard(),
-          SizedBox(height: 24.h),
+          SizedBox(height: DashboardSpacing.large),
 
           // Quick actions skeleton
           _buildQuickActionsGrid(),
-          SizedBox(height: 24.h),
+          SizedBox(height: DashboardSpacing.large),
 
           // Charts skeleton
           _buildChartsSection(),
-          SizedBox(height: 24.h),
+          SizedBox(height: DashboardSpacing.large),
 
           // Activities skeleton
           _buildActivitiesList(),
@@ -44,10 +45,7 @@ class DashboardSkeleton extends StatelessWidget {
           4,
           (index) => Padding(
             padding: EdgeInsets.only(right: 8.w),
-            child: SkeletonCard(
-              width: 100.w,
-              height: 36.h,
-            ),
+            child: SkeletonCard(width: 100.w, height: 36.h),
           ),
         ),
       ),
@@ -55,10 +53,7 @@ class DashboardSkeleton extends StatelessWidget {
   }
 
   Widget _buildSummaryCard() {
-    return SkeletonCard(
-      width: double.infinity,
-      height: 120.h,
-    );
+    return SkeletonCard(height: 120.h);
   }
 
   Widget _buildQuickActionsGrid() {
@@ -69,28 +64,16 @@ class DashboardSkeleton extends StatelessWidget {
       mainAxisSpacing: 12.h,
       crossAxisSpacing: 12.w,
       childAspectRatio: 1.0,
-      children: List.generate(
-        6,
-        (index) => SkeletonCard(
-          width: double.infinity,
-          height: double.infinity,
-        ),
-      ),
+      children: List.generate(6, (index) => SkeletonCard(height: 100.h)),
     );
   }
 
   Widget _buildChartsSection() {
     return Column(
       children: [
-        SkeletonCard(
-          width: double.infinity,
-          height: 200.h,
-        ),
+        SkeletonCard(height: 200.h),
         SizedBox(height: 12.h),
-        SkeletonCard(
-          width: double.infinity,
-          height: 150.h,
-        ),
+        SkeletonCard(height: 150.h),
       ],
     );
   }
@@ -101,10 +84,7 @@ class DashboardSkeleton extends StatelessWidget {
         3,
         (index) => Padding(
           padding: EdgeInsets.only(bottom: 12.h),
-          child: SkeletonCard(
-            width: double.infinity,
-            height: 70.h,
-          ),
+          child: SkeletonCard(width: double.infinity, height: 70.h),
         ),
       ),
     );

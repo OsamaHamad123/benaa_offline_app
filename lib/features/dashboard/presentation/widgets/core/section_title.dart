@@ -29,6 +29,7 @@ class SectionTitle extends StatelessWidget {
     final effectiveColor = color ?? AppColors.primary;
 
     return Row(
+      mainAxisSize: MainAxisSize.min, // ✅ Fix: Prevent unconstrained width
       children: [
         Container(
           padding: EdgeInsets.all(8.w),
@@ -44,7 +45,8 @@ class SectionTitle extends StatelessWidget {
           child: Icon(icon, size: 20.sp, color: effectiveColor),
         ),
         SizedBox(width: 12.w),
-        Expanded(
+        Flexible(
+          // ✅ Changed from Expanded to Flexible
           child: Text(
             title,
             style: TextStyle(
@@ -54,7 +56,10 @@ class SectionTitle extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing != null) trailing!,
+        if (trailing != null) ...[
+          SizedBox(width: 8.w),
+          trailing!,
+        ],
       ],
     );
   }
