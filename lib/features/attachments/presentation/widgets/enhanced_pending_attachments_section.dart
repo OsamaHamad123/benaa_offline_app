@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
@@ -303,6 +304,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
 
       if (fileSize > maxSize) {
         if (mounted) {
+          HapticFeedback.vibrate(); // Error haptic
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('حجم الملف يتجاوز 10 ميجابايت'),
@@ -345,6 +347,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
       _notifyChanges();
 
       if (mounted) {
+        HapticFeedback.mediumImpact(); // Success haptic
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -362,6 +365,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
+        HapticFeedback.vibrate(); // Error haptic
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
         );
@@ -382,6 +386,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
     );
 
     if (metadata != null) {
+      HapticFeedback.mediumImpact(); // Success haptic
       setState(() {
         _attachments[index] = attachment.copyWith(
           documentType: metadata['documentType'],
@@ -401,6 +406,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
   }
 
   void _deleteFile(int index) {
+    HapticFeedback.mediumImpact(); // Delete haptic
     setState(() {
       _attachments.removeAt(index);
     });
