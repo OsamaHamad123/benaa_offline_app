@@ -24,8 +24,7 @@ class ShimmerLoading extends StatefulWidget {
   State<ShimmerLoading> createState() => _ShimmerLoadingState();
 }
 
-class _ShimmerLoadingState extends State<ShimmerLoading>
-    with SingleTickerProviderStateMixin {
+class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -94,8 +93,7 @@ class FadeInWidget extends StatefulWidget {
   State<FadeInWidget> createState() => _FadeInWidgetState();
 }
 
-class _FadeInWidgetState extends State<FadeInWidget>
-    with SingleTickerProviderStateMixin {
+class _FadeInWidgetState extends State<FadeInWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -234,8 +232,7 @@ class SuccessCheckmark extends StatefulWidget {
   State<SuccessCheckmark> createState() => _SuccessCheckmarkState();
 }
 
-class _SuccessCheckmarkState extends State<SuccessCheckmark>
-    with SingleTickerProviderStateMixin {
+class _SuccessCheckmarkState extends State<SuccessCheckmark> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _checkAnimation;
