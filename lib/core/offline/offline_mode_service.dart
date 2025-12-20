@@ -310,18 +310,14 @@ class ConflictResolver<T> {
           return await mergeFunction(localVersion, remoteVersion);
         }
         // Fallback to newest
-        return localTimestamp.isAfter(remoteTimestamp)
-            ? localVersion
-            : remoteVersion;
+        return localTimestamp.isAfter(remoteTimestamp) ? localVersion : remoteVersion;
 
       case ConflictResolutionStrategy.askUser:
         if (askUserFunction != null) {
           return await askUserFunction(localVersion, remoteVersion);
         }
         // Fallback to newest
-        return localTimestamp.isAfter(remoteTimestamp)
-            ? localVersion
-            : remoteVersion;
+        return localTimestamp.isAfter(remoteTimestamp) ? localVersion : remoteVersion;
     }
   }
 }

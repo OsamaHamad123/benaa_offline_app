@@ -154,9 +154,7 @@ class ExternalIntegrationService {
           paymentId: paymentId,
           status: data['status'],
           amount: data['amount']?.toDouble(),
-          paidAt: data['paid_at'] != null
-              ? DateTime.parse(data['paid_at'])
-              : null,
+          paidAt: data['paid_at'] != null ? DateTime.parse(data['paid_at']) : null,
         );
       } else {
         return PaymentStatus(
