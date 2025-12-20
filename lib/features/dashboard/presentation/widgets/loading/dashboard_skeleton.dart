@@ -47,7 +47,6 @@ class DashboardSkeleton extends StatelessWidget {
             child: SkeletonCard(
               width: 100.w,
               height: 36.h,
-              borderRadius: 18.r,
             ),
           ),
         ),
@@ -59,7 +58,6 @@ class DashboardSkeleton extends StatelessWidget {
     return SkeletonCard(
       width: double.infinity,
       height: 120.h,
-      borderRadius: 16.r,
     );
   }
 
@@ -76,7 +74,6 @@ class DashboardSkeleton extends StatelessWidget {
         (index) => SkeletonCard(
           width: double.infinity,
           height: double.infinity,
-          borderRadius: 16.r,
         ),
       ),
     );
@@ -88,13 +85,11 @@ class DashboardSkeleton extends StatelessWidget {
         SkeletonCard(
           width: double.infinity,
           height: 200.h,
-          borderRadius: 16.r,
         ),
         SizedBox(height: 12.h),
         SkeletonCard(
           width: double.infinity,
           height: 150.h,
-          borderRadius: 16.r,
         ),
       ],
     );
@@ -109,7 +104,6 @@ class DashboardSkeleton extends StatelessWidget {
           child: SkeletonCard(
             width: double.infinity,
             height: 70.h,
-            borderRadius: 12.r,
           ),
         ),
       ),

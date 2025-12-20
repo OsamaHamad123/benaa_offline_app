@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../../theme/app_colors.dart';
+import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 import '../../domain/entities/dashboard_statistics.dart';
 
 /// 📊 Interactive Dashboard Charts - Enhanced with drill-down
@@ -11,12 +12,10 @@ class InteractiveDashboardCharts extends ConsumerStatefulWidget {
   const InteractiveDashboardCharts({super.key, required this.statistics});
 
   @override
-  ConsumerState<InteractiveDashboardCharts> createState() =>
-      _InteractiveDashboardChartsState();
+  ConsumerState<InteractiveDashboardCharts> createState() => _InteractiveDashboardChartsState();
 }
 
-class _InteractiveDashboardChartsState
-    extends ConsumerState<InteractiveDashboardCharts> {
+class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboardCharts> {
   int _selectedCategoryIndex = -1;
   int _selectedGrowthIndex = -1;
 
@@ -55,8 +54,7 @@ class _InteractiveDashboardChartsState
                 ),
                 IconButton(
                   icon: const Icon(Icons.info_outline, size: 20),
-                  onPressed: () =>
-                      _showChartInfo(context, 'اضغط على أي قطاع لعرض التفاصيل'),
+                  onPressed: () => _showChartInfo(context, 'اضغط على أي قطاع لعرض التفاصيل'),
                 ),
               ],
             ),
@@ -72,8 +70,7 @@ class _InteractiveDashboardChartsState
                     touchCallback: (event, response) {
                       setState(() {
                         if (response?.touchedSection != null) {
-                          _selectedCategoryIndex =
-                              response!.touchedSection!.touchedSectionIndex;
+                          _selectedCategoryIndex = response!.touchedSection!.touchedSectionIndex;
                         } else {
                           _selectedCategoryIndex = -1;
                         }
@@ -98,12 +95,12 @@ class _InteractiveDashboardChartsState
     final total = categories.values.fold<int>(0, (sum, count) => sum + count);
 
     final colors = [
-      AppColors.primary,
-      AppColors.success,
-      AppColors.warning,
-      AppColors.orphan,
-      AppColors.error,
-      AppColors.disabled,
+      DashboardColors.totalBeneficiaries,
+      DashboardColors.success,
+      DashboardColors.warning,
+      DashboardColors.widows,
+      DashboardColors.urgent,
+      DashboardColors.disabled,
     ];
 
     return categories.entries.toList().asMap().entries.map((entry) {
@@ -132,9 +129,9 @@ class _InteractiveDashboardChartsState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+        color: DashboardColors.totalBeneficiaries.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: DashboardColors.totalBeneficiaries.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -202,22 +199,22 @@ class _InteractiveDashboardChartsState
                     LineChartBarData(
                       spots: _buildGrowthSpots(),
                       isCurved: true,
-                      color: AppColors.primary,
+                      color: DashboardColors.totalBeneficiaries,
                       barWidth: 3,
                       dotData: FlDotData(
                         show: true,
                         getDotPainter: (spot, percent, bar, index) {
                           return FlDotCirclePainter(
                             radius: index == _selectedGrowthIndex ? 6 : 4,
-                            color: AppColors.primary,
+                            color: DashboardColors.totalBeneficiaries,
                             strokeWidth: index == _selectedGrowthIndex ? 2 : 0,
-                            strokeColor: AppColors.surface,
+                            strokeColor: DashboardColors.cardBg,
                           );
                         },
                       ),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: DashboardColors.totalBeneficiaries.withOpacity(0.1),
                       ),
                     ),
                   ],
@@ -225,8 +222,7 @@ class _InteractiveDashboardChartsState
                     touchCallback: (event, response) {
                       setState(() {
                         if (response?.lineBarSpots?.isNotEmpty ?? false) {
-                          _selectedGrowthIndex =
-                              response!.lineBarSpots!.first.spotIndex;
+                          _selectedGrowthIndex = response!.lineBarSpots!.first.spotIndex;
                         } else {
                           _selectedGrowthIndex = -1;
                         }
@@ -235,8 +231,7 @@ class _InteractiveDashboardChartsState
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((spot) {
-                          final date =
-                              widget.statistics.growthData[spot.spotIndex].date;
+                          final date = widget.statistics.growthData[spot.spotIndex].date;
                           return LineTooltipItem(
                             '${date.day}/${date.month}\n${spot.y.toInt()} مستفيد',
                             TextStyle(

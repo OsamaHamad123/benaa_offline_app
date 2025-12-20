@@ -15,7 +15,7 @@ class DashboardHaptics {
   static void onRefresh() => HapticPatterns.refresh();
 
   /// عند فتح/إغلاق قسم
-  static void onExpand() => HapticPatterns.lightImpact();
+  static void onExpand() => HapticPatterns.light();
 
   /// عند النقر على بطاقة إحصائيات
   static void onStatTap() => HapticPatterns.selection();

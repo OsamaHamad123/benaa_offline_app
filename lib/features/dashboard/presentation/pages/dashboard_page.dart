@@ -8,6 +8,10 @@ import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
 import '../../../../core/widgets/micro_interactions.dart';
+import '../../../../theme/app_colors.dart';
+import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
+import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
+import '../providers.dart';
 import '../../../../core/widgets/charts.dart';
 import '../../../../core/widgets/modern_sliver_app_bar.dart';
 import '../../../../core/widgets/enhanced_refresh_indicator.dart';
@@ -32,6 +36,7 @@ import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../services/dashboard_navigation_service.dart';
+import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 
 /// Dashboard Page - Clean Architecture Version with Navigation
 /// Uses StateNotifier for state management with performance optimizations
@@ -225,7 +230,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 },
                 icon: const Icon(Icons.person_add),
                 label: const Text('إضافة مستفيد'),
-                backgroundColor: AppColors.primary,
+                backgroundColor: DashboardColors.totalBeneficiaries,
                 elevation: 4,
               ),
             )
@@ -300,7 +305,9 @@ class _DashboardHome extends ConsumerWidget {
             SizedBox(height: 16.h),
             Text(
               'خطأ في تحميل الإعدادات',
-              style: TextStyle(fontSize: 16.sp, color: AppColors.error),
+              style: DashboardTextStyles.emptyStateTitle.copyWith(
+                color: AppColors.error,
+              ),
             ),
           ],
         ),
@@ -354,7 +361,7 @@ class _DashboardHome extends ConsumerWidget {
               HapticPatterns.refresh();
               await notifier.refresh();
             },
-            color: AppColors.primary,
+            color: DashboardColors.totalBeneficiaries,
             child: state.isLoadingStats && state.statistics == null
                 ? Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
@@ -481,19 +488,19 @@ class _DashboardHome extends ConsumerWidget {
                 label: 'اليوم',
                 value: 'today',
                 icon: Icons.today,
-                color: AppColors.success,
+                color: DashboardColors.success,
               ),
               FilterChipData(
                 label: 'هذا الأسبوع',
                 value: 'week',
                 icon: Icons.date_range,
-                color: AppColors.primary,
+                color: DashboardColors.totalBeneficiaries,
               ),
               FilterChipData(
                 label: 'تحتاج متابعة',
                 value: 'urgent',
                 icon: Icons.warning_amber,
-                color: AppColors.error,
+                color: DashboardColors.urgent,
               ),
             ],
             selectedFilter: selectedFilter,
@@ -568,7 +575,7 @@ class _DashboardHome extends ConsumerWidget {
                 title: 'نمو المستفيدين (آخر 6 أشهر)',
                 data: trendChartData, // ✅ Memoized data
                 labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
-                lineColor: AppColors.primary,
+                lineColor: DashboardColors.totalBeneficiaries,
               ),
             ),
           ),

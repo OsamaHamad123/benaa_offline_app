@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
+import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
 import '../providers/dashboard_providers.dart';
 import '../providers.dart'; // ✅ Import topGovernoratesProvider
 
@@ -198,16 +199,12 @@ class GeographicDistributionSection extends ConsumerWidget {
             SizedBox(height: 12.h),
             Text(
               'لا توجد بيانات',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+              style: DashboardTextStyles.emptyStateTitle,
             ),
             SizedBox(height: 4.h),
             Text(
               'لم يتم إضافة مستفيدين بعد',
-              style: TextStyle(fontSize: 12.sp, color: AppColors.textHint),
+              style: DashboardTextStyles.emptyStateMessage,
             ),
           ],
         ),

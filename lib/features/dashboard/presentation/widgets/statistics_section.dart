@@ -5,6 +5,8 @@ import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 import 'trend_indicator.dart';
 import '../../../../theme/app_colors.dart';
+import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
+import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
 import '../../../../core/utils/haptic_patterns.dart';
 
 /// Stat Card Widget - Reusable statistics card with Trend Indicator
@@ -49,8 +51,7 @@ class StatCard extends StatelessWidget {
       child: Card(
         elevation: 2,
         shadowColor: color.withOpacity(0.25),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16.r),
@@ -75,8 +76,7 @@ class StatCard extends StatelessWidget {
                   // and on very small tiles. Render a compact horizontal layout
                   // when the available height is too small to fit the full card.
                   // Treat very small heights or very narrow widths as "compact" cases.
-                  if (constraints.maxHeight < 110 ||
-                      constraints.maxWidth < 80) {
+                  if (constraints.maxHeight < 110 || constraints.maxWidth < 80) {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -102,9 +102,8 @@ class StatCard extends StatelessWidget {
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     value,
-                                    style: TextStyle(
+                                    style: DashboardTextStyles.statValue.copyWith(
                                       fontSize: 20.sp,
-                                      fontWeight: FontWeight.bold,
                                       color: color,
                                     ),
                                   ),
@@ -115,9 +114,8 @@ class StatCard extends StatelessWidget {
                                 fit: FlexFit.loose,
                                 child: Text(
                                   title,
-                                  style: TextStyle(
+                                  style: DashboardTextStyles.statLabel.copyWith(
                                     fontSize: 10.sp,
-                                    color: Colors.grey[700],
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -186,9 +184,7 @@ class StatCard extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             value,
-                            style: TextStyle(
-                              fontSize: 28.sp,
-                              fontWeight: FontWeight.bold,
+                            style: DashboardTextStyles.statValue.copyWith(
                               color: color,
                               height: 1.0,
                             ),
@@ -202,9 +198,7 @@ class StatCard extends StatelessWidget {
                         fit: FlexFit.loose,
                         child: Text(
                           title,
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: Colors.grey[700],
+                          style: DashboardTextStyles.statLabel.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 2,
@@ -224,10 +218,9 @@ class StatCard extends StatelessWidget {
                           ),
                           child: Text(
                             subtitle!,
-                            style: TextStyle(
+                            style: DashboardTextStyles.badge.copyWith(
                               fontSize: 10.sp,
                               color: color,
-                              fontWeight: FontWeight.w500,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -296,7 +289,7 @@ class StatisticsGrid extends ConsumerWidget {
           title: 'إجمالي المستفيدين',
           value: '$totalBeneficiaries',
           icon: Icons.people,
-          color: AppColors.info,
+          color: DashboardColors.totalBeneficiaries,
           onTap: onBeneficiariesTap,
         ),
         StatCard(
@@ -310,14 +303,14 @@ class StatisticsGrid extends ConsumerWidget {
           title: 'بانتظار المزامنة',
           value: '$pendingSync',
           icon: Icons.sync_problem,
-          color: pendingSync > 0 ? AppColors.warning : AppColors.textHint,
+          color: pendingSync > 0 ? DashboardColors.warning : AppColors.textHint,
           onTap: onPendingSyncTap,
         ),
         StatCard(
           title: 'الزيارات اليوم',
           value: '$completedVisitsToday',
           icon: Icons.check_circle,
-          color: AppColors.orphan,
+          color: DashboardColors.widows,
         ),
       ],
     );
