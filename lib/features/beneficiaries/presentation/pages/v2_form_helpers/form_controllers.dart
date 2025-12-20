@@ -285,24 +285,6 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _notifyAndScheduleAutoSave();
   }
 
-  /// Add single pending attachment
-  void addPendingAttachment(PendingAttachment attachment) {
-    _pendingAttachments.add(attachment);
-    _pendingAttachmentFiles.add(attachment.file);
-    _notifyAndScheduleAutoSave();
-  }
-
-  /// Remove pending attachment by index
-  void removePendingAttachment(int index) {
-    if (index >= 0 && index < _pendingAttachments.length) {
-      _pendingAttachments.removeAt(index);
-      if (index < _pendingAttachmentFiles.length) {
-        _pendingAttachmentFiles.removeAt(index);
-      }
-      _notifyAndScheduleAutoSave();
-    }
-  }
-
   /// Update living family members
   void updateLivingMembers(List<Map<String, dynamic>> members) {
     _livingMembers.clear();
