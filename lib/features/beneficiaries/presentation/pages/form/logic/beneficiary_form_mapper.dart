@@ -22,86 +22,75 @@ class BeneficiaryFormMapper {
       id: beneficiaryId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       fullName: fullName,
       nationalId: controllers.nationalIdController.text.trim(),
-      
+
       // Parse Gender from string to enum
       gender: _parseGender(controllers.selectedGender),
-      
+
       // Parse Category from string to enum
       category: _parseCategory(controllers.selectedCategory),
-      
+
       // Parse birth date string to DateTime
       birthDate: _parseDateString(controllers.birthDateController.text),
-      
+
       // Family Info
-      motherName: controllers.motherNameController.text.trim().isNotEmpty
-          ? controllers.motherNameController.text.trim()
-          : null,
-      fatherName: controllers.fatherNameController.text.trim().isNotEmpty
-          ? controllers.fatherNameController.text.trim()
-          : null,
+      motherName:
+          controllers.motherNameController.text.trim().isNotEmpty ? controllers.motherNameController.text.trim() : null,
+      fatherName:
+          controllers.fatherNameController.text.trim().isNotEmpty ? controllers.fatherNameController.text.trim() : null,
       grandFatherName: controllers.grandfatherNameController.text.trim().isNotEmpty
           ? controllers.grandfatherNameController.text.trim()
           : null,
-      familyName: controllers.lastNameController.text.trim().isNotEmpty
-          ? controllers.lastNameController.text.trim()
-          : null,
-      
+      familyName:
+          controllers.lastNameController.text.trim().isNotEmpty ? controllers.lastNameController.text.trim() : null,
+
       // Parse relationship from string to int
       relationship: _parseRelationship(controllers.selectedRelationship),
-      
+
       // Parse section from string to int
       sectionId: _parseSection(controllers.selectedSection),
-      
+
       // Contact Info
-      phoneNumber: controllers.phoneController.text.trim().isNotEmpty
-          ? controllers.phoneController.text.trim()
-          : null,
-      altPhoneNumber: controllers.altPhoneController.text.trim().isNotEmpty
-          ? controllers.altPhoneController.text.trim()
-          : null,
-      
+      phoneNumber: controllers.phoneController.text.trim().isNotEmpty ? controllers.phoneController.text.trim() : null,
+      altPhoneNumber:
+          controllers.altPhoneController.text.trim().isNotEmpty ? controllers.altPhoneController.text.trim() : null,
+
       // Parse governorate and district from string to int (if stored as codes)
       governorate: controllers.selectedProvince,
       district: controllers.selectedCity,
-      
-      address: controllers.addressController.text.trim().isNotEmpty
-          ? controllers.addressController.text.trim()
-          : null,
-      currentAddress: controllers.addressController.text.trim().isNotEmpty
-          ? controllers.addressController.text.trim()
-          : null,
+
+      address: controllers.addressController.text.trim().isNotEmpty ? controllers.addressController.text.trim() : null,
+      currentAddress:
+          controllers.addressController.text.trim().isNotEmpty ? controllers.addressController.text.trim() : null,
       addressBeforeDisplacement: controllers.addressBeforeDisplacementController.text.trim().isNotEmpty
           ? controllers.addressBeforeDisplacementController.text.trim()
           : null,
-      
+
       // Additional Info
       fileNo: null, // سيتم توليده من النظام
       associationName: null,
-      
+
       // Parse enums
       maritalStatus: _parseMaritalStatus(controllers.selectedMaritalStatus),
       educationLevel: _parseEducationLevel(controllers.selectedEducationLevel),
       healthStatus: _parseHealthStatus(controllers.selectedHealthStatus) ?? HealthStatus.good,
       hasDisability: controllers.hasDisability,
-      
+
       // Family Details
       familySize: _parseInt(controllers.numberOfDependentsController.text),
       numberOfMales: _parseInt(controllers.numberOfMalesController.text),
       numberOfFemales: _parseInt(controllers.numberOfFemalesController.text),
       chronicDiseasesCount: _parseInt(controllers.chronicDiseasesController.text),
       specialNeedsCount: null, // يمكن حسابه من family members
-      
+
       // Status Fields
       displacementStatus: _parseDisplacementStatus(controllers.selectedDisplacementStatus),
       employmentStatus: _parseEmploymentStatus(controllers.selectedEmploymentStatus),
       housingStatus: _parseHousingStatus(controllers.selectedHousingStatus),
       housingType: _parseHousingType(controllers.selectedHousingType),
       requestStatus: null, // يتم تحديده من النظام
-      
-      notes: controllers.notesController.text.trim().isNotEmpty
-          ? controllers.notesController.text.trim()
-          : null,
-      
+
+      notes: controllers.notesController.text.trim().isNotEmpty ? controllers.notesController.text.trim() : null,
+
       // System Fields
       createdByUser: createdByUser,
       createdAt: beneficiaryId == null ? DateTime.now() : DateTime.now(),
@@ -117,15 +106,15 @@ class BeneficiaryFormMapper {
   }) {
     // Split fullName إلى أجزاء
     final nameParts = beneficiary.fullName.split(' ');
-    
+
     controllers.firstNameController.text = nameParts.isNotEmpty ? nameParts[0] : '';
     controllers.fatherNameController.text = nameParts.length > 1 ? nameParts[1] : '';
     controllers.grandfatherNameController.text = nameParts.length > 2 ? nameParts[2] : '';
     controllers.lastNameController.text = nameParts.length > 3 ? nameParts[3] : '';
     controllers.motherNameController.text = beneficiary.motherName ?? '';
-    
+
     controllers.nationalIdController.text = beneficiary.nationalId;
-    
+
     // Format DateTime to string for birthDate
     if (beneficiary.birthDate != null) {
       controllers.birthDateController.text = _formatDate(beneficiary.birthDate!);
@@ -149,11 +138,11 @@ class BeneficiaryFormMapper {
     controllers.selectedHousingStatus = beneficiary.housingStatus?.arabicLabel;
     controllers.selectedHousingType = beneficiary.housingType?.arabicLabel;
     controllers.hasDisability = beneficiary.hasDisability;
-    
+
     // Convert relationship int to string representation
     controllers.selectedRelationship = beneficiary.relationship?.toString();
     controllers.selectedSection = beneficiary.sectionId?.toString();
-    
+
     // Convert location codes to strings
     controllers.selectedProvince = beneficiary.governorate;
     controllers.selectedCity = beneficiary.district;
