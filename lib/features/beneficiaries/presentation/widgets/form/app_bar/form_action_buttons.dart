@@ -1,0 +1,122 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+/// ⚡ أزرار الإجراءات في AppBar
+///
+/// تتضمن:
+/// - حفظ سريع (Ctrl+S)
+/// - التراجع/الإعادة (Ctrl+Z / Ctrl+Y)
+/// - عرض السجل
+/// - حذف (في وضع التعديل فقط)
+/// - المساعدة
+class FormActionButtons extends StatelessWidget {
+  final VoidCallback onSave;
+  final VoidCallback? onDelete;
+  final VoidCallback onShowHistory;
+  final VoidCallback onShowHelp;
+  final bool canUndo;
+  final bool canRedo;
+  final VoidCallback onUndo;
+  final VoidCallback onRedo;
+  final bool isEditMode;
+
+  const FormActionButtons({
+    super.key,
+    required this.onSave,
+    this.onDelete,
+    required this.onShowHistory,
+    required this.onShowHelp,
+    required this.canUndo,
+    required this.canRedo,
+    required this.onUndo,
+    required this.onRedo,
+    required this.isEditMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // زر الحفظ السريع
+        IconButton(
+          icon: Icon(Icons.save, size: 22.sp),
+          tooltip: 'حفظ (Ctrl+S)',
+          onPressed: onSave,
+        ),
+
+        // زر التراجع
+        IconButton(
+          icon: Icon(Icons.undo, size: 20.sp),
+          tooltip: 'تراجع (Ctrl+Z)',
+          onPressed: canUndo ? onUndo : null,
+        ),
+
+        // زر الإعادة
+        IconButton(
+          icon: Icon(Icons.redo, size: 20.sp),
+          tooltip: 'إعادة (Ctrl+Y)',
+          onPressed: canRedo ? onRedo : null,
+        ),
+
+        // قائمة خيارات إضافية
+        PopupMenuButton<String>(
+          icon: Icon(Icons.more_vert, size: 22.sp),
+          tooltip: 'خيارات',
+          onSelected: (value) {
+            switch (value) {
+              case 'history':
+                onShowHistory();
+                break;
+              case 'delete':
+                onDelete?.call();
+                break;
+              case 'help':
+                onShowHelp();
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              value: 'history',
+              child: Row(
+                children: [
+                  Icon(Icons.history, size: 20.sp),
+                  SizedBox(width: 12.w),
+                  const Text('عرض السجل'),
+                ],
+              ),
+            ),
+            if (isEditMode && onDelete != null) ...[
+              const PopupMenuDivider(),
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 20.sp, color: Colors.red),
+                    SizedBox(width: 12.w),
+                    const Text(
+                      'حذف المستفيد',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'help',
+              child: Row(
+                children: [
+                  Icon(Icons.help_outline, size: 20.sp),
+                  SizedBox(width: 12.w),
+                  const Text('المساعدة'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

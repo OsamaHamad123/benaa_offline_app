@@ -9,7 +9,6 @@ import 'dart:async';
 import '../../../../core/utils/debouncer.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/errors/user_friendly_error.dart';
-import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi ValueListenableBuilder
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
@@ -43,10 +42,8 @@ import 'v2_form_helpers/widgets/success_animation.dart'; // ✅ Success Animatio
 
 // 🚀 Performance-optimized widgets
 import 'v2_form_helpers/widgets/form_error_banner_widget.dart';
-import 'v2_form_helpers/widgets/form_app_bar_widget.dart';
 import 'v2_form_helpers/widgets/form_content_widget.dart';
 import 'v2_form_helpers/widgets/form_bottom_nav_widget.dart';
-import 'v2_form_helpers/widgets/form_progress_widgets.dart'; // 📊 Progress widgets
 
 // 🚀 Phase 3 - Advanced UX Features
 import 'v2_form_helpers/widgets/field_dependency_system.dart'; // 🔗 Field Dependencies
@@ -54,6 +51,11 @@ import 'v2_form_helpers/widgets/smart_field_hints.dart'; // 💡 Smart Hints
 // Disabled for performance: import 'v2_form_helpers/widgets/form_progress_tracker.dart';
 import 'v2_form_helpers/widgets/mobile_quick_actions.dart'; // 📱 Mobile Quick Actions
 import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
+
+// ✨ NEW: Extracted Form Components (Phase 1.3)
+import '../widgets/form/app_bar/beneficiary_form_app_bar.dart';
+import '../widgets/form/actions/save_draft_fab.dart';
+import '../widgets/form/statistics/completion_stats_widget.dart';
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -78,12 +80,10 @@ class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BeneficiaryFormPageV3> createState() =>
-      _BeneficiaryFormPageV3State();
+  ConsumerState<BeneficiaryFormPageV3> createState() => _BeneficiaryFormPageV3State();
 }
 
-class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
-    with SingleTickerProviderStateMixin {
+class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
@@ -105,8 +105,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
   set _lastSaved(DateTime? value) => _lastSavedNotifier.value = value;
 
-  set _hasUnsavedChanges(bool value) =>
-      _hasUnsavedChangesNotifier.value = value;
+  set _hasUnsavedChanges(bool value) => _hasUnsavedChangesNotifier.value = value;
 
   // 💾 Auto-draft ID - ثابت لتجنب إنشاء مسودات متكررة
   String? _autoSaveDraftId;
@@ -206,8 +205,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     if (_controllers.selectedEducationLevel != null) filled++;
 
     // Optional field: family members
-    if (_controllers.livingMembers.isNotEmpty ||
-        _controllers.deceasedMembers.isNotEmpty) filled++;
+    if (_controllers.livingMembers.isNotEmpty || _controllers.deceasedMembers.isNotEmpty) filled++;
 
     return filled;
   }
@@ -221,8 +219,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     _autoSaveDebouncer(() async {
       if (!mounted) return;
 
-      final hasChanges = _controllers.firstNameController.text.isNotEmpty ||
-          _controllers.nationalIdController.text.isNotEmpty;
+      final hasChanges =
+          _controllers.firstNameController.text.isNotEmpty || _controllers.nationalIdController.text.isNotEmpty;
 
       if (!hasChanges) return;
 
@@ -266,9 +264,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
       final firstName = _controllers.firstNameController.text;
       final lastName = _controllers.lastNameController.text;
-      final draftName = firstName.isNotEmpty
-          ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}'
-          : 'مسودة جديدة';
+      final draftName =
+          firstName.isNotEmpty ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}' : 'مسودة جديدة';
 
       await DraftManager.saveDraft(
         draftId: _autoSaveDraftId!,
@@ -300,9 +297,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     setState(() => _isLoading = true);
 
     if (widget.beneficiaryId != null) {
-      await ref
-          .read(beneficiaryFormProvider.notifier)
-          .loadBeneficiary(widget.beneficiaryId!);
+      await ref.read(beneficiaryFormProvider.notifier).loadBeneficiary(widget.beneficiaryId!);
 
       final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
       if (beneficiary != null) {
@@ -315,8 +310,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
       // ✨ ملء البيانات من السجل المدني إذا كانت موجودة
       if (widget.civilRegistryData != null) {
-        debugPrint(
-            '📋 Civil Registry Data received: ${widget.civilRegistryData}');
+        debugPrint('📋 Civil Registry Data received: ${widget.civilRegistryData}');
         // تأخير بسيط للسماح للـ controllers بالتحميل
         Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
@@ -350,8 +344,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       final drafts = await DraftManager.getAllDrafts();
 
       // تصفية المسودات التلقائية فقط
-      final autoSavedDrafts =
-          drafts.where((d) => d['isAutoSaved'] == true).toList();
+      final autoSavedDrafts = drafts.where((d) => d['isAutoSaved'] == true).toList();
 
       if (autoSavedDrafts.isEmpty) return;
 
@@ -857,8 +850,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       }
 
       // Show success message with count
-      debugPrint(
-          '✅ Successfully filled $filledFieldsCount fields from civil registry');
+      debugPrint('✅ Successfully filled $filledFieldsCount fields from civil registry');
 
       if (mounted && filledFieldsCount > 0) {
         // Force UI update
@@ -1062,20 +1054,14 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                       Icon(
                         Icons.inbox_outlined,
                         size: 64.sp,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withOpacity(0.3),
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
                       ),
                       SizedBox(height: 16.h),
                       Text(
                         'لا توجد مسودات محفوظة',
                         style: TextStyle(
                           fontSize: 16.sp,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.6),
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -1141,8 +1127,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                                           true,
                                         ),
                                         child: FilledButton(
-                                          onPressed:
-                                              null, // handled by AnimatedButton
+                                          onPressed: null, // handled by AnimatedButton
                                           style: FilledButton.styleFrom(
                                             backgroundColor: Theme.of(
                                               context,
@@ -1198,8 +1183,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
       // Fill controllers with draft data
       _controllers.firstNameController.text = formData['firstName'] ?? '';
       _controllers.fatherNameController.text = formData['fatherName'] ?? '';
-      _controllers.grandfatherNameController.text =
-          formData['grandfatherName'] ?? '';
+      _controllers.grandfatherNameController.text = formData['grandfatherName'] ?? '';
       _controllers.lastNameController.text = formData['lastName'] ?? '';
       _controllers.motherNameController.text = formData['motherName'] ?? '';
       _controllers.nationalIdController.text = formData['nationalId'] ?? '';
@@ -1299,8 +1283,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
     }
     if (_controllers.nationalIdController.text.trim().isEmpty) {
       basicErrors.add('الرقم الوطني');
-    } else if (_controllers.nationalIdController.text.trim().length !=
-        FormConstants.nationalIdLength) {
+    } else if (_controllers.nationalIdController.text.trim().length != FormConstants.nationalIdLength) {
       basicErrors.add('الرقم الوطني (غير صحيح)');
     }
     if (_controllers.selectedGender == null) {
@@ -1343,8 +1326,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
 
           EnhancedSnackbar.showError(
             context,
-            message:
-                '⚠️ يرجى تعبئة الحقول التالية في "$tabName":\n• ${errorFields.join('\n• ')}',
+            message: '⚠️ يرجى تعبئة الحقول التالية في "$tabName":\n• ${errorFields.join('\n• ')}',
           );
 
           // تحريك التركيز للحقل الأول
@@ -1406,9 +1388,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         return;
       }
 
-      ref
-          .read(beneficiaryFormProvider.notifier)
-          .updateField((_) => beneficiary);
+      ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
       final success = await ref.read(beneficiaryFormProvider.notifier).save();
 
       if (success && mounted) {
@@ -1569,42 +1549,21 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
         child: Scaffold(
           backgroundColor: theme.colorScheme.surface,
 
-          // 📱 AppBar - Separated widget with ValueListenableBuilder
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight + 52),
-            child: ValueListenableBuilder3<bool, DateTime?, bool>(
-              first: _isSavingNotifier,
-              second: _lastSavedNotifier,
-              third: _hasUnsavedChangesNotifier,
-              builder: (context, isSaving, lastSaved, hasUnsavedChanges, _) {
-                return FormAppBarWidget(
-                  beneficiaryId: widget.beneficiaryId,
-                  isSaving: isSaving,
-                  lastSaved: lastSaved,
-                  hasUnsavedChanges: hasUnsavedChanges,
-                  showStatistics: _showStatistics,
-                  showFieldHelpers: _showFieldHelpers,
-                  // onToggleSearch removed - search is local to FormContentWidget
-                  onToggleStatistics: _toggleStatistics,
-                  onToggleFieldHelpers: () {
-                    setState(() => _showFieldHelpers = !_showFieldHelpers);
-                  },
-                  onViewDrafts: _showDraftsList,
-                  onSaveDraft: hasUnsavedChanges ? _handleDraftSave : null,
-                  onShowHelp: () => showKeyboardShortcutsHelp(context),
-                  onDelete: widget.beneficiaryId != null ? _handleDelete : null,
-                  onUndo: _formHistory.canUndo ? _handleUndo : null,
-                  onRedo: _formHistory.canRedo ? _handleRedo : null,
-                  bottom: PreferredSize(
-                    preferredSize: Size.fromHeight(52.h),
-                    child: FormProgressIndicator(
-                      filledFields: _calculateFilledFields(),
-                      totalRequiredFields: 12,
-                    ),
-                  ),
-                );
-              },
-            ),
+          // 📱 AppBar - NEW: Using extracted BeneficiaryFormAppBar
+          appBar: BeneficiaryFormAppBar(
+            isEditMode: widget.beneficiaryId != null,
+            beneficiaryName: widget.beneficiaryId != null ? _controllers.firstNameController.text : null,
+            isSavingNotifier: _isSavingNotifier,
+            lastSavedNotifier: _lastSavedNotifier,
+            hasUnsavedChangesNotifier: _hasUnsavedChangesNotifier,
+            onSave: _handleSave,
+            onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+            onShowHistory: () {}, // TODO: Implement history viewer
+            onShowHelp: () => showKeyboardShortcutsHelp(context),
+            canUndo: _formHistory.canUndo,
+            canRedo: _formHistory.canRedo,
+            onUndo: _handleUndo,
+            onRedo: _handleRedo,
           ),
 
           body: _isLoading
@@ -1653,12 +1612,30 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                       builder: (context, isSaving, _) {
                         return local.LoadingOverlay(
                           isVisible: isSaving || _isDeleting,
-                          message: isSaving
-                              ? FormConstants.savingMessage
-                              : FormConstants.deletingMessage,
+                          message: isSaving ? FormConstants.savingMessage : FormConstants.deletingMessage,
                         );
                       },
                     ),
+
+                    // 📊 Statistics Widget (if visible)
+                    if (_showStatistics)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: CompletionStatsWidget(
+                          overallCompletion: (_calculateFilledFields() / 12 * 100),
+                          completedFields: _calculateFilledFields(),
+                          totalFields: 12,
+                          tabCompletions: {
+                            'البيانات الأساسية': 75.0,
+                            'أفراد الأسرة': 50.0,
+                            'المرفقات': 25.0,
+                            'التقييم': 90.0,
+                          },
+                          onTap: _toggleStatistics,
+                        ),
+                      ),
 
                     // 🎓 Tour Guide
                     if (_showTourGuide)
@@ -1666,32 +1643,27 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                         steps: [
                           TourStep(
                             title: 'مرحباً بك! 👋',
-                            description:
-                                'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
+                            description: 'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
                             icon: Icons.waving_hand,
                           ),
                           TourStep(
                             title: 'التبويبات 📑',
-                            description:
-                                'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
+                            description: 'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
                             icon: Icons.tab,
                           ),
                           TourStep(
                             title: 'كارد التقدم 📊',
-                            description:
-                                'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
+                            description: 'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
                             icon: Icons.analytics,
                           ),
                           TourStep(
                             title: 'حفظ المسودة 💾',
-                            description:
-                                'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
+                            description: 'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
                             icon: Icons.save,
                           ),
                           TourStep(
                             title: 'المراجعة النهائية 📋',
-                            description:
-                                'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
+                            description: 'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
                             icon: Icons.checklist,
                           ),
                         ],
@@ -1717,6 +1689,20 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
                     ),
                   ],
                 ),
+
+          // 💾 NEW: Floating Action Button for quick draft save
+          floatingActionButton: ValueListenableBuilder<bool>(
+            valueListenable: _hasUnsavedChangesNotifier,
+            builder: (context, hasUnsavedChanges, _) {
+              return SaveDraftFAB(
+                onSaveDraft: _handleDraftSave,
+                onQuickSave: _handleSave,
+                onViewDrafts: _showDraftsList,
+                onShowStatistics: _toggleStatistics,
+                hasUnsavedChanges: hasUnsavedChanges,
+              );
+            },
+          ),
         ),
       ),
     );
