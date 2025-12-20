@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 ///
 /// إدارة وضع السمة (فاتح/داكن/تلقائي)
 class ThemeModeSettings {
+  // المفاتيح لحفظ الإعدادات (محجوزة للاستخدام المستقبلي)
+  // ignore: unused_field
   static const String _keyThemeMode = 'theme_mode';
+  // ignore: unused_field
   static const String _keyAutoSwitch = 'auto_switch_theme';
 
   // أوقات التبديل التلقائي

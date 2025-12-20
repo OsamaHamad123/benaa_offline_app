@@ -89,7 +89,7 @@ ThemeData buildDarkTheme() {
     ),
 
     // البطاقات
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: DarkThemeColors.surface,
       elevation: 2,
       shadowColor: Colors.black54,
@@ -157,7 +157,7 @@ ThemeData buildDarkTheme() {
     ),
 
     // التبويبات
-    tabBarTheme: TabBarTheme(
+    tabBarTheme: TabBarThemeData(
       labelColor: DarkThemeColors.primary,
       unselectedLabelColor: DarkThemeColors.onSurfaceVariant,
       indicator: UnderlineTabIndicator(

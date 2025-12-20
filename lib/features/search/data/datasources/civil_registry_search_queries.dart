@@ -123,7 +123,8 @@ class CivilRegistrySearchQueries {
     final stopwatch = Stopwatch()..start();
 
     // Cache key with age filter
-    final cacheKey = '$normalized|$governorate|$genderCode|$minAge|$maxAge|$limit|$offset';
+    final cacheKey =
+        '$normalized|$governorate|$genderCode|$minAge|$maxAge|$limit|$offset';
 
     // Check cache (instant 0-2ms)
     if (_searchCache.containsKey(cacheKey)) {
@@ -222,7 +223,8 @@ class CivilRegistrySearchQueries {
 
         if (thirdWord != null) {
           // ⚡ ENHANCED: Try compound names AND hamza variations
-          final thirdVariations = TextNormalizationService.generateAllSearchVariations(thirdWord);
+          final thirdVariations =
+              TextNormalizationService.generateAllSearchVariations(thirdWord);
 
           if (thirdVariations.length > 1) {
             final placeholders = List.filled(
@@ -239,7 +241,8 @@ class CivilRegistrySearchQueries {
 
         if (fourthWord != null) {
           // ⚡ ENHANCED: Try compound names AND hamza variations
-          final fourthVariations = TextNormalizationService.generateAllSearchVariations(fourthWord);
+          final fourthVariations =
+              TextNormalizationService.generateAllSearchVariations(fourthWord);
 
           if (fourthVariations.length > 1) {
             final placeholders = List.filled(
