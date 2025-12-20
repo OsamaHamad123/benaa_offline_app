@@ -32,14 +32,14 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   }
 
   // ============================================================================
-  // STATISTICS LOADING - With Error Handling
+  // STATISTICS LOADING - With Error Handling and Lazy Loading
   // ============================================================================
 
   Future<void> loadStatistics({bool forceRefresh = false}) async {
     try {
       state = state.copyWith(isLoadingStats: true, errorMessage: null);
 
-      // Load full statistics
+      // ✅ Lazy Loading: تحميل البيانات الأساسية أولاً
       final result = await getDashboardStatistics(forceRefresh: forceRefresh);
 
       if (result is Failure<DashboardStatistics>) {
@@ -55,8 +55,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         lastRefreshTime: DateTime.now(),
       );
 
-      // Load activities after stats
-      await _loadInitialActivities();
+      // ✅ Lazy Loading: تحميل البيانات الثانوية بشكل تدريجي (غير محظور)
+      Future.microtask(() => _loadInitialActivities());
     } catch (e) {
       state = state.copyWith(
         isLoadingStats: false,

@@ -25,28 +25,30 @@ class StatsDashboardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final activePercentage = total > 0 ? (active / total * 100).toInt() : 0;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Container(
-      margin: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
-      padding: EdgeInsets.all(20.w),
+      margin: EdgeInsets.fromLTRB(16.w, isMobile ? 4.h : 8.h, 16.w, 4.h),
+      padding: EdgeInsets.all(isMobile ? 10.w : 16.w),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: [
-            theme.colorScheme.primaryContainer.withOpacity(0.5),
-            theme.colorScheme.secondaryContainer.withOpacity(0.3),
+            theme.colorScheme.primaryContainer.withOpacity(0.4),
+            theme.colorScheme.secondaryContainer.withOpacity(0.2),
           ],
         ),
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(isMobile ? 12.r : 16.r),
         border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withOpacity(0.15),
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: theme.colorScheme.primary.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -59,61 +61,74 @@ class StatsDashboardWidget extends StatelessWidget {
               Icon(
                 Icons.bar_chart_rounded,
                 color: theme.colorScheme.primary,
-                size: 28.sp,
+                size: isMobile ? 18.sp : 24.sp,
               ),
-              SizedBox(width: 8.w),
-              Text(
-                'إحصائيات الكفالات',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
+              SizedBox(width: 6.w),
+              Flexible(
+                child: Text(
+                  'إحصائيات الكفالات',
+                  style: (isMobile ? theme.textTheme.titleSmall : theme.textTheme.titleMedium)?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 20.h),
+          SizedBox(height: isMobile ? 8.h : 12.h),
 
           // Stats Cards Grid
-          GridView.count(
-            crossAxisCount: 4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12.w,
-            crossAxisSpacing: 12.w,
-            childAspectRatio: 0.85,
-            children: [
-              StatCard(
-                icon: Icons.handshake_rounded,
-                label: 'إجمالي',
-                value: '$total',
-                color: theme.colorScheme.primary,
-              ),
-              StatCard(
-                icon: Icons.check_circle_rounded,
-                label: 'نشطة',
-                value: '$active',
-                color: Colors.green,
-              ),
-              StatCard(
-                icon: Icons.pause_circle_rounded,
-                label: 'موقوفة',
-                value: '$paused',
-                color: Colors.orange,
-              ),
-              StatCard(
-                icon: Icons.cancel_rounded,
-                label: 'منتهية',
-                value: '$ended',
-                color: theme.colorScheme.error,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Responsive: تحديد عدد الأعمدة حسب العرض
+              final crossAxisCount = constraints.maxWidth < 600
+                  ? 2 // Mobile: عمودين
+                  : constraints.maxWidth < 900
+                      ? 4 // Tablet: 4 أعمدة
+                      : 4; // Desktop: 4 أعمدة
+
+              return GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: isMobile ? 4.w : 8.w,
+                crossAxisSpacing: isMobile ? 4.w : 8.w,
+                childAspectRatio: crossAxisCount == 2 ? 1.4 : 1.0,
+                children: [
+                  StatCard(
+                    icon: Icons.handshake_rounded,
+                    label: 'إجمالي',
+                    value: '$total',
+                    color: theme.colorScheme.primary,
+                  ),
+                  StatCard(
+                    icon: Icons.check_circle_rounded,
+                    label: 'نشطة',
+                    value: '$active',
+                    color: Colors.green,
+                  ),
+                  StatCard(
+                    icon: Icons.pause_circle_rounded,
+                    label: 'موقوفة',
+                    value: '$paused',
+                    color: Colors.orange,
+                  ),
+                  StatCard(
+                    icon: Icons.cancel_rounded,
+                    label: 'منتهية',
+                    value: '$ended',
+                    color: theme.colorScheme.error,
+                  ),
+                ],
+              );
+            },
           ),
 
           // Financial Summary (if available)
           if (totalAmount != null) ...[
-            SizedBox(height: 16.h),
+            SizedBox(height: isMobile ? 10.h : 16.h),
             Container(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.all(isMobile ? 10.w : 16.w),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface.withOpacity(0.6),
                 borderRadius: BorderRadius.circular(12.r),

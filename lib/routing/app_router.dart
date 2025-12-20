@@ -29,6 +29,12 @@ import '../features/visits/presentation/pages/visits_list_page_m3.dart';
 import '../features/associations/presentation/pages/associations_list_page_v2.dart';
 import '../features/kafalat/presentation/pages/kafalat_page.dart';
 import '../features/kafalat/presentation/pages/kafalat_import_page.dart';
+import '../features/kafalat/presentation/pages/sponsorship_charts_page.dart';
+import '../features/kafalat/presentation/pages/advanced_filters_page.dart';
+import '../features/kafalat/presentation/pages/export_page.dart';
+import '../features/kafalat/presentation/pages/smart_notifications_page.dart';
+import '../features/kafalat/presentation/pages/theme_settings_page.dart';
+import '../features/kafalat/presentation/pages/additional_features_pages.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
 import '../core/settings/enhanced_settings_page.dart';
 import '../core/storage/secure_store.dart';
@@ -50,8 +56,7 @@ Page<T> _buildPageWithTransition<T>({
           return FadeTransition(opacity: animation, child: child);
         case PageTransitionType.slideFromBottom:
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                .animate(
+            position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(
               CurvedAnimation(
                 parent: animation,
                 curve: AppCurves.pageEnter,
@@ -61,8 +66,7 @@ Page<T> _buildPageWithTransition<T>({
           );
         case PageTransitionType.slideFromRight:
           return SlideTransition(
-            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-                .animate(
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(
               CurvedAnimation(
                 parent: animation,
                 curve: AppCurves.pageEnter,
@@ -95,11 +99,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isGoingToLogin = state.matchedLocation == '/login';
 
       // السماح بالذهاب لصفحات التهيئة والتحميل
-      if (isGoingToAppInit ||
-          isGoingToInit ||
-          isGoingToWelcome ||
-          isGoingToDownload ||
-          isGoingToDbDownload) {
+      if (isGoingToAppInit || isGoingToInit || isGoingToWelcome || isGoingToDownload || isGoingToDbDownload) {
         return null;
       }
 
@@ -249,6 +249,56 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           type: PageTransitionType.slideFromRight,
         ),
+      ),
+
+      // 🚀 Kafalat Advanced Features Routes
+      GoRoute(
+        path: '/kafalat/charts',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const SponsorshipChartsPage(),
+          state: state,
+          type: PageTransitionType.fade,
+        ),
+      ),
+      GoRoute(
+        path: '/kafalat/filters',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const AdvancedFiltersPage(),
+          state: state,
+          type: PageTransitionType.slideFromBottom,
+        ),
+      ),
+      GoRoute(
+        path: '/kafalat/export',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const ExportPage(),
+          state: state,
+          type: PageTransitionType.fade,
+        ),
+      ),
+      GoRoute(
+        path: '/kafalat/notifications',
+        builder: (context, state) => const SmartNotificationsPage(),
+      ),
+      GoRoute(
+        path: '/kafalat/themes',
+        builder: (context, state) => const ThemeSettingsPage(),
+      ),
+      GoRoute(
+        path: '/kafalat/sync',
+        builder: (context, state) => const SyncSettingsPage(),
+      ),
+      GoRoute(
+        path: '/kafalat/permissions',
+        builder: (context, state) => const PermissionsPage(),
+      ),
+      GoRoute(
+        path: '/kafalat/mobile-features',
+        builder: (context, state) => const MobileFeaturesPage(),
+      ),
+      GoRoute(
+        path: '/kafalat/advanced-dashboard',
+        builder: (context, state) => const AdvancedDashboardPage(),
       ),
       GoRoute(
         path: '/kafalat/import',

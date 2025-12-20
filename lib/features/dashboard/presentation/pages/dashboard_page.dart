@@ -25,12 +25,13 @@ import '../widgets/geographic_distribution_section.dart';
 import '../widgets/daily_performance_section.dart';
 import '../widgets/dashboard_summary_widget.dart';
 import '../widgets/advanced_filters_widget.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/settings/enhanced_settings_page.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/utils/haptic_patterns.dart';
+import '../widgets/dashboard_widgets.dart';
+import '../services/dashboard_navigation_service.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
 /// Uses StateNotifier for state management with performance optimizations
@@ -92,8 +93,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   void _listenToConnectivity() {
-    _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
       if (mounted) {
         final wasOffline = !_isOnline;
         final isNowOnline = !result.contains(ConnectivityResult.none);
@@ -217,13 +217,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       floatingActionButton: _selectedIndex == 0
           ? MicroInteractions.bounceButton(
               onTap: () {
-                HapticPatterns.submit();
-                context.push('/beneficiaries/add');
+                DashboardNavigationService.navigateToAddBeneficiary(context);
               },
               child: FloatingActionButton.extended(
                 onPressed: () {
-                  HapticPatterns.submit();
-                  context.push('/beneficiaries/add');
+                  DashboardNavigationService.navigateToAddBeneficiary(context);
                 },
                 icon: const Icon(Icons.person_add),
                 label: const Text('إضافة مستفيد'),
@@ -315,6 +313,11 @@ class _DashboardHome extends ConsumerWidget {
     final notifier = ref.read(dashboardProvider.notifier);
     final padding = ResponsiveUtils.getResponsivePadding(context);
 
+    // Selective watching: يعيد build فقط عند تغيير pendingTasks
+    final pendingTasksCount = ref.watch(
+      dashboardProvider.select((state) => state.todayStats?.pendingTasks),
+    );
+
     return CustomScrollView(
       slivers: [
         // Modern App Bar - مكون موحد قابل لإعادة الاستخدام
@@ -326,20 +329,18 @@ class _DashboardHome extends ConsumerWidget {
               icon: Icons.search_rounded,
               tooltip: 'البحث',
               iconSize: 28,
-              onPressed: () => context.push('/beneficiaries'),
+              onPressed: () => DashboardNavigationService.navigateToBeneficiariesList(context),
             ),
             ModernActionButton(
               icon: Icons.notifications_outlined,
               tooltip: 'الإشعارات',
               iconSize: 28,
-              badge: state.todayStats?.pendingTasks,
+              badge: pendingTasksCount,
               onPressed: () {
-                final count = state.todayStats?.pendingTasks ?? 0;
+                final count = pendingTasksCount ?? 0;
                 EnhancedSnackbar.showInfo(
                   context,
-                  message: count > 0
-                      ? 'لديك $count مهمة معلقة'
-                      : 'لا توجد مهام معلقة',
+                  message: count > 0 ? 'لديك $count مهمة معلقة' : 'لا توجد مهام معلقة',
                 );
               },
             ),
@@ -356,8 +357,7 @@ class _DashboardHome extends ConsumerWidget {
             color: AppColors.primary,
             child: state.isLoadingStats && state.statistics == null
                 ? Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                     child: Column(
                       children: List.generate(
                         3,
@@ -402,54 +402,16 @@ class _DashboardHome extends ConsumerWidget {
     final stats = state.statistics;
     if (stats == null) return const SizedBox();
 
+    // ✅ Memoization: استخدام cached chart data
+    final trendChartData = ref.watch(trendChartDataProvider);
+
     return SingleChildScrollView(
       padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Offline Indicator Banner
-          if (!isOnline)
-            Container(
-              margin: EdgeInsets.only(bottom: 16.h),
-              padding: EdgeInsets.all(12.w),
-              decoration: BoxDecoration(
-                color: AppColors.warning.withOpacity(0.08),
-                border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.wifi_off,
-                    color: AppColors.warningDark,
-                    size: 20.sp,
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'وضع عدم الاتصال',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.warningDark,
-                          ),
-                        ),
-                        Text(
-                          'يمكنك العمل حالياً وسيتم المزامنة عند عودة الاتصال',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppColors.warning,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          if (!isOnline) const OfflineBanner(),
 
           // Welcome Banner (First time users)
           if (showWelcomeBanner)
@@ -457,7 +419,7 @@ class _DashboardHome extends ConsumerWidget {
               userName: 'المستخدم',
               message: 'مرحباً بك في منظومة بناء',
               onGetStarted: () {
-                context.push('/beneficiaries/add');
+                DashboardNavigationService.navigateToAddBeneficiary(context);
               },
               onDismiss: onWelcomeDismiss,
             ),
@@ -468,7 +430,7 @@ class _DashboardHome extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: _SectionTitle(
+                child: const SectionTitle(
                   title: 'التصنيفات السريعة',
                   icon: Icons.filter_alt,
                 ),
@@ -492,9 +454,7 @@ class _DashboardHome extends ConsumerWidget {
                   // Advanced Filters
                   IconButton(
                     icon: Badge(
-                      isLabelVisible: selectedCategory != null ||
-                          selectedGovernorate != null ||
-                          syncedOnly != null,
+                      isLabelVisible: selectedCategory != null || selectedGovernorate != null || syncedOnly != null,
                       label: Text(
                         '${(selectedCategory != null ? 1 : 0) + (selectedGovernorate != null ? 1 : 0) + (syncedOnly != null ? 1 : 0)}',
                       ),
@@ -511,7 +471,7 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 8.h),
 
           FilterChipGroup(
-            filters: [
+            filters: const [
               FilterChipData(
                 label: 'الكل',
                 value: 'all',
@@ -549,95 +509,89 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 24.h),
 
           // Dashboard Summary Widget - لوحة المعلومات المصغرة
-          FadeSlideTransition(
-            duration: AppDurations.fast,
-            child: const DashboardSummaryWidget(),
+          RepaintBoundary(
+            child: FadeSlideTransition(
+              duration: AppDurations.fast,
+              delay: const Duration(milliseconds: 0), // ✅ Stagger: أول widget
+              child: const DashboardSummaryWidget(),
+            ),
           ),
 
           SizedBox(height: 24.h),
 
           // Section: Quick Actions (الأكثر استخداماً - في الأعلى)
-          _SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
+          const SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
           SizedBox(height: 12.h),
-          QuickActionsGrid(
-            onAddBeneficiaryTap: () {
-              HapticPatterns.submit();
-              context.push('/beneficiaries/add');
-            },
-            onKafalatTap: () {
-              HapticPatterns.selection();
-              context.push('/kafalat');
-            },
-            onSearchTap: () {
-              HapticPatterns.selection();
-              context.push('/beneficiaries');
-            },
-            onSyncTap: () {
-              HapticPatterns.selection();
-              context.push('/sync');
-            },
-            onReportsTap: () {
-              HapticPatterns.selection();
-              context.push('/reports');
-            },
-            onCivilRegistryTap: () {
-              HapticPatterns.selection();
-              context.push('/search');
-            },
-            onVisitsTap: () {
-              HapticPatterns.selection();
-              context.push('/visits');
-            },
-            onAssociationsTap: () {
-              HapticPatterns.selection();
-              context.push('/associations');
-            },
-            syncBadge: stats.pendingSync,
-            reportsBadge: null,
+          FadeSlideTransition(
+            duration: AppDurations.fast,
+            delay: const Duration(milliseconds: 50), // ✅ Stagger: ثاني widget
+            child: QuickActionsGrid(
+              onAddBeneficiaryTap: () {
+                DashboardNavigationService.navigateToAddBeneficiary(context);
+              },
+              onKafalatTap: () {
+                DashboardNavigationService.navigateToKafalat(context);
+              },
+              onSearchTap: () {
+                DashboardNavigationService.navigateToBeneficiariesList(context);
+              },
+              onSyncTap: () {
+                DashboardNavigationService.navigateToSync(context);
+              },
+              onReportsTap: () {
+                DashboardNavigationService.navigateToReports(context);
+              },
+              onCivilRegistryTap: () {
+                DashboardNavigationService.navigateToCivilRegistry(context);
+              },
+              onVisitsTap: () {
+                DashboardNavigationService.navigateToVisits(context);
+              },
+              onAssociationsTap: () {
+                DashboardNavigationService.navigateToAssociations(context);
+              },
+              syncBadge: stats.pendingSync,
+              reportsBadge: null,
+            ),
           ),
-
-          SizedBox(height: 24.h),
-
           // 📊 Interactive Charts Section - NEW!
-          _SectionTitle(title: 'الإحصائيات التفاعلية', icon: Icons.bar_chart),
+          const SectionTitle(title: 'الإحصائيات التفاعلية', icon: Icons.bar_chart),
           SizedBox(height: 12.h),
 
           // Trend Line Chart
-          FadeSlideTransition(
-            duration: AppDurations.normal,
-            slideOffset: const Offset(0, 0.2),
-            child: TrendLineChart(
-              title: 'نمو المستفيدين (آخر 6 أشهر)',
-              data: [
-                stats.totalBeneficiaries * 0.5,
-                stats.totalBeneficiaries * 0.65,
-                stats.totalBeneficiaries * 0.75,
-                stats.totalBeneficiaries * 0.85,
-                stats.totalBeneficiaries * 0.92,
-                stats.totalBeneficiaries.toDouble(),
-              ],
-              labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
-              lineColor: AppColors.primary,
+          RepaintBoundary(
+            child: FadeSlideTransition(
+              duration: AppDurations.normal,
+              delay: const Duration(milliseconds: 100), // ✅ Stagger: ثالث widget
+              slideOffset: const Offset(0, 0.2),
+              child: TrendLineChart(
+                title: 'نمو المستفيدين (آخر 6 أشهر)',
+                data: trendChartData, // ✅ Memoized data
+                labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
+                lineColor: AppColors.primary,
+              ),
             ),
           ),
 
           SizedBox(height: 24.h),
 
           // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
-          _SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
+          const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
           SizedBox(height: 12.h),
           ScaleTransitionWidget(
             duration: AppDurations.fast,
+            delay: const Duration(milliseconds: 150), // ✅ Stagger
             child: const UrgentCasesSection(),
           ),
 
           SizedBox(height: 24.h),
 
           // Section: Daily Performance - مؤشر الأداء اليومي
-          _SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
+          const SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
           SizedBox(height: 12.h),
           ScaleTransitionWidget(
             duration: AppDurations.fast,
+            delay: const Duration(milliseconds: 200), // ✅ Stagger
             child: const DailyPerformanceSection(),
           ),
 
@@ -647,10 +601,10 @@ class _DashboardHome extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _SectionTitle(title: 'الأنشطة الحديثة', icon: Icons.history),
+              const SectionTitle(title: 'الأنشطة الحديثة', icon: Icons.history),
               TextButton.icon(
                 onPressed: () {
-                  context.push('/activities');
+                  DashboardNavigationService.navigateToAllActivities(context);
                 },
                 icon: const Icon(Icons.arrow_forward, size: 16),
                 label: const Text('عرض الكل'),
@@ -668,7 +622,7 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 24.h),
 
           // Section: Charts (قابلة للطي)
-          _CollapsibleSection(
+          CollapsibleSection(
             title: 'إحصائيات النمو',
             icon: Icons.trending_up,
             child: Column(
@@ -684,7 +638,7 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 24.h),
 
           // Section: Geographic Distribution (قابلة للطي)
-          _CollapsibleSection(
+          CollapsibleSection(
             title: 'التوزيع الجغرافي',
             icon: Icons.map,
             child: Column(
@@ -698,112 +652,6 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 32.h),
         ],
       ),
-    );
-  }
-}
-
-/// Collapsible Section Widget
-class _CollapsibleSection extends StatefulWidget {
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  const _CollapsibleSection({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  @override
-  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
-}
-
-class _CollapsibleSectionState extends State<_CollapsibleSection> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero, // إزالة المسافة الخارجية
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: AppColors.divider.withOpacity(0.2)),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          leading: Container(
-            padding: EdgeInsets.all(8.w),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withOpacity(0.2),
-                  AppColors.orphan.withOpacity(0.2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: Icon(widget.icon, size: 20.sp, color: AppColors.primary),
-          ),
-          title: Text(
-            widget.title,
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold),
-          ),
-          trailing: AnimatedRotation(
-            turns: _isExpanded ? 0.5 : 0,
-            duration: const Duration(milliseconds: 200),
-            child: const Icon(Icons.expand_more),
-          ),
-          onExpansionChanged: (expanded) {
-            setState(() {
-              _isExpanded = expanded;
-            });
-            HapticPatterns.selection();
-          },
-          children: [
-            Padding(padding: EdgeInsets.all(16.w), child: widget.child),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Section Title Widget with Icon
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  final IconData icon;
-
-  const _SectionTitle({required this.title, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.all(8.w),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.primary.withOpacity(0.2),
-                AppColors.orphan.withOpacity(0.2),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Icon(icon, size: 20.sp, color: AppColors.primary),
-        ),
-        SizedBox(width: 12.w),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
     );
   }
 }

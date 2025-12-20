@@ -35,6 +35,10 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
   String _query = '';
   SortOption _sortOption = SortOption.dateNewest;
 
+  // حالة إظهار الإحصائيات والفلاتر
+  bool _showStats = false;
+  bool _showFilters = false;
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -133,48 +137,170 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
 
     return Column(
       children: [
-        // Stats Dashboard
+        // شريط مبسط للإحصائيات مع زر الإظهار/الإخفاء
         sponsorshipsAsync.when(
           data: (allRows) {
             final total = allRows.length;
             final active = allRows.where((r) => r.sponsorship.status == 'active').length;
-            final paused = allRows.where((r) => r.sponsorship.status == 'paused').length;
-            final ended = allRows.where((r) => r.sponsorship.status == 'ended').length;
 
-            final totalAmount = allRows
-                .where((r) => r.sponsorship.status == 'active' && r.sponsorship.amount != null)
-                .fold<double>(0, (sum, r) => sum + r.sponsorship.amount!);
-
-            return StatsDashboardWidget(
-              total: total,
-              active: active,
-              paused: paused,
-              ended: ended,
-              totalAmount: totalAmount > 0 ? totalAmount : null,
-              currency: 'IQD',
+            return Column(
+              children: [
+                // شريط مختصر
+                Container(
+                  margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.handshake_rounded, color: theme.colorScheme.primary, size: 20.sp),
+                      SizedBox(width: 8.w),
+                      Text(
+                        'الإجمالي: $total',
+                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      SizedBox(width: 12.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          'نشطة: $active',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // زر إظهار الإحصائيات الكاملة
+                      IconButton(
+                        icon: Icon(
+                          _showStats ? Icons.expand_less : Icons.expand_more,
+                          size: 20.sp,
+                        ),
+                        onPressed: () => setState(() => _showStats = !_showStats),
+                        tooltip: _showStats ? 'إخفاء التفاصيل' : 'عرض التفاصيل',
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                ),
+                // الإحصائيات الكاملة (قابلة للطي)
+                if (_showStats) SizedBox(height: 8.h),
+                if (_showStats)
+                  StatsDashboardWidget(
+                    total: total,
+                    active: active,
+                    paused: allRows.where((r) => r.sponsorship.status == 'paused').length,
+                    ended: allRows.where((r) => r.sponsorship.status == 'ended').length,
+                    totalAmount: allRows
+                        .where((r) => r.sponsorship.status == 'active' && r.sponsorship.amount != null)
+                        .fold<double>(0, (sum, r) => sum + r.sponsorship.amount!),
+                  ),
+              ],
             );
           },
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
         ),
 
-        // Quick Filters Bar
+        // الفلاتر المدمجة (صف واحد مبسط)
         associationsAsync.when(
           data: (associations) {
-            return QuickFiltersBar(
-              selectedStatus: _status,
-              selectedType: _type,
-              selectedAssociationId: _associationId,
-              associations: associations.map((a) => (id: a.id, name: a.name)).toList(),
-              onStatusChanged: (v) => setState(() => _status = v),
-              onTypeChanged: (v) => setState(() => _type = v),
-              onAssociationChanged: (v) => setState(() => _associationId = v),
-              onClearFilters: _clearFilters,
+            return Container(
+              margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+              child: Row(
+                children: [
+                  // زر الفلاتر
+                  InkWell(
+                    onTap: () => setState(() => _showFilters = !_showFilters),
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                      decoration: BoxDecoration(
+                        color: _showFilters || _hasActiveFilters
+                            ? theme.colorScheme.primary.withOpacity(0.15)
+                            : theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: _hasActiveFilters ? theme.colorScheme.primary : theme.dividerColor,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.filter_list,
+                            size: 18.sp,
+                            color: _hasActiveFilters ? theme.colorScheme.primary : null,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'فلاتر',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: _hasActiveFilters ? FontWeight.w600 : null,
+                              color: _hasActiveFilters ? theme.colorScheme.primary : null,
+                            ),
+                          ),
+                          if (_hasActiveFilters) SizedBox(width: 4.w),
+                          if (_hasActiveFilters)
+                            Container(
+                              padding: EdgeInsets.all(4.r),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '•',
+                                style: TextStyle(color: Colors.white, fontSize: 8.sp),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_hasActiveFilters) SizedBox(width: 8.w),
+                  if (_hasActiveFilters)
+                    TextButton.icon(
+                      onPressed: _clearFilters,
+                      icon: const Icon(Icons.clear, size: 16),
+                      label: const Text('مسح'),
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                      ),
+                    ),
+                ],
+              ),
             );
           },
           loading: () => const SizedBox.shrink(),
           error: (_, __) => const SizedBox.shrink(),
         ),
+
+        // لوحة الفلاتر الكاملة (قابلة للطي)
+        if (_showFilters)
+          associationsAsync.when(
+            data: (associations) {
+              return QuickFiltersBar(
+                selectedStatus: _status,
+                selectedType: _type,
+                selectedAssociationId: _associationId,
+                associations: associations.map((a) => (id: a.id, name: a.name)).toList(),
+                onStatusChanged: (v) => setState(() => _status = v),
+                onTypeChanged: (v) => setState(() => _type = v),
+                onAssociationChanged: (v) => setState(() => _associationId = v),
+                onClearFilters: _clearFilters,
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
 
         // Search & Sorting Row
         Padding(
