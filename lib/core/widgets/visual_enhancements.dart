@@ -181,7 +181,7 @@ class RippleCard extends StatelessWidget {
   }
 }
 
-/// 🌈 Gradient Background
+///  Gradient Background
 class GradientBackground extends StatelessWidget {
   final Widget child;
   final List<Color>? colors;
