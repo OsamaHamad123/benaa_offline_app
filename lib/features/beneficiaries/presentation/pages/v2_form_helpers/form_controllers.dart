@@ -202,6 +202,23 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final List<PendingAttachment> _pendingAttachments = [];
   List<PendingAttachment> get pendingAttachments => _pendingAttachments;
 
+  // 🆕 Notifier for pending attachments
+  final ValueNotifier<List<PendingAttachment>> pendingAttachmentsNotifier = ValueNotifier(const []);
+
+  /// Add pending attachment with metadata
+  void addPendingAttachment(PendingAttachment attachment) {
+    _pendingAttachments.add(attachment);
+    pendingAttachmentsNotifier.value = List.unmodifiable(_pendingAttachments);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Remove pending attachment
+  void removePendingAttachment(PendingAttachment attachment) {
+    _pendingAttachments.remove(attachment);
+    pendingAttachmentsNotifier.value = List.unmodifiable(_pendingAttachments);
+    _notifyAndScheduleAutoSave();
+  }
+
   // 👨‍👩‍👧‍👦 Family members data (living and deceased)
   final List<Map<String, dynamic>> _livingMembers = [];
   List<Map<String, dynamic>> get livingMembers => _livingMembers;

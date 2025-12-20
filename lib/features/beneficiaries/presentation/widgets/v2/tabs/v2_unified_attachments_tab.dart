@@ -2,22 +2,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../../attachments/presentation/widgets/attachments_section_enhanced.dart';
-import '../../../../../attachments/presentation/widgets/enhanced_pending_attachments_section.dart'; // 🆕 Use enhanced version
+import '../../../../../attachments/domain/models/pending_attachment.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
+import '../../form/attachments/enhanced_upload_card.dart';
+import '../../form/attachments/organized_attachments_card.dart';
 
-/// 📎 تبويب المرفقات الموحد
+/// 📎 تبويب المرفقات الموحد - المحسّن
 ///
-/// يحتوي على جميع مرفقات المستفيد في مكان واحد:
-/// ✅ مرفقات المستفيد الرئيسية
-/// ✅ مرفقات الأيتام (لكل يتيم)
-/// ✅ مرفقات الوالدين المتوفيين (شهادات وفاة، وثائق)
-///
-/// فوائد التصميم الموحد:
-/// - سهولة الإدارة: كل المرفقات في مكان واحد
-/// - تجربة أفضل: لا تشتت للمستخدم
-/// - أداء أفضل: تحميل واحد بدل متعدد
-class V2UnifiedAttachmentsTab extends ConsumerWidget {
+/// يحتوي على:
+/// ✅ نظام رفع محسّن مع اختيار نوع الوثيقة والشخص
+/// ✅ عرض منظم للمرفقات حسب الشخص
+/// ✅ دعم أنواع مختلفة من الوثائق
+class V2UnifiedAttachmentsTab extends ConsumerStatefulWidget {
   final String? beneficiaryId;
   final List<File>? pendingFiles;
   final Function(List<File>)? onPendingFilesChanged;
@@ -32,53 +28,79 @@ class V2UnifiedAttachmentsTab extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<V2UnifiedAttachmentsTab> createState() => _V2UnifiedAttachmentsTabState();
+}
+
+class _V2UnifiedAttachmentsTabState extends ConsumerState<V2UnifiedAttachmentsTab> {
+  @override
+  Widget build(BuildContext context) {
+    // Get available family members for dropdown
+    final familyMembers = _getAvailableFamilyMembers();
+
     return ListView(
       padding: EdgeInsets.all(16.w),
-      physics: const ClampingScrollPhysics(), // ⚡ Smooth scroll
-      cacheExtent: 100, // ⚡ Reduce repaints
+      physics: const ClampingScrollPhysics(),
       children: [
-        // 📄 مرفقات المستفيد الرئيسية
-        _MainBeneficiaryAttachmentsSection(
-          beneficiaryId: beneficiaryId,
-          pendingFiles: pendingFiles,
-          onPendingFilesChanged: onPendingFilesChanged,
-          formControllers: formControllers, // 🆕 Pass formControllers
+        // 📤 Enhanced Upload Card
+        EnhancedUploadAttachmentCard(
+          availableFamilyMembers: familyMembers,
+          onAttachmentAdded: (attachment) {
+            if (widget.formControllers != null) {
+              widget.formControllers!.addPendingAttachment(attachment);
+            }
+          },
         ),
 
-        SizedBox(height: 16.h),
+        SizedBox(height: 24.h),
 
-        // 🪦 مرفقات الوالدين المتوفيين
-        if (formControllers != null)
-          ValueListenableBuilder<List<Map<String, dynamic>>>(
-            valueListenable: formControllers!.deceasedMembersNotifier,
-            builder: (context, deceasedMembers, _) {
-              if (deceasedMembers.isEmpty) return const SizedBox.shrink();
-              return _DeceasedParentsAttachmentsSection(
-                formControllers: formControllers!,
-              );
-            },
-          ),
-
-        SizedBox(height: 16.h),
-
-        // 👶 مرفقات الأيتام
-        if (formControllers != null)
-          ValueListenableBuilder<List<Map<String, dynamic>>>(
-            valueListenable: formControllers!.livingMembersNotifier,
-            builder: (context, livingMembers, _) {
-              if (livingMembers.isEmpty) return const SizedBox.shrink();
-              return _OrphansAttachmentsSection(
-                formControllers: formControllers!,
+        // 📋 Organized Attachments Display
+        if (widget.formControllers != null)
+          ValueListenableBuilder<List<PendingAttachment>>(
+            valueListenable: widget.formControllers!.pendingAttachmentsNotifier,
+            builder: (context, attachments, _) {
+              return OrganizedAttachmentsCard(
+                attachments: attachments,
+                onDelete: (attachment) {
+                  widget.formControllers!.removePendingAttachment(attachment);
+                },
               );
             },
           ),
       ],
     );
   }
+
+  List<String> _getAvailableFamilyMembers() {
+    if (widget.formControllers == null) return [];
+
+    final members = <String>[];
+
+    // Add living members
+    for (final member in widget.formControllers!.livingMembers) {
+      final name = _getMemberName(member);
+      if (name.isNotEmpty) {
+        members.add(name);
+      }
+    }
+
+    // Add deceased members
+    for (final member in widget.formControllers!.deceasedMembers) {
+      final name = _getMemberName(member);
+      if (name.isNotEmpty) {
+        members.add('$name (متوفي)');
+      }
+    }
+
+    return members;
+  }
+
+  String _getMemberName(Map<String, dynamic> member) {
+    final firstName = member['firstName'] ?? '';
+    final lastName = member['lastName'] ?? '';
+    return '$firstName $lastName'.trim();
+  }
 }
 
-/// 📄 قسم مرفقات المستفيد الرئيسية
 class _MainBeneficiaryAttachmentsSection extends StatelessWidget {
   final String? beneficiaryId;
   final List<File>? pendingFiles;
