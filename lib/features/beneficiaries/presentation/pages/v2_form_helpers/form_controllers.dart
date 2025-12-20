@@ -37,6 +37,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final notesController = TextEditingController();
   final chronicDiseasesController = TextEditingController();
   final addressBeforeDisplacementController = TextEditingController();
+  final createdByUserController = TextEditingController(); // 🆕 اسم المستخدم المدخل
 
   // 🔥 CRITICAL FIX: Prevent rebuild on every keystroke
   // Only notify on dropdown/switch changes, NOT on text input
@@ -428,6 +429,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     notesController.dispose();
     chronicDiseasesController.dispose();
     addressBeforeDisplacementController.dispose();
+    createdByUserController.dispose(); // 🆕 Dispose createdByUser controller
 
     livingMembersNotifier.dispose();
     deceasedMembersNotifier.dispose();
