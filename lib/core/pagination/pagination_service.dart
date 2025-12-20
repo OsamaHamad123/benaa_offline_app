@@ -62,8 +62,7 @@ class PaginationService {
     int pageSize,
   ) {
     final offset = getOffset(page, pageSize);
-    return query
-      ..limit(pageSize, offset: offset);
+    return query..limit(pageSize, offset: offset);
   }
 }
 

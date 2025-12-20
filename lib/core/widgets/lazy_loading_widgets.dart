@@ -60,9 +60,7 @@ class _LazyLoadingListState<T> extends State<LazyLoadingList<T>> {
     final position = _scrollController.position;
     final threshold = position.maxScrollExtent * widget.loadMoreThreshold;
 
-    if (position.pixels >= threshold &&
-        !widget.isLoading &&
-        widget.hasMore) {
+    if (position.pixels >= threshold && !widget.isLoading && widget.hasMore) {
       widget.onLoadMore();
     }
   }
@@ -223,9 +221,7 @@ class _LazyLoadedGridState<T> extends State<LazyLoadedGrid<T>> {
     final position = _scrollController.position;
     final threshold = position.maxScrollExtent * 0.8;
 
-    if (position.pixels >= threshold &&
-        !widget.isLoading &&
-        widget.hasMore) {
+    if (position.pixels >= threshold && !widget.isLoading && widget.hasMore) {
       widget.onLoadMore();
     }
   }

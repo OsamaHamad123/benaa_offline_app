@@ -77,9 +77,7 @@ class PaginationControls extends StatelessWidget {
       icon: Icon(icon, size: 18.sp),
       label: Text(label),
       style: TextButton.styleFrom(
-        foregroundColor: enabled
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).disabledColor,
+        foregroundColor: enabled ? Theme.of(context).colorScheme.primary : Theme.of(context).disabledColor,
       ),
     );
   }
@@ -98,12 +96,8 @@ class PaginationInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final startItem = paginationResult.isEmpty
-        ? 0
-        : (paginationResult.currentPage - 1) * paginationResult.pageSize + 1;
-    final endItem = paginationResult.isEmpty
-        ? 0
-        : startItem + paginationResult.items.length - 1;
+    final startItem = paginationResult.isEmpty ? 0 : (paginationResult.currentPage - 1) * paginationResult.pageSize + 1;
+    final endItem = paginationResult.isEmpty ? 0 : startItem + paginationResult.items.length - 1;
 
     return Container(
       padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 12.w),

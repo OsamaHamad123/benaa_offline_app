@@ -74,8 +74,7 @@ class PdfGeneratorService {
                       height: 80,
                       decoration: pw.BoxDecoration(
                         border: pw.Border.all(color: PdfColors.grey),
-                        borderRadius:
-                            const pw.BorderRadius.all(pw.Radius.circular(4)),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
                       ),
                       child: pw.Image(
                         pw.MemoryImage(photoBytes),
@@ -89,8 +88,7 @@ class PdfGeneratorService {
                       decoration: pw.BoxDecoration(
                         color: PdfColors.grey200,
                         border: pw.Border.all(color: PdfColors.grey),
-                        borderRadius:
-                            const pw.BorderRadius.all(pw.Radius.circular(4)),
+                        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
                       ),
                       child: pw.Center(
                         child: pw.Icon(
