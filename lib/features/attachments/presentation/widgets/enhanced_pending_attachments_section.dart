@@ -77,13 +77,15 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
 
   Widget _buildContent(BuildContext context) {
     if (_isUploading) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.r),
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        padding: EdgeInsets.all(32.r),
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(strokeWidth: 3),
+              const CircularProgressIndicator(strokeWidth: 3),
               SizedBox(height: 12.h),
               Text(
                 'جاري إضافة الملف...',
