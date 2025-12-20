@@ -39,6 +39,8 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final chronicDiseasesController = TextEditingController();
   final addressBeforeDisplacementController = TextEditingController();
   final createdByUserController = TextEditingController(); // 🆕 اسم المستخدم المدخل
+  final fileNumberController = TextEditingController(); // 🆕 رقم الملف الرسمي
+  final specialNeedsCountController = TextEditingController(); // 🆕 عدد ذوي الاحتياجات الخاصة
 
   // 🔥 CRITICAL FIX: Prevent rebuild on every keystroke
   // Only notify on dropdown/switch changes, NOT on text input
@@ -169,9 +171,22 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     }
   }
 
-  // Boolean switches with smart setter
+  String? _selectedRequestStatus; // 🆕 حالة الطلب
+  String? get selectedRequestStatus => _selectedRequestStatus;
+  set selectedRequestStatus(String? value) {
+    if (_selectedRequestStatus != value) {
+      _selectedRequestStatus = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  // ⚠️ DEPRECATED: hasDisability replaced by specialNeedsCountController
+  // Kept for backward compatibility during migration
+  @Deprecated('Use specialNeedsCountController instead')
   bool _hasDisability = false;
+  @Deprecated('Use specialNeedsCountController instead')
   bool get hasDisability => _hasDisability;
+  @Deprecated('Use specialNeedsCountController instead')
   set hasDisability(bool value) {
     if (_hasDisability != value) {
       _hasDisability = value;
@@ -387,6 +402,9 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'notes': notesController.text,
       'chronicDiseases': chronicDiseasesController.text,
       'addressBeforeDisplacement': addressBeforeDisplacementController.text,
+      'createdByUser': createdByUserController.text, // 🆕 NEW
+      'fileNumber': fileNumberController.text, // 🆕 NEW
+      'specialNeedsCount': specialNeedsCountController.text, // 🆕 NEW
       'selectedGender': _selectedGender,
       'selectedMaritalStatus': _selectedMaritalStatus,
       'selectedEducationLevel': _selectedEducationLevel,
@@ -398,6 +416,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'selectedHealthStatus': _selectedHealthStatus,
       'selectedHousingStatus': _selectedHousingStatus,
       'selectedHousingType': _selectedHousingType,
+      'selectedRequestStatus': _selectedRequestStatus, // 🆕 NEW
       'selectedRelationship': _selectedRelationship,
       'hasDisability': _hasDisability,
     };
@@ -422,6 +441,9 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     notesController.text = map['notes'] ?? '';
     chronicDiseasesController.text = map['chronicDiseases'] ?? '';
     addressBeforeDisplacementController.text = map['addressBeforeDisplacement'] ?? '';
+    createdByUserController.text = map['createdByUser'] ?? ''; // 🆕 NEW
+    fileNumberController.text = map['fileNumber'] ?? ''; // 🆕 NEW
+    specialNeedsCountController.text = map['specialNeedsCount'] ?? ''; // 🆕 NEW
 
     _selectedGender = map['selectedGender'];
     _selectedMaritalStatus = map['selectedMaritalStatus'];
@@ -434,6 +456,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _selectedHealthStatus = map['selectedHealthStatus'];
     _selectedHousingStatus = map['selectedHousingStatus'];
     _selectedHousingType = map['selectedHousingType'];
+    _selectedRequestStatus = map['selectedRequestStatus']; // 🆕 NEW
     _selectedRelationship = map['selectedRelationship'];
     _hasDisability = map['hasDisability'] ?? false;
 
@@ -469,6 +492,8 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     chronicDiseasesController.dispose();
     addressBeforeDisplacementController.dispose();
     createdByUserController.dispose(); // 🆕 Dispose createdByUser controller
+    fileNumberController.dispose(); // 🆕 Dispose fileNumber controller
+    specialNeedsCountController.dispose(); // 🆕 Dispose specialNeedsCount controller
 
     livingMembersNotifier.dispose();
     deceasedMembersNotifier.dispose();

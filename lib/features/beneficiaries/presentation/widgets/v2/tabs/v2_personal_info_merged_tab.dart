@@ -30,12 +30,10 @@ class V2PersonalInfoMergedTab extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<V2PersonalInfoMergedTab> createState() =>
-      _V2PersonalInfoMergedTabState();
+  ConsumerState<V2PersonalInfoMergedTab> createState() => _V2PersonalInfoMergedTabState();
 }
 
-class _V2PersonalInfoMergedTabState
-    extends ConsumerState<V2PersonalInfoMergedTab> {
+class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTab> {
   Timer? _debounceTimer;
   bool _showPreview = false;
   bool _hasAutofilled = false;
@@ -80,9 +78,7 @@ class _V2PersonalInfoMergedTabState
   }
 
   void _handleAutofill() {
-    final result = ref
-        .read(civilRegistryProvider.notifier)
-        .autofillForm(widget.formControllers);
+    final result = ref.read(civilRegistryProvider.notifier).autofillForm(widget.formControllers);
 
     if (result != null) {
       HapticFeedback.lightImpact();
@@ -145,18 +141,14 @@ class _V2PersonalInfoMergedTabState
                   prefixIcon: Icons.person_rounded,
                   isRequired: true,
                   focusNode: widget.firstFieldFocusNode,
-                  validator: (value) => value?.isEmpty ?? true
-                      ? FormConstants.requiredFieldMessage
-                      : null,
+                  validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
                 ),
                 M3TextField(
                   controller: widget.formControllers.fatherNameController,
                   label: 'اسم الأب',
                   prefixIcon: Icons.person_outline_rounded,
                   isRequired: true,
-                  validator: (value) => value?.isEmpty ?? true
-                      ? FormConstants.requiredFieldMessage
-                      : null,
+                  validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
                 ),
               ],
             ),
@@ -173,9 +165,7 @@ class _V2PersonalInfoMergedTabState
                   label: 'اللقب',
                   prefixIcon: Icons.family_restroom_rounded,
                   isRequired: true,
-                  validator: (value) => value?.isEmpty ?? true
-                      ? FormConstants.requiredFieldMessage
-                      : null,
+                  validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
                 ),
               ],
             ),
@@ -227,29 +217,22 @@ class _V2PersonalInfoMergedTabState
                 return Column(
                   children: [
                     // Civil Registry Status
-                    if (civilRegistryState.status !=
-                        CivilRegistryStatus.initial)
+                    if (civilRegistryState.status != CivilRegistryStatus.initial)
                       Padding(
                         padding: EdgeInsets.only(top: 8.h),
                         child: CivilRegistryStatusIndicator(
                           state: civilRegistryState,
                           onRetry: () {
-                            final nationalId = widget
-                                .formControllers.nationalIdController.text;
-                            if (nationalId.length ==
-                                FormConstants.nationalIdLength) {
-                              ref
-                                  .read(civilRegistryProvider.notifier)
-                                  .fetchByNationalId(nationalId);
+                            final nationalId = widget.formControllers.nationalIdController.text;
+                            if (nationalId.length == FormConstants.nationalIdLength) {
+                              ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
                             }
                           },
                         ),
                       ),
 
                     // Preview Card
-                    if (civilRegistryState.isSuccess &&
-                        civilRegistryState.person != null &&
-                        _showPreview)
+                    if (civilRegistryState.isSuccess && civilRegistryState.person != null && _showPreview)
                       Padding(
                         padding: EdgeInsets.only(top: 8.h),
                         child: CivilRegistryPreviewCard(
@@ -259,9 +242,7 @@ class _V2PersonalInfoMergedTabState
                       ),
 
                     // Autofill Button - Only show if not yet autofilled
-                    if (civilRegistryState.isSuccess &&
-                        civilRegistryState.person != null &&
-                        !_hasAutofilled)
+                    if (civilRegistryState.isSuccess && civilRegistryState.person != null && !_hasAutofilled)
                       Padding(
                         padding: EdgeInsets.only(top: 12.h),
                         child: Row(
@@ -274,17 +255,12 @@ class _V2PersonalInfoMergedTabState
                             ),
                             SizedBox(width: 8.w),
                             IconButton(
-                              onPressed: () =>
-                                  setState(() => _showPreview = !_showPreview),
+                              onPressed: () => setState(() => _showPreview = !_showPreview),
                               icon: Icon(
-                                _showPreview
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
+                                _showPreview ? Icons.visibility_off : Icons.visibility,
                                 size: 24.sp,
                               ),
-                              tooltip: _showPreview
-                                  ? 'إخفاء المعاينة'
-                                  : 'عرض المعاينة',
+                              tooltip: _showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة',
                             ),
                           ],
                         ),
@@ -314,10 +290,8 @@ class _V2PersonalInfoMergedTabState
                   label: 'الجنس',
                   prefixIcon: Icons.wc_rounded,
                   isRequired: true,
-                  onChanged: (value) =>
-                      widget.formControllers.selectedGender = value,
-                  validator: (value) =>
-                      value == null ? FormConstants.requiredFieldMessage : null,
+                  onChanged: (value) => widget.formControllers.selectedGender = value,
+                  validator: (value) => value == null ? FormConstants.requiredFieldMessage : null,
                   items: const [
                     DropdownMenuItem(value: 'ذكر', child: Text('ذكر')),
                     DropdownMenuItem(value: 'أنثى', child: Text('أنثى')),
@@ -331,10 +305,8 @@ class _V2PersonalInfoMergedTabState
               label: 'فئة المستفيد',
               prefixIcon: Icons.category_rounded,
               isRequired: true,
-              onChanged: (value) =>
-                  widget.formControllers.selectedCategory = value,
-              validator: (value) =>
-                  value == null ? FormConstants.requiredFieldMessage : null,
+              onChanged: (value) => widget.formControllers.selectedCategory = value,
+              validator: (value) => value == null ? FormConstants.requiredFieldMessage : null,
               items: const [
                 DropdownMenuItem(value: 'orphan', child: Text('يتيم')),
                 DropdownMenuItem(value: 'poor', child: Text('فقير')),
@@ -345,6 +317,32 @@ class _V2PersonalInfoMergedTabState
                   child: Text('من ذوي الإعاقة'),
                 ),
                 DropdownMenuItem(value: 'other', child: Text('أخرى')),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            // 🆕 NEW: رقم الملف
+            ResponsiveFormLayout(
+              children: [
+                M3TextField(
+                  controller: widget.formControllers.fileNumberController,
+                  label: 'رقم الملف',
+                  prefixIcon: Icons.folder_rounded,
+                  keyboardType: TextInputType.number,
+                  helperText: 'رقم ملف المستفيد الرسمي',
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                ),
+                M3DropdownField<String>(
+                  value: widget.formControllers.selectedRequestStatus,
+                  label: 'حالة الطلب',
+                  prefixIcon: Icons.pending_actions_rounded,
+                  onChanged: (value) => widget.formControllers.selectedRequestStatus = value,
+                  items: const [
+                    DropdownMenuItem(value: 'قيد المراجعة', child: Text('قيد المراجعة')),
+                    DropdownMenuItem(value: 'مقبول', child: Text('مقبول')),
+                    DropdownMenuItem(value: 'مرفوض', child: Text('مرفوض')),
+                    DropdownMenuItem(value: 'مكتمل', child: Text('مكتمل')),
+                  ],
+                ),
               ],
             ),
           ],
@@ -363,8 +361,7 @@ class _V2PersonalInfoMergedTabState
                   value: widget.formControllers.selectedEducationLevel,
                   label: 'المستوى التعليمي',
                   prefixIcon: Icons.school_rounded,
-                  onChanged: (value) =>
-                      widget.formControllers.selectedEducationLevel = value,
+                  onChanged: (value) => widget.formControllers.selectedEducationLevel = value,
                   items: const [
                     DropdownMenuItem(value: 'أمي', child: Text('أمي')),
                     DropdownMenuItem(value: 'ابتدائي', child: Text('ابتدائي')),
@@ -381,8 +378,7 @@ class _V2PersonalInfoMergedTabState
                   value: widget.formControllers.selectedEmploymentStatus,
                   label: 'حالة التوظيف',
                   prefixIcon: Icons.work_outline_rounded,
-                  onChanged: (value) =>
-                      widget.formControllers.selectedEmploymentStatus = value,
+                  onChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
                   items: const [
                     DropdownMenuItem(value: 'موظف', child: Text('موظف')),
                     DropdownMenuItem(
@@ -401,8 +397,7 @@ class _V2PersonalInfoMergedTabState
                   value: widget.formControllers.selectedHealthStatus,
                   label: 'الحالة الصحية',
                   prefixIcon: Icons.favorite_outline_rounded,
-                  onChanged: (value) =>
-                      widget.formControllers.selectedHealthStatus = value,
+                  onChanged: (value) => widget.formControllers.selectedHealthStatus = value,
                   items: const [
                     DropdownMenuItem(value: 'جيدة', child: Text('جيدة')),
                     DropdownMenuItem(value: 'متوسطة', child: Text('متوسطة')),
@@ -420,6 +415,16 @@ class _V2PersonalInfoMergedTabState
               helperText: 'أدخل الأمراض المزمنة إن وجدت',
             ),
             SizedBox(height: 12.h),
+            // 🆕 NEW: عدد ذوي الاحتياجات الخاصة
+            M3TextField(
+              controller: widget.formControllers.specialNeedsCountController,
+              label: 'عدد ذوي الاحتياجات الخاصة',
+              prefixIcon: Icons.accessible_rounded,
+              keyboardType: TextInputType.number,
+              helperText: 'عدد أفراد الأسرة من ذوي الاحتياجات الخاصة',
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            ),
+            SizedBox(height: 12.h),
             // 📱 Responsive Layout - معلومات السكن
             ResponsiveFormLayout(
               children: [
@@ -427,8 +432,7 @@ class _V2PersonalInfoMergedTabState
                   value: widget.formControllers.selectedHousingStatus,
                   label: 'حالة السكن',
                   prefixIcon: Icons.home_outlined,
-                  onChanged: (value) =>
-                      widget.formControllers.selectedHousingStatus = value,
+                  onChanged: (value) => widget.formControllers.selectedHousingStatus = value,
                   items: const [
                     DropdownMenuItem(value: 'ملك', child: Text('ملك')),
                     DropdownMenuItem(value: 'إيجار', child: Text('إيجار')),
@@ -443,8 +447,7 @@ class _V2PersonalInfoMergedTabState
                   value: widget.formControllers.selectedHousingType,
                   label: 'نوع السكن',
                   prefixIcon: Icons.apartment_outlined,
-                  onChanged: (value) =>
-                      widget.formControllers.selectedHousingType = value,
+                  onChanged: (value) => widget.formControllers.selectedHousingType = value,
                   items: const [
                     DropdownMenuItem(value: 'شقة', child: Text('شقة')),
                     DropdownMenuItem(value: 'بيت', child: Text('بيت')),

@@ -66,7 +66,9 @@ class BeneficiaryFormMapper {
           : null,
 
       // Additional Info
-      fileNo: null, // سيتم توليده من النظام
+      fileNo: controllers.fileNumberController.text.trim().isNotEmpty
+          ? controllers.fileNumberController.text.trim()
+          : null, // 🆕 NEW
       associationName: null,
 
       // Parse enums
@@ -80,14 +82,14 @@ class BeneficiaryFormMapper {
       numberOfMales: _parseInt(controllers.numberOfMalesController.text),
       numberOfFemales: _parseInt(controllers.numberOfFemalesController.text),
       chronicDiseasesCount: _parseInt(controllers.chronicDiseasesController.text),
-      specialNeedsCount: null, // يمكن حسابه من family members
+      specialNeedsCount: _parseInt(controllers.specialNeedsCountController.text), // 🆕 NEW
 
       // Status Fields
       displacementStatus: _parseDisplacementStatus(controllers.selectedDisplacementStatus),
       employmentStatus: _parseEmploymentStatus(controllers.selectedEmploymentStatus),
       housingStatus: _parseHousingStatus(controllers.selectedHousingStatus),
       housingType: _parseHousingType(controllers.selectedHousingType),
-      requestStatus: null, // يتم تحديده من النظام
+      requestStatus: _parseRequestStatus(controllers.selectedRequestStatus), // 🆕 NEW
 
       notes: controllers.notesController.text.trim().isNotEmpty ? controllers.notesController.text.trim() : null,
 
@@ -139,12 +141,15 @@ class BeneficiaryFormMapper {
     controllers.selectedHealthStatus = beneficiary.healthStatus.arabicLabel;
     controllers.selectedHousingStatus = beneficiary.housingStatus?.arabicLabel;
     controllers.selectedHousingType = beneficiary.housingType?.arabicLabel;
+    controllers.selectedRequestStatus = beneficiary.requestStatus?.arabicLabel; // 🆕 NEW
     controllers.hasDisability = beneficiary.hasDisability;
+    controllers.specialNeedsCountController.text = beneficiary.specialNeedsCount?.toString() ?? ''; // 🆕 NEW
 
     // Convert relationship int to string representation
     controllers.selectedRelationship = beneficiary.relationship?.toString();
     controllers.selectedSection = beneficiary.sectionId?.toString();
     controllers.createdByUserController.text = beneficiary.createdByUser ?? ''; // 🆕 Created by user
+    controllers.fileNumberController.text = beneficiary.fileNo ?? ''; // 🆕 NEW
 
     // Convert location codes to strings
     controllers.selectedProvince = beneficiary.governorate;
@@ -340,6 +345,14 @@ class BeneficiaryFormMapper {
     return HousingType.values.firstWhere(
       (h) => h.arabicLabel == value,
       orElse: () => HousingType.house,
+    );
+  }
+
+  static RequestStatus? _parseRequestStatus(String? value) {
+    if (value == null) return null;
+    return RequestStatus.values.firstWhere(
+      (r) => r.arabicLabel == value,
+      orElse: () => RequestStatus.pending,
     );
   }
 
