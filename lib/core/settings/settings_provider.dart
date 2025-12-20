@@ -31,6 +31,11 @@ class SettingsState {
   final int searchHistorySize;
   final bool offlineMode;
 
+  // Security
+  final bool biometricAuthEnabled;
+  final int sessionTimeoutMinutes;
+  final bool requireStrongPassword;
+
   // Advanced
   final bool developerMode;
   final bool debugLogging;
@@ -59,6 +64,10 @@ class SettingsState {
     this.cacheDurationMinutes = 30,
     this.searchHistorySize = 10,
     this.offlineMode = false,
+    // Security
+    this.biometricAuthEnabled = false,
+    this.sessionTimeoutMinutes = 15,
+    this.requireStrongPassword = true,
     // Advanced
     this.developerMode = false,
     this.debugLogging = false,
@@ -78,6 +87,9 @@ class SettingsState {
     bool? useMaterial3,
     int? itemsPerPage,
     String? defaultSort,
+    bool? biometricAuthEnabled,
+    int? sessionTimeoutMinutes,
+    bool? requireStrongPassword,
     bool? showStatistics,
     bool? showPerformanceDashboard,
     int? cacheDurationMinutes,
@@ -101,8 +113,7 @@ class SettingsState {
       itemsPerPage: itemsPerPage ?? this.itemsPerPage,
       defaultSort: defaultSort ?? this.defaultSort,
       showStatistics: showStatistics ?? this.showStatistics,
-      showPerformanceDashboard:
-          showPerformanceDashboard ?? this.showPerformanceDashboard,
+      showPerformanceDashboard: showPerformanceDashboard ?? this.showPerformanceDashboard,
       cacheDurationMinutes: cacheDurationMinutes ?? this.cacheDurationMinutes,
       searchHistorySize: searchHistorySize ?? this.searchHistorySize,
       offlineMode: offlineMode ?? this.offlineMode,

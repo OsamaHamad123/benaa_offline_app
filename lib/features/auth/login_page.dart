@@ -7,6 +7,8 @@ import '../../theme/app_colors.dart';
 import '../../core/design_system/app_animations.dart';
 import '../../core/error_handling/error_handler.dart';
 import '../../core/widgets/loading_state.dart';
+import '../../core/widgets/biometric_auth_widget.dart';
+import '../../core/security/session_manager.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -15,8 +17,7 @@ class LoginPage extends ConsumerStatefulWidget {
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage>
-    with SingleTickerProviderStateMixin {
+class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -74,8 +75,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
       // TODO: Replace with actual API authentication
       // For now, accept any non-empty credentials
-      if (_usernameController.text.isNotEmpty &&
-          _passwordController.text.isNotEmpty) {
+      if (_usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
         // ✅ SECURITY: Hash password before storing
         final hashedPassword = PasswordHashService.hashPassword(
           _passwordController.text,
@@ -90,6 +90,12 @@ class _LoginPageState extends ConsumerState<LoginPage>
         }
 
         if (mounted) {
+          // Initialize session after successful login
+          await SessionManager().initialize(
+            onSessionExpired: () => context.go('/login'),
+          );
+          await SessionManager().startNewSession();
+
           // Success feedback
           EnhancedSnackbar.showSuccess(
             context,
@@ -176,8 +182,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color:
-                                            AppColors.primary.withOpacity(0.3),
+                                        color: AppColors.primary.withOpacity(0.3),
                                         blurRadius: 20,
                                         offset: const Offset(0, 10),
                                       ),
@@ -201,10 +206,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     'منظومة بناء',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineLarge
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.primary,
                                           fontSize: 32,
@@ -214,10 +216,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     'نظام إدارة المستفيدين',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -306,9 +305,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   fillColor: Colors.white,
                                   suffixIcon: IconButton(
                                     icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
+                                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -399,10 +396,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                       const SizedBox(width: 8),
                                       Text(
                                         'تسجيل الدخول',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -424,10 +418,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   ),
                                   child: Text(
                                     'أو',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -438,26 +429,33 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             const SizedBox(height: 24),
 
                             // Biometric Login Button (if available)
-                            OutlinedButton.icon(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () {
-                                      // TODO: Implement biometric authentication
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'سيتم إضافة المصادقة البيومترية قريباً',
-                                          ),
-                                        ),
-                                      );
-                                    },
-                              icon: const Icon(Icons.fingerprint),
-                              label: const Text('تسجيل الدخول بالبصمة'),
-                              style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                              ),
+                            BiometricAuthButton(
+                              onSuccess: () async {
+                                // Initialize session after biometric auth
+                                await SessionManager().initialize(
+                                  onSessionExpired: () => context.go('/login'),
+                                );
+                                await SessionManager().startNewSession();
+
+                                if (mounted) {
+                                  EnhancedSnackbar.showSuccess(
+                                    context,
+                                    message: 'تم تسجيل الدخول بنجاح!',
+                                  );
+                                  context.go('/dashboard');
+                                }
+                              },
+                              onFailure: () {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'فشلت المصادقة البيومترية',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                             ),
                             const SizedBox(height: 32),
 
@@ -468,10 +466,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     'الإصدار 1.0.0',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -479,10 +474,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     '© 2025 منظومة بناء',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
