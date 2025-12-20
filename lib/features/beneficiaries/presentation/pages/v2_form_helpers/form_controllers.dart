@@ -104,6 +104,15 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     }
   }
 
+  String? _selectedSection;
+  String? get selectedSection => _selectedSection;
+  set selectedSection(String? value) {
+    if (_selectedSection != value) {
+      _selectedSection = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
   String? _selectedCity;
   String? get selectedCity => _selectedCity;
   set selectedCity(String? value) {
@@ -177,14 +186,12 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   List<Map<String, dynamic>> get livingMembers => _livingMembers;
 
   // Notifiers to allow fine-grained UI updates without parent setState
-  final ValueNotifier<List<Map<String, dynamic>>> livingMembersNotifier =
-      ValueNotifier(const []);
+  final ValueNotifier<List<Map<String, dynamic>>> livingMembersNotifier = ValueNotifier(const []);
 
   final List<Map<String, dynamic>> _deceasedMembers = [];
   List<Map<String, dynamic>> get deceasedMembers => _deceasedMembers;
 
-  final ValueNotifier<List<Map<String, dynamic>>> deceasedMembersNotifier =
-      ValueNotifier(const []);
+  final ValueNotifier<List<Map<String, dynamic>>> deceasedMembersNotifier = ValueNotifier(const []);
 
   /// Setter for pending files (used by PendingAttachmentsSection callback)
   set pendingAttachmentFiles(List<File> files) {
@@ -317,8 +324,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
 
   /// Check if data is valid for auto-save
   bool _hasValidData() {
-    return firstNameController.text.trim().isNotEmpty &&
-        nationalIdController.text.trim().length == 9;
+    return firstNameController.text.trim().isNotEmpty && nationalIdController.text.trim().length == 9;
   }
 
   /// Convert controllers to Map for draft saving
@@ -375,8 +381,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     numberOfFemalesController.text = map['numberOfFemales'] ?? '';
     notesController.text = map['notes'] ?? '';
     chronicDiseasesController.text = map['chronicDiseases'] ?? '';
-    addressBeforeDisplacementController.text =
-        map['addressBeforeDisplacement'] ?? '';
+    addressBeforeDisplacementController.text = map['addressBeforeDisplacement'] ?? '';
 
     _selectedGender = map['selectedGender'];
     _selectedMaritalStatus = map['selectedMaritalStatus'];
