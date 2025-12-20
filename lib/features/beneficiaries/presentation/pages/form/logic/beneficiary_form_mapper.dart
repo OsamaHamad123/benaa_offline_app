@@ -92,7 +92,9 @@ class BeneficiaryFormMapper {
       notes: controllers.notesController.text.trim().isNotEmpty ? controllers.notesController.text.trim() : null,
 
       // System Fields
-      createdByUser: createdByUser,
+      createdByUser: controllers.createdByUserController.text.trim().isNotEmpty
+          ? controllers.createdByUserController.text.trim()
+          : createdByUser, // Use parameter if field is empty
       createdAt: beneficiaryId == null ? DateTime.now() : DateTime.now(),
       updatedAt: DateTime.now(),
       needsSync: true,
@@ -142,6 +144,7 @@ class BeneficiaryFormMapper {
     // Convert relationship int to string representation
     controllers.selectedRelationship = beneficiary.relationship?.toString();
     controllers.selectedSection = beneficiary.sectionId?.toString();
+    controllers.createdByUserController.text = beneficiary.createdByUser ?? ''; // 🆕 Created by user
 
     // Convert location codes to strings
     controllers.selectedProvince = beneficiary.governorate;
@@ -193,6 +196,7 @@ class BeneficiaryFormMapper {
       'hasDisability': controllers.hasDisability,
       'relationship': controllers.selectedRelationship,
       'section': controllers.selectedSection,
+      'createdByUser': controllers.createdByUserController.text, // 🆕 Created by user
       'province': controllers.selectedProvince,
       'city': controllers.selectedCity,
       'currentTab': currentTabIndex,
@@ -235,6 +239,7 @@ class BeneficiaryFormMapper {
     controllers.hasDisability = formData['hasDisability'] ?? false;
     controllers.selectedRelationship = formData['relationship'];
     controllers.selectedSection = formData['section'];
+    controllers.createdByUserController.text = formData['createdByUser'] ?? ''; // 🆕 Created by user
     controllers.selectedProvince = formData['province'];
     controllers.selectedCity = formData['city'];
 

@@ -2426,6 +2426,29 @@ class $AttachmentsTable extends Attachments
   late final GeneratedColumn<String> thumbnailPath = GeneratedColumn<String>(
       'thumbnail_path', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _documentTypeMeta =
+      const VerificationMeta('documentType');
+  @override
+  late final GeneratedColumn<String> documentType = GeneratedColumn<String>(
+      'document_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _personTypeMeta =
+      const VerificationMeta('personType');
+  @override
+  late final GeneratedColumn<String> personType = GeneratedColumn<String>(
+      'person_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _personIdMeta =
+      const VerificationMeta('personId');
+  @override
+  late final GeneratedColumn<String> personId = GeneratedColumn<String>(
+      'person_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -2468,6 +2491,10 @@ class $AttachmentsTable extends Attachments
         type,
         fileSize,
         thumbnailPath,
+        documentType,
+        personType,
+        personId,
+        notes,
         createdAt,
         updatedAt,
         syncState,
@@ -2531,6 +2558,26 @@ class $AttachmentsTable extends Attachments
           thumbnailPath.isAcceptableOrUnknown(
               data['thumbnail_path']!, _thumbnailPathMeta));
     }
+    if (data.containsKey('document_type')) {
+      context.handle(
+          _documentTypeMeta,
+          documentType.isAcceptableOrUnknown(
+              data['document_type']!, _documentTypeMeta));
+    }
+    if (data.containsKey('person_type')) {
+      context.handle(
+          _personTypeMeta,
+          personType.isAcceptableOrUnknown(
+              data['person_type']!, _personTypeMeta));
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(_personIdMeta,
+          personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta));
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -2582,6 +2629,14 @@ class $AttachmentsTable extends Attachments
           .read(DriftSqlType.int, data['${effectivePrefix}file_size'])!,
       thumbnailPath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}thumbnail_path']),
+      documentType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}document_type']),
+      personType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}person_type']),
+      personId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}person_id']),
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       updatedAt: attachedDatabase.typeMapping
@@ -2610,6 +2665,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
   final String type;
   final int fileSize;
   final String? thumbnailPath;
+  final String? documentType;
+  final String? personType;
+  final String? personId;
+  final String? notes;
   final DateTime createdAt;
   final DateTime updatedAt;
   final String syncState;
@@ -2624,6 +2683,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       required this.type,
       required this.fileSize,
       this.thumbnailPath,
+      this.documentType,
+      this.personType,
+      this.personId,
+      this.notes,
       required this.createdAt,
       required this.updatedAt,
       required this.syncState,
@@ -2643,6 +2706,18 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     map['file_size'] = Variable<int>(fileSize);
     if (!nullToAbsent || thumbnailPath != null) {
       map['thumbnail_path'] = Variable<String>(thumbnailPath);
+    }
+    if (!nullToAbsent || documentType != null) {
+      map['document_type'] = Variable<String>(documentType);
+    }
+    if (!nullToAbsent || personType != null) {
+      map['person_type'] = Variable<String>(personType);
+    }
+    if (!nullToAbsent || personId != null) {
+      map['person_id'] = Variable<String>(personId);
+    }
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -2670,6 +2745,17 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       thumbnailPath: thumbnailPath == null && nullToAbsent
           ? const Value.absent()
           : Value(thumbnailPath),
+      documentType: documentType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(documentType),
+      personType: personType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personType),
+      personId: personId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personId),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
       syncState: Value(syncState),
@@ -2694,6 +2780,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       type: serializer.fromJson<String>(json['type']),
       fileSize: serializer.fromJson<int>(json['fileSize']),
       thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
+      documentType: serializer.fromJson<String?>(json['documentType']),
+      personType: serializer.fromJson<String?>(json['personType']),
+      personId: serializer.fromJson<String?>(json['personId']),
+      notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncState: serializer.fromJson<String>(json['syncState']),
@@ -2713,6 +2803,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       'type': serializer.toJson<String>(type),
       'fileSize': serializer.toJson<int>(fileSize),
       'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
+      'documentType': serializer.toJson<String?>(documentType),
+      'personType': serializer.toJson<String?>(personType),
+      'personId': serializer.toJson<String?>(personId),
+      'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncState': serializer.toJson<String>(syncState),
@@ -2730,6 +2824,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           String? type,
           int? fileSize,
           Value<String?> thumbnailPath = const Value.absent(),
+          Value<String?> documentType = const Value.absent(),
+          Value<String?> personType = const Value.absent(),
+          Value<String?> personId = const Value.absent(),
+          Value<String?> notes = const Value.absent(),
           DateTime? createdAt,
           DateTime? updatedAt,
           String? syncState,
@@ -2745,6 +2843,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
         fileSize: fileSize ?? this.fileSize,
         thumbnailPath:
             thumbnailPath.present ? thumbnailPath.value : this.thumbnailPath,
+        documentType:
+            documentType.present ? documentType.value : this.documentType,
+        personType: personType.present ? personType.value : this.personType,
+        personId: personId.present ? personId.value : this.personId,
+        notes: notes.present ? notes.value : this.notes,
         createdAt: createdAt ?? this.createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
         syncState: syncState ?? this.syncState,
@@ -2766,6 +2869,13 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       thumbnailPath: data.thumbnailPath.present
           ? data.thumbnailPath.value
           : this.thumbnailPath,
+      documentType: data.documentType.present
+          ? data.documentType.value
+          : this.documentType,
+      personType:
+          data.personType.present ? data.personType.value : this.personType,
+      personId: data.personId.present ? data.personId.value : this.personId,
+      notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncState: data.syncState.present ? data.syncState.value : this.syncState,
@@ -2787,6 +2897,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           ..write('type: $type, ')
           ..write('fileSize: $fileSize, ')
           ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('documentType: $documentType, ')
+          ..write('personType: $personType, ')
+          ..write('personId: $personId, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
@@ -2806,6 +2920,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       type,
       fileSize,
       thumbnailPath,
+      documentType,
+      personType,
+      personId,
+      notes,
       createdAt,
       updatedAt,
       syncState,
@@ -2823,6 +2941,10 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           other.type == this.type &&
           other.fileSize == this.fileSize &&
           other.thumbnailPath == this.thumbnailPath &&
+          other.documentType == this.documentType &&
+          other.personType == this.personType &&
+          other.personId == this.personId &&
+          other.notes == this.notes &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncState == this.syncState &&
@@ -2839,6 +2961,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
   final Value<String> type;
   final Value<int> fileSize;
   final Value<String?> thumbnailPath;
+  final Value<String?> documentType;
+  final Value<String?> personType;
+  final Value<String?> personId;
+  final Value<String?> notes;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<String> syncState;
@@ -2854,6 +2980,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     this.type = const Value.absent(),
     this.fileSize = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
+    this.documentType = const Value.absent(),
+    this.personType = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncState = const Value.absent(),
@@ -2870,6 +3000,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     required String type,
     required int fileSize,
     this.thumbnailPath = const Value.absent(),
+    this.documentType = const Value.absent(),
+    this.personType = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.notes = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.syncState = const Value.absent(),
@@ -2893,6 +3027,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     Expression<String>? type,
     Expression<int>? fileSize,
     Expression<String>? thumbnailPath,
+    Expression<String>? documentType,
+    Expression<String>? personType,
+    Expression<String>? personId,
+    Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncState,
@@ -2909,6 +3047,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       if (type != null) 'type': type,
       if (fileSize != null) 'file_size': fileSize,
       if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
+      if (documentType != null) 'document_type': documentType,
+      if (personType != null) 'person_type': personType,
+      if (personId != null) 'person_id': personId,
+      if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncState != null) 'sync_state': syncState,
@@ -2927,6 +3069,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       Value<String>? type,
       Value<int>? fileSize,
       Value<String?>? thumbnailPath,
+      Value<String?>? documentType,
+      Value<String?>? personType,
+      Value<String?>? personId,
+      Value<String?>? notes,
       Value<DateTime>? createdAt,
       Value<DateTime>? updatedAt,
       Value<String>? syncState,
@@ -2942,6 +3088,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       type: type ?? this.type,
       fileSize: fileSize ?? this.fileSize,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      documentType: documentType ?? this.documentType,
+      personType: personType ?? this.personType,
+      personId: personId ?? this.personId,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncState: syncState ?? this.syncState,
@@ -2978,6 +3128,18 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     if (thumbnailPath.present) {
       map['thumbnail_path'] = Variable<String>(thumbnailPath.value);
     }
+    if (documentType.present) {
+      map['document_type'] = Variable<String>(documentType.value);
+    }
+    if (personType.present) {
+      map['person_type'] = Variable<String>(personType.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<String>(personId.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -3010,6 +3172,10 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
           ..write('type: $type, ')
           ..write('fileSize: $fileSize, ')
           ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('documentType: $documentType, ')
+          ..write('personType: $personType, ')
+          ..write('personId: $personId, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncState: $syncState, ')
@@ -5696,6 +5862,30 @@ class $FamilyMembersTableTable extends FamilyMembersTable
   late final GeneratedColumn<int> healthStatus = GeneratedColumn<int>(
       'health_status', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _sponsorshipStatusMeta =
+      const VerificationMeta('sponsorshipStatus');
+  @override
+  late final GeneratedColumn<int> sponsorshipStatus = GeneratedColumn<int>(
+      'sponsorship_status', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sponsorshipTypeMeta =
+      const VerificationMeta('sponsorshipType');
+  @override
+  late final GeneratedColumn<int> sponsorshipType = GeneratedColumn<int>(
+      'sponsorship_type', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _sponsorNameMeta =
+      const VerificationMeta('sponsorName');
+  @override
+  late final GeneratedColumn<String> sponsorName = GeneratedColumn<String>(
+      'sponsor_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _sponsorshipStartDateMeta =
+      const VerificationMeta('sponsorshipStartDate');
+  @override
+  late final GeneratedColumn<DateTime> sponsorshipStartDate =
+      GeneratedColumn<DateTime>('sponsorship_start_date', aliasedName, true,
+          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -5752,6 +5942,10 @@ class $FamilyMembersTableTable extends FamilyMembersTable
         age,
         gender,
         healthStatus,
+        sponsorshipStatus,
+        sponsorshipType,
+        sponsorName,
+        sponsorshipStartDate,
         notes,
         attachments,
         createdAt,
@@ -5837,6 +6031,30 @@ class $FamilyMembersTableTable extends FamilyMembersTable
     } else if (isInserting) {
       context.missing(_healthStatusMeta);
     }
+    if (data.containsKey('sponsorship_status')) {
+      context.handle(
+          _sponsorshipStatusMeta,
+          sponsorshipStatus.isAcceptableOrUnknown(
+              data['sponsorship_status']!, _sponsorshipStatusMeta));
+    }
+    if (data.containsKey('sponsorship_type')) {
+      context.handle(
+          _sponsorshipTypeMeta,
+          sponsorshipType.isAcceptableOrUnknown(
+              data['sponsorship_type']!, _sponsorshipTypeMeta));
+    }
+    if (data.containsKey('sponsor_name')) {
+      context.handle(
+          _sponsorNameMeta,
+          sponsorName.isAcceptableOrUnknown(
+              data['sponsor_name']!, _sponsorNameMeta));
+    }
+    if (data.containsKey('sponsorship_start_date')) {
+      context.handle(
+          _sponsorshipStartDateMeta,
+          sponsorshipStartDate.isAcceptableOrUnknown(
+              data['sponsorship_start_date']!, _sponsorshipStartDateMeta));
+    }
     if (data.containsKey('notes')) {
       context.handle(
           _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
@@ -5900,6 +6118,15 @@ class $FamilyMembersTableTable extends FamilyMembersTable
           .read(DriftSqlType.int, data['${effectivePrefix}gender'])!,
       healthStatus: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}health_status'])!,
+      sponsorshipStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sponsorship_status']),
+      sponsorshipType: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sponsorship_type']),
+      sponsorName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sponsor_name']),
+      sponsorshipStartDate: attachedDatabase.typeMapping.read(
+          DriftSqlType.dateTime,
+          data['${effectivePrefix}sponsorship_start_date']),
       notes: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       attachments: attachedDatabase.typeMapping
@@ -5935,6 +6162,10 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   final int? age;
   final int gender;
   final int healthStatus;
+  final int? sponsorshipStatus;
+  final int? sponsorshipType;
+  final String? sponsorName;
+  final DateTime? sponsorshipStartDate;
   final String? notes;
   final String? attachments;
   final DateTime? createdAt;
@@ -5954,6 +6185,10 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       this.age,
       required this.gender,
       required this.healthStatus,
+      this.sponsorshipStatus,
+      this.sponsorshipType,
+      this.sponsorName,
+      this.sponsorshipStartDate,
       this.notes,
       this.attachments,
       this.createdAt,
@@ -5981,6 +6216,18 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     }
     map['gender'] = Variable<int>(gender);
     map['health_status'] = Variable<int>(healthStatus);
+    if (!nullToAbsent || sponsorshipStatus != null) {
+      map['sponsorship_status'] = Variable<int>(sponsorshipStatus);
+    }
+    if (!nullToAbsent || sponsorshipType != null) {
+      map['sponsorship_type'] = Variable<int>(sponsorshipType);
+    }
+    if (!nullToAbsent || sponsorName != null) {
+      map['sponsor_name'] = Variable<String>(sponsorName);
+    }
+    if (!nullToAbsent || sponsorshipStartDate != null) {
+      map['sponsorship_start_date'] = Variable<DateTime>(sponsorshipStartDate);
+    }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -6020,6 +6267,18 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       age: age == null && nullToAbsent ? const Value.absent() : Value(age),
       gender: Value(gender),
       healthStatus: Value(healthStatus),
+      sponsorshipStatus: sponsorshipStatus == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsorshipStatus),
+      sponsorshipType: sponsorshipType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsorshipType),
+      sponsorName: sponsorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsorName),
+      sponsorshipStartDate: sponsorshipStartDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sponsorshipStartDate),
       notes:
           notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       attachments: attachments == null && nullToAbsent
@@ -6056,6 +6315,11 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       age: serializer.fromJson<int?>(json['age']),
       gender: serializer.fromJson<int>(json['gender']),
       healthStatus: serializer.fromJson<int>(json['healthStatus']),
+      sponsorshipStatus: serializer.fromJson<int?>(json['sponsorshipStatus']),
+      sponsorshipType: serializer.fromJson<int?>(json['sponsorshipType']),
+      sponsorName: serializer.fromJson<String?>(json['sponsorName']),
+      sponsorshipStartDate:
+          serializer.fromJson<DateTime?>(json['sponsorshipStartDate']),
       notes: serializer.fromJson<String?>(json['notes']),
       attachments: serializer.fromJson<String?>(json['attachments']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -6080,6 +6344,11 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       'age': serializer.toJson<int?>(age),
       'gender': serializer.toJson<int>(gender),
       'healthStatus': serializer.toJson<int>(healthStatus),
+      'sponsorshipStatus': serializer.toJson<int?>(sponsorshipStatus),
+      'sponsorshipType': serializer.toJson<int?>(sponsorshipType),
+      'sponsorName': serializer.toJson<String?>(sponsorName),
+      'sponsorshipStartDate':
+          serializer.toJson<DateTime?>(sponsorshipStartDate),
       'notes': serializer.toJson<String?>(notes),
       'attachments': serializer.toJson<String?>(attachments),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -6102,6 +6371,10 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
           Value<int?> age = const Value.absent(),
           int? gender,
           int? healthStatus,
+          Value<int?> sponsorshipStatus = const Value.absent(),
+          Value<int?> sponsorshipType = const Value.absent(),
+          Value<String?> sponsorName = const Value.absent(),
+          Value<DateTime?> sponsorshipStartDate = const Value.absent(),
           Value<String?> notes = const Value.absent(),
           Value<String?> attachments = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
@@ -6121,6 +6394,16 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
         age: age.present ? age.value : this.age,
         gender: gender ?? this.gender,
         healthStatus: healthStatus ?? this.healthStatus,
+        sponsorshipStatus: sponsorshipStatus.present
+            ? sponsorshipStatus.value
+            : this.sponsorshipStatus,
+        sponsorshipType: sponsorshipType.present
+            ? sponsorshipType.value
+            : this.sponsorshipType,
+        sponsorName: sponsorName.present ? sponsorName.value : this.sponsorName,
+        sponsorshipStartDate: sponsorshipStartDate.present
+            ? sponsorshipStartDate.value
+            : this.sponsorshipStartDate,
         notes: notes.present ? notes.value : this.notes,
         attachments: attachments.present ? attachments.value : this.attachments,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
@@ -6151,6 +6434,17 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       healthStatus: data.healthStatus.present
           ? data.healthStatus.value
           : this.healthStatus,
+      sponsorshipStatus: data.sponsorshipStatus.present
+          ? data.sponsorshipStatus.value
+          : this.sponsorshipStatus,
+      sponsorshipType: data.sponsorshipType.present
+          ? data.sponsorshipType.value
+          : this.sponsorshipType,
+      sponsorName:
+          data.sponsorName.present ? data.sponsorName.value : this.sponsorName,
+      sponsorshipStartDate: data.sponsorshipStartDate.present
+          ? data.sponsorshipStartDate.value
+          : this.sponsorshipStartDate,
       notes: data.notes.present ? data.notes.value : this.notes,
       attachments:
           data.attachments.present ? data.attachments.value : this.attachments,
@@ -6178,6 +6472,10 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
           ..write('age: $age, ')
           ..write('gender: $gender, ')
           ..write('healthStatus: $healthStatus, ')
+          ..write('sponsorshipStatus: $sponsorshipStatus, ')
+          ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('sponsorName: $sponsorName, ')
+          ..write('sponsorshipStartDate: $sponsorshipStartDate, ')
           ..write('notes: $notes, ')
           ..write('attachments: $attachments, ')
           ..write('createdAt: $createdAt, ')
@@ -6190,25 +6488,30 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id,
-      beneficiaryId,
-      orphanNationalId,
-      firstName,
-      secondName,
-      thirdName,
-      familyName,
-      birthDate,
-      age,
-      gender,
-      healthStatus,
-      notes,
-      attachments,
-      createdAt,
-      updatedAt,
-      syncState,
-      serverId,
-      lastSyncedAt);
+  int get hashCode => Object.hashAll([
+        id,
+        beneficiaryId,
+        orphanNationalId,
+        firstName,
+        secondName,
+        thirdName,
+        familyName,
+        birthDate,
+        age,
+        gender,
+        healthStatus,
+        sponsorshipStatus,
+        sponsorshipType,
+        sponsorName,
+        sponsorshipStartDate,
+        notes,
+        attachments,
+        createdAt,
+        updatedAt,
+        syncState,
+        serverId,
+        lastSyncedAt
+      ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6224,6 +6527,10 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
           other.age == this.age &&
           other.gender == this.gender &&
           other.healthStatus == this.healthStatus &&
+          other.sponsorshipStatus == this.sponsorshipStatus &&
+          other.sponsorshipType == this.sponsorshipType &&
+          other.sponsorName == this.sponsorName &&
+          other.sponsorshipStartDate == this.sponsorshipStartDate &&
           other.notes == this.notes &&
           other.attachments == this.attachments &&
           other.createdAt == this.createdAt &&
@@ -6245,6 +6552,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
   final Value<int?> age;
   final Value<int> gender;
   final Value<int> healthStatus;
+  final Value<int?> sponsorshipStatus;
+  final Value<int?> sponsorshipType;
+  final Value<String?> sponsorName;
+  final Value<DateTime?> sponsorshipStartDate;
   final Value<String?> notes;
   final Value<String?> attachments;
   final Value<DateTime?> createdAt;
@@ -6264,6 +6575,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     this.age = const Value.absent(),
     this.gender = const Value.absent(),
     this.healthStatus = const Value.absent(),
+    this.sponsorshipStatus = const Value.absent(),
+    this.sponsorshipType = const Value.absent(),
+    this.sponsorName = const Value.absent(),
+    this.sponsorshipStartDate = const Value.absent(),
     this.notes = const Value.absent(),
     this.attachments = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -6284,6 +6599,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     this.age = const Value.absent(),
     required int gender,
     required int healthStatus,
+    this.sponsorshipStatus = const Value.absent(),
+    this.sponsorshipType = const Value.absent(),
+    this.sponsorName = const Value.absent(),
+    this.sponsorshipStartDate = const Value.absent(),
     this.notes = const Value.absent(),
     this.attachments = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -6310,6 +6629,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     Expression<int>? age,
     Expression<int>? gender,
     Expression<int>? healthStatus,
+    Expression<int>? sponsorshipStatus,
+    Expression<int>? sponsorshipType,
+    Expression<String>? sponsorName,
+    Expression<DateTime>? sponsorshipStartDate,
     Expression<String>? notes,
     Expression<String>? attachments,
     Expression<DateTime>? createdAt,
@@ -6330,6 +6653,11 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
       if (age != null) 'age': age,
       if (gender != null) 'gender': gender,
       if (healthStatus != null) 'health_status': healthStatus,
+      if (sponsorshipStatus != null) 'sponsorship_status': sponsorshipStatus,
+      if (sponsorshipType != null) 'sponsorship_type': sponsorshipType,
+      if (sponsorName != null) 'sponsor_name': sponsorName,
+      if (sponsorshipStartDate != null)
+        'sponsorship_start_date': sponsorshipStartDate,
       if (notes != null) 'notes': notes,
       if (attachments != null) 'attachments': attachments,
       if (createdAt != null) 'created_at': createdAt,
@@ -6352,6 +6680,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
       Value<int?>? age,
       Value<int>? gender,
       Value<int>? healthStatus,
+      Value<int?>? sponsorshipStatus,
+      Value<int?>? sponsorshipType,
+      Value<String?>? sponsorName,
+      Value<DateTime?>? sponsorshipStartDate,
       Value<String?>? notes,
       Value<String?>? attachments,
       Value<DateTime?>? createdAt,
@@ -6371,6 +6703,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
       age: age ?? this.age,
       gender: gender ?? this.gender,
       healthStatus: healthStatus ?? this.healthStatus,
+      sponsorshipStatus: sponsorshipStatus ?? this.sponsorshipStatus,
+      sponsorshipType: sponsorshipType ?? this.sponsorshipType,
+      sponsorName: sponsorName ?? this.sponsorName,
+      sponsorshipStartDate: sponsorshipStartDate ?? this.sponsorshipStartDate,
       notes: notes ?? this.notes,
       attachments: attachments ?? this.attachments,
       createdAt: createdAt ?? this.createdAt,
@@ -6417,6 +6753,19 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     if (healthStatus.present) {
       map['health_status'] = Variable<int>(healthStatus.value);
     }
+    if (sponsorshipStatus.present) {
+      map['sponsorship_status'] = Variable<int>(sponsorshipStatus.value);
+    }
+    if (sponsorshipType.present) {
+      map['sponsorship_type'] = Variable<int>(sponsorshipType.value);
+    }
+    if (sponsorName.present) {
+      map['sponsor_name'] = Variable<String>(sponsorName.value);
+    }
+    if (sponsorshipStartDate.present) {
+      map['sponsorship_start_date'] =
+          Variable<DateTime>(sponsorshipStartDate.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -6455,6 +6804,10 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
           ..write('age: $age, ')
           ..write('gender: $gender, ')
           ..write('healthStatus: $healthStatus, ')
+          ..write('sponsorshipStatus: $sponsorshipStatus, ')
+          ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('sponsorName: $sponsorName, ')
+          ..write('sponsorshipStartDate: $sponsorshipStartDate, ')
           ..write('notes: $notes, ')
           ..write('attachments: $attachments, ')
           ..write('createdAt: $createdAt, ')
@@ -10287,6 +10640,10 @@ typedef $$AttachmentsTableCreateCompanionBuilder = AttachmentsCompanion
   required String type,
   required int fileSize,
   Value<String?> thumbnailPath,
+  Value<String?> documentType,
+  Value<String?> personType,
+  Value<String?> personId,
+  Value<String?> notes,
   required DateTime createdAt,
   required DateTime updatedAt,
   Value<String> syncState,
@@ -10304,6 +10661,10 @@ typedef $$AttachmentsTableUpdateCompanionBuilder = AttachmentsCompanion
   Value<String> type,
   Value<int> fileSize,
   Value<String?> thumbnailPath,
+  Value<String?> documentType,
+  Value<String?> personType,
+  Value<String?> personId,
+  Value<String?> notes,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
   Value<String> syncState,
@@ -10344,6 +10705,18 @@ class $$AttachmentsTableFilterComposer
 
   ColumnFilters<String> get thumbnailPath => $composableBuilder(
       column: $table.thumbnailPath, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get documentType => $composableBuilder(
+      column: $table.documentType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get personType => $composableBuilder(
+      column: $table.personType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get personId => $composableBuilder(
+      column: $table.personId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -10396,6 +10769,19 @@ class $$AttachmentsTableOrderingComposer
       column: $table.thumbnailPath,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get documentType => $composableBuilder(
+      column: $table.documentType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get personType => $composableBuilder(
+      column: $table.personType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get personId => $composableBuilder(
+      column: $table.personId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -10446,6 +10832,18 @@ class $$AttachmentsTableAnnotationComposer
   GeneratedColumn<String> get thumbnailPath => $composableBuilder(
       column: $table.thumbnailPath, builder: (column) => column);
 
+  GeneratedColumn<String> get documentType => $composableBuilder(
+      column: $table.documentType, builder: (column) => column);
+
+  GeneratedColumn<String> get personType => $composableBuilder(
+      column: $table.personType, builder: (column) => column);
+
+  GeneratedColumn<String> get personId =>
+      $composableBuilder(column: $table.personId, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -10493,6 +10891,10 @@ class $$AttachmentsTableTableManager extends RootTableManager<
             Value<String> type = const Value.absent(),
             Value<int> fileSize = const Value.absent(),
             Value<String?> thumbnailPath = const Value.absent(),
+            Value<String?> documentType = const Value.absent(),
+            Value<String?> personType = const Value.absent(),
+            Value<String?> personId = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime> updatedAt = const Value.absent(),
             Value<String> syncState = const Value.absent(),
@@ -10509,6 +10911,10 @@ class $$AttachmentsTableTableManager extends RootTableManager<
             type: type,
             fileSize: fileSize,
             thumbnailPath: thumbnailPath,
+            documentType: documentType,
+            personType: personType,
+            personId: personId,
+            notes: notes,
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncState: syncState,
@@ -10525,6 +10931,10 @@ class $$AttachmentsTableTableManager extends RootTableManager<
             required String type,
             required int fileSize,
             Value<String?> thumbnailPath = const Value.absent(),
+            Value<String?> documentType = const Value.absent(),
+            Value<String?> personType = const Value.absent(),
+            Value<String?> personId = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
             required DateTime createdAt,
             required DateTime updatedAt,
             Value<String> syncState = const Value.absent(),
@@ -10541,6 +10951,10 @@ class $$AttachmentsTableTableManager extends RootTableManager<
             type: type,
             fileSize: fileSize,
             thumbnailPath: thumbnailPath,
+            documentType: documentType,
+            personType: personType,
+            personId: personId,
+            notes: notes,
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncState: syncState,
@@ -11810,6 +12224,10 @@ typedef $$FamilyMembersTableTableCreateCompanionBuilder
   Value<int?> age,
   required int gender,
   required int healthStatus,
+  Value<int?> sponsorshipStatus,
+  Value<int?> sponsorshipType,
+  Value<String?> sponsorName,
+  Value<DateTime?> sponsorshipStartDate,
   Value<String?> notes,
   Value<String?> attachments,
   Value<DateTime?> createdAt,
@@ -11831,6 +12249,10 @@ typedef $$FamilyMembersTableTableUpdateCompanionBuilder
   Value<int?> age,
   Value<int> gender,
   Value<int> healthStatus,
+  Value<int?> sponsorshipStatus,
+  Value<int?> sponsorshipType,
+  Value<String?> sponsorName,
+  Value<DateTime?> sponsorshipStartDate,
   Value<String?> notes,
   Value<String?> attachments,
   Value<DateTime?> createdAt,
@@ -11882,6 +12304,21 @@ class $$FamilyMembersTableTableFilterComposer
 
   ColumnFilters<int> get healthStatus => $composableBuilder(
       column: $table.healthStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sponsorshipStatus => $composableBuilder(
+      column: $table.sponsorshipStatus,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sponsorshipType => $composableBuilder(
+      column: $table.sponsorshipType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get sponsorName => $composableBuilder(
+      column: $table.sponsorName, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get sponsorshipStartDate => $composableBuilder(
+      column: $table.sponsorshipStartDate,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnFilters(column));
@@ -11950,6 +12387,21 @@ class $$FamilyMembersTableTableOrderingComposer
       column: $table.healthStatus,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get sponsorshipStatus => $composableBuilder(
+      column: $table.sponsorshipStatus,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sponsorshipType => $composableBuilder(
+      column: $table.sponsorshipType,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get sponsorName => $composableBuilder(
+      column: $table.sponsorName, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get sponsorshipStartDate => $composableBuilder(
+      column: $table.sponsorshipStartDate,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get notes => $composableBuilder(
       column: $table.notes, builder: (column) => ColumnOrderings(column));
 
@@ -12015,6 +12467,18 @@ class $$FamilyMembersTableTableAnnotationComposer
   GeneratedColumn<int> get healthStatus => $composableBuilder(
       column: $table.healthStatus, builder: (column) => column);
 
+  GeneratedColumn<int> get sponsorshipStatus => $composableBuilder(
+      column: $table.sponsorshipStatus, builder: (column) => column);
+
+  GeneratedColumn<int> get sponsorshipType => $composableBuilder(
+      column: $table.sponsorshipType, builder: (column) => column);
+
+  GeneratedColumn<String> get sponsorName => $composableBuilder(
+      column: $table.sponsorName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get sponsorshipStartDate => $composableBuilder(
+      column: $table.sponsorshipStartDate, builder: (column) => column);
+
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
@@ -12076,6 +12540,10 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             Value<int?> age = const Value.absent(),
             Value<int> gender = const Value.absent(),
             Value<int> healthStatus = const Value.absent(),
+            Value<int?> sponsorshipStatus = const Value.absent(),
+            Value<int?> sponsorshipType = const Value.absent(),
+            Value<String?> sponsorName = const Value.absent(),
+            Value<DateTime?> sponsorshipStartDate = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<String?> attachments = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -12096,6 +12564,10 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             age: age,
             gender: gender,
             healthStatus: healthStatus,
+            sponsorshipStatus: sponsorshipStatus,
+            sponsorshipType: sponsorshipType,
+            sponsorName: sponsorName,
+            sponsorshipStartDate: sponsorshipStartDate,
             notes: notes,
             attachments: attachments,
             createdAt: createdAt,
@@ -12116,6 +12588,10 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             Value<int?> age = const Value.absent(),
             required int gender,
             required int healthStatus,
+            Value<int?> sponsorshipStatus = const Value.absent(),
+            Value<int?> sponsorshipType = const Value.absent(),
+            Value<String?> sponsorName = const Value.absent(),
+            Value<DateTime?> sponsorshipStartDate = const Value.absent(),
             Value<String?> notes = const Value.absent(),
             Value<String?> attachments = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -12136,6 +12612,10 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             age: age,
             gender: gender,
             healthStatus: healthStatus,
+            sponsorshipStatus: sponsorshipStatus,
+            sponsorshipType: sponsorshipType,
+            sponsorName: sponsorName,
+            sponsorshipStartDate: sponsorshipStartDate,
             notes: notes,
             attachments: attachments,
             createdAt: createdAt,

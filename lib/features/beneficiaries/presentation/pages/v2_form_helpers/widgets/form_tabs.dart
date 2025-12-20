@@ -98,22 +98,22 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         key: const ValueKey('basic_info_tab'),
         firstNameController: widget.formControllers.firstNameController,
         fatherNameController: widget.formControllers.fatherNameController,
-        grandfatherNameController:
-            widget.formControllers.grandfatherNameController,
+        grandfatherNameController: widget.formControllers.grandfatherNameController,
         lastNameController: widget.formControllers.lastNameController,
         motherNameController: widget.formControllers.motherNameController,
         nationalIdController: widget.formControllers.nationalIdController,
         birthDateController: widget.formControllers.birthDateController,
         selectedGender: widget.formControllers.selectedGender,
-        onGenderChanged: (value) =>
-            widget.formControllers.selectedGender = value,
+        onGenderChanged: (value) => widget.formControllers.selectedGender = value,
         onBirthDateTap: widget.onBirthDateTap,
         firstFieldFocusNode: widget.firstFieldFocusNode,
         selectedCategory: widget.formControllers.selectedCategory,
-        onCategoryChanged: (value) =>
-            widget.formControllers.selectedCategory = value,
-        formControllers:
-            widget.formControllers, // 🆕 Pass controllers for autofill
+        onCategoryChanged: (value) => widget.formControllers.selectedCategory = value,
+        selectedRelationship: widget.formControllers.selectedRelationship,
+        onRelationshipChanged: (value) => widget.formControllers.selectedRelationship = value,
+        selectedSection: widget.formControllers.selectedSection,
+        onSectionChanged: (value) => widget.formControllers.selectedSection = value,
+        formControllers: widget.formControllers, // 🆕 Pass controllers for autofill
       ),
     );
   }
@@ -123,16 +123,12 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
       child: V2FamilyInfoTab(
         key: const ValueKey('family_info_tab'),
         selectedMaritalStatus: widget.formControllers.selectedMaritalStatus,
-        onMaritalStatusChanged: (value) =>
-            widget.formControllers.selectedMaritalStatus = value,
-        numberOfDependentsController:
-            widget.formControllers.numberOfDependentsController,
+        onMaritalStatusChanged: (value) => widget.formControllers.selectedMaritalStatus = value,
+        numberOfDependentsController: widget.formControllers.numberOfDependentsController,
         numberOfMalesController: widget.formControllers.numberOfMalesController,
-        numberOfFemalesController:
-            widget.formControllers.numberOfFemalesController,
+        numberOfFemalesController: widget.formControllers.numberOfFemalesController,
         selectedRelationship: widget.formControllers.selectedRelationship,
-        onRelationshipChanged: (value) =>
-            widget.formControllers.selectedRelationship = value,
+        onRelationshipChanged: (value) => widget.formControllers.selectedRelationship = value,
       ),
     );
   }
@@ -148,14 +144,10 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         selectedCity: widget.formControllers.selectedCity,
         onCityChanged: (value) => widget.formControllers.selectedCity = value,
         selectedProvince: widget.formControllers.selectedProvince,
-        onProvinceChanged: (value) =>
-            widget.formControllers.selectedProvince = value,
-        selectedDisplacementStatus:
-            widget.formControllers.selectedDisplacementStatus,
-        onDisplacementStatusChanged: (value) =>
-            widget.formControllers.selectedDisplacementStatus = value,
-        addressBeforeDisplacementController:
-            widget.formControllers.addressBeforeDisplacementController,
+        onProvinceChanged: (value) => widget.formControllers.selectedProvince = value,
+        selectedDisplacementStatus: widget.formControllers.selectedDisplacementStatus,
+        onDisplacementStatusChanged: (value) => widget.formControllers.selectedDisplacementStatus = value,
+        addressBeforeDisplacementController: widget.formControllers.addressBeforeDisplacementController,
       ),
     );
   }
@@ -165,26 +157,18 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
       child: V2AdditionalInfoTab(
         key: const ValueKey('additional_info_tab'),
         selectedEducationLevel: widget.formControllers.selectedEducationLevel,
-        onEducationLevelChanged: (value) =>
-            widget.formControllers.selectedEducationLevel = value,
-        selectedEmploymentStatus:
-            widget.formControllers.selectedEmploymentStatus,
-        onEmploymentStatusChanged: (value) =>
-            widget.formControllers.selectedEmploymentStatus = value,
+        onEducationLevelChanged: (value) => widget.formControllers.selectedEducationLevel = value,
+        selectedEmploymentStatus: widget.formControllers.selectedEmploymentStatus,
+        onEmploymentStatusChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
         hasDisability: widget.formControllers.hasDisability,
-        onDisabilityChanged: (value) =>
-            widget.formControllers.hasDisability = value,
+        onDisabilityChanged: (value) => widget.formControllers.hasDisability = value,
         selectedHealthStatus: widget.formControllers.selectedHealthStatus,
-        onHealthStatusChanged: (value) =>
-            widget.formControllers.selectedHealthStatus = value,
-        chronicDiseasesController:
-            widget.formControllers.chronicDiseasesController,
+        onHealthStatusChanged: (value) => widget.formControllers.selectedHealthStatus = value,
+        chronicDiseasesController: widget.formControllers.chronicDiseasesController,
         selectedHousingStatus: widget.formControllers.selectedHousingStatus,
-        onHousingStatusChanged: (value) =>
-            widget.formControllers.selectedHousingStatus = value,
+        onHousingStatusChanged: (value) => widget.formControllers.selectedHousingStatus = value,
         selectedHousingType: widget.formControllers.selectedHousingType,
-        onHousingTypeChanged: (value) =>
-            widget.formControllers.selectedHousingType = value,
+        onHousingTypeChanged: (value) => widget.formControllers.selectedHousingType = value,
       ),
     );
   }
@@ -218,8 +202,7 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         onPendingFilesChanged: (files) {
           widget.formControllers.updatePendingFiles(files);
         },
-        formControllers: widget
-            .formControllers, // ✅ تمرير controllers للوصول لبيانات العائلة
+        formControllers: widget.formControllers, // ✅ تمرير controllers للوصول لبيانات العائلة
       ),
     );
   }

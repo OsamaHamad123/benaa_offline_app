@@ -7,6 +7,7 @@ import '../../../../data/db/drift_database.dart';
 import '../providers/beneficiary_dependencies.dart';
 import '../../../../core/utils/family_enums.dart';
 import '../../../../core/utils/ux_helpers.dart';
+import '../../../../core/enums/sponsorship_enums.dart';
 
 class FamilyMembersForm extends ConsumerStatefulWidget {
   final int beneficiaryId;
@@ -38,6 +39,12 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
   DateTime? _birthDate;
   int? _calculatedAge;
 
+  // Sponsorship fields
+  int? _selectedSponsorshipStatus;
+  int? _selectedSponsorshipType;
+  late TextEditingController _sponsorNameController;
+  DateTime? _sponsorshipStartDate;
+
   // Attachments
   String? _nationalIdImagePath;
   String? _medicalReportPath;
@@ -58,6 +65,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       text: member?.orphanNationalId.toString() ?? '',
     );
     _notesController = TextEditingController(text: member?.notes);
+    _sponsorNameController = TextEditingController(text: member?.sponsorName);
 
     // تحميل القيم
     _selectedGender = member?.gender;
@@ -66,6 +74,11 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     if (_birthDate != null) {
       _calculatedAge = DateTime.now().difference(_birthDate!).inDays ~/ 365;
     }
+
+    // Sponsorship values
+    _selectedSponsorshipStatus = member?.sponsorshipStatus;
+    _selectedSponsorshipType = member?.sponsorshipType;
+    _sponsorshipStartDate = member?.sponsorshipStartDate;
 
     // Parse existing attachments
     if (member?.attachments != null && member!.attachments!.isNotEmpty) {
@@ -96,22 +109,39 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     _familyNameController.dispose();
     _orphanNationalIdController.dispose();
     _notesController.dispose();
+    _sponsorNameController.dispose();
     super.dispose();
   }
 
   Future<void> _selectBirthDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate:
-          _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
+      initialDate: _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('ar'),
     );
     if (picked != null) {
+      HapticFeedback.selectionClick(); // Date selected haptic
       setState(() {
         _birthDate = picked;
         _calculatedAge = DateTime.now().difference(picked).inDays ~/ 365;
+      });
+    }
+  }
+
+  Future<void> _selectSponsorshipStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _sponsorshipStartDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+      locale: const Locale('ar'),
+    );
+    if (picked != null) {
+      HapticFeedback.selectionClick(); // Date selected haptic
+      setState(() {
+        _sponsorshipStartDate = picked;
       });
     }
   }
@@ -163,6 +193,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_birthDate == null) {
+      HapticFeedback.vibrate(); // Warning haptic
       ToastHelper.showError('الرجاء اختيار تاريخ الميلاد');
       return;
     }
@@ -174,6 +205,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
         _lastCertificatePath == null ||
         _personalPhotoPath == null ||
         _fullPhotoPath == null) {
+      HapticFeedback.vibrate(); // Warning haptic
       ToastHelper.showWarning('الرجاء رفع جميع المرفقات المطلوبة');
       return;
     }
@@ -186,9 +218,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     );
 
     final companion = FamilyMembersTableCompanion(
-      id: widget.existingMember != null
-          ? drift.Value(widget.existingMember!.id)
-          : const drift.Value.absent(),
+      id: widget.existingMember != null ? drift.Value(widget.existingMember!.id) : const drift.Value.absent(),
       beneficiaryId: drift.Value(widget.beneficiaryId),
       orphanNationalId: drift.Value(orphanNationalIdInt),
       firstName: drift.Value(_firstNameController.text.trim()),
@@ -205,12 +235,21 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       healthStatus: drift.Value(_selectedHealthStatus ?? HealthStatus.unknown),
       attachments: drift.Value(_buildAttachmentsString()),
       notes: drift.Value(_notesController.text.trim()),
+      // Sponsorship fields
+      sponsorshipStatus:
+          _selectedSponsorshipStatus != null ? drift.Value(_selectedSponsorshipStatus) : const drift.Value(null),
+      sponsorshipType:
+          _selectedSponsorshipType != null ? drift.Value(_selectedSponsorshipType) : const drift.Value(null),
+      sponsorName: _sponsorNameController.text.trim().isEmpty
+          ? const drift.Value(null)
+          : drift.Value(_sponsorNameController.text.trim()),
+      sponsorshipStartDate:
+          _sponsorshipStartDate != null ? drift.Value(_sponsorshipStartDate) : const drift.Value(null),
       syncState: const drift.Value('pending'),
       serverId: const drift.Value(null),
       lastSyncedAt: const drift.Value(null),
-      createdAt: widget.existingMember != null
-          ? drift.Value(widget.existingMember!.createdAt)
-          : drift.Value(DateTime.now()),
+      createdAt:
+          widget.existingMember != null ? drift.Value(widget.existingMember!.createdAt) : drift.Value(DateTime.now()),
       updatedAt: drift.Value(DateTime.now()),
     );
 
@@ -235,22 +274,33 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
           ),
           attachments: drift.Value(_buildAttachmentsString()),
           notes: drift.Value(_notesController.text.trim()),
+          // Sponsorship fields
+          sponsorshipStatus:
+              _selectedSponsorshipStatus != null ? drift.Value(_selectedSponsorshipStatus) : const drift.Value(null),
+          sponsorshipType:
+              _selectedSponsorshipType != null ? drift.Value(_selectedSponsorshipType) : const drift.Value(null),
+          sponsorName: _sponsorNameController.text.trim().isEmpty
+              ? const drift.Value(null)
+              : drift.Value(_sponsorNameController.text.trim()),
+          sponsorshipStartDate:
+              _sponsorshipStartDate != null ? drift.Value(_sponsorshipStartDate) : const drift.Value(null),
           updatedAt: drift.Value(DateTime.now()),
         );
-        await (database.update(database.familyMembersTable)
-              ..where((t) => t.id.equals(widget.existingMember!.id)))
+        await (database.update(database.familyMembersTable)..where((t) => t.id.equals(widget.existingMember!.id)))
             .write(updateCompanion);
       } else {
         await dao.addMember(companion);
       }
 
       if (mounted) {
+        HapticFeedback.mediumImpact(); // Success haptic
         ToastHelper.showSuccess('تم الحفظ بنجاح');
         Navigator.of(context).pop();
         widget.onSaved();
       }
     } catch (e) {
       if (mounted) {
+        HapticFeedback.vibrate(); // Error haptic
         ToastHelper.showError('خطأ في الحفظ: $e');
       }
     }
@@ -494,12 +544,91 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
                   child: Text(HealthStatus.toArabic(statusValue)),
                 );
               }).toList(),
-              onChanged: (value) =>
-                  setState(() => _selectedHealthStatus = value),
+              onChanged: (value) => setState(() => _selectedHealthStatus = value),
               validator: (value) {
                 if (value == null) return 'الرجاء اختيار الحالة الصحية';
                 return null;
               },
+            ),
+            const SizedBox(height: 24),
+
+            // Section: بيانات الكفالة
+            const Text(
+              'بيانات الكفالة',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+
+            // حالة الكفالة
+            DropdownButtonFormField<int>(
+              value: _selectedSponsorshipStatus,
+              decoration: const InputDecoration(
+                labelText: 'حالة الكفالة',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.verified_user),
+                hintText: 'اختياري',
+              ),
+              items: SponsorshipStatus.allValues.map((status) {
+                return DropdownMenuItem(
+                  value: status.id,
+                  child: Text(status.arabicName),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedSponsorshipStatus = value),
+            ),
+            const SizedBox(height: 16),
+
+            // نوع الكفالة
+            DropdownButtonFormField<int>(
+              value: _selectedSponsorshipType,
+              decoration: const InputDecoration(
+                labelText: 'نوع الكفالة',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.category),
+                hintText: 'اختياري',
+              ),
+              items: SponsorshipType.allValues.map((type) {
+                return DropdownMenuItem(
+                  value: type.id,
+                  child: Text(type.arabicName),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedSponsorshipType = value),
+            ),
+            const SizedBox(height: 16),
+
+            // اسم الكفيل
+            TextFormField(
+              controller: _sponsorNameController,
+              decoration: const InputDecoration(
+                labelText: 'اسم الكفيل',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_add),
+                hintText: 'اختياري',
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // تاريخ بدء الكفالة
+            InkWell(
+              onTap: _selectSponsorshipStartDate,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'تاريخ بدء الكفالة',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.date_range),
+                  hintText: 'اختياري',
+                ),
+                child: Text(
+                  _sponsorshipStartDate != null
+                      ? '${_sponsorshipStartDate!.year}-${_sponsorshipStartDate!.month.toString().padLeft(2, '0')}-${_sponsorshipStartDate!.day.toString().padLeft(2, '0')}'
+                      : 'اختر التاريخ',
+                  style: TextStyle(
+                    color: _sponsorshipStartDate != null ? null : Colors.grey,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 

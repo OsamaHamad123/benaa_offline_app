@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import '../../../../attachments/domain/models/pending_attachment.dart'; // 🆕 Import PendingAttachment
 
 // Toggle form-level debug printing during manual debugging. Keep false
 // in CI/tests to avoid console I/O jitter.
@@ -37,6 +38,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final notesController = TextEditingController();
   final chronicDiseasesController = TextEditingController();
   final addressBeforeDisplacementController = TextEditingController();
+  final createdByUserController = TextEditingController(); // 🆕 اسم المستخدم المدخل
 
   // 🔥 CRITICAL FIX: Prevent rebuild on every keystroke
   // Only notify on dropdown/switch changes, NOT on text input
@@ -181,6 +183,10 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final List<File> _pendingAttachmentFiles = [];
   List<File> get pendingAttachmentFiles => _pendingAttachmentFiles;
 
+  // 🆕 Enhanced Pending Attachments with Metadata
+  final List<PendingAttachment> _pendingAttachments = [];
+  List<PendingAttachment> get pendingAttachments => _pendingAttachments;
+
   // 👨‍👩‍👧‍👦 Family members data (living and deceased)
   final List<Map<String, dynamic>> _livingMembers = [];
   List<Map<String, dynamic>> get livingMembers => _livingMembers;
@@ -227,6 +233,40 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void removePendingFile(int index) {
     if (index >= 0 && index < _pendingAttachmentFiles.length) {
       _pendingAttachmentFiles.removeAt(index);
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  // 🆕 Enhanced Pending Attachments Methods
+  /// Update pending attachments (with metadata)
+  void updatePendingAttachments(List<PendingAttachment> newAttachments) {
+    _pendingAttachments.clear();
+    _pendingAttachments.addAll(newAttachments);
+    // Also update legacy list for backward compatibility
+    _pendingAttachmentFiles.clear();
+    _pendingAttachmentFiles.addAll(newAttachments.map((a) => a.file));
+    if (kDebugMode && _enableFormDebugPrints) {
+      debugPrint(
+        '📋 [FormControllers] Updated pending attachments. Count: ${_pendingAttachments.length}',
+      );
+    }
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Add single pending attachment
+  void addPendingAttachment(PendingAttachment attachment) {
+    _pendingAttachments.add(attachment);
+    _pendingAttachmentFiles.add(attachment.file);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Remove pending attachment by index
+  void removePendingAttachment(int index) {
+    if (index >= 0 && index < _pendingAttachments.length) {
+      _pendingAttachments.removeAt(index);
+      if (index < _pendingAttachmentFiles.length) {
+        _pendingAttachmentFiles.removeAt(index);
+      }
       _notifyAndScheduleAutoSave();
     }
   }
@@ -428,6 +468,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     notesController.dispose();
     chronicDiseasesController.dispose();
     addressBeforeDisplacementController.dispose();
+    createdByUserController.dispose(); // 🆕 Dispose createdByUser controller
 
     livingMembersNotifier.dispose();
     deceasedMembersNotifier.dispose();
