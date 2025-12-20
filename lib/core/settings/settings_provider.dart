@@ -117,6 +117,9 @@ class SettingsState {
       cacheDurationMinutes: cacheDurationMinutes ?? this.cacheDurationMinutes,
       searchHistorySize: searchHistorySize ?? this.searchHistorySize,
       offlineMode: offlineMode ?? this.offlineMode,
+      biometricAuthEnabled: biometricAuthEnabled ?? this.biometricAuthEnabled,
+      sessionTimeoutMinutes: sessionTimeoutMinutes ?? this.sessionTimeoutMinutes,
+      requireStrongPassword: requireStrongPassword ?? this.requireStrongPassword,
       developerMode: developerMode ?? this.developerMode,
       debugLogging: debugLogging ?? this.debugLogging,
       showDebugInfo: showDebugInfo ?? this.showDebugInfo,
@@ -142,6 +145,9 @@ class SettingsState {
       'cacheDurationMinutes': cacheDurationMinutes,
       'searchHistorySize': searchHistorySize,
       'offlineMode': offlineMode,
+      'biometricAuthEnabled': biometricAuthEnabled,
+      'sessionTimeoutMinutes': sessionTimeoutMinutes,
+      'requireStrongPassword': requireStrongPassword,
       'developerMode': developerMode,
       'debugLogging': debugLogging,
       'showDebugInfo': showDebugInfo,
@@ -167,6 +173,9 @@ class SettingsState {
       cacheDurationMinutes: json['cacheDurationMinutes'] ?? 30,
       searchHistorySize: json['searchHistorySize'] ?? 10,
       offlineMode: json['offlineMode'] ?? false,
+      biometricAuthEnabled: json['biometricAuthEnabled'] ?? false,
+      sessionTimeoutMinutes: json['sessionTimeoutMinutes'] ?? 15,
+      requireStrongPassword: json['requireStrongPassword'] ?? true,
       developerMode: json['developerMode'] ?? false,
       debugLogging: json['debugLogging'] ?? false,
       showDebugInfo: json['showDebugInfo'] ?? false,
@@ -255,7 +264,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _saveSettings();
   }
 
-  Future<void> setSyncInterval(int hours) async {
+  Future<void> setSyncIntervalHours(int hours) async {
     state = state.copyWith(syncIntervalHours: hours);
     await _saveSettings();
   }
@@ -310,7 +319,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   // Data
-  Future<void> setCacheDuration(int minutes) async {
+  Future<void> setCacheDurationMinutes(int minutes) async {
     state = state.copyWith(cacheDurationMinutes: minutes);
     await _saveSettings();
   }
@@ -344,6 +353,22 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   // Reset to defaults
   Future<void> resetToDefaults() async {
     state = const SettingsState();
+    await _saveSettings();
+  }
+
+  // Security
+  Future<void> setBiometricAuthEnabled(bool value) async {
+    state = state.copyWith(biometricAuthEnabled: value);
+    await _saveSettings();
+  }
+
+  Future<void> setSessionTimeoutMinutes(int minutes) async {
+    state = state.copyWith(sessionTimeoutMinutes: minutes);
+    await _saveSettings();
+  }
+
+  Future<void> setRequireStrongPassword(bool value) async {
+    state = state.copyWith(requireStrongPassword: value);
     await _saveSettings();
   }
 }

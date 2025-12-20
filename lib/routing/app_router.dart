@@ -36,7 +36,7 @@ import '../features/kafalat/presentation/pages/smart_notifications_page.dart';
 import '../features/kafalat/presentation/pages/theme_settings_page.dart';
 import '../features/kafalat/presentation/pages/additional_features_pages.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
-import '../core/settings/enhanced_settings_page.dart';
+import '../core/settings/clean_settings_page.dart';
 import '../core/storage/secure_store.dart';
 import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
 import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
@@ -216,7 +216,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const EnhancedSettingsPage(),
+        builder: (context, state) => const CleanSettingsPage(),
       ),
       GoRoute(
         path: '/analytics',

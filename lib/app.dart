@@ -19,7 +19,6 @@ class BenaaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
-    final themeMode = ref.watch(themeModeProvider);
 
     // 📊 Start analytics session
     UxAnalytics.startSession();
@@ -31,6 +30,19 @@ class BenaaApp extends ConsumerWidget {
       child: settingsAsync.when(
         data: (_) {
           final settings = ref.watch(settingsProvider);
+
+          // Convert settings.themeMode to ThemeMode enum
+          ThemeMode themeMode;
+          switch (settings.themeMode) {
+            case 'light':
+              themeMode = ThemeMode.light;
+              break;
+            case 'dark':
+              themeMode = ThemeMode.dark;
+              break;
+            default:
+              themeMode = ThemeMode.system;
+          }
 
           // Get color scheme
           Color primaryColor = AppTheme.getColorFromScheme(

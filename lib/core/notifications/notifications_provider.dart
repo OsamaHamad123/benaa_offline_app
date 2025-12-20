@@ -169,7 +169,6 @@ class NotificationsState {
 }
 
 /// Provider للـ NotificationsStateNotifier
-final notificationsStateProvider =
-    StateNotifierProvider<NotificationsStateNotifier, NotificationsState>(
+final notificationsStateProvider = StateNotifierProvider<NotificationsStateNotifier, NotificationsState>(
   (ref) => NotificationsStateNotifier(),
 );
