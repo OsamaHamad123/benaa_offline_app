@@ -1347,6 +1347,38 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     );
   }
 
+  /// 🆕 Handle final save from Review Tab with confirmation
+  Future<void> _handleFinalSaveFromReview() async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(Icons.save_rounded, size: 48.sp, color: Theme.of(context).colorScheme.primary),
+        title: const Text('حفظ السجل نهائياً'),
+        content: const Text(
+          'هل أنت متأكد من حفظ السجل بشكل نهائي؟\n'
+          'يرجى التأكد من صحة جميع البيانات.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('تأكيد الحفظ'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _handleSave();
+    }
+  }
+
   Future<void> _handleSave({bool isAutoSave = false}) async {
     if (_isSavingLocked) return;
 
@@ -1586,6 +1618,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                               firstFieldFocusNode: _firstFieldFocusNode,
                               beneficiaryId: widget.beneficiaryId,
                               showFieldHelpers: _showFieldHelpers,
+                              onFinalSave: _handleFinalSaveFromReview, // 🆕 Pass callback
                             ),
                           ),
 

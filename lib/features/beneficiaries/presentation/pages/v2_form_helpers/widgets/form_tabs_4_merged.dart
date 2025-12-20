@@ -12,20 +12,23 @@ import '../../../widgets/v2/tabs/v2_personal_info_merged_tab.dart';
 import '../../../widgets/v2/tabs/v2_family_merged_tab.dart';
 import '../../../widgets/v2/tabs/v2_contact_notes_merged_tab.dart';
 import '../../../widgets/v2/tabs/v2_unified_attachments_tab.dart';
+import '../../../widgets/v2/tabs/v2_review_tab.dart'; // 🆕 Review Tab
 
-/// 📋 New 4-Tab Form Structure (Merged from 7 tabs)
+/// 📋 New 5-Tab Form Structure (Merged from 7 tabs + Review)
 ///
 /// التبويبات الجديدة:
 /// 1. معلومات شخصية (أساسي + إضافي)
 /// 2. العائلة (العائلة + أفراد)
 /// 3. التواصل والملاحظات (التواصل + ملاحظات)
 /// 4. المرفقات
+/// 5. المراجعة النهائية 🆕
 class BeneficiaryFormTabs4Merged extends StatefulWidget {
   final TabController controller;
   final BeneficiaryFormControllers formControllers;
   final VoidCallback onBirthDateTap;
   final FocusNode firstFieldFocusNode;
   final String? beneficiaryId;
+  final VoidCallback? onFinalSave; // 🆕 Callback for final save
 
   const BeneficiaryFormTabs4Merged({
     super.key,
@@ -34,15 +37,14 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
     required this.onBirthDateTap,
     required this.firstFieldFocusNode,
     required this.beneficiaryId,
+    this.onFinalSave,
   });
 
   @override
-  State<BeneficiaryFormTabs4Merged> createState() =>
-      _BeneficiaryFormTabs4MergedState();
+  State<BeneficiaryFormTabs4Merged> createState() => _BeneficiaryFormTabs4MergedState();
 }
 
-class _BeneficiaryFormTabs4MergedState
-    extends State<BeneficiaryFormTabs4Merged> {
+class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged> {
   final Set<int> _loadedTabs = {0}; // Always load first tab
   final List<Timer> _preloadTimers = [];
 
@@ -100,8 +102,7 @@ class _BeneficiaryFormTabs4MergedState
 
   /// 🎉 Check and celebrate tab completion
   void checkAndCelebrateCompletion(int tabIndex, TabCompletionStats stats) {
-    if (stats.percentage == 100 &&
-        !TabCompletionCelebration.hasCelebrated(tabIndex)) {
+    if (stats.percentage == 100 && !TabCompletionCelebration.hasCelebrated(tabIndex)) {
       TabCompletionCelebration.show(
         context,
         tabIndex: tabIndex,
@@ -114,8 +115,7 @@ class _BeneficiaryFormTabs4MergedState
   Widget build(BuildContext context) {
     return TabBarView(
       controller: widget.controller,
-      physics:
-          const NeverScrollableScrollPhysics(), // Disable swipe - use buttons only
+      physics: const NeverScrollableScrollPhysics(), // Disable swipe - use buttons only
       children: List.generate(FormConstants.totalTabs, (index) {
         // Lazy load: only build tabs that have been visited
         if (!_loadedTabs.contains(index)) {
@@ -141,6 +141,8 @@ class _BeneficiaryFormTabs4MergedState
         return _buildContactNotesMergedTab();
       case 3:
         return _buildAttachmentsTab();
+      case 4:
+        return _buildReviewTab(); // 🆕 Review Tab
       default:
         return const SizedBox.shrink();
     }
@@ -182,6 +184,19 @@ class _BeneficiaryFormTabs4MergedState
         widget.formControllers.updatePendingFiles(files);
       },
       formControllers: widget.formControllers,
+    );
+  }
+
+  /// 📋 Tab 5: المراجعة النهائية 🆕
+  Widget _buildReviewTab() {
+    return V2ReviewTab(
+      key: const ValueKey('review_tab'),
+      formControllers: widget.formControllers,
+      onFinalSave: widget.onFinalSave ?? () {},
+      onEditSection: () {
+        // العودة للتبويب الأول
+        widget.controller.animateTo(0);
+      },
     );
   }
 }
@@ -240,9 +255,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
                     Icon(
                       tab.icon,
                       size: 20,
-                      color: isActive
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurfaceVariant,
+                      color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
                     ),
                     // Checkmark for completed tabs
                     if (stats != null && stats.percentage == 100)
@@ -274,9 +287,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
                   style: TextStyle(
                     fontSize: isActive ? 12.sp : 11.sp,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    color: isActive
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurfaceVariant,
+                    color: isActive ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
 
@@ -289,8 +300,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
                     height: 3,
                     child: LinearProgressIndicator(
                       value: stats.percentage / 100,
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
                       valueColor: AlwaysStoppedAnimation(
                         BeneficiaryFormColors.getProgressColor(
                           context,

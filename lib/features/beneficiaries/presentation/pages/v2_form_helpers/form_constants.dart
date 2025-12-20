@@ -27,7 +27,7 @@ class FormConstants {
   static const fabIconSize = 24.0;
 
   // 📱 Tab Configuration
-  static const totalTabs = 4; // تقليل من 7 إلى 4
+  static const totalTabs = 5; // تقليل من 7 إلى 5 (مع تبويب المراجعة)
 
   // 🎯 Validation Messages
   static const requiredFieldMessage = '⚠️ الحقل مطلوب';
@@ -103,6 +103,12 @@ class FormTabs {
       icon: Icons.attach_file_rounded,
       index: 3,
     ),
+    TabConfig(
+      title: 'المراجعة',
+      fullTitle: 'مراجعة جميع المعلومات',
+      icon: Icons.fact_check_rounded,
+      index: 4,
+    ),
   ];
 }
 
@@ -163,6 +169,7 @@ class FormFieldDependencies {
 class FormColors {
   FormColors._();
 
+    4: [Color(0xFF0288D1), Color(0xFF29B6F6)], // Cyan - المراجعة
   // Tab Colors with gradients
   static final Map<int, List<Color>> tabGradients = {
     0: [Color(0xFF1976D2), Color(0xFF42A5F5)], // Blue - معلومات شخصية

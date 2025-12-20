@@ -16,6 +16,7 @@ class FormContentWidget extends StatefulWidget {
   final FocusNode firstFieldFocusNode;
   final String? beneficiaryId;
   final bool showFieldHelpers;
+  final VoidCallback? onFinalSave; // 🆕 Callback for final save from review tab
 
   const FormContentWidget({
     super.key,
@@ -25,6 +26,7 @@ class FormContentWidget extends StatefulWidget {
     required this.firstFieldFocusNode,
     required this.beneficiaryId,
     required this.showFieldHelpers,
+    this.onFinalSave,
   });
 
   @override
@@ -82,6 +84,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
             onBirthDateTap: widget.onBirthDateTap,
             firstFieldFocusNode: widget.firstFieldFocusNode,
             beneficiaryId: widget.beneficiaryId,
+            onFinalSave: widget.onFinalSave, // 🆕 Pass callback
           ),
         ),
       ],
