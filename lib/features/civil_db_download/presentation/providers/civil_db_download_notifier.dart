@@ -41,10 +41,10 @@ class CivilDbDownloadNotifier extends StateNotifier<CivilDbDownloadState> {
     required this.downloadUseCase,
     required this.cancelUseCase,
   }) : super(
-         CivilDbDownloadState(
-           status: CivilDbStatus(status: CivilDbStatusType.notDownloaded),
-         ),
-       );
+          CivilDbDownloadState(
+            status: CivilDbStatus(status: CivilDbStatusType.notDownloaded),
+          ),
+        );
 
   /// Check database status
   Future<void> checkStatus() async {
@@ -105,9 +105,9 @@ class CivilDbDownloadNotifier extends StateNotifier<CivilDbDownloadState> {
 /// Provider for CivilDbDownloadNotifier
 final civilDbDownloadProvider =
     StateNotifierProvider<CivilDbDownloadNotifier, CivilDbDownloadState>((ref) {
-      return CivilDbDownloadNotifier(
-        checkStatusUseCase: ref.watch(checkDbStatusUseCaseProvider),
-        downloadUseCase: ref.watch(downloadDbUseCaseProvider),
-        cancelUseCase: ref.watch(cancelDownloadUseCaseProvider),
-      );
-    });
+  return CivilDbDownloadNotifier(
+    checkStatusUseCase: ref.watch(checkDbStatusUseCaseProvider),
+    downloadUseCase: ref.watch(downloadDbUseCaseProvider),
+    cancelUseCase: ref.watch(cancelDownloadUseCaseProvider),
+  );
+});

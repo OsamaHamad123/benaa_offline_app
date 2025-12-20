@@ -291,9 +291,8 @@ class _ActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = isDestructive
-        ? theme.colorScheme.error
-        : theme.colorScheme.primary;
+    final color =
+        isDestructive ? theme.colorScheme.error : theme.colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
@@ -311,9 +310,7 @@ class _ActionTile extends StatelessWidget {
               ),
               child: Icon(icon, color: color, size: 24.sp),
             ),
-
             SizedBox(width: 16.w),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,7 +333,6 @@ class _ActionTile extends StatelessWidget {
                 ],
               ),
             ),
-
             Icon(Icons.chevron_right, color: theme.dividerColor),
           ],
         ),
@@ -433,7 +429,6 @@ class _QuickActionsSpeedDialState extends State<QuickActionsSpeedDial>
                 },
               ),
               SizedBox(height: 12.h),
-
               _SpeedDialAction(
                 icon: Icons.paste,
                 label: 'لصق',
@@ -443,7 +438,6 @@ class _QuickActionsSpeedDialState extends State<QuickActionsSpeedDial>
                 },
               ),
               SizedBox(height: 12.h),
-
               _SpeedDialAction(
                 icon: Icons.science_outlined,
                 label: 'تجريبي',
@@ -453,7 +447,6 @@ class _QuickActionsSpeedDialState extends State<QuickActionsSpeedDial>
                 },
               ),
               SizedBox(height: 12.h),
-
               _SpeedDialAction(
                 icon: Icons.clear_all,
                 label: 'مسح',

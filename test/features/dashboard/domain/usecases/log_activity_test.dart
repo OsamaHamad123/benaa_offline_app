@@ -8,7 +8,8 @@ class MockActivityRepository implements ActivityRepository {
   final List<Activity> activities = [];
 
   @override
-  Future<Result<List<Activity>>> getAllActivities() async => Success(activities);
+  Future<Result<List<Activity>>> getAllActivities() async =>
+      Success(activities);
 
   @override
   Future<Result<List<Activity>>> getActivitiesByType(String type) async =>
@@ -18,7 +19,8 @@ class MockActivityRepository implements ActivityRepository {
   Future<Result<List<Activity>>> getActivitiesForBeneficiary(
     String beneficiaryId,
   ) async =>
-      Success(activities.where((a) => a.beneficiaryId == beneficiaryId).toList());
+      Success(
+          activities.where((a) => a.beneficiaryId == beneficiaryId).toList());
 
   @override
   Future<Result<void>> logActivity(Activity activity) async {
@@ -124,7 +126,8 @@ class _FailingRepository implements ActivityRepository {
   bool logActivityCalled = false;
 
   @override
-  Future<Result<List<Activity>>> getAllActivities() async => const Failure(DatabaseFailure('Database error'));
+  Future<Result<List<Activity>>> getAllActivities() async =>
+      const Failure(DatabaseFailure('Database error'));
 
   @override
   Future<Result<List<Activity>>> getActivitiesByType(String type) async =>
@@ -143,11 +146,14 @@ class _FailingRepository implements ActivityRepository {
   }
 
   @override
-  Future<Result<void>> deleteActivity(String activityId) async => const Failure(DatabaseFailure('Database error'));
+  Future<Result<void>> deleteActivity(String activityId) async =>
+      const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<Result<void>> clearAllActivities() async => const Failure(DatabaseFailure('Database error'));
+  Future<Result<void>> clearAllActivities() async =>
+      const Failure(DatabaseFailure('Database error'));
 
   @override
-  Future<Result<int>> getActivitiesCount() async => const Failure(DatabaseFailure('Database error'));
+  Future<Result<int>> getActivitiesCount() async =>
+      const Failure(DatabaseFailure('Database error'));
 }

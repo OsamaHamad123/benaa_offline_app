@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:benaa_offline_app/core/error_handling/result.dart';
-import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart' as domain;
+import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart'
+    as domain;
 import 'package:benaa_offline_app/features/dashboard/data/datasources/activity_local_datasource.dart';
 import 'package:benaa_offline_app/features/dashboard/data/repositories/activity_repository_impl.dart';
 

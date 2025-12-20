@@ -38,8 +38,8 @@ class BeneficiariesGrowthChart extends ConsumerWidget {
                 Text(
                   'نمو عدد المستفيدين',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),
@@ -259,8 +259,8 @@ class CategoryDistributionChart extends ConsumerWidget {
                 Text(
                   'توزيع المستفيدين حسب الفئة',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ],
             ),

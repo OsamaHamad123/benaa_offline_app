@@ -148,8 +148,7 @@ class _CivilRegistryLookupState extends ConsumerState<CivilRegistryLookup> {
             civilRegistryState.hasData)
           Padding(
             padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
-            child:
-                widget.customPreview ??
+            child: widget.customPreview ??
                 CivilRegistryPreviewCard(
                   person: civilRegistryState.person!,
                   onDismiss: () => setState(() => _showPreviewWidget = false),

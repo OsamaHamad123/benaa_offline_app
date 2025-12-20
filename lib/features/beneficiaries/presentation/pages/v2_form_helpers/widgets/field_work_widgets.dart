@@ -227,13 +227,12 @@ class GPSAccuracyIndicator extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color:
-            (isGood
-                    ? Colors.green
-                    : isFair
+        color: (isGood
+                ? Colors.green
+                : isFair
                     ? Colors.orange
                     : Colors.red)
-                .withOpacity(0.1),
+            .withOpacity(0.1),
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
@@ -245,8 +244,8 @@ class GPSAccuracyIndicator extends StatelessWidget {
             color: isGood
                 ? Colors.green
                 : isFair
-                ? Colors.orange
-                : Colors.red,
+                    ? Colors.orange
+                    : Colors.red,
           ),
           SizedBox(width: 6.w),
           Text(
@@ -256,8 +255,8 @@ class GPSAccuracyIndicator extends StatelessWidget {
               color: isGood
                   ? Colors.green
                   : isFair
-                  ? Colors.orange
-                  : Colors.red,
+                      ? Colors.orange
+                      : Colors.red,
             ),
           ),
         ],

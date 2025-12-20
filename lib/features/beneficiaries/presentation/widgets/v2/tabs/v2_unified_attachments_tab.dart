@@ -165,9 +165,8 @@ class _DeceasedParentsAttachmentsSection extends StatelessWidget {
                     itemCount: deceasedCount,
                     itemBuilder: (context, index) {
                       final deceased = formControllers.deceasedMembers[index];
-                      final type = deceased['deceasedType'] == 1
-                          ? 'الأب'
-                          : 'الأم';
+                      final type =
+                          deceased['deceasedType'] == 1 ? 'الأب' : 'الأم';
                       final fullName =
                           '${deceased['firstName'] ?? ''} ${deceased['familyName'] ?? ''}';
 

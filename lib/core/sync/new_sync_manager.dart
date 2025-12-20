@@ -233,7 +233,8 @@ class NewSyncManager {
             break;
 
           default:
-            UnifiedLogger.warning('⚠️ Unknown entity type: ${entity.entityType}');
+            UnifiedLogger.warning(
+                '⚠️ Unknown entity type: ${entity.entityType}');
         }
       }
 
@@ -344,7 +345,8 @@ class NewSyncManager {
       final serverId = int.tryParse(entity.id);
 
       if (serverId == null) {
-        UnifiedLogger.warning('⚠️ Invalid family_member server ID: ${entity.id}');
+        UnifiedLogger.warning(
+            '⚠️ Invalid family_member server ID: ${entity.id}');
         return;
       }
 

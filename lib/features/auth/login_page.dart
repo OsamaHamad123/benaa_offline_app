@@ -15,7 +15,8 @@ class LoginPage extends ConsumerStatefulWidget {
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProviderStateMixin {
+class _LoginPageState extends ConsumerState<LoginPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -73,7 +74,8 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
 
       // TODO: Replace with actual API authentication
       // For now, accept any non-empty credentials
-      if (_usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+      if (_usernameController.text.isNotEmpty &&
+          _passwordController.text.isNotEmpty) {
         // ✅ SECURITY: Hash password before storing
         final hashedPassword = PasswordHashService.hashPassword(
           _passwordController.text,
@@ -174,7 +176,8 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primary.withOpacity(0.3),
+                                        color:
+                                            AppColors.primary.withOpacity(0.3),
                                         blurRadius: 20,
                                         offset: const Offset(0, 10),
                                       ),
@@ -198,7 +201,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   Text(
                                     'منظومة بناء',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineLarge
+                                        ?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.primary,
                                           fontSize: 32,
@@ -208,7 +214,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   Text(
                                     'نظام إدارة المستفيدين',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -297,7 +306,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   fillColor: Colors.white,
                                   suffixIcon: IconButton(
                                     icon: Icon(
-                                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -388,7 +399,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                       const SizedBox(width: 8),
                                       Text(
                                         'تسجيل الدخول',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -410,7 +424,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   ),
                                   child: Text(
                                     'أو',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -426,7 +443,8 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   ? null
                                   : () {
                                       // TODO: Implement biometric authentication
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             'سيتم إضافة المصادقة البيومترية قريباً',
@@ -437,7 +455,8 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                               icon: const Icon(Icons.fingerprint),
                               label: const Text('تسجيل الدخول بالبصمة'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                             const SizedBox(height: 32),
@@ -449,7 +468,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   Text(
                                     'الإصدار 1.0.0',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -457,7 +479,10 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                   Text(
                                     '© 2025 منظومة بناء',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),

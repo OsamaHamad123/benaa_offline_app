@@ -101,7 +101,8 @@ class SettingsState {
       itemsPerPage: itemsPerPage ?? this.itemsPerPage,
       defaultSort: defaultSort ?? this.defaultSort,
       showStatistics: showStatistics ?? this.showStatistics,
-      showPerformanceDashboard: showPerformanceDashboard ?? this.showPerformanceDashboard,
+      showPerformanceDashboard:
+          showPerformanceDashboard ?? this.showPerformanceDashboard,
       cacheDurationMinutes: cacheDurationMinutes ?? this.cacheDurationMinutes,
       searchHistorySize: searchHistorySize ?? this.searchHistorySize,
       offlineMode: offlineMode ?? this.offlineMode,

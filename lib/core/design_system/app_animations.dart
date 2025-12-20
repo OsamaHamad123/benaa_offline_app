@@ -57,6 +57,7 @@ class AppCurves {
 class ScaleTransitionWidget extends StatelessWidget {
   final Widget child;
   final Duration duration;
+  final Duration? delay; // ✅ Added for Stagger Animations
   final Curve curve;
   final bool reverse;
 
@@ -64,12 +65,28 @@ class ScaleTransitionWidget extends StatelessWidget {
     super.key,
     required this.child,
     this.duration = AppDurations.normal,
+    this.delay,
     this.curve = AppCurves.smooth,
     this.reverse = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Support delayed animations
+    if (delay != null) {
+      return TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 0.0),
+        duration: delay!,
+        builder: (context, delayValue, child) {
+          return delayValue == 0.0 ? _buildAnimation() : const SizedBox.shrink();
+        },
+      );
+    }
+
+    return _buildAnimation();
+  }
+
+  Widget _buildAnimation() {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: reverse ? 1.0 : 0.0, end: reverse ? 0.0 : 1.0),
       duration: duration,
@@ -146,17 +163,34 @@ class SlideTransitionWidget extends StatelessWidget {
 class FadeSlideTransition extends StatelessWidget {
   final Widget child;
   final Duration duration;
+  final Duration? delay; // ✅ Added for Stagger Animations
   final Offset slideOffset;
 
   const FadeSlideTransition({
     super.key,
     required this.child,
     this.duration = AppDurations.normal,
+    this.delay,
     this.slideOffset = const Offset(0, 0.3),
   });
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Support delayed animations
+    if (delay != null) {
+      return TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 0.0), // Start invisible
+        duration: delay!,
+        builder: (context, delayValue, child) {
+          return delayValue == 0.0 ? _buildAnimation() : const SizedBox.shrink();
+        },
+      );
+    }
+
+    return _buildAnimation();
+  }
+
+  Widget _buildAnimation() {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: duration,

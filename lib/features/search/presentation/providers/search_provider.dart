@@ -121,8 +121,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
     required this.searchByNationalIdUseCase,
     required this.searchByNameUseCase,
     required Ref ref,
-  }) : _ref = ref,
-       super(const SearchState());
+  })  : _ref = ref,
+        super(const SearchState());
 
   // ⚡ Optimized for 5M records: Page size from AppConstants
   static const int _pageSize = AppConstants.searchPageSize;
@@ -150,10 +150,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
     // Calculate how many entries to remove (25% of cache)
     final entriesToRemove = (_cache.length * 0.25).ceil();
-    final keysToRemove = sortedEntries
-        .take(entriesToRemove)
-        .map((e) => e.key)
-        .toList();
+    final keysToRemove =
+        sortedEntries.take(entriesToRemove).map((e) => e.key).toList();
 
     // Remove old entries and recalculate memory
     var freedMemory = 0;
@@ -378,8 +376,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
       // Check if it's a database not found error
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
-        errorMessage =
-            '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
+        errorMessage = '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
             'الرجاء الذهاب إلى:\n'
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
@@ -448,8 +445,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
       stopwatch.stop();
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
-        errorMessage =
-            '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
+        errorMessage = '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
             'الرجاء الذهاب إلى:\n'
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
@@ -548,8 +544,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
       stopwatch.stop();
       String errorMessage = 'خطأ في البحث: $e';
       if (e.toString().contains('قاعدة بيانات السجل المدني غير موجودة')) {
-        errorMessage =
-            '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
+        errorMessage = '⚠️ قاعدة بيانات السجل المدني غير موجودة\n\n'
             'الرجاء الذهاب إلى:\n'
             '"تنزيل قاعدة بيانات السجل المدني"\n'
             'من القائمة الرئيسية أولاً.';
@@ -686,20 +681,20 @@ class SearchNotifier extends StateNotifier<SearchState> {
 /// Provider for Search State with auto-dispose for memory cleanup
 final searchProvider =
     StateNotifierProvider.autoDispose<SearchNotifier, SearchState>((ref) {
-      final searchByNationalId = ref.watch(searchByNationalIdUseCaseProvider);
-      final searchByName = ref.watch(searchByNameUseCaseProvider);
+  final searchByNationalId = ref.watch(searchByNationalIdUseCaseProvider);
+  final searchByName = ref.watch(searchByNameUseCaseProvider);
 
-      final notifier = SearchNotifier(
-        searchByNationalIdUseCase: searchByNationalId,
-        searchByNameUseCase: searchByName,
-        ref: ref,
-      );
+  final notifier = SearchNotifier(
+    searchByNationalIdUseCase: searchByNationalId,
+    searchByNameUseCase: searchByName,
+    ref: ref,
+  );
 
-      // ✅ Cleanup happens automatically via StateNotifier.dispose()
-      // No need for explicit ref.onDispose() - it's called by autoDispose
+  // ✅ Cleanup happens automatically via StateNotifier.dispose()
+  // No need for explicit ref.onDispose() - it's called by autoDispose
 
-      return notifier;
-    });
+  return notifier;
+});
 
 /// Statistics Provider with caching (10 minutes TTL)
 final statisticsProvider = FutureProvider.autoDispose<SearchStatistics>((

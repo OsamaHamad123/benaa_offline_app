@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -26,7 +26,8 @@ class ReportsPage extends ConsumerStatefulWidget {
   ConsumerState<ReportsPage> createState() => _ReportsPageState();
 }
 
-class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAliveClientMixin {
+class _ReportsPageState extends ConsumerState<ReportsPage>
+    with AutomaticKeepAliveClientMixin {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isExportingAll = false;
@@ -39,8 +40,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      initialDateRange:
-          _startDate != null && _endDate != null ? DateTimeRange(start: _startDate!, end: _endDate!) : null,
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : null,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -285,7 +287,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _isExportingAll ? null : () => _exportAllReports('pdf'),
+                    onPressed:
+                        _isExportingAll ? null : () => _exportAllReports('pdf'),
                     icon: _isExportingAll
                         ? SizedBox(
                             width: 16.w,
@@ -310,7 +313,9 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
                 SizedBox(width: 12.w),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _isExportingAll ? null : () => _exportAllReports('excel'),
+                    onPressed: _isExportingAll
+                        ? null
+                        : () => _exportAllReports('excel'),
                     icon: Icon(Icons.table_view, size: 20.sp),
                     label: Text('Excel', style: TextStyle(fontSize: 14.sp)),
                     style: ElevatedButton.styleFrom(

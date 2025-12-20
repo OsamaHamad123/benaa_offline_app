@@ -18,7 +18,8 @@ class CivilRegistryPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'بيانات من السجل المدني: ${person.fullName}, الرقم الوطني ${person.nationalId}',
+      label:
+          'بيانات من السجل المدني: ${person.fullName}, الرقم الوطني ${person.nationalId}',
       hint: 'عرض البيانات المستوردة من السجل المدني',
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 8.h),
@@ -36,7 +37,8 @@ class CivilRegistryPreviewCard extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  Icon(Icons.verified_rounded, color: Colors.green, size: 24.sp),
+                  Icon(Icons.verified_rounded,
+                      color: Colors.green, size: 24.sp),
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
@@ -104,7 +106,8 @@ class CivilRegistryPreviewCard extends StatelessWidget {
               if (person.status != null && person.status != 'active')
                 Container(
                   margin: EdgeInsets.only(top: 8.h),
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
                     color: Colors.orange.shade100,
                     borderRadius: BorderRadius.circular(6.r),

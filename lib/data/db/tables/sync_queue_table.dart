@@ -10,8 +10,8 @@ class SyncQueue extends Table {
       text()(); // 'create', 'update', 'delete', 'upload'
   TextColumn get payload => text()(); // JSON
   IntColumn get priority => integer().withDefault(
-    const Constant(0),
-  )(); // 10=Auth, 9=Beneficiary, 8=Visit, 7=Attachment
+        const Constant(0),
+      )(); // 10=Auth, 9=Beneficiary, 8=Visit, 7=Attachment
   IntColumn get attempts => integer().withDefault(const Constant(0))();
   TextColumn get lastError => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();

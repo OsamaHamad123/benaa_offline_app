@@ -176,13 +176,11 @@ class DashboardLocalDataSource {
   Future<int> _getActiveBeneficiariesCount() async {
     // Count beneficiaries with recent activity (last 30 days)
     final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-    final result = await database
-        .customSelect(
-          'SELECT COUNT(*) as count FROM beneficiaries WHERE updated_at >= ?',
-          variables: [Variable.withDateTime(thirtyDaysAgo)],
-          readsFrom: {database.beneficiaries},
-        )
-        .getSingle();
+    final result = await database.customSelect(
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE updated_at >= ?',
+      variables: [Variable.withDateTime(thirtyDaysAgo)],
+      readsFrom: {database.beneficiaries},
+    ).getSingle();
     return result.read<int>('count');
   }
 
@@ -192,13 +190,11 @@ class DashboardLocalDataSource {
   }
 
   Future<int> _getNewBeneficiariesToday(DateTime startOfDay) async {
-    final result = await database
-        .customSelect(
-          'SELECT COUNT(*) as count FROM beneficiaries WHERE created_at >= ?',
-          variables: [Variable.withDateTime(startOfDay)],
-          readsFrom: {database.beneficiaries},
-        )
-        .getSingle();
+    final result = await database.customSelect(
+      'SELECT COUNT(*) as count FROM beneficiaries WHERE created_at >= ?',
+      variables: [Variable.withDateTime(startOfDay)],
+      readsFrom: {database.beneficiaries},
+    ).getSingle();
     return result.read<int>('count');
   }
 
@@ -233,16 +229,14 @@ class DashboardLocalDataSource {
       ).subtract(Duration(days: i));
       final nextDay = date.add(const Duration(days: 1));
 
-      final result = await database
-          .customSelect(
-            'SELECT COUNT(*) as count FROM beneficiaries WHERE created_at >= ? AND created_at < ?',
-            variables: [
-              Variable.withDateTime(date),
-              Variable.withDateTime(nextDay),
-            ],
-            readsFrom: {database.beneficiaries},
-          )
-          .getSingle();
+      final result = await database.customSelect(
+        'SELECT COUNT(*) as count FROM beneficiaries WHERE created_at >= ? AND created_at < ?',
+        variables: [
+          Variable.withDateTime(date),
+          Variable.withDateTime(nextDay),
+        ],
+        readsFrom: {database.beneficiaries},
+      ).getSingle();
 
       growthData.add(
         GrowthDataPointModel(date: date, count: result.read<int>('count')),
@@ -255,32 +249,27 @@ class DashboardLocalDataSource {
   /// ⚡ Get family statistics (NEW)
   Future<Map<String, dynamic>> _getFamilyStatistics() async {
     // Count all family members
-    final totalOrphansResult = await database
-        .customSelect(
-          'SELECT COUNT(*) as count FROM family_members',
-          readsFrom: {database.familyMembersTable},
-        )
-        .getSingle();
+    final totalOrphansResult = await database.customSelect(
+      'SELECT COUNT(*) as count FROM family_members',
+      readsFrom: {database.familyMembersTable},
+    ).getSingle();
     final totalOrphans = totalOrphansResult.read<int>('count');
 
     // Count deceased members
-    final totalDeceasedResult = await database
-        .customSelect(
-          'SELECT COUNT(*) as count FROM family_deceased',
-          readsFrom: {database.familyDeceasedTable},
-        )
-        .getSingle();
+    final totalDeceasedResult = await database.customSelect(
+      'SELECT COUNT(*) as count FROM family_deceased',
+      readsFrom: {database.familyDeceasedTable},
+    ).getSingle();
     final totalDeceased = totalDeceasedResult.read<int>('count');
 
     // Total family members (deceased + orphans)
     final totalFamilyMembers = totalDeceased + totalOrphans;
 
     // Average family size (orphans per beneficiary)
-    final beneficiariesCount = await database.beneficiariesDao
-        .countBeneficiaries();
-    final averageFamilySize = beneficiariesCount > 0
-        ? (totalOrphans / beneficiariesCount)
-        : 0.0;
+    final beneficiariesCount =
+        await database.beneficiariesDao.countBeneficiaries();
+    final averageFamilySize =
+        beneficiariesCount > 0 ? (totalOrphans / beneficiariesCount) : 0.0;
 
     return {
       'totalFamilyMembers': totalFamilyMembers,

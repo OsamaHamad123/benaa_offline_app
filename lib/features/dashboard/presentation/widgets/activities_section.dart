@@ -14,7 +14,7 @@ class ActivityItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SwipeableCard(
-      key: ValueKey(activity.id),
+      key: ValueKey(activity.id), // ✅ Performance optimization
       onSwipeRight: () {
         // View action
         ScaffoldMessenger.of(

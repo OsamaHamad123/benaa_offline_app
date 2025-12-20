@@ -94,11 +94,10 @@ void main() {
         'City7': 5,
       };
 
-      final topCities =
-          (cityData.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value)))
-              .take(5)
-              .toList();
+      final topCities = (cityData.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value)))
+          .take(5)
+          .toList();
 
       expect(topCities.length, 5);
       expect(topCities[0].key, 'City1');

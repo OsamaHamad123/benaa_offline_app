@@ -43,8 +43,7 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                             setState(() {
                               if (response?.touchedSection != null) {
                                 _selectedCategoryIndex = response!
-                                    .touchedSection!
-                                    .touchedSectionIndex;
+                                    .touchedSection!.touchedSectionIndex;
                               }
                             });
                           },

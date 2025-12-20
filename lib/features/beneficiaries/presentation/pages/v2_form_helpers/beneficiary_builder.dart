@@ -21,9 +21,8 @@ class BeneficiaryEntityBuilder {
     ].where((s) => s.isNotEmpty).join(' ');
 
     // Parse gender
-    final gender = controllers.selectedGender == 'ذكر'
-        ? Gender.male
-        : Gender.female;
+    final gender =
+        controllers.selectedGender == 'ذكر' ? Gender.male : Gender.female;
 
     // Generate timestamps
     final now = DateTime.now();
@@ -72,8 +71,7 @@ class BeneficiaryEntityBuilder {
         DisplacementStatus.values,
         DisplacementStatus.notDisplaced,
       ),
-      healthStatus:
-          _parseEnum<HealthStatus>(
+      healthStatus: _parseEnum<HealthStatus>(
             controllers.selectedHealthStatus,
             HealthStatus.values,
             HealthStatus.good,

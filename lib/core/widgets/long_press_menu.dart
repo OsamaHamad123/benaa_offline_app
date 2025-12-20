@@ -51,14 +51,18 @@ class LongPressContextMenu {
               Icon(
                 item.icon,
                 size: 20.sp,
-                color: item.isDangerous ? Colors.red : (item.color ?? Colors.grey[700]),
+                color: item.isDangerous
+                    ? Colors.red
+                    : (item.color ?? Colors.grey[700]),
               ),
               SizedBox(width: 12.w),
               Text(
                 item.label,
                 style: TextStyle(
                   fontSize: 14.sp,
-                  color: item.isDangerous ? Colors.red : (item.color ?? Colors.black87),
+                  color: item.isDangerous
+                      ? Colors.red
+                      : (item.color ?? Colors.black87),
                 ),
               ),
             ],
@@ -118,12 +122,16 @@ class LongPressContextMenu {
                 return ListTile(
                   leading: Icon(
                     item.icon,
-                    color: item.isDangerous ? Colors.red : (item.color ?? Colors.grey[700]),
+                    color: item.isDangerous
+                        ? Colors.red
+                        : (item.color ?? Colors.grey[700]),
                   ),
                   title: Text(
                     item.label,
                     style: TextStyle(
-                      color: item.isDangerous ? Colors.red : (item.color ?? Colors.black87),
+                      color: item.isDangerous
+                          ? Colors.red
+                          : (item.color ?? Colors.black87),
                     ),
                   ),
                   onTap: () {

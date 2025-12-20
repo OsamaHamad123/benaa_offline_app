@@ -151,7 +151,8 @@ class ResponsiveDialog extends StatelessWidget {
             // Content
             Flexible(
               child: SingleChildScrollView(
-                padding: contentPadding ?? EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+                padding: contentPadding ??
+                    EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
                 child: content,
               ),
             ),
@@ -216,7 +217,8 @@ class ResponsiveDialog extends StatelessWidget {
   /// Build actions (buttons)
   Widget _buildActions(BuildContext context) {
     return Container(
-      padding: actionsPadding ?? EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+      padding: actionsPadding ??
+          EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -321,7 +323,8 @@ Future<bool?> showConfirmationDialog({
     context: context,
     title: title,
     icon: icon ?? (isDangerous ? Icons.warning_outlined : Icons.help_outline),
-    iconColor: iconColor ?? (isDangerous ? Colors.red : theme.colorScheme.primary),
+    iconColor:
+        iconColor ?? (isDangerous ? Colors.red : theme.colorScheme.primary),
     content: Text(
       message,
       style: theme.textTheme.bodyLarge?.copyWith(
@@ -337,7 +340,8 @@ Future<bool?> showConfirmationDialog({
       ElevatedButton(
         onPressed: () => Navigator.pop(context, true),
         style: ElevatedButton.styleFrom(
-          backgroundColor: confirmColor ?? (isDangerous ? Colors.red : theme.colorScheme.primary),
+          backgroundColor: confirmColor ??
+              (isDangerous ? Colors.red : theme.colorScheme.primary),
         ),
         child: Text(confirmText),
       ),

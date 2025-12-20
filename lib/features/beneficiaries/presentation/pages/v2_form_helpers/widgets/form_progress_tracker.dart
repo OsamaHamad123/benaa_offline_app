@@ -383,9 +383,8 @@ class FormProgressTracker extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.bold,
-                      color: isComplete
-                          ? Colors.green.shade900
-                          : Colors.black87,
+                      color:
+                          isComplete ? Colors.green.shade900 : Colors.black87,
                     ),
                   ),
                 ),

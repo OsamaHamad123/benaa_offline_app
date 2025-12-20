@@ -22,12 +22,12 @@ class Activity extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    type,
-    description,
-    timestamp,
-    beneficiaryId,
-    beneficiaryName,
-    metadata,
-  ];
+        id,
+        type,
+        description,
+        timestamp,
+        beneficiaryId,
+        beneficiaryName,
+        metadata,
+      ];
 }

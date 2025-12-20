@@ -40,19 +40,37 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     final db = ref.read(databaseProvider);
 
     // Count beneficiaries by sync state
-    final total = await db.select(db.beneficiaries).get();
-    final pending = total.where((b) => b.syncState == 'pending').length;
-    final modified = total.where((b) => b.syncState == 'modified').length;
-    final synced = total.where((b) => b.syncState == 'synced').length;
+    final beneficiaries = await db.select(db.beneficiaries).get();
+    final benPending =
+        beneficiaries.where((b) => b.syncState == 'pending').length;
+    final benModified =
+        beneficiaries.where((b) => b.syncState == 'modified').length;
+    final benSynced =
+        beneficiaries.where((b) => b.syncState == 'synced').length;
+
+    // Count associations (assuming they have similar sync tracking)
+    final associations = await db.select(db.associations).get();
+    final assocTotal = associations.length;
+    // Note: If associations don't have syncState, we'll count them as synced
+    final assocSynced = associations.where((a) => a.isActive).length;
 
     if (mounted) {
       setState(() {
         _stats = {
-          'total': total.length,
-          'pending': pending,
-          'modified': modified,
-          'synced': synced,
-          'needsSync': pending + modified,
+          // Beneficiaries
+          'ben_total': beneficiaries.length,
+          'ben_pending': benPending,
+          'ben_modified': benModified,
+          'ben_synced': benSynced,
+          'ben_needsSync': benPending + benModified,
+
+          // Associations
+          'assoc_total': assocTotal,
+          'assoc_active': assocSynced,
+
+          // Combined totals
+          'total': beneficiaries.length + assocTotal,
+          'needsSync': benPending + benModified,
         };
       });
     }
@@ -85,7 +103,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message: '✅ تم تنزيل ${result.recordsSynced} مستفيد بنجاح',
+          message:
+              '✅ تم تنزيل ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
         );
       } else {
         if (!mounted) return;
@@ -113,13 +132,15 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message: '✅ تم رفع ${result.recordsSynced} مستفيد بنجاح',
+          message:
+              '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
         );
       } else {
         if (!mounted) return;
         EnhancedSnackbar.showWarning(
           context,
-          message: '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
+          message:
+              '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
         );
       }
     }
@@ -244,53 +265,103 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   Widget _buildStatsCard() {
     if (_stats == null) return const SizedBox.shrink();
 
-    return Card(
-      color: Colors.blue[50],
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Column(
+      children: [
+        // 📊 Beneficiaries Stats Card
+        Card(
+          color: Colors.blue[50],
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.analytics, color: Colors.blue, size: 20.sp),
-                SizedBox(width: 8.w),
-                Text(
-                  'إحصائيات البيانات المحلية',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Icon(Icons.people, color: Colors.blue, size: 20.sp),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'إحصائيات المستفيدين',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                _buildStatRow(
+                  'إجمالي المستفيدين',
+                  '${_stats!['ben_total']}',
+                  Colors.blue,
+                ),
+                _buildStatRow(
+                    'متزامن', '${_stats!['ben_synced']}', Colors.green),
+                _buildStatRow(
+                  'بانتظار الرفع',
+                  '${_stats!['ben_pending']}',
+                  Colors.orange,
+                ),
+                _buildStatRow(
+                  'محدّث (غير مزامن)',
+                  '${_stats!['ben_modified']}',
+                  Colors.orange,
+                ),
+                Divider(height: 20.h),
+                _buildStatRow(
+                  'يحتاج مزامنة',
+                  '${_stats!['ben_needsSync']}',
+                  _stats!['ben_needsSync']! > 0 ? Colors.red : Colors.green,
+                  bold: true,
                 ),
               ],
             ),
-            SizedBox(height: 12.h),
-            _buildStatRow(
-              'إجمالي المستفيدين',
-              '${_stats!['total']}',
-              Colors.blue,
-            ),
-            _buildStatRow('متزامن', '${_stats!['synced']}', Colors.green),
-            _buildStatRow(
-              'بانتظار الرفع',
-              '${_stats!['pending']}',
-              Colors.orange,
-            ),
-            _buildStatRow(
-              'محدّث (غير مزامن)',
-              '${_stats!['modified']}',
-              Colors.orange,
-            ),
-            Divider(height: 20.h),
-            _buildStatRow(
-              'يحتاج مزامنة',
-              '${_stats!['needsSync']}',
-              _stats!['needsSync']! > 0 ? Colors.red : Colors.green,
-              bold: true,
-            ),
-          ],
+          ),
         ),
-      ),
+
+        SizedBox(height: 12.h),
+
+        // 🏢 Associations Stats Card
+        Card(
+          color: Colors.purple[50],
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.business, color: Colors.purple, size: 20.sp),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'إحصائيات الجمعيات',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                _buildStatRow(
+                  'إجمالي الجمعيات',
+                  '${_stats!['assoc_total']}',
+                  Colors.purple,
+                ),
+                _buildStatRow(
+                  'جمعيات نشطة',
+                  '${_stats!['assoc_active']}',
+                  Colors.green,
+                ),
+                _buildStatRow(
+                  'جمعيات غير نشطة',
+                  '${_stats!['assoc_total']! - _stats!['assoc_active']!}',
+                  Colors.grey,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

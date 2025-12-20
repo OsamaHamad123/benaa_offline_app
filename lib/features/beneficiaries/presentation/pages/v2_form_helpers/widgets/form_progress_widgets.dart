@@ -51,7 +51,6 @@ class FormProgressIndicator extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-
               Text(
                 '${(progress * 100).toInt()}% مكتمل',
                 style: TextStyle(

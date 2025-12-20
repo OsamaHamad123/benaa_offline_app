@@ -84,9 +84,9 @@ class SummaryStatisticsWidget extends ConsumerWidget {
         Text(
           'ملخص الإحصائيات',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18.sp,
-          ),
+                fontWeight: FontWeight.bold,
+                fontSize: 18.sp,
+              ),
         ),
       ],
     );

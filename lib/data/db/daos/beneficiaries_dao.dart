@@ -8,7 +8,8 @@ part 'beneficiaries_dao.g.dart';
 /// Beneficiaries Data Access Object
 /// يحتوي على جميع عمليات CRUD والاستعلامات الخاصة بالمستفيدين
 @DriftAccessor(tables: [Beneficiaries])
-class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$BeneficiariesDaoMixin {
+class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
+    with _$BeneficiariesDaoMixin {
   BeneficiariesDao(super.db);
 
   // ============================================================================
@@ -128,7 +129,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
     ).get();
 
     return {
-      for (final row in results) row.read<int>('province'): row.read<int>('count'),
+      for (final row in results)
+        row.read<int>('province'): row.read<int>('count'),
     };
   }
 
@@ -173,6 +175,21 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
   /// Insert beneficiary
   Future<void> insertBeneficiary(BeneficiariesCompanion beneficiary) async {
     await into(beneficiaries).insert(beneficiary);
+  }
+
+  /// Upsert beneficiary by national ID (idNumber)
+  ///
+  /// Useful for Excel import where the row may already exist.
+  Future<void> upsertBeneficiaryByNationalId(
+    BeneficiariesCompanion beneficiary,
+  ) async {
+    await into(beneficiaries).insert(
+      beneficiary,
+      onConflict: DoUpdate(
+        (old) => beneficiary,
+        target: [beneficiaries.idNumber],
+      ),
+    );
   }
 
   /// Update beneficiary using Companion
@@ -234,11 +251,13 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
 
     return await (select(beneficiaries)
           ..where((b) {
-            var condition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
+            var condition = b.fullNameNorm.like('%$normalized%') |
+                b.fileIdNumber.like('%$normalized%');
 
             // إذا كان رقم، ابحث في id_number أيضاً
             if (isNumeric) {
-              condition = condition | b.idNumber.cast<String>().contains(query.trim());
+              condition =
+                  condition | b.idNumber.cast<String>().contains(query.trim());
             }
 
             return condition;
@@ -271,10 +290,12 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
 
         // 🔍 Search filter
         if (normalized.isNotEmpty) {
-          var searchCondition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
+          var searchCondition = b.fullNameNorm.like('%$normalized%') |
+              b.fileIdNumber.like('%$normalized%');
 
           if (isNumeric) {
-            searchCondition = searchCondition | b.idNumber.cast<String>().contains(query.trim());
+            searchCondition = searchCondition |
+                b.idNumber.cast<String>().contains(query.trim());
           }
 
           condition = condition & searchCondition;
@@ -324,7 +345,9 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
             default:
               sortColumn = b.fullName;
           }
-          return sortDesc ? OrderingTerm.desc(sortColumn) : OrderingTerm.asc(sortColumn);
+          return sortDesc
+              ? OrderingTerm.desc(sortColumn)
+              : OrderingTerm.asc(sortColumn);
         },
       ])
       ..limit(limit, offset: offset);
@@ -352,11 +375,13 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
         // Search filter (search in fullName, fileIdNumber, and idNumber)
         if (normalized.isNotEmpty) {
           final isNumeric = int.tryParse(query.trim()) != null;
-          var searchCondition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
+          var searchCondition = b.fullNameNorm.like('%$normalized%') |
+              b.fileIdNumber.like('%$normalized%');
 
           // إذا كان رقم، ابحث في id_number
           if (isNumeric) {
-            searchCondition = searchCondition | b.idNumber.cast<String>().contains(query.trim());
+            searchCondition = searchCondition |
+                b.idNumber.cast<String>().contains(query.trim());
           }
 
           condition = condition & searchCondition;

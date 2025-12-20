@@ -90,9 +90,8 @@ class V2ConfirmDialog extends StatelessWidget {
                     },
                     style: FilledButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 14.h),
-                      backgroundColor: isDangerous
-                          ? colorScheme.error
-                          : colorScheme.primary,
+                      backgroundColor:
+                          isDangerous ? colorScheme.error : colorScheme.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.r),
                       ),

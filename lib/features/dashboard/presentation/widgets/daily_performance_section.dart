@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../theme/app_colors.dart';
+import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 import '../providers/dashboard_providers.dart';
 
 /// Daily Performance Section - مؤشر الأداء اليومي
@@ -30,9 +31,7 @@ class DailyPerformanceSection extends ConsumerWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
             side: BorderSide(
-              color: isTargetMet
-                  ? AppColors.success.withOpacity(0.3)
-                  : AppColors.info.withOpacity(0.3),
+              color: isTargetMet ? AppColors.success.withOpacity(0.3) : AppColors.info.withOpacity(0.3),
               width: 2,
             ),
           ),
@@ -67,18 +66,13 @@ class DailyPerformanceSection extends ConsumerWidget {
                           Container(
                             padding: EdgeInsets.all(10.w),
                             decoration: BoxDecoration(
-                              color: isTargetMet
-                                  ? AppColors.success.withOpacity(0.15)
-                                  : AppColors.info.withOpacity(0.15),
+                              color:
+                                  isTargetMet ? AppColors.success.withOpacity(0.15) : AppColors.info.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(12.r),
                             ),
                             child: Icon(
-                              isTargetMet
-                                  ? Icons.check_circle
-                                  : Icons.trending_up,
-                              color: isTargetMet
-                                  ? AppColors.success
-                                  : AppColors.info,
+                              isTargetMet ? Icons.check_circle : Icons.trending_up,
+                              color: isTargetMet ? AppColors.success : AppColors.info,
                               size: 24.sp,
                             ),
                           ),
@@ -95,17 +89,11 @@ class DailyPerformanceSection extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                isTargetMet
-                                    ? 'تم تحقيق الهدف! 🎉'
-                                    : 'في التقدم',
+                                isTargetMet ? 'تم تحقيق الهدف! 🎉' : 'في التقدم',
                                 style: TextStyle(
                                   fontSize: 12.sp,
-                                  color: isTargetMet
-                                      ? AppColors.successDark
-                                      : AppColors.textSecondary,
-                                  fontWeight: isTargetMet
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
+                                  color: isTargetMet ? AppColors.successDark : AppColors.textSecondary,
+                                  fontWeight: isTargetMet ? FontWeight.w600 : FontWeight.normal,
                                 ),
                               ),
                             ],
@@ -150,9 +138,7 @@ class DailyPerformanceSection extends ConsumerWidget {
                                 strokeWidth: 12.w,
                                 backgroundColor: Colors.transparent,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  isTargetMet
-                                      ? AppColors.success
-                                      : AppColors.info,
+                                  isTargetMet ? AppColors.success : AppColors.info,
                                 ),
                               );
                             },
@@ -169,9 +155,7 @@ class DailyPerformanceSection extends ConsumerWidget {
                                 style: TextStyle(
                                   fontSize: 36.sp,
                                   fontWeight: FontWeight.bold,
-                                  color: isTargetMet
-                                      ? AppColors.success
-                                      : AppColors.info,
+                                  color: isTargetMet ? AppColors.success : AppColors.info,
                                 ),
                               ),
                               Text(
@@ -205,7 +189,7 @@ class DailyPerformanceSection extends ConsumerWidget {
                           icon: Icons.person_add,
                           label: 'مستفيدين جدد',
                           value: '$newBeneficiariesToday',
-                          color: AppColors.orphan,
+                          color: DashboardColors.widows,
                         ),
                       ),
                       SizedBox(width: 12.w),
@@ -214,7 +198,7 @@ class DailyPerformanceSection extends ConsumerWidget {
                           icon: Icons.show_chart,
                           label: 'المتوسط (7 أيام)',
                           value: avgVisitsPerDay.toStringAsFixed(1),
-                          color: AppColors.warning,
+                          color: DashboardColors.warning,
                         ),
                       ),
                     ],
@@ -286,8 +270,7 @@ class DailyPerformanceSection extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             // Provide a compact skeleton when vertical space is limited to avoid overflow
-            final compact =
-                constraints.maxHeight > 0 && constraints.maxHeight < 260;
+            final compact = constraints.maxHeight > 0 && constraints.maxHeight < 260;
 
             final double iconSize = compact ? 32.w : 40.w;
             final double headerBarHeight = compact ? 14.h : 20.h;
@@ -296,9 +279,7 @@ class DailyPerformanceSection extends ConsumerWidget {
             final double spacing = compact ? 12.h : 20.h;
 
             // Cap sizes based on available vertical space to avoid overflow
-            final availableH = constraints.maxHeight > 0
-                ? constraints.maxHeight
-                : double.infinity;
+            final availableH = constraints.maxHeight > 0 ? constraints.maxHeight : double.infinity;
             final effectiveCircleSize = math.min(circleSize, availableH * 0.45);
             final effectiveHeaderBarHeight = math.min(
               headerBarHeight,

@@ -20,7 +20,9 @@ class SyncStatusBar extends ConsumerWidget {
 
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          color: status.lastError != null ? Colors.red.shade100 : Colors.blue.shade100,
+          color: status.lastError != null
+              ? Colors.red.shade100
+              : Colors.blue.shade100,
           child: Row(
             children: [
               if (status.isSyncing)
@@ -96,7 +98,9 @@ class SyncButton extends ConsumerWidget {
           icon: status.isSyncing
               ? const SmallLoadingIndicator()
               : Badge(
-                  label: status.totalItems > 0 ? Text('${status.totalItems}') : null,
+                  label: status.totalItems > 0
+                      ? Text('${status.totalItems}')
+                      : null,
                   isLabelVisible: status.totalItems > 0,
                   child: const Icon(Icons.sync),
                 ),

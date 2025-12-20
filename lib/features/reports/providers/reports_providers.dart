@@ -105,12 +105,12 @@ final summaryStatisticsProvider = FutureProvider.autoDispose<SummaryStatistics>(
 /// Summary Statistics Provider with date range
 final summaryStatisticsWithDateProvider = FutureProvider.autoDispose
     .family<SummaryStatistics, DateRangeFilter?>((ref, dateRange) async {
-      final repository = ref.watch(reportsRepositoryProvider);
-      return await repository.getSummaryStatistics(
-        startDate: dateRange?.startDate,
-        endDate: dateRange?.endDate,
-      );
-    });
+  final repository = ref.watch(reportsRepositoryProvider);
+  return await repository.getSummaryStatistics(
+    startDate: dateRange?.startDate,
+    endDate: dateRange?.endDate,
+  );
+});
 
 /// Gender Report Provider with caching
 final genderReportProvider = FutureProvider.autoDispose<List<GenderCount>>((
@@ -135,21 +135,21 @@ final genderReportProvider = FutureProvider.autoDispose<List<GenderCount>>((
 /// Governorate Report Provider with caching
 final governorateReportProvider =
     FutureProvider.autoDispose<List<GovernorateCount>>((ref) async {
-      // Keep provider alive for cache duration
-      final link = ref.keepAlive();
-      Timer? timer;
+  // Keep provider alive for cache duration
+  final link = ref.keepAlive();
+  Timer? timer;
 
-      ref.onDispose(() {
-        timer?.cancel();
-      });
+  ref.onDispose(() {
+    timer?.cancel();
+  });
 
-      timer = Timer(_reportsCacheDuration, () {
-        link.close();
-      });
+  timer = Timer(_reportsCacheDuration, () {
+    link.close();
+  });
 
-      final useCase = ref.watch(getGovernorateReportUseCaseProvider);
-      return await useCase();
-    });
+  final useCase = ref.watch(getGovernorateReportUseCaseProvider);
+  return await useCase();
+});
 
 /// Category Report Provider with caching
 final categoryReportProvider = FutureProvider.autoDispose<List<CategoryCount>>((
@@ -194,18 +194,18 @@ final ageReportProvider = FutureProvider.autoDispose<List<AgeCount>>((
 /// Sync Status Report Provider with caching
 final syncStatusReportProvider =
     FutureProvider.autoDispose<List<SyncStatusCount>>((ref) async {
-      // Keep provider alive for cache duration
-      final link = ref.keepAlive();
-      Timer? timer;
+  // Keep provider alive for cache duration
+  final link = ref.keepAlive();
+  Timer? timer;
 
-      ref.onDispose(() {
-        timer?.cancel();
-      });
+  ref.onDispose(() {
+    timer?.cancel();
+  });
 
-      timer = Timer(_reportsCacheDuration, () {
-        link.close();
-      });
+  timer = Timer(_reportsCacheDuration, () {
+    link.close();
+  });
 
-      final useCase = ref.watch(getSyncStatusReportUseCaseProvider);
-      return await useCase();
-    });
+  final useCase = ref.watch(getSyncStatusReportUseCaseProvider);
+  return await useCase();
+});

@@ -14,7 +14,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
       final activities = await localDataSource.getAllActivities();
       return Success(activities);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get all activities: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get all activities: $e', stackTrace));
     }
   }
 
@@ -24,7 +25,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
       final activities = await localDataSource.getActivitiesByType(type);
       return Success(activities);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get activities by type: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get activities by type: $e', stackTrace));
     }
   }
 
@@ -33,10 +35,12 @@ class ActivityRepositoryImpl implements ActivityRepository {
     String beneficiaryId,
   ) async {
     try {
-      final activities = await localDataSource.getActivitiesForBeneficiary(beneficiaryId);
+      final activities =
+          await localDataSource.getActivitiesForBeneficiary(beneficiaryId);
       return Success(activities);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get activities for beneficiary: $e', stackTrace));
+      return Failure(DatabaseFailure(
+          'Failed to get activities for beneficiary: $e', stackTrace));
     }
   }
 
@@ -56,7 +60,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
       await localDataSource.deleteActivity(activityId);
       return Success(null);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to delete activity: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to delete activity: $e', stackTrace));
     }
   }
 
@@ -66,7 +71,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
       await localDataSource.clearAllActivities();
       return Success(null);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to clear activities: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to clear activities: $e', stackTrace));
     }
   }
 
@@ -76,7 +82,8 @@ class ActivityRepositoryImpl implements ActivityRepository {
       final count = await localDataSource.getActivitiesCount();
       return Success(count);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get activities count: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get activities count: $e', stackTrace));
     }
   }
 }

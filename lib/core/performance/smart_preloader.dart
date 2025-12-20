@@ -124,11 +124,9 @@ class SmartImagePreloader {
 
   /// التحميل المسبق للصور
   static Future<void> preloadImages(List<String> imagePaths) async {
-    for (
-      var i = 0;
-      i < imagePaths.length && _imageCache.length < _maxCacheSize;
-      i++
-    ) {
+    for (var i = 0;
+        i < imagePaths.length && _imageCache.length < _maxCacheSize;
+        i++) {
       // هنا يمكن إضافة منطق التحميل الفعلي
       // مثال: _imageCache[imagePaths[i]] = await loadImage(imagePaths[i]);
     }

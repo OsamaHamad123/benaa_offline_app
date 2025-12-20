@@ -33,7 +33,8 @@ class BottomNavigationButtons extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final isTabletOrDesktop = ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
+    final isTabletOrDesktop =
+        ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
     final buttonSpacing = isTabletOrDesktop ? 16.w : 12.w;
     final verticalPadding = isTabletOrDesktop ? 18.h : 16.h;
 
@@ -58,7 +59,8 @@ class BottomNavigationButtons extends StatelessWidget {
               Expanded(
                 flex: isFirstTab ? 1 : 2,
                 child: Semantics(
-                  label: isLastTab ? 'حفظ النموذج' : 'الانتقال إلى التبويب التالي',
+                  label:
+                      isLastTab ? 'حفظ النموذج' : 'الانتقال إلى التبويب التالي',
                   hint: isLastTab ? 'اضغط لحفظ جميع البيانات' : 'اضغط للمتابعة',
                   button: true,
                   enabled: !isLoading,
@@ -86,11 +88,16 @@ class BottomNavigationButtons extends StatelessWidget {
                             ),
                           )
                         : Icon(
-                            isLastTab ? Icons.check_circle_rounded : Icons.arrow_back_ios_rounded, // ← للأمام في RTL
+                            isLastTab
+                                ? Icons.check_circle_rounded
+                                : Icons
+                                    .arrow_back_ios_rounded, // ← للأمام في RTL
                             size: isTabletOrDesktop ? 22 : 20,
                           ),
                     label: Text(
-                      isLoading ? 'جاري الحفظ...' : (isLastTab ? 'حفظ' : 'التالي'),
+                      isLoading
+                          ? 'جاري الحفظ...'
+                          : (isLastTab ? 'حفظ' : 'التالي'),
                       style: TextStyle(
                         fontSize: isTabletOrDesktop ? 15.sp : 14.sp,
                         fontWeight: FontWeight.w600,
@@ -101,7 +108,9 @@ class BottomNavigationButtons extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12.r),
                       ),
-                      backgroundColor: isLastTab ? Colors.green.shade600 : colorScheme.primary,
+                      backgroundColor: isLastTab
+                          ? Colors.green.shade600
+                          : colorScheme.primary,
                     ),
                   ),
                 ),
@@ -132,7 +141,8 @@ class BottomNavigationButtons extends StatelessWidget {
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: verticalPadding),
+                        padding:
+                            EdgeInsets.symmetric(vertical: verticalPadding),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.r),
                         ),

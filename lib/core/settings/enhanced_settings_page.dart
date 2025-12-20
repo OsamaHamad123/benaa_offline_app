@@ -72,7 +72,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         title: 'الصوت',
                         subtitle: 'تشغيل الأصوات مع الإشعارات',
                         value: settings.soundEnabled,
-                        onChanged: settings.notificationsEnabled ? notifier.setSoundEnabled : null,
+                        onChanged: settings.notificationsEnabled
+                            ? notifier.setSoundEnabled
+                            : null,
                         icon: Icons.volume_up_rounded,
                         color: Colors.deepOrange,
                       ),
@@ -82,7 +84,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         title: 'الاهتزاز',
                         subtitle: 'اهتزاز الجهاز عند الإجراءات',
                         value: settings.vibrationEnabled,
-                        onChanged: settings.notificationsEnabled ? notifier.setVibrationEnabled : null,
+                        onChanged: settings.notificationsEnabled
+                            ? notifier.setVibrationEnabled
+                            : null,
                         icon: Icons.vibration_rounded,
                         color: Colors.amber,
                       ),
@@ -113,7 +117,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         title: 'WiFi فقط',
                         subtitle: 'المزامنة عند الاتصال بـ WiFi فقط',
                         value: settings.wifiOnlySync,
-                        onChanged: settings.autoSyncEnabled ? notifier.setWifiOnlySync : null,
+                        onChanged: settings.autoSyncEnabled
+                            ? notifier.setWifiOnlySync
+                            : null,
                         icon: Icons.wifi_rounded,
                         color: Colors.lightBlue,
                       ),
@@ -150,13 +156,15 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         subtitle: _getThemeModeLabel(settings.themeMode),
                         icon: _getThemeModeIcon(settings.themeMode),
                         color: Colors.purple,
-                        onTap: () => _showThemeModeDialog(context, notifier, settings),
+                        onTap: () =>
+                            _showThemeModeDialog(context, notifier, settings),
                       ),
                       _buildDivider(),
                       _buildColorSchemeTile(
                         context,
                         settings.colorScheme,
-                        () => _showColorSchemeDialog(context, notifier, settings),
+                        () =>
+                            _showColorSchemeDialog(context, notifier, settings),
                       ),
                       _buildDivider(),
                       _buildNavigationTile(
@@ -165,7 +173,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         subtitle: '${settings.fontSize.toInt()} نقطة',
                         icon: Icons.text_fields_rounded,
                         color: Colors.deepPurple,
-                        onTap: () => _showFontSizeDialog(context, notifier, settings),
+                        onTap: () =>
+                            _showFontSizeDialog(context, notifier, settings),
                       ),
                       _buildDivider(),
                       _buildSwitchTile(
@@ -208,7 +217,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         subtitle: _getSortLabel(settings.defaultSort),
                         icon: Icons.sort_rounded,
                         color: Colors.cyan,
-                        onTap: () => _showDefaultSortDialog(context, notifier, settings),
+                        onTap: () =>
+                            _showDefaultSortDialog(context, notifier, settings),
                       ),
                       _buildDivider(),
                       _buildSwitchTile(
@@ -332,10 +342,20 @@ class EnhancedSettingsPage extends ConsumerWidget {
                         _buildNavigationTile(
                           context,
                           title: '📈 Performance Monitor',
-                          subtitle: 'مراقبة الأداء في الوقت الفعلي (FPS, Frame Time)',
+                          subtitle:
+                              'مراقبة الأداء في الوقت الفعلي (FPS, Frame Time)',
                           icon: Icons.monitor_heart_rounded,
                           color: Colors.purple,
                           onTap: () => context.push('/performance-monitor'),
+                        ),
+                        _buildDivider(),
+                        _buildNavigationTile(
+                          context,
+                          title: '🐛 Sentry Test',
+                          subtitle: 'اختبار تقارير الأخطاء والمراقبة',
+                          icon: Icons.bug_report_rounded,
+                          color: Colors.red,
+                          onTap: () => context.push('/sentry-test'),
                         ),
                       ],
                     ]),
@@ -841,7 +861,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
                 ),
               ),
             ),
-            if (isSelected) Icon(Icons.check_circle_rounded, color: color, size: 24.sp),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: color, size: 24.sp),
           ],
         ),
       ),
@@ -910,7 +931,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12.r),
-                    border: isSelected ? Border.all(color: Colors.black, width: 3) : null,
+                    border: isSelected
+                        ? Border.all(color: Colors.black, width: 3)
+                        : null,
                     boxShadow: [
                       BoxShadow(
                         color: (data['color'] as Color).withOpacity(0.3),
@@ -1013,7 +1036,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.indigo.withOpacity(0.1) : Colors.transparent,
+          color:
+              isSelected ? Colors.indigo.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: isSelected ? Colors.indigo : Colors.grey.shade300,
@@ -1118,7 +1142,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
             Container(
               padding: EdgeInsets.all(6.w),
               decoration: BoxDecoration(
-                color: isSelected ? Colors.teal.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+                color: isSelected
+                    ? Colors.teal.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(
@@ -1141,7 +1167,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
                 ),
               ),
             ),
-            if (isSelected) Icon(Icons.check_circle_rounded, color: Colors.teal, size: 24.sp),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: Colors.teal, size: 24.sp),
           ],
         ),
       ),
@@ -1246,7 +1273,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
                 ),
               ),
             ),
-            if (isSelected) Icon(Icons.check_circle_rounded, color: Colors.cyan, size: 24.sp),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: Colors.cyan, size: 24.sp),
           ],
         ),
       ),
@@ -1321,7 +1349,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.lightGreen.withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? Colors.lightGreen.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: isSelected ? Colors.lightGreen : Colors.grey.shade300,
@@ -1431,7 +1461,9 @@ class EnhancedSettingsPage extends ConsumerWidget {
             Container(
               padding: EdgeInsets.all(6.w),
               decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
+                color: isSelected
+                    ? color.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: Text(
@@ -1454,7 +1486,8 @@ class EnhancedSettingsPage extends ConsumerWidget {
                 ),
               ),
             ),
-            if (isSelected) Icon(Icons.check_circle_rounded, color: color, size: 24.sp),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: color, size: 24.sp),
           ],
         ),
       ),
@@ -1591,7 +1624,8 @@ class _FontSizeDialogState extends ConsumerState<_FontSizeDialog> {
                           divisions: 8,
                           label: _currentFontSize.toInt().toString(),
                           activeColor: Colors.deepPurple,
-                          inactiveColor: isDark ? Colors.grey[700] : Colors.grey[300],
+                          inactiveColor:
+                              isDark ? Colors.grey[700] : Colors.grey[300],
                           onChanged: (value) {
                             setState(() {
                               _currentFontSize = value;

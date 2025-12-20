@@ -75,8 +75,8 @@ class BeneficiaryFormValidationHelper {
         final context = entry.value.currentContext;
         if (context != null) {
           // Check if field has error
-          final formFieldState = context
-              .findAncestorStateOfType<FormFieldState>();
+          final formFieldState =
+              context.findAncestorStateOfType<FormFieldState>();
           if (formFieldState?.hasError == true) {
             // Scroll to this field
             Scrollable.ensureVisible(

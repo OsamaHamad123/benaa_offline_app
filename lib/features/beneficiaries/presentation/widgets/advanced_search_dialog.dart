@@ -198,9 +198,8 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                             selected: _selectedMaritalStatus == 'single',
                             onSelected: (selected) {
                               setState(() {
-                                _selectedMaritalStatus = selected
-                                    ? 'single'
-                                    : null;
+                                _selectedMaritalStatus =
+                                    selected ? 'single' : null;
                               });
                             },
                           ),
@@ -209,9 +208,8 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                             selected: _selectedMaritalStatus == 'married',
                             onSelected: (selected) {
                               setState(() {
-                                _selectedMaritalStatus = selected
-                                    ? 'married'
-                                    : null;
+                                _selectedMaritalStatus =
+                                    selected ? 'married' : null;
                               });
                             },
                           ),
@@ -220,9 +218,8 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                             selected: _selectedMaritalStatus == 'widowed',
                             onSelected: (selected) {
                               setState(() {
-                                _selectedMaritalStatus = selected
-                                    ? 'widowed'
-                                    : null;
+                                _selectedMaritalStatus =
+                                    selected ? 'widowed' : null;
                               });
                             },
                           ),
@@ -231,9 +228,8 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                             selected: _selectedMaritalStatus == 'divorced',
                             onSelected: (selected) {
                               setState(() {
-                                _selectedMaritalStatus = selected
-                                    ? 'divorced'
-                                    : null;
+                                _selectedMaritalStatus =
+                                    selected ? 'divorced' : null;
                               });
                             },
                           ),

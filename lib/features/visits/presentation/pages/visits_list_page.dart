@@ -21,7 +21,8 @@ class VisitsListPage extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPage> createState() => _VisitsListPageState();
 }
 
-class _VisitsListPageState extends ConsumerState<VisitsListPage> with SingleTickerProviderStateMixin {
+class _VisitsListPageState extends ConsumerState<VisitsListPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   DateTime _selectedMonth = DateTime.now();
   String _selectedFilter = 'all'; // all, pending, submitted
@@ -46,7 +47,9 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage> with SingleTick
     try {
       // Load visits from provider
       if (widget.beneficiaryId != null) {
-        await ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId!);
+        await ref
+            .read(visitNotifierProvider.notifier)
+            .loadBeneficiaryVisits(widget.beneficiaryId!);
       }
 
       final state = ref.read(visitNotifierProvider);
@@ -292,7 +295,8 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage> with SingleTick
                     size: 20.sp,
                   ),
                 ),
-                if (index < _visits.length - 1) Container(width: 2, height: 60.h, color: Colors.grey[300]),
+                if (index < _visits.length - 1)
+                  Container(width: 2, height: 60.h, color: Colors.grey[300]),
               ],
             ),
           ),

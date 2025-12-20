@@ -79,12 +79,10 @@ class _DeceasedParentsSectionState extends State<_DeceasedParentsSection> {
     return ValueListenableBuilder<List<Map<String, dynamic>>>(
       valueListenable: widget.formControllers.deceasedMembersNotifier,
       builder: (context, deceasedMembers, _) {
-        final father = deceasedMembers
-            .where((d) => d['deceasedType'] == 1)
-            .firstOrNull;
-        final mother = deceasedMembers
-            .where((d) => d['deceasedType'] == 2)
-            .firstOrNull;
+        final father =
+            deceasedMembers.where((d) => d['deceasedType'] == 1).firstOrNull;
+        final mother =
+            deceasedMembers.where((d) => d['deceasedType'] == 2).firstOrNull;
 
         return Card(
           elevation: 2,

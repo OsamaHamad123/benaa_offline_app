@@ -130,9 +130,10 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
         widget.fatherNameController.text.trim().isNotEmpty &&
         widget.lastNameController.text.trim().isNotEmpty;
 
-    final isPersonalInfoComplete = widget.nationalIdController.text.length == 9 &&
-        widget.selectedGender != null &&
-        widget.selectedCategory != null;
+    final isPersonalInfoComplete =
+        widget.nationalIdController.text.length == 9 &&
+            widget.selectedGender != null &&
+            widget.selectedCategory != null;
 
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),

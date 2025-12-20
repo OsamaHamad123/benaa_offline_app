@@ -16,10 +16,12 @@ class GovernorateFilterBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<GovernorateFilterBottomSheet> createState() => _GovernorateFilterBottomSheetState();
+  State<GovernorateFilterBottomSheet> createState() =>
+      _GovernorateFilterBottomSheetState();
 }
 
-class _GovernorateFilterBottomSheetState extends State<GovernorateFilterBottomSheet> {
+class _GovernorateFilterBottomSheetState
+    extends State<GovernorateFilterBottomSheet> {
   String? _selectedGovernorate;
   String _searchQuery = '';
 
@@ -33,7 +35,9 @@ class _GovernorateFilterBottomSheetState extends State<GovernorateFilterBottomSh
     if (_searchQuery.isEmpty) {
       return widget.availableGovernorates;
     }
-    return widget.availableGovernorates.where((gov) => gov.contains(_searchQuery)).toList();
+    return widget.availableGovernorates
+        .where((gov) => gov.contains(_searchQuery))
+        .toList();
   }
 
   @override
@@ -111,18 +115,27 @@ class _GovernorateFilterBottomSheetState extends State<GovernorateFilterBottomSh
                   ListTile(
                     leading: Icon(
                       Icons.clear_all,
-                      color: _selectedGovernorate == null ? Colors.blue.shade700 : Colors.grey,
+                      color: _selectedGovernorate == null
+                          ? Colors.blue.shade700
+                          : Colors.grey,
                     ),
                     title: Text(
                       'الكل (بدون فلتر)',
                       style: TextStyle(
-                        fontWeight: _selectedGovernorate == null ? FontWeight.bold : FontWeight.normal,
-                        color: _selectedGovernorate == null ? Colors.blue.shade700 : Colors.black87,
+                        fontWeight: _selectedGovernorate == null
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _selectedGovernorate == null
+                            ? Colors.blue.shade700
+                            : Colors.black87,
                       ),
                     ),
-                    trailing:
-                        _selectedGovernorate == null ? Icon(Icons.check_circle, color: Colors.blue.shade700) : null,
-                    tileColor: _selectedGovernorate == null ? Colors.blue.shade50 : null,
+                    trailing: _selectedGovernorate == null
+                        ? Icon(Icons.check_circle, color: Colors.blue.shade700)
+                        : null,
+                    tileColor: _selectedGovernorate == null
+                        ? Colors.blue.shade50
+                        : null,
                     onTap: () {
                       HapticPatterns.selection();
                       setState(() {
@@ -142,11 +155,17 @@ class _GovernorateFilterBottomSheetState extends State<GovernorateFilterBottomSh
                       title: Text(
                         governorate,
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? Colors.blue.shade700 : Colors.black87,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? Colors.blue.shade700
+                              : Colors.black87,
                         ),
                       ),
-                      trailing: isSelected ? Icon(Icons.check_circle, color: Colors.blue.shade700) : null,
+                      trailing: isSelected
+                          ? Icon(Icons.check_circle,
+                              color: Colors.blue.shade700)
+                          : null,
                       tileColor: isSelected ? Colors.blue.shade50 : null,
                       onTap: () {
                         HapticPatterns.selection();

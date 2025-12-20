@@ -59,7 +59,8 @@ class MonitoredAnimation extends StatefulWidget {
   State<MonitoredAnimation> createState() => _MonitoredAnimationState();
 }
 
-class _MonitoredAnimationState extends State<MonitoredAnimation> with SingleTickerProviderStateMixin {
+class _MonitoredAnimationState extends State<MonitoredAnimation>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final Stopwatch _stopwatch = Stopwatch();
 
@@ -147,7 +148,8 @@ class UxAnalyticsDashboard extends StatelessWidget {
                   await UxAnalytics.resetAnalytics();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('تم إعادة تعيين الإحصائيات')),
+                      const SnackBar(
+                          content: Text('تم إعادة تعيين الإحصائيات')),
                     );
                   }
                   break;
@@ -220,7 +222,8 @@ class UxAnalyticsDashboard extends StatelessWidget {
               FutureBuilder<List<String>>(
                 future: AnalyticsExporter.generateInsights(),
                 builder: (context, insightsSnapshot) {
-                  if (insightsSnapshot.hasData && insightsSnapshot.data!.isNotEmpty) {
+                  if (insightsSnapshot.hasData &&
+                      insightsSnapshot.data!.isNotEmpty) {
                     return Column(
                       children: [
                         _buildSection(
@@ -229,13 +232,16 @@ class UxAnalyticsDashboard extends StatelessWidget {
                               .map((insight) => Padding(
                                     padding: const EdgeInsets.only(bottom: 8),
                                     child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        const Text('• ', style: TextStyle(fontSize: 16)),
+                                        const Text('• ',
+                                            style: TextStyle(fontSize: 16)),
                                         Expanded(
                                           child: Text(
                                             insight,
-                                            style: const TextStyle(fontSize: 14),
+                                            style:
+                                                const TextStyle(fontSize: 14),
                                           ),
                                         ),
                                       ],
@@ -263,7 +269,8 @@ class UxAnalyticsDashboard extends StatelessWidget {
               _buildSection(
                 '🌙 Dark Mode',
                 [
-                  _buildMetric('الحالة', darkMode['enabled'] ? 'مفعّل' : 'معطّل'),
+                  _buildMetric(
+                      'الحالة', darkMode['enabled'] ? 'مفعّل' : 'معطّل'),
                   _buildMetric('مرات التبديل', '${darkMode['toggleCount']}'),
                   _buildMetric('أول تفعيل', darkMode['firstEnabled'] ?? 'N/A'),
                 ],
@@ -273,15 +280,18 @@ class UxAnalyticsDashboard extends StatelessWidget {
                 '🎨 Animations',
                 [
                   _buildMetric('Frame Drops', '${animations['frameDrops']}'),
-                  _buildMetric('Avg Duration', '${animations['avgDuration']}ms'),
+                  _buildMetric(
+                      'Avg Duration', '${animations['avgDuration']}ms'),
                 ],
               ),
               const SizedBox(height: 16),
               _buildSection(
                 '♿ Accessibility',
                 [
-                  _buildMetric('Screen Reader', accessibility['screenReaderUsed'] ? 'نعم' : 'لا'),
-                  _buildMetric('Semantics Interactions', '${accessibility['semanticsInteractions']}'),
+                  _buildMetric('Screen Reader',
+                      accessibility['screenReaderUsed'] ? 'نعم' : 'لا'),
+                  _buildMetric('Semantics Interactions',
+                      '${accessibility['semanticsInteractions']}'),
                 ],
               ),
               const SizedBox(height: 16),
@@ -289,7 +299,8 @@ class UxAnalyticsDashboard extends StatelessWidget {
                 '📈 Sessions',
                 [
                   _buildMetric('إجمالي الجلسات', '${sessions['total']}'),
-                  _buildMetric('بداية الجلسة الحالية', sessions['currentStart'] ?? 'N/A'),
+                  _buildMetric('بداية الجلسة الحالية',
+                      sessions['currentStart'] ?? 'N/A'),
                 ],
               ),
             ],

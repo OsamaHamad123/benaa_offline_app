@@ -192,7 +192,8 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                                   icon: Icons.male,
                                   label: 'ذكور',
                                   count: '$males',
-                                  percentage: PercentageHelper.getPercentageText(
+                                  percentage:
+                                      PercentageHelper.getPercentageText(
                                     males,
                                     total,
                                   ),
@@ -206,7 +207,8 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                                   icon: Icons.female,
                                   label: 'إناث',
                                   count: '$females',
-                                  percentage: PercentageHelper.getPercentageText(
+                                  percentage:
+                                      PercentageHelper.getPercentageText(
                                     females,
                                     total,
                                   ),

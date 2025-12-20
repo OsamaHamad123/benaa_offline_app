@@ -361,7 +361,8 @@ class SyncManager {
             // البحث عن مستفيد موجود بنفس الـ serverId
             final serverId = item['id'] as int?;
             if (serverId != null) {
-              final existing = await _db.beneficiariesDao.getBeneficiaryByServerId(serverId);
+              final existing =
+                  await _db.beneficiariesDao.getBeneficiaryByServerId(serverId);
 
               if (existing != null) {
                 // تحديث الموجود
@@ -378,7 +379,8 @@ class SyncManager {
               }
             } else {
               // إدراج جديد (بدون serverId)
-              await _db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
+              await _db.beneficiariesDao
+                  .insertBeneficiary(beneficiaryCompanion);
               insertedCount++;
             }
           } catch (e) {

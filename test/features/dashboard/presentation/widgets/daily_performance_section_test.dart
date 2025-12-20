@@ -88,8 +88,7 @@ void main() {
         'syncedRecords': 8,
       };
 
-      final totalActions =
-          todayStats['newBeneficiaries']! +
+      final totalActions = todayStats['newBeneficiaries']! +
           todayStats['completedVisits']! +
           todayStats['syncedRecords']!;
 
@@ -129,8 +128,8 @@ void main() {
       final highColor = highPerformance >= 80
           ? Colors.green
           : highPerformance >= 50
-          ? Colors.orange
-          : Colors.red;
+              ? Colors.orange
+              : Colors.red;
       expect(highColor, Colors.green);
 
       // Orange for 50-80%
@@ -138,8 +137,8 @@ void main() {
       final mediumColor = mediumPerformance >= 80
           ? Colors.green
           : mediumPerformance >= 50
-          ? Colors.orange
-          : Colors.red;
+              ? Colors.orange
+              : Colors.red;
       expect(mediumColor, Colors.orange);
 
       // Red for < 50%
@@ -147,8 +146,8 @@ void main() {
       final lowColor = lowPerformance >= 80
           ? Colors.green
           : lowPerformance >= 50
-          ? Colors.orange
-          : Colors.red;
+              ? Colors.orange
+              : Colors.red;
       expect(lowColor, Colors.red);
     });
   });

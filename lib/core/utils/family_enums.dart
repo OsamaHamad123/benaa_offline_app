@@ -110,26 +110,26 @@ class DeathCause {
   }
 
   static List<int> get allValues => [
-    natural,
-    disease,
-    sudden,
-    accident,
-    other,
-    suicide,
-    murdered,
-    unknown,
-  ];
+        natural,
+        disease,
+        sudden,
+        accident,
+        other,
+        suicide,
+        murdered,
+        unknown,
+      ];
 
   static Map<int, String> get allArabic => {
-    natural: toArabic(natural),
-    disease: toArabic(disease),
-    sudden: toArabic(sudden),
-    accident: toArabic(accident),
-    other: toArabic(other),
-    suicide: toArabic(suicide),
-    murdered: toArabic(murdered),
-    unknown: toArabic(unknown),
-  };
+        natural: toArabic(natural),
+        disease: toArabic(disease),
+        sudden: toArabic(sudden),
+        accident: toArabic(accident),
+        other: toArabic(other),
+        suicide: toArabic(suicide),
+        murdered: toArabic(murdered),
+        unknown: toArabic(unknown),
+      };
 }
 
 /// نوع الوثيقة
@@ -160,9 +160,9 @@ class DocumentType {
   }
 
   static Map<int, String> get allArabic => {
-    deathCertificate: toArabic(deathCertificate),
-    martyrCertificate: toArabic(martyrCertificate),
-  };
+        deathCertificate: toArabic(deathCertificate),
+        martyrCertificate: toArabic(martyrCertificate),
+      };
 }
 
 /// الجنس (موحد مع جدول المستفيدين)
@@ -215,9 +215,9 @@ class Gender {
   }
 
   static Map<int, String> get allArabic => {
-    male: toArabic(male),
-    female: toArabic(female),
-  };
+        male: toArabic(male),
+        female: toArabic(female),
+      };
 }
 
 /// الحالة الصحية
@@ -265,10 +265,10 @@ class HealthStatus {
   static List<int> get allValues => [healthy, sick, chronic, disabled, unknown];
 
   static Map<int, String> get allArabic => {
-    healthy: toArabic(healthy),
-    sick: toArabic(sick),
-    chronic: toArabic(chronic),
-    disabled: toArabic(disabled),
-    unknown: toArabic(unknown),
-  };
+        healthy: toArabic(healthy),
+        sick: toArabic(sick),
+        chronic: toArabic(chronic),
+        disabled: toArabic(disabled),
+        unknown: toArabic(unknown),
+      };
 }

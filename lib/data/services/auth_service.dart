@@ -15,9 +15,9 @@ class AuthService {
   final SecureStorage _storage = SecureStorage();
 
   AuthService({String? serverUrl})
-    : _apiClient = SyncApiClient(
-        baseUrl: serverUrl ?? ApiConfig.defaultBaseUrl,
-      );
+      : _apiClient = SyncApiClient(
+          baseUrl: serverUrl ?? ApiConfig.defaultBaseUrl,
+        );
 
   // ===========================
   // 🔑 AUTHENTICATION
@@ -46,9 +46,8 @@ class AuthService {
       }
 
       // إنشاء API client جديد إذا كان هناك server URL مختلف
-      final apiClient = serverUrl != null
-          ? SyncApiClient(baseUrl: serverUrl)
-          : _apiClient;
+      final apiClient =
+          serverUrl != null ? SyncApiClient(baseUrl: serverUrl) : _apiClient;
 
       // إنشاء طلب تسجيل الدخول
       final request = LoginRequestDto(

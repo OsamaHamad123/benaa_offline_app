@@ -17,9 +17,9 @@ class ApiClientWithMock {
     ApiClient? realClient,
     MockApiServer? mockServer,
     required bool useMock,
-  }) : _realClient = realClient,
-       _mockServer = mockServer,
-       _useMock = useMock;
+  })  : _realClient = realClient,
+        _mockServer = mockServer,
+        _useMock = useMock;
 
   /// التحقق من أنه في وضع Mock
   bool get isMockMode => _useMock;

@@ -201,8 +201,8 @@ class CustomRefreshHeader extends StatelessWidget {
               isRefreshing
                   ? 'جاري التحديث...'
                   : progress >= 1.0
-                  ? 'اترك للتحديث'
-                  : 'اسحب للتحديث',
+                      ? 'اترك للتحديث'
+                      : 'اسحب للتحديث',
               style: TextStyle(
                 fontSize: 12.sp,
                 color: theme.colorScheme.onSurface.withOpacity(0.6),

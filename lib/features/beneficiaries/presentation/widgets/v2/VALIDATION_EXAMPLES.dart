@@ -295,9 +295,7 @@ class _BeneficiaryFormExampleState extends State<BeneficiaryFormExample> {
             validationLevel: _firstNameValidation.level,
             showValidation: _firstNameValidation.show,
           ),
-
           const SizedBox(height: 16),
-
           AnimatedFormField(
             controller: _lastNameController,
             labelText: 'اسم العائلة *',
@@ -315,9 +313,7 @@ class _BeneficiaryFormExampleState extends State<BeneficiaryFormExample> {
             validationLevel: _lastNameValidation.level,
             showValidation: _lastNameValidation.show,
           ),
-
           const SizedBox(height: 16),
-
           AnimatedFormField(
             controller: _nationalIdController,
             labelText: 'الرقم الوطني *',
@@ -343,9 +339,7 @@ class _BeneficiaryFormExampleState extends State<BeneficiaryFormExample> {
             validationLevel: _nationalIdValidation.level,
             showValidation: _nationalIdValidation.show,
           ),
-
           const SizedBox(height: 16),
-
           AnimatedFormField(
             controller: _phoneController,
             labelText: 'رقم الهاتف *',

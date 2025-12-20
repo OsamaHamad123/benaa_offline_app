@@ -22,13 +22,13 @@ class SyncHistoryEntry {
   });
 
   Map<String, dynamic> toJson() => {
-    'timestamp': timestamp.toIso8601String(),
-    'success': success,
-    'message': message,
-    'uploadedCount': uploadedCount,
-    'downloadedCount': downloadedCount,
-    'duration': duration?.inSeconds,
-  };
+        'timestamp': timestamp.toIso8601String(),
+        'success': success,
+        'message': message,
+        'uploadedCount': uploadedCount,
+        'downloadedCount': downloadedCount,
+        'duration': duration?.inSeconds,
+      };
 
   factory SyncHistoryEntry.fromJson(Map<String, dynamic> json) {
     return SyncHistoryEntry(
@@ -37,9 +37,8 @@ class SyncHistoryEntry {
       message: json['message'],
       uploadedCount: json['uploadedCount'],
       downloadedCount: json['downloadedCount'],
-      duration: json['duration'] != null
-          ? Duration(seconds: json['duration'])
-          : null,
+      duration:
+          json['duration'] != null ? Duration(seconds: json['duration']) : null,
     );
   }
 }
@@ -110,7 +109,7 @@ class SyncHistoryManager {
     final averageDuration = durations.isEmpty
         ? 0
         : durations.fold(0, (sum, e) => sum + e.duration!.inSeconds) ~/
-              durations.length;
+            durations.length;
 
     return {
       'totalSyncs': history.length,

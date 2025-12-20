@@ -14,7 +14,8 @@ class GenderFilterBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<GenderFilterBottomSheet> createState() => _GenderFilterBottomSheetState();
+  State<GenderFilterBottomSheet> createState() =>
+      _GenderFilterBottomSheetState();
 }
 
 class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
@@ -200,7 +201,8 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                 ),
               ),
             ),
-            if (isSelected) Icon(Icons.check_circle, color: color.shade700, size: 28),
+            if (isSelected)
+              Icon(Icons.check_circle, color: color.shade700, size: 28),
           ],
         ),
       ),

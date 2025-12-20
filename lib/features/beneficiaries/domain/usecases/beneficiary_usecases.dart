@@ -83,7 +83,8 @@ class GetBeneficiaryStatisticsUseCase {
       return Failure(totalResult.error);
     }
 
-    final pendingResult = await repository.count(); // TODO: Add pendingSync filter
+    final pendingResult =
+        await repository.count(); // TODO: Add pendingSync filter
     if (pendingResult is Failure<int>) {
       return Failure(pendingResult.error);
     }

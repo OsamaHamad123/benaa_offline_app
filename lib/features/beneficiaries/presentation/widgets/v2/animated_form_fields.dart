@@ -54,7 +54,8 @@ class AnimatedFormField extends StatefulWidget {
   State<AnimatedFormField> createState() => _AnimatedFormFieldState();
 }
 
-class _AnimatedFormFieldState extends State<AnimatedFormField> with SingleTickerProviderStateMixin {
+class _AnimatedFormFieldState extends State<AnimatedFormField>
+    with SingleTickerProviderStateMixin {
   late FocusNode _focusNode;
   bool _isFocused = false;
 
@@ -98,7 +99,8 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> with SingleTicker
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _isFocused ? theme.colorScheme.primary : Colors.transparent,
+              color:
+                  _isFocused ? theme.colorScheme.primary : Colors.transparent,
               width: 2,
             ),
           ),
@@ -120,7 +122,9 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> with SingleTicker
               prefixIcon: widget.prefixIcon != null
                   ? Icon(
                       widget.prefixIcon,
-                      color: _isFocused ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                      color: _isFocused
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
                     )
                   : null,
               suffix: widget.suffix,
@@ -161,7 +165,9 @@ class _AnimatedFormFieldState extends State<AnimatedFormField> with SingleTicker
         ),
 
         // ✅ Inline Validation Message
-        if (widget.showValidation && widget.validationMessage != null && widget.validationLevel != null)
+        if (widget.showValidation &&
+            widget.validationMessage != null &&
+            widget.validationLevel != null)
           InlineValidationMessage(
             message: widget.validationMessage!,
             level: widget.validationLevel!,
@@ -192,7 +198,8 @@ class AnimatedDropdownField<T> extends StatefulWidget {
   });
 
   @override
-  State<AnimatedDropdownField<T>> createState() => _AnimatedDropdownFieldState<T>();
+  State<AnimatedDropdownField<T>> createState() =>
+      _AnimatedDropdownFieldState<T>();
 }
 
 class _AnimatedDropdownFieldState<T> extends State<AnimatedDropdownField<T>> {
@@ -242,7 +249,9 @@ class _AnimatedDropdownFieldState<T> extends State<AnimatedDropdownField<T>> {
           prefixIcon: widget.prefixIcon != null
               ? Icon(
                   widget.prefixIcon,
-                  color: _isFocused ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                  color: _isFocused
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
                 )
               : null,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

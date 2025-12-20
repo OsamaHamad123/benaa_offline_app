@@ -27,8 +27,7 @@ class _DraftSaveDialogState extends State<DraftSaveDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(
-      text:
-          widget.currentDraftName ??
+      text: widget.currentDraftName ??
           'مسودة ${DateTime.now().toString().split(' ')[0]}',
     );
     _notesController = TextEditingController(text: widget.currentDraftNotes);

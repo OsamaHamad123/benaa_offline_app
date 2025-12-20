@@ -11,8 +11,7 @@ class PerformanceDashboard extends ConsumerStatefulWidget {
   const PerformanceDashboard({super.key});
 
   @override
-  ConsumerState<PerformanceDashboard> createState() =>
-      _PerformanceDashboardState();
+  ConsumerState<PerformanceDashboard> createState() => _PerformanceDashboardState();
 }
 
 class _PerformanceDashboardState extends ConsumerState<PerformanceDashboard> {
@@ -485,6 +484,7 @@ class _WidgetMetricsTab extends StatelessWidget {
     final widgets = WidgetPerformanceAnalyzer.getMostRebuiltWidgets(limit: 20);
 
     return ListView.builder(
+      key: const PageStorageKey('widget_metrics_list'),
       padding: EdgeInsets.symmetric(vertical: 12.h),
       itemCount: widgets.length,
       itemBuilder: (context, index) {
@@ -495,9 +495,7 @@ class _WidgetMetricsTab extends StatelessWidget {
           margin: EdgeInsets.only(bottom: 8.h),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: metrics.isPerformant
-                  ? Colors.green
-                  : Colors.orange,
+              backgroundColor: metrics.isPerformant ? Colors.green : Colors.orange,
               child: Text(
                 '${metrics.buildCount}',
                 style: TextStyle(fontSize: 10.sp),
@@ -522,6 +520,7 @@ class _StateMetricsTab extends StatelessWidget {
     final states = StateOptimizer.getMostUpdatedStates(limit: 20);
 
     return ListView.builder(
+      key: const PageStorageKey('state_metrics_list'),
       padding: EdgeInsets.symmetric(vertical: 12.h),
       itemCount: states.length,
       itemBuilder: (context, index) {
@@ -532,9 +531,7 @@ class _StateMetricsTab extends StatelessWidget {
           margin: EdgeInsets.only(bottom: 8.h),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: metrics.wasteRate < 10
-                  ? Colors.green
-                  : Colors.red,
+              backgroundColor: metrics.wasteRate < 10 ? Colors.green : Colors.red,
               child: Text(
                 '${metrics.updateCount}',
                 style: TextStyle(fontSize: 10.sp),
@@ -559,6 +556,7 @@ class _QueryMetricsTab extends StatelessWidget {
     final queries = QueryOptimizer.getSlowestQueries(limit: 20);
 
     return ListView.builder(
+      key: const PageStorageKey('query_metrics_list'),
       padding: EdgeInsets.symmetric(vertical: 12.h),
       itemCount: queries.length,
       itemBuilder: (context, index) {
@@ -569,9 +567,7 @@ class _QueryMetricsTab extends StatelessWidget {
           margin: EdgeInsets.only(bottom: 8.h),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: stats.averageDuration.inMilliseconds < 50
-                  ? Colors.green
-                  : Colors.orange,
+              backgroundColor: stats.averageDuration.inMilliseconds < 50 ? Colors.green : Colors.orange,
               child: Text(
                 '${stats.averageDuration.inMilliseconds}',
                 style: TextStyle(fontSize: 9.sp),

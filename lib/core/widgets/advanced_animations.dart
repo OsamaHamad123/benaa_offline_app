@@ -331,24 +331,23 @@ class HeroAnimationWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Hero(
       tag: tag,
-      flightShuttleBuilder:
-          (
-            flightContext,
-            animation,
-            flightDirection,
-            fromHeroContext,
-            toHeroContext,
-          ) {
-            return ScaleTransition(
-              scale: animation.drive(
-                Tween<double>(
-                  begin: 0.8,
-                  end: 1.0,
-                ).chain(CurveTween(curve: Curves.easeInOut)),
-              ),
-              child: child,
-            );
-          },
+      flightShuttleBuilder: (
+        flightContext,
+        animation,
+        flightDirection,
+        fromHeroContext,
+        toHeroContext,
+      ) {
+        return ScaleTransition(
+          scale: animation.drive(
+            Tween<double>(
+              begin: 0.8,
+              end: 1.0,
+            ).chain(CurveTween(curve: Curves.easeInOut)),
+          ),
+          child: child,
+        );
+      },
       child: child,
     );
   }

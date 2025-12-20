@@ -60,8 +60,8 @@ class CivilRegistry extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {nationalId}, // الرقم الوطني فريد
-  ];
+        {nationalId}, // الرقم الوطني فريد
+      ];
 }
 
 /// City table - جدول المدن والمحافظات

@@ -135,5 +135,6 @@ class CacheStats {
   });
 
   @override
-  String toString() => 'CacheStats(size: $size/$maxSize, hitRate: ${(hitRate * 100).toStringAsFixed(1)}%)';
+  String toString() =>
+      'CacheStats(size: $size/$maxSize, hitRate: ${(hitRate * 100).toStringAsFixed(1)}%)';
 }

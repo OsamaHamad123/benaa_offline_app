@@ -121,9 +121,9 @@ class _BatchQueue {
   }
 
   QueueStats get stats => QueueStats(
-    pendingOperations: _operations.length,
-    processedBatches: _processedBatches,
-  );
+        pendingOperations: _operations.length,
+        processedBatches: _processedBatches,
+      );
 }
 
 /// إحصائيات الطابور

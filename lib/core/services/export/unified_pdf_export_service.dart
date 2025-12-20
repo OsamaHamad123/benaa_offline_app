@@ -137,12 +137,10 @@ class UnifiedPdfExportService implements BaseExportService {
             time: data.formattedTime,
           ),
           pw.SizedBox(height: 20),
-
           if (data.statistics != null && data.statistics!.isNotEmpty) ...[
             _buildStatisticsGrid(data.statistics!),
             pw.SizedBox(height: 20),
           ],
-
           _buildDataTable(table),
         ],
         footer: (context) => _buildFooter(
@@ -173,12 +171,10 @@ class UnifiedPdfExportService implements BaseExportService {
             time: data.formattedTime,
           ),
           pw.SizedBox(height: 20),
-
           if (data.statistics != null && data.statistics!.isNotEmpty) ...[
             _buildStatisticsGrid(data.statistics!),
             pw.SizedBox(height: 20),
           ],
-
           _buildDataTable(table),
         ],
         footer: (context) => _buildFooter(

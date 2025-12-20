@@ -201,8 +201,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       setState(() {
         final title = widget.isDeceased
             ? (widget.presetDeceasedType == 1
-                  ? 'إضافة أب متوفى'
-                  : 'إضافة أم متوفاة')
+                ? 'إضافة أب متوفى'
+                : 'إضافة أم متوفاة')
             : 'إضافة يتيم';
         _hoistedHeader = RebuildLogger(
           name: 'header',
@@ -670,15 +670,15 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                           third: _hideSearchButton,
                           builder:
                               (context, isFetching, status, hideButton, _) {
-                                return NationalIdWithCivilRegistry(
-                                  nationalIdController: _nationalIdCtrl,
-                                  isFetching: isFetching,
-                                  statusMessage: status,
-                                  hideButtonAfterFetch: hideButton,
-                                  onFetch: _fetchFromCivilRegistry,
-                                  onChanged: _handleNationalIdChanged,
-                                );
-                              },
+                            return NationalIdWithCivilRegistry(
+                              nationalIdController: _nationalIdCtrl,
+                              isFetching: isFetching,
+                              statusMessage: status,
+                              hideButtonAfterFetch: hideButton,
+                              onFetch: _fetchFromCivilRegistry,
+                              onChanged: _handleNationalIdChanged,
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
 
@@ -726,8 +726,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                                       date != null
                                           ? '${date.day}/${date.month}/${date.year}'
                                           : (widget.isDeceased
-                                                ? 'تاريخ الوفاة - اضغط للاختيار'
-                                                : 'تاريخ الميلاد - اضغط للاختيار'),
+                                              ? 'تاريخ الوفاة - اضغط للاختيار'
+                                              : 'تاريخ الميلاد - اضغط للاختيار'),
                                     ),
                                   ),
                                 ],
@@ -903,9 +903,8 @@ class _ChipSelector extends StatelessWidget {
                   e.value,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: isSelected
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected ? Colors.blue : Colors.grey.shade700,
                   ),
                 ),
@@ -924,7 +923,7 @@ class ValueListenableBuilder3<A, B, C> extends StatelessWidget {
   final ValueNotifier<B> second;
   final ValueNotifier<C> third;
   final Widget Function(BuildContext context, A a, B b, C c, Widget? child)
-  builder;
+      builder;
   final Widget? child;
 
   const ValueListenableBuilder3({

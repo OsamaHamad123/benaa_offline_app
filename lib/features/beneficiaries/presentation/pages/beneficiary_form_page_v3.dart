@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/widgets/responsive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -77,10 +78,12 @@ class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<BeneficiaryFormPageV3> createState() => _BeneficiaryFormPageV3State();
+  ConsumerState<BeneficiaryFormPageV3> createState() =>
+      _BeneficiaryFormPageV3State();
 }
 
-class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> with SingleTickerProviderStateMixin {
+class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
@@ -102,7 +105,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   set _lastSaved(DateTime? value) => _lastSavedNotifier.value = value;
 
-  set _hasUnsavedChanges(bool value) => _hasUnsavedChangesNotifier.value = value;
+  set _hasUnsavedChanges(bool value) =>
+      _hasUnsavedChangesNotifier.value = value;
 
   // 💾 Auto-draft ID - ثابت لتجنب إنشاء مسودات متكررة
   String? _autoSaveDraftId;
@@ -202,7 +206,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     if (_controllers.selectedEducationLevel != null) filled++;
 
     // Optional field: family members
-    if (_controllers.livingMembers.isNotEmpty || _controllers.deceasedMembers.isNotEmpty) filled++;
+    if (_controllers.livingMembers.isNotEmpty ||
+        _controllers.deceasedMembers.isNotEmpty) filled++;
 
     return filled;
   }
@@ -216,8 +221,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _autoSaveDebouncer(() async {
       if (!mounted) return;
 
-      final hasChanges =
-          _controllers.firstNameController.text.isNotEmpty || _controllers.nationalIdController.text.isNotEmpty;
+      final hasChanges = _controllers.firstNameController.text.isNotEmpty ||
+          _controllers.nationalIdController.text.isNotEmpty;
 
       if (!hasChanges) return;
 
@@ -261,8 +266,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       final firstName = _controllers.firstNameController.text;
       final lastName = _controllers.lastNameController.text;
-      final draftName =
-          firstName.isNotEmpty ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}' : 'مسودة جديدة';
+      final draftName = firstName.isNotEmpty
+          ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}'
+          : 'مسودة جديدة';
 
       await DraftManager.saveDraft(
         draftId: _autoSaveDraftId!,
@@ -294,7 +300,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     setState(() => _isLoading = true);
 
     if (widget.beneficiaryId != null) {
-      await ref.read(beneficiaryFormProvider.notifier).loadBeneficiary(widget.beneficiaryId!);
+      await ref
+          .read(beneficiaryFormProvider.notifier)
+          .loadBeneficiary(widget.beneficiaryId!);
 
       final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
       if (beneficiary != null) {
@@ -307,7 +315,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       // ✨ ملء البيانات من السجل المدني إذا كانت موجودة
       if (widget.civilRegistryData != null) {
-        debugPrint('📋 Civil Registry Data received: ${widget.civilRegistryData}');
+        debugPrint(
+            '📋 Civil Registry Data received: ${widget.civilRegistryData}');
         // تأخير بسيط للسماح للـ controllers بالتحميل
         Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
@@ -341,7 +350,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       final drafts = await DraftManager.getAllDrafts();
 
       // تصفية المسودات التلقائية فقط
-      final autoSavedDrafts = drafts.where((d) => d['isAutoSaved'] == true).toList();
+      final autoSavedDrafts =
+          drafts.where((d) => d['isAutoSaved'] == true).toList();
 
       if (autoSavedDrafts.isEmpty) return;
 
@@ -355,9 +365,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       final shouldRestore = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          icon: Icon(Icons.restore_outlined, color: Colors.blue, size: 48.sp),
-          title: const Text('استعادة مسودة تلقائية'),
+        builder: (context) => ResponsiveDialog(
+          title: 'استعادة مسودة تلقائية',
+          icon: Icons.restore_outlined,
+          iconColor: Colors.blue,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -846,7 +857,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       }
 
       // Show success message with count
-      debugPrint('✅ Successfully filled $filledFieldsCount fields from civil registry');
+      debugPrint(
+          '✅ Successfully filled $filledFieldsCount fields from civil registry');
 
       if (mounted && filledFieldsCount > 0) {
         // Force UI update
@@ -975,11 +987,28 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           showDialog(
             context: context,
             barrierDismissible: true,
-            barrierColor: Colors.black26,
-            builder: (context) => Center(
-              child: FormAnimations.successCheckmark(
-                size: 80.sp,
-                color: Theme.of(context).colorScheme.primary,
+            barrierColor: Colors.black54,
+            builder: (context) => Material(
+              color: Colors.transparent,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(24.r),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(20.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: FormAnimations.successCheckmark(
+                    size: 80.sp,
+                    color: Colors.green,
+                  ),
+                ),
               ),
             ),
           );
@@ -1033,14 +1062,20 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                       Icon(
                         Icons.inbox_outlined,
                         size: 64.sp,
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.3),
                       ),
                       SizedBox(height: 16.h),
                       Text(
                         'لا توجد مسودات محفوظة',
                         style: TextStyle(
                           fontSize: 16.sp,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.6),
                         ),
                       ),
                     ],
@@ -1085,8 +1120,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('حذف المسودة'),
+                                  builder: (context) => ResponsiveDialog(
+                                    title: 'حذف المسودة',
+                                    icon: Icons.delete_outline,
+                                    iconColor: Colors.red,
                                     content: Text(
                                       'هل تريد حذف هذه المسودة؟',
                                     ),
@@ -1104,7 +1141,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                                           true,
                                         ),
                                         child: FilledButton(
-                                          onPressed: null, // handled by AnimatedButton
+                                          onPressed:
+                                              null, // handled by AnimatedButton
                                           style: FilledButton.styleFrom(
                                             backgroundColor: Theme.of(
                                               context,
@@ -1160,7 +1198,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       // Fill controllers with draft data
       _controllers.firstNameController.text = formData['firstName'] ?? '';
       _controllers.fatherNameController.text = formData['fatherName'] ?? '';
-      _controllers.grandfatherNameController.text = formData['grandfatherName'] ?? '';
+      _controllers.grandfatherNameController.text =
+          formData['grandfatherName'] ?? '';
       _controllers.lastNameController.text = formData['lastName'] ?? '';
       _controllers.motherNameController.text = formData['motherName'] ?? '';
       _controllers.nationalIdController.text = formData['nationalId'] ?? '';
@@ -1260,7 +1299,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     }
     if (_controllers.nationalIdController.text.trim().isEmpty) {
       basicErrors.add('الرقم الوطني');
-    } else if (_controllers.nationalIdController.text.trim().length != FormConstants.nationalIdLength) {
+    } else if (_controllers.nationalIdController.text.trim().length !=
+        FormConstants.nationalIdLength) {
       basicErrors.add('الرقم الوطني (غير صحيح)');
     }
     if (_controllers.selectedGender == null) {
@@ -1303,7 +1343,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
           EnhancedSnackbar.showError(
             context,
-            message: '⚠️ يرجى تعبئة الحقول التالية في "$tabName":\n• ${errorFields.join('\n• ')}',
+            message:
+                '⚠️ يرجى تعبئة الحقول التالية في "$tabName":\n• ${errorFields.join('\n• ')}',
           );
 
           // تحريك التركيز للحقل الأول
@@ -1365,7 +1406,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         return;
       }
 
-      ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
+      ref
+          .read(beneficiaryFormProvider.notifier)
+          .updateField((_) => beneficiary);
       final success = await ref.read(beneficiaryFormProvider.notifier).save();
 
       if (success && mounted) {
@@ -1610,7 +1653,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                       builder: (context, isSaving, _) {
                         return local.LoadingOverlay(
                           isVisible: isSaving || _isDeleting,
-                          message: isSaving ? FormConstants.savingMessage : FormConstants.deletingMessage,
+                          message: isSaving
+                              ? FormConstants.savingMessage
+                              : FormConstants.deletingMessage,
                         );
                       },
                     ),
@@ -1621,27 +1666,32 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         steps: [
                           TourStep(
                             title: 'مرحباً بك! 👋',
-                            description: 'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
+                            description:
+                                'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
                             icon: Icons.waving_hand,
                           ),
                           TourStep(
                             title: 'التبويبات 📑',
-                            description: 'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
+                            description:
+                                'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
                             icon: Icons.tab,
                           ),
                           TourStep(
                             title: 'كارد التقدم 📊',
-                            description: 'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
+                            description:
+                                'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
                             icon: Icons.analytics,
                           ),
                           TourStep(
                             title: 'حفظ المسودة 💾',
-                            description: 'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
+                            description:
+                                'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
                             icon: Icons.save,
                           ),
                           TourStep(
                             title: 'المراجعة النهائية 📋',
-                            description: 'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
+                            description:
+                                'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
                             icon: Icons.checklist,
                           ),
                         ],

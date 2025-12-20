@@ -20,10 +20,10 @@ class LocalSyncDataSource {
     required BeneficiariesDao beneficiariesDao,
     required SyncMetadataDao syncMetadataDao,
     required SyncDao syncDao,
-  }) : _taxonomiesDao = taxonomiesDao,
-       _beneficiariesDao = beneficiariesDao,
-       _syncMetadataDao = syncMetadataDao,
-       _syncDao = syncDao;
+  })  : _taxonomiesDao = taxonomiesDao,
+        _beneficiariesDao = beneficiariesDao,
+        _syncMetadataDao = syncMetadataDao,
+        _syncDao = syncDao;
 
   // ═══════════════════════════════════════════════════════════════════════
   // 🏷️ TAXONOMIES - Local Operations

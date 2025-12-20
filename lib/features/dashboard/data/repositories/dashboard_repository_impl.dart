@@ -12,12 +12,15 @@ class DashboardRepositoryImpl implements DashboardRepository {
   DashboardRepositoryImpl(this.localDataSource);
 
   @override
-  Future<Result<DashboardStatistics>> getStatistics({bool forceRefresh = false}) async {
+  Future<Result<DashboardStatistics>> getStatistics(
+      {bool forceRefresh = false}) async {
     try {
-      final stats = await localDataSource.getStatistics(forceRefresh: forceRefresh);
+      final stats =
+          await localDataSource.getStatistics(forceRefresh: forceRefresh);
       return Success(stats);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get dashboard statistics: $e', stackTrace));
+      return Failure(DatabaseFailure(
+          'Failed to get dashboard statistics: $e', stackTrace));
     }
   }
 
@@ -27,7 +30,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       final stats = await localDataSource.getTodayStatsData();
       return Success(stats);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get today stats: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get today stats: $e', stackTrace));
     }
   }
 
@@ -43,7 +47,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       );
       return Success(activities);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get recent activities: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get recent activities: $e', stackTrace));
     }
   }
 
@@ -53,7 +58,8 @@ class DashboardRepositoryImpl implements DashboardRepository {
       final stats = await localDataSource.getTodayStatsData();
       return Success(stats.pendingTasks);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get notifications count: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get notifications count: $e', stackTrace));
     }
   }
 

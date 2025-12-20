@@ -15,10 +15,12 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
     String beneficiaryId,
   ) async {
     try {
-      final attachments = await _dataSource.getBeneficiaryAttachments(beneficiaryId);
+      final attachments =
+          await _dataSource.getBeneficiaryAttachments(beneficiaryId);
       return Success(attachments);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get beneficiary attachments: $e', stackTrace));
+      return Failure(DatabaseFailure(
+          'Failed to get beneficiary attachments: $e', stackTrace));
     }
   }
 
@@ -28,7 +30,8 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
       // TODO: Implement when visit attachments are needed
       return Failure(UnknownFailure('Visit attachments not yet implemented'));
     } catch (e, stackTrace) {
-      return Failure(UnknownFailure('Failed to get visit attachments: $e', stackTrace));
+      return Failure(
+          UnknownFailure('Failed to get visit attachments: $e', stackTrace));
     }
   }
 
@@ -41,7 +44,8 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
       }
       return Success(attachment);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get attachment: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get attachment: $e', stackTrace));
     }
   }
 
@@ -69,17 +73,21 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
       final result = await _dataSource.deleteAttachment(id);
       return Success(result);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to delete attachment: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to delete attachment: $e', stackTrace));
     }
   }
 
   @override
-  Future<Result<bool>> deleteBeneficiaryAttachments(String beneficiaryId) async {
+  Future<Result<bool>> deleteBeneficiaryAttachments(
+      String beneficiaryId) async {
     try {
-      final result = await _dataSource.deleteBeneficiaryAttachments(beneficiaryId);
+      final result =
+          await _dataSource.deleteBeneficiaryAttachments(beneficiaryId);
       return Success(result);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to delete beneficiary attachments: $e', stackTrace));
+      return Failure(DatabaseFailure(
+          'Failed to delete beneficiary attachments: $e', stackTrace));
     }
   }
 
@@ -97,7 +105,8 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
       );
       return Success(null);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to update sync state: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to update sync state: $e', stackTrace));
     }
   }
 
@@ -107,7 +116,8 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
       final count = await _dataSource.getAttachmentsCount(beneficiaryId);
       return Success(count);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get attachments count: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get attachments count: $e', stackTrace));
     }
   }
 }

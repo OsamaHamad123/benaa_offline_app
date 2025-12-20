@@ -75,8 +75,7 @@ class TabNavigationButtons extends StatelessWidget {
             Flexible(
               child: currentIndex == totalTabs - 1
                   ? FilledButton.icon(
-                      onPressed:
-                          onFinalSave ??
+                      onPressed: onFinalSave ??
                           () {
                             HapticFeedback.mediumImpact();
                             // Show message if no callback

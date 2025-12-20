@@ -102,7 +102,8 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
   Future<void> _selectBirthDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
+      initialDate:
+          _birthDate ?? DateTime.now().subtract(const Duration(days: 365 * 5)),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
       locale: const Locale('ar'),
@@ -185,7 +186,9 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     );
 
     final companion = FamilyMembersTableCompanion(
-      id: widget.existingMember != null ? drift.Value(widget.existingMember!.id) : const drift.Value.absent(),
+      id: widget.existingMember != null
+          ? drift.Value(widget.existingMember!.id)
+          : const drift.Value.absent(),
       beneficiaryId: drift.Value(widget.beneficiaryId),
       orphanNationalId: drift.Value(orphanNationalIdInt),
       firstName: drift.Value(_firstNameController.text.trim()),
@@ -205,8 +208,9 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       syncState: const drift.Value('pending'),
       serverId: const drift.Value(null),
       lastSyncedAt: const drift.Value(null),
-      createdAt:
-          widget.existingMember != null ? drift.Value(widget.existingMember!.createdAt) : drift.Value(DateTime.now()),
+      createdAt: widget.existingMember != null
+          ? drift.Value(widget.existingMember!.createdAt)
+          : drift.Value(DateTime.now()),
       updatedAt: drift.Value(DateTime.now()),
     );
 
@@ -233,7 +237,8 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
           notes: drift.Value(_notesController.text.trim()),
           updatedAt: drift.Value(DateTime.now()),
         );
-        await (database.update(database.familyMembersTable)..where((t) => t.id.equals(widget.existingMember!.id)))
+        await (database.update(database.familyMembersTable)
+              ..where((t) => t.id.equals(widget.existingMember!.id)))
             .write(updateCompanion);
       } else {
         await dao.addMember(companion);
@@ -489,7 +494,8 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
                   child: Text(HealthStatus.toArabic(statusValue)),
                 );
               }).toList(),
-              onChanged: (value) => setState(() => _selectedHealthStatus = value),
+              onChanged: (value) =>
+                  setState(() => _selectedHealthStatus = value),
               validator: (value) {
                 if (value == null) return 'الرجاء اختيار الحالة الصحية';
                 return null;

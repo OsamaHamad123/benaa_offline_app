@@ -16,7 +16,8 @@ class RecordVisitPageClean extends ConsumerStatefulWidget {
   const RecordVisitPageClean({super.key, required this.beneficiary});
 
   @override
-  ConsumerState<RecordVisitPageClean> createState() => _RecordVisitPageCleanState();
+  ConsumerState<RecordVisitPageClean> createState() =>
+      _RecordVisitPageCleanState();
 }
 
 class _RecordVisitPageCleanState extends ConsumerState<RecordVisitPageClean> {
@@ -79,7 +80,8 @@ class _RecordVisitPageCleanState extends ConsumerState<RecordVisitPageClean> {
       syncState: 'pending',
     );
 
-    final success = await ref.read(visitNotifierProvider.notifier).createNewVisit(visit);
+    final success =
+        await ref.read(visitNotifierProvider.notifier).createNewVisit(visit);
 
     if (success && mounted) {
       context.showSuccess('تم حفظ الزيارة بنجاح');

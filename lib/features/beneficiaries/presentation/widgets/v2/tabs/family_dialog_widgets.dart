@@ -305,7 +305,9 @@ class DatePickerField extends StatelessWidget {
           prefixIcon: Icon(icon, size: 20, color: iconColor),
         ),
         child: Text(
-          selectedDate != null ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}' : 'اضغط للاختيار',
+          selectedDate != null
+              ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
+              : 'اضغط للاختيار',
           style: TextStyle(fontSize: 14.0),
         ),
       ),

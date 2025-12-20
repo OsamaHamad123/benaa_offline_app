@@ -213,17 +213,13 @@ class _BeneficiaryLocationFormState extends State<BeneficiaryLocationForm> {
                 });
               },
             ),
-
             const SizedBox(height: 16),
-
             SubDistrictAutocomplete(
               controller: _subDistrictController,
               parentDistrict: _selectedDistrict,
               onSelected: (_) {},
             ),
-
             const SizedBox(height: 16),
-
             TextFormField(
               controller: _addressController,
               decoration: InputDecoration(
@@ -236,16 +232,12 @@ class _BeneficiaryLocationFormState extends State<BeneficiaryLocationForm> {
               ),
               maxLines: 2,
             ),
-
             const SizedBox(height: 16),
-
             OrganizationAutocomplete(
               controller: _organizationController,
               onSelected: (_) {},
             ),
-
             const SizedBox(height: 24),
-
             FilledButton.icon(
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
@@ -336,7 +328,6 @@ class _CustomTypeExampleState extends State<CustomTypeExample> {
                 setState(() => _selectedCity = city);
               },
             ),
-
             if (_selectedCity != null) ...[
               const SizedBox(height: 24),
               Card(

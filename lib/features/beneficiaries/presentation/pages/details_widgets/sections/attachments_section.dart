@@ -26,9 +26,9 @@ class AttachmentsSection extends StatelessWidget {
             Text(
               'المرفقات',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blueGrey,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueGrey,
+                  ),
             ),
           ],
         ),

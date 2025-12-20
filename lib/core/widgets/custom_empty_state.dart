@@ -166,8 +166,7 @@ class ErrorState extends StatelessWidget {
       icon: Icons.error_outline,
       iconColor: Colors.red[300],
       title: 'حدث خطأ',
-      message:
-          errorMessage ??
+      message: errorMessage ??
           'حدث خطأ أثناء تحميل البيانات\nالرجاء المحاولة مرة أخرى',
       onAction: onRetry,
       actionLabel: onRetry != null ? 'إعادة المحاولة' : null,

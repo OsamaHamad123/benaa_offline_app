@@ -21,8 +21,8 @@ class SmoothPageTransition extends StatelessWidget {
       child: SlideTransition(
         position: Tween<Offset>(begin: const Offset(0.02, 0), end: Offset.zero)
             .animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            ),
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        ),
         child: child,
       ),
     );
@@ -190,11 +190,9 @@ class RippleEffect extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: borderRadius ?? BorderRadius.circular(12.r),
-        splashColor:
-            rippleColor?.withOpacity(0.3) ??
+        splashColor: rippleColor?.withOpacity(0.3) ??
             Theme.of(context).primaryColor.withOpacity(0.3),
-        highlightColor:
-            rippleColor?.withOpacity(0.1) ??
+        highlightColor: rippleColor?.withOpacity(0.1) ??
             Theme.of(context).primaryColor.withOpacity(0.1),
         child: child,
       ),

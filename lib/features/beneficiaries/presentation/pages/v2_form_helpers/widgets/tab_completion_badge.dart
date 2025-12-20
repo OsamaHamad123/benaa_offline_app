@@ -117,7 +117,8 @@ class EnhancedTabWithBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percentage = (progress * 100).round();
-    final color = isActive ? Theme.of(context).primaryColor : Colors.grey.shade600;
+    final color =
+        isActive ? Theme.of(context).primaryColor : Colors.grey.shade600;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),

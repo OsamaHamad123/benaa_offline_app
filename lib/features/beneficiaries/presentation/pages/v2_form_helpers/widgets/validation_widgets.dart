@@ -30,8 +30,8 @@ class ValidationIndicator extends StatelessWidget {
     final effectiveSeverity = isValid == true
         ? ValidationSeverity.success
         : isValid == false
-        ? ValidationSeverity.error
-        : severity;
+            ? ValidationSeverity.error
+            : severity;
 
     final config = _getConfig(effectiveSeverity);
 
@@ -295,8 +295,7 @@ class FieldValidationBuilder extends StatefulWidget {
     String? value,
     String? error,
     void Function(String?) onChanged,
-  )
-  builder;
+  ) builder;
   final void Function(bool isValid)? onValidationChanged;
   final bool validateOnInit;
   final bool validateOnChange;
@@ -562,8 +561,8 @@ class CharacterCounter extends StatelessWidget {
             color: isOverLimit
                 ? Colors.red
                 : isNearLimit
-                ? Colors.orange
-                : theme.colorScheme.onSurface.withOpacity(0.6),
+                    ? Colors.orange
+                    : theme.colorScheme.onSurface.withOpacity(0.6),
             fontWeight: isNearLimit ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -584,8 +583,8 @@ class CharacterCounter extends StatelessWidget {
                   color: isOverLimit
                       ? Colors.red
                       : isNearLimit
-                      ? Colors.orange
-                      : theme.colorScheme.primary,
+                          ? Colors.orange
+                          : theme.colorScheme.primary,
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),

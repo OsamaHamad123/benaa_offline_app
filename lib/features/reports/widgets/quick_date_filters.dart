@@ -96,9 +96,8 @@ class QuickDateFilters extends StatelessWidget {
     required bool isSelected,
   }) {
     return Material(
-      color: isSelected
-          ? Theme.of(context).colorScheme.primary
-          : Colors.grey[200],
+      color:
+          isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[200],
       borderRadius: BorderRadius.circular(20.r),
       child: InkWell(
         onTap: onTap,

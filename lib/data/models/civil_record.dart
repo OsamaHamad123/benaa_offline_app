@@ -96,8 +96,7 @@ class CivilRecord {
       relationId: driftData.relationId,
       relativeCodeId: driftData.relativeCodeId,
       relativeId: driftData.relativeId,
-      fullName:
-          driftData.fullName ??
+      fullName: driftData.fullName ??
           _buildFullName(
             driftData.firstName,
             driftData.fatherName,
@@ -143,8 +142,7 @@ class CivilRecord {
       relationId: json['CF_ID_NUM'] as int?,
       relativeCodeId: json['CF_RELATIVE_CD'] as int?,
       relativeId: json['CF_ID_RELATIVE'] as int?,
-      fullName:
-          json['full_name'] as String? ??
+      fullName: json['full_name'] as String? ??
           _buildFullName(firstName, fatherName, grandFatherName, familyName),
       fullNameNormalized: json['full_name_normalized'] as String? ?? '',
       governorate: json['governorate'] as String?,
@@ -228,34 +226,34 @@ class CivilRecord {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'CI_ID_NUM': nationalId,
-    'CI_FIRST_ARB': firstName,
-    'CI_FATHER_ARB': fatherName,
-    'CI_GRAND_FATHER_ARB': grandFatherName,
-    'CI_FAMILY_ARB': familyName,
-    'CI_BIRTH_TB_CD': birthCertificateId,
-    'CI_BIRTH_CD': birthCodeId,
-    'CI_BIRTH_DT': birthDate?.toIso8601String(),
-    'CI_SEX_CD': sexCode,
-    'CI_PERSONAL_CD': personalCodeId,
-    'CI_DEAD_DT': deadDate,
-    'MOTHER_NAME1': motherName,
-    'CITY': cityId,
-    'city_name': cityName,
-    'STREET': street,
-    'HOUSE_NO': houseNo,
-    'CF_ID_NUM': relationId,
-    'CF_RELATIVE_CD': relativeCodeId,
-    'CF_ID_RELATIVE': relativeId,
-    'full_name': fullName,
-    'full_name_normalized': fullNameNormalized,
-    'governorate': governorate,
-    'district': district,
-    'created_at': createdAt.toIso8601String(),
-    'updated_at': updatedAt.toIso8601String(),
-    'last_synced_at': lastSyncedAt?.toIso8601String(),
-  };
+        'id': id,
+        'CI_ID_NUM': nationalId,
+        'CI_FIRST_ARB': firstName,
+        'CI_FATHER_ARB': fatherName,
+        'CI_GRAND_FATHER_ARB': grandFatherName,
+        'CI_FAMILY_ARB': familyName,
+        'CI_BIRTH_TB_CD': birthCertificateId,
+        'CI_BIRTH_CD': birthCodeId,
+        'CI_BIRTH_DT': birthDate?.toIso8601String(),
+        'CI_SEX_CD': sexCode,
+        'CI_PERSONAL_CD': personalCodeId,
+        'CI_DEAD_DT': deadDate,
+        'MOTHER_NAME1': motherName,
+        'CITY': cityId,
+        'city_name': cityName,
+        'STREET': street,
+        'HOUSE_NO': houseNo,
+        'CF_ID_NUM': relationId,
+        'CF_RELATIVE_CD': relativeCodeId,
+        'CF_ID_RELATIVE': relativeId,
+        'full_name': fullName,
+        'full_name_normalized': fullNameNormalized,
+        'governorate': governorate,
+        'district': district,
+        'created_at': createdAt.toIso8601String(),
+        'updated_at': updatedAt.toIso8601String(),
+        'last_synced_at': lastSyncedAt?.toIso8601String(),
+      };
 
   @override
   String toString() => '$fullName ($nationalId)';
@@ -283,10 +281,10 @@ class CivilRegistryManifest {
   }
 
   Map<String, dynamic> toJson() => {
-    'parts': parts.map((p) => p.toJson()).toList(),
-    'version': version,
-    'created_at': createdAt.toIso8601String(),
-  };
+        'parts': parts.map((p) => p.toJson()).toList(),
+        'version': version,
+        'created_at': createdAt.toIso8601String(),
+      };
 
   int get totalSize => parts.fold(0, (sum, part) => sum + part.size);
   int get partCount => parts.length;
@@ -312,8 +310,8 @@ class CivilRegistryPart {
   }
 
   Map<String, dynamic> toJson() => {
-    'file': file,
-    'size': size,
-    'sha256': sha256,
-  };
+        'file': file,
+        'size': size,
+        'sha256': sha256,
+      };
 }

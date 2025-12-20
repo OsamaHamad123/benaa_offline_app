@@ -16,7 +16,8 @@ class BeneficiaryLocalDataSource {
     final id = await db.into(db.beneficiaries).insert(companion);
     final data = await (db.select(
       db.beneficiaries,
-    )..where((b) => b.id.equals(id))).getSingle();
+    )..where((b) => b.id.equals(id)))
+        .getSingle();
 
     // Log activity
     await _logActivity(
@@ -35,10 +36,12 @@ class BeneficiaryLocalDataSource {
   ) async {
     await (db.update(
       db.beneficiaries,
-    )..where((b) => b.id.equals(id))).write(companion);
+    )..where((b) => b.id.equals(id)))
+        .write(companion);
     final data = await (db.select(
       db.beneficiaries,
-    )..where((b) => b.id.equals(id))).getSingle();
+    )..where((b) => b.id.equals(id)))
+        .getSingle();
 
     // Log activity
     await _logActivity(

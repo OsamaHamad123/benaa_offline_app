@@ -226,15 +226,15 @@ class SyncState {
 
   const SyncState.idle() : this(status: SyncStatus.idle);
   const SyncState.syncing(String message)
-    : this(status: SyncStatus.syncing, message: message);
+      : this(status: SyncStatus.syncing, message: message);
   const SyncState.success({required int itemsSynced, String? message})
-    : this(
-        status: SyncStatus.success,
-        itemsSynced: itemsSynced,
-        message: message,
-      );
+      : this(
+          status: SyncStatus.success,
+          itemsSynced: itemsSynced,
+          message: message,
+        );
   const SyncState.error(String error)
-    : this(status: SyncStatus.error, error: error);
+      : this(status: SyncStatus.error, error: error);
 
   bool get isIdle => status == SyncStatus.idle;
   bool get isSyncing => status == SyncStatus.syncing;
@@ -250,9 +250,9 @@ class SyncController extends StateNotifier<SyncState> {
   SyncController({
     required DeltaSyncUseCase deltaSyncUseCase,
     required FullSyncUseCase fullSyncUseCase,
-  }) : _deltaSyncUseCase = deltaSyncUseCase,
-       _fullSyncUseCase = fullSyncUseCase,
-       super(const SyncState.idle());
+  })  : _deltaSyncUseCase = deltaSyncUseCase,
+        _fullSyncUseCase = fullSyncUseCase,
+        super(const SyncState.idle());
 
   /// Perform Delta Sync
   Future<void> deltaSync(String entityType) async {

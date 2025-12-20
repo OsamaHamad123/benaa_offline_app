@@ -162,7 +162,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       SizedBox(height: 16.h),
                       Text(
                         beneficiary.fullName,
-                        style: Theme.of(context).textTheme.headlineSmall
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
                             ?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
@@ -388,8 +390,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       ],
                       if (beneficiary.addressBeforeDisplacement != null &&
                           beneficiary
-                              .addressBeforeDisplacement!
-                              .isNotEmpty) ...[
+                              .addressBeforeDisplacement!.isNotEmpty) ...[
                         InfoRow(
                           icon: Icons.location_city,
                           label: 'العنوان قبل النزوح',
@@ -588,9 +589,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: Theme.of(context).colorScheme.primary,
-      ),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
     );
   }
 
