@@ -16,8 +16,7 @@ import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsi
 import '../../../../core/providers/providers.dart'; // 🔌 Core Providers
 
 import '../providers/beneficiary_form_provider.dart';
-import '../providers/beneficiary_dependencies.dart';
-import '../providers/beneficiary_dependencies_provider.dart';
+import '../providers/beneficiary_dependencies.dart' hide databaseProvider; // Hide conflicting provider
 import '../widgets/v2/v2_widgets.dart';
 import '../../domain/entities/beneficiary.dart';
 
