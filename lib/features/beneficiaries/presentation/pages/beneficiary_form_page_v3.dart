@@ -13,9 +13,11 @@ import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsive Bottom Sheet
+import '../../../../core/providers/providers.dart'; // 🔌 Core Providers
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
+import '../providers/beneficiary_dependencies_provider.dart';
 import '../widgets/v2/v2_widgets.dart';
 import '../../domain/entities/beneficiary.dart';
 
