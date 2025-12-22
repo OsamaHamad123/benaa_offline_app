@@ -56,8 +56,10 @@ android {
 
 flutter { source = "../.." }
 
+
 dependencies {
     // Core library desugaring for Java 8+ APIs support
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+
 
