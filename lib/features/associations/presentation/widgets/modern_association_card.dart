@@ -174,22 +174,26 @@ class ModernAssociationCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _MiniActionButton(
-                        icon: Icons.edit,
-                        label: 'تعديل',
-                        color: theme.colorScheme.primary,
-                        onPressed: onEdit,
+                      Flexible(
+                        child: _MiniActionButton(
+                          icon: Icons.edit,
+                          label: 'تعديل',
+                          color: theme.colorScheme.primary,
+                          onPressed: onEdit,
+                        ),
                       ),
                       Container(
                         width: 1,
                         height: 20.h,
                         color: theme.dividerColor.withOpacity(0.3),
                       ),
-                      _MiniActionButton(
-                        icon: Icons.delete_outline,
-                        label: 'حذف',
-                        color: theme.colorScheme.error,
-                        onPressed: onDelete,
+                      Flexible(
+                        child: _MiniActionButton(
+                          icon: Icons.delete_outline,
+                          label: 'حذف',
+                          color: theme.colorScheme.error,
+                          onPressed: onDelete,
+                        ),
                       ),
                     ],
                   ),
@@ -320,18 +324,21 @@ class _MiniActionButton extends StatelessWidget {
       onTap: onPressed,
       borderRadius: BorderRadius.circular(8.r),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16.sp, color: color),
-            SizedBox(width: 4.w),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 11.sp,
+            Icon(icon, size: 14.sp, color: color),
+            SizedBox(width: 3.w),
+            Flexible(
+              child: Text(
+                label,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10.sp,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

@@ -9,8 +9,7 @@ class AppInitializationPage extends ConsumerStatefulWidget {
   const AppInitializationPage({super.key});
 
   @override
-  ConsumerState<AppInitializationPage> createState() =>
-      _AppInitializationPageState();
+  ConsumerState<AppInitializationPage> createState() => _AppInitializationPageState();
 }
 
 class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
@@ -44,19 +43,20 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
       });
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Database exists - go to main app
+      // Database exists - go to login/dashboard
+      // The router will redirect to dashboard if already authenticated
       if (mounted && context.mounted) {
-        context.go('/dashboard');
+        context.go('/login');
       }
     } else {
       setState(() {
-        _statusMessage = 'قاعدة البيانات غير موجودة - التوجيه للتنزيل...';
+        _statusMessage = 'يجب تسجيل الدخول لتنزيل قاعدة البيانات...';
       });
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Database doesn't exist - go to download page
+      // Database doesn't exist - go to login first
       if (mounted && context.mounted) {
-        context.go('/database-download');
+        context.go('/login');
       }
     }
   }

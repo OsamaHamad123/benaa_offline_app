@@ -8,6 +8,19 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
 
+  /// Helper to wrap widget with ScreenUtilInit for tests
+  Widget buildTestWidget(Widget child) {
+    return MaterialApp(
+      home: Scaffold(
+        body: ScreenUtilInit(
+          designSize: const Size(390, 844),
+          minTextAdapt: true,
+          builder: (context, _) => child,
+        ),
+      ),
+    );
+  }
+
   group('AccessibilityConstants', () {
     test('has correct minimum touch target size', () {
       expect(AccessibilityConstants.minTouchTarget, 48.0);
@@ -137,26 +150,19 @@ void main() {
   group('AccessibleListTile', () {
     testWidgets('respects minimum height', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ScreenUtilInit(
-              designSize: const Size(390, 844),
-              builder: (context, child) => const AccessibleListTile(
-                title: Text('Test'),
-              ),
-            ),
+        buildTestWidget(
+          const AccessibleListTile(
+            title: Text('Test'),
           ),
         ),
       );
 
-      final constrainedBox = tester.widget<ConstrainedBox>(
-        find.byType(ConstrainedBox),
+      // Find the ConstrainedBox that wraps the ListTile
+      final constrainedBoxFinder = find.byWidgetPredicate(
+        (widget) => widget is ConstrainedBox && widget.constraints.minHeight >= 48.0,
       );
 
-      expect(
-        constrainedBox.constraints.minHeight,
-        greaterThanOrEqualTo(48.0),
-      );
+      expect(constrainedBoxFinder, findsAtLeastNWidgets(1));
     });
   });
 
@@ -173,7 +179,12 @@ void main() {
         ),
       );
 
-      expect(find.byType(Semantics), findsOneWidget);
+      // Find Semantics widget with specific label
+      final semanticsFinder = find.byWidgetPredicate(
+        (widget) => widget is Semantics && widget.properties.label == 'Test Label',
+      );
+
+      expect(semanticsFinder, findsOneWidget);
       expect(find.text('Content'), findsOneWidget);
     });
   });

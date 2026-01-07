@@ -5,14 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../domain/entities/download_progress.dart';
 import '../providers/database_download_provider.dart';
 import 'config/download_config.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 /// 📥 Database Download Page - First Time Setup
 class DatabaseDownloadPage extends ConsumerStatefulWidget {
   const DatabaseDownloadPage({super.key});
 
   @override
-  ConsumerState<DatabaseDownloadPage> createState() =>
-      _DatabaseDownloadPageState();
+  ConsumerState<DatabaseDownloadPage> createState() => _DatabaseDownloadPageState();
 }
 
 class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
@@ -33,9 +33,41 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
 
     if (!state.isAvailable && state.progress.status == DownloadStatus.idle) {
       // Auto-start download
-      ref
-          .read(databaseDownloadProvider.notifier)
-          .downloadDatabase(_downloadUrl);
+      ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl);
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    // عرض تأكيد
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تسجيل الخروج'),
+        content: const Text('هل تريد تسجيل الخروج؟\nسيتم إيقاف التنزيل إذا كان جارياً.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تسجيل الخروج'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // إيقاف التنزيل إذا كان جارياً
+      ref.read(databaseDownloadProvider.notifier).cancelDownload();
+
+      // تسجيل الخروج
+      await ref.read(authNotifierProvider.notifier).logout();
+
+      // العودة لصفحة تسجيل الدخول
+      if (context.mounted) {
+        context.go('/login');
+      }
     }
   }
 
@@ -45,6 +77,18 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
     final progress = state.progress;
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          // 🚪 زر تسجيل الخروج
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'تسجيل الخروج',
+            onPressed: () => _handleLogout(context),
+          ),
+        ],
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -69,11 +113,9 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
                   SizedBox(height: 16.h),
                   _buildDescription(progress.status),
                   SizedBox(height: 48.h),
-                  if (progress.isDownloading ||
-                      progress.status == DownloadStatus.extracting)
+                  if (progress.isDownloading || progress.status == DownloadStatus.extracting)
                     _buildProgressIndicator(progress),
-                  if (progress.status == DownloadStatus.checking)
-                    _buildCheckingIndicator(),
+                  if (progress.status == DownloadStatus.checking) _buildCheckingIndicator(),
                   if (progress.hasError) _buildErrorMessage(progress),
                   if (progress.isComplete) _buildCompleteButton(),
                   if (progress.isDownloading) _buildCancelButton(),
@@ -152,24 +194,20 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
 
     switch (status) {
       case DownloadStatus.downloading:
-        description =
-            'يتم الآن تحميل قاعدة بيانات السجل المدني (ملف مضغوط)\nالرجاء الانتظار...';
+        description = 'يتم الآن تحميل قاعدة بيانات السجل المدني (ملف مضغوط)\nالرجاء الانتظار...';
         break;
       case DownloadStatus.extracting:
         description =
             'يتم الآن فك ضغط الملف واستخراج قاعدة البيانات\nهذا قد يستغرق بضع دقائق... الرجاء عدم إغلاق التطبيق';
         break;
       case DownloadStatus.verifying:
-        description =
-            'يتم الآن التحقق من سلامة قاعدة البيانات\nتقريباً انتهينا...';
+        description = 'يتم الآن التحقق من سلامة قاعدة البيانات\nتقريباً انتهينا...';
         break;
       case DownloadStatus.completed:
-        description =
-            'تم تحميل واستخراج جميع البيانات بنجاح ✓\nيمكنك الآن البدء باستخدام التطبيق';
+        description = 'تم تحميل واستخراج جميع البيانات بنجاح ✓\nيمكنك الآن البدء باستخدام التطبيق';
         break;
       case DownloadStatus.failed:
-        description =
-            'حدث خطأ أثناء التحميل أو الاستخراج\nالرجاء التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى';
+        description = 'حدث خطأ أثناء التحميل أو الاستخراج\nالرجاء التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى';
         break;
       default:
         description =
@@ -363,9 +401,7 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
       children: [
         ElevatedButton.icon(
           onPressed: () {
-            ref
-                .read(databaseDownloadProvider.notifier)
-                .downloadDatabase(_downloadUrl);
+            ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl);
           },
           icon: Icon(hasPartialDownload ? Icons.play_arrow : Icons.refresh),
           label: Text(

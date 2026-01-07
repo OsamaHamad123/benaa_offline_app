@@ -121,11 +121,16 @@ class CivilDbManager {
 
       if (e.type == DioExceptionType.cancel) {
         errorMessage = 'تم إلغاء التنزيل';
-      } else if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
+      } else if (e.response?.statusCode == 404) {
+        errorMessage = 'قاعدة البيانات غير متوفرة على الخادم. يرجى التحقق من رابط التنزيل أو التواصل مع الدعم الفني';
+      } else if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        errorMessage = 'لا تملك صلاحية لتنزيل قاعدة البيانات. يرجى تسجيل الدخول مجدداً';
+      } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
         errorMessage = 'انتهت مهلة الاتصال. تحقق من الإنترنت';
       } else if (e.type == DioExceptionType.connectionError) {
         errorMessage = 'خطأ في الاتصال بالإنترنت';
+      } else if (e.response != null) {
+        errorMessage = 'خطأ ${e.response!.statusCode}: ${e.response!.statusMessage ?? "غير محدد"}';
       }
 
       yield CivilDbStatus(

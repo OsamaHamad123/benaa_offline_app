@@ -6,6 +6,7 @@ import 'package:archive/archive.dart';
 import '../../domain/entities/download_progress.dart';
 
 /// 📥 Civil Registry Database Download Service
+/// ⚠️ No authentication required - public download endpoint
 class DatabaseDownloadService {
   final Dio _dio;
   CancelToken? _cancelToken;
@@ -80,6 +81,11 @@ class DatabaseDownloadService {
         }
       }
 
+      if (kDebugMode) {
+        debugPrint('📥 Downloading from: $downloadUrl');
+        debugPrint('📦 Public download - no authentication required');
+      }
+
       // Download ZIP file with resume support
       await _dio.download(
         downloadUrl,
@@ -87,9 +93,7 @@ class DatabaseDownloadService {
         cancelToken: _cancelToken,
         deleteOnError: false, // Keep partial download
         options: Options(
-          headers: downloadedLength > 0
-              ? {'Range': 'bytes=$downloadedLength-'}
-              : null,
+          headers: downloadedLength > 0 ? {'Range': 'bytes=$downloadedLength-'} : null,
         ),
         onReceiveProgress: (received, total) {
           if (total != -1) {
@@ -240,9 +244,7 @@ class DatabaseDownloadService {
           final data = file.content as List<int>;
 
           // If file is persons.db, rename to civil_registry.db
-          final outputFilename = filename.toLowerCase() == 'persons.db'
-              ? 'civil_registry.db'
-              : filename;
+          final outputFilename = filename.toLowerCase() == 'persons.db' ? 'civil_registry.db' : filename;
 
           final outputFile = File('$outputDir/$outputFilename');
           await outputFile.create(recursive: true);

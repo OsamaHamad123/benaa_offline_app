@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../widgets/modern_sliver_app_bar.dart';
 import 'settings_provider.dart';
 import 'widgets/widgets.dart';
@@ -277,6 +279,90 @@ class CleanSettingsPage extends ConsumerWidget {
                           ),
                           icon: Icons.password_rounded,
                           color: Colors.deepOrange,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 16.h),
+
+                    // Account Section
+                    const SettingsSectionHeader(
+                      title: 'الحساب',
+                      icon: Icons.account_circle_rounded,
+                      color: Colors.deepPurple,
+                    ),
+                    SettingsSectionCard(
+                      children: [
+                        // عرض معلومات المستخدم
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final user = ref.watch(currentUserProvider);
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.deepPurple.withOpacity(0.1),
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  color: Colors.deepPurple,
+                                  size: 24.sp,
+                                ),
+                              ),
+                              title: Text(
+                                user?.name ?? 'مستخدم',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                user?.email ?? '',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        const SettingsDivider(),
+                        // زر تسجيل الخروج
+                        Consumer(
+                          builder: (context, ref, child) {
+                            return ListTile(
+                              leading: Container(
+                                padding: EdgeInsets.all(8.r),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                child: Icon(
+                                  Icons.logout_rounded,
+                                  color: Colors.red,
+                                  size: 24.sp,
+                                ),
+                              ),
+                              title: Text(
+                                'تسجيل الخروج',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'إنهاء الجلسة الحالية',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              trailing: Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.grey[400],
+                                size: 24.sp,
+                              ),
+                              onTap: () => _handleLogout(context, ref),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -603,6 +689,42 @@ class CleanSettingsPage extends ConsumerWidget {
             ),
           );
         }
+      }
+    }
+  }
+
+  /// معالجة تسجيل الخروج
+  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
+    // عرض حوار تأكيد
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تسجيل الخروج'),
+        content: const Text('هل أنت متأكد من رغبتك في تسجيل الخروج؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('تسجيل الخروج'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // تسجيل الخروج
+      final authNotifier = ref.read(authNotifierProvider.notifier);
+      await authNotifier.logout();
+
+      // التوجه لصفحة تسجيل الدخول
+      if (context.mounted) {
+        context.go('/login');
       }
     }
   }

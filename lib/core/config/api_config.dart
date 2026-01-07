@@ -5,17 +5,24 @@
 class ApiConfig {
   // 🌐 Base URL - سيتم استبداله بالرابط الفعلي
   // يمكن تغييره من واجهة تسجيل الدخول
-  static const String defaultBaseUrl = 'https://palestine.benaadev.org/api';
+  static const String defaultBaseUrl = 'https://palestine.benaadev.org';
 
-  // 🔗 API Endpoints
-  static const String loginEndpoint = '/api/auth/login';
-  static const String logoutEndpoint = '/api/auth/logout';
-  static const String refreshTokenEndpoint = '/api/auth/refresh';
+  // 🔗 Mobile Auth Endpoints (الجديدة)
+  static const String loginEndpoint = '/api/mobile/auth/login';
+  static const String logoutEndpoint = '/api/mobile/auth/logout';
+  static const String refreshTokenEndpoint = '/api/mobile/auth/refresh';
+  static const String validateTokenEndpoint = '/api/mobile/auth/validate';
+  static const String profileEndpoint = '/api/mobile/profile';
+  static const String devicesEndpoint = '/api/mobile/devices';
+
+  // 💾 قاعدة البيانات Endpoints
+  static const String civilDbDownloadEndpoint = '/api/mobile/civil-db/download';
+  static const String civilDbStatusEndpoint = '/api/mobile/civil-db/status';
 
   // 🔄 Sync Endpoints
-  static const String syncEndpoint = '/api/sync';
-  static const String initialDataEndpoint = '/api/sync/initial';
-  static const String syncStatusEndpoint = '/api/sync/status';
+  static const String syncEndpoint = '/api/mobile/sync';
+  static const String initialDataEndpoint = '/api/mobile/sync/initial';
+  static const String syncStatusEndpoint = '/api/mobile/sync/status';
 
   // 📊 Data Endpoints
   static const String materialsEndpoint = '/api/materials';

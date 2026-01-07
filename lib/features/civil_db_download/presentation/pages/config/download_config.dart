@@ -6,8 +6,7 @@ class DownloadConfig {
   /// static const downloadUrl = 'https://your-cdn.com/persons.db.gz';
   /// static const downloadUrl = 'https://storage.googleapis.com/your-bucket/persons.db.gz';
   /// static const downloadUrl = 'https://s3.amazonaws.com/your-bucket/persons.db.gz';
-  static const String downloadUrl =
-      'https://palestine.benaadev.org/api/persons-file/download';
+  static const String downloadUrl = 'https://palestine.benaadev.org/api/mobile/civil-db/download';
 
   /// Optional: Fallback URLs in case primary fails
   static const List<String> fallbackUrls = [

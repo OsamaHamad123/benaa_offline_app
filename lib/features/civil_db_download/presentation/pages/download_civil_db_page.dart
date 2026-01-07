@@ -13,19 +13,19 @@ class DownloadCivilDbPage extends ConsumerStatefulWidget {
   const DownloadCivilDbPage({super.key});
 
   @override
-  ConsumerState<DownloadCivilDbPage> createState() =>
-      _DownloadCivilDbPageState();
+  ConsumerState<DownloadCivilDbPage> createState() => _DownloadCivilDbPageState();
 }
 
-class _DownloadCivilDbPageState extends ConsumerState<DownloadCivilDbPage>
-    with SingleTickerProviderStateMixin {
+class _DownloadCivilDbPageState extends ConsumerState<DownloadCivilDbPage> with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
   // 🔧 Development: Will copy from Assets (see CivilDbManager.isDevelopmentMode)
-  // 🌐 Production: Replace with your actual download URL
-  static const String _downloadUrl =
-      'https://your-server.com/downloads/persons.db';
+  // 🌐 Production: Downloads from API server
+  static String get _downloadUrl {
+    // In production, this will use the API endpoint from ApiConfig
+    return 'https://palestine.benaadev.org/api/mobile/civil-db/download';
+  }
 
   @override
   void initState() {
@@ -41,8 +41,7 @@ class _DownloadCivilDbPageState extends ConsumerState<DownloadCivilDbPage>
     // Auto-start download in Development Mode
     Future.microtask(() {
       final state = ref.read(civilDbDownloadProvider);
-      if (state.status.status == CivilDbStatusType.notDownloaded &&
-          !state.isDownloading) {
+      if (state.status.status == CivilDbStatusType.notDownloaded && !state.isDownloading) {
         _startDownload();
       }
     });
