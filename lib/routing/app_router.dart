@@ -37,9 +37,10 @@ import '../features/kafalat/presentation/pages/theme_settings_page.dart';
 import '../features/kafalat/presentation/pages/additional_features_pages.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
 import '../core/settings/clean_settings_page.dart';
-import '../core/storage/secure_store.dart';
+import '../core/storage/secure_storage.dart';
 import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
 import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
+import '../features/taxonomies/presentation/pages/taxonomy_management_page.dart';
 
 /// 🎬 Custom Page Transition Helper
 Page<T> _buildPageWithTransition<T>({
@@ -95,7 +96,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isGoingToWelcome = state.matchedLocation == '/welcome';
       final isGoingToDownload = state.matchedLocation == '/download-civil-db';
       final isGoingToDbDownload = state.matchedLocation == '/database-download';
-      final isAuth = await SecureStore.isAuthenticated();
+      // استخدام SecureStorage للتحقق من المصادقة (نفس الـ storage المستخدم في auth)
+      final token = await SecureStorage().getAuthToken();
+      final isAuth = token != null && token.isNotEmpty;
       final isGoingToLogin = state.matchedLocation == '/login';
 
       // السماح بالذهاب لصفحات التهيئة والتحميل
@@ -107,8 +110,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
+      // 🆕 إذا كان المستخدم مصادق ويذهب للـ Login، نسمح له بالذهاب
+      // وصفحة Login ستتعامل مع الموضوع وتتحقق من database
+      // هذا يمنع الـ Loop
       if (isAuth && isGoingToLogin) {
-        return '/dashboard';
+        // السماح بالذهاب لصفحة Login - ستتحقق هي من database وتقرر
+        return null;
       }
 
       return null;
@@ -332,6 +339,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/monitoring',
         builder: (context, state) => const MonitoringDashboard(),
+      ),
+      // 🏷️ Taxonomies Management
+      GoRoute(
+        path: '/taxonomies',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const TaxonomyManagementPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
       ),
     ],
   );

@@ -3,22 +3,25 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive.dart';
+import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/download_progress.dart';
 
 /// 📥 Civil Registry Database Download Service
-/// ⚠️ No authentication required - public download endpoint
+/// 🔐 Requires Admin authentication - Bearer Token required
 class DatabaseDownloadService {
   final Dio _dio;
+  final SecureStorage _secureStorage;
   CancelToken? _cancelToken;
 
-  DatabaseDownloadService({Dio? dio})
+  DatabaseDownloadService({Dio? dio, SecureStorage? secureStorage})
       : _dio = dio ??
             Dio(
               BaseOptions(
                 connectTimeout: const Duration(seconds: 30),
                 receiveTimeout: const Duration(minutes: 10),
               ),
-            );
+            ),
+        _secureStorage = secureStorage ?? SecureStorage();
 
   /// Download database from server
   Future<void> downloadDatabase({
@@ -83,17 +86,30 @@ class DatabaseDownloadService {
 
       if (kDebugMode) {
         debugPrint('📥 Downloading from: $downloadUrl');
-        debugPrint('📦 Public download - no authentication required');
       }
 
-      // Download ZIP file with resume support
+      // 🔐 Get auth token for Admin-only endpoint
+      final authToken = await _secureStorage.getAuthToken();
+      if (authToken == null || authToken.isEmpty) {
+        throw Exception('Authentication required. Please login first.');
+      }
+
+      if (kDebugMode) {
+        debugPrint('🔐 Using Bearer Token for authenticated download');
+      }
+
+      // Download ZIP file with resume support and authentication
       await _dio.download(
         downloadUrl,
         downloadPath,
         cancelToken: _cancelToken,
         deleteOnError: false, // Keep partial download
         options: Options(
-          headers: downloadedLength > 0 ? {'Range': 'bytes=$downloadedLength-'} : null,
+          headers: {
+            'Authorization': 'Bearer $authToken',
+            'Accept': 'application/zip, */*',
+            if (downloadedLength > 0) 'Range': 'bytes=$downloadedLength-',
+          },
         ),
         onReceiveProgress: (received, total) {
           if (total != -1) {
@@ -338,6 +354,20 @@ class DatabaseDownloadService {
       return 0;
     } catch (e) {
       return 0;
+    }
+  }
+
+  /// Get database download date (file modification date)
+  Future<DateTime?> getDownloadDate() async {
+    try {
+      final path = await getDatabasePath();
+      final file = File(path);
+      if (await file.exists()) {
+        return await file.lastModified();
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 

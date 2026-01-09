@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 
+import '../../../../../../features/taxonomies/taxonomies.dart'; // 🏷️ Taxonomy System
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
 import '../../../pages/v2_form_helpers/form_constants.dart';
@@ -300,24 +301,13 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               ],
             ),
             SizedBox(height: 12.h),
-            M3DropdownField<String>(
-              value: widget.formControllers.selectedCategory,
-              label: 'فئة المستفيد',
-              prefixIcon: Icons.category_rounded,
+            // 🏷️ فئة المستفيد - من نظام التصنيفات
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.category,
+              selectedCode: widget.formControllers.selectedCategory,
+              onCodeChanged: (value) => widget.formControllers.selectedCategory = value,
+              labelText: 'فئة المستفيد',
               isRequired: true,
-              onChanged: (value) => widget.formControllers.selectedCategory = value,
-              validator: (value) => value == null ? FormConstants.requiredFieldMessage : null,
-              items: const [
-                DropdownMenuItem(value: 'orphan', child: Text('يتيم')),
-                DropdownMenuItem(value: 'poor', child: Text('فقير')),
-                DropdownMenuItem(value: 'displaced', child: Text('نازح')),
-                DropdownMenuItem(value: 'widow', child: Text('أرملة')),
-                DropdownMenuItem(
-                  value: 'disabled',
-                  child: Text('من ذوي الإعاقة'),
-                ),
-                DropdownMenuItem(value: 'other', child: Text('أخرى')),
-              ],
             ),
             SizedBox(height: 12.h),
             // 🆕 NEW: رقم الملف

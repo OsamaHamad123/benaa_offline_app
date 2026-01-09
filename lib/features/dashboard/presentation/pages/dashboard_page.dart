@@ -23,6 +23,9 @@ import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../theme/app_colors.dart';
 
+// Civil DB Download
+import '../../../civil_db_download/presentation/providers/database_download_provider.dart';
+
 // Dashboard
 import '../providers.dart';
 import '../services/dashboard_navigation_service.dart';
@@ -453,6 +456,9 @@ class _DashboardHome extends ConsumerWidget {
           // Offline Indicator Banner
           if (!isOnline) const OfflineBanner(),
 
+          // Civil Registry Banner - إذا لم يتم تحميل السجل المدني
+          _CivilRegistryBanner(ref: ref),
+
           // Welcome Banner (First time users)
           if (showWelcomeBanner)
             WelcomeBanner(
@@ -722,6 +728,85 @@ class _SettingsView extends StatelessWidget {
         ],
       ),
       body: const EnhancedSettingsPage(),
+    );
+  }
+}
+
+/// Civil Registry Download Banner - بانر تذكير بتحميل السجل المدني
+class _CivilRegistryBanner extends ConsumerWidget {
+  final WidgetRef ref;
+
+  const _CivilRegistryBanner({required this.ref});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dbState = ref.watch(databaseDownloadProvider);
+
+    // لا تعرض البانر إذا كان السجل المدني محملاً
+    if (dbState.isAvailable) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade100,
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            child: Icon(
+              Icons.info_outline_rounded,
+              color: Colors.orange.shade700,
+              size: 24.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'السجل المدني غير محمّل',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'بعض الميزات لن تعمل بدون تحميل السجل المدني',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.orange.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          FilledButton.tonal(
+            onPressed: () {
+              Navigator.pushNamed(context, '/database-download');
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.orange.shade100,
+              foregroundColor: Colors.orange.shade800,
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+            ),
+            child: const Text('تحميل'),
+          ),
+        ],
+      ),
     );
   }
 }

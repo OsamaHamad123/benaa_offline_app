@@ -1,76 +1,151 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/database_download_service.dart';
 import '../../domain/entities/download_progress.dart';
+import '../pages/config/download_config.dart';
 
 /// Download State
 class DatabaseDownloadState {
   final DownloadProgress progress;
   final bool isAvailable;
+  final bool wasSkipped;
   final int? databaseSize;
+  final DateTime? downloadDate;
 
   const DatabaseDownloadState({
     required this.progress,
     required this.isAvailable,
+    this.wasSkipped = false,
     this.databaseSize,
+    this.downloadDate,
   });
+
+  /// هل يمكن المتابعة (إما موجود أو تم تخطيه)
+  bool get canProceed => isAvailable || wasSkipped;
 
   DatabaseDownloadState copyWith({
     DownloadProgress? progress,
     bool? isAvailable,
+    bool? wasSkipped,
     int? databaseSize,
+    DateTime? downloadDate,
   }) {
     return DatabaseDownloadState(
       progress: progress ?? this.progress,
       isAvailable: isAvailable ?? this.isAvailable,
+      wasSkipped: wasSkipped ?? this.wasSkipped,
       databaseSize: databaseSize ?? this.databaseSize,
+      downloadDate: downloadDate ?? this.downloadDate,
+    );
+  }
+
+  /// تنسيق حجم الملف للعرض
+  String get fileSizeFormatted {
+    if (databaseSize == null) return 'غير معروف';
+
+    final bytes = databaseSize!;
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  /// Default/Initial state
+  factory DatabaseDownloadState.initial() {
+    return DatabaseDownloadState(
+      progress: DownloadProgress(
+        downloadedBytes: 0,
+        totalBytes: 0,
+        percentage: 0,
+        status: DownloadStatus.idle,
+      ),
+      isAvailable: false,
+      wasSkipped: false,
     );
   }
 }
 
-/// Database Download Provider
+/// Database Download Provider - يستخدم StateNotifier مع keepAlive
 class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
   final DatabaseDownloadService _downloadService;
+  SharedPreferences? _prefs;
+  bool _isInitialized = false;
 
-  DatabaseDownloadNotifier(this._downloadService)
-      : super(
-          DatabaseDownloadState(
-            progress: DownloadProgress(
-              downloadedBytes: 0,
-              totalBytes: 0,
-              percentage: 0,
-              status: DownloadStatus.idle,
-            ),
-            isAvailable: false,
-          ),
-        ) {
-    _checkDatabase();
+  DatabaseDownloadNotifier(this._downloadService) : super(DatabaseDownloadState.initial()) {
+    _init();
+  }
+
+  Future<void> _init() async {
+    if (_isInitialized) return;
+    _prefs = await SharedPreferences.getInstance();
+    _isInitialized = true;
+    await _checkDatabase();
   }
 
   Future<void> _checkDatabase() async {
+    if (!mounted) return;
+
     final isAvailable = await _downloadService.isDatabaseAvailable();
     final size = await _downloadService.getDatabaseSize();
+    final downloadDate = await _downloadService.getDownloadDate();
+    final wasSkipped = _prefs?.getBool(DownloadConfig.skipPreferenceKey) ?? false;
 
     if (kDebugMode) {
-      debugPrint('📊 Database check: isAvailable=$isAvailable, size=$size');
+      debugPrint('📊 Database check: isAvailable=$isAvailable, size=$size, wasSkipped=$wasSkipped');
     }
+
+    if (!mounted) return;
 
     state = state.copyWith(
       isAvailable: isAvailable,
       databaseSize: size > 0 ? size : null,
+      downloadDate: downloadDate,
+      wasSkipped: wasSkipped,
     );
   }
 
   /// Public method to refresh database status
   Future<void> checkDatabase() async {
+    await _init();
     await _checkDatabase();
   }
 
+  /// تخطي التحميل (مع الحفظ)
+  Future<void> skipDownload() async {
+    await _init();
+    await _prefs?.setBool(DownloadConfig.skipPreferenceKey, true);
+
+    if (!mounted) return;
+    state = state.copyWith(wasSkipped: true);
+
+    if (kDebugMode) {
+      debugPrint('⏭️ Download skipped and saved');
+    }
+  }
+
+  /// إلغاء التخطي (عند بدء التحميل)
+  Future<void> clearSkipStatus() async {
+    await _init();
+    await _prefs?.remove(DownloadConfig.skipPreferenceKey);
+
+    if (!mounted) return;
+    state = state.copyWith(wasSkipped: false);
+  }
+
+  /// تحميل قاعدة البيانات
   Future<void> downloadDatabase(String url) async {
+    await _init();
+    // عند بدء التحميل، نلغي حالة التخطي
+    await clearSkipStatus();
+
     try {
       await _downloadService.downloadDatabase(
         downloadUrl: url,
         onProgress: (progress) {
+          if (!mounted) return;
           state = state.copyWith(progress: progress);
 
           if (progress.isComplete) {
@@ -79,6 +154,7 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
         },
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         progress: DownloadProgress(
           downloadedBytes: 0,
@@ -91,8 +167,11 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     }
   }
 
+  /// إلغاء التحميل
   void cancelDownload() {
     _downloadService.cancelDownload();
+
+    if (!mounted) return;
     state = state.copyWith(
       progress: DownloadProgress(
         downloadedBytes: 0,
@@ -103,24 +182,28 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     );
   }
 
+  /// حذف وإعادة التحميل
   Future<void> deleteAndRedownload(String url) async {
     await _downloadService.deleteDatabase();
+    await clearSkipStatus();
+
+    if (!mounted) return;
     state = state.copyWith(isAvailable: false, databaseSize: null);
+
     await downloadDatabase(url);
   }
 }
 
-/// Provider
-final databaseDownloadServiceProvider = Provider<DatabaseDownloadService>((
-  ref,
-) {
+/// Provider for DatabaseDownloadService
+final databaseDownloadServiceProvider = Provider<DatabaseDownloadService>((ref) {
   return DatabaseDownloadService();
 });
 
-final databaseDownloadProvider =
-    StateNotifierProvider<DatabaseDownloadNotifier, DatabaseDownloadState>((
-  ref,
-) {
+/// Database Download Provider - مع keepAlive لتجنب dispose المبكر
+final databaseDownloadProvider = StateNotifierProvider<DatabaseDownloadNotifier, DatabaseDownloadState>((ref) {
+  // keepAlive لمنع dispose عند عدم الاستخدام
+  ref.keepAlive();
+
   final service = ref.watch(databaseDownloadServiceProvider);
   return DatabaseDownloadNotifier(service);
 });

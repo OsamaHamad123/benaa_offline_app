@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
+import '../../../../../../features/taxonomies/taxonomies.dart'; // 🏷️ Taxonomy System
 import '../../../pages/v2_form_helpers/widgets/enhanced_section_widgets.dart'; // 🎨
 import '../../../providers/beneficiary_dependencies.dart';
 import '../../../providers/civil_registry_provider.dart';
@@ -270,37 +271,22 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               ),
             ),
             SizedBox(height: 12.h),
-            V2DropdownField<String>(
-              value: widget.selectedGender,
-              label: 'الجنس',
-              prefixIcon: Icons.wc_rounded,
+            // 🏷️ الجنس - من نظام التصنيفات
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.gender,
+              selectedCode: widget.selectedGender,
+              onCodeChanged: widget.onGenderChanged,
+              labelText: 'الجنس',
               isRequired: true,
-              onChanged: widget.onGenderChanged,
-              validator: (value) => value == null ? 'الحقل مطلوب' : null,
-              items: const [
-                DropdownMenuItem(value: 'ذكر', child: Text('ذكر')),
-                DropdownMenuItem(value: 'أنثى', child: Text('أنثى')),
-              ],
             ),
             SizedBox(height: 12.h),
-            V2DropdownField<String>(
-              value: widget.selectedCategory,
-              label: 'فئة المستفيد',
-              prefixIcon: Icons.category_rounded,
+            // 🏷️ فئة المستفيد - من نظام التصنيفات
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.category,
+              selectedCode: widget.selectedCategory,
+              onCodeChanged: widget.onCategoryChanged,
+              labelText: 'فئة المستفيد',
               isRequired: true,
-              onChanged: widget.onCategoryChanged,
-              validator: (value) => value == null ? 'الحقل مطلوب' : null,
-              items: const [
-                DropdownMenuItem(value: 'orphan', child: Text('يتيم')),
-                DropdownMenuItem(value: 'poor', child: Text('فقير')),
-                DropdownMenuItem(value: 'displaced', child: Text('نازح')),
-                DropdownMenuItem(value: 'widow', child: Text('أرملة')),
-                DropdownMenuItem(
-                  value: 'disabled',
-                  child: Text('من ذوي الإعاقة'),
-                ),
-                DropdownMenuItem(value: 'other', child: Text('أخرى')),
-              ],
             ),
             SizedBox(height: 12.h),
             // 🆕 صلة القرابة (Relationship)

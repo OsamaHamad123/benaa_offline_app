@@ -15,8 +15,7 @@ class AppSettingsManager {
   }
 
   // 🔔 Notifications Settings
-  bool get notificationsEnabled =>
-      _prefs?.getBool('notifications_enabled') ?? true;
+  bool get notificationsEnabled => _prefs?.getBool('notifications_enabled') ?? true;
 
   Future<void> setNotificationsEnabled(bool value) async {
     await _prefs?.setBool('notifications_enabled', value);
@@ -58,7 +57,7 @@ class AppSettingsManager {
   }
 
   // 🎨 Theme Mode
-  String get themeMode => _prefs?.getString('theme_mode') ?? 'system';
+  String get themeMode => _prefs?.getString('theme_mode') ?? 'light';
 
   Future<void> setThemeMode(String mode) async {
     await _prefs?.setString('theme_mode', mode);
@@ -107,8 +106,7 @@ class AppSettingsManager {
   }
 
   // 🎯 Show Performance Dashboard
-  bool get showPerformanceDashboard =>
-      _prefs?.getBool('show_performance_dashboard') ?? false;
+  bool get showPerformanceDashboard => _prefs?.getBool('show_performance_dashboard') ?? false;
 
   Future<void> setShowPerformanceDashboard(bool value) async {
     await _prefs?.setBool('show_performance_dashboard', value);
@@ -127,7 +125,7 @@ class AppSettingsManager {
     await setAutoSyncEnabled(false);
     await setWifiOnlySync(true);
     await setSyncInterval(24);
-    await setThemeMode('system');
+    await setThemeMode('light');
     await setFontSize(14.0);
     await setItemsPerPage(20);
     await setDefaultSort('name_asc');

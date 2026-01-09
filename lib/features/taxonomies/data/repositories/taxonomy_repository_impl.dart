@@ -1,4 +1,4 @@
-import '../../../core/error_handling/result.dart';
+import '../../../../core/error_handling/result.dart';
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../../domain/repositories/taxonomy_repository.dart';
@@ -34,8 +34,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   }
 
   @override
-  Future<Result<List<Taxonomy>>> getTaxonomiesByGroup(
-      TaxonomyGroup group) async {
+  Future<Result<List<Taxonomy>>> getTaxonomiesByGroup(TaxonomyGroup group) async {
     try {
       final taxonomies = await _localDataSource.getTaxonomiesByGroup(group);
       return Success(taxonomies);
@@ -58,13 +57,11 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   }
 
   @override
-  Future<Result<Taxonomy>> getTaxonomyByCode(
-      TaxonomyGroup group, String code) async {
+  Future<Result<Taxonomy>> getTaxonomyByCode(TaxonomyGroup group, String code) async {
     try {
       final taxonomy = await _localDataSource.getTaxonomyByCode(group, code);
       if (taxonomy == null) {
-        return Failure(NotFoundFailure(
-            'التصنيف غير موجود: ${group.value}/$code'));
+        return Failure(NotFoundFailure('التصنيف غير موجود: ${group.value}/$code'));
       }
       return Success(taxonomy);
     } catch (e, st) {
@@ -189,10 +186,10 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   }
 
   @override
-  Future<Result<void>> upsertTaxonomies(List<Taxonomy> taxonomies) async {
+  Future<Result<int>> upsertTaxonomies(List<Taxonomy> taxonomies) async {
     try {
       await _localDataSource.saveTaxonomies(taxonomies);
-      return Success(null);
+      return Success(taxonomies.length);
     } catch (e, st) {
       return Failure(DatabaseFailure('فشل حفظ التصنيفات: $e', st));
     }
@@ -232,8 +229,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   }
 
   @override
-  Future<Result<TaxonomySyncResult>> syncGroupFromServer(
-      TaxonomyGroup group) async {
+  Future<Result<TaxonomySyncResult>> syncGroupFromServer(TaxonomyGroup group) async {
     try {
       final request = TaxonomySyncRequestDTO(
         group: group.value,
@@ -316,10 +312,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   }
 
   @override
-  Future<bool> isCodeUnique(TaxonomyGroup group, String code,
-      {String? excludeId}) async {
-    return await _localDataSource.isCodeUnique(group, code,
-        excludeId: excludeId);
+  Future<bool> isCodeUnique(TaxonomyGroup group, String code, {String? excludeId}) async {
+    return await _localDataSource.isCodeUnique(group, code, excludeId: excludeId);
   }
 
   // ═══════════════════════════════════════════════════════════════

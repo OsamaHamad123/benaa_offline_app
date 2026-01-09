@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/services/taxonomy_service.dart';
+import '../taxonomies/presentation/providers/taxonomy_providers.dart';
 
 /// صفحة التهيئة - تحميل التصنيفات من API أو من البيانات المحلية
 class InitializationPage extends ConsumerStatefulWidget {
@@ -27,20 +27,27 @@ class _InitializationPageState extends ConsumerState<InitializationPage> {
         _statusMessage = 'جاري تحميل التصنيفات...';
       });
 
-      final taxonomyService = ref.read(taxonomyServiceProvider);
+      // استخدام نظام التصنيفات الجديد
+      final syncNotifier = ref.read(taxonomySyncNotifierProvider.notifier);
 
       // محاولة المزامنة من API
       try {
-        await taxonomyService.syncTaxonomies();
-        setState(() {
-          _statusMessage = 'تم تحديث التصنيفات من الخادم';
-        });
+        await syncNotifier.sync();
+        final syncResult = ref.read(lastSyncResultProvider);
+        if (syncResult != null && syncResult.success) {
+          setState(() {
+            _statusMessage = 'تم تحديث التصنيفات من الخادم (${syncResult.addedCount} جديد)';
+          });
+        } else {
+          setState(() {
+            _statusMessage = 'تم تحميل التصنيفات المحلية';
+          });
+        }
       } catch (e) {
-        // في حالة فشل API، تحميل البيانات الافتراضية
+        // في حالة فشل API، نتابع بدون خطأ
         setState(() {
-          _statusMessage = 'جاري تحميل التصنيفات المحلية...';
+          _statusMessage = 'جاري استخدام التصنيفات المحلية...';
         });
-        await taxonomyService.loadDefaultTaxonomies();
       }
 
       // الانتظار قليلاً لعرض الرسالة

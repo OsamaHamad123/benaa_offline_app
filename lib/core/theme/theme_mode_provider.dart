@@ -7,7 +7,7 @@ import 'theme_mode_settings.dart';
 ///
 /// إدارة حالة وضع السمة
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
+  ThemeModeNotifier() : super(ThemeMode.light) {
     _loadThemeMode();
   }
 
@@ -32,7 +32,7 @@ class ThemeModeNotifier extends StateNotifier<ThemeMode> {
       );
     } catch (e) {
       // في حالة الخطأ، استخدم النظام
-      state = ThemeMode.system;
+      state = ThemeMode.light;
     }
   }
 

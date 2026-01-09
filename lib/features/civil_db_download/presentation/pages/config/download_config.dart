@@ -1,12 +1,10 @@
 /// 📥 Database Download Configuration
 class DownloadConfig {
-  /// ⚠️ TODO: Replace with your actual server URL
-  ///
-  /// Example:
-  /// static const downloadUrl = 'https://your-cdn.com/persons.db.gz';
-  /// static const downloadUrl = 'https://storage.googleapis.com/your-bucket/persons.db.gz';
-  /// static const downloadUrl = 'https://s3.amazonaws.com/your-bucket/persons.db.gz';
-  static const String downloadUrl = 'https://palestine.benaadev.org/api/mobile/civil-db/download';
+  /// 🔗 Server Download URL (Admin Only - requires Bearer Token)
+  static const String downloadUrl = 'https://palestine.benaadev.org/api/mobile/database/persons-file/download';
+
+  /// 🔗 File Info URL (to get size and metadata)
+  static const String fileInfoUrl = 'https://palestine.benaadev.org/api/mobile/database/persons-file/info';
 
   /// Optional: Fallback URLs in case primary fails
   static const List<String> fallbackUrls = [
@@ -19,4 +17,7 @@ class DownloadConfig {
 
   /// Minimum acceptable size (MB) - to detect incomplete downloads
   static const int minAcceptableSizeMB = 100;
+
+  /// SharedPreferences key for skip status
+  static const String skipPreferenceKey = 'civil_db_download_skipped';
 }

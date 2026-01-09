@@ -34,16 +34,17 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
     // Explicitly check database (refresh status)
     await ref.read(databaseDownloadProvider.notifier).checkDatabase();
 
-    // Check if database is available
+    // Check if database is available OR was skipped
     final dbState = ref.read(databaseDownloadProvider);
 
-    if (dbState.isAvailable) {
+    if (dbState.canProceed) {
+      // Database exists OR user skipped download previously
       setState(() {
-        _statusMessage = 'تم العثور على قاعدة البيانات ✓';
+        _statusMessage = dbState.isAvailable ? 'تم العثور على قاعدة البيانات ✓' : 'تم تخطي التحميل سابقاً...';
       });
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Database exists - go to login/dashboard
+      // Go to login/dashboard
       // The router will redirect to dashboard if already authenticated
       if (mounted && context.mounted) {
         context.go('/login');
@@ -54,7 +55,7 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> {
       });
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Database doesn't exist - go to login first
+      // Database doesn't exist and wasn't skipped - go to login first
       if (mounted && context.mounted) {
         context.go('/login');
       }

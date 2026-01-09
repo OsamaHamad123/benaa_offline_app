@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
+import '../../features/civil_db_download/presentation/providers/database_download_provider.dart';
 import '../widgets/modern_sliver_app_bar.dart';
 import 'settings_provider.dart';
 import 'widgets/widgets.dart';
@@ -228,6 +229,36 @@ class CleanSettingsPage extends ConsumerWidget {
                     ),
                     SettingsSectionCard(
                       children: [
+                        // 🆕 السجل المدني
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final dbState = ref.watch(databaseDownloadProvider);
+                            return SettingsNavigationTile(
+                              title: 'السجل المدني',
+                              subtitle: dbState.isAvailable
+                                  ? '✅ محمّل (الحجم: ${dbState.fileSizeFormatted})'
+                                  : '⚠️ غير محمّل - اضغط للتحميل',
+                              icon: Icons.person_search_rounded,
+                              color: dbState.isAvailable ? Colors.green : Colors.orange,
+                              onTap: () {
+                                if (!dbState.isAvailable) {
+                                  context.push('/database-download');
+                                } else {
+                                  _showCivilDbInfoDialog(context, ref);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'إدارة التصنيفات',
+                          subtitle: 'المحافظات، الفئات، الحالات',
+                          icon: Icons.category_rounded,
+                          color: Colors.teal,
+                          onTap: () => context.push('/taxonomies'),
+                        ),
+                        const SettingsDivider(),
                         SettingsNavigationTile(
                           title: 'مدة الذاكرة المؤقتة',
                           subtitle: '${settings.cacheDurationMinutes} دقيقة',
@@ -691,6 +722,110 @@ class CleanSettingsPage extends ConsumerWidget {
         }
       }
     }
+  }
+
+  /// عرض معلومات السجل المدني
+  void _showCivilDbInfoDialog(BuildContext context, WidgetRef ref) {
+    final dbState = ref.read(databaseDownloadProvider);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.green, size: 28.sp),
+            SizedBox(width: 12.w),
+            const Text('السجل المدني'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow(
+              icon: Icons.storage_rounded,
+              label: 'الحجم',
+              value: dbState.fileSizeFormatted,
+            ),
+            SizedBox(height: 12.h),
+            _buildInfoRow(
+              icon: Icons.calendar_today_rounded,
+              label: 'تاريخ التحميل',
+              value: dbState.downloadDate != null
+                  ? '${dbState.downloadDate!.day}/${dbState.downloadDate!.month}/${dbState.downloadDate!.year}'
+                  : 'غير معروف',
+            ),
+            SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_rounded, color: Colors.green, size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      'السجل المدني محمّل ويعمل بشكل صحيح',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/database-download');
+            },
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('إعادة التحميل'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 20.sp, color: Colors.grey[600]),
+        SizedBox(width: 8.w),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            fontSize: 14.sp,
+            color: Colors.grey[600],
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
   }
 
   /// معالجة تسجيل الخروج

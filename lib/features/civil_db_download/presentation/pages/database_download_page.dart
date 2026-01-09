@@ -120,6 +120,13 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
                   if (progress.isComplete) _buildCompleteButton(),
                   if (progress.isDownloading) _buildCancelButton(),
                   if (progress.hasError) _buildRetryButton(),
+                  // 🆕 زر التخطي - يمكن التحميل لاحقاً
+                  if (progress.status == DownloadStatus.idle ||
+                      progress.status == DownloadStatus.failed ||
+                      progress.isDownloading) ...[
+                    SizedBox(height: 24.h),
+                    _buildSkipButton(),
+                  ],
                 ],
               ),
             ),
@@ -427,6 +434,133 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
           ),
         ],
       ],
+    );
+  }
+
+  /// 🆕 زر التخطي - للدخول بدون تحميل السجل المدني
+  Widget _buildSkipButton() {
+    return Column(
+      children: [
+        const Divider(height: 32),
+        Text(
+          'أو يمكنك التخطي والتحميل لاحقاً',
+          style: TextStyle(
+            fontSize: 14.sp,
+            color: Colors.grey[600],
+          ),
+        ),
+        SizedBox(height: 12.h),
+        OutlinedButton.icon(
+          onPressed: () => _showSkipConfirmation(),
+          icon: const Icon(Icons.skip_next_rounded),
+          label: const Text('تخطي الآن'),
+          style: OutlinedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          'ملاحظة: بعض الميزات لن تعمل بدون السجل المدني\n(البحث عن المواطنين، الملء التلقائي)',
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: Colors.orange[700],
+            fontStyle: FontStyle.italic,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  /// تأكيد التخطي
+  Future<void> _showSkipConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Icon(Icons.info_outline, size: 48.sp, color: Colors.orange),
+        title: const Text('تخطي تحميل السجل المدني؟'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('يمكنك استخدام التطبيق بدون السجل المدني، لكن:'),
+            SizedBox(height: 12.h),
+            _buildWarningItem('لن تتمكن من البحث عن المواطنين'),
+            _buildWarningItem('لن يعمل الملء التلقائي للبيانات'),
+            _buildWarningItem('ستحتاج لإدخال البيانات يدوياً'),
+            SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.download_rounded, color: Colors.green[700], size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      'يمكنك التحميل لاحقاً من الإعدادات',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.green[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('تخطي والمتابعة'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted && context.mounted) {
+      // إيقاف التحميل إذا كان جارياً
+      final notifier = ref.read(databaseDownloadProvider.notifier);
+      final state = ref.read(databaseDownloadProvider);
+
+      if (state.progress.isDownloading) {
+        notifier.cancelDownload();
+      }
+
+      // 🆕 حفظ حالة التخطي
+      await notifier.skipDownload();
+
+      // الذهاب للـ Dashboard
+      context.go('/dashboard');
+    }
+  }
+
+  Widget _buildWarningItem(String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4.h),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 16.sp, color: Colors.orange),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(fontSize: 13.sp),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

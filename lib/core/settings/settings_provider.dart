@@ -51,7 +51,7 @@ class SettingsState {
     this.wifiOnlySync = true,
     this.syncIntervalHours = 24,
     // Theme
-    this.themeMode = 'system',
+    this.themeMode = 'light', // الافتراضي: الوضع الفاتح
     this.colorScheme = 'blue',
     this.fontSize = 14.0,
     this.useMaterial3 = true,
@@ -162,7 +162,7 @@ class SettingsState {
       autoSyncEnabled: json['autoSyncEnabled'] ?? false,
       wifiOnlySync: json['wifiOnlySync'] ?? true,
       syncIntervalHours: json['syncIntervalHours'] ?? 24,
-      themeMode: json['themeMode'] ?? 'system',
+      themeMode: json['themeMode'] ?? 'light',
       colorScheme: json['colorScheme'] ?? 'blue',
       fontSize: (json['fontSize'] ?? 14.0).toDouble(),
       useMaterial3: json['useMaterial3'] ?? true,

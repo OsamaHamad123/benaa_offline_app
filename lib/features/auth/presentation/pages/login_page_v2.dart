@@ -56,6 +56,24 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
     await authNotifier.checkAuthStatus();
   }
 
+  /// 🚀 الانتقال بعد المصادقة - التحقق من database أولاً
+  Future<void> _navigateAfterAuth() async {
+    await ref.read(databaseDownloadProvider.notifier).checkDatabase();
+    final dbState = ref.read(databaseDownloadProvider);
+
+    if (dbState.canProceed) {
+      // قاعدة البيانات موجودة أو تم تخطيها
+      if (mounted && context.mounted) {
+        context.go('/dashboard');
+      }
+    } else {
+      // يجب تنزيل قاعدة البيانات
+      if (mounted && context.mounted) {
+        context.go('/database-download');
+      }
+    }
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -98,13 +116,14 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
         await ref.read(databaseDownloadProvider.notifier).checkDatabase();
         final dbState = ref.read(databaseDownloadProvider);
 
-        if (!dbState.isAvailable) {
-          // قاعدة البيانات غير موجودة - الذهاب لصفحة التنزيل
+        // 🆕 استخدام canProceed بدلاً من isAvailable فقط
+        if (!dbState.canProceed) {
+          // قاعدة البيانات غير موجودة ولم يتم تخطيها - الذهاب لصفحة التنزيل
           if (mounted && context.mounted) {
             context.go('/database-download');
           }
         } else {
-          // قاعدة البيانات موجودة - الانتقال للوحة التحكم
+          // قاعدة البيانات موجودة أو تم تخطيها - الانتقال للوحة التحكم
           if (mounted && context.mounted) {
             context.go('/dashboard');
           }
@@ -122,9 +141,9 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
       next.maybeWhen(
         authenticated: (session, isOffline, tokenRefreshed) {
-          // تم المصادقة - الانتقال للوحة التحكم
+          // تم المصادقة - التحقق من حالة قاعدة البيانات أولاً
           if (mounted) {
-            context.go('/dashboard');
+            _navigateAfterAuth();
           }
         },
         error: (message, errorCode, canRetry) {
