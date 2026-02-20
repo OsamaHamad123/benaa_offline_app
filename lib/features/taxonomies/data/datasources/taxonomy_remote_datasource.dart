@@ -7,7 +7,7 @@ import '../../domain/entities/taxonomy_group.dart';
 /// مصدر البيانات من API للتصنيفات
 abstract class TaxonomyRemoteDataSource {
   /// جلب جميع التصنيفات
-  Future<TaxonomiesResponseDTO> getAllTaxonomies();
+  Future<TaxonomiesResponseDTO> getAllTaxonomies({DateTime? since});
 
   /// جلب التصنيفات حسب المجموعة
   Future<TaxonomiesResponseDTO> getTaxonomiesByGroup(TaxonomyGroup group);
@@ -32,15 +32,20 @@ abstract class TaxonomyRemoteDataSource {
 class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
   final Dio _dio;
 
-  static const String _basePath = '/api/mobile/taxonomies';
+  // ✅ Using categories endpoint as per API documentation
+  static const String _basePath = '/api/mobile/categories';
 
   TaxonomyRemoteDataSourceImpl(this._dio);
 
   @override
-  Future<TaxonomiesResponseDTO> getAllTaxonomies() async {
+  Future<TaxonomiesResponseDTO> getAllTaxonomies({DateTime? since}) async {
     try {
-      final response = await _dio.get(_basePath);
-      return TaxonomiesResponseDTO.fromJson(response.data);
+      // Use sync-all endpoint for full or incremental sync
+      final response = await _dio.get(
+        '$_basePath/sync-all',
+        queryParameters: since != null ? {'updated_after': since.toIso8601String()} : null,
+      );
+      return TaxonomiesResponseDTO.fromSyncAllJson(response.data);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

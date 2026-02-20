@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:benaa_offline_app/data/db/tables/associations_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -22,6 +23,7 @@ import 'daos/family_deceased_dao.dart';
 import 'daos/family_members_dao.dart';
 import 'daos/associations_dao.dart';
 import 'daos/sponsorships_dao.dart';
+import 'daos/file_id_reservation_dao.dart';
 
 part 'drift_database.g.dart';
 
@@ -40,6 +42,7 @@ part 'drift_database.g.dart';
     Associations,
     AssociationRepresentatives,
     Sponsorships,
+    FileIdReservationTable,
   ],
   daos: [
     BeneficiariesDao,
@@ -54,6 +57,7 @@ part 'drift_database.g.dart';
     FamilyMembersDao,
     AssociationsDao,
     SponsorshipsDao,
+    FileIdReservationDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -67,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration {
@@ -132,6 +136,33 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(sponsorships, sponsorships.governorate);
           await m.addColumn(sponsorships, sponsorships.city);
           await m.addColumn(sponsorships, sponsorships.address);
+        }
+
+        if (from < 17) {
+          // v17: Add file_id_reservations table
+          await m.createTable(fileIdReservationTable);
+        }
+
+        if (from < 18) {
+          // v18: Add missing columns for sync and new tables
+          // 1. Visits columns
+          await m.addColumn(visits, visits.serverId);
+          await m.addColumn(visits, visits.lastSyncedAt);
+
+          // 2. Attachments columns
+          await m.addColumn(attachments, attachments.syncState);
+          await m.addColumn(attachments, attachments.serverUrl);
+          await m.addColumn(attachments, attachments.lastSyncedAt);
+
+          // 3. Ensure family tables exist (for users who skipped previous manual updates)
+          try {
+            await m.createTable(familyMembersTable);
+            await m.createTable(familyDeceasedTable);
+            await m.createTable(associations);
+            await m.createTable(associationRepresentatives);
+          } catch (e) {
+            // Tables might already exist if it's a new installation
+          }
         }
 
         await _createPerformanceIndexes();
@@ -368,8 +399,7 @@ extension BeneficiaryExtension on Beneficiary {
     if (birthDate == null) return null;
     final now = DateTime.now();
     var age = now.year - birthDate!.year;
-    if (now.month < birthDate!.month ||
-        (now.month == birthDate!.month && now.day < birthDate!.day)) {
+    if (now.month < birthDate!.month || (now.month == birthDate!.month && now.day < birthDate!.day)) {
       age--;
     }
     return age;
@@ -401,7 +431,7 @@ LazyDatabase openEncryptedDb() {
         // Performance optimizations
         db.execute('PRAGMA synchronous = NORMAL;');
         db.execute('PRAGMA temp_store = MEMORY;');
-        db.execute('PRAGMA mmap_size = 30000000000;');
+        // db.execute('PRAGMA mmap_size = 30000000000;'); // Removed excessive mmap which can cause ANRs
       },
     );
   });

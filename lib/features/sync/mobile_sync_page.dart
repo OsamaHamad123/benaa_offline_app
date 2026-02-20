@@ -4,9 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
+import '../auth/presentation/providers/auth_providers.dart';
 import '../../core/widgets/modern_sliver_app_bar.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
 import '../../core/error_handling/error_handler.dart';
+import '../taxonomies/presentation/providers/taxonomy_providers.dart';
+import 'presentation/providers/file_id_providers.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
@@ -14,7 +17,18 @@ import '../../core/error_handling/error_handler.dart';
 
 final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
   final database = ref.watch(databaseProvider);
-  return MobileSyncService(database);
+  final apiClient = ref.watch(apiClientProvider);
+  final secureStorage = ref.watch(secureStorageProvider);
+  final fileIdService = ref.watch(fileIdServiceProvider);
+  final taxonomyRepository = ref.watch(taxonomyRepositoryProvider);
+
+  return MobileSyncService(
+    database,
+    secureStorage,
+    dio: apiClient.dio,
+    fileIdService: fileIdService,
+    taxonomyRepository: taxonomyRepository,
+  );
 });
 
 class MobileSyncPage extends ConsumerStatefulWidget {
@@ -41,12 +55,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
     // Count beneficiaries by sync state
     final beneficiaries = await db.select(db.beneficiaries).get();
-    final benPending =
-        beneficiaries.where((b) => b.syncState == 'pending').length;
-    final benModified =
-        beneficiaries.where((b) => b.syncState == 'modified').length;
-    final benSynced =
-        beneficiaries.where((b) => b.syncState == 'synced').length;
+    final benPending = beneficiaries.where((b) => b.syncState == 'pending').length;
+    final benModified = beneficiaries.where((b) => b.syncState == 'modified').length;
+    final benSynced = beneficiaries.where((b) => b.syncState == 'synced').length;
 
     // Count associations (assuming they have similar sync tracking)
     final associations = await db.select(db.associations).get();
@@ -103,8 +114,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message:
-              '✅ تم تنزيل ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
+          message: '✅ تم تنزيل ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
         );
       } else {
         if (!mounted) return;
@@ -132,15 +142,13 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message:
-              '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
+          message: '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
         );
       } else {
         if (!mounted) return;
         EnhancedSnackbar.showWarning(
           context,
-          message:
-              '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
+          message: '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
         );
       }
     }
@@ -247,7 +255,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
             SizedBox(height: 12.h),
             Text(
               '• لا يوجد authentication (مؤقت)\n'
-              '• المرفقات لا تتزامن (نصوص فقط)\n'
+              '• المرفقات تتزامن الآن (Multipart)\n'
               '• في حالة التعارض، بيانات السيرفر تفوز\n'
               '• السجلات المحذوفة لا تتزامن',
               style: TextStyle(
@@ -294,8 +302,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                   '${_stats!['ben_total']}',
                   Colors.blue,
                 ),
-                _buildStatRow(
-                    'متزامن', '${_stats!['ben_synced']}', Colors.green),
+                _buildStatRow('متزامن', '${_stats!['ben_synced']}', Colors.green),
                 _buildStatRow(
                   'بانتظار الرفع',
                   '${_stats!['ben_pending']}',

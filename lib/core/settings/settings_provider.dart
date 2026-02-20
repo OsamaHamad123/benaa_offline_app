@@ -47,7 +47,7 @@ class SettingsState {
     this.soundEnabled = true,
     this.vibrationEnabled = true,
     // Sync
-    this.autoSyncEnabled = false,
+    this.autoSyncEnabled = true,
     this.wifiOnlySync = true,
     this.syncIntervalHours = 24,
     // Theme
@@ -159,7 +159,7 @@ class SettingsState {
       notificationsEnabled: json['notificationsEnabled'] ?? true,
       soundEnabled: json['soundEnabled'] ?? true,
       vibrationEnabled: json['vibrationEnabled'] ?? true,
-      autoSyncEnabled: json['autoSyncEnabled'] ?? false,
+      autoSyncEnabled: json['autoSyncEnabled'] ?? true,
       wifiOnlySync: json['wifiOnlySync'] ?? true,
       syncIntervalHours: json['syncIntervalHours'] ?? 24,
       themeMode: json['themeMode'] ?? 'light',

@@ -7,8 +7,7 @@ part 'attachments_dao.g.dart';
 /// Attachments Data Access Object
 /// يحتوي على جميع عمليات CRUD والاستعلامات الخاصة بالمرفقات
 @DriftAccessor(tables: [Attachments])
-class AttachmentsDao extends DatabaseAccessor<AppDatabase>
-    with _$AttachmentsDaoMixin {
+class AttachmentsDao extends DatabaseAccessor<AppDatabase> with _$AttachmentsDaoMixin {
   AttachmentsDao(super.db);
 
   // ============================================================================
@@ -65,5 +64,10 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
         updatedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  /// Get all attachments that need sync
+  Future<List<Attachment>> getPendingAttachments() async {
+    return await (select(attachments)..where((a) => a.syncState.equals('pending'))).get();
   }
 }

@@ -10,6 +10,7 @@ class DatabaseMaintenanceService {
   final SharedPreferences prefs;
   static const String _lastVacuumKey = 'last_vacuum_date';
   static const String _lastAnalyzeKey = 'last_analyze_date';
+  static const bool _automaticMaintenanceEnabled = false;
 
   // Use centralized configuration from AppConstants
   static final Duration _vacuumInterval = AppConstants.vacuumInterval;
@@ -18,6 +19,11 @@ class DatabaseMaintenanceService {
 
   /// Check and perform maintenance if needed
   Future<void> performMaintenanceIfNeeded() async {
+    if (!_automaticMaintenanceEnabled) {
+      UnifiedLogger.info('Automatic DB maintenance is disabled to avoid runtime ANR risk');
+      return;
+    }
+
     await _checkAndVacuum();
     await _checkAndAnalyze();
   }
@@ -25,8 +31,7 @@ class DatabaseMaintenanceService {
   /// VACUUM - Rebuild database file to reduce size and improve performance
   Future<void> _checkAndVacuum() async {
     final lastVacuum = prefs.getString(_lastVacuumKey);
-    final shouldVacuum = lastVacuum == null ||
-        DateTime.now().difference(DateTime.parse(lastVacuum)) > _vacuumInterval;
+    final shouldVacuum = lastVacuum == null || DateTime.now().difference(DateTime.parse(lastVacuum)) > _vacuumInterval;
     if (shouldVacuum) {
       await vacuum();
       await prefs.setString(_lastVacuumKey, DateTime.now().toIso8601String());
@@ -36,9 +41,8 @@ class DatabaseMaintenanceService {
   /// ANALYZE - Update query planner statistics
   Future<void> _checkAndAnalyze() async {
     final lastAnalyze = prefs.getString(_lastAnalyzeKey);
-    final shouldAnalyze = lastAnalyze == null ||
-        DateTime.now().difference(DateTime.parse(lastAnalyze)) >
-            _analyzeInterval;
+    final shouldAnalyze =
+        lastAnalyze == null || DateTime.now().difference(DateTime.parse(lastAnalyze)) > _analyzeInterval;
     if (shouldAnalyze) {
       await analyze();
       await prefs.setString(_lastAnalyzeKey, DateTime.now().toIso8601String());

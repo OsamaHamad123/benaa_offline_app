@@ -2,19 +2,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:dio/dio.dart';
 import 'app.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/widgets/safe_widgets.dart';
-import 'core/services/database_maintenance_service.dart';
 import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 import 'features/visits/presentation/providers/visit_providers.dart' as visit_providers;
 import 'features/search/presentation/providers/search_dependencies.dart' as search_providers;
 import 'features/beneficiaries/presentation/providers/beneficiary_dependencies.dart' as beneficiary_providers;
 import 'features/dashboard/presentation/providers/activity_providers.dart' as dashboard_providers;
-import 'core/config/sentry_config.dart';
-import 'core/error_handling/error_logger.dart';
+import 'features/taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_providers;
 import 'core/widgets/error_boundary.dart';
+import 'core/storage/secure_storage.dart';
+
+import 'package:benaa_offline_app/core/config/app_config.dart';
 
 /// 🐛 DEBUG MODE ENTRY POINT
 /// This is the development entry point with:
@@ -28,53 +29,60 @@ Future<void> main() async {
   // Initialize safe widgets to prevent overflow errors
   FlutterErrorHandler.initialize();
 
-  // Initialize SharedPreferences for dashboard caching & recent searches
-  final sharedPreferences = await SharedPreferences.getInstance();
+  // Initialize SharedPreferences and AppConfig for synchronous provider access
+  final results = await Future.wait([
+    SharedPreferences.getInstance(),
+    AppConfig.load(),
+  ]);
 
-  // ⚠️ SENTRY TEMPORARILY DISABLED FOR DEBUGGING
-  // Initialize Sentry for debug error tracking
-  // await SentryFlutter.init(
-  //   (options) {
-  //     options.dsn = SentryConfig.dsn;
+  final sharedPreferences = results[0] as SharedPreferences;
+  final appConfig = results[1] as AppConfig;
 
-  //     // Environment
-  //     options.environment = kReleaseMode
-  //         ? SentryConfig.prodEnvironment
-  //         : SentryConfig.devEnvironment;
+  // 🌐 Initialize Dio for API calls (with auth interceptor)
+  final dio = await _createAuthenticatedDio();
 
-  //     // Performance monitoring (20% sample rate)
-  //     options.tracesSampleRate = SentryConfig.tracesSampleRate;
-
-  //     // Enable features
-  //     options.enableAutoSessionTracking = true;
-  //     options.attachStacktrace = true;
-  //     options.attachScreenshot = true; // Debug: capture screenshots
-
-  //     // Always send in debug mode (for testing)
-  //     options.beforeSend = (event, hint) {
-  //       if (kDebugMode && !SentryConfig.sendInDebug) {
-  //         debugPrint('🐛 Sentry event blocked in debug: ${event.message}');
-  //         return null; // Don't send
-  //       }
-  //       return event;
-  //     };
-
-  //     // Debug config
-  //     options.debug = true;
-  //     options.diagnosticLevel = SentryLevel.debug;
-  //   },
-  //   appRunner: () => _runApp(sharedPreferences),
-  // );
-
-  // Run app directly without Sentry
-  _runApp(sharedPreferences);
+  // Run app directly
+  _runApp(sharedPreferences, appConfig, dio);
 }
 
-void _runApp(SharedPreferences sharedPreferences) {
+/// 🔑 Create authenticated Dio instance with auth interceptor
+Future<Dio> _createAuthenticatedDio() async {
+  final dio = Dio(BaseOptions(
+    baseUrl: 'https://palestine.benaadev.org',
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+    headers: {'Accept': 'application/json'},
+  ));
+
+  // Auth interceptor - adds Bearer token to all requests
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      final token = await SecureStorage().getAuthToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      return handler.next(options);
+    },
+    onError: (error, handler) {
+      if (error.response?.statusCode == 401) {
+        debugPrint('🔐 Token expired or invalid');
+      }
+      return handler.next(error);
+    },
+  ));
+
+  return dio;
+}
+
+void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig, Dio dio) {
   runApp(
     ErrorBoundary(
       child: ProviderScope(
         overrides: [
+          // Override Core Async Providers with pre-loaded values
+          core_providers.sharedPreferencesProvider.overrideWith((ref) => sharedPreferences),
+          core_providers.appConfigProvider.overrideWith((ref) => appConfig),
+
           // Override Sync infrastructure providers
           sync_providers.databaseProvider.overrideWith(
             (ref) => ref.watch(core_providers.databaseProvider),
@@ -99,35 +107,17 @@ void _runApp(SharedPreferences sharedPreferences) {
           search_providers.sharedPreferencesProvider.overrideWithValue(
             sharedPreferences,
           ),
+
+          // 🏷️ Taxonomy providers (for dynamic categories from server)
+          taxonomy_providers.taxonomyDatabaseProvider.overrideWith(
+            (ref) => ref.watch(core_providers.databaseProvider),
+          ),
+          taxonomy_providers.taxonomyDioProvider.overrideWithValue(dio),
         ],
         child: const BenaaApp(),
       ),
     ),
   );
 
-  // Performance: Run database maintenance in background (after UI is ready)
-  Future.delayed(const Duration(seconds: 2), () {
-    _performDatabaseMaintenance(sharedPreferences);
-  });
-}
-
-/// Perform database maintenance in background
-Future<void> _performDatabaseMaintenance(SharedPreferences prefs) async {
-  try {
-    final container = ProviderContainer();
-    final database = container.read(core_providers.databaseProvider);
-    final maintenanceService = DatabaseMaintenanceService(
-      database: database,
-      prefs: prefs,
-    );
-    await maintenanceService.performMaintenanceIfNeeded();
-    container.dispose();
-  } catch (e, stackTrace) {
-    await ErrorLogger.logError(
-      e,
-      stackTrace,
-      context: {'operation': 'database_maintenance', 'mode': 'debug'},
-      hint: 'Background database maintenance failed',
-    );
-  }
+  // Performance: Run database maintenance is now handled by DatabaseMaintenanceManager in app.dart
 }

@@ -1,6 +1,7 @@
 import 'package:benaa_offline_app/core/design_system/app_animations.dart';
 import 'package:benaa_offline_app/core/error_handling/error_handler.dart';
 import 'package:benaa_offline_app/core/security/session_manager.dart';
+import 'package:benaa_offline_app/core/storage/secure_storage.dart';
 import 'package:benaa_offline_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_state.dart';
 import 'package:benaa_offline_app/features/civil_db_download/presentation/providers/database_download_provider.dart';
@@ -45,15 +46,39 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
     );
     _animationController.forward();
 
-    // التحقق من حالة المصادقة عند البدء
+    // التحقق من حالة المصادقة وتحميل البيانات المحفوظة
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkInitialAuthState();
+      _loadSavedCredentials();
     });
   }
 
   Future<void> _checkInitialAuthState() async {
     final authNotifier = ref.read(authNotifierProvider.notifier);
     await authNotifier.checkAuthStatus();
+  }
+
+  /// 📥 تحميل بيانات تسجيل الدخول المحفوظة (Remember Me)
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final secureStorage = SecureStorage();
+      final credentials = await secureStorage.getSavedCredentials();
+
+      if (credentials.rememberMe && mounted) {
+        setState(() {
+          _rememberMe = true;
+          if (credentials.email != null) {
+            _emailController.text = credentials.email!;
+          }
+          if (credentials.password != null) {
+            _passwordController.text = credentials.password!;
+          }
+        });
+      }
+    } catch (e) {
+      // تجاهل الأخطاء - البيانات المحفوظة اختيارية
+      debugPrint('⚠️ Could not load saved credentials: $e');
+    }
   }
 
   /// 🚀 الانتقال بعد المصادقة - التحقق من database أولاً
@@ -90,12 +115,26 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
     final authNotifier = ref.read(authNotifierProvider.notifier);
 
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
     final success = await authNotifier.login(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
+      email: email,
+      password: password,
     );
 
     if (success && mounted) {
+      // 💾 حفظ بيانات تسجيل الدخول إذا كان Remember Me مفعلاً
+      final secureStorage = SecureStorage();
+      if (_rememberMe) {
+        await secureStorage.saveLoginCredentials(
+          email: email,
+          password: password,
+        );
+      } else {
+        await secureStorage.clearSavedCredentials();
+      }
+
       // بدء الجلسة
       await SessionManager().initialize(
         onSessionExpired: () => context.go('/login'),
@@ -227,10 +266,6 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
                             // Login Button
                             _buildLoginButton(isLoading),
-                            const SizedBox(height: 16),
-
-                            // Biometric Login
-                            const SizedBox.shrink(),
                             const SizedBox(height: 24),
 
                             // Token Status (for debugging - remove in production)
@@ -488,11 +523,7 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
         ),
         const Spacer(),
         TextButton(
-          onPressed: isLoading
-              ? null
-              : () {
-                  // TODO: Navigate to forgot password page
-                },
+          onPressed: isLoading ? null : () => context.go('/forgot-password'),
           child: Text(
             'نسيت كلمة المرور؟',
             style: TextStyle(color: AppColors.primary),

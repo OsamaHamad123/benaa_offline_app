@@ -22,10 +22,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 // API Client Provider
 final apiClientProvider = Provider<ApiClient>((ref) {
-  final config = ref.watch(appConfigProvider).value;
-  if (config == null) {
-    throw Exception('App config not loaded');
-  }
+  final config = ref.watch(appConfigProvider).requireValue;
   return ApiClient(config);
 });
 
@@ -44,10 +41,7 @@ final sharedPreferencesProvider = FutureProvider<SharedPreferences>((
 // Database Maintenance Service Provider
 final databaseMaintenanceProvider = Provider<DatabaseMaintenanceService>((ref) {
   final db = ref.watch(databaseProvider);
-  final prefs = ref.watch(sharedPreferencesProvider).value;
-  if (prefs == null) {
-    throw Exception('SharedPreferences not loaded');
-  }
+  final prefs = ref.watch(sharedPreferencesProvider).requireValue;
   return DatabaseMaintenanceService(database: db, prefs: prefs);
 });
 
@@ -68,8 +62,8 @@ final databaseReadyProvider = FutureProvider<bool>((ref) async {
 // ============================================================================
 
 // Beneficiaries Search Provider with filters
-final beneficiariesSearchProvider = FutureProvider.family
-    .autoDispose<List<Beneficiary>, BeneficiariesFilter>((ref, filter) async {
+final beneficiariesSearchProvider =
+    FutureProvider.family.autoDispose<List<Beneficiary>, BeneficiariesFilter>((ref, filter) async {
   final db = ref.watch(databaseProvider);
   return await db.beneficiariesDao.searchBeneficiariesFiltered(
     query: filter.searchQuery,
@@ -117,8 +111,7 @@ final notificationsCountProvider = FutureProvider.autoDispose<int>((ref) async {
 });
 
 // Single Beneficiary Provider
-final beneficiaryProvider =
-    FutureProvider.family.autoDispose<Beneficiary?, int>((ref, id) async {
+final beneficiaryProvider = FutureProvider.family.autoDispose<Beneficiary?, int>((ref, id) async {
   final db = ref.watch(databaseProvider);
   return await db.beneficiariesDao.getBeneficiaryById(id);
 });

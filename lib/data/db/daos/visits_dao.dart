@@ -112,4 +112,25 @@ class VisitsDao extends DatabaseAccessor<AppDatabase> with _$VisitsDaoMixin {
 
     return result.read<double>('avg_visits');
   }
+
+  // ============================================================================
+  // SYNC OPERATIONS
+  // ============================================================================
+
+  /// Get visits that need sync
+  Future<List<Visit>> getPendingVisits() async {
+    return await (select(visits)..where((v) => v.syncState.equals('pending') | v.syncState.equals('modified'))).get();
+  }
+
+  /// Update sync status after success
+  Future<void> updateVisitSyncStatus(String id, String serverId) async {
+    await (update(visits)..where((v) => v.id.equals(id))).write(
+      VisitsCompanion(
+        syncState: const Value('synced'),
+        serverId: Value(serverId),
+        lastSyncedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
 }

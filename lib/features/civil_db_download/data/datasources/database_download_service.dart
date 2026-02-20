@@ -2,9 +2,9 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:archive/archive.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../domain/entities/download_progress.dart';
+import '../services/optimized_zip_extractor.dart';
 
 /// 📥 Civil Registry Database Download Service
 /// 🔐 Requires Admin authentication - Bearer Token required
@@ -98,48 +98,66 @@ class DatabaseDownloadService {
         debugPrint('🔐 Using Bearer Token for authenticated download');
       }
 
-      // Download ZIP file with resume support and authentication
-      await _dio.download(
-        downloadUrl,
-        downloadPath,
-        cancelToken: _cancelToken,
-        deleteOnError: false, // Keep partial download
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $authToken',
-            'Accept': 'application/zip, */*',
-            if (downloadedLength > 0) 'Range': 'bytes=$downloadedLength-',
-          },
-        ),
-        onReceiveProgress: (received, total) {
-          if (total != -1) {
-            // Add downloaded length for resume
-            final actualReceived = received + downloadedLength;
-            final actualTotal = total + downloadedLength;
-            final percentage = (actualReceived / actualTotal * 100);
+      // Download ZIP file with resume support, authentication, and retry
+      await RetryHelper.retry(
+        operationName: 'Database Download',
+        maxAttempts: 3,
+        initialDelaySeconds: 3,
+        onRetry: (attempt, error) {
+          onProgress(
+            DownloadProgress(
+              downloadedBytes: 0,
+              totalBytes: 0,
+              percentage: 0,
+              status: DownloadStatus.downloading,
+              errorMessage: 'إعادة المحاولة ($attempt/3)...',
+            ),
+          );
+        },
+        action: () async {
+          await _dio.download(
+            downloadUrl,
+            downloadPath,
+            cancelToken: _cancelToken,
+            deleteOnError: false, // Keep partial download
+            options: Options(
+              headers: {
+                'Authorization': 'Bearer $authToken',
+                'Accept': 'application/zip, */*',
+                if (downloadedLength > 0) 'Range': 'bytes=$downloadedLength-',
+              },
+            ),
+            onReceiveProgress: (received, total) {
+              if (total != -1) {
+                // Add downloaded length for resume
+                final actualReceived = received + downloadedLength;
+                final actualTotal = total + downloadedLength;
+                final percentage = (actualReceived / actualTotal * 100);
 
-            // Calculate speed
-            final now = DateTime.now();
-            final timeDiff = now.difference(lastProgressTime).inMilliseconds;
-            double? speed;
+                // Calculate speed
+                final now = DateTime.now();
+                final timeDiff = now.difference(lastProgressTime).inMilliseconds;
+                double? speed;
 
-            if (timeDiff > 500) {
-              // Update speed every 500ms
-              final bytesDiff = received - lastDownloadedBytes;
-              speed = (bytesDiff / (1024 * 1024)) / (timeDiff / 1000); // MB/s
-              lastDownloadedBytes = received;
-              lastProgressTime = now;
-            }
+                if (timeDiff > 500) {
+                  // Update speed every 500ms
+                  final bytesDiff = received - lastDownloadedBytes;
+                  speed = (bytesDiff / (1024 * 1024)) / (timeDiff / 1000); // MB/s
+                  lastDownloadedBytes = received;
+                  lastProgressTime = now;
+                }
 
-            onProgress(
-              DownloadProgress(
-                downloadedBytes: actualReceived,
-                totalBytes: actualTotal,
-                percentage: percentage,
-                status: DownloadStatus.downloading,
-              )..downloadSpeed = speed,
-            );
-          }
+                onProgress(
+                  DownloadProgress(
+                    downloadedBytes: actualReceived,
+                    totalBytes: actualTotal,
+                    percentage: percentage,
+                    status: DownloadStatus.downloading,
+                  )..downloadSpeed = speed,
+                );
+              }
+            },
+          );
         },
       );
 
@@ -153,7 +171,22 @@ class DatabaseDownloadService {
         ),
       );
 
-      await _extractZipFile(downloadPath, dbDirectory.path);
+      // Extract ZIP file using optimized extractor for large files (4GB+)
+      await OptimizedZipExtractor.extractZipWithProgress(
+        zipPath: downloadPath,
+        outputDir: dbDirectory.path,
+        targetFileName: 'civil_registry.db',
+        onProgress: (progress, currentFile) {
+          onProgress(
+            DownloadProgress(
+              downloadedBytes: 0,
+              totalBytes: 0,
+              percentage: 90 + (progress * 5), // 90-95% for extraction
+              status: DownloadStatus.extracting,
+            ),
+          );
+        },
+      );
 
       // Delete ZIP file
       final zipFile = File(downloadPath);
@@ -240,49 +273,6 @@ class DatabaseDownloadService {
   /// Cancel download
   void cancelDownload() {
     _cancelToken?.cancel('Download cancelled by user');
-  }
-
-  /// Extract ZIP file
-  Future<void> _extractZipFile(String zipPath, String outputDir) async {
-    try {
-      if (kDebugMode) {
-        debugPrint('📦 Extracting ZIP: $zipPath');
-      }
-
-      // Read ZIP file
-      final bytes = await File(zipPath).readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
-
-      // Extract all files and rename if needed
-      for (final file in archive) {
-        final filename = file.name;
-        if (file.isFile) {
-          final data = file.content as List<int>;
-
-          // If file is persons.db, rename to civil_registry.db
-          final outputFilename = filename.toLowerCase() == 'persons.db' ? 'civil_registry.db' : filename;
-
-          final outputFile = File('$outputDir/$outputFilename');
-          await outputFile.create(recursive: true);
-          await outputFile.writeAsBytes(data);
-
-          if (kDebugMode) {
-            debugPrint(
-              '✓ Extracted: $filename${filename != outputFilename ? " → $outputFilename" : ""}',
-            );
-          }
-        }
-      }
-
-      if (kDebugMode) {
-        debugPrint('✅ ZIP extraction complete');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ ZIP extraction error: $e');
-      }
-      rethrow;
-    }
   }
 
   /// Verify database integrity

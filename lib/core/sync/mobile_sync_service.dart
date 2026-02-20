@@ -1,10 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:logger/logger.dart';
 
+import 'package:benaa_offline_app/core/config/api_config.dart';
 import '../../data/db/drift_database.dart';
 import '../mappers/beneficiary_sync_mapper.dart' as mapper;
+import '../mappers/visit_sync_mapper.dart' as visit_mapper;
+import '../storage/secure_storage.dart';
+import '../../features/sync/services/file_id_service.dart';
+import '../../features/taxonomies/domain/repositories/taxonomy_repository.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Service - للمزامنة مع Mobile Sync API
@@ -25,19 +31,29 @@ import '../mappers/beneficiary_sync_mapper.dart' as mapper;
 class MobileSyncService {
   final AppDatabase _db;
   final Dio _dio;
+  final SecureStorage _storage;
+  final FileIdService? _fileIdService;
+  final TaxonomyRepository? _taxonomyRepository;
   final Logger _logger = Logger();
 
   // Sync state
   final _statusController = StreamController<MobileSyncStatus>.broadcast();
   MobileSyncStatus _currentStatus = MobileSyncStatus();
 
-  MobileSyncService(this._db, {Dio? dio})
-      : _dio = dio ??
+  MobileSyncService(
+    this._db,
+    this._storage, {
+    Dio? dio,
+    FileIdService? fileIdService,
+    TaxonomyRepository? taxonomyRepository,
+  })  : _fileIdService = fileIdService,
+        _taxonomyRepository = taxonomyRepository,
+        _dio = dio ??
             Dio(
               BaseOptions(
-                baseUrl: 'https://palestine.benaadev.org',
-                connectTimeout: const Duration(seconds: 30),
-                receiveTimeout: const Duration(seconds: 30),
+                baseUrl: ApiConfig.defaultBaseUrl,
+                connectTimeout: ApiConfig.connectTimeout,
+                receiveTimeout: ApiConfig.receiveTimeout,
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',
@@ -68,6 +84,38 @@ class MobileSyncService {
     );
 
     try {
+      // 1. Sync Taxonomies (Lookups)
+      if (_taxonomyRepository != null) {
+        _logger.i('Syncing taxonomies...');
+        _updateStatus(
+          _currentStatus.copyWith(
+            currentOperation: 'جاري تحديث القوائم والتصنيفات...',
+            progress: 0.1,
+          ),
+        );
+        try {
+          await _taxonomyRepository.syncFromServer();
+        } catch (e) {
+          _logger.w('Taxonomy sync failed (non-critical): $e');
+        }
+      }
+
+      // 2. Check File IDs
+      if (_fileIdService != null) {
+        _logger.i('Checking file ID reservation...');
+        _updateStatus(
+          _currentStatus.copyWith(
+            currentOperation: 'جاري التحقق من مخزون الأرقام...',
+            progress: 0.2,
+          ),
+        );
+        try {
+          await _fileIdService.ensureReservation();
+        } catch (e) {
+          _logger.w('File ID reservation failed (non-critical): $e');
+        }
+      }
+
       // Sync beneficiaries directly
       _updateStatus(
         _currentStatus.copyWith(
@@ -112,8 +160,8 @@ class MobileSyncService {
 
     try {
       while (true) {
-        // Fetch page using correct endpoint from Postman collection
-        final endpoint = '/api/mobile-sync/table/sy_benaa_application';
+        // Fetch page using correct endpoint from ApiConfig
+        final endpoint = ApiConfig.syncEndpoint;
         final fullUrl = '${_dio.options.baseUrl}$endpoint';
 
         _logger.i('Fetching page $page from: $fullUrl');
@@ -150,11 +198,8 @@ class MobileSyncService {
 
             // Check if exists by serverId
             final serverIdRaw = record['id'];
-            final serverId = serverIdRaw is int
-                ? serverIdRaw
-                : (serverIdRaw != null
-                    ? int.tryParse(serverIdRaw.toString())
-                    : null);
+            final serverId =
+                serverIdRaw is int ? serverIdRaw : (serverIdRaw != null ? int.tryParse(serverIdRaw.toString()) : null);
             if (serverId != null) {
               final existing = await (_db.select(
                 _db.beneficiaries,
@@ -187,8 +232,7 @@ class MobileSyncService {
 
         // Check if more pages
         final pagination = data['pagination'] as Map<String, dynamic>?;
-        if (pagination == null ||
-            pagination['current_page'] == pagination['last_page']) {
+        if (pagination == null || pagination['current_page'] == pagination['last_page']) {
           break;
         }
 
@@ -207,15 +251,15 @@ class MobileSyncService {
   }
 
   // ========================================================================
-  // 🔼 SYNC UP - رفع التغييرات المحلية للسيرفر
+  // 🔼 BATCH SYNC UP - رفع التغييرات المحلية مجمعة
   // ========================================================================
 
-  /// رفع المستفيدين المحليين للسيرفر
+  /// رفع المستفيدين المحليين للسيرفر باستخدام الـ Batch API
   Future<MobileSyncResult> syncUp() async {
     _updateStatus(
       _currentStatus.copyWith(
         isSyncing: true,
-        currentOperation: 'جاري رفع التغييرات للسيرفر...',
+        currentOperation: 'جاري رفع التغييرات (Batch Sync)...',
         progress: 0.0,
       ),
     );
@@ -224,11 +268,11 @@ class MobileSyncService {
       // Get local beneficiaries that need sync (pending or modified)
       final localBeneficiaries = await (_db.select(_db.beneficiaries)
             ..where(
-              (b) =>
-                  b.syncState.equals('pending') |
-                  b.syncState.equals('modified'),
+              (b) => b.syncState.equals('pending') | b.syncState.equals('modified'),
             ))
           .get();
+
+      final deviceId = await _storage.getDeviceId(); // 🆔 Get real device ID
 
       _logger.i('Found ${localBeneficiaries.length} beneficiaries to upload');
 
@@ -243,108 +287,84 @@ class MobileSyncService {
         return MobileSyncResult(success: true, recordsSynced: 0);
       }
 
+      // Process in batches
+      final batchSize = ApiConfig.batchSize;
       int uploaded = 0;
       int failed = 0;
 
-      for (int i = 0; i < localBeneficiaries.length; i++) {
-        final beneficiary = localBeneficiaries[i];
+      for (int i = 0; i < localBeneficiaries.length; i += batchSize) {
+        final end = (i + batchSize < localBeneficiaries.length) ? i + batchSize : localBeneficiaries.length;
+        final batch = localBeneficiaries.sublist(i, end);
 
         _updateStatus(
           _currentStatus.copyWith(
-            currentOperation: 'رفع ${i + 1}/${localBeneficiaries.length}...',
-            progress: (i + 1) / localBeneficiaries.length,
+            currentOperation: 'جاري رفع الدفعة ${(i ~/ batchSize) + 1}...',
+            progress: (i + batch.length) / localBeneficiaries.length,
           ),
         );
 
         try {
-          // Convert to backend format
-          final backendData = mapper.BeneficiaryMapper.toBackend(beneficiary);
+          // Convert batch to backend format
+          final dataList = batch.map((b) => mapper.BeneficiaryMapper.toBackend(b)).toList();
 
-          // Check if needs update or create
-          if (beneficiary.serverId != null) {
-            // Update existing record using correct endpoint
-            final response = await _dio.put(
-              '/api/mobile-sync/table/sy_benaa_application/${beneficiary.serverId}',
-              data: backendData,
+          final response = await _dio.post(
+            ApiConfig.batchDataSyncEndpoint,
+            data: {
+              'records': dataList,
+              'device_id': deviceId, // ✅ Using real device ID
+            },
+          );
+
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            // Mark these records as synced in DB
+            final ids = batch.map((b) => b.id).toList();
+            await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
+              BeneficiariesCompanion(
+                syncState: const drift.Value('synced'),
+                lastSyncedAt: drift.Value(DateTime.now()),
+              ),
             );
 
-            if (response.statusCode == 200) {
-              // Mark as synced
-              await (_db.update(
-                _db.beneficiaries,
-              )..where((b) => b.id.equals(beneficiary.id)))
-                  .write(
-                BeneficiariesCompanion(
-                  syncState: const drift.Value('synced'),
-                  lastSyncedAt: drift.Value(DateTime.now()),
-                ),
-              );
-              uploaded++;
-              _logger.i(
-                '✅ Updated beneficiary ${beneficiary.id} (serverId: ${beneficiary.serverId})',
-              );
-            } else {
-              failed++;
-              _logger.w('Failed to update ${beneficiary.id}: ${response.data}');
-            }
+            uploaded += batch.length;
+            _logger.i('✅ Synced batch of ${batch.length} records');
           } else {
-            // Create new record using correct endpoint
-            final response = await _dio.post(
-              '/api/mobile-sync/table/sy_benaa_application',
-              data: backendData,
-            );
-
-            if (response.statusCode == 201 || response.statusCode == 200) {
-              final responseData = response.data as Map<String, dynamic>;
-
-              // API returns {success: true, message: "...", id: X}
-              final serverIdRaw = responseData['id'];
-              final serverId = serverIdRaw is int
-                  ? serverIdRaw
-                  : (serverIdRaw != null
-                      ? int.tryParse(serverIdRaw.toString())
-                      : null);
-
-              // Update with serverId and mark as synced
-              await (_db.update(
-                _db.beneficiaries,
-              )..where((b) => b.id.equals(beneficiary.id)))
-                  .write(
-                BeneficiariesCompanion(
-                  serverId: drift.Value(serverId),
-                  syncState: const drift.Value('synced'),
-                  lastSyncedAt: drift.Value(DateTime.now()),
-                ),
-              );
-              uploaded++;
-              _logger.i(
-                '✅ Created beneficiary ${beneficiary.id} with serverId $serverId',
-              );
-            } else {
-              failed++;
-              _logger.w('Failed to create ${beneficiary.id}: ${response.data}');
-            }
+            failed += batch.length;
+            _logger.w('❌ Sync batch failed: ${response.data}');
           }
         } catch (e) {
-          failed++;
-
-          // Check if it's a 404 error (endpoint not available)
-          if (e.toString().contains('404')) {
-            _logger.w(
-              '⚠️ Sync endpoint not available on server (404) - beneficiary ${beneficiary.id} not uploaded',
-            );
-          } else {
-            _logger.w('Error uploading ${beneficiary.id}: $e');
-          }
+          failed += batch.length;
+          _logger.e('Error syncing batch', error: e);
         }
       }
+
+      // 1.5️⃣ Upload Visits
+      _updateStatus(
+        _currentStatus.copyWith(
+          currentOperation: 'جاري رفع الزيارات...',
+          progress: 0.6,
+        ),
+      );
+
+      final visitsResult = await _syncVisitsUp(deviceId);
+      uploaded += visitsResult.recordsSynced;
+      failed += visitsResult.recordsFailed;
+
+      // 2️⃣ Upload Attachments
+      _updateStatus(
+        _currentStatus.copyWith(
+          currentOperation: 'جاري رفع المرفقات...',
+          progress: 0.8,
+        ),
+      );
+
+      final attachmentResult = await _syncAttachmentsUp(deviceId);
+      uploaded += attachmentResult.recordsSynced;
+      failed += attachmentResult.recordsFailed;
 
       _updateStatus(
         _currentStatus.copyWith(
           isSyncing: false,
-          currentOperation: failed > 0
-              ? 'تم رفع $uploaded سجل (فشل $failed - السيرفر لا يدعم الرفع حالياً)'
-              : 'تم رفع $uploaded سجل بنجاح ✓',
+          currentOperation: failed > 0 ? 'تم رفع $uploaded سجل (فشل $failed)' : 'تم رفع $uploaded سجل بنجاح ✓',
           progress: 1.0,
           lastSyncAt: DateTime.now(),
         ),
@@ -357,16 +377,131 @@ class MobileSyncService {
       );
     } catch (e, stack) {
       _logger.e('Sync up failed', error: e, stackTrace: stack);
+      _updateStatus(_currentStatus.copyWith(isSyncing: false, lastError: e.toString()));
+      return MobileSyncResult(success: false, recordsSynced: 0, error: e.toString());
+    }
+  }
 
-      _updateStatus(
-        _currentStatus.copyWith(isSyncing: false, lastError: e.toString()),
-      );
+  /// مزامنة المرفقات محلية الرفع للسيرفر
+  Future<MobileSyncResult> _syncAttachmentsUp(String deviceId) async {
+    int uploaded = 0;
+    int failedCount = 0;
+
+    try {
+      final pendingAttachments = await _db.attachmentsDao.getPendingAttachments();
+      _logger.i('Found ${pendingAttachments.length} attachments to upload');
+
+      for (final attachment in pendingAttachments) {
+        try {
+          final file = File(attachment.filePath);
+          if (!await file.exists()) {
+            _logger.w('File not found: ${attachment.filePath}');
+            failedCount++;
+            continue;
+          }
+
+          final formData = FormData.fromMap({
+            'file': await MultipartFile.fromFile(file.path, filename: attachment.fileName),
+            'entity_type': 'beneficiary',
+            'entity_id': attachment.beneficiaryId,
+            'device_id': deviceId,
+            'document_type': attachment.documentType,
+            'notes': attachment.notes,
+          });
+
+          final response = await _dio.post(
+            ApiConfig.attachmentUploadEndpoint,
+            data: formData,
+          );
+
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            final serverUrl = response.data['url'] as String?;
+            await _db.attachmentsDao.updateAttachmentSyncState(
+              attachment.id,
+              'synced',
+              serverUrl: serverUrl,
+            );
+            uploaded++;
+          } else {
+            failedCount++;
+            _logger.w('Failed to upload attachment ${attachment.id}: ${response.statusCode}');
+          }
+        } catch (e) {
+          _logger.w('Error uploading attachment ${attachment.id}: $e');
+          failedCount++;
+        }
+      }
 
       return MobileSyncResult(
-        success: false,
-        recordsSynced: 0,
-        error: e.toString(),
+        success: failedCount == 0,
+        recordsSynced: uploaded,
+        recordsFailed: failedCount,
       );
+    } catch (e) {
+      _logger.e('Attachments sync up failed', error: e);
+      return MobileSyncResult(success: false, recordsSynced: 0, error: e.toString());
+    }
+  }
+
+  /// مزامنة الزيارات محلية الرفع للسيرفر
+  Future<MobileSyncResult> _syncVisitsUp(String deviceId) async {
+    int uploaded = 0;
+    int failedCount = 0;
+
+    try {
+      final pendingVisits = await _db.visitsDao.getPendingVisits();
+      _logger.i('Found ${pendingVisits.length} visits to upload');
+
+      if (pendingVisits.isEmpty) {
+        return MobileSyncResult(success: true, recordsSynced: 0);
+      }
+
+      // Process in batches
+      final batchSize = ApiConfig.batchSize;
+      for (int i = 0; i < pendingVisits.length; i += batchSize) {
+        final end = (i + batchSize < pendingVisits.length) ? i + batchSize : pendingVisits.length;
+        final batch = pendingVisits.sublist(i, end);
+        final dataList = batch.map(visit_mapper.VisitSyncMapper.toBackend).toList();
+
+        try {
+          final response = await _dio.post(
+            ApiConfig.visitsBatchSyncEndpoint,
+            data: {
+              'records': dataList,
+              'device_id': deviceId,
+            },
+          );
+
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            final results = response.data['results'] as List?;
+            if (results != null) {
+              for (var res in results) {
+                final localId = res['local_id']?.toString();
+                final serverId = res['id']?.toString();
+                if (localId != null && serverId != null) {
+                  await _db.visitsDao.updateVisitSyncStatus(localId, serverId);
+                  uploaded++;
+                }
+              }
+            }
+          } else {
+            failedCount += batch.length;
+            _logger.w('❌ Visits sync batch failed: ${response.statusCode}');
+          }
+        } catch (e) {
+          failedCount += batch.length;
+          _logger.e('Error syncing visits batch', error: e);
+        }
+      }
+
+      return MobileSyncResult(
+        success: failedCount == 0,
+        recordsSynced: uploaded,
+        recordsFailed: failedCount,
+      );
+    } catch (e) {
+      _logger.e('Visits sync up failed', error: e);
+      return MobileSyncResult(success: false, recordsSynced: 0, error: e.toString());
     }
   }
 

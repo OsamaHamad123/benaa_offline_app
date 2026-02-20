@@ -68,6 +68,8 @@ class FetchCivilRegistryDataUseCase {
         return 'خطأ في الخادم';
       case CivilRegistryErrorType.timeout:
         return 'انتهت مهلة الاتصال';
+      case CivilRegistryErrorType.databaseNotAvailable:
+        return 'قاعدة بيانات السجل المدني غير متوفرة. يرجى تحميلها من الإعدادات.';
       case CivilRegistryErrorType.unknown:
         return 'حدث خطأ غير معروف';
     }

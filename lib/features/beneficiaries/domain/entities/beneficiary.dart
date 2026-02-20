@@ -31,6 +31,7 @@ class Beneficiary {
 
   // Additional Info
   final String? fileNo;
+  final String? fileIdNumber; // 🆔 المعرف الرسمي المحجوز من السيرفر
   final String? associationName;
   final MaritalStatus? maritalStatus;
   final EducationLevel? educationLevel;
@@ -81,6 +82,7 @@ class Beneficiary {
     this.currentAddress,
     this.addressBeforeDisplacement,
     this.fileNo,
+    this.fileIdNumber,
     this.associationName,
     this.maritalStatus,
     this.educationLevel,
@@ -187,6 +189,7 @@ class Beneficiary {
     String? currentAddress,
     String? addressBeforeDisplacement,
     String? fileNo,
+    String? fileIdNumber,
     String? associationName,
     MaritalStatus? maritalStatus,
     EducationLevel? educationLevel,
@@ -226,6 +229,7 @@ class Beneficiary {
       currentAddress: currentAddress ?? this.currentAddress,
       addressBeforeDisplacement: addressBeforeDisplacement ?? this.addressBeforeDisplacement,
       fileNo: fileNo ?? this.fileNo,
+      fileIdNumber: fileIdNumber ?? this.fileIdNumber,
       associationName: associationName ?? this.associationName,
       maritalStatus: maritalStatus ?? this.maritalStatus,
       educationLevel: educationLevel ?? this.educationLevel,

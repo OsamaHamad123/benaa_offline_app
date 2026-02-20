@@ -9499,6 +9499,394 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
   }
 }
 
+class $FileIdReservationTableTable extends FileIdReservationTable
+    with TableInfo<$FileIdReservationTableTable, FileIdReservation> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FileIdReservationTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _fileIdMeta = const VerificationMeta('fileId');
+  @override
+  late final GeneratedColumn<int> fileId = GeneratedColumn<int>(
+      'file_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, false,
+      additionalChecks:
+          GeneratedColumn.checkTextLength(minTextLength: 1, maxTextLength: 20),
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('available'));
+  static const VerificationMeta _beneficiaryIdMeta =
+      const VerificationMeta('beneficiaryId');
+  @override
+  late final GeneratedColumn<int> beneficiaryId = GeneratedColumn<int>(
+      'beneficiary_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES beneficiaries (id)'));
+  static const VerificationMeta _reservedAtMeta =
+      const VerificationMeta('reservedAt');
+  @override
+  late final GeneratedColumn<DateTime> reservedAt = GeneratedColumn<DateTime>(
+      'reserved_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _usedAtMeta = const VerificationMeta('usedAt');
+  @override
+  late final GeneratedColumn<DateTime> usedAt = GeneratedColumn<DateTime>(
+      'used_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _syncedAtMeta =
+      const VerificationMeta('syncedAt');
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+      'synced_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, fileId, status, beneficiaryId, reservedAt, usedAt, syncedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'file_id_reservations';
+  @override
+  VerificationContext validateIntegrity(Insertable<FileIdReservation> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('file_id')) {
+      context.handle(_fileIdMeta,
+          fileId.isAcceptableOrUnknown(data['file_id']!, _fileIdMeta));
+    } else if (isInserting) {
+      context.missing(_fileIdMeta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('beneficiary_id')) {
+      context.handle(
+          _beneficiaryIdMeta,
+          beneficiaryId.isAcceptableOrUnknown(
+              data['beneficiary_id']!, _beneficiaryIdMeta));
+    }
+    if (data.containsKey('reserved_at')) {
+      context.handle(
+          _reservedAtMeta,
+          reservedAt.isAcceptableOrUnknown(
+              data['reserved_at']!, _reservedAtMeta));
+    }
+    if (data.containsKey('used_at')) {
+      context.handle(_usedAtMeta,
+          usedAt.isAcceptableOrUnknown(data['used_at']!, _usedAtMeta));
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(_syncedAtMeta,
+          syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  FileIdReservation map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FileIdReservation(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      fileId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}file_id'])!,
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
+      beneficiaryId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}beneficiary_id']),
+      reservedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}reserved_at'])!,
+      usedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}used_at']),
+      syncedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}synced_at']),
+    );
+  }
+
+  @override
+  $FileIdReservationTableTable createAlias(String alias) {
+    return $FileIdReservationTableTable(attachedDatabase, alias);
+  }
+}
+
+class FileIdReservation extends DataClass
+    implements Insertable<FileIdReservation> {
+  final int id;
+  final int fileId;
+  final String status;
+  final int? beneficiaryId;
+  final DateTime reservedAt;
+  final DateTime? usedAt;
+  final DateTime? syncedAt;
+  const FileIdReservation(
+      {required this.id,
+      required this.fileId,
+      required this.status,
+      this.beneficiaryId,
+      required this.reservedAt,
+      this.usedAt,
+      this.syncedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['file_id'] = Variable<int>(fileId);
+    map['status'] = Variable<String>(status);
+    if (!nullToAbsent || beneficiaryId != null) {
+      map['beneficiary_id'] = Variable<int>(beneficiaryId);
+    }
+    map['reserved_at'] = Variable<DateTime>(reservedAt);
+    if (!nullToAbsent || usedAt != null) {
+      map['used_at'] = Variable<DateTime>(usedAt);
+    }
+    if (!nullToAbsent || syncedAt != null) {
+      map['synced_at'] = Variable<DateTime>(syncedAt);
+    }
+    return map;
+  }
+
+  FileIdReservationTableCompanion toCompanion(bool nullToAbsent) {
+    return FileIdReservationTableCompanion(
+      id: Value(id),
+      fileId: Value(fileId),
+      status: Value(status),
+      beneficiaryId: beneficiaryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(beneficiaryId),
+      reservedAt: Value(reservedAt),
+      usedAt:
+          usedAt == null && nullToAbsent ? const Value.absent() : Value(usedAt),
+      syncedAt: syncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedAt),
+    );
+  }
+
+  factory FileIdReservation.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FileIdReservation(
+      id: serializer.fromJson<int>(json['id']),
+      fileId: serializer.fromJson<int>(json['fileId']),
+      status: serializer.fromJson<String>(json['status']),
+      beneficiaryId: serializer.fromJson<int?>(json['beneficiaryId']),
+      reservedAt: serializer.fromJson<DateTime>(json['reservedAt']),
+      usedAt: serializer.fromJson<DateTime?>(json['usedAt']),
+      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'fileId': serializer.toJson<int>(fileId),
+      'status': serializer.toJson<String>(status),
+      'beneficiaryId': serializer.toJson<int?>(beneficiaryId),
+      'reservedAt': serializer.toJson<DateTime>(reservedAt),
+      'usedAt': serializer.toJson<DateTime?>(usedAt),
+      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+    };
+  }
+
+  FileIdReservation copyWith(
+          {int? id,
+          int? fileId,
+          String? status,
+          Value<int?> beneficiaryId = const Value.absent(),
+          DateTime? reservedAt,
+          Value<DateTime?> usedAt = const Value.absent(),
+          Value<DateTime?> syncedAt = const Value.absent()}) =>
+      FileIdReservation(
+        id: id ?? this.id,
+        fileId: fileId ?? this.fileId,
+        status: status ?? this.status,
+        beneficiaryId:
+            beneficiaryId.present ? beneficiaryId.value : this.beneficiaryId,
+        reservedAt: reservedAt ?? this.reservedAt,
+        usedAt: usedAt.present ? usedAt.value : this.usedAt,
+        syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+      );
+  FileIdReservation copyWithCompanion(FileIdReservationTableCompanion data) {
+    return FileIdReservation(
+      id: data.id.present ? data.id.value : this.id,
+      fileId: data.fileId.present ? data.fileId.value : this.fileId,
+      status: data.status.present ? data.status.value : this.status,
+      beneficiaryId: data.beneficiaryId.present
+          ? data.beneficiaryId.value
+          : this.beneficiaryId,
+      reservedAt:
+          data.reservedAt.present ? data.reservedAt.value : this.reservedAt,
+      usedAt: data.usedAt.present ? data.usedAt.value : this.usedAt,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileIdReservation(')
+          ..write('id: $id, ')
+          ..write('fileId: $fileId, ')
+          ..write('status: $status, ')
+          ..write('beneficiaryId: $beneficiaryId, ')
+          ..write('reservedAt: $reservedAt, ')
+          ..write('usedAt: $usedAt, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, fileId, status, beneficiaryId, reservedAt, usedAt, syncedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FileIdReservation &&
+          other.id == this.id &&
+          other.fileId == this.fileId &&
+          other.status == this.status &&
+          other.beneficiaryId == this.beneficiaryId &&
+          other.reservedAt == this.reservedAt &&
+          other.usedAt == this.usedAt &&
+          other.syncedAt == this.syncedAt);
+}
+
+class FileIdReservationTableCompanion
+    extends UpdateCompanion<FileIdReservation> {
+  final Value<int> id;
+  final Value<int> fileId;
+  final Value<String> status;
+  final Value<int?> beneficiaryId;
+  final Value<DateTime> reservedAt;
+  final Value<DateTime?> usedAt;
+  final Value<DateTime?> syncedAt;
+  const FileIdReservationTableCompanion({
+    this.id = const Value.absent(),
+    this.fileId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.beneficiaryId = const Value.absent(),
+    this.reservedAt = const Value.absent(),
+    this.usedAt = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+  });
+  FileIdReservationTableCompanion.insert({
+    this.id = const Value.absent(),
+    required int fileId,
+    this.status = const Value.absent(),
+    this.beneficiaryId = const Value.absent(),
+    this.reservedAt = const Value.absent(),
+    this.usedAt = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+  }) : fileId = Value(fileId);
+  static Insertable<FileIdReservation> custom({
+    Expression<int>? id,
+    Expression<int>? fileId,
+    Expression<String>? status,
+    Expression<int>? beneficiaryId,
+    Expression<DateTime>? reservedAt,
+    Expression<DateTime>? usedAt,
+    Expression<DateTime>? syncedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (fileId != null) 'file_id': fileId,
+      if (status != null) 'status': status,
+      if (beneficiaryId != null) 'beneficiary_id': beneficiaryId,
+      if (reservedAt != null) 'reserved_at': reservedAt,
+      if (usedAt != null) 'used_at': usedAt,
+      if (syncedAt != null) 'synced_at': syncedAt,
+    });
+  }
+
+  FileIdReservationTableCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? fileId,
+      Value<String>? status,
+      Value<int?>? beneficiaryId,
+      Value<DateTime>? reservedAt,
+      Value<DateTime?>? usedAt,
+      Value<DateTime?>? syncedAt}) {
+    return FileIdReservationTableCompanion(
+      id: id ?? this.id,
+      fileId: fileId ?? this.fileId,
+      status: status ?? this.status,
+      beneficiaryId: beneficiaryId ?? this.beneficiaryId,
+      reservedAt: reservedAt ?? this.reservedAt,
+      usedAt: usedAt ?? this.usedAt,
+      syncedAt: syncedAt ?? this.syncedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (fileId.present) {
+      map['file_id'] = Variable<int>(fileId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (beneficiaryId.present) {
+      map['beneficiary_id'] = Variable<int>(beneficiaryId.value);
+    }
+    if (reservedAt.present) {
+      map['reserved_at'] = Variable<DateTime>(reservedAt.value);
+    }
+    if (usedAt.present) {
+      map['used_at'] = Variable<DateTime>(usedAt.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FileIdReservationTableCompanion(')
+          ..write('id: $id, ')
+          ..write('fileId: $fileId, ')
+          ..write('status: $status, ')
+          ..write('beneficiaryId: $beneficiaryId, ')
+          ..write('reservedAt: $reservedAt, ')
+          ..write('usedAt: $usedAt, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9518,6 +9906,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $AssociationRepresentativesTable(this);
   late final $AssociationsTable associations = $AssociationsTable(this);
   late final $SponsorshipsTable sponsorships = $SponsorshipsTable(this);
+  late final $FileIdReservationTableTable fileIdReservationTable =
+      $FileIdReservationTableTable(this);
   late final BeneficiariesDao beneficiariesDao =
       BeneficiariesDao(this as AppDatabase);
   late final VisitsDao visitsDao = VisitsDao(this as AppDatabase);
@@ -9536,6 +9926,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       AssociationsDao(this as AppDatabase);
   late final SponsorshipsDao sponsorshipsDao =
       SponsorshipsDao(this as AppDatabase);
+  late final FileIdReservationDao fileIdReservationDao =
+      FileIdReservationDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9552,7 +9944,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         familyMembersTable,
         associationRepresentatives,
         associations,
-        sponsorships
+        sponsorships,
+        fileIdReservationTable
       ];
 }
 
@@ -9657,6 +10050,25 @@ final class $$BeneficiariesTableReferences
         .filter((f) => f.beneficiaryId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_sponsorshipsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
+  static MultiTypedResultKey<$FileIdReservationTableTable,
+      List<FileIdReservation>> _fileIdReservationTableRefsTable(
+          _$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(db.fileIdReservationTable,
+          aliasName: $_aliasNameGenerator(
+              db.beneficiaries.id, db.fileIdReservationTable.beneficiaryId));
+
+  $$FileIdReservationTableTableProcessedTableManager
+      get fileIdReservationTableRefs {
+    final manager = $$FileIdReservationTableTableTableManager(
+            $_db, $_db.fileIdReservationTable)
+        .filter((f) => f.beneficiaryId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_fileIdReservationTableRefsTable($_db));
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
@@ -9825,6 +10237,29 @@ class $$BeneficiariesTableFilterComposer
               $removeJoinBuilderFromRootComposer:
                   $removeJoinBuilderFromRootComposer,
             ));
+    return f(composer);
+  }
+
+  Expression<bool> fileIdReservationTableRefs(
+      Expression<bool> Function($$FileIdReservationTableTableFilterComposer f)
+          f) {
+    final $$FileIdReservationTableTableFilterComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.fileIdReservationTable,
+            getReferencedColumn: (t) => t.beneficiaryId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$FileIdReservationTableTableFilterComposer(
+                  $db: $db,
+                  $table: $db.fileIdReservationTable,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
     return f(composer);
   }
 }
@@ -10136,6 +10571,29 @@ class $$BeneficiariesTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> fileIdReservationTableRefs<T extends Object>(
+      Expression<T> Function($$FileIdReservationTableTableAnnotationComposer a)
+          f) {
+    final $$FileIdReservationTableTableAnnotationComposer composer =
+        $composerBuilder(
+            composer: this,
+            getCurrentColumn: (t) => t.id,
+            referencedTable: $db.fileIdReservationTable,
+            getReferencedColumn: (t) => t.beneficiaryId,
+            builder: (joinBuilder,
+                    {$addJoinBuilderToRootComposer,
+                    $removeJoinBuilderFromRootComposer}) =>
+                $$FileIdReservationTableTableAnnotationComposer(
+                  $db: $db,
+                  $table: $db.fileIdReservationTable,
+                  $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                  joinBuilder: joinBuilder,
+                  $removeJoinBuilderFromRootComposer:
+                      $removeJoinBuilderFromRootComposer,
+                ));
+    return f(composer);
+  }
 }
 
 class $$BeneficiariesTableTableManager extends RootTableManager<
@@ -10149,7 +10607,8 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
     $$BeneficiariesTableUpdateCompanionBuilder,
     (Beneficiary, $$BeneficiariesTableReferences),
     Beneficiary,
-    PrefetchHooks Function({bool sponsorshipsRefs})> {
+    PrefetchHooks Function(
+        {bool sponsorshipsRefs, bool fileIdReservationTableRefs})> {
   $$BeneficiariesTableTableManager(_$AppDatabase db, $BeneficiariesTable table)
       : super(TableManagerState(
           db: db,
@@ -10334,10 +10793,14 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
                     $$BeneficiariesTableReferences(db, table, e)
                   ))
               .toList(),
-          prefetchHooksCallback: ({sponsorshipsRefs = false}) {
+          prefetchHooksCallback: (
+              {sponsorshipsRefs = false, fileIdReservationTableRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (sponsorshipsRefs) db.sponsorships],
+              explicitlyWatchedTables: [
+                if (sponsorshipsRefs) db.sponsorships,
+                if (fileIdReservationTableRefs) db.fileIdReservationTable
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -10350,6 +10813,19 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
                         managerFromTypedResult: (p0) =>
                             $$BeneficiariesTableReferences(db, table, p0)
                                 .sponsorshipsRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.beneficiaryId == item.id),
+                        typedResults: items),
+                  if (fileIdReservationTableRefs)
+                    await $_getPrefetchedData<Beneficiary, $BeneficiariesTable,
+                            FileIdReservation>(
+                        currentTable: table,
+                        referencedTable: $$BeneficiariesTableReferences
+                            ._fileIdReservationTableRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$BeneficiariesTableReferences(db, table, p0)
+                                .fileIdReservationTableRefs,
                         referencedItemsForCurrentItem:
                             (item, referencedItems) => referencedItems
                                 .where((e) => e.beneficiaryId == item.id),
@@ -10372,7 +10848,8 @@ typedef $$BeneficiariesTableProcessedTableManager = ProcessedTableManager<
     $$BeneficiariesTableUpdateCompanionBuilder,
     (Beneficiary, $$BeneficiariesTableReferences),
     Beneficiary,
-    PrefetchHooks Function({bool sponsorshipsRefs})>;
+    PrefetchHooks Function(
+        {bool sponsorshipsRefs, bool fileIdReservationTableRefs})>;
 typedef $$VisitsTableCreateCompanionBuilder = VisitsCompanion Function({
   required String id,
   required String beneficiaryId,
@@ -14237,6 +14714,312 @@ typedef $$SponsorshipsTableProcessedTableManager = ProcessedTableManager<
     (Sponsorship, $$SponsorshipsTableReferences),
     Sponsorship,
     PrefetchHooks Function({bool beneficiaryId, bool associationId})>;
+typedef $$FileIdReservationTableTableCreateCompanionBuilder
+    = FileIdReservationTableCompanion Function({
+  Value<int> id,
+  required int fileId,
+  Value<String> status,
+  Value<int?> beneficiaryId,
+  Value<DateTime> reservedAt,
+  Value<DateTime?> usedAt,
+  Value<DateTime?> syncedAt,
+});
+typedef $$FileIdReservationTableTableUpdateCompanionBuilder
+    = FileIdReservationTableCompanion Function({
+  Value<int> id,
+  Value<int> fileId,
+  Value<String> status,
+  Value<int?> beneficiaryId,
+  Value<DateTime> reservedAt,
+  Value<DateTime?> usedAt,
+  Value<DateTime?> syncedAt,
+});
+
+final class $$FileIdReservationTableTableReferences extends BaseReferences<
+    _$AppDatabase, $FileIdReservationTableTable, FileIdReservation> {
+  $$FileIdReservationTableTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $BeneficiariesTable _beneficiaryIdTable(_$AppDatabase db) =>
+      db.beneficiaries.createAlias($_aliasNameGenerator(
+          db.fileIdReservationTable.beneficiaryId, db.beneficiaries.id));
+
+  $$BeneficiariesTableProcessedTableManager? get beneficiaryId {
+    final $_column = $_itemColumn<int>('beneficiary_id');
+    if ($_column == null) return null;
+    final manager = $$BeneficiariesTableTableManager($_db, $_db.beneficiaries)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_beneficiaryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$FileIdReservationTableTableFilterComposer
+    extends Composer<_$AppDatabase, $FileIdReservationTableTable> {
+  $$FileIdReservationTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get fileId => $composableBuilder(
+      column: $table.fileId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get reservedAt => $composableBuilder(
+      column: $table.reservedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get usedAt => $composableBuilder(
+      column: $table.usedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+      column: $table.syncedAt, builder: (column) => ColumnFilters(column));
+
+  $$BeneficiariesTableFilterComposer get beneficiaryId {
+    final $$BeneficiariesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.beneficiaryId,
+        referencedTable: $db.beneficiaries,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BeneficiariesTableFilterComposer(
+              $db: $db,
+              $table: $db.beneficiaries,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$FileIdReservationTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $FileIdReservationTableTable> {
+  $$FileIdReservationTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get fileId => $composableBuilder(
+      column: $table.fileId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get status => $composableBuilder(
+      column: $table.status, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get reservedAt => $composableBuilder(
+      column: $table.reservedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get usedAt => $composableBuilder(
+      column: $table.usedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+      column: $table.syncedAt, builder: (column) => ColumnOrderings(column));
+
+  $$BeneficiariesTableOrderingComposer get beneficiaryId {
+    final $$BeneficiariesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.beneficiaryId,
+        referencedTable: $db.beneficiaries,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BeneficiariesTableOrderingComposer(
+              $db: $db,
+              $table: $db.beneficiaries,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$FileIdReservationTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FileIdReservationTableTable> {
+  $$FileIdReservationTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get fileId =>
+      $composableBuilder(column: $table.fileId, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get reservedAt => $composableBuilder(
+      column: $table.reservedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get usedAt =>
+      $composableBuilder(column: $table.usedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  $$BeneficiariesTableAnnotationComposer get beneficiaryId {
+    final $$BeneficiariesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.beneficiaryId,
+        referencedTable: $db.beneficiaries,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BeneficiariesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.beneficiaries,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$FileIdReservationTableTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $FileIdReservationTableTable,
+    FileIdReservation,
+    $$FileIdReservationTableTableFilterComposer,
+    $$FileIdReservationTableTableOrderingComposer,
+    $$FileIdReservationTableTableAnnotationComposer,
+    $$FileIdReservationTableTableCreateCompanionBuilder,
+    $$FileIdReservationTableTableUpdateCompanionBuilder,
+    (FileIdReservation, $$FileIdReservationTableTableReferences),
+    FileIdReservation,
+    PrefetchHooks Function({bool beneficiaryId})> {
+  $$FileIdReservationTableTableTableManager(
+      _$AppDatabase db, $FileIdReservationTableTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FileIdReservationTableTableFilterComposer(
+                  $db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FileIdReservationTableTableOrderingComposer(
+                  $db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FileIdReservationTableTableAnnotationComposer(
+                  $db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> fileId = const Value.absent(),
+            Value<String> status = const Value.absent(),
+            Value<int?> beneficiaryId = const Value.absent(),
+            Value<DateTime> reservedAt = const Value.absent(),
+            Value<DateTime?> usedAt = const Value.absent(),
+            Value<DateTime?> syncedAt = const Value.absent(),
+          }) =>
+              FileIdReservationTableCompanion(
+            id: id,
+            fileId: fileId,
+            status: status,
+            beneficiaryId: beneficiaryId,
+            reservedAt: reservedAt,
+            usedAt: usedAt,
+            syncedAt: syncedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int fileId,
+            Value<String> status = const Value.absent(),
+            Value<int?> beneficiaryId = const Value.absent(),
+            Value<DateTime> reservedAt = const Value.absent(),
+            Value<DateTime?> usedAt = const Value.absent(),
+            Value<DateTime?> syncedAt = const Value.absent(),
+          }) =>
+              FileIdReservationTableCompanion.insert(
+            id: id,
+            fileId: fileId,
+            status: status,
+            beneficiaryId: beneficiaryId,
+            reservedAt: reservedAt,
+            usedAt: usedAt,
+            syncedAt: syncedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$FileIdReservationTableTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({beneficiaryId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (beneficiaryId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.beneficiaryId,
+                    referencedTable: $$FileIdReservationTableTableReferences
+                        ._beneficiaryIdTable(db),
+                    referencedColumn: $$FileIdReservationTableTableReferences
+                        ._beneficiaryIdTable(db)
+                        .id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$FileIdReservationTableTableProcessedTableManager
+    = ProcessedTableManager<
+        _$AppDatabase,
+        $FileIdReservationTableTable,
+        FileIdReservation,
+        $$FileIdReservationTableTableFilterComposer,
+        $$FileIdReservationTableTableOrderingComposer,
+        $$FileIdReservationTableTableAnnotationComposer,
+        $$FileIdReservationTableTableCreateCompanionBuilder,
+        $$FileIdReservationTableTableUpdateCompanionBuilder,
+        (FileIdReservation, $$FileIdReservationTableTableReferences),
+        FileIdReservation,
+        PrefetchHooks Function({bool beneficiaryId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -14267,4 +15050,7 @@ class $AppDatabaseManager {
       $$AssociationsTableTableManager(_db, _db.associations);
   $$SponsorshipsTableTableManager get sponsorships =>
       $$SponsorshipsTableTableManager(_db, _db.sponsorships);
+  $$FileIdReservationTableTableTableManager get fileIdReservationTable =>
+      $$FileIdReservationTableTableTableManager(
+          _db, _db.fileIdReservationTable);
 }

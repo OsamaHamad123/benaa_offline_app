@@ -6,57 +6,166 @@ import 'form_controllers.dart';
 ///
 /// Handles data loading and entity building
 class BeneficiaryFormDataHandler {
+  static Gender _parseGender(String? value) {
+    if (value == null || value.trim().isEmpty) return Gender.unknown;
+    final normalized = value.trim();
+
+    if (normalized == '1' || normalized == 'male' || normalized == 'ذكر') {
+      return Gender.male;
+    }
+    if (normalized == '2' || normalized == 'female' || normalized == 'أنثى') {
+      return Gender.female;
+    }
+
+    return Gender.fromString(normalized);
+  }
+
+  static BeneficiaryCategory _parseCategory(String? value) {
+    if (value == null || value.trim().isEmpty) return BeneficiaryCategory.poor;
+    final normalized = value.trim();
+
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      return BeneficiaryCategory.fromCode(code);
+    }
+
+    return BeneficiaryCategory.values.firstWhere(
+      (category) =>
+          category.name == normalized || category.englishValue == normalized || category.arabicLabel == normalized,
+      orElse: () => BeneficiaryCategory.poor,
+    );
+  }
+
+  static MaritalStatus? _parseMaritalStatus(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    return MaritalStatus.values.firstWhere(
+      (status) => status.name == normalized || status.arabicLabel == normalized,
+      orElse: () => MaritalStatus.single,
+    );
+  }
+
+  static EducationLevel? _parseEducationLevel(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    return EducationLevel.values.firstWhere(
+      (level) => level.name == normalized || level.arabicLabel == normalized,
+      orElse: () => EducationLevel.none,
+    );
+  }
+
+  static EmploymentStatus? _parseEmploymentStatus(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      return EmploymentStatus.fromCode(code);
+    }
+
+    return EmploymentStatus.values.firstWhere(
+      (status) => status.name == normalized || status.arabicLabel == normalized,
+      orElse: () => EmploymentStatus.unemployed,
+    );
+  }
+
+  static DisplacementStatus? _parseDisplacementStatus(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      return DisplacementStatus.fromCode(code);
+    }
+
+    return DisplacementStatus.values.firstWhere(
+      (status) => status.name == normalized || status.arabicLabel == normalized,
+      orElse: () => DisplacementStatus.notDisplaced,
+    );
+  }
+
+  static HousingStatus? _parseHousingStatus(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      return HousingStatus.fromCode(code);
+    }
+
+    return HousingStatus.values.firstWhere(
+      (status) => status.name == normalized || status.arabicLabel == normalized,
+      orElse: () => HousingStatus.rented,
+    );
+  }
+
+  static HousingType? _parseHousingType(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      return HousingType.fromCode(code);
+    }
+
+    return HousingType.values.firstWhere(
+      (type) => type.name == normalized || type.arabicLabel == normalized,
+      orElse: () => HousingType.other,
+    );
+  }
+
+  static HealthStatus _parseHealthStatus(String? value) {
+    if (value == null || value.trim().isEmpty) return HealthStatus.good;
+    return HealthStatus.fromString(value.trim());
+  }
+
   /// Populate controllers from existing beneficiary
   static void populateControllers(
     BeneficiaryFormControllers controllers,
     Beneficiary beneficiary,
     Function(VoidCallback) setState,
   ) {
+    final nameParts = beneficiary.fullName.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+
     // Basic Info
-    controllers.firstNameController.text = beneficiary.fatherName ?? '';
+    controllers.firstNameController.text = nameParts.isNotEmpty ? nameParts.first : '';
     controllers.fatherNameController.text = beneficiary.fatherName ?? '';
-    controllers.grandfatherNameController.text =
-        beneficiary.grandFatherName ?? '';
+    controllers.grandfatherNameController.text = beneficiary.grandFatherName ?? '';
     controllers.lastNameController.text = beneficiary.familyName ?? '';
     controllers.motherNameController.text = beneficiary.motherName ?? '';
     controllers.nationalIdController.text = beneficiary.nationalId;
-    controllers.birthDateController.text =
-        beneficiary.birthDate?.toString().split(' ')[0] ?? '';
+    controllers.birthDateController.text = beneficiary.birthDate?.toString().split(' ')[0] ?? '';
 
     // Contact
     controllers.phoneController.text = beneficiary.phoneNumber ?? '';
     controllers.altPhoneController.text = beneficiary.altPhoneNumber ?? '';
     controllers.addressController.text = beneficiary.address ?? '';
     controllers.neighborhoodController.text = beneficiary.district ?? '';
-    controllers.chronicDiseasesController.text =
-        beneficiary.chronicDiseasesCount?.toString() ?? '';
-    controllers.addressBeforeDisplacementController.text =
-        beneficiary.addressBeforeDisplacement ?? '';
+    controllers.chronicDiseasesController.text = beneficiary.chronicDiseasesCount?.toString() ?? '';
+    controllers.addressBeforeDisplacementController.text = beneficiary.addressBeforeDisplacement ?? '';
 
     // Family
-    controllers.numberOfDependentsController.text =
-        beneficiary.familySize?.toString() ?? '';
-    controllers.numberOfMalesController.text =
-        beneficiary.numberOfMales?.toString() ?? '';
-    controllers.numberOfFemalesController.text =
-        beneficiary.numberOfFemales?.toString() ?? '';
+    controllers.numberOfDependentsController.text = beneficiary.familySize?.toString() ?? '';
+    controllers.numberOfMalesController.text = beneficiary.numberOfMales?.toString() ?? '';
+    controllers.numberOfFemalesController.text = beneficiary.numberOfFemales?.toString() ?? '';
 
     // Notes
     controllers.notesController.text = beneficiary.notes ?? '';
 
     setState(() {
-      // Map gender to Arabic display values
-      controllers.selectedGender =
-          beneficiary.gender == Gender.male ? 'ذكر' : 'أنثى';
+      controllers.selectedGender = beneficiary.gender == Gender.unknown ? null : beneficiary.gender.englishValue;
       controllers.selectedMaritalStatus = beneficiary.maritalStatus?.name;
       controllers.selectedEducationLevel = beneficiary.educationLevel?.name;
       controllers.selectedEmploymentStatus = beneficiary.employmentStatus?.name;
       controllers.selectedHealthStatus = beneficiary.healthStatus.name;
-      controllers.selectedCategory = beneficiary.category.name;
-      controllers.selectedDisplacementStatus =
-          beneficiary.displacementStatus?.name;
+      controllers.selectedCategory = beneficiary.category.code.toString();
+      controllers.selectedDisplacementStatus = beneficiary.displacementStatus?.name;
       controllers.selectedHousingStatus = beneficiary.housingStatus?.name;
       controllers.selectedHousingType = beneficiary.housingType?.name;
+      controllers.selectedRelationship = beneficiary.relationship?.toString();
+      controllers.selectedSection = beneficiary.sectionId?.toString();
       controllers.hasDisability = beneficiary.hasDisability;
       // Note: city, province, relationship need enum conversion from IDs
     });
@@ -79,9 +188,18 @@ class BeneficiaryFormDataHandler {
       controllers.lastNameController.text.trim(),
     ].where((s) => s.isNotEmpty).join(' ');
 
-    // Parse gender
-    final gender =
-        controllers.selectedGender == 'ذكر' ? Gender.male : Gender.female;
+    // Parse taxonomy-backed values safely (code/name/label)
+    final gender = _parseGender(controllers.selectedGender);
+    final category = _parseCategory(controllers.selectedCategory);
+    final maritalStatus = _parseMaritalStatus(controllers.selectedMaritalStatus);
+    final educationLevel = _parseEducationLevel(controllers.selectedEducationLevel);
+    final employmentStatus = _parseEmploymentStatus(controllers.selectedEmploymentStatus);
+    final displacementStatus = _parseDisplacementStatus(controllers.selectedDisplacementStatus);
+    final housingStatus = _parseHousingStatus(controllers.selectedHousingStatus);
+    final housingType = _parseHousingType(controllers.selectedHousingType);
+    final healthStatus = _parseHealthStatus(controllers.selectedHealthStatus);
+    final relationshipCode = int.tryParse(controllers.selectedRelationship ?? '');
+    final sectionCode = int.tryParse(controllers.selectedSection ?? '');
 
     return Beneficiary(
       id: beneficiaryId ?? '',
@@ -89,94 +207,45 @@ class BeneficiaryFormDataHandler {
       nationalId: controllers.nationalIdController.text.trim(),
       fileNo: fileNo,
       gender: gender,
-      category: controllers.selectedCategory != null
-          ? BeneficiaryCategory.values.firstWhere(
-              (e) => e.name == controllers.selectedCategory,
-              orElse: () => BeneficiaryCategory.poor,
-            )
-          : BeneficiaryCategory.poor,
+      category: category,
       birthDate: controllers.birthDateController.text.isNotEmpty
           ? DateTime.tryParse(controllers.birthDateController.text)
           : null,
-      motherName: controllers.motherNameController.text.trim().isEmpty
-          ? null
-          : controllers.motherNameController.text.trim(),
-      fatherName: controllers.fatherNameController.text.trim().isEmpty
-          ? null
-          : controllers.fatherNameController.text.trim(),
+      motherName:
+          controllers.motherNameController.text.trim().isEmpty ? null : controllers.motherNameController.text.trim(),
+      fatherName:
+          controllers.fatherNameController.text.trim().isEmpty ? null : controllers.fatherNameController.text.trim(),
       grandFatherName: controllers.grandfatherNameController.text.trim().isEmpty
           ? null
           : controllers.grandfatherNameController.text.trim(),
-      familyName: controllers.lastNameController.text.trim().isEmpty
-          ? null
-          : controllers.lastNameController.text.trim(),
-      phoneNumber: controllers.phoneController.text.trim().isEmpty
-          ? null
-          : controllers.phoneController.text.trim(),
-      altPhoneNumber: controllers.altPhoneController.text.trim().isEmpty
-          ? null
-          : controllers.altPhoneController.text.trim(),
-      address: controllers.addressController.text.trim().isEmpty
-          ? null
-          : controllers.addressController.text.trim(),
+      familyName:
+          controllers.lastNameController.text.trim().isEmpty ? null : controllers.lastNameController.text.trim(),
+      phoneNumber: controllers.phoneController.text.trim().isEmpty ? null : controllers.phoneController.text.trim(),
+      altPhoneNumber:
+          controllers.altPhoneController.text.trim().isEmpty ? null : controllers.altPhoneController.text.trim(),
+      address: controllers.addressController.text.trim().isEmpty ? null : controllers.addressController.text.trim(),
       district: controllers.neighborhoodController.text.trim().isEmpty
           ? null
           : controllers.neighborhoodController.text.trim(),
       governorate: controllers.selectedProvince,
-      currentAddress: controllers.addressController.text.trim().isEmpty
+      relationship: relationshipCode,
+      sectionId: sectionCode,
+      currentAddress:
+          controllers.addressController.text.trim().isEmpty ? null : controllers.addressController.text.trim(),
+      addressBeforeDisplacement: controllers.addressBeforeDisplacementController.text.trim().isEmpty
           ? null
-          : controllers.addressController.text.trim(),
-      addressBeforeDisplacement:
-          controllers.addressBeforeDisplacementController.text.trim().isEmpty
-              ? null
-              : controllers.addressBeforeDisplacementController.text.trim(),
-      maritalStatus: controllers.selectedMaritalStatus != null
-          ? MaritalStatus.values.firstWhere(
-              (e) => e.name == controllers.selectedMaritalStatus,
-              orElse: () => MaritalStatus.single,
-            )
-          : null,
-      educationLevel: controllers.selectedEducationLevel != null
-          ? EducationLevel.values.firstWhere(
-              (e) => e.name == controllers.selectedEducationLevel,
-              orElse: () => EducationLevel.none,
-            )
-          : null,
-      employmentStatus: controllers.selectedEmploymentStatus != null
-          ? EmploymentStatus.values.firstWhere(
-              (e) => e.name == controllers.selectedEmploymentStatus,
-              orElse: () => EmploymentStatus.unemployed,
-            )
-          : null,
-      displacementStatus: controllers.selectedDisplacementStatus != null
-          ? DisplacementStatus.values.firstWhere(
-              (e) => e.name == controllers.selectedDisplacementStatus,
-              orElse: () => DisplacementStatus.notDisplaced,
-            )
-          : null,
-      healthStatus: controllers.selectedHealthStatus != null
-          ? HealthStatus.values.firstWhere(
-              (e) => e.name == controllers.selectedHealthStatus,
-              orElse: () => HealthStatus.good,
-            )
-          : HealthStatus.good,
-      housingStatus: controllers.selectedHousingStatus != null
-          ? HousingStatus.values.firstWhere(
-              (e) => e.name == controllers.selectedHousingStatus,
-              orElse: () => HousingStatus.rented,
-            )
-          : null,
-      housingType: controllers.selectedHousingType != null
-          ? HousingType.values.firstWhere(
-              (e) => e.name == controllers.selectedHousingType,
-              orElse: () => HousingType.other,
-            )
-          : null,
+          : controllers.addressBeforeDisplacementController.text.trim(),
+      maritalStatus: maritalStatus,
+      educationLevel: educationLevel,
+      employmentStatus: employmentStatus,
+      displacementStatus: displacementStatus,
+      healthStatus: healthStatus,
+      housingStatus: housingStatus,
+      housingType: housingType,
       hasDisability: controllers.hasDisability,
-      chronicDiseasesCount:
-          controllers.chronicDiseasesController.text.trim().isEmpty
-              ? null
-              : int.tryParse(controllers.chronicDiseasesController.text.trim()),
+      chronicDiseasesCount: controllers.chronicDiseasesController.text.trim().isEmpty
+          ? null
+          : int.tryParse(controllers.chronicDiseasesController.text.trim()),
       familySize: controllers.numberOfDependentsController.text.trim().isEmpty
           ? null
           : int.tryParse(controllers.numberOfDependentsController.text.trim()),
@@ -186,9 +255,7 @@ class BeneficiaryFormDataHandler {
       numberOfFemales: controllers.numberOfFemalesController.text.trim().isEmpty
           ? null
           : int.tryParse(controllers.numberOfFemalesController.text.trim()),
-      notes: controllers.notesController.text.trim().isEmpty
-          ? null
-          : controllers.notesController.text.trim(),
+      notes: controllers.notesController.text.trim().isEmpty ? null : controllers.notesController.text.trim(),
       createdAt: createdAt,
       updatedAt: now,
     );

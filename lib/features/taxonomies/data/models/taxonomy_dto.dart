@@ -1,5 +1,7 @@
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
+import '../../../../data/db/drift_database.dart' show TaxonomiesCompanion;
+import 'package:drift/drift.dart' as drift;
 
 /// 📦 Taxonomy DTO
 ///
@@ -77,6 +79,19 @@ class TaxonomyDTO {
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
       if (deletedAt != null) 'deleted_at': deletedAt!.toIso8601String(),
     };
+  }
+
+  TaxonomiesCompanion toDbCompanion() {
+    return TaxonomiesCompanion.insert(
+      id: id,
+      group: groupValue,
+      code: code,
+      label: label,
+      updatedAt: updatedAt ?? DateTime.now(),
+      parentId: drift.Value(parentId),
+      sortOrder: drift.Value(sortOrder),
+      isActive: drift.Value(isActive && deletedAt == null),
+    );
   }
 
   /// تحويل إلى Entity
@@ -191,12 +206,14 @@ class TaxonomiesResponseDTO {
   final List<TaxonomyDTO> data;
   final String? message;
   final TaxonomyMetaDTO? meta;
+  final DateTime? syncTimestamp;
 
   const TaxonomiesResponseDTO({
     required this.success,
     required this.data,
     this.message,
     this.meta,
+    this.syncTimestamp,
   });
 
   factory TaxonomiesResponseDTO.fromJson(Map<String, dynamic> json) {
@@ -207,6 +224,139 @@ class TaxonomiesResponseDTO {
       message: json['message']?.toString(),
       meta: json['meta'] != null ? TaxonomyMetaDTO.fromJson(json['meta'] as Map<String, dynamic>) : null,
     );
+  }
+
+  /// ✅ Parse sync-all API response format
+  /// Format: { "success": true, "data": { "categories": { "slug": { items: [...] } } } }
+  factory TaxonomiesResponseDTO.fromSyncAllJson(Map<String, dynamic> json) {
+    final List<TaxonomyDTO> taxonomies = [];
+
+    final data = json['data'] as Map<String, dynamic>?;
+    if (data != null) {
+      final categories = data['categories'] as Map<String, dynamic>?;
+      if (categories != null) {
+        // Iterate over each category (e.g., "academic-degrees", "provinces", etc.)
+        categories.forEach((slug, categoryData) {
+          if (categoryData is Map<String, dynamic>) {
+            final items = categoryData['items'] as List<dynamic>?;
+            final labelAr = categoryData['label_ar']?.toString() ?? slug;
+            final labelEn = categoryData['label_en']?.toString();
+            final resolvedGroup = _resolveGroupValue(slug.toString(), labelAr, labelEn);
+
+            if (items != null) {
+              for (final item in items) {
+                if (item is Map<String, dynamic>) {
+                  taxonomies.add(TaxonomyDTO(
+                    id: item['id']?.toString() ?? '',
+                    groupValue: resolvedGroup,
+                    code: item['code']?.toString() ?? item['id']?.toString() ?? '',
+                    label: item['name']?.toString() ?? '',
+                    labelEn: labelEn,
+                    parentId: item['parent_id']?.toString(),
+                    sortOrder: _parseInt(item['sort_order']),
+                    isActive: _parseBool(item['is_active'], defaultValue: true),
+                    createdAt: _parseDateTime(item['created_at']),
+                    updatedAt: _parseDateTime(item['updated_at']),
+                    deletedAt: _parseDateTime(item['deleted_at']),
+                  ));
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Parse sync timestamp
+    DateTime? syncTime;
+    final syncTimestampStr = json['data']?['sync_timestamp']?.toString();
+    if (syncTimestampStr != null) {
+      syncTime = DateTime.tryParse(syncTimestampStr);
+    }
+
+    return TaxonomiesResponseDTO(
+      success: json['success'] == true,
+      data: taxonomies,
+      message: json['message']?.toString(),
+      syncTimestamp: syncTime,
+    );
+  }
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  static int _parseInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
+  static bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      return value.toLowerCase() == 'true' || value == '1';
+    }
+    return defaultValue;
+  }
+
+  static String _resolveGroupValue(String slug, String labelAr, String? labelEn) {
+    final normalizedSlug = slug.toLowerCase().replaceAll('_', '-').trim();
+    final normalizedAr = labelAr.trim();
+    final normalizedEn = (labelEn ?? '').toLowerCase().trim();
+
+    const mapBySlug = <String, String>{
+      'categories': 'category',
+      'category': 'category',
+      'provinces': 'governorate',
+      'governorates': 'governorate',
+      'governorate': 'governorate',
+      'genders': 'gender',
+      'gender': 'gender',
+      'marital-statuses': 'marital_status',
+      'marital-status': 'marital_status',
+      'education-levels': 'education_level',
+      'education-level': 'education_level',
+      'health-statuses': 'health_status',
+      'health-status': 'health_status',
+      'housing-types': 'housing_type',
+      'housing-statuses': 'housing_status',
+      'relationships': 'relationship',
+      'sections': 'section',
+    };
+
+    final mapped = mapBySlug[normalizedSlug];
+    if (mapped != null) return mapped;
+
+    if (normalizedAr.contains('محافظ')) return 'governorate';
+    if (normalizedAr.contains('فئ')) return 'category';
+    if (normalizedAr.contains('الحالة الاجتماعية')) return 'marital_status';
+    if (normalizedAr.contains('المستوى التعليمي')) return 'education_level';
+    if (normalizedAr.contains('الحالة الصحية')) return 'health_status';
+    if (normalizedAr.contains('نوع السكن')) return 'housing_type';
+    if (normalizedAr.contains('حالة السكن')) return 'housing_status';
+    if (normalizedAr.contains('صلة القرابة')) return 'relationship';
+    if (normalizedAr.contains('القسم')) return 'section';
+    if (normalizedAr.contains('الجنس')) return 'gender';
+
+    if (normalizedEn.contains('governorate') || normalizedEn.contains('province')) return 'governorate';
+    if (normalizedEn.contains('category')) return 'category';
+    if (normalizedEn.contains('marital')) return 'marital_status';
+    if (normalizedEn.contains('education')) return 'education_level';
+    if (normalizedEn.contains('health')) return 'health_status';
+    if (normalizedEn.contains('housing type')) return 'housing_type';
+    if (normalizedEn.contains('housing status')) return 'housing_status';
+    if (normalizedEn.contains('relationship')) return 'relationship';
+    if (normalizedEn.contains('section')) return 'section';
+    if (normalizedEn.contains('gender')) return 'gender';
+
+    return normalizedSlug.replaceAll('-', '_');
   }
 
   Map<String, dynamic> toJson() {

@@ -3,8 +3,8 @@ import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy_g
 
 void main() {
   group('TaxonomyGroup Enum', () {
-    test('should have 15 taxonomy groups', () {
-      expect(TaxonomyGroup.values.length, 15);
+    test('should have 17 taxonomy groups', () {
+      expect(TaxonomyGroup.values.length, 17);
     });
 
     test('governorate should have correct values', () {
@@ -120,6 +120,8 @@ void main() {
         'visit_type',
         'assistance_type',
         'beneficiary_status',
+        'relationship',
+        'section',
       ];
 
       for (final groupValue in expectedGroups) {

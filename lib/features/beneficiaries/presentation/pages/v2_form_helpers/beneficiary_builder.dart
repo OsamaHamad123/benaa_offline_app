@@ -21,8 +21,7 @@ class BeneficiaryEntityBuilder {
     ].where((s) => s.isNotEmpty).join(' ');
 
     // Parse gender
-    final gender =
-        controllers.selectedGender == 'ذكر' ? Gender.male : Gender.female;
+    final gender = controllers.selectedGender == 'ذكر' ? Gender.male : Gender.female;
 
     // Generate timestamps
     final now = DateTime.now();
@@ -98,7 +97,11 @@ class BeneficiaryEntityBuilder {
       numberOfFemales: _parseIntOrNull(
         controllers.numberOfFemalesController.text,
       ),
+      specialNeedsCount: _parseIntOrNull(
+        controllers.specialNeedsCountController.text,
+      ),
       notes: _trimOrNull(controllers.notesController.text),
+      createdByUser: _trimOrNull(controllers.createdByUserController.text),
       createdAt: existingCreatedAt ?? now,
       updatedAt: now,
     );
@@ -108,8 +111,16 @@ class BeneficiaryEntityBuilder {
   static BeneficiaryCategory _parseCategory(String? value) {
     if (value == null) return BeneficiaryCategory.poor;
     try {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return BeneficiaryCategory.poor;
+
+      final numericCode = int.tryParse(trimmed);
+      if (numericCode != null) {
+        return BeneficiaryCategory.fromCode(numericCode);
+      }
+
       return BeneficiaryCategory.values.firstWhere(
-        (e) => e.name == value,
+        (e) => e.name == trimmed || e.englishValue == trimmed || e.arabicLabel == trimmed,
         orElse: () => BeneficiaryCategory.poor,
       );
     } catch (_) {

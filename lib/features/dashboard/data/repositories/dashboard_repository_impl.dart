@@ -12,15 +12,17 @@ class DashboardRepositoryImpl implements DashboardRepository {
   DashboardRepositoryImpl(this.localDataSource);
 
   @override
-  Future<Result<DashboardStatistics>> getStatistics(
-      {bool forceRefresh = false}) async {
+  Future<Result<DashboardStatistics>> getStatistics({bool forceRefresh = false}) async {
     try {
-      final stats =
-          await localDataSource.getStatistics(forceRefresh: forceRefresh);
+      final stats = await localDataSource.getStatistics(forceRefresh: forceRefresh);
       return Success(stats);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure(
-          'Failed to get dashboard statistics: $e', stackTrace));
+      // 🛡️ Error Handling Strategy for Dashboard
+      // invalid column errors (like SQLSTATE[42S22]) suggests schema mismatch
+      if (e.toString().contains('SQLSTATE') || e.toString().contains('no such column')) {
+        return Failure(DatabaseFailure('خطأ في هيكلية البيانات (يرجى التواصل مع الدعم الفني)', stackTrace));
+      }
+      return Failure(DatabaseFailure('فشل تحميل إحصائيات الداشبورد: $e', stackTrace));
     }
   }
 
@@ -30,8 +32,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       final stats = await localDataSource.getTodayStatsData();
       return Success(stats);
     } catch (e, stackTrace) {
-      return Failure(
-          DatabaseFailure('Failed to get today stats: $e', stackTrace));
+      return Failure(DatabaseFailure('Failed to get today stats: $e', stackTrace));
     }
   }
 
@@ -47,8 +48,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       );
       return Success(activities);
     } catch (e, stackTrace) {
-      return Failure(
-          DatabaseFailure('Failed to get recent activities: $e', stackTrace));
+      return Failure(DatabaseFailure('Failed to get recent activities: $e', stackTrace));
     }
   }
 
@@ -58,8 +58,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
       final stats = await localDataSource.getTodayStatsData();
       return Success(stats.pendingTasks);
     } catch (e, stackTrace) {
-      return Failure(
-          DatabaseFailure('Failed to get notifications count: $e', stackTrace));
+      return Failure(DatabaseFailure('Failed to get notifications count: $e', stackTrace));
     }
   }
 

@@ -2,22 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
 
-import '../../../../../../features/taxonomies/taxonomies.dart'; // 🏷️ Taxonomy System
+import '../../../../../../features/taxonomies/taxonomies.dart';
+import '../../../pages/v2_form_helpers/civil_registry_lookup_controller.dart';
+import '../../../pages/v2_form_helpers/civil_registry_autofill_feedback_helper.dart';
+import '../../../pages/v2_form_helpers/form_constants.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
-import '../../../pages/v2_form_helpers/form_constants.dart';
-import '../../../../../../core/utils/responsive_utils_v2.dart'; // 🎱 Responsive
+import '../../../../../../core/utils/responsive_utils_v2.dart';
 import '../../../providers/beneficiary_dependencies.dart';
 import '../../../providers/civil_registry_provider.dart';
-import '../../civil_registry_status_indicator.dart';
 import '../../autofill_button.dart';
 import '../../civil_registry_preview_card.dart';
+import '../../civil_registry_required_banner.dart';
+import '../../civil_registry_status_indicator.dart';
 
-/// 👤 Personal Info Merged Tab (Basic + Additional Info)
-///
-/// دمج التبويبات: أساسي + إضافي
 class V2PersonalInfoMergedTab extends ConsumerStatefulWidget {
   final BeneficiaryFormControllers formControllers;
   final VoidCallback onBirthDateTap;
@@ -35,105 +34,74 @@ class V2PersonalInfoMergedTab extends ConsumerStatefulWidget {
 }
 
 class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTab> {
-  Timer? _debounceTimer;
-  bool _showPreview = false;
-  bool _hasAutofilled = false;
+  late final CivilRegistryLookupController _lookupController;
 
   @override
   void initState() {
     super.initState();
-    widget.formControllers.nationalIdController.addListener(
-      _onNationalIdChanged,
-    );
+    _lookupController = CivilRegistryLookupController();
+    widget.formControllers.nationalIdController.addListener(_onNationalIdChanged);
   }
 
   @override
   void dispose() {
-    widget.formControllers.nationalIdController.removeListener(
-      _onNationalIdChanged,
-    );
-    _debounceTimer?.cancel();
-    _debounceTimer = null;
+    widget.formControllers.nationalIdController.removeListener(_onNationalIdChanged);
+    _lookupController.dispose();
     super.dispose();
   }
 
   void _onNationalIdChanged() {
-    final nationalId = widget.formControllers.nationalIdController.text;
+    final nationalId = widget.formControllers.nationalIdController.text.trim();
+    final canUseCivilRegistry = ref.read(civilRegistryAvailableProvider).value ?? false;
 
-    _debounceTimer?.cancel();
-
-    if (nationalId.length < FormConstants.nationalIdLength) {
-      setState(() {
-        _showPreview = false;
-        _hasAutofilled = false; // Reset when ID changes
-      });
-      ref.read(civilRegistryProvider.notifier).reset();
-      return;
-    }
-
-    _debounceTimer = Timer(FormConstants.civilRegistryDebounce, () {
-      if (nationalId.length == FormConstants.nationalIdLength) {
-        ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
-      }
-    });
+    _lookupController.onNationalIdChanged(
+      nationalId: nationalId,
+      canUseCivilRegistry: canUseCivilRegistry,
+      nationalIdLength: FormConstants.nationalIdLength,
+      debounceDuration: FormConstants.civilRegistryDebounce,
+      fetchByNationalId: (id) => ref.read(civilRegistryProvider.notifier).fetchByNationalId(id),
+      isLookupInProgressForId: () {
+        final providerState = ref.read(civilRegistryProvider);
+        return providerState.isLoading && providerState.lastSearchedNationalId == nationalId;
+      }(),
+      resetProvider: () => ref.read(civilRegistryProvider.notifier).reset(),
+      requestRebuild: () {
+        if (!mounted) return;
+        setState(() {});
+      },
+    );
   }
 
   void _handleAutofill() {
     final result = ref.read(civilRegistryProvider.notifier).autofillForm(widget.formControllers);
+    if (result == null) return;
 
-    if (result != null) {
-      HapticFeedback.lightImpact();
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Text(
-                  '✓ تم ملء ${result.filledFieldsCount} حقل بنجاح',
-                  style: TextStyle(fontSize: 14.sp),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
-        ),
-      );
-
-      // Hide preview card and button after 1.5 seconds
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) {
-          setState(() {
-            _showPreview = false;
-            _hasAutofilled = true; // Mark as autofilled to hide button
-          });
-        }
-      });
-    }
+    CivilRegistryAutofillFeedbackHelper.showSuccess(
+      context: context,
+      message: '✓ تم ملء ${result.filledFieldsCount} حقل بنجاح',
+      onCompleted: () {
+        _lookupController.onAutofillCompleted(
+          requestRebuild: () {
+            if (!mounted) return;
+            setState(() {});
+          },
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // ⚠️ DON'T watch provider in build - causes rebuild on every keystroke!
-    // Use Consumer below only where needed
-
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
-      physics: const ClampingScrollPhysics(), // ⚡ Smooth scroll
-      cacheExtent: 100, // ⚡ Reduce repaints
+      physics: const ClampingScrollPhysics(),
+      cacheExtent: 100,
       children: [
-        // 📋 Basic Information Section
         M3SectionCard(
           title: 'الاسم الكامل',
           icon: Icons.person_rounded,
           headerColor: FormColors.tabGradients[0]![0].withOpacity(0.2),
           children: [
-            // 📱 Responsive: 1 column mobile, 2 columns tablet+
             ResponsiveFormLayout(
               children: [
                 M3TextField(
@@ -178,8 +146,6 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
             ),
           ],
         ),
-
-        // 🆔 Identity & Civil Registry Section
         M3SectionCard(
           title: 'الهوية والسجل المدني',
           icon: Icons.credit_card_rounded,
@@ -194,14 +160,10 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               isRequired: true,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(
-                  FormConstants.nationalIdLength,
-                ),
+                LengthLimitingTextInputFormatter(FormConstants.nationalIdLength),
               ],
               validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return FormConstants.requiredFieldMessage;
-                }
+                if (value?.isEmpty ?? true) return FormConstants.requiredFieldMessage;
                 if (value!.length != FormConstants.nationalIdLength) {
                   return FormConstants.invalidNationalIdMessage;
                 }
@@ -209,16 +171,16 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               },
               helperText: 'يجب أن يكون ${FormConstants.nationalIdLength} أرقام',
             ),
-
-            // Civil Registry widgets wrapped in Consumer to prevent rebuilding entire tab
             Consumer(
               builder: (context, ref, _) {
+                final civilRegistryAvailable = ref.watch(civilRegistryAvailableProvider);
                 final civilRegistryState = ref.watch(civilRegistryProvider);
+                final canUseCivilRegistry = civilRegistryAvailable.value ?? false;
 
                 return Column(
                   children: [
-                    // Civil Registry Status
-                    if (civilRegistryState.status != CivilRegistryStatus.initial)
+                    if (!canUseCivilRegistry) const CivilRegistryRequiredBanner(),
+                    if (canUseCivilRegistry && civilRegistryState.status != CivilRegistryStatus.initial)
                       Padding(
                         padding: EdgeInsets.only(top: 8.h),
                         child: CivilRegistryStatusIndicator(
@@ -231,19 +193,26 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                           },
                         ),
                       ),
-
-                    // Preview Card
-                    if (civilRegistryState.isSuccess && civilRegistryState.person != null && _showPreview)
+                    if (canUseCivilRegistry &&
+                        civilRegistryState.isSuccess &&
+                        civilRegistryState.person != null &&
+                        _lookupController.showPreview)
                       Padding(
                         padding: EdgeInsets.only(top: 8.h),
                         child: CivilRegistryPreviewCard(
                           person: civilRegistryState.person!,
-                          onDismiss: () => setState(() => _showPreview = false),
+                          onDismiss: () {
+                            _lookupController.dismissPreview(() {
+                              if (!mounted) return;
+                              setState(() {});
+                            });
+                          },
                         ),
                       ),
-
-                    // Autofill Button - Only show if not yet autofilled
-                    if (civilRegistryState.isSuccess && civilRegistryState.person != null && !_hasAutofilled)
+                    if (canUseCivilRegistry &&
+                        civilRegistryState.isSuccess &&
+                        civilRegistryState.person != null &&
+                        !_lookupController.hasAutofilled)
                       Padding(
                         padding: EdgeInsets.only(top: 12.h),
                         child: Row(
@@ -256,12 +225,17 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                             ),
                             SizedBox(width: 8.w),
                             IconButton(
-                              onPressed: () => setState(() => _showPreview = !_showPreview),
+                              onPressed: () {
+                                _lookupController.togglePreview(() {
+                                  if (!mounted) return;
+                                  setState(() {});
+                                });
+                              },
                               icon: Icon(
-                                _showPreview ? Icons.visibility_off : Icons.visibility,
+                                _lookupController.showPreview ? Icons.visibility_off : Icons.visibility,
                                 size: 24.sp,
                               ),
-                              tooltip: _showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة',
+                              tooltip: _lookupController.showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة',
                             ),
                           ],
                         ),
@@ -270,9 +244,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                 );
               },
             ),
-
             SizedBox(height: 12.h),
-            // 📱 Responsive Layout: 1 column mobile, 2 columns tablet
             ResponsiveFormLayout(
               children: [
                 M3TextField(
@@ -301,7 +273,6 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               ],
             ),
             SizedBox(height: 12.h),
-            // 🏷️ فئة المستفيد - من نظام التصنيفات
             TaxonomyBridgeDropdown(
               group: TaxonomyGroup.category,
               selectedCode: widget.formControllers.selectedCategory,
@@ -310,7 +281,6 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               isRequired: true,
             ),
             SizedBox(height: 12.h),
-            // 🆕 NEW: رقم الملف
             ResponsiveFormLayout(
               children: [
                 M3TextField(
@@ -337,14 +307,11 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
             ),
           ],
         ),
-
-        // 🎓 Additional Information Section
         M3SectionCard(
           title: 'معلومات إضافية',
           icon: Icons.info_outline_rounded,
           headerColor: FormColors.tabGradients[0]![1].withOpacity(0.2),
           children: [
-            // 📱 Responsive Layout
             ResponsiveFormLayout(
               children: [
                 M3DropdownField<String>(
@@ -358,10 +325,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                     DropdownMenuItem(value: 'إعدادي', child: Text('إعدادي')),
                     DropdownMenuItem(value: 'ثانوي', child: Text('ثانوي')),
                     DropdownMenuItem(value: 'جامعي', child: Text('جامعي')),
-                    DropdownMenuItem(
-                      value: 'دراسات عليا',
-                      child: Text('دراسات عليا'),
-                    ),
+                    DropdownMenuItem(value: 'دراسات عليا', child: Text('دراسات عليا')),
                   ],
                 ),
                 M3DropdownField<String>(
@@ -371,16 +335,10 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   onChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
                   items: const [
                     DropdownMenuItem(value: 'موظف', child: Text('موظف')),
-                    DropdownMenuItem(
-                      value: 'عاطل',
-                      child: Text('عاطل عن العمل'),
-                    ),
+                    DropdownMenuItem(value: 'عاطل', child: Text('عاطل عن العمل')),
                     DropdownMenuItem(value: 'طالب', child: Text('طالب')),
                     DropdownMenuItem(value: 'متقاعد', child: Text('متقاعد')),
-                    DropdownMenuItem(
-                      value: 'أعمال حرة',
-                      child: Text('أعمال حرة'),
-                    ),
+                    DropdownMenuItem(value: 'أعمال حرة', child: Text('أعمال حرة')),
                   ],
                 ),
                 M3DropdownField<String>(
@@ -405,7 +363,6 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               helperText: 'أدخل الأمراض المزمنة إن وجدت',
             ),
             SizedBox(height: 12.h),
-            // 🆕 NEW: عدد ذوي الاحتياجات الخاصة
             M3TextField(
               controller: widget.formControllers.specialNeedsCountController,
               label: 'عدد ذوي الاحتياجات الخاصة',
@@ -415,7 +372,6 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
             SizedBox(height: 12.h),
-            // 📱 Responsive Layout - معلومات السكن
             ResponsiveFormLayout(
               children: [
                 M3DropdownField<String>(
@@ -426,10 +382,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   items: const [
                     DropdownMenuItem(value: 'ملك', child: Text('ملك')),
                     DropdownMenuItem(value: 'إيجار', child: Text('إيجار')),
-                    DropdownMenuItem(
-                      value: 'سكن مشترك',
-                      child: Text('سكن مشترك'),
-                    ),
+                    DropdownMenuItem(value: 'سكن مشترك', child: Text('سكن مشترك')),
                     DropdownMenuItem(value: 'آخر', child: Text('آخر')),
                   ],
                 ),

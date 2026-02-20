@@ -1,30 +1,37 @@
 {
-    "dart.flutterSdkPath": null,
-    "dart.lineLength": 120,
+  "dart.flutterSdkPath": null,
+  "dart.lineLength": 120,
+  "editor.formatOnSave": true,
+  "editor.rulers": [80, 120],
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/build/": true,
+    "**/.dart_tool/": true,
+    "**/.flutter-plugins": true,
+    "**/.flutter-plugins-dependencies": true,
+    "**/.packages": true
+  },
+  "[dart]": {
     "editor.formatOnSave": true,
-    "editor.rulers": [
-        80,
-        120
-    ],
-    "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/CVS": true,
-        "**/.DS_Store": true,
-        "**/build/": true,
-        "**/.dart_tool/": true,
-        "**/.flutter-plugins": true,
-        "**/.flutter-plugins-dependencies": true,
-        "**/.packages": true
-    },
-    "[dart]": {
-        "editor.formatOnSave": true,
-        "editor.formatOnType": true,
-        "editor.selectionHighlight": false,
-        "editor.suggest.snippetsPreventQuickSuggestions": false,
-        "editor.suggestSelection": "first",
-        "editor.tabCompletion": "onlySnippets",
-        "editor.wordBasedSuggestions": "off"
-    }
+    "editor.formatOnType": true,
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  },
+  "cmake.sourceDirectory": "C:/Dev/benaa_offline_app/linux"
+  ,
+  "java.import.gradle.enabled": true,
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.project.sourcePaths": [
+    "android/app/src/main/java",
+    "android/app/src/debug/java",
+    "android/app/src/profile/java"
+  ],
+  "java.errors.incompleteClasspath.severity": "ignore"
 }

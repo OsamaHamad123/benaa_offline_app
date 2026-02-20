@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-
-// Core
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/welcome_banner.dart';
 import '../../../../core/widgets/filter_chip_group.dart';
@@ -17,11 +16,12 @@ import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../../core/monitoring/app_monitoring.dart';
+import '../../../../core/analytics/app_analytics.dart';
 import '../../../../core/settings/enhanced_settings_page.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
-import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_providers.dart';
 
 // Civil DB Download
 import '../../../civil_db_download/presentation/providers/database_download_provider.dart';
@@ -32,7 +32,6 @@ import '../services/dashboard_navigation_service.dart';
 import '../utils/dashboard_colors.dart';
 import '../utils/dashboard_text_styles.dart';
 import '../utils/dashboard_haptics.dart';
-import '../utils/dashboard_spacing.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/activities_section.dart';
 import '../widgets/dashboard_charts.dart';
@@ -44,9 +43,6 @@ import '../widgets/advanced_filters_widget.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/dashboard_search_delegate.dart';
 import '../widgets/dashboard_export_dialog.dart';
-import 'dashboard_settings_page.dart';
-
-// Other Features
 import '../../../sync/mobile_sync_page.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
@@ -90,12 +86,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     // Cancel connectivity subscription to prevent memory leak
     _connectivitySubscription?.cancel();
 
-    // Log screen exit with error handling
-    try {
-      ref.read(appMonitoringProvider).logScreenExit('Dashboard');
-    } catch (_) {
-      // Ignore if ref is already disposed
-    }
+    // Direct static call avoids provider access while route is popping.
+    AppAnalytics.logScreenExit('Dashboard');
     super.dispose();
   }
 
@@ -459,6 +451,9 @@ class _DashboardHome extends ConsumerWidget {
           // Civil Registry Banner - إذا لم يتم تحميل السجل المدني
           _CivilRegistryBanner(ref: ref),
 
+          // Taxonomies Sync Health Banner
+          const _TaxonomySyncHealthBanner(),
+
           // Welcome Banner (First time users)
           if (showWelcomeBanner)
             WelcomeBanner(
@@ -702,6 +697,66 @@ class _DashboardHome extends ConsumerWidget {
   }
 }
 
+class _TaxonomySyncHealthBanner extends ConsumerWidget {
+  const _TaxonomySyncHealthBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final autoState = ref.watch(taxonomyAutoSyncStateProvider);
+    final lastSyncAsync = ref.watch(lastSyncTimeProvider);
+
+    final lastSync = lastSyncAsync.asData?.value;
+    final now = DateTime.now();
+    final isStale = lastSync == null || now.difference(lastSync) > const Duration(hours: 24);
+    final hasFailures = autoState.consecutiveFailures >= 3;
+
+    if (!isStale && !hasFailures) {
+      return const SizedBox.shrink();
+    }
+
+    final color = hasFailures ? Colors.red.shade700 : Colors.orange.shade700;
+    final bg = hasFailures ? Colors.red.shade50 : Colors.orange.shade50;
+    final border = hasFailures ? Colors.red.shade200 : Colors.orange.shade200;
+
+    final subtitle = hasFailures
+        ? 'فشل متكرر في مزامنة التصنيفات. راجع الاتصال أو نفّذ مزامنة يدوية.'
+        : 'التصنيفات تحتاج تحديث (${lastSync == null ? 'لم تتم مزامنة بعد' : 'آخر مزامنة قديمة'}).';
+
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.sync_problem_rounded, color: color, size: 22.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasFailures ? 'تنبيه مزامنة التصنيفات' : 'التصنيفات قد تكون قديمة',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.sp, color: color),
+                ),
+                SizedBox(height: 2.h),
+                Text(subtitle, style: TextStyle(fontSize: 12.sp, color: Colors.black87)),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => context.push('/taxonomies'),
+            child: const Text('فتح'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Settings View
 class _SettingsView extends StatelessWidget {
   const _SettingsView();
@@ -717,12 +772,7 @@ class _SettingsView extends StatelessWidget {
             icon: const Icon(Icons.dashboard_customize),
             tooltip: 'إعدادات الداشبورد',
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const DashboardSettingsPage(),
-                ),
-              );
+              context.push('/settings/dashboard');
             },
           ),
         ],
@@ -796,7 +846,7 @@ class _CivilRegistryBanner extends ConsumerWidget {
           SizedBox(width: 8.w),
           FilledButton.tonal(
             onPressed: () {
-              Navigator.pushNamed(context, '/database-download');
+              context.push('/database-download');
             },
             style: FilledButton.styleFrom(
               backgroundColor: Colors.orange.shade100,

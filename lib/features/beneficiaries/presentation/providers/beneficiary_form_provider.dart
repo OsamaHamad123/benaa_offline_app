@@ -7,6 +7,8 @@ import '../../../dashboard/domain/usecases/log_activity.dart';
 import '../../../dashboard/presentation/providers/activity_providers.dart';
 import '../../../../core/utils/debug_logger.dart';
 import '../../../../core/error_handling/result.dart';
+import '../../../sync/presentation/providers/file_id_providers.dart';
+import '../../../sync/services/file_id_service.dart';
 
 /// 🎯 Beneficiary Form State
 class BeneficiaryFormState {
@@ -54,13 +56,15 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
   final UpdateBeneficiaryUseCase _updateUseCase;
   final GetBeneficiaryUseCase _getUseCase;
   final LoadFromCivilRegistryUseCase _loadFromCivilRegistry;
+  final FileIdService _fileIdService;
   final LogActivity? _logActivity;
 
   BeneficiaryFormNotifier(
     this._createUseCase,
     this._updateUseCase,
     this._getUseCase,
-    this._loadFromCivilRegistry, {
+    this._loadFromCivilRegistry,
+    this._fileIdService, {
     LogActivity? logActivity,
   })  : _logActivity = logActivity,
         super(const BeneficiaryFormState());
@@ -173,10 +177,14 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
       final fullName = beneficiary.fullName;
 
       if (state.isNew) {
+        // 🆔 Allocate File ID from local pool
+        final fileId = await _fileIdService.getNextId();
+
         // Create new
         final createResult = await _createUseCase.execute(
           beneficiary.copyWith(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
+            fileIdNumber: fileId?.toString(), // Assign reserved ID
             createdAt: now,
             updatedAt: now,
           ),
@@ -187,6 +195,14 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         }
 
         final created = (createResult as Success<Beneficiary>).value;
+
+        // ✅ Mark File ID as used if it was allocated
+        if (fileId != null) {
+          final localId = int.tryParse(created.id);
+          if (localId != null) {
+            await _fileIdService.markAsUsed(fileId, localId);
+          }
+        }
 
         // Log activity if available
         final logActivity = _logActivity;
@@ -296,16 +312,17 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 }
 
 /// Provider for beneficiary form
-final beneficiaryFormProvider =
-    StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
+final beneficiaryFormProvider = StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
   final dependencies = ref.watch(beneficiaryDependenciesProvider);
   final logActivity = ref.watch(logActivityUseCaseProvider);
+  final fileIdService = ref.watch(fileIdServiceProvider);
 
   return BeneficiaryFormNotifier(
     dependencies.createUseCase,
     dependencies.updateUseCase,
     dependencies.getUseCase,
     dependencies.loadFromCivilRegistryUseCase,
+    fileIdService,
     logActivity: logActivity,
   );
 });

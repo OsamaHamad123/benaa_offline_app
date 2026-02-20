@@ -24,6 +24,15 @@ class ApiConfig {
   static const String initialDataEndpoint = '/api/mobile/sync/initial';
   static const String syncStatusEndpoint = '/api/mobile/sync/status';
 
+  // 🆔 File ID Reservation Endpoints
+  static const String reserveFileIdsEndpoint = '/api/mobile/database/file-ids/reserve';
+  static const String syncUsedFileIdsEndpoint = '/api/mobile/database/file-ids/sync-used';
+
+  // 🚀 Batch Data Endpoints
+  static const String batchDataSyncEndpoint = '/api/mobile/database/data/batch';
+  static const String visitsBatchSyncEndpoint = '/api/mobile/visits/batch';
+  static const String attachmentUploadEndpoint = '/api/mobile/attachments/upload';
+
   // 📊 Data Endpoints
   static const String materialsEndpoint = '/api/materials';
   static const String stockMovementsEndpoint = '/api/stock-movements';

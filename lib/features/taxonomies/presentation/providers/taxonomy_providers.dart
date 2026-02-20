@@ -1,22 +1,23 @@
 import 'package:benaa_offline_app/core/error_handling/result.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../data/db/drift_database.dart' show AppDatabase;
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../../domain/repositories/taxonomy_repository.dart';
 import '../../domain/usecases/taxonomy_usecases.dart';
 import '../../data/datasources/taxonomy_remote_datasource.dart';
 import '../../data/datasources/taxonomy_local_datasource.dart';
+import '../../data/datasources/taxonomy_local_drift_datasource.dart';
 import '../../data/repositories/taxonomy_repository_impl.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Dependency Injection Providers
 // ═══════════════════════════════════════════════════════════════
 
-/// SharedPreferences Provider
-final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
-  throw UnimplementedError('SharedPreferences must be overridden in ProviderScope');
+/// Database Provider for taxonomy local storage (single source of truth)
+final taxonomyDatabaseProvider = Provider<AppDatabase>((ref) {
+  throw UnimplementedError('AppDatabase must be overridden in ProviderScope');
 });
 
 /// Dio Provider for Taxonomy API
@@ -32,8 +33,8 @@ final taxonomyRemoteDataSourceProvider = Provider<TaxonomyRemoteDataSource>((ref
 
 /// Local Data Source Provider
 final taxonomyLocalDataSourceProvider = Provider<TaxonomyLocalDataSource>((ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return TaxonomyLocalDataSourceImpl(prefs);
+  final db = ref.watch(taxonomyDatabaseProvider);
+  return TaxonomyLocalDriftDataSource(db.taxonomiesDao, db.syncMetadataDao);
 });
 
 /// Repository Provider
@@ -79,9 +80,61 @@ final taxonomyStatisticsUseCaseProvider = Provider<GetTaxonomyStatisticsUseCase>
 /// حالة المزامنة
 enum TaxonomySyncStatus { idle, syncing, success, error }
 
+/// حالة المزامنة التلقائية في الخلفية (periodic/resume)
+class TaxonomyAutoSyncState {
+  final bool enabled;
+  final bool inFlight;
+  final DateTime? lastAttemptAt;
+  final DateTime? lastSuccessAt;
+  final DateTime? nextAttemptAt;
+  final int consecutiveFailures;
+  final String? lastError;
+  final String? lastSkipReason;
+
+  const TaxonomyAutoSyncState({
+    this.enabled = true,
+    this.inFlight = false,
+    this.lastAttemptAt,
+    this.lastSuccessAt,
+    this.nextAttemptAt,
+    this.consecutiveFailures = 0,
+    this.lastError,
+    this.lastSkipReason,
+  });
+
+  TaxonomyAutoSyncState copyWith({
+    bool? enabled,
+    bool? inFlight,
+    DateTime? lastAttemptAt,
+    DateTime? lastSuccessAt,
+    DateTime? nextAttemptAt,
+    int? consecutiveFailures,
+    String? lastError,
+    String? lastSkipReason,
+    bool clearLastError = false,
+    bool clearLastSkipReason = false,
+  }) {
+    return TaxonomyAutoSyncState(
+      enabled: enabled ?? this.enabled,
+      inFlight: inFlight ?? this.inFlight,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      lastSuccessAt: lastSuccessAt ?? this.lastSuccessAt,
+      nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
+      consecutiveFailures: consecutiveFailures ?? this.consecutiveFailures,
+      lastError: clearLastError ? null : (lastError ?? this.lastError),
+      lastSkipReason: clearLastSkipReason ? null : (lastSkipReason ?? this.lastSkipReason),
+    );
+  }
+}
+
 /// حالة المزامنة الحالية
 final taxonomySyncStatusProvider = StateProvider<TaxonomySyncStatus>((ref) {
   return TaxonomySyncStatus.idle;
+});
+
+/// حالة المزامنة التلقائية الدورية
+final taxonomyAutoSyncStateProvider = StateProvider<TaxonomyAutoSyncState>((ref) {
+  return const TaxonomyAutoSyncState();
 });
 
 /// رسالة الخطأ

@@ -204,23 +204,26 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     try {
       final lastSync = await _localDataSource.getLastSyncTime();
 
-      final request = TaxonomySyncRequestDTO(
-        lastSync: lastSync,
-        includeDeleted: true,
-      );
+      final response = await _remoteDataSource.getAllTaxonomies(since: lastSync);
 
-      final response = await _remoteDataSource.syncTaxonomies(request);
-
-      // حفظ التصنيفات الجديدة/المحدثة
-      if (response.taxonomies != null && response.taxonomies!.isNotEmpty) {
-        final taxonomies = response.taxonomies!.map((d) => d.toEntity()).toList();
+      if (response.data.isNotEmpty) {
+        final taxonomies = response.data.map((d) => d.toEntity()).toList();
         await _localDataSource.saveTaxonomies(taxonomies);
       }
 
-      // تحديث وقت المزامنة
-      await _localDataSource.updateLastSyncTime(DateTime.now());
+      final syncTime = response.syncTimestamp ?? DateTime.now();
+      await _localDataSource.updateLastSyncTime(syncTime);
 
-      return Success(response.toSyncResult());
+      final result = TaxonomySyncResult(
+        addedCount: response.data.length,
+        updatedCount: 0,
+        deletedCount: response.data.where((t) => t.deletedAt != null).length,
+        syncTime: syncTime,
+        success: response.success,
+        message: response.message,
+      );
+
+      return Success(result);
     } on TaxonomyApiException catch (e) {
       return Failure(SyncFailure(e.message));
     } catch (e, st) {
@@ -231,19 +234,23 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   @override
   Future<Result<TaxonomySyncResult>> syncGroupFromServer(TaxonomyGroup group) async {
     try {
-      final request = TaxonomySyncRequestDTO(
-        group: group.value,
-        includeDeleted: true,
-      );
+      final response = await _remoteDataSource.getTaxonomiesByGroup(group);
 
-      final response = await _remoteDataSource.syncTaxonomies(request);
-
-      if (response.taxonomies != null && response.taxonomies!.isNotEmpty) {
-        final taxonomies = response.taxonomies!.map((d) => d.toEntity()).toList();
+      if (response.data.isNotEmpty) {
+        final taxonomies = response.data.map((d) => d.toEntity()).toList();
         await _localDataSource.saveTaxonomies(taxonomies);
       }
 
-      return Success(response.toSyncResult());
+      await _localDataSource.updateLastSyncTime(DateTime.now());
+
+      return Success(TaxonomySyncResult(
+        addedCount: response.data.length,
+        updatedCount: 0,
+        deletedCount: response.data.where((t) => t.deletedAt != null).length,
+        syncTime: DateTime.now(),
+        success: response.success,
+        message: response.message,
+      ));
     } on TaxonomyApiException catch (e) {
       return Failure(SyncFailure(e.message));
     } catch (e, st) {
@@ -278,7 +285,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       await _localDataSource.clearAll();
 
       // جلب كل التصنيفات من السيرفر
-      final response = await _remoteDataSource.getAllTaxonomies();
+      final response = await _remoteDataSource.getAllTaxonomies(since: null);
 
       if (response.data.isNotEmpty) {
         final taxonomies = response.data.map((d) => d.toEntity()).toList();

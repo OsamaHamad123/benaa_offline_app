@@ -92,6 +92,20 @@ final bridgeGovernoratesProvider = StreamProvider<List<Taxonomy>>((ref) {
       );
 });
 
+/// 👪 Relationships (صلة القرابة)
+final bridgeRelationshipsProvider = StreamProvider<List<Taxonomy>>((ref) {
+  return ref.watch(sync_providers.relationshipsProvider.stream).map(
+        (list) => list.map(_convertFromDrift).toList(),
+      );
+});
+
+/// 🧩 Sections (القسم)
+final bridgeSectionsProvider = StreamProvider<List<Taxonomy>>((ref) {
+  return ref.watch(sync_providers.sectionsProvider.stream).map(
+        (list) => list.map(_convertFromDrift).toList(),
+      );
+});
+
 // ═══════════════════════════════════════════════════════════════
 // 🔗 Generic Group Provider
 // ═══════════════════════════════════════════════════════════════
@@ -117,6 +131,10 @@ final bridgeTaxonomiesByGroupProvider = StreamProvider.family<List<Taxonomy>, Ta
         return ref.watch(bridgeHousingStatusesProvider.stream);
       case TaxonomyGroup.governorate:
         return ref.watch(bridgeGovernoratesProvider.stream);
+      case TaxonomyGroup.relationship:
+        return ref.watch(bridgeRelationshipsProvider.stream);
+      case TaxonomyGroup.section:
+        return ref.watch(bridgeSectionsProvider.stream);
       default:
         // للمجموعات الأخرى، نعيد قائمة فارغة
         // يمكن إضافتها لاحقاً عند الحاجة
@@ -125,6 +143,14 @@ final bridgeTaxonomiesByGroupProvider = StreamProvider.family<List<Taxonomy>, Ta
   },
 );
 
+/// One-shot provider للحصول على التصنيفات مرة واحدة بدون stream subscription.
+/// يقلل الحمل على UI isolate في الشاشات الثقيلة (مثل نموذج إضافة المستفيد).
+final bridgeTaxonomiesByGroupOnceProvider = FutureProvider.family<List<Taxonomy>, TaxonomyGroup>((ref, group) async {
+  final db = ref.read(sync_providers.databaseProvider);
+  final items = await db.taxonomiesDao.getByGroup(group.value);
+  return items.map(_convertFromDrift).toList();
+});
+
 // ═══════════════════════════════════════════════════════════════
 // 🔍 Lookup Providers
 // ═══════════════════════════════════════════════════════════════
@@ -132,7 +158,7 @@ final bridgeTaxonomiesByGroupProvider = StreamProvider.family<List<Taxonomy>, Ta
 /// البحث عن تصنيف بالكود
 final bridgeTaxonomyByCodeProvider = FutureProvider.family<Taxonomy?, ({TaxonomyGroup group, String code})>(
   (ref, params) async {
-    final taxonomiesAsync = await ref.watch(bridgeTaxonomiesByGroupProvider(params.group).future);
+    final taxonomiesAsync = await ref.watch(bridgeTaxonomiesByGroupOnceProvider(params.group).future);
     try {
       return taxonomiesAsync.firstWhere((t) => t.code == params.code);
     } catch (_) {
@@ -147,7 +173,7 @@ final bridgeTaxonomyByIdProvider = FutureProvider.family<Taxonomy?, String>(
     // نبحث في كل المجموعات
     for (final group in TaxonomyGroup.values) {
       try {
-        final taxonomies = await ref.watch(bridgeTaxonomiesByGroupProvider(group).future);
+        final taxonomies = await ref.watch(bridgeTaxonomiesByGroupOnceProvider(group).future);
         final found = taxonomies.where((t) => t.id == id);
         if (found.isNotEmpty) {
           return found.first;

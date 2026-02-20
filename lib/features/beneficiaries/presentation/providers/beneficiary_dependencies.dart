@@ -21,11 +21,6 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   throw UnimplementedError('Database provider must be overridden');
 });
 
-// 🆕 Civil Registry Database Provider (persons.db)
-final civilRegistryDatabaseProvider = Provider<CivilRegistryDatabase>((ref) {
-  return CivilRegistryDatabase.instance;
-});
-
 // Data Source
 final beneficiaryDataSourceProvider = Provider<BeneficiaryLocalDataSource>((
   ref,
@@ -72,28 +67,41 @@ final loadFromCivilRegistryUseCaseProvider = Provider((ref) {
 });
 
 // ============================================================================
-// 🆕 CIVIL REGISTRY PROVIDERS
+// 🆕 CIVIL REGISTRY PROVIDERS - SAFE & LAZY
 // ============================================================================
 
-// Civil Registry Data Source
-final civilRegistryDataSourceProvider = Provider<CivilRegistryLocalDataSource>((
-  ref,
-) {
-  final civilDb = ref.watch(civilRegistryDatabaseProvider);
+/// ✅ Check if civil registry database is available (async, safe)
+final civilRegistryAvailableProvider = FutureProvider<bool>((ref) async {
+  return await CivilRegistryDatabase.isAvailable();
+});
+
+/// ✅ Civil Registry Database Provider - SAFE, returns null if not available
+final civilRegistryDatabaseAsyncProvider = FutureProvider<CivilRegistryDatabase?>((ref) async {
+  final isAvailable = await CivilRegistryDatabase.isAvailable();
+  if (!isAvailable) {
+    return null; // Database not downloaded yet
+  }
+  return CivilRegistryDatabase.instance;
+});
+
+// Civil Registry Data Source - only works if database is available
+final civilRegistryDataSourceProvider = FutureProvider<CivilRegistryLocalDataSource?>((ref) async {
+  final civilDb = await ref.watch(civilRegistryDatabaseAsyncProvider.future);
+  if (civilDb == null) return null;
   return CivilRegistryLocalDataSource(civilDb);
 });
 
-// Civil Registry Repository
-final civilRegistryRepositoryProvider = Provider<CivilRegistryRepository>((
-  ref,
-) {
-  final dataSource = ref.watch(civilRegistryDataSourceProvider);
+// Civil Registry Repository - nullable
+final civilRegistryRepositoryProvider = FutureProvider<CivilRegistryRepository?>((ref) async {
+  final dataSource = await ref.watch(civilRegistryDataSourceProvider.future);
+  if (dataSource == null) return null;
   return CivilRegistryRepositoryImpl(dataSource);
 });
 
-// Civil Registry Use Cases
-final fetchCivilRegistryDataUseCaseProvider = Provider((ref) {
-  final repository = ref.watch(civilRegistryRepositoryProvider);
+// Civil Registry Use Cases - nullable
+final fetchCivilRegistryDataUseCaseProvider = FutureProvider<FetchCivilRegistryDataUseCase?>((ref) async {
+  final repository = await ref.watch(civilRegistryRepositoryProvider.future);
+  if (repository == null) return null;
   return FetchCivilRegistryDataUseCase(repository);
 });
 
@@ -101,16 +109,12 @@ final autofillFromCivilRegistryUseCaseProvider = Provider((ref) {
   return AutofillFromCivilRegistryUseCase();
 });
 
-// Civil Registry State Provider
-final civilRegistryProvider =
-    StateNotifierProvider<CivilRegistryNotifier, CivilRegistryState>((ref) {
-  final fetchUseCase = ref.watch(fetchCivilRegistryDataUseCaseProvider);
-  final autofillUseCase = ref.watch(
-    autofillFromCivilRegistryUseCaseProvider,
-  );
-
+// Civil Registry State Provider - safe, works even if database not available
+final civilRegistryProvider = StateNotifierProvider<CivilRegistryNotifier, CivilRegistryState>((ref) {
+  // Use null-safe approach - fetch use case may be null
   return CivilRegistryNotifier(
-    fetchUseCase: fetchUseCase,
-    autofillUseCase: autofillUseCase,
+    fetchUseCaseProvider: fetchCivilRegistryDataUseCaseProvider,
+    autofillUseCase: ref.watch(autofillFromCivilRegistryUseCaseProvider),
+    ref: ref,
   );
 });

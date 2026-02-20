@@ -11,3 +11,4 @@ export 'civil_registry_tables.dart';
 export 'family_deceased_table.dart';
 export 'family_members_table.dart';
 export 'sponsorships_table.dart';
+export 'file_id_reservation_table.dart';

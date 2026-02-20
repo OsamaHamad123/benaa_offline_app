@@ -69,7 +69,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupProvider(group));
+    final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(group));
 
     return taxonomiesAsync.when(
       data: (taxonomies) => _buildDropdown(context, taxonomies),
@@ -81,12 +81,22 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
   Widget _buildDropdown(BuildContext context, List<Taxonomy> taxonomies) {
     final theme = Theme.of(context);
 
+    final uniqueTaxonomies = <Taxonomy>[];
+    final seenCodes = <String>{};
+    for (final taxonomy in taxonomies) {
+      final code = taxonomy.code.trim();
+      if (code.isEmpty) continue;
+      if (seenCodes.add(code)) {
+        uniqueTaxonomies.add(taxonomy);
+      }
+    }
+
     // Find selected taxonomy
     Taxonomy? selectedTaxonomy;
     if (selectedCode != null) {
-      selectedTaxonomy = taxonomies.where((t) => t.code == selectedCode).firstOrNull;
+      selectedTaxonomy = uniqueTaxonomies.where((t) => t.code == selectedCode).firstOrNull;
     } else if (selectedId != null) {
-      selectedTaxonomy = taxonomies.where((t) => t.id == selectedId).firstOrNull;
+      selectedTaxonomy = uniqueTaxonomies.where((t) => t.id == selectedId).firstOrNull;
     }
 
     return DropdownButtonFormField<String>(
@@ -105,7 +115,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
               vertical: 14.h,
             ),
           ),
-      items: taxonomies.map((taxonomy) {
+      items: uniqueTaxonomies.map((taxonomy) {
         return DropdownMenuItem<String>(
           value: taxonomy.code,
           child: Row(
@@ -137,7 +147,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
                 onCodeChanged!(code);
               }
               if (onTaxonomyChanged != null) {
-                final taxonomy = taxonomies.where((t) => t.code == code).firstOrNull;
+                final taxonomy = uniqueTaxonomies.where((t) => t.code == code).firstOrNull;
                 onTaxonomyChanged!(taxonomy);
               }
             }
@@ -225,6 +235,10 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
         return Icons.handshake_rounded;
       case TaxonomyGroup.beneficiaryStatus:
         return Icons.verified_user_rounded;
+      case TaxonomyGroup.relationship:
+        return Icons.family_restroom_rounded;
+      case TaxonomyGroup.section:
+        return Icons.account_tree_rounded;
     }
   }
 

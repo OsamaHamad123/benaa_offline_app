@@ -48,5 +48,6 @@ enum CivilRegistryErrorType {
   invalidNationalId,
   serverError,
   timeout,
+  databaseNotAvailable, // ✅ When civil registry DB is not downloaded
   unknown,
 }

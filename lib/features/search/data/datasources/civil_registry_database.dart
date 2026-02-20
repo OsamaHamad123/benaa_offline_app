@@ -8,6 +8,15 @@ import 'database_migrations_service.dart';
 import 'civil_registry_search_queries.dart';
 import '../../domain/entities/civil_person.dart';
 
+/// 🚫 Exception thrown when civil registry database is not available
+class CivilRegistryNotAvailableException implements Exception {
+  final String message;
+  CivilRegistryNotAvailableException(this.message);
+
+  @override
+  String toString() => 'CivilRegistryNotAvailableException: $message';
+}
+
 /// 📂 Civil Registry Database - Clean Architecture
 ///
 /// Responsibilities:
@@ -19,6 +28,8 @@ class CivilRegistryDatabase {
   static CivilRegistryDatabase? _instance;
   static Database? _database;
   static CivilRegistrySearchQueries? _searchQueries;
+  static bool _backgroundSetupStarted = false;
+  static bool _runtimeMaintenanceEnabled = false;
 
   CivilRegistryDatabase._();
 
@@ -28,22 +39,47 @@ class CivilRegistryDatabase {
   }
 
   /// Get database instance
-  Future<Database> get database async {
+  Future<Database?> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
-    return _database!;
+    return _database;
   }
 
   /// Get search queries instance
-  Future<CivilRegistrySearchQueries> get searchQueries async {
+  Future<CivilRegistrySearchQueries?> get searchQueries async {
     if (_searchQueries != null) return _searchQueries!;
     final db = await database;
+    if (db == null) return null;
     _searchQueries = CivilRegistrySearchQueries(db);
-    return _searchQueries!;
+    return _searchQueries;
+  }
+
+  /// ✅ Check if database is available (without throwing)
+  static Future<bool> isAvailable() async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final dbPath = p.join(appDir.path, 'databases', 'civil_registry.db');
+      final file = File(dbPath);
+      return await file.exists();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// ✅ Get database path
+  static Future<String> getDatabasePath() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    return p.join(appDir.path, 'databases', 'civil_registry.db');
+  }
+
+  /// Opt-in hook for heavy maintenance tasks (ANALYZE/index verification).
+  /// Keep disabled during normal runtime to avoid ANR on low-end devices.
+  static void setRuntimeMaintenanceEnabled(bool enabled) {
+    _runtimeMaintenanceEnabled = enabled;
   }
 
   /// Initialize database
-  Future<Database> _initDatabase() async {
+  Future<Database?> _initDatabase() async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final dbPath = p.join(appDir.path, 'databases', 'civil_registry.db');
@@ -52,11 +88,12 @@ class CivilRegistryDatabase {
       final exists = await file.exists();
 
       if (!exists) {
-        throw Exception(
-          'قاعدة بيانات السجل المدني غير موجودة.\n'
-          'الرجاء الذهاب إلى صفحة "تنزيل قاعدة بيانات السجل المدني" أولاً.\n'
-          'سيتم نسخ القاعدة تلقائياً من الملفات.',
+        // ✅ Return null: Don't throw, let caller handle
+        UnifiedLogger.warning(
+          '⚠️ Civil registry database not found at: $dbPath\n'
+          'Please download from Settings → Database Download',
         );
+        return null; // ✅ Return null instead of throwing
       }
 
       // Open database WITHOUT version (existing database with data)
@@ -71,26 +108,13 @@ class CivilRegistryDatabase {
         throw Exception('جدول persons غير موجود في قاعدة البيانات!');
       }
 
-      // Apply performance PRAGMA settings
+      // ⚡ IMPORTANT: keep init lightweight to avoid ANR on low-end devices.
+      // Heavy optimization and index setup are deferred to background.
       await _applyPragmaSettings(db);
 
-      // ⚡ Check if database needs optimization (first time after copy)
-      final needsOptimization = await _needsOptimization(db);
-
-      if (needsOptimization) {
-        UnifiedLogger.info('⏳ Optimizing database for first use...');
-        await _optimizeDatabase(db);
-        UnifiedLogger.success('✅ Database optimization complete!');
-      } else {
-        UnifiedLogger.info('✅ Database already optimized, skipping...');
+      if (_runtimeMaintenanceEnabled) {
+        _scheduleBackgroundSetup(db);
       }
-
-      // ⚡ Optimized indexes setup - MUST run synchronously for fast search!
-      UnifiedLogger.info(
-        '⏳ Setting up optimized indexes for ultra-fast search...',
-      );
-      await DatabaseMigrationsService.ensureOptimizedIndexes(db);
-      UnifiedLogger.success('Optimized indexes ready!');
 
       // ⚠️ Background migrations DISABLED to prevent lag after fetch
       // These were causing heavy GC and app slowdown:
@@ -106,58 +130,44 @@ class CivilRegistryDatabase {
       return db;
     } catch (e) {
       UnifiedLogger.error('Database error', error: e);
-      rethrow;
+      return null; // ✅ Return null on initialization error
     }
   }
 
   /// Apply PRAGMA settings - SMART PERFORMANCE MODE ⚡
   Future<void> _applyPragmaSettings(Database db) async {
-    // ⚡ CRITICAL: Disable synchronous for MAXIMUM SPEED (read-only DB is safe)
-    await db.rawQuery('PRAGMA synchronous = OFF');
-
-    // ⚡ MASSIVE cache (1GB for extreme speed)
-    await db.rawQuery('PRAGMA cache_size = -1048576');
-
-    // All temp operations in memory
-    await db.rawQuery('PRAGMA temp_store = MEMORY');
-
-    // WAL mode - allows concurrent reads (critical!)
+    // Keep PRAGMA setup minimal and safe for UI responsiveness.
     await db.rawQuery('PRAGMA journal_mode = WAL');
-
-    // Optimal page size for modern systems
-    await db.rawQuery('PRAGMA page_size = 4096');
-
-    // ⚡ SMART memory-mapped I/O (adaptive based on 5M records DB ~2GB)
-    // Conservative: 512MB (works on all devices)
-    // Note: Full DB is ~2GB, but we don't need to map it all at once
-    await db.rawQuery('PRAGMA mmap_size = 536870912'); // 512MB
-
-    // ⚡ EXCLUSIVE lock for single-user app (faster)
-    await db.rawQuery('PRAGMA locking_mode = EXCLUSIVE');
-
-    // Dirty reads OK for search (huge performance boost)
-    await db.rawQuery('PRAGMA read_uncommitted = 1');
-
-    // Auto-vacuum off for speed (data is read-only)
-    await db.rawQuery('PRAGMA auto_vacuum = NONE');
-
-    // Disable foreign keys (not used, save overhead)
+    await db.rawQuery('PRAGMA temp_store = MEMORY');
+    await db.rawQuery('PRAGMA cache_size = -65536'); // ~64MB
+    await db.rawQuery('PRAGMA synchronous = NORMAL');
     await db.rawQuery('PRAGMA foreign_keys = OFF');
+    await db.rawQuery('PRAGMA wal_autocheckpoint = 1000');
+  }
 
-    // ⚡ NEW: Disable secure delete for speed
-    await db.rawQuery('PRAGMA secure_delete = OFF');
+  void _scheduleBackgroundSetup(Database db) {
+    if (_backgroundSetupStarted) return;
+    _backgroundSetupStarted = true;
 
-    // Optimize query planner
-    await db.rawQuery('PRAGMA optimize');
+    Future<void>(() async {
+      try {
+        final needsOptimization = await _needsOptimization(db);
+        if (needsOptimization) {
+          UnifiedLogger.info('⏳ Running deferred database optimization...');
+          await _optimizeDatabase(db);
+        }
+      } catch (e) {
+        UnifiedLogger.warning('Deferred optimization skipped: $e');
+      }
 
-    // ⚠️ NOTE: ANALYZE removed - runs once in _optimizeDatabase() on first use
-    // Running ANALYZE multiple times causes unnecessary overhead
-
-    // Increase WAL checkpoint threshold (less frequent checkpoints)
-    await db.rawQuery('PRAGMA wal_autocheckpoint = 10000');
-
-    // Disable query_only mode for flexibility
-    await db.rawQuery('PRAGMA query_only = OFF');
+      try {
+        UnifiedLogger.info('⏳ Running deferred index setup...');
+        await DatabaseMigrationsService.ensureOptimizedIndexes(db);
+        UnifiedLogger.success('Deferred index setup completed');
+      } catch (e) {
+        UnifiedLogger.warning('Deferred index setup skipped: $e');
+      }
+    });
   }
 
   /// Check if database needs optimization (first time after copy from assets)
@@ -197,6 +207,7 @@ class CivilRegistryDatabase {
   /// Search by National ID
   Future<CivilPerson?> searchByNationalId(String nationalId) async {
     final queries = await searchQueries;
+    if (queries == null) return null;
     return queries.searchByNationalId(nationalId);
   }
 
@@ -209,6 +220,7 @@ class CivilRegistryDatabase {
     int offset = 0,
   }) async {
     final queries = await searchQueries;
+    if (queries == null) return [];
     return queries.searchByName(
       query,
       governorate: governorate,
@@ -225,6 +237,7 @@ class CivilRegistryDatabase {
     int? genderCode,
   }) async {
     final queries = await searchQueries;
+    if (queries == null) return 0;
     return queries.getSearchCount(
       query,
       governorate: governorate,
@@ -235,6 +248,7 @@ class CivilRegistryDatabase {
   /// Get statistics
   Future<Map<String, dynamic>> getStatistics() async {
     final queries = await searchQueries;
+    if (queries == null) return {'total': 0, 'males': 0, 'females': 0};
     return queries.getStatistics();
   }
 
@@ -254,5 +268,7 @@ class CivilRegistryDatabase {
     _instance = null;
     _database = null;
     _searchQueries = null;
+    _backgroundSetupStarted = false;
+    _runtimeMaintenanceEnabled = false;
   }
 }

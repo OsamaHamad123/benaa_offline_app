@@ -187,11 +187,13 @@ class AuthRepositoryImpl implements AuthRepository {
     required String deviceId,
   }) async {
     try {
-      final currentToken = await _secureStorage.getAuthToken();
-
-      if (currentToken == null) {
-        return const Failure(NoStoredSessionFailure());
+      final currentSessionResult = await getStoredSession();
+      if (currentSessionResult is Failure<AuthSession>) {
+        return Failure(currentSessionResult.error);
       }
+
+      final session = (currentSessionResult as Success<AuthSession>).value;
+      final token = session.token.accessToken;
 
       UnifiedLogger.info('🔄 Refreshing token');
 
@@ -199,7 +201,7 @@ class AuthRepositoryImpl implements AuthRepository {
         ApiConfig.refreshTokenEndpoint,
         data: RefreshTokenRequest(deviceId: deviceId).toJson(),
         options: Options(
-          headers: {'Authorization': 'Bearer $currentToken'},
+          headers: {'Authorization': 'Bearer $token'},
         ),
       );
 
@@ -209,11 +211,9 @@ class AuthRepositoryImpl implements AuthRepository {
         if (refreshResponse.success && refreshResponse.data != null) {
           final newToken = AuthMappers.tokenFromDto(refreshResponse.data!.token);
 
-          // تحديث Token محلياً
-          await _secureStorage.updateToken(
-            accessToken: newToken.accessToken,
-            expiresAt: newToken.expiresAt,
-          );
+          // تحديث الجلسة في الذاكرة والتخزين
+          final updatedSession = session.updateToken(newToken);
+          await saveSession(updatedSession);
 
           UnifiedLogger.success('✅ Token refreshed - expires in ${newToken.remainingDays} days');
           return Success(newToken);

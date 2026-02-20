@@ -185,8 +185,7 @@ class DashboardLocalDataSource {
   }
 
   Future<int> _getCompletedVisitstodayCount() async {
-    // TODO: Implement when visits feature is ready
-    return 0;
+    return await database.visitsDao.countVisitsToday();
   }
 
   Future<int> _getNewBeneficiariesToday(DateTime startOfDay) async {
@@ -266,10 +265,8 @@ class DashboardLocalDataSource {
     final totalFamilyMembers = totalDeceased + totalOrphans;
 
     // Average family size (orphans per beneficiary)
-    final beneficiariesCount =
-        await database.beneficiariesDao.countBeneficiaries();
-    final averageFamilySize =
-        beneficiariesCount > 0 ? (totalOrphans / beneficiariesCount) : 0.0;
+    final beneficiariesCount = await database.beneficiariesDao.countBeneficiaries();
+    final averageFamilySize = beneficiariesCount > 0 ? (totalOrphans / beneficiariesCount) : 0.0;
 
     return {
       'totalFamilyMembers': totalFamilyMembers,

@@ -7,13 +7,19 @@ import 'dart:convert';
 class DraftManager {
   static const String _draftPrefix = 'beneficiary_draft_';
   static const String _draftListKey = 'draft_list';
+  static SharedPreferences? _prefsCache;
+
+  static Future<SharedPreferences> _prefs() async {
+    _prefsCache ??= await SharedPreferences.getInstance();
+    return _prefsCache!;
+  }
 
   /// Save form as draft
   static Future<void> saveDraft({
     required String draftId,
     required Map<String, dynamic> formData,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
 
     // Add timestamp
     formData['savedAt'] = DateTime.now().toIso8601String();
@@ -32,7 +38,7 @@ class DraftManager {
 
   /// Load draft by ID
   static Future<Map<String, dynamic>?> loadDraft(String draftId) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final String? draftJson = prefs.getString('$_draftPrefix$draftId');
 
     if (draftJson == null) return null;
@@ -42,7 +48,7 @@ class DraftManager {
 
   /// Delete draft
   static Future<void> deleteDraft(String draftId) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
 
     // Remove draft data
     await prefs.remove('$_draftPrefix$draftId');
@@ -54,22 +60,40 @@ class DraftManager {
   }
 
   /// Get all drafts
-  static Future<List<Map<String, dynamic>>> getAllDrafts() async {
-    final prefs = await SharedPreferences.getInstance();
+  static Future<List<Map<String, dynamic>>> getAllDrafts({
+    int? limit,
+    bool autoSavedOnly = false,
+  }) async {
+    final prefs = await _prefs();
     final List<String> draftIds = prefs.getStringList(_draftListKey) ?? [];
 
     final List<Map<String, dynamic>> drafts = [];
-    for (final id in draftIds) {
-      final draft = await loadDraft(id);
-      if (draft != null) {
+
+    // Iterate from latest to oldest (list appends newest at end).
+    final Iterable<String> orderedIds = draftIds.reversed;
+    for (final id in orderedIds) {
+      final draftJson = prefs.getString('$_draftPrefix$id');
+      if (draftJson == null) continue;
+
+      try {
+        final draft = json.decode(draftJson) as Map<String, dynamic>;
+        if (autoSavedOnly && draft['isAutoSaved'] != true) {
+          continue;
+        }
         drafts.add(draft);
+
+        if (limit != null && drafts.length >= limit) {
+          break;
+        }
+      } catch (_) {
+        continue;
       }
     }
 
     // Sort by savedAt (newest first)
     drafts.sort((a, b) {
-      final aTime = DateTime.parse(a['savedAt'] as String);
-      final bTime = DateTime.parse(b['savedAt'] as String);
+      final aTime = DateTime.tryParse((a['savedAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = DateTime.tryParse((b['savedAt'] ?? '').toString()) ?? DateTime.fromMillisecondsSinceEpoch(0);
       return bTime.compareTo(aTime);
     });
 
@@ -78,13 +102,13 @@ class DraftManager {
 
   /// Check if draft exists
   static Future<bool> hasDraft(String draftId) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     return prefs.containsKey('$_draftPrefix$draftId');
   }
 
   /// Clear all drafts
   static Future<void> clearAllDrafts() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _prefs();
     final List<String> draftIds = prefs.getStringList(_draftListKey) ?? [];
 
     for (final id in draftIds) {

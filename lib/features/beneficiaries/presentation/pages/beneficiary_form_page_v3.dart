@@ -1,4 +1,8 @@
+import 'dart:ui';
+
 import 'package:benaa_offline_app/core/widgets/responsive_dialog.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/civil_registry_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +33,16 @@ import 'v2_form_helpers/family_save_helper.dart';
 import 'v2_form_helpers/form_constants.dart';
 import 'v2_form_helpers/form_history.dart';
 import 'v2_form_helpers/draft_manager.dart'; // 💾 Draft Manager
+import 'v2_form_helpers/form_bootstrap_controller.dart';
+import 'v2_form_helpers/draft_save_coordinator.dart';
+import 'v2_form_helpers/form_save_coordinator.dart';
+import 'v2_form_helpers/draft_load_coordinator.dart';
+import 'v2_form_helpers/beneficiary_delete_coordinator.dart';
+import 'v2_form_helpers/form_flow_tracer.dart';
+import 'v2_form_helpers/form_feedback_coordinator.dart';
+import 'v2_form_helpers/form_open_benchmark.dart';
+import 'v2_form_helpers/form_flow_metrics_collector.dart';
+import 'v2_form_helpers/auto_save_throttle_guard.dart';
 
 // Widgets
 import 'v2_form_helpers/widgets/loading_overlay.dart' as local;
@@ -85,6 +99,9 @@ class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
 }
 
 class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> with SingleTickerProviderStateMixin {
+  static const bool _enableFormTour = false;
+  static const bool _enableRuntimePerfTracing = true;
+
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
 
@@ -93,8 +110,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   // ⚡ Performance: استخدام ValueNotifier بدلاً من setState
   final ValueNotifier<bool> _isSavingNotifier = ValueNotifier(false);
-  bool _isDeleting = false;
-  bool _isLoading = false;
+  final ValueNotifier<bool> _isDeletingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   bool _isSavingLocked = false;
 
   final ValueNotifier<DateTime?> _lastSavedNotifier = ValueNotifier(null);
@@ -103,6 +120,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   // Setters للكتابة السهلة (Getters غير مطلوبة لأننا نستخدم ValueListenableBuilder)
   bool get _isSaving => _isSavingNotifier.value;
   set _isSaving(bool value) => _isSavingNotifier.value = value;
+  bool get _isDeleting => _isDeletingNotifier.value;
+  set _isDeleting(bool value) => _isDeletingNotifier.value = value;
+  bool get _isLoading => _isLoadingNotifier.value;
+  set _isLoading(bool value) => _isLoadingNotifier.value = value;
 
   set _lastSaved(DateTime? value) => _lastSavedNotifier.value = value;
 
@@ -110,6 +131,15 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   // 💾 Auto-draft ID - ثابت لتجنب إنشاء مسودات متكررة
   String? _autoSaveDraftId;
+  final BeneficiaryFormBootstrapController _bootstrapController = const BeneficiaryFormBootstrapController();
+  final DraftSaveCoordinator _draftSaveCoordinator = const DraftSaveCoordinator();
+  final FormSaveCoordinator _formSaveCoordinator = const FormSaveCoordinator();
+  final DraftLoadCoordinator _draftLoadCoordinator = const DraftLoadCoordinator();
+  final BeneficiaryDeleteCoordinator _beneficiaryDeleteCoordinator = const BeneficiaryDeleteCoordinator();
+  final FormFeedbackCoordinator _feedbackCoordinator = const FormFeedbackCoordinator();
+  final FormOpenBenchmark _openBenchmark = FormOpenBenchmark();
+  final FormFlowMetricsCollector _flowMetricsCollector = FormFlowMetricsCollector();
+  final AutoSaveThrottleGuard _autoSaveThrottleGuard = AutoSaveThrottleGuard();
 
   // 🆕 New features state
   bool _showStatistics = false;
@@ -127,12 +157,21 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   Timer? _tourShowTimer;
 
   // 🚀 Phase 3 - Advanced UX Features
-  late final FieldDependencyController _dependencyController;
+  FieldDependencyController? _dependencyController;
   final Map<String, SmartHint> _fieldHints = {}; // Smart hints for fields
+
+  // 🧪 Runtime perf tracing (debug only)
+  int _totalFramesObserved = 0;
+  int _slowBuildFrames = 0;
+  int _slowRasterFrames = 0;
+  int _verySlowFrames = 0;
+  Duration _worstTotalFrame = Duration.zero;
+  bool _previousCivilLookupDiagnosticsEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    _openBenchmark.start();
 
     // ✅ Initialize Debouncer for auto-save (2 seconds)
     _autoSaveDebouncer = Debouncer(delay: const Duration(seconds: 2));
@@ -145,9 +184,17 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     );
 
     // 🚀 Initialize Phase 3 features
-    _dependencyController = FieldDependencyController();
-    _setupFieldDependencies();
+    if (_showFieldHelpers) {
+      _dependencyController = FieldDependencyController();
+      _setupFieldDependencies();
+    }
     _setupSmartHints();
+
+    if (kDebugMode && _enableRuntimePerfTracing) {
+      WidgetsBinding.instance.addTimingsCallback(_onFrameTimings);
+      _previousCivilLookupDiagnosticsEnabled = CivilRegistryLookupDiagnostics.enabled;
+      CivilRegistryLookupDiagnostics.enabled = true;
+    }
 
     // ⚠️ DISABLED for performance - causes setState on every keystroke
     // Listen to controller changes for history
@@ -156,15 +203,47 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeForm();
       _checkFirstTimeUser();
+      _openBenchmark.stopAndReport();
     });
+  }
+
+  void _onFrameTimings(List<FrameTiming> timings) {
+    for (final timing in timings) {
+      _totalFramesObserved++;
+
+      final buildDuration = timing.buildDuration;
+      final rasterDuration = timing.rasterDuration;
+      final totalDuration = timing.totalSpan;
+
+      if (buildDuration > const Duration(milliseconds: 16)) {
+        _slowBuildFrames++;
+      }
+      if (rasterDuration > const Duration(milliseconds: 16)) {
+        _slowRasterFrames++;
+      }
+      if (totalDuration > const Duration(milliseconds: 50)) {
+        _verySlowFrames++;
+      }
+
+      if (totalDuration > _worstTotalFrame) {
+        _worstTotalFrame = totalDuration;
+      }
+    }
   }
 
   /// 🎓 Check if first time user and show tour
   void _checkFirstTimeUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenTour = prefs.getBool('has_seen_form_tour') ?? false;
+    if (!_enableFormTour) {
+      return;
+    }
 
-    if (!hasSeenTour && mounted) {
+    final prefs = await SharedPreferences.getInstance();
+    final shouldShowTour = await _bootstrapController.shouldShowTour(
+      tourEnabled: _enableFormTour,
+      prefs: prefs,
+    );
+
+    if (shouldShowTour && mounted) {
       // Show tour after a short delay (cancelable timer)
       _tourShowTimer = Timer(const Duration(seconds: 1), () {
         if (mounted) {
@@ -225,6 +304,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       if (!hasChanges) return;
 
+      final now = DateTime.now();
+      if (!_autoSaveThrottleGuard.canAttempt(now)) {
+        return;
+      }
+
       // ✅ Auto-save as draft instead of full save
       // This prevents validation errors and allows partial forms
       await _autoSaveDraft();
@@ -233,69 +317,75 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   /// 💾 Auto-save as draft (silent, no validation required)
   Future<void> _autoSaveDraft() async {
+    final trace = FormFlowTracer.start('autoSaveDraft');
+    final now = DateTime.now();
+    _autoSaveThrottleGuard.markStarted();
+    var success = false;
+    var signature = '';
+
     try {
-      final formData = {
-        'firstName': _controllers.firstNameController.text,
-        'fatherName': _controllers.fatherNameController.text,
-        'grandfatherName': _controllers.grandfatherNameController.text,
-        'lastName': _controllers.lastNameController.text,
-        'motherName': _controllers.motherNameController.text,
-        'nationalId': _controllers.nationalIdController.text,
-        'birthDate': _controllers.birthDateController.text,
-        'phone': _controllers.phoneController.text,
-        'altPhone': _controllers.altPhoneController.text,
-        'address': _controllers.addressController.text,
-        'neighborhood': _controllers.neighborhoodController.text,
-        'notes': _controllers.notesController.text,
-        'gender': _controllers.selectedGender,
-        'maritalStatus': _controllers.selectedMaritalStatus,
-        'educationLevel': _controllers.selectedEducationLevel,
-        'employmentStatus': _controllers.selectedEmploymentStatus,
-        'category': _controllers.selectedCategory,
-        'displacementStatus': _controllers.selectedDisplacementStatus,
-        'healthStatus': _controllers.selectedHealthStatus,
-        'housingStatus': _controllers.selectedHousingStatus,
-        'housingType': _controllers.selectedHousingType,
-        'hasDisability': _controllers.hasDisability,
-      };
+      final formData = _draftSaveCoordinator.buildAutoSaveFormData(_controllers);
+      signature = AutoSaveThrottleGuard.buildSignature(
+        formData: formData,
+        currentTab: _tabController.index,
+      );
+
+      if (_autoSaveThrottleGuard.shouldSkipUnchanged(signature: signature, now: now)) {
+        success = true;
+        final elapsed = trace.end(result: 'skipped_unchanged');
+        _flowMetricsCollector.record(operation: 'autoSaveDraft', durationMs: elapsed);
+        return;
+      }
 
       // استخدام ID ثابت للمسودة التلقائية - يتم التحديث بدلاً من الإنشاء
-      _autoSaveDraftId ??= widget.beneficiaryId ??
-          'auto_draft_${_controllers.nationalIdController.text.isNotEmpty ? _controllers.nationalIdController.text : 'temp_${DateTime.now().millisecondsSinceEpoch}'}';
+      _autoSaveDraftId = _draftSaveCoordinator.ensureAutoSaveDraftId(
+        currentDraftId: _autoSaveDraftId,
+        beneficiaryId: widget.beneficiaryId,
+        nationalId: _controllers.nationalIdController.text.trim(),
+        now: now,
+      );
 
-      final firstName = _controllers.firstNameController.text;
-      final lastName = _controllers.lastNameController.text;
-      final draftName =
-          firstName.isNotEmpty ? 'حفظ تلقائي - $firstName ${lastName.isNotEmpty ? lastName : ""}' : 'مسودة جديدة';
+      final draftName = _draftSaveCoordinator.buildAutoDraftName(_controllers);
 
       await DraftManager.saveDraft(
         draftId: _autoSaveDraftId!,
-        formData: {
-          'name': draftName,
-          'notes': 'آخر تحديث: ${DateTime.now().toString().split('.')[0]}',
-          'formData': formData,
-          'currentTab': _tabController.index,
-          'beneficiaryId': widget.beneficiaryId,
-          'isAutoSaved': true,
-        },
-      );
+        formData: _draftSaveCoordinator.buildDraftEnvelope(
+          name: draftName,
+          notes: 'آخر تحديث: ${now.toString().split('.')[0]}',
+          formData: formData,
+          currentTab: _tabController.index,
+          beneficiaryId: widget.beneficiaryId,
+          isAutoSaved: true,
+        ),
+      ).timeout(const Duration(seconds: 2), onTimeout: () {
+        throw TimeoutException('Auto-save draft timed out');
+      });
 
       if (mounted) {
-        setState(() {
-          _lastSaved = DateTime.now();
-        });
+        _lastSaved = DateTime.now();
       }
 
       debugPrint('✅ Auto-saved draft successfully');
+      success = true;
+      final elapsed = trace.end(result: 'saved');
+      _flowMetricsCollector.record(operation: 'autoSaveDraft', durationMs: elapsed);
     } catch (e, stackTrace) {
       final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
       debugPrint('❌ Auto-save failed: $errorMsg (technical: $e)');
+      final elapsed = trace.end(result: 'failed');
+      _flowMetricsCollector.record(operation: 'autoSaveDraft', durationMs: elapsed);
       // Silent failure - don't disturb user with auto-save errors
+    } finally {
+      _autoSaveThrottleGuard.markFinished(
+        success: success,
+        signature: signature,
+        now: now,
+      );
     }
   }
 
   void _initializeForm() async {
-    setState(() => _isLoading = true);
+    _isLoading = true;
 
     if (widget.beneficiaryId != null) {
       await ref.read(beneficiaryFormProvider.notifier).loadBeneficiary(widget.beneficiaryId!);
@@ -322,9 +412,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           }
         });
       } else {
-        // ✅ التحقق من وجود مسودات تلقائية واقتراحها على المستخدم (cancelable)
+        // ✅ التحقق من وجود مسودات تلقائية بشكل مؤجل لتجنب أي تقطيع عند فتح الصفحة
         _offerAutoSavedDraftsTimer = Timer(
-          const Duration(milliseconds: 500),
+          const Duration(seconds: 3),
           () async {
             if (mounted) {
               await _checkAndOfferAutoSavedDrafts();
@@ -336,21 +426,22 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     }
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
+    _isLoading = false;
   }
 
   /// 💾 Check for auto-saved drafts and offer to restore
   Future<void> _checkAndOfferAutoSavedDrafts() async {
     try {
-      final drafts = await DraftManager.getAllDrafts();
+      // Skip if user already started typing.
+      final latestDraft = await _bootstrapController.getLatestAutoSavedDraft(
+        hasUserInput: _controllers.firstNameController.text.trim().isNotEmpty ||
+            _controllers.nationalIdController.text.trim().isNotEmpty,
+        limit: 15,
+      );
 
-      // تصفية المسودات التلقائية فقط
-      final autoSavedDrafts = drafts.where((d) => d['isAutoSaved'] == true).toList();
-
-      if (autoSavedDrafts.isEmpty) return;
+      if (latestDraft == null) return;
 
       // عرض أحدث مسودة تلقائية فقط
-      final latestDraft = autoSavedDrafts.first;
       final draftName = latestDraft['name'] ?? 'مسودة';
       final savedAt = DateTime.parse(latestDraft['savedAt']);
       final timeSince = _formatDateTime(savedAt);
@@ -491,7 +582,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _controllers.hasDisability = false;
     _controllers.updatePendingFiles([]);
 
-    ref.read(civilRegistryProvider.notifier).reset();
+    // ✅ Safe reset - don't crash if civil registry is not available
+    try {
+      ref.read(civilRegistryProvider.notifier).reset();
+    } catch (e) {
+      // Silently ignore - civil registry is optional
+      debugPrint('⚠️ Civil registry not available: $e');
+    }
   }
 
   void _populateControllers(Beneficiary beneficiary) {
@@ -560,15 +657,19 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   /// 🔗 Setup Field Dependencies (Phase 3)
   void _setupFieldDependencies() {
+    if (_dependencyController == null) {
+      return;
+    }
+
     // Add common dependency scenarios
     final scenarios = DependencyScenarios.getAllCommonScenarios();
     for (final scenario in scenarios) {
-      _dependencyController.addDependency(scenario);
+      _dependencyController!.addDependency(scenario);
     }
 
     // Listen to text field changes
     _controllers.firstNameController.addListener(() {
-      _dependencyController.updateField(
+      _dependencyController?.updateField(
         'maritalStatus',
         _controllers.selectedMaritalStatus,
       );
@@ -935,36 +1036,19 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       _isSaving = true; // ⚡ Direct assignment instead of setState
 
       try {
-        // 📦 Prepare draft data
-        final formData = {
-          'firstName': _controllers.firstNameController.text,
-          'fatherName': _controllers.fatherNameController.text,
-          'grandfatherName': _controllers.grandfatherNameController.text,
-          'lastName': _controllers.lastNameController.text,
-          'motherName': _controllers.motherNameController.text,
-          'nationalId': _controllers.nationalIdController.text,
-          'birthDate': _controllers.birthDateController.text,
-          'phone': _controllers.phoneController.text,
-          'altPhone': _controllers.altPhoneController.text,
-          'address': _controllers.addressController.text,
-          'neighborhood': _controllers.neighborhoodController.text,
-          'notes': _controllers.notesController.text,
-          'gender': _controllers.selectedGender,
-          'maritalStatus': _controllers.selectedMaritalStatus,
-          'educationLevel': _controllers.selectedEducationLevel,
-        };
+        final formData = _draftSaveCoordinator.buildManualSaveFormData(_controllers);
 
         // 💾 Save to local storage using DraftManager
         final draftId = 'draft_${DateTime.now().millisecondsSinceEpoch}';
         await DraftManager.saveDraft(
           draftId: draftId,
-          formData: {
-            'name': draftName,
-            'notes': draftNotes,
-            'formData': formData,
-            'currentTab': _tabController.index,
-            'beneficiaryId': widget.beneficiaryId,
-          },
+          formData: _draftSaveCoordinator.buildDraftEnvelope(
+            name: draftName,
+            notes: draftNotes,
+            formData: formData,
+            currentTab: _tabController.index,
+            beneficiaryId: widget.beneficiaryId,
+          ),
         );
 
         if (!mounted) return;
@@ -1176,60 +1260,42 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   /// 📥 Load Draft
   Future<void> _loadDraft(Map<String, dynamic> draft) async {
+    final trace = FormFlowTracer.start('loadDraft');
     try {
-      setState(() => _isLoading = true);
+      _isLoading = true;
+      trace.startStep('applyDraft');
 
-      final formData = draft['formData'] as Map<String, dynamic>;
-
-      // Fill controllers with draft data
-      _controllers.firstNameController.text = formData['firstName'] ?? '';
-      _controllers.fatherNameController.text = formData['fatherName'] ?? '';
-      _controllers.grandfatherNameController.text = formData['grandfatherName'] ?? '';
-      _controllers.lastNameController.text = formData['lastName'] ?? '';
-      _controllers.motherNameController.text = formData['motherName'] ?? '';
-      _controllers.nationalIdController.text = formData['nationalId'] ?? '';
-      _controllers.phoneController.text = formData['phone'] ?? '';
-      _controllers.altPhoneController.text = formData['altPhone'] ?? '';
-      _controllers.addressController.text = formData['address'] ?? '';
-      _controllers.neighborhoodController.text = formData['neighborhood'] ?? '';
-      _controllers.notesController.text = formData['notes'] ?? '';
-
-      if (formData['birthDate'] != null) {
-        _controllers.birthDateController.text = formData['birthDate'];
-      }
-
-      // Set dropdowns
-      if (!mounted) return;
-      setState(() {
-        _controllers.selectedGender = formData['gender'];
-        _controllers.selectedMaritalStatus = formData['maritalStatus'];
-        _controllers.selectedEducationLevel = formData['educationLevel'];
-      });
+      final result = _draftLoadCoordinator.applyDraft(
+        controllers: _controllers,
+        draft: draft,
+      );
+      trace.endStep('applyDraft');
 
       // Navigate to saved tab
-      final savedTab = draft['currentTab'] ?? 0;
-      _tabController.animateTo(savedTab);
+      _tabController.animateTo(result.currentTab);
 
       if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _hasUnsavedChanges = true;
-      });
+      _isLoading = false;
+      _hasUnsavedChanges = true;
 
       if (mounted) {
-        EnhancedSnackbar.showSuccess(
+        _feedbackCoordinator.showSuccess(
           context,
-          message: 'تم تحميل المسودة "${draft['name']}" بنجاح',
+          'تم تحميل المسودة "${draft['name']}" بنجاح',
         );
       }
+      final elapsed = trace.end(result: 'success');
+      _flowMetricsCollector.record(operation: 'loadDraft', durationMs: elapsed);
     } catch (e, stackTrace) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
+      _isLoading = false;
       if (mounted) {
         final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
-        EnhancedSnackbar.showError(context, message: errorMsg);
+        _feedbackCoordinator.showError(context, errorMsg);
         debugPrint('❌ Load draft error: $e');
       }
+      final elapsed = trace.end(result: 'error');
+      _flowMetricsCollector.record(operation: 'loadDraft', durationMs: elapsed);
     }
   }
 
@@ -1256,10 +1322,34 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _tabController.dispose();
     _firstFieldFocusNode.dispose();
     _formHistory.dispose();
+    _dependencyController?.dispose();
     // ⚠️ _searchController moved to FormContentWidget
+
+    if (kDebugMode && _enableRuntimePerfTracing) {
+      WidgetsBinding.instance.removeTimingsCallback(_onFrameTimings);
+      CivilRegistryLookupDiagnostics.enabled = _previousCivilLookupDiagnosticsEnabled;
+
+      debugPrint(
+        '[BeneficiaryFormPerf] frames=$_totalFramesObserved slowBuild=$_slowBuildFrames slowRaster=$_slowRasterFrames verySlow=$_verySlowFrames worst=${_worstTotalFrame.inMilliseconds}ms',
+      );
+
+      final lookupEvents = CivilRegistryLookupDiagnostics.snapshot();
+      if (lookupEvents.isNotEmpty) {
+        debugPrint('[BeneficiaryFormPerf] civilLookupEvents=${lookupEvents.length}');
+      }
+
+      final summaries = _flowMetricsCollector.summarizeAll();
+      for (final summary in summaries) {
+        debugPrint(
+          '[BeneficiaryFormPerf] flow=${summary.operation} count=${summary.count} p50=${summary.p50Ms}ms p95=${summary.p95Ms}ms max=${summary.maxMs}ms',
+        );
+      }
+    }
 
     // ⚡ Dispose ValueNotifiers
     _isSavingNotifier.dispose();
+    _isDeletingNotifier.dispose();
+    _isLoadingNotifier.dispose();
     _lastSavedNotifier.dispose();
     _hasUnsavedChangesNotifier.dispose();
 
@@ -1384,15 +1474,19 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     if (_isSavingLocked) return;
 
     _isSavingLocked = true;
+    final trace = FormFlowTracer.start('save');
 
     try {
       if (!_formKey.currentState!.validate()) {
-        if (isAutoSave) return;
+        if (isAutoSave) {
+          final elapsed = trace.end(result: 'autosave_validation_failed');
+          _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
+          return;
+        }
         _scrollToFirstError();
-        EnhancedSnackbar.showError(
-          context,
-          message: FormConstants.requiredFieldMessage,
-        );
+        _feedbackCoordinator.showError(context, FormConstants.requiredFieldMessage);
+        final elapsed = trace.end(result: 'validation_failed');
+        _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
         return;
       }
 
@@ -1405,48 +1499,38 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         existingFileNo: currentBeneficiary?.fileNo,
         existingCreatedAt: currentBeneficiary?.createdAt,
       );
-
-      final repository = ref.read(beneficiaryRepositoryProvider);
-      final hasDuplicate = await SaveOperationsHelper.checkDuplicate(
-        context: context,
-        repository: repository,
-        nationalId: _controllers.nationalIdController.text.trim(),
-        isNewBeneficiary: widget.beneficiaryId == null,
-        currentBeneficiaryId: widget.beneficiaryId,
-      );
-
-      if (hasDuplicate) {
-        if (!mounted) return;
-        _isSaving = false; // ⚡ Direct assignment
-        return;
-      }
-
       ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
-      final success = await ref.read(beneficiaryFormProvider.notifier).save();
-
-      if (success && mounted) {
-        final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
-        if (savedBeneficiary == null) {
-          if (!mounted) return;
-          _isSaving = false; // ⚡ Direct assignment
-          return;
-        }
-
-        final attachmentResult = await SaveOperationsHelper.saveAttachments(
-          database: ref.read(databaseProvider),
-          beneficiaryId: savedBeneficiary.id,
-          pendingFiles: _controllers.pendingAttachmentFiles,
-        );
-
-        if (attachmentResult.failedCount > 0 && mounted && !isAutoSave) {
-          EnhancedSnackbar.showWarning(
-            context,
-            message: 'بعض الملفات فشل حفظها (${attachmentResult.failedCount})',
+      trace.startStep('orchestration');
+      final result = await _formSaveCoordinator.execute(
+        checkDuplicate: () async {
+          final repository = ref.read(beneficiaryRepositoryProvider);
+          return SaveOperationsHelper.checkDuplicate(
+            context: context,
+            repository: repository,
+            nationalId: _controllers.nationalIdController.text.trim(),
+            isNewBeneficiary: widget.beneficiaryId == null,
+            currentBeneficiaryId: widget.beneficiaryId,
           );
-        }
+        },
+        saveBeneficiary: () => ref.read(beneficiaryFormProvider.notifier).save(),
+        getSavedBeneficiaryId: () async => ref.read(beneficiaryFormProvider).beneficiary?.id,
+        saveAttachments: (beneficiaryId) async {
+          final attachmentResult = await SaveOperationsHelper.saveAttachments(
+            database: ref.read(databaseProvider),
+            beneficiaryId: beneficiaryId,
+            pendingFiles: _controllers.pendingAttachmentFiles,
+          );
+          return attachmentResult.failedCount;
+        },
+        saveFamilyMembers: _saveFamilyMembers,
+        clearPendingAttachments: _controllers.pendingAttachmentFiles.clear,
+      );
+      trace.endStep('orchestration');
 
-        _controllers.pendingAttachmentFiles.clear();
-        await _saveFamilyMembers(savedBeneficiary.id);
+      if (result.status == FormSaveStatus.saved && mounted) {
+        if (result.failedAttachmentsCount > 0 && !isAutoSave) {
+          _feedbackCoordinator.showWarning(context, 'بعض الملفات فشل حفظها (${result.failedAttachmentsCount})');
+        }
 
         if (!mounted) return;
         // ⚡ Direct assignments instead of setState
@@ -1454,13 +1538,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _hasUnsavedChanges = false;
 
         if (!isAutoSave) {
-          HapticPatterns.success();
           if (mounted) {
-            // 🎉 Show success animation overlay
-            SuccessOverlay.show(
-              context,
-              message: FormConstants.saveSuccessMessage,
-            );
+            _feedbackCoordinator.showSaveSuccessOverlay(context, FormConstants.saveSuccessMessage);
           }
 
           if (!mounted) return;
@@ -1470,21 +1549,36 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           if (mounted && context.mounted) {
             context.pop(true);
           }
+          final elapsed = trace.end(result: 'saved');
+          _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
         } else {
           if (!mounted) return;
           _isSaving = false; // ⚡ Direct assignment
+          final elapsed = trace.end(result: 'autosaved');
+          _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
         }
       } else {
         if (!mounted) return;
         _isSaving = false; // ⚡ Direct assignment
-        if (!isAutoSave && mounted) {
-          HapticPatterns.error();
-          EnhancedSnackbar.showError(
+        if (result.status == FormSaveStatus.duplicateNationalId) {
+          final elapsed = trace.end(result: 'duplicate');
+          _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
+          return;
+        }
+        if (result.status == FormSaveStatus.missingSavedBeneficiary) {
+          final elapsed = trace.end(result: 'missing_saved_beneficiary');
+          _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
+          return;
+        }
+        if (!isAutoSave) {
+          _feedbackCoordinator.showError(
             context,
-            message: 'فشل في حفظ البيانات',
+            'فشل في حفظ البيانات',
             onRetry: () => _handleSave(),
           );
         }
+        final elapsed = trace.end(result: 'save_failed');
+        _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
       }
     } finally {
       _isSavingLocked = false;
@@ -1511,38 +1605,41 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     );
 
     if (confirmed == true && mounted) {
-      setState(() => _isDeleting = true);
+      final trace = FormFlowTracer.start('delete');
+      _isDeleting = true;
 
-      try {
-        final deleteUseCase = ref.read(deleteBeneficiaryUseCaseProvider);
-        await deleteUseCase.execute(beneficiary.id);
+      final deleteUseCase = ref.read(deleteBeneficiaryUseCaseProvider);
+      trace.startStep('deleteUseCase');
+      final deleteResult = await _beneficiaryDeleteCoordinator.execute(
+        beneficiaryId: beneficiary.id,
+        deleteAction: deleteUseCase.execute,
+      );
+      trace.endStep('deleteUseCase');
 
-        if (mounted) {
-          if (!mounted) return;
-          setState(() => _isDeleting = false);
-          HapticFeedback.lightImpact();
-          EnhancedSnackbar.showSuccess(
-            context,
-            message: FormConstants.deleteSuccessMessage,
-          );
+      if (!mounted) return;
+      _isDeleting = false;
 
-          if (context.mounted) {
-            context.pop();
-          }
+      if (deleteResult.success) {
+        _feedbackCoordinator.showDeleteSuccess(context, FormConstants.deleteSuccessMessage);
+
+        if (context.mounted) {
+          context.pop();
         }
-      } catch (e, stackTrace) {
-        if (mounted) {
-          if (!mounted) return;
-          setState(() => _isDeleting = false);
-          HapticFeedback.heavyImpact();
-          final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
-          EnhancedSnackbar.showError(
-            context,
-            message: errorMsg,
-            onRetry: _handleDelete,
-          );
-          debugPrint('❌ Delete error: $e');
-        }
+        final elapsed = trace.end(result: 'deleted');
+        _flowMetricsCollector.record(operation: 'delete', durationMs: elapsed);
+      } else {
+        final errorMsg = UserFriendlyError.getMessage(
+          deleteResult.error ?? Exception('Delete failed'),
+          deleteResult.stackTrace,
+        );
+        _feedbackCoordinator.showError(
+          context,
+          errorMsg,
+          onRetry: _handleDelete,
+        );
+        debugPrint('❌ Delete error: ${deleteResult.error}');
+        final elapsed = trace.end(result: 'delete_failed');
+        _flowMetricsCollector.record(operation: 'delete', durationMs: elapsed);
       }
     }
   }
@@ -1599,130 +1696,152 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
             onRedo: _handleRedo,
           ),
 
-          body: _isLoading
-              ? const SkeletonFormScreen()
-              : Stack(
-                  children: [
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          // 🚨 Error Banner - Separated widget
-                          const FormErrorBanner(),
+          body: ValueListenableBuilder<bool>(
+            valueListenable: _isLoadingNotifier,
+            builder: (context, isLoading, _) {
+              if (isLoading) {
+                return const SkeletonFormScreen();
+              }
 
-                          // 📝 Form Content - Separated widget
-                          Expanded(
-                            child: FormContentWidget(
+              return Stack(
+                children: [
+                  Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        // 🚨 Error Banner - Separated widget
+                        const FormErrorBanner(),
+
+                        // 📝 Form Content - Separated widget
+                        Expanded(
+                          child: FormContentWidget(
+                            tabController: _tabController,
+                            controllers: _controllers,
+                            onBirthDateTap: () => _selectDate(context),
+                            firstFieldFocusNode: _firstFieldFocusNode,
+                            beneficiaryId: widget.beneficiaryId,
+                            showFieldHelpers: _showFieldHelpers,
+                            onFinalSave: _handleFinalSaveFromReview, // 🆕 Pass callback
+                          ),
+                        ),
+
+                        // 🎯 Bottom Navigation - Separated widget with ValueListenableBuilder
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _isSavingNotifier,
+                          builder: (context, isSaving, _) {
+                            return FormBottomNavWidget(
                               tabController: _tabController,
-                              controllers: _controllers,
-                              onBirthDateTap: () => _selectDate(context),
-                              firstFieldFocusNode: _firstFieldFocusNode,
-                              beneficiaryId: widget.beneficiaryId,
-                              showFieldHelpers: _showFieldHelpers,
-                              onFinalSave: _handleFinalSaveFromReview, // 🆕 Pass callback
-                            ),
-                          ),
+                              onPrevious: _handlePreviousTab,
+                              onNext: _handleNextTab,
+                              onSave: _showFinalReview,
+                              isLoading: isSaving,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
 
-                          // 🎯 Bottom Navigation - Separated widget with ValueListenableBuilder
-                          ValueListenableBuilder<bool>(
-                            valueListenable: _isSavingNotifier,
-                            builder: (context, isSaving, _) {
-                              return FormBottomNavWidget(
-                                tabController: _tabController,
-                                onPrevious: _handlePreviousTab,
-                                onNext: _handleNextTab,
-                                onSave: _showFinalReview,
-                                isLoading: isSaving,
-                              );
-                            },
-                          ),
-                        ],
+                  // ⚡ Loading Overlay with ValueListenableBuilder
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _isSavingNotifier,
+                    builder: (context, isSaving, _) {
+                      return ValueListenableBuilder<bool>(
+                        valueListenable: _isDeletingNotifier,
+                        builder: (context, isDeleting, _) {
+                          return local.LoadingOverlay(
+                            isVisible: isSaving || isDeleting,
+                            message: isSaving ? FormConstants.savingMessage : FormConstants.deletingMessage,
+                          );
+                        },
+                      );
+                    },
+                  ),
+
+                  // 📊 Statistics Widget (if visible)
+                  if (_showStatistics)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: CompletionStatsWidget(
+                        overallCompletion: (_calculateFilledFields() / 12 * 100),
+                        completedFields: _calculateFilledFields(),
+                        totalFields: 12,
+                        tabCompletions: {
+                          'البيانات الأساسية': 75.0,
+                          'أفراد الأسرة': 50.0,
+                          'المرفقات': 25.0,
+                          'التقييم': 90.0,
+                        },
+                        onTap: _toggleStatistics,
                       ),
                     ),
 
-                    // ⚡ Loading Overlay with ValueListenableBuilder
-                    ValueListenableBuilder<bool>(
-                      valueListenable: _isSavingNotifier,
-                      builder: (context, isSaving, _) {
-                        return local.LoadingOverlay(
-                          isVisible: isSaving || _isDeleting,
-                          message: isSaving ? FormConstants.savingMessage : FormConstants.deletingMessage,
-                        );
+                  // 🎓 Tour Guide
+                  if (_showTourGuide)
+                    TourGuide(
+                      steps: [
+                        TourStep(
+                          title: 'مرحباً بك! 👋',
+                          description: 'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
+                          icon: Icons.waving_hand,
+                        ),
+                        TourStep(
+                          title: 'التبويبات 📑',
+                          description: 'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
+                          icon: Icons.tab,
+                        ),
+                        TourStep(
+                          title: 'كارد التقدم 📊',
+                          description: 'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
+                          icon: Icons.analytics,
+                        ),
+                        TourStep(
+                          title: 'حفظ المسودة 💾',
+                          description: 'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
+                          icon: Icons.save,
+                        ),
+                        TourStep(
+                          title: 'المراجعة النهائية 📋',
+                          description: 'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
+                          icon: Icons.checklist,
+                        ),
+                      ],
+                      onComplete: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await _bootstrapController.markTourSeen(prefs);
+                        setState(() => _showTourGuide = false);
+                      },
+                      onSkip: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await _bootstrapController.markTourSeen(prefs);
+                        setState(() => _showTourGuide = false);
                       },
                     ),
 
-                    // 📊 Statistics Widget (if visible)
-                    if (_showStatistics)
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: CompletionStatsWidget(
-                          overallCompletion: (_calculateFilledFields() / 12 * 100),
-                          completedFields: _calculateFilledFields(),
-                          totalFields: 12,
-                          tabCompletions: {
-                            'البيانات الأساسية': 75.0,
-                            'أفراد الأسرة': 50.0,
-                            'المرفقات': 25.0,
-                            'التقييم': 90.0,
-                          },
-                          onTap: _toggleStatistics,
-                        ),
-                      ),
-
-                    // 🎓 Tour Guide
-                    if (_showTourGuide)
-                      TourGuide(
-                        steps: [
-                          TourStep(
-                            title: 'مرحباً بك! 👋',
-                            description: 'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
-                            icon: Icons.waving_hand,
-                          ),
-                          TourStep(
-                            title: 'التبويبات 📑',
-                            description: 'النموذج مقسم إلى 4 تبويبات لسهولة التنقل والتنظيم.',
-                            icon: Icons.tab,
-                          ),
-                          TourStep(
-                            title: 'كارد التقدم 📊',
-                            description: 'يعرض نسبة إنجازك في ملء النموذج والحقول المكتملة.',
-                            icon: Icons.analytics,
-                          ),
-                          TourStep(
-                            title: 'حفظ المسودة 💾',
-                            description: 'يمكنك حفظ تقدمك كمسودة والعودة لاحقاً لإكمالها.',
-                            icon: Icons.save,
-                          ),
-                          TourStep(
-                            title: 'المراجعة النهائية 📋',
-                            description: 'في النهاية، راجع جميع البيانات قبل الحفظ النهائي.',
-                            icon: Icons.checklist,
-                          ),
-                        ],
-                        onComplete: () async {
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool('has_seen_form_tour', true);
-                          setState(() => _showTourGuide = false);
+                  // 📱 Mobile Quick Actions
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _isSavingNotifier,
+                    builder: (context, isSaving, _) {
+                      return ValueListenableBuilder<bool>(
+                        valueListenable: _isDeletingNotifier,
+                        builder: (context, isDeleting, _) {
+                          return MobileQuickActions(
+                            onCopyFromBeneficiary: _handleCopyFromBeneficiary,
+                            onClearAllFields: _handleClearAllFields,
+                            onPasteData: _handlePasteData,
+                            onFillDemoData: _handleFillDemoData,
+                            enabled: !isSaving && !isDeleting,
+                          );
                         },
-                        onSkip: () async {
-                          final prefs = await SharedPreferences.getInstance();
-                          await prefs.setBool('has_seen_form_tour', true);
-                          setState(() => _showTourGuide = false);
-                        },
-                      ),
-
-                    // 📱 Mobile Quick Actions
-                    MobileQuickActions(
-                      onCopyFromBeneficiary: _handleCopyFromBeneficiary,
-                      onClearAllFields: _handleClearAllFields,
-                      onPasteData: _handlePasteData,
-                      onFillDemoData: _handleFillDemoData,
-                      enabled: !_isSaving && !_isDeleting,
-                    ),
-                  ],
-                ),
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
 
           // 💾 NEW: Floating Action Button for quick draft save
           floatingActionButton: ValueListenableBuilder<bool>(

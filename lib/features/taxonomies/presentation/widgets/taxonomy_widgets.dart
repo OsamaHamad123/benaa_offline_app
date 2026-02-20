@@ -148,6 +148,10 @@ class TaxonomyDropdown extends ConsumerWidget {
         return Icons.handshake;
       case TaxonomyGroup.beneficiaryStatus:
         return Icons.verified_user;
+      case TaxonomyGroup.relationship:
+        return Icons.family_restroom;
+      case TaxonomyGroup.section:
+        return Icons.account_tree;
     }
   }
 }
@@ -307,6 +311,7 @@ class TaxonomySyncStatusWidget extends ConsumerWidget {
     final syncStatus = ref.watch(taxonomySyncStatusProvider);
     final errorMessage = ref.watch(taxonomyErrorMessageProvider);
     final lastSync = ref.watch(lastSyncTimeProvider);
+    final autoState = ref.watch(taxonomyAutoSyncStateProvider);
 
     return Card(
       child: Padding(
@@ -341,6 +346,51 @@ class TaxonomySyncStatusWidget extends ConsumerWidget {
                 style: const TextStyle(color: Colors.red),
               ),
             ],
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  autoState.enabled ? Icons.autorenew : Icons.pause_circle,
+                  size: 16,
+                  color: autoState.enabled ? Colors.blueGrey : Colors.grey,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  autoState.enabled ? 'المزامنة التلقائية مفعلة' : 'المزامنة التلقائية متوقفة',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                if (autoState.inFlight) ...[
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ],
+              ],
+            ),
+            if (autoState.nextAttemptAt != null)
+              Text(
+                'المحاولة القادمة: ${_formatDateTime(autoState.nextAttemptAt!)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            if (autoState.consecutiveFailures > 0)
+              Text(
+                'عدد الفشل المتتالي: ${autoState.consecutiveFailures}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.orange.shade700),
+              ),
+            if (autoState.lastSkipReason == 'fresh_cache')
+              Text(
+                'تم التخطي: البيانات المحلية ما زالت حديثة',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.blueGrey),
+              ),
+            if (autoState.lastError != null)
+              Text(
+                'آخر خطأ تلقائي: ${autoState.lastError}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.red.shade700),
+              ),
             lastSync.when(
               data: (time) => time != null
                   ? Text(

@@ -4,6 +4,7 @@ import '../../../pages/v2_form_helpers/form_controllers.dart';
 import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
 import '../../../pages/v2_form_helpers/form_constants.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱 Responsive utilities
+import '../../../../../../features/taxonomies/taxonomies.dart';
 import 'v2_family_members_tab_redesigned.dart';
 
 /// 👨‍👩‍👧 Family Merged Tab (Family Info + Family Members)
@@ -18,8 +19,7 @@ class V2FamilyMergedTab extends StatefulWidget {
   State<V2FamilyMergedTab> createState() => _V2FamilyMergedTabState();
 }
 
-class _V2FamilyMergedTabState extends State<V2FamilyMergedTab>
-    with AutomaticKeepAliveClientMixin {
+class _V2FamilyMergedTabState extends State<V2FamilyMergedTab> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -65,43 +65,8 @@ class _FamilyInfoSection extends StatefulWidget {
 }
 
 class _FamilyInfoSectionState extends State<_FamilyInfoSection> {
-  // Valid values for dropdowns
-  static const List<String> _validMaritalStatuses = [
-    'أعزب',
-    'متزوج',
-    'مطلق',
-    'أرمل',
-  ];
-
-  static const List<String> _validRelationships = [
-    'ابن',
-    'ابنة',
-    'أب',
-    'أم',
-    'أخ',
-    'أخت',
-    'زوج',
-    'زوجة',
-    'آخر',
-  ];
-
-  String? _validateDropdownValue(String? value, List<String> validValues) {
-    if (value == null || value.isEmpty) return null;
-    return validValues.contains(value) ? value : null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Validate dropdown values to prevent crash
-    final maritalStatus = _validateDropdownValue(
-      widget.formControllers.selectedMaritalStatus,
-      _validMaritalStatuses,
-    );
-    final relationship = _validateDropdownValue(
-      widget.formControllers.selectedRelationship,
-      _validRelationships,
-    );
-
     return M3SectionCard(
       title: 'معلومات العائلة',
       icon: Icons.family_restroom_rounded,
@@ -109,24 +74,17 @@ class _FamilyInfoSectionState extends State<_FamilyInfoSection> {
       children: [
         ResponsiveFormLayout(
           children: [
-            M3DropdownField<String>(
-              value: maritalStatus,
-              label: 'الحالة الاجتماعية',
-              prefixIcon: Icons.people_alt_rounded,
-              isRequired: true,
-              onChanged: (value) {
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.maritalStatus,
+              selectedCode: widget.formControllers.selectedMaritalStatus,
+              onCodeChanged: (value) {
                 setState(() {
                   widget.formControllers.selectedMaritalStatus = value;
                 });
               },
-              validator: (value) =>
-                  value == null ? FormConstants.requiredFieldMessage : null,
-              items: const [
-                DropdownMenuItem(value: 'أعزب', child: Text('أعزب')),
-                DropdownMenuItem(value: 'متزوج', child: Text('متزوج')),
-                DropdownMenuItem(value: 'مطلق', child: Text('مطلق')),
-                DropdownMenuItem(value: 'أرمل', child: Text('أرمل')),
-              ],
+              labelText: 'الحالة الاجتماعية',
+              prefixIcon: Icons.people_alt_rounded,
+              isRequired: true,
             ),
             M3TextField(
               controller: widget.formControllers.numberOfDependentsController,
@@ -155,26 +113,16 @@ class _FamilyInfoSectionState extends State<_FamilyInfoSection> {
           ],
         ),
         SizedBox(height: 12.h),
-        M3DropdownField<String>(
-          value: relationship,
-          label: 'صلة القرابة بالمستفيد',
-          prefixIcon: Icons.connect_without_contact_rounded,
-          onChanged: (value) {
+        TaxonomyBridgeDropdown(
+          group: TaxonomyGroup.relationship,
+          selectedCode: widget.formControllers.selectedRelationship,
+          onCodeChanged: (value) {
             setState(() {
               widget.formControllers.selectedRelationship = value;
             });
           },
-          items: const [
-            DropdownMenuItem(value: 'ابن', child: Text('ابن')),
-            DropdownMenuItem(value: 'ابنة', child: Text('ابنة')),
-            DropdownMenuItem(value: 'أب', child: Text('أب')),
-            DropdownMenuItem(value: 'أم', child: Text('أم')),
-            DropdownMenuItem(value: 'أخ', child: Text('أخ')),
-            DropdownMenuItem(value: 'أخت', child: Text('أخت')),
-            DropdownMenuItem(value: 'زوج', child: Text('زوج')),
-            DropdownMenuItem(value: 'زوجة', child: Text('زوجة')),
-            DropdownMenuItem(value: 'آخر', child: Text('آخر')),
-          ],
+          labelText: 'صلة القرابة بالمستفيد',
+          prefixIcon: Icons.connect_without_contact_rounded,
         ),
       ],
     );

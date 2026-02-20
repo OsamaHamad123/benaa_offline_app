@@ -46,7 +46,13 @@ enum TaxonomyGroup {
   assistanceType('assistance_type', 'نوع المساعدة', 'assist'),
 
   /// حالة المستفيد
-  beneficiaryStatus('beneficiary_status', 'حالة المستفيد', 'ben_status');
+  beneficiaryStatus('beneficiary_status', 'حالة المستفيد', 'ben_status'),
+
+  /// صلة القرابة
+  relationship('relationship', 'صلة القرابة', 'rel'),
+
+  /// القسم (إداري، مالي، إلخ)
+  section('section', 'القسم', 'sec');
 
   /// القيمة المستخدمة في API و Database
   final String value;
@@ -127,6 +133,10 @@ extension TaxonomyGroupExtension on TaxonomyGroup {
         return 'handshake';
       case TaxonomyGroup.beneficiaryStatus:
         return 'person';
+      case TaxonomyGroup.relationship:
+        return 'family_restroom';
+      case TaxonomyGroup.section:
+        return 'account_tree';
     }
   }
 }

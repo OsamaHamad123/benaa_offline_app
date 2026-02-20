@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'dart:async';
 import '../components/v2_custom_text_field.dart';
-import '../components/v2_dropdown_field.dart';
 import '../../../../../../features/taxonomies/taxonomies.dart'; // 🏷️ Taxonomy System
 import '../../../pages/v2_form_helpers/widgets/enhanced_section_widgets.dart'; // 🎨
+import '../../../pages/v2_form_helpers/civil_registry_lookup_controller.dart';
+import '../../../pages/v2_form_helpers/civil_registry_autofill_feedback_helper.dart';
 import '../../../providers/beneficiary_dependencies.dart';
 import '../../../providers/civil_registry_provider.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
@@ -16,6 +16,7 @@ import '../../../pages/v2_form_helpers/widgets/smart_widgets.dart'; // 💡 Smar
 import '../../civil_registry_status_indicator.dart';
 import '../../autofill_button.dart';
 import '../../civil_registry_preview_card.dart';
+import '../../civil_registry_required_banner.dart';
 
 /// Basic information tab with Civil Registry Integration
 class V2BasicInfoTab extends ConsumerStatefulWidget {
@@ -65,43 +66,43 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
 }
 
 class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
-  Timer? _debounceTimer;
-  bool _showPreview = false;
+  late final CivilRegistryLookupController _lookupController;
   bool _dismissedSuggestion = false; // Track if user dismissed suggestion
 
   @override
   void initState() {
     super.initState();
+    _lookupController = CivilRegistryLookupController();
     widget.nationalIdController.addListener(_onNationalIdChanged);
   }
 
   @override
   void dispose() {
     widget.nationalIdController.removeListener(_onNationalIdChanged);
-    _debounceTimer?.cancel();
-    _debounceTimer = null; // Prevent memory leak
+    _lookupController.dispose();
     super.dispose();
   }
 
   void _onNationalIdChanged() {
-    final nationalId = widget.nationalIdController.text;
+    final nationalId = widget.nationalIdController.text.trim();
+    final canUseCivilRegistry = ref.read(civilRegistryAvailableProvider).value ?? false;
 
-    // Cancel previous timer
-    _debounceTimer?.cancel();
-
-    // Reset preview if ID is incomplete
-    if (nationalId.length < 9) {
-      setState(() => _showPreview = false);
-      ref.read(civilRegistryProvider.notifier).reset();
-      return;
-    }
-
-    // Debounce for 500ms
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      if (nationalId.length == 9) {
-        ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
-      }
-    });
+    _lookupController.onNationalIdChanged(
+      nationalId: nationalId,
+      canUseCivilRegistry: canUseCivilRegistry,
+      nationalIdLength: 9,
+      debounceDuration: const Duration(milliseconds: 500),
+      fetchByNationalId: (id) => ref.read(civilRegistryProvider.notifier).fetchByNationalId(id),
+      isLookupInProgressForId: () {
+        final providerState = ref.read(civilRegistryProvider);
+        return providerState.isLoading && providerState.lastSearchedNationalId == nationalId;
+      }(),
+      resetProvider: () => ref.read(civilRegistryProvider.notifier).reset(),
+      requestRebuild: () {
+        if (!mounted) return;
+        setState(() {});
+      },
+    );
   }
 
   void _handleAutofill() {
@@ -110,28 +111,27 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
     final result = ref.read(civilRegistryProvider.notifier).autofillForm(widget.formControllers);
 
     if (result != null) {
-      HapticFeedback.lightImpact();
-      setState(() => _showPreview = false);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8.w),
-              Expanded(child: Text(result.successMessage)),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
+      CivilRegistryAutofillFeedbackHelper.showSuccess(
+        context: context,
+        message: result.successMessage,
+        duration: const Duration(seconds: 2),
+        onCompleted: () {
+          _lookupController.onAutofillCompleted(
+            hideAfter: Duration.zero,
+            requestRebuild: () {
+              if (!mounted) return;
+              setState(() {});
+            },
+          );
+        },
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final civilRegistryAvailable = ref.watch(civilRegistryAvailableProvider);
+    final canUseCivilRegistry = civilRegistryAvailable.value ?? false;
     final civilRegistryState = ref.watch(civilRegistryProvider);
 
     // Check completion status
@@ -208,8 +208,10 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               validator: FieldValidators.validateNationalId,
             ),
 
+            if (!canUseCivilRegistry) const CivilRegistryRequiredBanner(),
+
             // 🆕 Civil Registry Status Indicator
-            if (civilRegistryState.status != CivilRegistryStatus.initial)
+            if (canUseCivilRegistry && civilRegistryState.status != CivilRegistryStatus.initial)
               Padding(
                 padding: EdgeInsets.only(top: 8.h),
                 child: CivilRegistryStatusIndicator(
@@ -224,17 +226,25 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               ),
 
             // 🆕 Preview Card (when data found)
-            if (civilRegistryState.isSuccess && civilRegistryState.person != null && _showPreview)
+            if (canUseCivilRegistry &&
+                civilRegistryState.isSuccess &&
+                civilRegistryState.person != null &&
+                _lookupController.showPreview)
               Padding(
                 padding: EdgeInsets.only(top: 8.h),
                 child: CivilRegistryPreviewCard(
                   person: civilRegistryState.person!,
-                  onDismiss: () => setState(() => _showPreview = false),
+                  onDismiss: () {
+                    _lookupController.dismissPreview(() {
+                      if (!mounted) return;
+                      setState(() {});
+                    });
+                  },
                 ),
               ),
 
             // 🆕 Autofill Button (when data found)
-            if (civilRegistryState.isSuccess && civilRegistryState.person != null)
+            if (canUseCivilRegistry && civilRegistryState.isSuccess && civilRegistryState.person != null)
               Padding(
                 padding: EdgeInsets.only(top: 12.h),
                 child: Row(
@@ -247,12 +257,17 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                     ),
                     SizedBox(width: 8.w),
                     IconButton(
-                      onPressed: () => setState(() => _showPreview = !_showPreview),
+                      onPressed: () {
+                        _lookupController.togglePreview(() {
+                          if (!mounted) return;
+                          setState(() {});
+                        });
+                      },
                       icon: Icon(
-                        _showPreview ? Icons.visibility_off : Icons.visibility,
+                        _lookupController.showPreview ? Icons.visibility_off : Icons.visibility,
                         size: 24.sp,
                       ),
-                      tooltip: _showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة',
+                      tooltip: _lookupController.showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة',
                     ),
                   ],
                 ),
@@ -289,35 +304,22 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               isRequired: true,
             ),
             SizedBox(height: 12.h),
-            // 🆕 صلة القرابة (Relationship)
-            V2DropdownField<String>(
-              value: widget.selectedRelationship,
-              label: 'صلة القرابة',
+            // 🏷️ صلة القرابة - من نظام التصنيفات
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.relationship,
+              selectedCode: widget.selectedRelationship,
+              onCodeChanged: widget.onRelationshipChanged,
+              labelText: 'صلة القرابة',
               prefixIcon: Icons.connect_without_contact_rounded,
-              onChanged: widget.onRelationshipChanged,
-              items: const [
-                DropdownMenuItem(value: '2', child: Text('أرملة')),
-                DropdownMenuItem(value: '3', child: Text('أرمل')),
-                DropdownMenuItem(value: '4', child: Text('يتيم')),
-                DropdownMenuItem(value: '5', child: Text('يتيمة')),
-                DropdownMenuItem(value: '6', child: Text('ولي أمر')),
-                DropdownMenuItem(value: '99', child: Text('أخرى')),
-              ],
             ),
             SizedBox(height: 12.h),
-            // 🆕 القسم (Section/Department)
-            V2DropdownField<String>(
-              value: widget.selectedSection,
-              label: 'القسم',
+            // 🏷️ القسم - من نظام التصنيفات
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.section,
+              selectedCode: widget.selectedSection,
+              onCodeChanged: widget.onSectionChanged,
+              labelText: 'القسم',
               prefixIcon: Icons.business_center_rounded,
-              onChanged: widget.onSectionChanged,
-              items: const [
-                DropdownMenuItem(value: '1', child: Text('القسم الأول')),
-                DropdownMenuItem(value: '2', child: Text('القسم الثاني')),
-                DropdownMenuItem(value: '3', child: Text('القسم الثالث')),
-                DropdownMenuItem(value: '4', child: Text('القسم الرابع')),
-                DropdownMenuItem(value: '5', child: Text('القسم الخامس')),
-              ],
             ),
             SizedBox(height: 12.h),
             // 🆕 المستخدم المدخل للبيانات (Created By User)

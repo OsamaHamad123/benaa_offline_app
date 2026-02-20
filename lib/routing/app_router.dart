@@ -6,6 +6,7 @@ import '../core/analytics/analytics_widgets.dart';
 import '../core/analytics/realtime_performance_monitor.dart';
 import '../core/debug/sentry_test_page.dart';
 import '../features/auth/presentation/pages/login_page_v2.dart';
+import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/initialization/presentation/pages/app_initialization_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -101,8 +102,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isAuth = token != null && token.isNotEmpty;
       final isGoingToLogin = state.matchedLocation == '/login';
 
-      // السماح بالذهاب لصفحات التهيئة والتحميل
-      if (isGoingToAppInit || isGoingToInit || isGoingToWelcome || isGoingToDownload || isGoingToDbDownload) {
+      final isGoingToForgotPassword = state.matchedLocation == '/forgot-password';
+
+      // السماح بالذهاب لصفحات التهيئة والتحميل ونسيت كلمة المرور
+      if (isGoingToAppInit ||
+          isGoingToInit ||
+          isGoingToWelcome ||
+          isGoingToDownload ||
+          isGoingToDbDownload ||
+          isGoingToForgotPassword) {
         return null;
       }
 
@@ -145,6 +153,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DownloadCivilDbPage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPageV2()),
+      GoRoute(
+        path: '/forgot-password',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const ForgotPasswordPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
       GoRoute(
         path: '/dashboard',
         pageBuilder: (context, state) => _buildPageWithTransition(

@@ -8,6 +8,7 @@ import '../providers/beneficiary_dependencies.dart';
 import 'civil_registry_status_indicator.dart';
 import 'autofill_button.dart';
 import 'civil_registry_preview_card.dart';
+import 'civil_registry_required_banner.dart';
 
 /// 🔍 Reusable Civil Registry Lookup Widget
 ///
@@ -36,13 +37,13 @@ class CivilRegistryLookup extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CivilRegistryLookup> createState() =>
-      _CivilRegistryLookupState();
+  ConsumerState<CivilRegistryLookup> createState() => _CivilRegistryLookupState();
 }
 
 class _CivilRegistryLookupState extends ConsumerState<CivilRegistryLookup> {
   Timer? _debounceTimer;
   bool _showPreviewWidget = false;
+  String? _lastQueuedNationalId;
 
   @override
   void initState() {
@@ -62,30 +63,40 @@ class _CivilRegistryLookupState extends ConsumerState<CivilRegistryLookup> {
   }
 
   void _onNationalIdChanged() {
-    final nationalId = widget.nationalIdController.text;
+    final nationalId = widget.nationalIdController.text.trim();
+    final canUseCivilRegistry = ref.read(civilRegistryAvailableProvider).value ?? false;
 
     // Cancel previous timer
     _debounceTimer?.cancel();
 
     // Reset preview if ID is incomplete
     if (nationalId.length < 9) {
+      _lastQueuedNationalId = null;
       setState(() => _showPreviewWidget = false);
       ref.read(civilRegistryProvider.notifier).reset();
       return;
     }
 
+    if (!canUseCivilRegistry) {
+      return;
+    }
+
+    if (nationalId.length > 9 || _lastQueuedNationalId == nationalId) {
+      return;
+    }
+
     // Debounce
     _debounceTimer = Timer(widget.debounceDuration, () {
+      if (!mounted) return;
       if (nationalId.length == 9) {
+        _lastQueuedNationalId = nationalId;
         _fetchData(nationalId);
       }
     });
   }
 
   Future<void> _fetchData(String nationalId) async {
-    await ref
-        .read(civilRegistryProvider.notifier)
-        .fetchByNationalId(nationalId);
+    await ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
 
     final state = ref.read(civilRegistryProvider);
 
@@ -129,23 +140,25 @@ class _CivilRegistryLookupState extends ConsumerState<CivilRegistryLookup> {
 
   @override
   Widget build(BuildContext context) {
+    final civilRegistryAvailable = ref.watch(civilRegistryAvailableProvider);
+    final canUseCivilRegistry = civilRegistryAvailable.value ?? false;
     final civilRegistryState = ref.watch(civilRegistryProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (!canUseCivilRegistry) const CivilRegistryRequiredBanner(),
+
         // Status Indicator
-        if (civilRegistryState.status != CivilRegistryStatus.initial)
+        if (canUseCivilRegistry && civilRegistryState.status != CivilRegistryStatus.initial)
           Padding(
             padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
             child: CivilRegistryStatusIndicator(state: civilRegistryState),
           ),
 
         // Preview Card
-        if (widget.showPreview &&
-            _showPreviewWidget &&
-            civilRegistryState.hasData)
+        if (widget.showPreview && canUseCivilRegistry && _showPreviewWidget && civilRegistryState.hasData)
           Padding(
             padding: EdgeInsets.only(top: 8.h, bottom: 8.h),
             child: widget.customPreview ??
@@ -157,6 +170,7 @@ class _CivilRegistryLookupState extends ConsumerState<CivilRegistryLookup> {
 
         // Autofill Button
         if (widget.showAutofillButton &&
+            canUseCivilRegistry &&
             civilRegistryState.isSuccess &&
             civilRegistryState.hasData)
           Padding(
@@ -180,13 +194,12 @@ class CompactCivilRegistryLookup extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<CompactCivilRegistryLookup> createState() =>
-      _CompactCivilRegistryLookupState();
+  ConsumerState<CompactCivilRegistryLookup> createState() => _CompactCivilRegistryLookupState();
 }
 
-class _CompactCivilRegistryLookupState
-    extends ConsumerState<CompactCivilRegistryLookup> {
+class _CompactCivilRegistryLookupState extends ConsumerState<CompactCivilRegistryLookup> {
   Timer? _debounceTimer;
+  String? _lastQueuedNationalId;
 
   @override
   void initState() {
@@ -202,25 +215,35 @@ class _CompactCivilRegistryLookupState
   }
 
   void _onNationalIdChanged() {
-    final nationalId = widget.nationalIdController.text;
+    final nationalId = widget.nationalIdController.text.trim();
+    final canUseCivilRegistry = ref.read(civilRegistryAvailableProvider).value ?? false;
     _debounceTimer?.cancel();
 
     if (nationalId.length < 9) {
+      _lastQueuedNationalId = null;
       ref.read(civilRegistryProvider.notifier).reset();
       return;
     }
 
+    if (!canUseCivilRegistry) {
+      return;
+    }
+
+    if (nationalId.length > 9 || _lastQueuedNationalId == nationalId) {
+      return;
+    }
+
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
       if (nationalId.length == 9) {
+        _lastQueuedNationalId = nationalId;
         _fetchAndFill(nationalId);
       }
     });
   }
 
   Future<void> _fetchAndFill(String nationalId) async {
-    await ref
-        .read(civilRegistryProvider.notifier)
-        .fetchByNationalId(nationalId);
+    await ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
 
     final state = ref.read(civilRegistryProvider);
 
@@ -242,7 +265,13 @@ class _CompactCivilRegistryLookupState
 
   @override
   Widget build(BuildContext context) {
+    final civilRegistryAvailable = ref.watch(civilRegistryAvailableProvider);
+    final canUseCivilRegistry = civilRegistryAvailable.value ?? false;
     final state = ref.watch(civilRegistryProvider);
+
+    if (!canUseCivilRegistry) {
+      return const CivilRegistryRequiredBanner();
+    }
 
     // عرض مؤشر بسيط فقط
     if (state.status == CivilRegistryStatus.loading) {

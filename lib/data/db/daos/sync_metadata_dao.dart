@@ -5,8 +5,7 @@ import '../tables/sync_metadata_table.dart';
 part 'sync_metadata_dao.g.dart';
 
 @DriftAccessor(tables: [SyncMetadataTable])
-class SyncMetadataDao extends DatabaseAccessor<AppDatabase>
-    with _$SyncMetadataDaoMixin {
+class SyncMetadataDao extends DatabaseAccessor<AppDatabase> with _$SyncMetadataDaoMixin {
   SyncMetadataDao(super.db);
 
   /// Get last sync time for entity
@@ -23,11 +22,12 @@ class SyncMetadataDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateSyncSuccess(
     String entity, {
     required int totalSynced,
+    DateTime? syncTime,
   }) async {
     await into(db.syncMetadataTable).insertOnConflictUpdate(
       SyncMetadataTableCompanion.insert(
         entity: entity,
-        lastSyncTime: DateTime.now(),
+        lastSyncTime: syncTime ?? DateTime.now(),
         totalSynced: Value(totalSynced),
         failedSyncs: const Value(0),
         lastError: const Value(null),

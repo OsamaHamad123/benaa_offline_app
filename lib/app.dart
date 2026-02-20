@@ -6,22 +6,27 @@ import 'dart:async';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
 import 'core/theme/dark_theme.dart';
-import 'core/theme/theme_mode_provider.dart';
 import 'core/settings/settings_provider.dart';
 import 'core/error_handling/error_handler.dart';
 import 'core/design_system/app_animations.dart';
 import 'core/analytics/ux_analytics.dart';
 import 'l10n/app_localizations.dart';
+import 'features/taxonomies/presentation/widgets/taxonomy_auto_sync_manager.dart';
 
 class BenaaApp extends ConsumerWidget {
+  static bool _analyticsSessionStarted = false;
+
   const BenaaApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
 
-    // 📊 Start analytics session
-    UxAnalytics.startSession();
+    // 📊 Start analytics session once per app process
+    if (!_analyticsSessionStarted) {
+      _analyticsSessionStarted = true;
+      unawaited(UxAnalytics.startSession());
+    }
 
     // Watch settings for theme configuration
     final settingsAsync = ref.watch(sharedPreferencesProvider);
@@ -45,7 +50,7 @@ class BenaaApp extends ConsumerWidget {
           }
 
           // Get color scheme
-          Color primaryColor = AppTheme.getColorFromScheme(
+          final Color primaryColor = AppTheme.getColorFromScheme(
             settings.colorScheme,
           );
 
@@ -54,9 +59,6 @@ class BenaaApp extends ConsumerWidget {
             minTextAdapt: true,
             splitScreenMode: true,
             // 🚀 Critical performance fix:
-            // Avoid rebuilding the whole app on keyboard open/close.
-            // flutter_screenutil rebuilds when MediaQuery changes; keyboard changes viewInsets
-            // which can trigger multiple rebuilds during the IME animation.
             rebuildFactor: (old, data) {
               return old.size != data.size ||
                   old.orientation != data.orientation ||
@@ -78,15 +80,18 @@ class BenaaApp extends ConsumerWidget {
                 routerConfig: router,
                 debugShowCheckedModeBanner: false,
                 // 🚀 IME (keyboard) jank fix:
-                // When the keyboard opens/closes, the platform animates viewInsets
-                // and Flutter updates MediaQuery every frame. Many widgets depend on
-                // MediaQuery (directly or indirectly), so this can cause app-wide relayout jank.
-                // We debounce viewInsets changes so the subtree is notified once per transition.
                 builder: (context, child) {
                   if (child == null) return const SizedBox.shrink();
-                  return _DebouncedKeyboardInsets(child: child);
+                  return TaxonomyAutoSyncManager(
+                    syncInterval: Duration(hours: settings.syncIntervalHours),
+                    freshnessThreshold: Duration(
+                      minutes: settings.cacheDurationMinutes.clamp(10, 24 * 60),
+                    ),
+                    enabled: settings.autoSyncEnabled,
+                    child: _DebouncedKeyboardInsets(child: child),
+                  );
                 },
-                localizationsDelegates: [
+                localizationsDelegates:const [
                   AppLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,
@@ -98,7 +103,7 @@ class BenaaApp extends ConsumerWidget {
             },
           );
         },
-        loading: () => MaterialApp(
+        loading: () => const MaterialApp(
           home: Scaffold(
             body: Center(
               child: FadeTransitionWidget(

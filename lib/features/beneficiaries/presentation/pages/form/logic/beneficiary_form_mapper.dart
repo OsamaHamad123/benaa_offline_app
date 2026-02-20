@@ -136,7 +136,7 @@ class BeneficiaryFormMapper {
     controllers.selectedMaritalStatus = beneficiary.maritalStatus?.arabicLabel;
     controllers.selectedEducationLevel = beneficiary.educationLevel?.arabicLabel;
     controllers.selectedEmploymentStatus = beneficiary.employmentStatus?.arabicLabel.toString();
-    controllers.selectedCategory = beneficiary.category.arabicLabel;
+    controllers.selectedCategory = beneficiary.category.code.toString();
     controllers.selectedDisplacementStatus = beneficiary.displacementStatus?.arabicLabel;
     controllers.selectedHealthStatus = beneficiary.healthStatus.arabicLabel;
     controllers.selectedHousingStatus = beneficiary.housingStatus?.arabicLabel;
@@ -286,8 +286,16 @@ class BeneficiaryFormMapper {
 
   static BeneficiaryCategory _parseCategory(String? value) {
     if (value == null) return BeneficiaryCategory.other;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return BeneficiaryCategory.other;
+
+    final numericCode = int.tryParse(trimmed);
+    if (numericCode != null) {
+      return BeneficiaryCategory.fromCode(numericCode);
+    }
+
     return BeneficiaryCategory.values.firstWhere(
-      (c) => c.arabicLabel == value,
+      (c) => c.arabicLabel == trimmed || c.englishValue == trimmed || c.name == trimmed,
       orElse: () => BeneficiaryCategory.other,
     );
   }

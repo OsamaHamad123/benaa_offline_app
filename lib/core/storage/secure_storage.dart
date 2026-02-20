@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 
 /// 🔐 Secure Storage - تخزين آمن للبيانات الحساسة
 ///
@@ -12,6 +14,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// - إعدادات أخرى حساسة
 class SecureStorage {
   static final SecureStorage _instance = SecureStorage._internal();
+  static String? _cachedDeviceId;
+  static bool _secureStoragePluginUnavailable = false;
+  static final Map<String, String> _memoryFallbackStore = <String, String>{};
   factory SecureStorage() => _instance;
   SecureStorage._internal();
 
@@ -36,6 +41,10 @@ class SecureStorage {
   static const String _offlineConfigKey = 'offline_config';
   static const String _userDataKey = 'user_data';
   static const String _lastOnlineAuthKey = 'last_online_auth';
+  // 🆕 Remember Me Keys
+  static const String _rememberMeKey = 'remember_me';
+  static const String _savedEmailKey = 'saved_email';
+  static const String _savedPasswordKey = 'saved_password_encrypted';
 
   // ===========================
   // 🔐 Authentication Methods
@@ -130,20 +139,64 @@ class SecureStorage {
 
   /// 📱 الحصول على Device ID (أو إنشاؤه إذا لم يكن موجود)
   Future<String> getDeviceId() async {
+    if (_cachedDeviceId != null && _cachedDeviceId!.isNotEmpty) {
+      return _cachedDeviceId!;
+    }
+
     try {
-      String? deviceId = await _storage.read(key: _deviceIdKey);
+      String? deviceId;
+
+      if (_secureStoragePluginUnavailable) {
+        deviceId = _memoryFallbackStore[_deviceIdKey];
+      } else {
+        deviceId = await _storage.read(key: _deviceIdKey);
+      }
 
       if (deviceId == null || deviceId.isEmpty) {
-        deviceId = 'device_${DateTime.now().millisecondsSinceEpoch}';
-        await _storage.write(key: _deviceIdKey, value: deviceId);
-        UnifiedLogger.info('📱 New device ID created: $deviceId');
+        // 🆔 إنشاء معرف فريد عالمي (UUID V4)
+        deviceId = const Uuid().v4();
+        _cachedDeviceId = deviceId;
+
+        if (_secureStoragePluginUnavailable) {
+          _memoryFallbackStore[_deviceIdKey] = deviceId;
+        } else {
+          await _storage.write(key: _deviceIdKey, value: deviceId);
+        }
+
+        UnifiedLogger.info('📱 New persistent device ID created (UUID): $deviceId');
+      } else {
+        _cachedDeviceId = deviceId;
       }
 
       return deviceId;
+    } on MissingPluginException {
+      _secureStoragePluginUnavailable = true;
+
+      final fallback = _memoryFallbackStore[_deviceIdKey];
+      if (fallback != null && fallback.isNotEmpty) {
+        _cachedDeviceId = fallback;
+        return fallback;
+      }
+
+      final generated = const Uuid().v4();
+      _cachedDeviceId = generated;
+      _memoryFallbackStore[_deviceIdKey] = generated;
+      UnifiedLogger.warning('⚠️ flutter_secure_storage plugin unavailable; using in-memory fallback for device ID');
+      return generated;
     } catch (e) {
       UnifiedLogger.error('❌ Failed to get device ID', error: e);
-      // Fallback device ID
-      return 'device_${DateTime.now().millisecondsSinceEpoch}';
+      if (_cachedDeviceId != null && _cachedDeviceId!.isNotEmpty) {
+        return _cachedDeviceId!;
+      }
+
+      // Fallback (still tries to use UUID if possible, or timestamp as last resort)
+      try {
+        _cachedDeviceId = const Uuid().v4();
+        return _cachedDeviceId!;
+      } catch (_) {
+        _cachedDeviceId = 'device_${DateTime.now().millisecondsSinceEpoch}';
+        return _cachedDeviceId!;
+      }
     }
   }
 
@@ -215,8 +268,18 @@ class SecureStorage {
   /// 🗑️ حذف جميع البيانات (تسجيل الخروج)
   Future<void> clearAll() async {
     try {
-      await _storage.deleteAll();
+      if (_secureStoragePluginUnavailable) {
+        _memoryFallbackStore.clear();
+      } else {
+        await _storage.deleteAll();
+      }
+      _cachedDeviceId = null;
       UnifiedLogger.info('🗑️ All secure storage cleared');
+    } on MissingPluginException {
+      _secureStoragePluginUnavailable = true;
+      _memoryFallbackStore.clear();
+      _cachedDeviceId = null;
+      UnifiedLogger.warning('⚠️ flutter_secure_storage plugin unavailable; cleared in-memory secure storage fallback');
     } catch (e) {
       UnifiedLogger.error('❌ Failed to clear storage', error: e);
       rethrow;
@@ -499,6 +562,98 @@ class SecureStorage {
     } catch (e) {
       UnifiedLogger.error('❌ Failed to clear auth session', error: e);
       rethrow;
+    }
+  }
+
+  // ===========================
+  // 🔐 REMEMBER ME METHODS
+  // ===========================
+
+  /// 💾 حفظ بيانات تسجيل الدخول (Remember Me)
+  /// يتم تشفير كلمة المرور باستخدام flutter_secure_storage
+  Future<void> saveLoginCredentials({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // تشفير بسيط للكلمة المرور (flutter_secure_storage يشفر تلقائياً)
+      final encodedPassword = base64Encode(utf8.encode(password));
+
+      await Future.wait([
+        _storage.write(key: _rememberMeKey, value: 'true'),
+        _storage.write(key: _savedEmailKey, value: email),
+        _storage.write(key: _savedPasswordKey, value: encodedPassword),
+      ]);
+
+      UnifiedLogger.success('✅ Login credentials saved securely');
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to save login credentials', error: e);
+      rethrow;
+    }
+  }
+
+  /// 📖 الحصول على بيانات تسجيل الدخول المحفوظة
+  Future<({String? email, String? password, bool rememberMe})> getSavedCredentials() async {
+    try {
+      final rememberMe = await _storage.read(key: _rememberMeKey);
+
+      if (rememberMe != 'true') {
+        return (email: null, password: null, rememberMe: false);
+      }
+
+      final email = await _storage.read(key: _savedEmailKey);
+      final encodedPassword = await _storage.read(key: _savedPasswordKey);
+
+      String? password;
+      if (encodedPassword != null && encodedPassword.isNotEmpty) {
+        try {
+          password = utf8.decode(base64Decode(encodedPassword));
+        } catch (_) {
+          password = null;
+        }
+      }
+
+      return (email: email, password: password, rememberMe: true);
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to get saved credentials', error: e);
+      return (email: null, password: null, rememberMe: false);
+    }
+  }
+
+  /// ✅ التحقق من وجود بيانات محفوظة
+  Future<bool> hasRememberMe() async {
+    try {
+      final rememberMe = await _storage.read(key: _rememberMeKey);
+      return rememberMe == 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🗑️ حذف بيانات تسجيل الدخول المحفوظة
+  Future<void> clearSavedCredentials() async {
+    try {
+      await Future.wait([
+        _storage.delete(key: _rememberMeKey),
+        _storage.delete(key: _savedEmailKey),
+        _storage.delete(key: _savedPasswordKey),
+      ]);
+      UnifiedLogger.info('🗑️ Saved credentials cleared');
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to clear saved credentials', error: e);
+    }
+  }
+
+  /// 🔄 تحديث حالة Remember Me فقط (بدون حذف البيانات)
+  Future<void> setRememberMe(bool enabled) async {
+    try {
+      if (enabled) {
+        await _storage.write(key: _rememberMeKey, value: 'true');
+      } else {
+        await clearSavedCredentials();
+      }
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to update remember me', error: e);
     }
   }
 }

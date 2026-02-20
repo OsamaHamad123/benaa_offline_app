@@ -21,12 +21,7 @@ final dashboardLocalDataSourceProvider = Provider<DashboardLocalDataSource>((
   ref,
 ) {
   final database = ref.watch(core_providers.databaseProvider);
-  final prefsAsync = ref.watch(core_providers.sharedPreferencesProvider);
-  final prefs = prefsAsync.value;
-
-  if (prefs == null) {
-    throw Exception('SharedPreferences not loaded yet');
-  }
+  final prefs = ref.watch(core_providers.sharedPreferencesProvider).requireValue;
 
   return DashboardLocalDataSource(database: database, prefs: prefs);
 });
