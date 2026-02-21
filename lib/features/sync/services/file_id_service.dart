@@ -65,6 +65,15 @@ class FileIdService {
     await _checkAndReserveIfNeeded();
   }
 
+  /// 📊 Get diagnostics for local/remote File ID state
+  Future<FileIdDiagnostics?> getDiagnostics() async {
+    final result = await _repository.getDiagnostics();
+    if (result.isFailure) {
+      return null;
+    }
+    return result.getOrNull();
+  }
+
   /// 📊 Check availability and reserve in background if needed
   Future<void> _checkAndReserveIfNeeded() async {
     if (_isReserving) return;

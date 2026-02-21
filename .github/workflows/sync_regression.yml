@@ -1,0 +1,65 @@
+name: Sync Regression
+
+on:
+    pull_request:
+        branches: [main, develop]
+        paths:
+            - "lib/core/sync/**"
+            - "lib/features/sync/**"
+            - "lib/features/taxonomies/**"
+            - "lib/features/beneficiaries/**"
+            - "lib/features/attachments/**"
+            - "test/**"
+            - ".github/workflows/sync_regression.yml"
+    push:
+        branches: [main, develop]
+        paths:
+            - "lib/core/sync/**"
+            - "lib/features/sync/**"
+            - "lib/features/taxonomies/**"
+            - "lib/features/beneficiaries/**"
+            - "lib/features/attachments/**"
+            - "test/**"
+            - ".github/workflows/sync_regression.yml"
+
+jobs:
+    sync-regression:
+        name: Sync + Taxonomy Regression
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup Java
+              uses: actions/setup-java@v4
+              with:
+                  distribution: temurin
+                  java-version: "17"
+
+            - name: Setup Flutter
+              uses: subosito/flutter-action@v2
+              with:
+                  channel: stable
+                  cache: true
+
+            - name: Get dependencies
+              run: flutter pub get
+
+            - name: Analyze focused modules
+              run: |
+                  flutter analyze \
+                    lib/core/sync/mobile_sync_service.dart \
+                    lib/features/sync/mobile_sync_page.dart \
+                    lib/features/sync/data/datasources/file_id_remote_datasource.dart \
+                    lib/features/beneficiaries/presentation/pages/v2_form_helpers/family_save_helper.dart \
+                    lib/features/attachments/data/datasources/attachment_datasource.dart
+
+            - name: Run sync/file-id tests
+              run: flutter test test/features/sync/data/datasources/file_id_remote_datasource_test.dart
+
+            - name: Run taxonomy tests
+              run: |
+                  flutter test test/features/taxonomies/domain/entities/taxonomy_group_test.dart
+                  flutter test test/features/taxonomies/domain/entities/taxonomy_test.dart
+                  flutter test test/features/taxonomies/data/models/taxonomy_dto_test.dart

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
+import '../../../../core/utils/beneficiary_identity_resolver.dart';
 import '../../domain/helpers/beneficiary_domain_helpers.dart';
 import '../providers/details/beneficiary_details_provider.dart';
 import 'details_widgets/details_header_card.dart';
@@ -26,8 +28,7 @@ import 'details_widgets/sections/action_buttons.dart';
 import 'details_widgets/sections/sponsorships_section.dart';
 import '../widgets/family_section.dart';
 import '../../../visits/presentation/pages/record_visit_page_enhanced.dart';
-import '../../../visits/presentation/providers/visit_providers.dart'
-    hide databaseProvider;
+import '../../../visits/presentation/providers/visit_providers.dart' hide databaseProvider;
 import '../../../attachments/presentation/providers/attachments_provider.dart';
 import '../../../../core/providers/providers.dart';
 
@@ -40,31 +41,45 @@ class BeneficiaryDetailsPageV2 extends ConsumerStatefulWidget {
   const BeneficiaryDetailsPageV2({required this.beneficiaryId, super.key});
 
   @override
-  ConsumerState<BeneficiaryDetailsPageV2> createState() =>
-      _BeneficiaryDetailsPageV2State();
+  ConsumerState<BeneficiaryDetailsPageV2> createState() => _BeneficiaryDetailsPageV2State();
 }
 
-class _BeneficiaryDetailsPageV2State
-    extends ConsumerState<BeneficiaryDetailsPageV2> {
-  late final int? _beneficiaryIntId;
+class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPageV2> {
+  int? _beneficiaryIntId;
+  String? _resolvedBeneficiaryId;
+  bool _isResolvingIdentity = true;
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _showTimelineView = true;
 
   @override
   void initState() {
     super.initState();
-    _beneficiaryIntId = int.tryParse(widget.beneficiaryId);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
-  void _loadData() {
+  Future<void> _loadData() async {
+    final database = ref.read(databaseProvider);
+    final resolved = await BeneficiaryIdentityResolver.resolveLocalBeneficiaryIdAsString(
+      database: database,
+      beneficiaryId: widget.beneficiaryId,
+    );
+
+    if (!mounted) return;
+
+    final effective = resolved ?? widget.beneficiaryId;
+    final intId = int.tryParse(effective);
+
+    setState(() {
+      _resolvedBeneficiaryId = effective;
+      _beneficiaryIntId = intId;
+      _isResolvingIdentity = false;
+    });
+
     if (_beneficiaryIntId != null) {
-      ref
-          .read(beneficiaryDetailsProvider.notifier)
-          .loadBeneficiary(_beneficiaryIntId);
-      ref
-          .read(visitNotifierProvider.notifier)
-          .loadBeneficiaryVisits(widget.beneficiaryId);
+      ref.read(beneficiaryDetailsProvider.notifier).loadBeneficiary(_beneficiaryIntId!);
+      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId!);
     }
   }
 
@@ -79,6 +94,13 @@ class _BeneficiaryDetailsPageV2State
     final errorMessage = ref.watch(
       beneficiaryDetailsProvider.select((s) => s.errorMessage),
     );
+
+    if (_isResolvingIdentity) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('جاري التحميل...')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     if (_beneficiaryIntId == null) {
       return Scaffold(
@@ -111,26 +133,21 @@ class _BeneficiaryDetailsPageV2State
   // ============================================================================
 
   AppBar _buildAppBar(BuildContext context, beneficiary) {
-    final colorInfo = beneficiary != null
-        ? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category)
-        : null;
+    final colorInfo = beneficiary != null ? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category) : null;
 
     return AppBar(
       title: const Text('تفاصيل المستفيد'),
-      backgroundColor:
-          colorInfo != null ? Color(colorInfo.light) : Colors.transparent,
+      backgroundColor: colorInfo != null ? Color(colorInfo.light) : Colors.transparent,
       actions: [
         IconButton(
           icon: const Icon(Icons.share_outlined),
           tooltip: 'مشاركة',
-          onPressed:
-              beneficiary != null ? () => _shareScreenshot(context) : null,
+          onPressed: beneficiary != null ? () => _shareScreenshot(context) : null,
         ),
         IconButton(
           icon: const Icon(Icons.edit_outlined),
           tooltip: 'تعديل',
-          onPressed:
-              beneficiary != null ? () => _navigateToEdit(context) : null,
+          onPressed: beneficiary != null ? () => _navigateToEdit(context) : null,
         ),
         PopupMenuButton<String>(
           onSelected: (value) => _handleMenuAction(context, value),
@@ -200,6 +217,8 @@ class _BeneficiaryDetailsPageV2State
                 child: FadeInAnimation(child: widget),
               ),
               children: [
+                if (kDebugMode) _buildIdentityDebugBanner(),
+                if (kDebugMode) SizedBox(height: 12.h),
                 DetailsHeaderCard(beneficiary: beneficiary),
                 SizedBox(height: 20.h),
                 _buildQuickStats(beneficiary),
@@ -264,13 +283,15 @@ class _BeneficiaryDetailsPageV2State
                   items: InfoBuilders.buildSystemInfoItems(beneficiary),
                 ),
                 SizedBox(height: 20.h),
-                SponsorshipsSection(beneficiaryId: _beneficiaryIntId),
+                SponsorshipsSection(beneficiaryId: _beneficiaryIntId!),
                 SizedBox(height: 20.h),
-                AttachmentsSection(beneficiaryId: widget.beneficiaryId),
+                AttachmentsSection(
+                  beneficiaryId: _resolvedBeneficiaryId ?? widget.beneficiaryId,
+                ),
                 SizedBox(height: 20.h),
                 VisitsSection(
                   beneficiary: beneficiary,
-                  beneficiaryId: widget.beneficiaryId,
+                  beneficiaryId: _resolvedBeneficiaryId ?? widget.beneficiaryId,
                   visitState: ref.watch(visitNotifierProvider),
                   showTimelineView: _showTimelineView,
                   onToggleView: () {
@@ -298,15 +319,33 @@ class _BeneficiaryDetailsPageV2State
   Widget _buildQuickStats(beneficiary) {
     final visitState = ref.watch(visitNotifierProvider);
     final attachmentsState = ref.watch(
-      attachmentsProvider(widget.beneficiaryId),
+      attachmentsProvider(_resolvedBeneficiaryId ?? widget.beneficiaryId),
     );
 
     return QuickStatsCard(
       visitsCount: visitState.visits.length,
       attachmentsCount: attachmentsState.attachments.length,
-      lastVisitDate: visitState.visits.isNotEmpty
-          ? _formatDateShort(visitState.visits.first.visitDate)
-          : 'لا توجد',
+      lastVisitDate: visitState.visits.isNotEmpty ? _formatDateShort(visitState.visits.first.visitDate) : 'لا توجد',
+    );
+  }
+
+  Widget _buildIdentityDebugBanner() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.orange.withOpacity(0.55)),
+      ),
+      child: Text(
+        'DEBUG LINK | routeId: ${widget.beneficiaryId} | resolvedLocalId: ${_resolvedBeneficiaryId ?? '-'} | localIntId: ${_beneficiaryIntId ?? '-'}',
+        style: TextStyle(
+          fontSize: 11.sp,
+          color: Colors.brown[800],
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 
@@ -372,7 +411,7 @@ class _BeneficiaryDetailsPageV2State
 
   void _navigateToEdit(BuildContext context) {
     try {
-      context.push('/beneficiaries/${widget.beneficiaryId}/edit');
+      context.push('/beneficiaries/${_resolvedBeneficiaryId ?? widget.beneficiaryId}/edit');
     } catch (e) {
       EnhancedSnackbar.showError(context, message: 'خطأ في الانتقال: $e');
     }
@@ -387,7 +426,7 @@ class _BeneficiaryDetailsPageV2State
       final db = ref.read(databaseProvider);
       final beneficiaries = await (db.select(
         db.beneficiaries,
-      )..where((t) => t.id.equals(_beneficiaryIntId)))
+      )..where((t) => t.id.equals(_beneficiaryIntId!)))
           .get();
 
       if (mounted) LoadingDialog.hide(context);
@@ -407,14 +446,11 @@ class _BeneficiaryDetailsPageV2State
       if (mounted) {
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) =>
-                RecordVisitPageEnhanced(beneficiary: beneficiary),
+            builder: (context) => RecordVisitPageEnhanced(beneficiary: beneficiary),
           ),
         );
 
-        ref
-            .read(visitNotifierProvider.notifier)
-            .loadBeneficiaryVisits(widget.beneficiaryId);
+        ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId ?? widget.beneficiaryId);
       }
     } catch (e) {
       if (mounted) {
@@ -435,9 +471,7 @@ class _BeneficiaryDetailsPageV2State
       ),
     );
     if (result == true) {
-      ref
-          .read(visitNotifierProvider.notifier)
-          .loadBeneficiaryVisits(widget.beneficiaryId);
+      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId ?? widget.beneficiaryId);
     }
   }
 
@@ -445,9 +479,7 @@ class _BeneficiaryDetailsPageV2State
     if (_beneficiaryIntId == null) return;
 
     try {
-      await ref
-          .read(beneficiaryDetailsProvider.notifier)
-          .refresh(_beneficiaryIntId);
+      await ref.read(beneficiaryDetailsProvider.notifier).refresh(_beneficiaryIntId!);
     } catch (e) {
       if (mounted) {
         EnhancedSnackbar.showError(context, message: 'فشل تحديث البيانات');
@@ -485,9 +517,7 @@ class _BeneficiaryDetailsPageV2State
       try {
         if (_beneficiaryIntId == null) return;
 
-        final success = await ref
-            .read(beneficiaryDetailsProvider.notifier)
-            .deleteBeneficiary(_beneficiaryIntId);
+        final success = await ref.read(beneficiaryDetailsProvider.notifier).deleteBeneficiary(_beneficiaryIntId!);
 
         if (mounted) LoadingDialog.hide(context);
 
@@ -498,8 +528,7 @@ class _BeneficiaryDetailsPageV2State
           );
           context.pop();
         } else if (mounted) {
-          final errorMsg = ref.read(beneficiaryDetailsProvider).errorMessage ??
-              'خطأ غير معروف';
+          final errorMsg = ref.read(beneficiaryDetailsProvider).errorMessage ?? 'خطأ غير معروف';
           EnhancedSnackbar.showError(context, message: 'خطأ: $errorMsg');
         }
       } catch (e) {
@@ -526,8 +555,7 @@ class _BeneficiaryDetailsPageV2State
       }
 
       final directory = await getTemporaryDirectory();
-      final imagePath =
-          '${directory.path}/beneficiary_${widget.beneficiaryId}.png';
+      final imagePath = '${directory.path}/beneficiary_${widget.beneficiaryId}.png';
       final imageFile = File(imagePath);
       await imageFile.writeAsBytes(image);
 

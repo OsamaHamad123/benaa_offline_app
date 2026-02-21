@@ -211,6 +211,10 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
         return Icons.category_rounded;
       case TaxonomyGroup.maritalStatus:
         return Icons.family_restroom_rounded;
+      case TaxonomyGroup.displacementStatus:
+        return Icons.alt_route_rounded;
+      case TaxonomyGroup.employmentStatus:
+        return Icons.work_outline_rounded;
       case TaxonomyGroup.educationLevel:
         return Icons.school_rounded;
       case TaxonomyGroup.healthStatus:

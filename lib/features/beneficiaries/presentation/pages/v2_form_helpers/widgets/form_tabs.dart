@@ -169,6 +169,8 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         onHousingStatusChanged: (value) => widget.formControllers.selectedHousingStatus = value,
         selectedHousingType: widget.formControllers.selectedHousingType,
         onHousingTypeChanged: (value) => widget.formControllers.selectedHousingType = value,
+        selectedBeneficiaryStatus: widget.formControllers.selectedRequestStatus,
+        onBeneficiaryStatusChanged: (value) => widget.formControllers.selectedRequestStatus = value,
       ),
     );
   }

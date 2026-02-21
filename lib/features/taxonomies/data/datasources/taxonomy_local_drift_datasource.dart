@@ -1,5 +1,6 @@
 import '../../../../data/db/daos/sync_metadata_dao.dart';
 import '../../../../data/db/daos/taxonomies_dao.dart';
+import '../../../../data/db/drift_database.dart' show TaxonomiesCompanion;
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../models/taxonomy_dto.dart';
@@ -73,18 +74,18 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
 
   @override
   Future<TaxonomyStatistics> getStatistics() async {
-    final all = await getAllTaxonomies();
-    final active = all.where((t) => t.isActive && !t.isDeleted).toList();
-    final inactive = all.where((t) => !t.isActive && !t.isDeleted).toList();
+    final allItems = await _taxonomiesDao.getAllTaxonomies();
+    final activeItems = allItems.where((item) => item.isActive).toList();
+    final inactiveItems = allItems.where((item) => !item.isActive).toList();
     final counts = <TaxonomyGroup, int>{};
     for (final group in TaxonomyGroup.values) {
-      counts[group] = active.where((t) => t.group == group).length;
+      counts[group] = activeItems.where((item) => TaxonomyGroup.normalizeValue(item.group) == group.value).length;
     }
 
     return TaxonomyStatistics(
-      totalCount: all.where((t) => !t.isDeleted).length,
-      activeCount: active.length,
-      inactiveCount: inactive.length,
+      totalCount: allItems.length,
+      activeCount: activeItems.length,
+      inactiveCount: inactiveItems.length,
       countByGroup: counts,
       lastSyncTime: await getLastSyncTime(),
     );
@@ -134,10 +135,17 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
     );
   }
 
+  Future<void> upsertCompanions(List<TaxonomiesCompanion> companions) async {
+    await _taxonomiesDao.upsertBatch(companions);
+  }
+
   Taxonomy _fromDbEntity(dynamic entity) {
+    final normalizedGroupValue = TaxonomyGroup.normalizeValue(entity.group);
+    final resolvedGroup = TaxonomyGroup.fromString(normalizedGroupValue) ?? TaxonomyGroup.category;
+
     return Taxonomy(
       id: entity.id,
-      group: TaxonomyGroup.fromString(entity.group) ?? TaxonomyGroup.category,
+      group: resolvedGroup,
       code: entity.code,
       label: entity.label,
       labelEn: null,

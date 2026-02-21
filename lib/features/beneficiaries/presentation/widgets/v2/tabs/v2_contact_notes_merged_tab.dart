@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
 import '../../../pages/v2_form_helpers/form_constants.dart';
+import '../../../../../../features/taxonomies/taxonomies.dart';
 
 /// 📞 Contact & Notes Merged Tab (Contact Info + Notes)
 ///
@@ -31,9 +32,7 @@ class V2ContactNotesMergedTab extends StatelessWidget {
               prefixIcon: Icons.phone_rounded,
               keyboardType: TextInputType.phone,
               isRequired: true,
-              validator: (value) => value?.isEmpty ?? true
-                  ? FormConstants.requiredFieldMessage
-                  : null,
+              validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
               helperText: 'أدخل رقم الهاتف الرئيسي',
             ),
             SizedBox(height: 12.h),
@@ -53,27 +52,13 @@ class V2ContactNotesMergedTab extends StatelessWidget {
           icon: Icons.location_on_rounded,
           headerColor: FormColors.tabGradients[2]![0].withOpacity(0.15),
           children: [
-            M3DropdownField<String>(
-              value: formControllers.selectedProvince,
-              label: 'المحافظة',
-              prefixIcon: Icons.map_rounded,
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.governorate,
+              selectedCode: formControllers.selectedProvince,
+              onCodeChanged: (value) => formControllers.selectedProvince = value,
+              labelText: 'المحافظة',
               isRequired: true,
-              onChanged: (value) => formControllers.selectedProvince = value,
-              validator: (value) =>
-                  value == null ? FormConstants.requiredFieldMessage : null,
-              items: const [
-                DropdownMenuItem(value: 'صنعاء', child: Text('صنعاء')),
-                DropdownMenuItem(value: 'عدن', child: Text('عدن')),
-                DropdownMenuItem(value: 'تعز', child: Text('تعز')),
-                DropdownMenuItem(value: 'الحديدة', child: Text('الحديدة')),
-                DropdownMenuItem(value: 'إب', child: Text('إب')),
-                DropdownMenuItem(value: 'ذمار', child: Text('ذمار')),
-                DropdownMenuItem(value: 'حضرموت', child: Text('حضرموت')),
-                DropdownMenuItem(value: 'المحويت', child: Text('المحويت')),
-                DropdownMenuItem(value: 'صعدة', child: Text('صعدة')),
-                DropdownMenuItem(value: 'عمران', child: Text('عمران')),
-                DropdownMenuItem(value: 'أخرى', child: Text('أخرى')),
-              ],
+              prefixIcon: Icons.map_rounded,
             ),
             SizedBox(height: 12.h),
             M3DropdownField<String>(
@@ -111,19 +96,15 @@ class V2ContactNotesMergedTab extends StatelessWidget {
           icon: Icons.moving_rounded,
           headerColor: FormColors.tabGradients[2]![1].withOpacity(0.15),
           children: [
-            M3DropdownField<String>(
-              value: formControllers.selectedDisplacementStatus,
-              label: 'حالة النزوح',
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.displacementStatus,
+              selectedCode: formControllers.selectedDisplacementStatus,
+              onCodeChanged: (value) => formControllers.selectedDisplacementStatus = value,
+              labelText: 'حالة النزوح',
               prefixIcon: Icons.alt_route_rounded,
-              onChanged: (value) =>
-                  formControllers.selectedDisplacementStatus = value,
-              items: const [
-                DropdownMenuItem(value: 'غير نازح', child: Text('غير نازح')),
-                DropdownMenuItem(value: 'نازح', child: Text('نازح')),
-                DropdownMenuItem(value: 'عائد', child: Text('عائد')),
-              ],
             ),
-            if (formControllers.selectedDisplacementStatus == 'نازح') ...[
+            if (formControllers.selectedDisplacementStatus != null &&
+                formControllers.selectedDisplacementStatus!.isNotEmpty) ...[
               SizedBox(height: 12.h),
               M3TextField(
                 controller: formControllers.addressBeforeDisplacementController,

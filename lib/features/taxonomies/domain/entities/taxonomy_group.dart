@@ -12,6 +12,12 @@ enum TaxonomyGroup {
   /// الحالة الاجتماعية
   maritalStatus('marital_status', 'الحالة الاجتماعية', 'mar'),
 
+  /// حالة النزوح
+  displacementStatus('displacement_status', 'حالة النزوح', 'disp'),
+
+  /// حالة التوظيف
+  employmentStatus('employment_status', 'حالة التوظيف', 'emp'),
+
   /// المستوى التعليمي
   educationLevel('education_level', 'المستوى التعليمي', 'edu'),
 
@@ -67,16 +73,126 @@ enum TaxonomyGroup {
 
   /// تحويل من String إلى Enum
   static TaxonomyGroup? fromString(String? value) {
-    if (value == null) return null;
-    return TaxonomyGroup.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => TaxonomyGroup.category,
-    );
+    final normalized = normalizeValue(value);
+    if (normalized == null) return null;
+    for (final group in TaxonomyGroup.values) {
+      if (group.value == normalized) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  /// تطبيع قيمة المجموعة القادمة من API أو قاعدة البيانات
+  ///
+  /// ترجع قيمة قياسية مطابقة لقيم enum عند القدرة على التعرف عليها.
+  /// إذا تعذر التعرف، ترجع القيمة بعد التطبيع الشكلي فقط.
+  static String? normalizeValue(String? rawValue) {
+    if (rawValue == null) return null;
+
+    final trimmed = rawValue.trim();
+    if (trimmed.isEmpty) return null;
+
+    final normalized = trimmed.toLowerCase().replaceAll(RegExp(r'\s+'), '_').replaceAll('-', '_');
+
+    if (trimmed.contains('المحافظ')) return 'governorate';
+    if (trimmed.contains('الفئ')) return 'category';
+    if (trimmed.contains('الحالة الاجتماعية')) return 'marital_status';
+    if (trimmed.contains('النزوح')) return 'displacement_status';
+    if (trimmed.contains('التوظيف') || trimmed.contains('العمل')) return 'employment_status';
+    if (trimmed.contains('المستوى التعليمي')) return 'education_level';
+    if (trimmed.contains('الحالة الصحية')) return 'health_status';
+    if (trimmed.contains('نوع السكن')) return 'housing_type';
+    if (trimmed.contains('حالة السكن')) return 'housing_status';
+    if (trimmed.contains('الإعاقة')) return 'disability_type';
+    if (trimmed.contains('مصدر الدخل')) return 'income_source';
+    if (trimmed.contains('نوع الجمعية')) return 'association_type';
+    if (trimmed.contains('نوع الكفالة')) return 'sponsorship_type';
+    if (trimmed.contains('نوع الزيارة')) return 'visit_type';
+    if (trimmed.contains('نوع المساعدة')) return 'assistance_type';
+    if (trimmed.contains('حالة المستفيد')) return 'beneficiary_status';
+    if (trimmed.contains('صلة القرابة')) return 'relationship';
+    if (trimmed.contains('القسم')) return 'section';
+    if (trimmed.contains('الجنس')) return 'gender';
+
+    const aliases = <String, String>{
+      'categories': 'category',
+      'beneficiary_categories': 'category',
+      'province': 'governorate',
+      'provinces': 'governorate',
+      'governorates': 'governorate',
+      'cities': 'governorate',
+      'marital_statuses': 'marital_status',
+      'social_status': 'marital_status',
+      'social_statuses': 'marital_status',
+      'displacement_statuses': 'displacement_status',
+      'employment_statuses': 'employment_status',
+      'job_status': 'employment_status',
+      'job_statuses': 'employment_status',
+      'education_levels': 'education_level',
+      'educational_levels': 'education_level',
+      'academic_degrees': 'education_level',
+      'health_statuses': 'health_status',
+      'health_conditions': 'health_status',
+      'housing_types': 'housing_type',
+      'residence_types': 'housing_type',
+      'housing_statuses': 'housing_status',
+      'housing_conditions': 'housing_status',
+      'residence_status': 'housing_status',
+      'disability_types': 'disability_type',
+      'special_needs_types': 'disability_type',
+      'income_sources': 'income_source',
+      'association_types': 'association_type',
+      'associations_types': 'association_type',
+      'sponsorship_types': 'sponsorship_type',
+      'visit_types': 'visit_type',
+      'assistance_types': 'assistance_type',
+      'aid_types': 'assistance_type',
+      'beneficiary_statuses': 'beneficiary_status',
+      'beneficiary_state': 'beneficiary_status',
+      'relationships': 'relationship',
+      'kinship': 'relationship',
+      'departments': 'section',
+      'department': 'section',
+      'sections': 'section',
+      'sex': 'gender',
+      'genders': 'gender',
+    };
+
+    final direct = aliases[normalized] ?? normalized;
+
+    if (TaxonomyGroup.values.any((group) => group.value == direct)) {
+      return direct;
+    }
+
+    if (direct.contains('marital') || direct.contains('social_status')) return 'marital_status';
+    if (direct.contains('displacement')) return 'displacement_status';
+    if (direct.contains('employment') || direct.contains('job_status')) return 'employment_status';
+    if (direct.contains('education') || direct.contains('academic_degree')) return 'education_level';
+    if (direct.contains('health')) return 'health_status';
+    if (direct.contains('housing_type') || direct.contains('residence_type')) return 'housing_type';
+    if (direct.contains('housing_status') || direct.contains('housing_condition')) return 'housing_status';
+    if (direct.contains('disability') || direct.contains('special_needs')) return 'disability_type';
+    if (direct.contains('income')) return 'income_source';
+    if (direct.contains('association')) return 'association_type';
+    if (direct.contains('sponsorship')) return 'sponsorship_type';
+    if (direct.contains('visit')) return 'visit_type';
+    if (direct.contains('assistance') || direct.contains('aid_type')) return 'assistance_type';
+    if (direct.contains('beneficiary_status') || direct.contains('beneficiary_state')) return 'beneficiary_status';
+    if (direct.contains('relationship') || direct.contains('kinship')) return 'relationship';
+    if (direct.contains('section') || direct.contains('department')) return 'section';
+    if (direct.contains('gender') || direct.contains('sex')) return 'gender';
+    if (direct.contains('governorate') || direct.contains('province') || direct.contains('city')) return 'governorate';
+    if (direct.contains('category')) return 'category';
+
+    return direct;
   }
 
   /// التحقق من وجود مجموعة
   static bool isValidGroup(String value) {
-    return TaxonomyGroup.values.any((e) => e.value == value);
+    final normalized = normalizeValue(value);
+    if (normalized == null) return false;
+    return TaxonomyGroup.values.any((e) => e.value == normalized);
   }
 
   @override
@@ -109,6 +225,10 @@ extension TaxonomyGroupExtension on TaxonomyGroup {
         return 'category';
       case TaxonomyGroup.maritalStatus:
         return 'people';
+      case TaxonomyGroup.displacementStatus:
+        return 'alt_route';
+      case TaxonomyGroup.employmentStatus:
+        return 'work';
       case TaxonomyGroup.educationLevel:
         return 'school';
       case TaxonomyGroup.healthStatus:

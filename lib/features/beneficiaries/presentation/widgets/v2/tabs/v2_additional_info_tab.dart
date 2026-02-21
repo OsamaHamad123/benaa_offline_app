@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
-import '../components/v2_dropdown_field.dart';
 import '../components/v2_switch_tile.dart';
 import '../components/v2_section_card.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱 Responsive utilities
+import '../../../../../../features/taxonomies/taxonomies.dart';
 
 /// Additional information tab
 class V2AdditionalInfoTab extends StatelessWidget {
@@ -21,6 +21,8 @@ class V2AdditionalInfoTab extends StatelessWidget {
   final Function(String?) onHousingStatusChanged;
   final String? selectedHousingType;
   final Function(String?) onHousingTypeChanged;
+  final String? selectedBeneficiaryStatus;
+  final Function(String?) onBeneficiaryStatusChanged;
 
   const V2AdditionalInfoTab({
     super.key,
@@ -37,6 +39,8 @@ class V2AdditionalInfoTab extends StatelessWidget {
     required this.onHousingStatusChanged,
     this.selectedHousingType,
     required this.onHousingTypeChanged,
+    this.selectedBeneficiaryStatus,
+    required this.onBeneficiaryStatusChanged,
   });
 
   @override
@@ -50,44 +54,19 @@ class V2AdditionalInfoTab extends StatelessWidget {
           children: [
             ResponsiveFormLayout(
               children: [
-                V2DropdownField<String>(
-                  value: selectedEducationLevel,
-                  label: 'المستوى التعليمي',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.educationLevel,
+                  selectedCode: selectedEducationLevel,
+                  labelText: 'المستوى التعليمي',
                   prefixIcon: Icons.menu_book_rounded,
-                  onChanged: onEducationLevelChanged,
-                  items: const [
-                    DropdownMenuItem(value: 'none', child: Text('أمي')),
-                    DropdownMenuItem(value: 'primary', child: Text('ابتدائي')),
-                    DropdownMenuItem(
-                      value: 'intermediate',
-                      child: Text('إعدادي'),
-                    ),
-                    DropdownMenuItem(value: 'secondary', child: Text('ثانوي')),
-                    DropdownMenuItem(value: 'bachelor', child: Text('جامعي')),
-                    DropdownMenuItem(
-                      value: 'master',
-                      child: Text('دراسات عليا'),
-                    ),
-                  ],
+                  onCodeChanged: onEducationLevelChanged,
                 ),
-                V2DropdownField<String>(
-                  value: selectedEmploymentStatus,
-                  label: 'حالة العمل',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.employmentStatus,
+                  selectedCode: selectedEmploymentStatus,
+                  labelText: 'حالة العمل',
                   prefixIcon: Icons.work_rounded,
-                  onChanged: onEmploymentStatusChanged,
-                  items: const [
-                    DropdownMenuItem(value: 'employed', child: Text('موظف')),
-                    DropdownMenuItem(
-                      value: 'unemployed',
-                      child: Text('عاطل عن العمل'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'selfEmployed',
-                      child: Text('أعمال حرة'),
-                    ),
-                    DropdownMenuItem(value: 'retired', child: Text('متقاعد')),
-                    DropdownMenuItem(value: 'student', child: Text('طالب')),
-                  ],
+                  onCodeChanged: onEmploymentStatusChanged,
                 ),
               ],
             ),
@@ -99,21 +78,12 @@ class V2AdditionalInfoTab extends StatelessWidget {
           children: [
             ResponsiveFormLayout(
               children: [
-                V2DropdownField<String>(
-                  value: selectedHealthStatus,
-                  label: 'الحالة الصحية',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.healthStatus,
+                  selectedCode: selectedHealthStatus,
+                  labelText: 'الحالة الصحية',
                   prefixIcon: Icons.favorite_rounded,
-                  onChanged: onHealthStatusChanged,
-                  items: const [
-                    DropdownMenuItem(value: 'good', child: Text('جيدة')),
-                    DropdownMenuItem(value: 'moderate', child: Text('متوسطة')),
-                    DropdownMenuItem(
-                      value: 'chronic',
-                      child: Text('أمراض مزمنة'),
-                    ),
-                    DropdownMenuItem(value: 'disability', child: Text('إعاقة')),
-                    DropdownMenuItem(value: 'poor', child: Text('سيئة')),
-                  ],
+                  onCodeChanged: onHealthStatusChanged,
                 ),
                 V2CustomTextField(
                   controller: chronicDiseasesController,
@@ -140,39 +110,34 @@ class V2AdditionalInfoTab extends StatelessWidget {
           children: [
             ResponsiveFormLayout(
               children: [
-                V2DropdownField<String>(
-                  value: selectedHousingStatus,
-                  label: 'حالة السكن',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.housingStatus,
+                  selectedCode: selectedHousingStatus,
+                  labelText: 'حالة السكن',
                   prefixIcon: Icons.house_rounded,
-                  onChanged: onHousingStatusChanged,
-                  items: const [
-                    DropdownMenuItem(value: 'owned', child: Text('ملك')),
-                    DropdownMenuItem(value: 'rented', child: Text('إيجار')),
-                    DropdownMenuItem(value: 'shared', child: Text('مشترك')),
-                    DropdownMenuItem(value: 'homeless', child: Text('مشرد')),
-                    DropdownMenuItem(
-                      value: 'withFamily',
-                      child: Text('مع العائلة'),
-                    ),
-                    DropdownMenuItem(value: 'temporary', child: Text('مؤقت')),
-                  ],
+                  onCodeChanged: onHousingStatusChanged,
                 ),
-                V2DropdownField<String>(
-                  value: selectedHousingType,
-                  label: 'نوع السكن',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.housingType,
+                  selectedCode: selectedHousingType,
+                  labelText: 'نوع السكن',
                   prefixIcon: Icons.apartment_rounded,
-                  onChanged: onHousingTypeChanged,
-                  items: const [
-                    DropdownMenuItem(value: 'house', child: Text('منزل')),
-                    DropdownMenuItem(value: 'apartment', child: Text('شقة')),
-                    DropdownMenuItem(value: 'room', child: Text('غرفة')),
-                    DropdownMenuItem(value: 'tent', child: Text('خيمة')),
-                    DropdownMenuItem(value: 'caravan', child: Text('قافلة')),
-                    DropdownMenuItem(value: 'shelter', child: Text('مأوى')),
-                    DropdownMenuItem(value: 'other', child: Text('أخرى')),
-                  ],
+                  onCodeChanged: onHousingTypeChanged,
                 ),
               ],
+            ),
+          ],
+        ),
+        V2SectionCard(
+          title: 'حالة المستفيد',
+          icon: Icons.verified_user_rounded,
+          children: [
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.beneficiaryStatus,
+              selectedCode: selectedBeneficiaryStatus,
+              labelText: 'حالة المستفيد',
+              prefixIcon: Icons.flag_rounded,
+              onCodeChanged: onBeneficiaryStatusChanged,
             ),
           ],
         ),

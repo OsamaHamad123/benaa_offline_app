@@ -6,6 +6,7 @@ import '../components/v2_dropdown_field.dart';
 import '../components/v2_section_card.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱
 import '../../../../../../core/validation/field_validators.dart'; // 📋
+import '../../../../../../features/taxonomies/taxonomies.dart';
 
 /// Contact information tab
 class V2ContactInfoTab extends StatelessWidget {
@@ -77,36 +78,12 @@ class V2ContactInfoTab extends StatelessWidget {
           children: [
             ResponsiveFormLayout(
               children: [
-                V2DropdownField<String>(
-                  value: selectedProvince,
-                  label: 'المحافظة',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.governorate,
+                  selectedCode: selectedProvince,
+                  labelText: 'المحافظة',
                   prefixIcon: Icons.map_rounded,
-                  onChanged: onProvinceChanged,
-                  items: const [
-                    DropdownMenuItem(value: 'damascus', child: Text('رفح')),
-                    DropdownMenuItem(value: 'aleppo', child: Text('خانيونس')),
-                    DropdownMenuItem(value: 'homs', child: Text('القرارة')),
-                    DropdownMenuItem(value: 'hama', child: Text('حماة')),
-                    DropdownMenuItem(value: 'latakia', child: Text('اللاذقية')),
-                    DropdownMenuItem(value: 'tartus', child: Text('طرطوس')),
-                    DropdownMenuItem(value: 'idlib', child: Text('إدلب')),
-                    DropdownMenuItem(value: 'daraa', child: Text('درعا')),
-                    DropdownMenuItem(
-                      value: 'quneitra',
-                      child: Text('القنيطرة'),
-                    ),
-                    DropdownMenuItem(value: 'suwayda', child: Text('السويداء')),
-                    DropdownMenuItem(
-                      value: 'deir_ez_zor',
-                      child: Text('دير الزور'),
-                    ),
-                    DropdownMenuItem(value: 'raqqa', child: Text('الرقة')),
-                    DropdownMenuItem(value: 'hasakah', child: Text('الحسكة')),
-                    DropdownMenuItem(
-                      value: 'rif_dimashq',
-                      child: Text('ريف دمشق'),
-                    ),
-                  ],
+                  onCodeChanged: onProvinceChanged,
                 ),
                 V2DropdownField<String>(
                   value: selectedCity,
@@ -150,22 +127,14 @@ class V2ContactInfoTab extends StatelessWidget {
           title: 'حالة النزوح',
           icon: Icons.move_to_inbox_rounded,
           children: [
-            V2DropdownField<String>(
-              value: selectedDisplacementStatus,
-              label: 'حالة النزوح',
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.displacementStatus,
+              selectedCode: selectedDisplacementStatus,
+              labelText: 'حالة النزوح',
               prefixIcon: Icons.group_rounded,
-              onChanged: onDisplacementStatusChanged,
-              items: const [
-                DropdownMenuItem(
-                  value: 'notDisplaced',
-                  child: Text('غير نازح'),
-                ),
-                DropdownMenuItem(value: 'displaced', child: Text('نازح')),
-                DropdownMenuItem(value: 'refugee', child: Text('لاجئ')),
-                DropdownMenuItem(value: 'returned', child: Text('عائد')),
-              ],
+              onCodeChanged: onDisplacementStatusChanged,
             ),
-            if (selectedDisplacementStatus == 'displaced' || selectedDisplacementStatus == 'refugee') ...[
+            if (selectedDisplacementStatus != null && selectedDisplacementStatus!.isNotEmpty) ...[
               SizedBox(height: 12.h),
               V2CustomTextField(
                 controller: addressBeforeDisplacementController!,

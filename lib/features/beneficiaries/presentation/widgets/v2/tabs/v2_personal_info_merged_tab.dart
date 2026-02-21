@@ -258,17 +258,13 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                     onPressed: widget.onBirthDateTap,
                   ),
                 ),
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedGender,
-                  label: 'الجنس',
-                  prefixIcon: Icons.wc_rounded,
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.gender,
+                  selectedCode: widget.formControllers.selectedGender,
+                  onCodeChanged: (value) => widget.formControllers.selectedGender = value,
+                  labelText: 'الجنس',
                   isRequired: true,
-                  onChanged: (value) => widget.formControllers.selectedGender = value,
-                  validator: (value) => value == null ? FormConstants.requiredFieldMessage : null,
-                  items: const [
-                    DropdownMenuItem(value: 'ذكر', child: Text('ذكر')),
-                    DropdownMenuItem(value: 'أنثى', child: Text('أنثى')),
-                  ],
+                  prefixIcon: Icons.wc_rounded,
                 ),
               ],
             ),
@@ -291,17 +287,12 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   helperText: 'رقم ملف المستفيد الرسمي',
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedRequestStatus,
-                  label: 'حالة الطلب',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.beneficiaryStatus,
+                  selectedCode: widget.formControllers.selectedRequestStatus,
+                  onCodeChanged: (value) => widget.formControllers.selectedRequestStatus = value,
+                  labelText: 'حالة الطلب',
                   prefixIcon: Icons.pending_actions_rounded,
-                  onChanged: (value) => widget.formControllers.selectedRequestStatus = value,
-                  items: const [
-                    DropdownMenuItem(value: 'قيد المراجعة', child: Text('قيد المراجعة')),
-                    DropdownMenuItem(value: 'مقبول', child: Text('مقبول')),
-                    DropdownMenuItem(value: 'مرفوض', child: Text('مرفوض')),
-                    DropdownMenuItem(value: 'مكتمل', child: Text('مكتمل')),
-                  ],
                 ),
               ],
             ),
@@ -314,43 +305,26 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
           children: [
             ResponsiveFormLayout(
               children: [
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedEducationLevel,
-                  label: 'المستوى التعليمي',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.educationLevel,
+                  selectedCode: widget.formControllers.selectedEducationLevel,
+                  onCodeChanged: (value) => widget.formControllers.selectedEducationLevel = value,
+                  labelText: 'المستوى التعليمي',
                   prefixIcon: Icons.school_rounded,
-                  onChanged: (value) => widget.formControllers.selectedEducationLevel = value,
-                  items: const [
-                    DropdownMenuItem(value: 'أمي', child: Text('أمي')),
-                    DropdownMenuItem(value: 'ابتدائي', child: Text('ابتدائي')),
-                    DropdownMenuItem(value: 'إعدادي', child: Text('إعدادي')),
-                    DropdownMenuItem(value: 'ثانوي', child: Text('ثانوي')),
-                    DropdownMenuItem(value: 'جامعي', child: Text('جامعي')),
-                    DropdownMenuItem(value: 'دراسات عليا', child: Text('دراسات عليا')),
-                  ],
                 ),
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedEmploymentStatus,
-                  label: 'حالة التوظيف',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.employmentStatus,
+                  selectedCode: widget.formControllers.selectedEmploymentStatus,
+                  onCodeChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
+                  labelText: 'حالة التوظيف',
                   prefixIcon: Icons.work_outline_rounded,
-                  onChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
-                  items: const [
-                    DropdownMenuItem(value: 'موظف', child: Text('موظف')),
-                    DropdownMenuItem(value: 'عاطل', child: Text('عاطل عن العمل')),
-                    DropdownMenuItem(value: 'طالب', child: Text('طالب')),
-                    DropdownMenuItem(value: 'متقاعد', child: Text('متقاعد')),
-                    DropdownMenuItem(value: 'أعمال حرة', child: Text('أعمال حرة')),
-                  ],
                 ),
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedHealthStatus,
-                  label: 'الحالة الصحية',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.healthStatus,
+                  selectedCode: widget.formControllers.selectedHealthStatus,
+                  onCodeChanged: (value) => widget.formControllers.selectedHealthStatus = value,
+                  labelText: 'الحالة الصحية',
                   prefixIcon: Icons.favorite_outline_rounded,
-                  onChanged: (value) => widget.formControllers.selectedHealthStatus = value,
-                  items: const [
-                    DropdownMenuItem(value: 'جيدة', child: Text('جيدة')),
-                    DropdownMenuItem(value: 'متوسطة', child: Text('متوسطة')),
-                    DropdownMenuItem(value: 'سيئة', child: Text('سيئة')),
-                  ],
                 ),
               ],
             ),
@@ -374,30 +348,19 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
             SizedBox(height: 12.h),
             ResponsiveFormLayout(
               children: [
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedHousingStatus,
-                  label: 'حالة السكن',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.housingStatus,
+                  selectedCode: widget.formControllers.selectedHousingStatus,
+                  onCodeChanged: (value) => widget.formControllers.selectedHousingStatus = value,
+                  labelText: 'حالة السكن',
                   prefixIcon: Icons.home_outlined,
-                  onChanged: (value) => widget.formControllers.selectedHousingStatus = value,
-                  items: const [
-                    DropdownMenuItem(value: 'ملك', child: Text('ملك')),
-                    DropdownMenuItem(value: 'إيجار', child: Text('إيجار')),
-                    DropdownMenuItem(value: 'سكن مشترك', child: Text('سكن مشترك')),
-                    DropdownMenuItem(value: 'آخر', child: Text('آخر')),
-                  ],
                 ),
-                M3DropdownField<String>(
-                  value: widget.formControllers.selectedHousingType,
-                  label: 'نوع السكن',
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.housingType,
+                  selectedCode: widget.formControllers.selectedHousingType,
+                  onCodeChanged: (value) => widget.formControllers.selectedHousingType = value,
+                  labelText: 'نوع السكن',
                   prefixIcon: Icons.apartment_outlined,
-                  onChanged: (value) => widget.formControllers.selectedHousingType = value,
-                  items: const [
-                    DropdownMenuItem(value: 'شقة', child: Text('شقة')),
-                    DropdownMenuItem(value: 'بيت', child: Text('بيت')),
-                    DropdownMenuItem(value: 'غرفة', child: Text('غرفة')),
-                    DropdownMenuItem(value: 'خيمة', child: Text('خيمة')),
-                    DropdownMenuItem(value: 'آخر', child: Text('آخر')),
-                  ],
                 ),
               ],
             ),

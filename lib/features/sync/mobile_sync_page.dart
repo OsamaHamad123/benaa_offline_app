@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
@@ -9,7 +14,11 @@ import '../../core/widgets/modern_sliver_app_bar.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
 import '../../core/error_handling/error_handler.dart';
 import '../taxonomies/presentation/providers/taxonomy_providers.dart';
+import '../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../taxonomies/domain/entities/taxonomy.dart';
+import '../taxonomies/domain/entities/taxonomy_group.dart';
 import 'presentation/providers/file_id_providers.dart';
+import 'domain/repositories/file_id_reservation_repository.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
@@ -42,6 +51,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   MobileSyncStatus? _status;
   MobileSyncResult? _lastResult;
   Map<String, int>? _stats;
+  FileIdDiagnostics? _fileIdDiagnostics;
 
   @override
   void initState() {
@@ -65,8 +75,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     // Note: If associations don't have syncState, we'll count them as synced
     final assocSynced = associations.where((a) => a.isActive).length;
 
+    final fileIdService = ref.read(fileIdServiceProvider);
+    final fileIdDiagnostics = await fileIdService.getDiagnostics();
+
     if (mounted) {
       setState(() {
+        _fileIdDiagnostics = fileIdDiagnostics;
         _stats = {
           // Beneficiaries
           'ben_total': beneficiaries.length,
@@ -102,6 +116,17 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     final service = ref.read(mobileSyncServiceProvider);
     final result = await service.syncDown();
 
+    // Force taxonomy sync through notifier to guarantee provider invalidation + UI refresh.
+    await ref.read(taxonomySyncNotifierProvider.notifier).sync();
+    for (final group in TaxonomyGroup.values) {
+      ref.invalidate(taxonomiesByGroupProvider(group));
+      ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
+      ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
+    }
+
+    final taxonomyStatus = ref.read(taxonomySyncStatusProvider);
+    final taxonomyError = ref.read(taxonomyErrorMessageProvider);
+
     if (mounted) {
       setState(() {
         _lastResult = result;
@@ -112,10 +137,25 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
       if (result.success) {
         if (!mounted) return;
-        EnhancedSnackbar.showSuccess(
-          context,
-          message: '✅ تم تنزيل ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
-        );
+        final skippedWarning = _buildSkippedThresholdWarning(result);
+        if (skippedWarning != null) {
+          EnhancedSnackbar.showWarning(
+            context,
+            message: skippedWarning,
+          );
+        }
+        if (taxonomyStatus == TaxonomySyncStatus.success) {
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: '✅ تم تنزيل ${result.recordsSynced} سجل ومزامنة التصنيفات بنجاح',
+          );
+        } else {
+          EnhancedSnackbar.showWarning(
+            context,
+            message:
+                '⚠️ تم تنزيل ${result.recordsSynced} سجل لكن التصنيفات لم تتحدث: ${taxonomyError ?? 'تحقق من الاتصال'}',
+          );
+        }
       } else {
         if (!mounted) return;
         EnhancedSnackbar.showError(
@@ -154,9 +194,201 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     }
   }
 
+  Future<void> _syncTaxonomies() async {
+    await ref.read(taxonomySyncNotifierProvider.notifier).sync();
+
+    if (!mounted) return;
+
+    final syncStatus = ref.read(taxonomySyncStatusProvider);
+    final errorMessage = ref.read(taxonomyErrorMessageProvider);
+
+    if (syncStatus == TaxonomySyncStatus.success) {
+      EnhancedSnackbar.showSuccess(
+        context,
+        message: '✅ تمت مزامنة التصنيفات بنجاح',
+      );
+      return;
+    }
+
+    EnhancedSnackbar.showError(
+      context,
+      message: '❌ فشل مزامنة التصنيفات: ${errorMessage ?? 'خطأ غير معروف'}',
+    );
+  }
+
+  String? _buildSkippedThresholdWarning(MobileSyncResult result) {
+    if (result.writeCounters.isEmpty) return null;
+
+    int counter(String key) => result.writeCounters[key] ?? 0;
+
+    final beneficiariesInserted = counter('beneficiaries_inserted');
+    final beneficiariesUpdated = counter('beneficiaries_updated');
+    final beneficiariesSkipped = counter('beneficiaries_skipped');
+    final beneficiariesTotal = beneficiariesInserted + beneficiariesUpdated + beneficiariesSkipped;
+
+    // Critical signal: high skip ratio on beneficiaries themselves.
+    if (beneficiariesTotal >= 50 && beneficiariesSkipped >= 20) {
+      final ratio = beneficiariesSkipped / beneficiariesTotal;
+      if (ratio >= 0.20) {
+        return '⚠️ تم تخطي $beneficiariesSkipped من أصل $beneficiariesTotal من سجلات المستفيدين (${(ratio * 100).toStringAsFixed(1)}%). افحص مطابقة المعرفات.';
+      }
+    }
+
+    final attachmentsInserted = counter('attachments_inserted');
+    final attachmentsUpdated = counter('attachments_updated');
+    final attachmentsSkipped = counter('attachments_skipped');
+
+    final familyInserted = counter('family_members_inserted');
+    final familyUpdated = counter('family_members_updated');
+    final familySkipped = counter('family_members_skipped');
+
+    final deadInserted = counter('dead_people_inserted');
+    final deadUpdated = counter('dead_people_updated');
+    final deadSkipped = counter('dead_people_skipped');
+
+    final relatedApplied =
+        attachmentsInserted + attachmentsUpdated + familyInserted + familyUpdated + deadInserted + deadUpdated;
+    final relatedSkipped = attachmentsSkipped + familySkipped + deadSkipped;
+
+    // Related rows may legitimately include records for beneficiaries outside local scope.
+    // Warn only in severe mismatch scenarios to avoid noisy false alarms.
+    if (relatedSkipped >= 500 && relatedApplied == 0 && result.recordsSynced > 0) {
+      return '⚠️ تم تخطي عدد كبير من العلاقات/المرفقات ($relatedSkipped) بدون أي كتابة مرتبطة. هذا قد يشير لخلل في ربط المستفيد (local/server).';
+    }
+
+    return null;
+  }
+
+  ({int score, String level, Color color, String hint}) _buildSyncHealthScore(MobileSyncResult result) {
+    var score = 100;
+
+    final failures = result.recordsFailed;
+    if (failures > 0) {
+      score -= failures >= 10 ? 25 : 10;
+    }
+
+    final beneficiariesInserted = result.writeCounters['beneficiaries_inserted'] ?? 0;
+    final beneficiariesUpdated = result.writeCounters['beneficiaries_updated'] ?? 0;
+    final beneficiariesSkipped = result.writeCounters['beneficiaries_skipped'] ?? 0;
+    final benTotal = beneficiariesInserted + beneficiariesUpdated + beneficiariesSkipped;
+    if (benTotal > 0) {
+      final benSkipRatio = beneficiariesSkipped / benTotal;
+      if (benSkipRatio >= 0.40) {
+        score -= 25;
+      } else if (benSkipRatio >= 0.20) {
+        score -= 12;
+      }
+    }
+
+    if (result.errorCategory != null) {
+      score -= 20;
+    }
+
+    score = score.clamp(0, 100);
+
+    if (score >= 85) {
+      return (score: score, level: 'ممتاز', color: Colors.green, hint: 'المزامنة مستقرة.');
+    }
+    if (score >= 65) {
+      return (score: score, level: 'متوسط', color: Colors.orange, hint: 'يوجد مؤشرات تحتاج متابعة.');
+    }
+    return (score: score, level: 'ضعيف', color: Colors.red, hint: 'يفضل تصدير التشخيص وفحص الربط.');
+  }
+
+  Future<void> _exportSyncDiagnostics() async {
+    if (_lastResult == null) {
+      if (!mounted) return;
+      EnhancedSnackbar.showInfo(context, message: 'لا يوجد تقرير مزامنة للتصدير');
+      return;
+    }
+
+    try {
+      final now = DateTime.now();
+      Map<String, int>? taxonomyGroupCounts;
+      List<String>? missingTaxonomyGroups;
+
+      try {
+        final taxonomyStats = await ref.read(taxonomyStatisticsProvider.future);
+        taxonomyGroupCounts = {
+          for (final entry in taxonomyStats.countByGroup.entries) entry.key.value: entry.value,
+        };
+        missingTaxonomyGroups = taxonomyStats.countByGroup.entries
+            .where((entry) => entry.value == 0)
+            .map((entry) => entry.key.arabicName)
+            .toList();
+      } catch (_) {
+        taxonomyGroupCounts = null;
+        missingTaxonomyGroups = null;
+      }
+
+      final diagnostics = {
+        'generated_at': now.toIso8601String(),
+        'sync_status': {
+          'is_syncing': _status?.isSyncing ?? false,
+          'current_operation': _status?.currentOperation,
+          'progress': _status?.progress,
+          'last_sync_at': _status?.lastSyncAt?.toIso8601String(),
+          'last_error': _status?.lastError,
+        },
+        'last_result': {
+          'success': _lastResult!.success,
+          'records_synced': _lastResult!.recordsSynced,
+          'records_failed': _lastResult!.recordsFailed,
+          'payload_counters': _lastResult!.payloadCounters,
+          'write_counters': _lastResult!.writeCounters,
+          'error': _lastResult!.error,
+          'error_category': _lastResult!.errorCategory,
+          'error_context': _lastResult!.errorContext,
+        },
+        'local_stats': _stats,
+        'taxonomy_diagnostics': {
+          'group_counts': taxonomyGroupCounts,
+          'missing_groups': missingTaxonomyGroups,
+        },
+        'file_id_diagnostics': _fileIdDiagnostics == null
+            ? null
+            : {
+                'available_count': _fileIdDiagnostics!.availableCount,
+                'used_unsynced_count': _fileIdDiagnostics!.usedUnsyncedCount,
+                'active_reservation_id': _fileIdDiagnostics!.activeReservationId,
+                'active_reservation_remaining': _fileIdDiagnostics!.activeReservationRemaining,
+                'last_reserved_at': _fileIdDiagnostics!.lastReservedAt?.toIso8601String(),
+                'last_synced_at': _fileIdDiagnostics!.lastSyncedAt?.toIso8601String(),
+              },
+        'recommended_actions': [
+          if ((missingTaxonomyGroups?.isNotEmpty ?? false)) 'sync_taxonomies',
+          if ((_lastResult?.errorCategory ?? '').isNotEmpty) 'review_error_context',
+          if ((_lastResult?.writeCounters['beneficiaries_skipped'] ?? 0) > 0) 'verify_identity_mapping',
+        ],
+      };
+
+      final appDir = await getApplicationDocumentsDirectory();
+      final outputFile =
+          File('${appDir.path}${Platform.pathSeparator}sync_diagnostics_${now.millisecondsSinceEpoch}.json');
+      await outputFile.writeAsString(const JsonEncoder.withIndent('  ').convert(diagnostics));
+
+      await Share.shareXFiles(
+        [XFile(outputFile.path)],
+        text: 'Sync diagnostics export',
+      );
+
+      if (!mounted) return;
+      EnhancedSnackbar.showSuccess(context, message: '✅ تم تصدير تقرير التشخيص');
+    } catch (e) {
+      if (!mounted) return;
+      EnhancedSnackbar.showError(context, message: '❌ فشل تصدير تقرير التشخيص: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = _status ?? MobileSyncStatus();
+    final taxonomySyncStatus = ref.watch(taxonomySyncStatusProvider);
+    final taxonomyErrorMessage = ref.watch(taxonomyErrorMessageProvider);
+    final taxonomyStatsAsync = ref.watch(taxonomyStatisticsProvider);
+    final taxonomyLastSyncAsync = ref.watch(lastSyncTimeProvider);
+    final taxonomySyncAsync = ref.watch(taxonomySyncNotifierProvider);
+    final isTaxonomySyncing = taxonomySyncStatus == TaxonomySyncStatus.syncing || taxonomySyncAsync.isLoading;
 
     return Scaffold(
       body: CustomScrollView(
@@ -183,6 +415,11 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 tooltip: 'تحديث الإحصائيات',
                 onPressed: _loadStats,
               ),
+              ModernActionButton(
+                icon: Icons.ios_share_rounded,
+                tooltip: 'تصدير التشخيص',
+                onPressed: _exportSyncDiagnostics,
+              ),
             ],
           ),
 
@@ -207,6 +444,22 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                   _buildStatusCard(status),
 
                   SizedBox(height: 20.h),
+
+                  // Taxonomy diagnostics card
+                  _buildTaxonomyDiagnosticsCard(
+                    syncStatus: taxonomySyncStatus,
+                    errorMessage: taxonomyErrorMessage,
+                    statsAsync: taxonomyStatsAsync,
+                    lastSyncAsync: taxonomyLastSyncAsync,
+                    isSyncing: isTaxonomySyncing,
+                  ),
+
+                  SizedBox(height: 20.h),
+
+                  // File ID diagnostics card
+                  if (_fileIdDiagnostics != null) _buildFileIdDiagnosticsCard(_fileIdDiagnostics!),
+
+                  if (_fileIdDiagnostics != null) SizedBox(height: 20.h),
 
                   // Sync buttons
                   _buildSyncButtons(status),
@@ -535,7 +788,140 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     );
   }
 
+  Widget _buildTaxonomyDiagnosticsCard({
+    required TaxonomySyncStatus syncStatus,
+    required String? errorMessage,
+    required AsyncValue<TaxonomyStatistics> statsAsync,
+    required AsyncValue<DateTime?> lastSyncAsync,
+    required bool isSyncing,
+  }) {
+    Color statusColor;
+    String statusLabel;
+
+    switch (syncStatus) {
+      case TaxonomySyncStatus.syncing:
+        statusColor = Colors.blue;
+        statusLabel = 'جاري المزامنة';
+        break;
+      case TaxonomySyncStatus.success:
+        statusColor = Colors.green;
+        statusLabel = 'متزامنة';
+        break;
+      case TaxonomySyncStatus.error:
+        statusColor = Colors.red;
+        statusLabel = 'فشل';
+        break;
+      case TaxonomySyncStatus.idle:
+        statusColor = Colors.grey;
+        statusLabel = 'غير متحقق';
+        break;
+    }
+
+    return Card(
+      color: Colors.teal[50],
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.category_rounded, color: Colors.teal, size: 20.sp),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    'تشخيص التصنيفات',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: statusColor),
+                  ),
+                  child: Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            statsAsync.when(
+              data: (stats) {
+                final nonEmptyGroups = stats.countByGroup.entries.where((entry) => entry.value > 0).length;
+                final missingGroups = stats.countByGroup.entries
+                    .where((entry) => entry.value == 0)
+                    .map((entry) => entry.key.arabicName)
+                    .toList();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildInfoRow('إجمالي التصنيفات', '${stats.totalCount}'),
+                    _buildInfoRow('النشطة', '${stats.activeCount}'),
+                    _buildInfoRow('المجموعات المعبأة', '$nonEmptyGroups/${stats.countByGroup.length}'),
+                    if (missingGroups.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        'المجموعات غير المعبأة: ${missingGroups.join('، ')}',
+                        style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
+                      ),
+                    ],
+                  ],
+                );
+              },
+              loading: () => const LinearProgressIndicator(minHeight: 2),
+              error: (e, _) => Text(
+                'تعذر تحميل إحصائيات التصنيفات: $e',
+                style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            lastSyncAsync.when(
+              data: (time) => _buildInfoRow(
+                'آخر مزامنة للتصنيفات',
+                time != null ? _formatDateTime(time) : 'لا يوجد',
+              ),
+              loading: () => _buildInfoRow('آخر مزامنة للتصنيفات', '...'),
+              error: (_, __) => _buildInfoRow('آخر مزامنة للتصنيفات', 'غير متاحة'),
+            ),
+            if (errorMessage != null && errorMessage.isNotEmpty) ...[
+              SizedBox(height: 8.h),
+              Text(
+                'الخطأ الأخير: $errorMessage',
+                style: TextStyle(fontSize: 12.sp, color: Colors.red[900]),
+              ),
+            ],
+            SizedBox(height: 12.h),
+            ElevatedButton.icon(
+              onPressed: isSyncing ? null : _syncTaxonomies,
+              icon: const Icon(Icons.sync_rounded),
+              label: Text(isSyncing ? 'جاري مزامنة التصنيفات...' : 'مزامنة التصنيفات الآن'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.grey,
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildResultCard(MobileSyncResult result) {
+    final health = _buildSyncHealthScore(result);
+
     return Card(
       color: result.success ? Colors.green[50] : Colors.red[50],
       child: Padding(
@@ -561,20 +947,145 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               ],
             ),
             SizedBox(height: 8.h),
+            Row(
+              children: [
+                Text(
+                  '• صحة المزامنة: ${health.score}/100 (${health.level})',
+                  style: TextStyle(fontSize: 13.sp, color: health.color, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            Text(
+              '  ${health.hint}',
+              style: TextStyle(fontSize: 12.sp, color: health.color),
+            ),
+            if (health.score < 65 || result.errorCategory != null) ...[
+              SizedBox(height: 8.h),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _exportSyncDiagnostics,
+                    icon: const Icon(Icons.ios_share_rounded),
+                    label: const Text('تصدير التشخيص'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _syncTaxonomies,
+                    icon: const Icon(Icons.sync_rounded),
+                    label: const Text('مزامنة التصنيفات'),
+                  ),
+                ],
+              ),
+            ],
+            SizedBox(height: 8.h),
             Text(
               '• عدد السجلات: ${result.recordsSynced}',
               style: TextStyle(fontSize: 14.sp),
             ),
+            if (result.payloadCounters.isNotEmpty) ...[
+              SizedBox(height: 8.h),
+              Text(
+                '• عداد payload:',
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                '  - beneficiaries: ${result.payloadCounters['beneficiaries'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - attachments: ${result.payloadCounters['attachments'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - family_members: ${result.payloadCounters['family_members'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - dead_people: ${result.payloadCounters['dead_people'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+            ],
             if (result.recordsFailed > 0)
               Text(
                 '• فشل: ${result.recordsFailed}',
                 style: TextStyle(fontSize: 14.sp, color: Colors.red),
               ),
+            if (result.writeCounters.isNotEmpty) ...[
+              SizedBox(height: 8.h),
+              Text(
+                '• عداد الكتابة (inserted/updated/skipped):',
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+              ),
+              for (final entry in result.writeCounters.entries)
+                Text(
+                  '  - ${entry.key}: ${entry.value}',
+                  style: TextStyle(fontSize: 12.sp),
+                ),
+            ],
             if (result.error != null)
               Text(
                 '• خطأ: ${result.error}',
                 style: TextStyle(fontSize: 13.sp, color: Colors.red[800]),
               ),
+            if (result.errorCategory != null)
+              Text(
+                '• التصنيف: ${result.errorCategory}',
+                style: TextStyle(fontSize: 12.sp, color: Colors.red[700]),
+              ),
+            if (result.errorContext != null)
+              Text(
+                '• السياق: ${result.errorContext}',
+                style: TextStyle(fontSize: 12.sp, color: Colors.red[700]),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileIdDiagnosticsCard(FileIdDiagnostics diagnostics) {
+    return Card(
+      color: Colors.indigo[50],
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.confirmation_num_outlined, color: Colors.indigo, size: 20.sp),
+                SizedBox(width: 8.w),
+                Text(
+                  'تشخيص أرقام الملفات',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            _buildInfoRow('المتوفر محليًا', diagnostics.availableCount.toString()),
+            _buildInfoRow('المستخدم غير المرفوع', diagnostics.usedUnsyncedCount.toString()),
+            _buildInfoRow(
+              'رقم الحجز النشط',
+              diagnostics.activeReservationId?.toString() ?? 'غير متاح',
+            ),
+            _buildInfoRow(
+              'المتبقي في الحجز',
+              diagnostics.activeReservationRemaining?.toString() ?? 'غير متاح',
+            ),
+            _buildInfoRow(
+              'آخر حجز',
+              diagnostics.lastReservedAt != null ? _formatDateTime(diagnostics.lastReservedAt!) : 'لا يوجد',
+            ),
+            _buildInfoRow(
+              'آخر مزامنة استخدام',
+              diagnostics.lastSyncedAt != null ? _formatDateTime(diagnostics.lastSyncedAt!) : 'لا يوجد',
+            ),
           ],
         ),
       ),

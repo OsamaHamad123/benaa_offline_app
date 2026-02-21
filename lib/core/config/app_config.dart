@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AppConfig {
+  static const String _defaultApiBaseUrl = 'https://palestine.benaadev.org';
+
   final String apiBaseUrl;
   final int syncBatchSize;
   final List<int> retryBackoffSeconds;
@@ -25,24 +27,76 @@ class AppConfig {
       final docDir = await getApplicationDocumentsDirectory();
       final configFile = File('${docDir.path}/env.json');
 
-      Map<String, dynamic> json;
+      Map<String, dynamic>? persistedJson;
+      Map<String, dynamic>? bundledJson;
+      Map<String, dynamic>? exampleJson;
+
       if (await configFile.exists()) {
         final content = await configFile.readAsString();
-        json = jsonDecode(content);
-      } else {
-        // Load default from assets
+        persistedJson = jsonDecode(content) as Map<String, dynamic>;
+      }
+
+      try {
+        final content = await rootBundle.loadString('assets/env.json');
+        bundledJson = jsonDecode(content) as Map<String, dynamic>;
+      } catch (_) {}
+
+      try {
         final content = await rootBundle.loadString('assets/env.example.json');
-        json = jsonDecode(content);
+        exampleJson = jsonDecode(content) as Map<String, dynamic>;
+      } catch (_) {}
+
+      final selected = persistedJson ?? bundledJson ?? exampleJson ?? const <String, dynamic>{};
+
+      String apiBaseUrl = (selected['API_BASE_URL'] as String?)?.trim() ??
+          (bundledJson?['API_BASE_URL'] as String?)?.trim() ??
+          (exampleJson?['API_BASE_URL'] as String?)?.trim() ??
+          _defaultApiBaseUrl;
+
+      if (_isLocalhostUrl(apiBaseUrl)) {
+        final bundledApiBaseUrl = (bundledJson?['API_BASE_URL'] as String?)?.trim();
+        if (bundledApiBaseUrl != null && bundledApiBaseUrl.isNotEmpty && !_isLocalhostUrl(bundledApiBaseUrl)) {
+          apiBaseUrl = bundledApiBaseUrl;
+        }
       }
 
       return AppConfig(
-        apiBaseUrl: json['API_BASE_URL'] ?? 'http://localhost:3000/api',
-        syncBatchSize: json['SYNC_BATCH_SIZE'] ?? 200,
-        attachmentChunkSize: json['ATTACHMENT_CHUNK_SIZE'] ?? 512 * 1024,
+        apiBaseUrl: _normalizeBaseUrl(apiBaseUrl),
+        syncBatchSize: selected['SYNC_BATCH_SIZE'] ?? 200,
+        attachmentChunkSize: selected['ATTACHMENT_CHUNK_SIZE'] ?? 512 * 1024,
       );
     } catch (e) {
       // Fallback to defaults
-      return const AppConfig(apiBaseUrl: 'http://localhost:3000/api');
+      return const AppConfig(apiBaseUrl: _defaultApiBaseUrl);
+    }
+  }
+
+  static String _normalizeBaseUrl(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return _defaultApiBaseUrl;
+    final withoutTrailingSlashes = trimmed.replaceAll(RegExp(r'/+$'), '');
+
+    try {
+      final uri = Uri.parse(withoutTrailingSlashes);
+      if (uri.path.toLowerCase() == '/api') {
+        return uri.replace(path: '').toString().replaceAll(RegExp(r'/+$'), '');
+      }
+    } catch (_) {}
+
+    if (withoutTrailingSlashes.toLowerCase().endsWith('/api')) {
+      return withoutTrailingSlashes.substring(0, withoutTrailingSlashes.length - 4);
+    }
+
+    return withoutTrailingSlashes;
+  }
+
+  static bool _isLocalhostUrl(String value) {
+    try {
+      final uri = Uri.parse(value);
+      final host = uri.host.toLowerCase();
+      return host == 'localhost' || host == '127.0.0.1' || host == '::1';
+    } catch (_) {
+      return false;
     }
   }
 

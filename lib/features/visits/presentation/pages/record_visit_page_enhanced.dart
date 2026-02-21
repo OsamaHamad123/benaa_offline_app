@@ -11,6 +11,7 @@ import '../providers/visit_providers.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
+import '../../../../features/taxonomies/taxonomies.dart';
 
 /// Record Visit Page - Enhanced Version 🔥
 class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
@@ -19,12 +20,10 @@ class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
   const RecordVisitPageEnhanced({super.key, required this.beneficiary});
 
   @override
-  ConsumerState<RecordVisitPageEnhanced> createState() =>
-      _RecordVisitPageEnhancedState();
+  ConsumerState<RecordVisitPageEnhanced> createState() => _RecordVisitPageEnhancedState();
 }
 
-class _RecordVisitPageEnhancedState
-    extends ConsumerState<RecordVisitPageEnhanced> {
+class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhanced> {
   final _formKey = GlobalKey<FormState>();
   final _staffNameController = TextEditingController();
   final _notesController = TextEditingController();
@@ -32,7 +31,7 @@ class _RecordVisitPageEnhancedState
 
   // 🎯 Visit Types
   String? _selectedVisitType;
-  final List<String> _visitTypes = [
+  static const List<String> _fallbackVisitTypes = [
     'زيارة منزلية',
     'زيارة متابعة',
     'زيارة استشارية',
@@ -42,7 +41,7 @@ class _RecordVisitPageEnhancedState
 
   // 📋 Visit Categories
   final List<String> _selectedCategories = [];
-  final List<String> _categories = [
+  static const List<String> _fallbackCategories = [
     'صحية',
     'تعليمية',
     'اقتصادية',
@@ -277,6 +276,26 @@ class _RecordVisitPageEnhancedState
 
   @override
   Widget build(BuildContext context) {
+    final visitTypeOptionsAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.visitType),
+    );
+    final assistanceTypeOptionsAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.assistanceType),
+    );
+
+    final visitTypeOptions = visitTypeOptionsAsync.maybeWhen(
+      data: (items) => items.map((item) => item.label.trim()).where((label) => label.isNotEmpty).toSet().toList(),
+      orElse: () => const <String>[],
+    );
+
+    final assistanceTypeOptions = assistanceTypeOptionsAsync.maybeWhen(
+      data: (items) => items.map((item) => item.label.trim()).where((label) => label.isNotEmpty).toSet().toList(),
+      orElse: () => const <String>[],
+    );
+
+    final resolvedVisitTypes = visitTypeOptions.isNotEmpty ? visitTypeOptions : _fallbackVisitTypes;
+    final resolvedCategories = assistanceTypeOptions.isNotEmpty ? assistanceTypeOptions : _fallbackCategories;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('تسجيل زيارة'),
@@ -356,7 +375,7 @@ class _RecordVisitPageEnhancedState
                   children: [
                     _buildSectionTitle('نوع الزيارة', Icons.category),
                     SizedBox(height: 12.h),
-                    _buildVisitTypeSelector(),
+                    _buildVisitTypeSelector(resolvedVisitTypes),
                   ],
                 ),
               ),
@@ -370,7 +389,7 @@ class _RecordVisitPageEnhancedState
                   children: [
                     _buildSectionTitle('الفئات (اختياري)', Icons.label_outline),
                     SizedBox(height: 12.h),
-                    _buildCategoriesSelector(),
+                    _buildCategoriesSelector(resolvedCategories),
                   ],
                 ),
               ),
@@ -534,11 +553,11 @@ class _RecordVisitPageEnhancedState
     );
   }
 
-  Widget _buildVisitTypeSelector() {
+  Widget _buildVisitTypeSelector(List<String> visitTypes) {
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
-      children: _visitTypes.map((type) {
+      children: visitTypes.map((type) {
         final isSelected = _selectedVisitType == type;
         return ChoiceChip(
           label: Text(type),
@@ -558,11 +577,11 @@ class _RecordVisitPageEnhancedState
     );
   }
 
-  Widget _buildCategoriesSelector() {
+  Widget _buildCategoriesSelector(List<String> categories) {
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
-      children: _categories.map((category) {
+      children: categories.map((category) {
         final isSelected = _selectedCategories.contains(category);
         return FilterChip(
           label: Text(category),

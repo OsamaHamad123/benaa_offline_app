@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
-import '../components/v2_dropdown_field.dart';
 import '../components/v2_section_card.dart';
+import '../../../../../../features/taxonomies/taxonomies.dart';
 
 /// Family information tab
 class V2FamilyInfoTab extends StatelessWidget {
@@ -34,31 +34,20 @@ class V2FamilyInfoTab extends StatelessWidget {
           title: 'الحالة العائلية',
           icon: Icons.family_restroom_rounded,
           children: [
-            V2DropdownField<String>(
-              value: selectedMaritalStatus,
-              label: 'الحالة الاجتماعية',
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.maritalStatus,
+              selectedCode: selectedMaritalStatus,
+              labelText: 'الحالة الاجتماعية',
               prefixIcon: Icons.favorite_rounded,
-              onChanged: onMaritalStatusChanged,
-              items: const [
-                DropdownMenuItem(value: 'single', child: Text('أعزب')),
-                DropdownMenuItem(value: 'married', child: Text('متزوج')),
-                DropdownMenuItem(value: 'widowed', child: Text('أرمل')),
-                DropdownMenuItem(value: 'divorced', child: Text('مطلق')),
-              ],
+              onCodeChanged: onMaritalStatusChanged,
             ),
             SizedBox(height: 12.h),
-            V2DropdownField<String>(
-              value: selectedRelationship,
-              label: 'العلاقة بعائل الأسرة',
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.relationship,
+              selectedCode: selectedRelationship,
+              labelText: 'العلاقة بعائل الأسرة',
               prefixIcon: Icons.people_outline_rounded,
-              onChanged: onRelationshipChanged,
-              items: const [
-                DropdownMenuItem(value: 'head', child: Text('رب الأسرة')),
-                DropdownMenuItem(value: 'widow', child: Text('أرملة')),
-                DropdownMenuItem(value: 'son', child: Text('ابن')),
-                DropdownMenuItem(value: 'daughter', child: Text('ابنة')),
-                DropdownMenuItem(value: 'other', child: Text('أخرى')),
-              ],
+              onCodeChanged: onRelationshipChanged,
             ),
           ],
         ),

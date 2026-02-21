@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
 import 'app.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/widgets/safe_widgets.dart';
@@ -13,7 +11,6 @@ import 'features/beneficiaries/presentation/providers/beneficiary_dependencies.d
 import 'features/dashboard/presentation/providers/activity_providers.dart' as dashboard_providers;
 import 'features/taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_providers;
 import 'core/widgets/error_boundary.dart';
-import 'core/storage/secure_storage.dart';
 
 import 'package:benaa_offline_app/core/config/app_config.dart';
 
@@ -38,43 +35,11 @@ Future<void> main() async {
   final sharedPreferences = results[0] as SharedPreferences;
   final appConfig = results[1] as AppConfig;
 
-  // 🌐 Initialize Dio for API calls (with auth interceptor)
-  final dio = await _createAuthenticatedDio();
-
   // Run app directly
-  _runApp(sharedPreferences, appConfig, dio);
+  _runApp(sharedPreferences, appConfig);
 }
 
-/// 🔑 Create authenticated Dio instance with auth interceptor
-Future<Dio> _createAuthenticatedDio() async {
-  final dio = Dio(BaseOptions(
-    baseUrl: 'https://palestine.benaadev.org',
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(seconds: 30),
-    headers: {'Accept': 'application/json'},
-  ));
-
-  // Auth interceptor - adds Bearer token to all requests
-  dio.interceptors.add(InterceptorsWrapper(
-    onRequest: (options, handler) async {
-      final token = await SecureStorage().getAuthToken();
-      if (token != null && token.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $token';
-      }
-      return handler.next(options);
-    },
-    onError: (error, handler) {
-      if (error.response?.statusCode == 401) {
-        debugPrint('🔐 Token expired or invalid');
-      }
-      return handler.next(error);
-    },
-  ));
-
-  return dio;
-}
-
-void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig, Dio dio) {
+void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig) {
   runApp(
     ErrorBoundary(
       child: ProviderScope(
@@ -112,7 +77,9 @@ void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig, Dio dio) 
           taxonomy_providers.taxonomyDatabaseProvider.overrideWith(
             (ref) => ref.watch(core_providers.databaseProvider),
           ),
-          taxonomy_providers.taxonomyDioProvider.overrideWithValue(dio),
+          taxonomy_providers.taxonomyDioProvider.overrideWith(
+            (ref) => ref.watch(core_providers.apiClientProvider).dio,
+          ),
         ],
         child: const BenaaApp(),
       ),

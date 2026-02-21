@@ -54,8 +54,7 @@ class SyncApiClient {
       InterceptorsWrapper(
         onError: (error, handler) async {
           // إعادة المحاولة للأخطاء المؤقتة
-          if (_shouldRetry(error) &&
-              error.requestOptions.extra['retryCount'] == null) {
+          if (_shouldRetry(error) && error.requestOptions.extra['retryCount'] == null) {
             error.requestOptions.extra['retryCount'] = 0;
           }
 
@@ -106,7 +105,7 @@ class SyncApiClient {
       );
 
       final response = await _dio.post(
-        ApiConfig.syncEndpoint,
+        ApiConfig.batchDataSyncEndpoint,
         data: request.toJson(),
       );
 
@@ -182,7 +181,7 @@ class SyncApiClient {
       DebugLogger.info('📤 Uploading ${changes.length} changes...');
 
       final response = await _dio.post(
-        '${ApiConfig.syncEndpoint}/upload',
+        ApiConfig.batchDataSyncEndpoint,
         data: {'changes': changes.map((c) => c.toJson()).toList()},
       );
 
@@ -207,7 +206,7 @@ class SyncApiClient {
       };
 
       final response = await _dio.get(
-        '${ApiConfig.syncEndpoint}/download',
+        ApiConfig.syncEndpoint,
         queryParameters: queryParams,
       );
 
@@ -360,8 +359,7 @@ class SyncException implements Exception {
   SyncException(this.message, {this.code});
 
   @override
-  String toString() =>
-      'SyncException: $message${code != null ? ' ($code)' : ''}';
+  String toString() => 'SyncException: $message${code != null ? ' ($code)' : ''}';
 }
 
 /// استجابة حالة المزامنة

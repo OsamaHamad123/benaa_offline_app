@@ -124,6 +124,10 @@ class TaxonomyDropdown extends ConsumerWidget {
         return Icons.category;
       case TaxonomyGroup.maritalStatus:
         return Icons.family_restroom;
+      case TaxonomyGroup.displacementStatus:
+        return Icons.alt_route;
+      case TaxonomyGroup.employmentStatus:
+        return Icons.work;
       case TaxonomyGroup.educationLevel:
         return Icons.school;
       case TaxonomyGroup.healthStatus:

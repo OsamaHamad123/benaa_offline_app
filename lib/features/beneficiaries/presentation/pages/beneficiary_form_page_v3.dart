@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import '../../../../core/utils/debouncer.dart';
+import '../../../../core/utils/beneficiary_identity_resolver.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/errors/user_friendly_error.dart';
 import '../../../../core/error_handling/error_handler.dart';
@@ -18,6 +19,7 @@ import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsive Bottom Sheet
 import '../../../../core/providers/providers.dart'; // 🔌 Core Providers
+import '../../../../data/db/drift_database.dart' show AppDatabase;
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart' hide databaseProvider; // Hide conflicting provider
@@ -27,7 +29,6 @@ import '../../domain/entities/beneficiary.dart';
 // Helper Classes
 import 'v2_form_helpers/form_controllers.dart';
 import 'v2_form_helpers/form_data_handler.dart';
-import 'v2_form_helpers/beneficiary_builder.dart';
 import 'v2_form_helpers/save_operations_helper.dart';
 import 'v2_form_helpers/family_save_helper.dart';
 import 'v2_form_helpers/form_constants.dart';
@@ -53,7 +54,6 @@ import 'v2_form_helpers/widgets/draft_save_dialog.dart'; // 💾 Draft Save
 import 'v2_form_helpers/widgets/keyboard_shortcuts_help.dart'; // ⌨️ Shortcuts Help
 import 'v2_form_helpers/widgets/help_widgets.dart'; // 🎓 Help Widgets
 import 'v2_form_helpers/widgets/form_page_widgets.dart'; // 📦 Extracted Form Widgets
-import 'v2_form_helpers/widgets/success_animation.dart'; // ✅ Success Animation
 
 // 🚀 Performance-optimized widgets
 import 'v2_form_helpers/widgets/form_error_banner_widget.dart';
@@ -71,6 +71,7 @@ import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
 import '../widgets/form/app_bar/beneficiary_form_app_bar.dart';
 import '../widgets/form/actions/save_draft_fab.dart';
 import '../widgets/form/statistics/completion_stats_widget.dart';
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -393,6 +394,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
       if (beneficiary != null) {
         _populateControllers(beneficiary);
+        await _normalizeAllTaxonomySelections();
         _saveToHistory('Initial load');
       }
     } else {
@@ -425,8 +427,45 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       }
     }
 
+    await _verifyFormTaxonomyBindings();
+
     if (!mounted) return;
     _isLoading = false;
+  }
+
+  Future<void> _verifyFormTaxonomyBindings() async {
+    final db = ref.read(databaseProvider);
+    const requiredGroups = <TaxonomyGroup>[
+      TaxonomyGroup.gender,
+      TaxonomyGroup.category,
+      TaxonomyGroup.relationship,
+      TaxonomyGroup.section,
+      TaxonomyGroup.maritalStatus,
+      TaxonomyGroup.governorate,
+      TaxonomyGroup.displacementStatus,
+      TaxonomyGroup.educationLevel,
+      TaxonomyGroup.employmentStatus,
+      TaxonomyGroup.healthStatus,
+      TaxonomyGroup.housingStatus,
+      TaxonomyGroup.housingType,
+      TaxonomyGroup.beneficiaryStatus,
+    ];
+
+    final missingGroups = <TaxonomyGroup>[];
+    for (final group in requiredGroups) {
+      final rows = await db.taxonomiesDao.getByGroup(group.value);
+      if (rows.isEmpty) {
+        missingGroups.add(group);
+      }
+    }
+
+    if (!mounted || missingGroups.isEmpty) return;
+
+    final missingNames = missingGroups.map((g) => g.arabicName).join('، ');
+    EnhancedSnackbar.showWarning(
+      context,
+      message: '⚠️ تصنيفات غير متوفرة في الفورم: $missingNames. يرجى مزامنة التصنيفات.',
+    );
   }
 
   /// 💾 Check for auto-saved drafts and offer to restore
@@ -579,6 +618,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _controllers.selectedHealthStatus = null;
     _controllers.selectedHousingStatus = null;
     _controllers.selectedHousingType = null;
+    _controllers.selectedRequestStatus = null;
     _controllers.hasDisability = false;
     _controllers.updatePendingFiles([]);
 
@@ -598,6 +638,146 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       (fn) => fn(),
     );
     _loadFamilyMembers(beneficiary.id);
+  }
+
+  Future<void> _normalizeAllTaxonomySelections() async {
+    if (!mounted) return;
+
+    await _normalizeAndSet(
+      group: TaxonomyGroup.gender,
+      rawValue: _controllers.selectedGender,
+      setter: (value) => _controllers.selectedGender = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.category,
+      rawValue: _controllers.selectedCategory,
+      setter: (value) => _controllers.selectedCategory = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.maritalStatus,
+      rawValue: _controllers.selectedMaritalStatus,
+      setter: (value) => _controllers.selectedMaritalStatus = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.educationLevel,
+      rawValue: _controllers.selectedEducationLevel,
+      setter: (value) => _controllers.selectedEducationLevel = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.employmentStatus,
+      rawValue: _controllers.selectedEmploymentStatus,
+      setter: (value) => _controllers.selectedEmploymentStatus = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.relationship,
+      rawValue: _controllers.selectedRelationship,
+      setter: (value) => _controllers.selectedRelationship = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.section,
+      rawValue: _controllers.selectedSection,
+      setter: (value) => _controllers.selectedSection = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.governorate,
+      rawValue: _controllers.selectedProvince,
+      setter: (value) => _controllers.selectedProvince = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.displacementStatus,
+      rawValue: _controllers.selectedDisplacementStatus,
+      setter: (value) => _controllers.selectedDisplacementStatus = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.healthStatus,
+      rawValue: _controllers.selectedHealthStatus,
+      setter: (value) => _controllers.selectedHealthStatus = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.housingStatus,
+      rawValue: _controllers.selectedHousingStatus,
+      setter: (value) => _controllers.selectedHousingStatus = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.housingType,
+      rawValue: _controllers.selectedHousingType,
+      setter: (value) => _controllers.selectedHousingType = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.beneficiaryStatus,
+      rawValue: _controllers.selectedRequestStatus,
+      setter: (value) => _controllers.selectedRequestStatus = value,
+    );
+  }
+
+  Future<void> _normalizeAndSet({
+    required TaxonomyGroup group,
+    required String? rawValue,
+    required void Function(String?) setter,
+  }) async {
+    final normalized = await _resolveTaxonomyCode(group: group, rawValue: rawValue);
+    if (normalized != null && normalized != rawValue) {
+      setter(normalized);
+    }
+  }
+
+  Future<String?> _resolveTaxonomyCode({
+    required TaxonomyGroup group,
+    required String? rawValue,
+  }) async {
+    final raw = rawValue?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    final db = ref.read(databaseProvider);
+    final taxonomies = await db.taxonomiesDao.getByGroup(group.value);
+    if (taxonomies.isEmpty) return raw;
+
+    final candidates = {
+      _normalizeTaxonomyToken(raw),
+      ..._legacyAliasesForGroup(group, raw).map(_normalizeTaxonomyToken),
+    };
+
+    for (final taxonomy in taxonomies) {
+      final codeNorm = _normalizeTaxonomyToken(taxonomy.code);
+      final labelNorm = _normalizeTaxonomyToken(taxonomy.label);
+      final idNorm = _normalizeTaxonomyToken(taxonomy.id.toString());
+
+      if (candidates.contains(codeNorm) ||
+          candidates.contains(labelNorm) ||
+          (idNorm.isNotEmpty && candidates.contains(idNorm))) {
+        return taxonomy.code;
+      }
+    }
+
+    return raw;
+  }
+
+  String _normalizeTaxonomyToken(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+  }
+
+  List<String> _legacyAliasesForGroup(TaxonomyGroup group, String rawValue) {
+    final raw = _normalizeTaxonomyToken(rawValue);
+    switch (group) {
+      case TaxonomyGroup.gender:
+        if (raw == 'ذكر' || raw == 'male') return ['male', 'ذكر', '1'];
+        if (raw == 'أنثى' || raw == 'انثى' || raw == 'female') return ['female', 'أنثى', '2'];
+        return const [];
+      case TaxonomyGroup.maritalStatus:
+        if (raw == 'single' || raw == 'أعزب/عزباء' || raw == 'اعزب/عزباء') return ['single', 'أعزب/عزباء', '1'];
+        if (raw == 'married' || raw == 'متزوج/متزوجة') return ['married', 'متزوج/متزوجة', '2'];
+        if (raw == 'divorced' || raw == 'مطلق/مطلقة') return ['divorced', 'مطلق/مطلقة', '3'];
+        if (raw == 'widowed' || raw == 'أرمل/أرملة' || raw == 'ارمل/ارملة') return ['widowed', 'أرمل/أرملة', '4'];
+        return const [];
+      case TaxonomyGroup.displacementStatus:
+        if (raw == 'notdisplaced' || raw == 'غيرنازح') return ['notDisplaced', 'غير نازح', '0'];
+        if (raw == 'displaced' || raw == 'نازح') return ['displaced', 'نازح', '1'];
+        if (raw == 'refugee' || raw == 'لاجئ') return ['refugee', 'لاجئ', '2'];
+        if (raw == 'returned' || raw == 'عائد' || raw == 'returnee') return ['returned', 'returnee', 'عائد', '3', '4'];
+        return const [];
+      default:
+        return const [];
+    }
   }
 
   Future<void> _loadFamilyMembers(String beneficiaryId) async {
@@ -861,6 +1041,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _controllers.addressController.text = 'بغداد - الكرادة';
     _controllers.selectedGender = 'ذكر';
     _controllers.selectedMaritalStatus = 'متزوج';
+    unawaited(_normalizeAllTaxonomySelections());
 
     setState(() {});
 
@@ -957,6 +1138,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       if (mounted && filledFieldsCount > 0) {
         // Force UI update
         setState(() {});
+        unawaited(_normalizeAllTaxonomySelections());
 
         EnhancedSnackbar.showSuccess(
           context,
@@ -1269,6 +1451,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         controllers: _controllers,
         draft: draft,
       );
+      await _normalizeAllTaxonomySelections();
       trace.endStep('applyDraft');
 
       // Navigate to saved tab
@@ -1493,11 +1676,12 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       _isSaving = true; // ⚡ Direct assignment
 
       final currentBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
-      final beneficiary = BeneficiaryEntityBuilder.build(
+      final now = DateTime.now();
+      final beneficiary = BeneficiaryFormDataHandler.buildBeneficiary(
         controllers: _controllers,
-        existingId: widget.beneficiaryId,
-        existingFileNo: currentBeneficiary?.fileNo,
-        existingCreatedAt: currentBeneficiary?.createdAt,
+        beneficiaryId: widget.beneficiaryId,
+        fileNo: currentBeneficiary?.fileNo ?? 'F-${now.millisecondsSinceEpoch}',
+        createdAt: currentBeneficiary?.createdAt ?? now,
       );
       ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
       trace.startStep('orchestration');
@@ -1646,6 +1830,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   @override
   Widget build(BuildContext context) {
+    final resolvedBeneficiaryId = ref.watch(
+      beneficiaryFormProvider.select((state) => state.beneficiary?.id),
+    );
+
     // ⚠️ DON'T use ref.watch here - causes rebuild on every provider change!
     // Use Consumer only where needed
     final theme = Theme.of(context);
@@ -1712,6 +1900,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         // 🚨 Error Banner - Separated widget
                         const FormErrorBanner(),
 
+                        if (kDebugMode)
+                          _buildIdentityDebugCard(
+                            context,
+                            resolvedBeneficiaryId: resolvedBeneficiaryId,
+                            routeBeneficiaryId: widget.beneficiaryId,
+                          ),
+
                         // 📝 Form Content - Separated widget
                         Expanded(
                           child: FormContentWidget(
@@ -1719,7 +1914,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                             controllers: _controllers,
                             onBirthDateTap: () => _selectDate(context),
                             firstFieldFocusNode: _firstFieldFocusNode,
-                            beneficiaryId: widget.beneficiaryId,
+                            beneficiaryId: resolvedBeneficiaryId ?? widget.beneficiaryId,
                             showFieldHelpers: _showFieldHelpers,
                             onFinalSave: _handleFinalSaveFromReview, // 🆕 Pass callback
                           ),
@@ -1886,4 +2081,98 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
     }
   }
+
+  Widget _buildIdentityDebugCard(
+    BuildContext context, {
+    required String? resolvedBeneficiaryId,
+    required String? routeBeneficiaryId,
+  }) {
+    final effectiveId = resolvedBeneficiaryId ?? routeBeneficiaryId;
+    if (effectiveId == null || effectiveId.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final familyCount = _controllers.livingMembers.length + _controllers.deceasedMembers.length;
+    final pendingAttachmentsCount = _controllers.pendingAttachments.length;
+    final db = ref.read(databaseProvider);
+
+    return FutureBuilder<_FormIdentityDebugSnapshot>(
+      future: _buildDebugSnapshot(
+        database: db,
+        effectiveId: effectiveId,
+        fallbackResolvedBeneficiaryId: resolvedBeneficiaryId,
+      ),
+      builder: (context, snapshot) {
+        final debugSnapshot = snapshot.data;
+        final resolvedByResolver = debugSnapshot?.resolvedLocalId ?? resolvedBeneficiaryId ?? '-';
+        final savedFamily = debugSnapshot?.savedFamilyCount ?? 0;
+        final savedAttachments = debugSnapshot?.savedAttachmentsCount ?? 0;
+
+        return Padding(
+          padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: Colors.amber.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: Colors.amber.withOpacity(0.55)),
+            ),
+            child: Text(
+              'DEBUG LINK | routeId: ${routeBeneficiaryId ?? '-'} | resolvedLocalId: $resolvedByResolver | family(pending/saved): $familyCount/$savedFamily | attachments(pending/saved): $pendingAttachmentsCount/$savedAttachments',
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: Colors.brown[800],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<_FormIdentityDebugSnapshot> _buildDebugSnapshot({
+    required AppDatabase database,
+    required String effectiveId,
+    required String? fallbackResolvedBeneficiaryId,
+  }) async {
+    final resolvedByResolver = await BeneficiaryIdentityResolver.resolveLocalBeneficiaryIdAsString(
+      database: database,
+      beneficiaryId: effectiveId,
+    );
+
+    final resolvedLocalId = resolvedByResolver ?? fallbackResolvedBeneficiaryId;
+    final localIntId = int.tryParse(resolvedLocalId ?? '');
+
+    if (resolvedLocalId == null || localIntId == null) {
+      return _FormIdentityDebugSnapshot(
+        resolvedLocalId: resolvedLocalId,
+        savedFamilyCount: 0,
+        savedAttachmentsCount: 0,
+      );
+    }
+
+    final attachments = await database.attachmentsDao.getBeneficiaryAttachments(resolvedLocalId);
+    final living = await database.familyMembersDao.getMembersByBeneficiary(localIntId);
+    final deceased = await database.familyDeceasedDao.getDeceasedByBeneficiary(localIntId);
+
+    return _FormIdentityDebugSnapshot(
+      resolvedLocalId: resolvedLocalId,
+      savedFamilyCount: living.length + deceased.length,
+      savedAttachmentsCount: attachments.length,
+    );
+  }
+}
+
+class _FormIdentityDebugSnapshot {
+  final String? resolvedLocalId;
+  final int savedFamilyCount;
+  final int savedAttachmentsCount;
+
+  const _FormIdentityDebugSnapshot({
+    required this.resolvedLocalId,
+    required this.savedFamilyCount,
+    required this.savedAttachmentsCount,
+  });
 }

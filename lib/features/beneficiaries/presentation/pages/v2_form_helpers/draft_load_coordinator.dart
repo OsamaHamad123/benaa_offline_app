@@ -36,9 +36,19 @@ class DraftLoadCoordinator {
     final birthDate = formDataRaw['birthDate'];
     controllers.birthDateController.text = birthDate == null ? '' : birthDate.toString();
 
-    controllers.selectedGender = formDataRaw['gender']?.toString();
-    controllers.selectedMaritalStatus = formDataRaw['maritalStatus']?.toString();
-    controllers.selectedEducationLevel = formDataRaw['educationLevel']?.toString();
+    controllers.selectedGender = formDataRaw['selectedGender']?.toString();
+    controllers.selectedMaritalStatus = formDataRaw['selectedMaritalStatus']?.toString();
+    controllers.selectedEducationLevel = formDataRaw['selectedEducationLevel']?.toString();
+    controllers.selectedEmploymentStatus = formDataRaw['selectedEmploymentStatus']?.toString();
+    controllers.selectedCategory = formDataRaw['selectedCategory']?.toString();
+    controllers.selectedRelationship = formDataRaw['selectedRelationship']?.toString();
+    controllers.selectedSection = formDataRaw['selectedSection']?.toString();
+    controllers.selectedCity = formDataRaw['selectedCity']?.toString();
+    controllers.selectedProvince = formDataRaw['selectedProvince']?.toString();
+    controllers.selectedDisplacementStatus = formDataRaw['selectedDisplacementStatus']?.toString();
+    controllers.selectedHealthStatus = formDataRaw['selectedHealthStatus']?.toString();
+    controllers.selectedHousingStatus = formDataRaw['selectedHousingStatus']?.toString();
+    controllers.selectedHousingType = formDataRaw['selectedHousingType']?.toString();
 
     final rawTab = draft['currentTab'];
     final currentTab = rawTab is int ? rawTab : int.tryParse(rawTab?.toString() ?? '') ?? 0;

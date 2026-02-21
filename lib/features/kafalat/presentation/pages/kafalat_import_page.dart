@@ -16,6 +16,7 @@ import '../../../../core/utils/file_write.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/gradient_app_bar.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../features/taxonomies/taxonomies.dart';
 import '../providers/kafalat_providers.dart';
 
 class KafalatImportPage extends ConsumerStatefulWidget {
@@ -53,6 +54,35 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sponsorshipTypesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType),
+    );
+
+    final dynamicSponsorshipTypeItems = sponsorshipTypesAsync.maybeWhen(
+      data: (items) => items
+          .where((item) => item.code.trim().isNotEmpty && item.label.trim().isNotEmpty)
+          .map(
+            (item) => DropdownMenuItem<String>(
+              value: item.code,
+              child: Text(item.label, textAlign: TextAlign.right),
+            ),
+          )
+          .toList(growable: false),
+      orElse: () => const <DropdownMenuItem<String>>[],
+    );
+
+    final sponsorshipTypeItems = dynamicSponsorshipTypeItems.isNotEmpty
+        ? dynamicSponsorshipTypeItems
+        : const [
+            DropdownMenuItem(value: 'monthly', child: Text('شهرية')),
+            DropdownMenuItem(value: 'one_time', child: Text('مرة واحدة')),
+            DropdownMenuItem(value: 'other', child: Text('أخرى')),
+          ];
+
+    final selectedSponsorshipTypeExists = sponsorshipTypeItems.any(
+      (item) => item.value == _selectedSponsorshipType,
+    );
+    final selectedSponsorshipType = selectedSponsorshipTypeExists ? _selectedSponsorshipType : null;
 
     final width = MediaQuery.of(context).size.width;
     final isWide = width >= 900;
@@ -88,20 +118,17 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.info_outline,
-                              color: theme.colorScheme.primary),
+                          Icon(Icons.info_outline, color: theme.colorScheme.primary),
                           SizedBox(width: 10.w),
                           Expanded(
                             child: Text(
                               'تعليمات رفع الملف',
-                              style: theme.textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                               textAlign: TextAlign.right,
                             ),
                           ),
                           OutlinedButton.icon(
-                            onPressed:
-                                _busy ? null : () => _downloadTemplate(context),
+                            onPressed: _busy ? null : () => _downloadTemplate(context),
                             icon: const Icon(Icons.download_outlined),
                             label: const Text('تحميل القالب'),
                           ),
@@ -117,8 +144,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                         '5) اسم الأب\n'
                         '6) اسم الجد\n'
                         '7) اللقب',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.right,
                       ),
                       SizedBox(height: 12.h),
@@ -131,8 +157,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.warning_amber_rounded,
-                                color: theme.colorScheme.onTertiaryContainer),
+                            Icon(Icons.warning_amber_rounded, color: theme.colorScheme.onTertiaryContainer),
                             SizedBox(width: 10.w),
                             Expanded(
                               child: Text(
@@ -158,8 +183,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
               // Import settings
               Text(
                 'إعدادات الاستيراد',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 textAlign: TextAlign.right,
               ),
               SizedBox(height: 10.h),
@@ -170,22 +194,15 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   final associationField = _AssociationDropdown(
                     value: _selectedAssociationId,
                     enabled: !_busy,
-                    onChanged: (v) =>
-                        setState(() => _selectedAssociationId = v),
+                    onChanged: (v) => setState(() => _selectedAssociationId = v),
                   );
 
                   final typeField = _SimpleDropdown(
                     label: 'نوع الكفالة',
-                    value: _selectedSponsorshipType,
+                    value: selectedSponsorshipType,
                     enabled: !_busy,
-                    items: const [
-                      DropdownMenuItem(value: 'monthly', child: Text('شهرية')),
-                      DropdownMenuItem(
-                          value: 'one_time', child: Text('مرة واحدة')),
-                      DropdownMenuItem(value: 'other', child: Text('أخرى')),
-                    ],
-                    onChanged: (v) =>
-                        setState(() => _selectedSponsorshipType = v),
+                    items: sponsorshipTypeItems,
+                    onChanged: (v) => setState(() => _selectedSponsorshipType = v),
                   );
 
                   final statusField = _SimpleDropdown(
@@ -197,8 +214,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                       DropdownMenuItem(value: 'paused', child: Text('موقوفة')),
                       DropdownMenuItem(value: 'ended', child: Text('منتهية')),
                     ],
-                    onChanged: (v) =>
-                        setState(() => _selectedSponsorshipStatus = v),
+                    onChanged: (v) => setState(() => _selectedSponsorshipStatus = v),
                   );
 
                   if (isThreeCols) {
@@ -232,8 +248,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                 alignment: Alignment.centerRight,
                 child: Text(
                   'ملف Excel',
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   textAlign: TextAlign.right,
                 ),
               ),
@@ -271,8 +286,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   _rows.isEmpty
                       ? 'الملف جاهز للفحص'
                       : 'تمت قراءة ${_rows.length} صف • صالحة: $_parseValidRows • مكررة: $_parseDuplicateRows • غير صالحة: $_parseInvalidRows',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.right,
                 ),
               ],
@@ -284,8 +298,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   SizedBox(height: 6.h),
                   Text(
                     _busyLabel!,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     textAlign: TextAlign.right,
                   ),
                 ],
@@ -301,9 +314,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   final scanButton = SizedBox(
                     width: isRow ? null : double.infinity,
                     child: FilledButton.icon(
-                      onPressed: (_busy || _fileBytes == null)
-                          ? null
-                          : () => _parseExcel(context),
+                      onPressed: (_busy || _fileBytes == null) ? null : () => _parseExcel(context),
                       icon: const Icon(Icons.search),
                       label: Text(_busy ? 'جاري الفحص...' : 'فحص الملف'),
                     ),
@@ -312,9 +323,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   final importButton = SizedBox(
                     width: isRow ? null : double.infinity,
                     child: FilledButton.tonalIcon(
-                      onPressed: (_busy || _rows.isEmpty)
-                          ? null
-                          : () => _importRows(context),
+                      onPressed: (_busy || _rows.isEmpty) ? null : () => _importRows(context),
                       icon: const Icon(Icons.download_done_outlined),
                       label: Text(_busy ? 'جاري الاستيراد...' : 'استيراد'),
                     ),
@@ -323,8 +332,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   final cancelButton = SizedBox(
                     width: isRow ? null : double.infinity,
                     child: OutlinedButton(
-                      onPressed:
-                          _busy ? null : () => Navigator.maybePop(context),
+                      onPressed: _busy ? null : () => Navigator.maybePop(context),
                       child: const Text('إلغاء'),
                     ),
                   );
@@ -364,8 +372,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                       children: [
                         Text(
                           'تقدم الاستيراد',
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                           textAlign: TextAlign.right,
                         ),
                         SizedBox(height: 8.h),
@@ -380,23 +387,19 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                             ),
                             Text(
                               'إضافة: $_importInserted • تحديث: $_importUpdated • تخطي: $_importSkipped',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant),
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
                         SizedBox(height: 8.h),
                         LinearProgressIndicator(
-                          value: _importTotal == 0
-                              ? null
-                              : (_importProcessed / _importTotal).clamp(0, 1),
+                          value: _importTotal == 0 ? null : (_importProcessed / _importTotal).clamp(0, 1),
                         ),
                         if (_lastImportBatchId != null) ...[
                           SizedBox(height: 8.h),
                           Text(
                             'Batch ID: $_lastImportBatchId',
-                            style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ],
@@ -412,15 +415,13 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   Expanded(
                     child: Text(
                       'معاينة البيانات',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                       textAlign: TextAlign.right,
                     ),
                   ),
                   Text(
                     _rows.isEmpty ? '0 صف' : '${_rows.length} صف',
-                    style: theme.textTheme.labelLarge
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -430,9 +431,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   padding: EdgeInsets.symmetric(vertical: 24.h),
                   child: Column(
                     children: [
-                      Icon(Icons.table_rows_outlined,
-                          size: 36.sp,
-                          color: theme.colorScheme.onSurfaceVariant),
+                      Icon(Icons.table_rows_outlined, size: 36.sp, color: theme.colorScheme.onSurfaceVariant),
                       SizedBox(height: 10.h),
                       Text(
                         'لا توجد بيانات لعرضها',
@@ -490,8 +489,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
 
       if (kIsWeb) {
         if (!context.mounted) return;
-        EnhancedSnackbar.showError(context,
-            message: 'تحميل القالب غير مدعوم على الويب حالياً');
+        EnhancedSnackbar.showError(context, message: 'تحميل القالب غير مدعوم على الويب حالياً');
         return;
       }
 
@@ -571,9 +569,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
         throw Exception('لا توجد بيانات');
       }
 
-      final headers = rows.first
-          .map((c) => _normalizeHeader(_cellToString(c)))
-          .toList(growable: false);
+      final headers = rows.first.map((c) => _normalizeHeader(_cellToString(c))).toList(growable: false);
 
       final parsed = <_ExcelBeneficiaryRow>[];
 
@@ -644,16 +640,14 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
     if (_rows.isEmpty) return;
 
     if (_selectedAssociationId == null || _selectedAssociationId!.isEmpty) {
-      EnhancedSnackbar.showError(context,
-          message: 'يرجى اختيار المؤسسة الكافلة');
+      EnhancedSnackbar.showError(context, message: 'يرجى اختيار المؤسسة الكافلة');
       return;
     }
     if (_selectedSponsorshipType == null || _selectedSponsorshipType!.isEmpty) {
       EnhancedSnackbar.showError(context, message: 'يرجى اختيار نوع الكفالة');
       return;
     }
-    if (_selectedSponsorshipStatus == null ||
-        _selectedSponsorshipStatus!.isEmpty) {
+    if (_selectedSponsorshipStatus == null || _selectedSponsorshipStatus!.isEmpty) {
       EnhancedSnackbar.showError(context, message: 'يرجى اختيار حالة الكفالة');
       return;
     }
@@ -705,9 +699,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
           ],
         );
 
-        final idRow = await db
-            .customSelect('SELECT last_insert_rowid() AS id')
-            .getSingle();
+        final idRow = await db.customSelect('SELECT last_insert_rowid() AS id').getSingle();
         final newBatchId = idRow.read<int>('id');
 
         int inserted = 0;
@@ -757,14 +749,12 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
         }
 
         // Build a mapping nationalId -> beneficiaryId after upsert.
-        final beneficiaryIdByNationalId =
-            await _fetchBeneficiaryIdMap(db, idNumbers);
+        final beneficiaryIdByNationalId = await _fetchBeneficiaryIdMap(db, idNumbers);
 
         // Idempotency for active sponsorships: don't create a new active sponsorship
         // if the beneficiary already has any active sponsorship.
         final hasActiveSponsorship = sponsorshipStatus == 'active'
-            ? await _prefetchBeneficiariesWithActiveSponsorship(
-                db, beneficiaryIdByNationalId.values.toList())
+            ? await _prefetchBeneficiariesWithActiveSponsorship(db, beneficiaryIdByNationalId.values.toList())
             : <int>{};
 
         for (final r in _rows) {
@@ -774,8 +764,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
             continue;
           }
 
-          if (sponsorshipStatus == 'active' &&
-              hasActiveSponsorship.contains(beneficiaryId)) {
+          if (sponsorshipStatus == 'active' && hasActiveSponsorship.contains(beneficiaryId)) {
             sponsorshipsSkipped++;
             continue;
           }
@@ -786,9 +775,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                 beneficiaryId: beneficiaryId,
                 associationId: associationId,
                 startDate: drift.Value(now),
-                endDate: sponsorshipStatus == 'ended'
-                    ? drift.Value(now)
-                    : const drift.Value.absent(),
+                endDate: sponsorshipStatus == 'ended' ? drift.Value(now) : const drift.Value.absent(),
                 status: drift.Value(sponsorshipStatus),
                 sponsorshipType: drift.Value(sponsorshipType),
                 importBatchId: drift.Value(newBatchId),
@@ -821,14 +808,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
               sponsorships_skipped = ?
           WHERE id = ?
           ''',
-          [
-            inserted,
-            updated,
-            skipped,
-            sponsorshipsInserted,
-            sponsorshipsSkipped,
-            newBatchId
-          ],
+          [inserted, updated, skipped, sponsorshipsInserted, sponsorshipsSkipped, newBatchId],
         );
 
         return newBatchId;
@@ -844,8 +824,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
       unawaited(HapticPatterns.success());
       EnhancedSnackbar.showSuccess(
         context,
-        message:
-            'تم الاستيراد. مستفيدون: إضافة $_importInserted • تحديث $_importUpdated • تخطي $_importSkipped',
+        message: 'تم الاستيراد. مستفيدون: إضافة $_importInserted • تحديث $_importUpdated • تخطي $_importSkipped',
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -861,8 +840,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
     }
   }
 
-  Future<Map<int, int>> _fetchBeneficiaryIdMap(
-      AppDatabase db, List<int> idNumbers) async {
+  Future<Map<int, int>> _fetchBeneficiaryIdMap(AppDatabase db, List<int> idNumbers) async {
     if (idNumbers.isEmpty) return const {};
     final map = <int, int>{};
 
@@ -886,15 +864,13 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
     return map;
   }
 
-  Future<Set<int>> _prefetchBeneficiariesWithActiveSponsorship(
-      AppDatabase db, List<int> beneficiaryIds) async {
+  Future<Set<int>> _prefetchBeneficiariesWithActiveSponsorship(AppDatabase db, List<int> beneficiaryIds) async {
     if (beneficiaryIds.isEmpty) return <int>{};
     final result = <int>{};
 
     const chunkSize = 900;
     for (var i = 0; i < beneficiaryIds.length; i += chunkSize) {
-      final chunk =
-          beneficiaryIds.skip(i).take(chunkSize).toList(growable: false);
+      final chunk = beneficiaryIds.skip(i).take(chunkSize).toList(growable: false);
       final placeholders = List.filled(chunk.length, '?').join(',');
       final rows = await db.customSelect(
         "SELECT DISTINCT beneficiary_id AS beneficiaryId FROM sponsorships WHERE status = 'active' AND beneficiary_id IN ($placeholders)",
@@ -911,8 +887,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
     return result;
   }
 
-  Future<Set<int>> _prefetchExistingNationalIds(
-      AppDatabase db, List<int> idNumbers) async {
+  Future<Set<int>> _prefetchExistingNationalIds(AppDatabase db, List<int> idNumbers) async {
     if (idNumbers.isEmpty) return <int>{};
 
     final result = <int>{};
@@ -1026,12 +1001,9 @@ class _ExcelBeneficiaryRow {
   });
 
   String get firstNameSafe => firstName.trim().isEmpty ? '' : firstName.trim();
-  String get fatherNameSafe =>
-      fatherName.trim().isEmpty ? '' : fatherName.trim();
-  String get grandFatherNameSafe =>
-      grandFatherName.trim().isEmpty ? '' : grandFatherName.trim();
-  String get familyNameSafe =>
-      familyName.trim().isEmpty ? '' : familyName.trim();
+  String get fatherNameSafe => fatherName.trim().isEmpty ? '' : fatherName.trim();
+  String get grandFatherNameSafe => grandFatherName.trim().isEmpty ? '' : grandFatherName.trim();
+  String get familyNameSafe => familyName.trim().isEmpty ? '' : familyName.trim();
 
   String get fullNameOrFallback {
     final parts = [
@@ -1110,8 +1082,7 @@ class _AssociationDropdown extends ConsumerWidget {
         );
       },
       loading: () => const LinearProgressIndicator(minHeight: 2),
-      error: (e, _) =>
-          Text('فشل تحميل المؤسسات: $e', textAlign: TextAlign.right),
+      error: (e, _) => Text('فشل تحميل المؤسسات: $e', textAlign: TextAlign.right),
     );
   }
 }

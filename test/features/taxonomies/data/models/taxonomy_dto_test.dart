@@ -289,4 +289,57 @@ void main() {
       expect(json['message'], 'Synced');
     });
   });
+
+  group('TaxonomiesResponseDTO.fromSyncAllJson', () {
+    test('parses nested categories map format', () {
+      final json = {
+        'success': true,
+        'data': {
+          'categories': {
+            'social-status': {
+              'label_ar': 'الحالة الاجتماعية',
+              'items': [
+                {'id': 1, 'name': 'متزوج'},
+                {'id': 2, 'name': 'أعزب'},
+              ],
+            },
+          },
+        },
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.success, true);
+      expect(dto.data, hasLength(2));
+      expect(dto.data.first.groupValue, 'marital_status');
+    });
+
+    test('parses flat list fallback format', () {
+      final json = {
+        'success': true,
+        'data': [
+          {
+            'id': 10,
+            'group': 'gender',
+            'code': 'male',
+            'label': 'ذكر',
+            'is_active': 1,
+          },
+          {
+            'id': 11,
+            'group': 'gender',
+            'code': 'female',
+            'label': 'أنثى',
+            'is_active': 1,
+          },
+        ],
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.success, true);
+      expect(dto.data, hasLength(2));
+      expect(dto.data.first.groupValue, 'gender');
+    });
+  });
 }

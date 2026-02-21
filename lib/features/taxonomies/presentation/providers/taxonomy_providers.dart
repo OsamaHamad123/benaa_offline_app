@@ -10,6 +10,7 @@ import '../../data/datasources/taxonomy_remote_datasource.dart';
 import '../../data/datasources/taxonomy_local_datasource.dart';
 import '../../data/datasources/taxonomy_local_drift_datasource.dart';
 import '../../data/repositories/taxonomy_repository_impl.dart';
+import 'taxonomy_bridge_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // 📦 Dependency Injection Providers
@@ -250,6 +251,12 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
       _ref.read(lastSyncResultProvider.notifier).state = syncResult;
       _ref.invalidate(allTaxonomiesProvider);
       _ref.invalidate(taxonomyStatisticsProvider);
+      _ref.invalidate(lastSyncTimeProvider);
+      for (final group in TaxonomyGroup.values) {
+        _ref.invalidate(taxonomiesByGroupProvider(group));
+        _ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
+        _ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
+      }
       state = AsyncValue.data(syncResult);
     } else {
       final e = (result as Failure).error;
@@ -268,6 +275,8 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
     if (result.isSuccess) {
       final syncResult = (result as Success<TaxonomySyncResult>).value;
       _ref.invalidate(taxonomiesByGroupProvider(group));
+      _ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
+      _ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
       state = AsyncValue.data(syncResult);
     } else {
       final e = (result as Failure).error;
@@ -288,6 +297,12 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
       _ref.read(lastSyncResultProvider.notifier).state = syncResult;
       _ref.invalidate(allTaxonomiesProvider);
       _ref.invalidate(taxonomyStatisticsProvider);
+      _ref.invalidate(lastSyncTimeProvider);
+      for (final group in TaxonomyGroup.values) {
+        _ref.invalidate(taxonomiesByGroupProvider(group));
+        _ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
+        _ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
+      }
       state = AsyncValue.data(syncResult);
     } else {
       final e = (result as Failure).error;

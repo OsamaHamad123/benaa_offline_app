@@ -40,8 +40,29 @@ class BeneficiaryFormDataHandler {
     if (value == null || value.trim().isEmpty) return null;
     final normalized = value.trim();
 
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      switch (code) {
+        case 1:
+          return MaritalStatus.single;
+        case 2:
+          return MaritalStatus.married;
+        case 3:
+          return MaritalStatus.divorced;
+        case 4:
+          return MaritalStatus.widowed;
+      }
+    }
+
     return MaritalStatus.values.firstWhere(
-      (status) => status.name == normalized || status.arabicLabel == normalized,
+      (status) =>
+          status.name.toLowerCase() == normalized.toLowerCase() ||
+          status.arabicLabel == normalized ||
+          (status == MaritalStatus.single && (normalized == 'أعزب/عزباء' || normalized == 'اعزب/عزباء')) ||
+          (status == MaritalStatus.married && (normalized == 'متزوج' || normalized == 'متزوجة')) ||
+          (status == MaritalStatus.divorced && (normalized == 'مطلق' || normalized == 'مطلقة')) ||
+          (status == MaritalStatus.widowed &&
+              (normalized == 'أرمل' || normalized == 'أرملة' || normalized == 'ارمل' || normalized == 'ارملة')),
       orElse: () => MaritalStatus.single,
     );
   }
@@ -50,8 +71,30 @@ class BeneficiaryFormDataHandler {
     if (value == null || value.trim().isEmpty) return null;
     final normalized = value.trim();
 
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      switch (code) {
+        case 1:
+          return EducationLevel.none;
+        case 2:
+          return EducationLevel.primary;
+        case 3:
+          return EducationLevel.intermediate;
+        case 4:
+          return EducationLevel.secondary;
+        case 5:
+          return EducationLevel.diploma;
+        case 6:
+          return EducationLevel.bachelor;
+        case 7:
+          return EducationLevel.master;
+        case 8:
+          return EducationLevel.phd;
+      }
+    }
+
     return EducationLevel.values.firstWhere(
-      (level) => level.name == normalized || level.arabicLabel == normalized,
+      (level) => level.name.toLowerCase() == normalized.toLowerCase() || level.arabicLabel == normalized,
       orElse: () => EducationLevel.none,
     );
   }
@@ -118,7 +161,38 @@ class BeneficiaryFormDataHandler {
 
   static HealthStatus _parseHealthStatus(String? value) {
     if (value == null || value.trim().isEmpty) return HealthStatus.good;
-    return HealthStatus.fromString(value.trim());
+    final normalized = value.trim();
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      switch (code) {
+        case 1:
+          return HealthStatus.good;
+        case 2:
+          return HealthStatus.fair;
+        case 3:
+          return HealthStatus.chronicDisease;
+        case 4:
+          return HealthStatus.disability;
+        case 5:
+          return HealthStatus.poor;
+      }
+    }
+    return HealthStatus.fromString(normalized);
+  }
+
+  static RequestStatus? _parseRequestStatus(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    final normalized = value.trim();
+
+    final code = int.tryParse(normalized);
+    if (code != null) {
+      return RequestStatus.fromCode(code);
+    }
+
+    return RequestStatus.values.firstWhere(
+      (status) => status.name.toLowerCase() == normalized.toLowerCase() || status.arabicLabel == normalized,
+      orElse: () => RequestStatus.pending,
+    );
   }
 
   /// Populate controllers from existing beneficiary
@@ -164,6 +238,7 @@ class BeneficiaryFormDataHandler {
       controllers.selectedDisplacementStatus = beneficiary.displacementStatus?.name;
       controllers.selectedHousingStatus = beneficiary.housingStatus?.name;
       controllers.selectedHousingType = beneficiary.housingType?.name;
+      controllers.selectedRequestStatus = beneficiary.requestStatus?.name;
       controllers.selectedRelationship = beneficiary.relationship?.toString();
       controllers.selectedSection = beneficiary.sectionId?.toString();
       controllers.hasDisability = beneficiary.hasDisability;
@@ -198,6 +273,7 @@ class BeneficiaryFormDataHandler {
     final housingStatus = _parseHousingStatus(controllers.selectedHousingStatus);
     final housingType = _parseHousingType(controllers.selectedHousingType);
     final healthStatus = _parseHealthStatus(controllers.selectedHealthStatus);
+    final requestStatus = _parseRequestStatus(controllers.selectedRequestStatus);
     final relationshipCode = int.tryParse(controllers.selectedRelationship ?? '');
     final sectionCode = int.tryParse(controllers.selectedSection ?? '');
 
@@ -240,6 +316,7 @@ class BeneficiaryFormDataHandler {
       employmentStatus: employmentStatus,
       displacementStatus: displacementStatus,
       healthStatus: healthStatus,
+      requestStatus: requestStatus,
       housingStatus: housingStatus,
       housingType: housingType,
       hasDisability: controllers.hasDisability,

@@ -22,4 +22,25 @@ abstract class FileIdReservationRepository {
 
   /// 📊 Get current count of available local IDs
   Future<Result<int>> getAvailableCount();
+
+  /// 📈 Diagnostics for local pool + remote reservation
+  Future<Result<FileIdDiagnostics>> getDiagnostics();
+}
+
+class FileIdDiagnostics {
+  final int availableCount;
+  final int usedUnsyncedCount;
+  final DateTime? lastReservedAt;
+  final DateTime? lastSyncedAt;
+  final int? activeReservationId;
+  final int? activeReservationRemaining;
+
+  const FileIdDiagnostics({
+    required this.availableCount,
+    required this.usedUnsyncedCount,
+    this.lastReservedAt,
+    this.lastSyncedAt,
+    this.activeReservationId,
+    this.activeReservationRemaining,
+  });
 }

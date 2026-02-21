@@ -78,4 +78,38 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
       return Failure(DatabaseFailure('Failed to count available IDs: $e'));
     }
   }
+
+  @override
+  Future<Result<FileIdDiagnostics>> getDiagnostics() async {
+    try {
+      final availableCount = await localDao.countAvailable();
+      final usedUnsyncedCount = await localDao.countUsedUnsynced();
+      final lastReservedAt = await localDao.getLastReservedAt();
+      final lastSyncedAt = await localDao.getLastSyncedAt();
+
+      int? reservationId;
+      int? remainingCount;
+      try {
+        final remoteStatus = await remoteDataSource.getActiveReservationStatus();
+        reservationId = remoteStatus.reservationId;
+        remainingCount = remoteStatus.remainingCount;
+      } catch (_) {
+        reservationId = null;
+        remainingCount = null;
+      }
+
+      return Success(
+        FileIdDiagnostics(
+          availableCount: availableCount,
+          usedUnsyncedCount: usedUnsyncedCount,
+          lastReservedAt: lastReservedAt,
+          lastSyncedAt: lastSyncedAt,
+          activeReservationId: reservationId,
+          activeReservationRemaining: remainingCount,
+        ),
+      );
+    } catch (e) {
+      return Failure(DatabaseFailure('Failed to load file-id diagnostics: $e'));
+    }
+  }
 }

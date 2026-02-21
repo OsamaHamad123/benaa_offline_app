@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../attachments/domain/models/pending_attachment.dart';
+import '../../../../../attachments/presentation/widgets/attachments_section_enhanced.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 import '../../form/attachments/enhanced_upload_card.dart';
 import '../../form/attachments/organized_attachments_card.dart';
@@ -66,6 +67,22 @@ class _V2UnifiedAttachmentsTabState extends ConsumerState<V2UnifiedAttachmentsTa
               );
             },
           ),
+
+        if (widget.beneficiaryId != null && widget.beneficiaryId!.trim().isNotEmpty) ...[
+          SizedBox(height: 24.h),
+          Text(
+            'المرفقات المحفوظة',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          SizedBox(height: 8.h),
+          AttachmentsSectionEnhanced(
+            beneficiaryId: widget.beneficiaryId!,
+            readOnly: true,
+            showTitle: false,
+          ),
+        ],
       ],
     );
   }

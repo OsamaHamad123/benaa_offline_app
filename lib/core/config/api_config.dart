@@ -16,22 +16,23 @@ class ApiConfig {
   static const String devicesEndpoint = '/api/mobile/devices';
 
   // 💾 قاعدة البيانات Endpoints
-  static const String civilDbDownloadEndpoint = '/api/mobile/civil-db/download';
-  static const String civilDbStatusEndpoint = '/api/mobile/civil-db/status';
+  static const String civilDbDownloadEndpoint = '/api/mobile/database/persons-file/download';
+  static const String civilDbStatusEndpoint = '/api/mobile/database/persons-file/info';
 
   // 🔄 Sync Endpoints
-  static const String syncEndpoint = '/api/mobile/sync';
-  static const String initialDataEndpoint = '/api/mobile/sync/initial';
-  static const String syncStatusEndpoint = '/api/mobile/sync/status';
+  static const String syncEndpoint = '/api/mobile/database/data';
+  static const String initialDataEndpoint = '/api/mobile/database/data';
+  static const String syncStatusEndpoint = '/api/mobile/auth/validate';
 
   // 🆔 File ID Reservation Endpoints
   static const String reserveFileIdsEndpoint = '/api/mobile/database/file-ids/reserve';
+  static const String fileIdReservationsEndpoint = '/api/mobile/database/file-ids/reservations';
   static const String syncUsedFileIdsEndpoint = '/api/mobile/database/file-ids/sync-used';
 
   // 🚀 Batch Data Endpoints
   static const String batchDataSyncEndpoint = '/api/mobile/database/data/batch';
   static const String visitsBatchSyncEndpoint = '/api/mobile/visits/batch';
-  static const String attachmentUploadEndpoint = '/api/mobile/attachments/upload';
+  static const String attachmentUploadEndpoint = '/api/mobile/database/attachments';
 
   // 📊 Data Endpoints
   static const String materialsEndpoint = '/api/materials';

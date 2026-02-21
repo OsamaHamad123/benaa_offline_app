@@ -1,20 +1,28 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../../data/db/drift_database.dart';
+import '../../../../../core/utils/beneficiary_identity_resolver.dart';
 
 /// 👨‍👩‍👧‍👦 مساعد حفظ وتحميل بيانات أفراد العائلة
 class FamilySaveHelper {
   /// ⬇️ تحميل بيانات أفراد العائلة من قاعدة البيانات
-  static Future<
-      ({
-        List<Map<String, dynamic>> living,
-        List<Map<String, dynamic>> deceased
-      })> loadFamilyMembers({
+  static Future<({List<Map<String, dynamic>> living, List<Map<String, dynamic>> deceased})> loadFamilyMembers({
     required AppDatabase database,
     required String beneficiaryId,
   }) async {
     try {
-      final intBeneficiaryId = int.parse(beneficiaryId);
+      final intBeneficiaryId = await _resolveBeneficiaryLocalId(
+        database: database,
+        beneficiaryId: beneficiaryId,
+      );
+
+      if (intBeneficiaryId == null) {
+        debugPrint('⚠️ [FamilySaveHelper] Could not resolve local beneficiary id for: $beneficiaryId');
+        return (
+          living: <Map<String, dynamic>>[],
+          deceased: <Map<String, dynamic>>[],
+        );
+      }
 
       // تحميل الأحياء والأموات بالتوازي للأداء
       final results = await Future.wait([
@@ -78,6 +86,16 @@ class FamilySaveHelper {
     }
   }
 
+  static Future<int?> _resolveBeneficiaryLocalId({
+    required AppDatabase database,
+    required String beneficiaryId,
+  }) async {
+    return BeneficiaryIdentityResolver.resolveLocalBeneficiaryId(
+      database: database,
+      beneficiaryId: beneficiaryId,
+    );
+  }
+
   /// ⬆️ حفظ أفراد العائلة الأحياء والأموات
   static Future<void> saveFamilyMembers({
     required AppDatabase database,
@@ -86,20 +104,25 @@ class FamilySaveHelper {
     required List<Map<String, dynamic>> deceasedMembers,
   }) async {
     try {
-      final intBeneficiaryId = int.parse(beneficiaryId);
+      final intBeneficiaryId = await _resolveBeneficiaryLocalId(
+        database: database,
+        beneficiaryId: beneficiaryId,
+      );
+
+      if (intBeneficiaryId == null) {
+        throw StateError('Could not resolve local beneficiary id for family save: $beneficiaryId');
+      }
 
       // 🔥 حذف البيانات القديمة أولاً (لتجنب التكرار)
       await database.transaction(() async {
         // حذف الأحياء القدامى
-        final oldLiving = await database.familyMembersDao
-            .getMembersByBeneficiary(intBeneficiaryId);
+        final oldLiving = await database.familyMembersDao.getMembersByBeneficiary(intBeneficiaryId);
         for (final old in oldLiving) {
           await database.familyMembersDao.deleteMember(old.id);
         }
 
         // حذف الأموات القدامى
-        final oldDeceased = await database.familyDeceasedDao
-            .getDeceasedByBeneficiary(intBeneficiaryId);
+        final oldDeceased = await database.familyDeceasedDao.getDeceasedByBeneficiary(intBeneficiaryId);
         for (final old in oldDeceased) {
           await database.familyDeceasedDao.deleteDeceased(old.id);
         }

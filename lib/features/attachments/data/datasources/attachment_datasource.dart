@@ -6,6 +6,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../core/utils/beneficiary_identity_resolver.dart';
 import '../models/attachment_model.dart';
 import '../../domain/entities/attachment.dart' as domain;
 
@@ -26,9 +27,10 @@ class AttachmentDataSource {
   Future<List<AttachmentModel>> getBeneficiaryAttachments(
     String beneficiaryId,
   ) async {
-    debugPrint('📎 [DataSource] Getting attachments for: $beneficiaryId');
+    final resolvedBeneficiaryId = await _resolveBeneficiaryIdForQuery(beneficiaryId);
+    debugPrint('📎 [DataSource] Getting attachments for: $beneficiaryId (resolved: $resolvedBeneficiaryId)');
     final results = await _database.attachmentsDao.getBeneficiaryAttachments(
-      beneficiaryId,
+      resolvedBeneficiaryId,
     );
     debugPrint('📎 [DataSource] Found ${results.length} attachments in DB');
     final models = results.map((e) => AttachmentModel.fromDrift(e)).toList();
@@ -48,6 +50,8 @@ class AttachmentDataSource {
     String? visitId,
     required File sourceFile,
   }) async {
+    final resolvedBeneficiaryId = await _resolveBeneficiaryIdForQuery(beneficiaryId);
+
     // التحقق من حجم الملف
     final fileSize = await sourceFile.length();
     if (fileSize > _maxFileSize) {
@@ -61,7 +65,7 @@ class AttachmentDataSource {
     // إنشاء مجلد المرفقات
     final appDir = await getApplicationDocumentsDirectory();
     final attachmentsDir = Directory(
-      path.join(appDir.path, _attachmentsFolder, beneficiaryId),
+      path.join(appDir.path, _attachmentsFolder, resolvedBeneficiaryId),
     );
     if (!await attachmentsDir.exists()) {
       await attachmentsDir.create(recursive: true);
@@ -96,7 +100,7 @@ class AttachmentDataSource {
     await _database.attachmentsDao.addAttachment(
       AttachmentsCompanion(
         id: drift.Value(id),
-        beneficiaryId: drift.Value(beneficiaryId),
+        beneficiaryId: drift.Value(resolvedBeneficiaryId),
         visitId: drift.Value(visitId),
         fileName: drift.Value(fileName),
         filePath: drift.Value(filePath),
@@ -111,7 +115,7 @@ class AttachmentDataSource {
 
     return AttachmentModel(
       id: id,
-      beneficiaryId: beneficiaryId,
+      beneficiaryId: resolvedBeneficiaryId,
       visitId: visitId,
       fileName: fileName,
       filePath: filePath,
@@ -158,8 +162,10 @@ class AttachmentDataSource {
   /// Delete all attachments for a beneficiary
   Future<bool> deleteBeneficiaryAttachments(String beneficiaryId) async {
     try {
+      final resolvedBeneficiaryId = await _resolveBeneficiaryIdForQuery(beneficiaryId);
+
       // Get all attachments first
-      final attachments = await getBeneficiaryAttachments(beneficiaryId);
+      final attachments = await getBeneficiaryAttachments(resolvedBeneficiaryId);
 
       // Delete all physical files
       for (final attachment in attachments) {
@@ -178,16 +184,16 @@ class AttachmentDataSource {
 
       // Delete from database
       await _database.attachmentsDao.deleteBeneficiaryAttachments(
-        beneficiaryId,
+        resolvedBeneficiaryId,
       );
 
       // Delete directories
       final appDir = await getApplicationDocumentsDirectory();
       final attachmentsDir = Directory(
-        path.join(appDir.path, _attachmentsFolder, beneficiaryId),
+        path.join(appDir.path, _attachmentsFolder, resolvedBeneficiaryId),
       );
       final thumbnailsDir = Directory(
-        path.join(appDir.path, _thumbnailsFolder, beneficiaryId),
+        path.join(appDir.path, _thumbnailsFolder, resolvedBeneficiaryId),
       );
 
       if (await attachmentsDir.exists()) {
@@ -222,6 +228,14 @@ class AttachmentDataSource {
   Future<int> getAttachmentsCount(String beneficiaryId) async {
     final attachments = await getBeneficiaryAttachments(beneficiaryId);
     return attachments.length;
+  }
+
+  Future<String> _resolveBeneficiaryIdForQuery(String beneficiaryId) async {
+    final resolved = await BeneficiaryIdentityResolver.resolveLocalBeneficiaryIdAsString(
+      database: _database,
+      beneficiaryId: beneficiaryId,
+    );
+    return resolved ?? beneficiaryId;
   }
 
   // ============================================================================

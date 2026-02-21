@@ -68,4 +68,31 @@ class FileIdReservationDao extends DatabaseAccessor<AppDatabase> with _$FileIdRe
     final result = await query.getSingle();
     return result.read(countExp) ?? 0;
   }
+
+  Future<int> countUsedUnsynced() async {
+    final countExp = fileIdReservationTable.id.count();
+    final query = selectOnly(fileIdReservationTable)
+      ..addColumns([countExp])
+      ..where(fileIdReservationTable.status.equals('used'));
+
+    final result = await query.getSingle();
+    return result.read(countExp) ?? 0;
+  }
+
+  Future<DateTime?> getLastReservedAt() async {
+    final row = await (select(fileIdReservationTable)
+          ..orderBy([(t) => OrderingTerm.desc(t.reservedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.reservedAt;
+  }
+
+  Future<DateTime?> getLastSyncedAt() async {
+    final row = await (select(fileIdReservationTable)
+          ..where((t) => t.syncedAt.isNotNull())
+          ..orderBy([(t) => OrderingTerm.desc(t.syncedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+    return row?.syncedAt;
+  }
 }

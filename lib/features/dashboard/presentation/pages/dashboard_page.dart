@@ -327,6 +327,9 @@ class _DashboardHome extends ConsumerWidget {
     final pendingTasksCount = ref.watch(
       dashboardProvider.select((state) => state.todayStats?.pendingTasks),
     );
+    final taxonomySyncStatus = ref.watch(taxonomySyncStatusProvider);
+    final taxonomyStatsAsync = ref.watch(taxonomyStatisticsProvider);
+    final taxonomyTotal = taxonomyStatsAsync.valueOrNull?.totalCount ?? 0;
 
     return CustomScrollView(
       slivers: [
@@ -335,6 +338,11 @@ class _DashboardHome extends ConsumerWidget {
           title: !isOnline ? 'منظومة بناء (غير متصل)' : 'منظومة بناء',
           icon: Icons.dashboard_rounded,
           actions: [
+            _buildTaxonomyStatusBadge(
+              context,
+              taxonomySyncStatus,
+              taxonomyTotal,
+            ),
             ModernActionButton(
               icon: Icons.search_rounded,
               tooltip: 'البحث',
@@ -424,6 +432,56 @@ class _DashboardHome extends ConsumerWidget {
 
   Widget _buildErrorView(BuildContext context, String error, dynamic notifier) {
     return RetryWidget(message: error, onRetry: () => notifier.refresh());
+  }
+
+  Widget _buildTaxonomyStatusBadge(
+    BuildContext context,
+    TaxonomySyncStatus status,
+    int totalTaxonomies,
+  ) {
+    final (Color badgeColor, IconData icon, String label) = switch (status) {
+      TaxonomySyncStatus.success => (Colors.green, Icons.category_rounded, 'تصنيفات $totalTaxonomies'),
+      TaxonomySyncStatus.syncing => (Colors.blue, Icons.sync_rounded, 'تصنيفات...'),
+      TaxonomySyncStatus.error => (Colors.red, Icons.error_outline_rounded, 'تصنيفات !'),
+      TaxonomySyncStatus.idle => (Colors.grey, Icons.category_outlined, 'تصنيفات'),
+    };
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
+      child: GestureDetector(
+        onTap: () {
+          final message = switch (status) {
+            TaxonomySyncStatus.success => 'التصنيفات جاهزة ($totalTaxonomies)',
+            TaxonomySyncStatus.syncing => 'جاري مزامنة التصنيفات...',
+            TaxonomySyncStatus.error => 'هناك مشكلة في مزامنة التصنيفات',
+            TaxonomySyncStatus.idle => 'لم يتم فحص التصنيفات بعد',
+          };
+
+          EnhancedSnackbar.showInfo(context, message: message);
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: badgeColor.withOpacity(0.9), width: 1.2),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 14.sp, color: Colors.white),
+              SizedBox(width: 4.w),
+              Text(
+                label,
+                style: DashboardTextStyles.badge.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildContent(

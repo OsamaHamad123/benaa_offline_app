@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:benaa_offline_app/core/error_handling/result.dart';
 
+import '../../domain/entities/taxonomy_group.dart';
 import '../providers/taxonomy_providers.dart';
+import '../providers/taxonomy_bridge_providers.dart';
 
 class TaxonomyAutoSyncManager extends ConsumerStatefulWidget {
   final Widget child;
@@ -130,6 +133,11 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
         ref.invalidate(allTaxonomiesProvider);
         ref.invalidate(taxonomyStatisticsProvider);
         ref.invalidate(lastSyncTimeProvider);
+        for (final group in TaxonomyGroup.values) {
+          ref.invalidate(taxonomiesByGroupProvider(group));
+          ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
+          ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
+        }
       } else {
         _failureCount = (_failureCount + 1).clamp(1, 8);
         final failure = result as Failure;
@@ -172,8 +180,23 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
   }
 
   void _publishState(TaxonomyAutoSyncState Function(TaxonomyAutoSyncState) updater) {
-    final notifier = ref.read(taxonomyAutoSyncStateProvider.notifier);
-    notifier.state = updater(notifier.state);
+    final applyUpdate = () {
+      if (!mounted) return;
+      final notifier = ref.read(taxonomyAutoSyncStateProvider.notifier);
+      notifier.state = updater(notifier.state);
+    };
+
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    final isBuildingFrame = phase == SchedulerPhase.transientCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks ||
+        phase == SchedulerPhase.persistentCallbacks;
+
+    if (isBuildingFrame) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => applyUpdate());
+      return;
+    }
+
+    applyUpdate();
   }
 
   Duration _computeBackoffDelay() {

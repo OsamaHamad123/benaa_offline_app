@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import '../config/app_config.dart';
 import '../storage/secure_store.dart';
+import '../storage/secure_storage.dart';
 import '../errors/failure.dart';
 
 class ApiClient {
@@ -39,7 +40,7 @@ class ApiClient {
     RequestInterceptorHandler handler,
   ) async {
     // Add auth token if available
-    final token = await SecureStore.getAccessToken();
+    final token = await SecureStore.getAccessToken() ?? await SecureStorage().getAuthToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -348,8 +349,7 @@ class ApiClient {
       final response = await _dio.get(
         '/sync/pull',
         queryParameters: {
-          if (updatedAfter != null)
-            'updated_after': updatedAfter.toIso8601String(),
+          if (updatedAfter != null) 'updated_after': updatedAfter.toIso8601String(),
         },
       );
       return response.data;
@@ -359,8 +359,7 @@ class ApiClient {
   }
 
   NetworkFailure _handleDioError(DioException error) {
-    if (error.type == DioExceptionType.connectionTimeout ||
-        error.type == DioExceptionType.receiveTimeout) {
+    if (error.type == DioExceptionType.connectionTimeout || error.type == DioExceptionType.receiveTimeout) {
       return NetworkFailure(
         message: 'Connection timeout',
         code: 'TIMEOUT',
@@ -377,8 +376,7 @@ class ApiClient {
     }
 
     final statusCode = error.response?.statusCode;
-    final message =
-        error.response?.data?['message'] ?? error.message ?? 'Unknown error';
+    final message = error.response?.data?['message'] ?? error.message ?? 'Unknown error';
 
     return NetworkFailure(
       message: message,

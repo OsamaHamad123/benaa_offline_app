@@ -17,10 +17,16 @@ import '../../../../core/sync/presentation/providers/sync_providers.dart' as syn
 // ═══════════════════════════════════════════════════════════════
 
 /// تحويل من Drift Entity إلى Domain Entity
-Taxonomy _convertFromDrift(dynamic driftTaxonomy) {
+Taxonomy? _convertFromDrift(dynamic driftTaxonomy) {
+  final normalizedGroupValue = TaxonomyGroup.normalizeValue(driftTaxonomy.group?.toString());
+  final resolvedGroup = TaxonomyGroup.fromString(normalizedGroupValue);
+  if (resolvedGroup == null) {
+    return null;
+  }
+
   return Taxonomy(
     id: driftTaxonomy.id?.toString() ?? '',
-    group: TaxonomyGroup.fromString(driftTaxonomy.group) ?? TaxonomyGroup.category,
+    group: resolvedGroup,
     code: driftTaxonomy.code ?? '',
     label: driftTaxonomy.label ?? '',
     labelEn: driftTaxonomy.labelEn,
@@ -39,70 +45,70 @@ Taxonomy _convertFromDrift(dynamic driftTaxonomy) {
 /// 📦 Categories (فئات المستفيدين)
 final bridgeCategoriesProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.categoriesProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 👫 Genders (الجنس)
 final bridgeGendersProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.gendersProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 💒 Marital Statuses (الحالة الاجتماعية)
 final bridgeMaritalStatusesProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.maritalStatusesProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 📚 Education Levels (المستوى التعليمي)
 final bridgeEducationLevelsProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.educationLevelsProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 🏥 Health Statuses (الحالة الصحية)
 final bridgeHealthStatusesProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.healthStatusesProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 🏠 Housing Types (نوع السكن)
 final bridgeHousingTypesProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.housingTypesProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 🏘️ Housing Statuses (حالة السكن)
 final bridgeHousingStatusesProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.housingStatusesProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 🗺️ Governorates (المحافظات)
 final bridgeGovernoratesProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.governoratesProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 👪 Relationships (صلة القرابة)
 final bridgeRelationshipsProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.relationshipsProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
 /// 🧩 Sections (القسم)
 final bridgeSectionsProvider = StreamProvider<List<Taxonomy>>((ref) {
   return ref.watch(sync_providers.sectionsProvider.stream).map(
-        (list) => list.map(_convertFromDrift).toList(),
+        (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
       );
 });
 
@@ -114,32 +120,10 @@ final bridgeSectionsProvider = StreamProvider<List<Taxonomy>>((ref) {
 /// يستخدم Drift Database الموجود
 final bridgeTaxonomiesByGroupProvider = StreamProvider.family<List<Taxonomy>, TaxonomyGroup>(
   (ref, group) {
-    switch (group) {
-      case TaxonomyGroup.category:
-        return ref.watch(bridgeCategoriesProvider.stream);
-      case TaxonomyGroup.gender:
-        return ref.watch(bridgeGendersProvider.stream);
-      case TaxonomyGroup.maritalStatus:
-        return ref.watch(bridgeMaritalStatusesProvider.stream);
-      case TaxonomyGroup.educationLevel:
-        return ref.watch(bridgeEducationLevelsProvider.stream);
-      case TaxonomyGroup.healthStatus:
-        return ref.watch(bridgeHealthStatusesProvider.stream);
-      case TaxonomyGroup.housingType:
-        return ref.watch(bridgeHousingTypesProvider.stream);
-      case TaxonomyGroup.housingStatus:
-        return ref.watch(bridgeHousingStatusesProvider.stream);
-      case TaxonomyGroup.governorate:
-        return ref.watch(bridgeGovernoratesProvider.stream);
-      case TaxonomyGroup.relationship:
-        return ref.watch(bridgeRelationshipsProvider.stream);
-      case TaxonomyGroup.section:
-        return ref.watch(bridgeSectionsProvider.stream);
-      default:
-        // للمجموعات الأخرى، نعيد قائمة فارغة
-        // يمكن إضافتها لاحقاً عند الحاجة
-        return Stream.value([]);
-    }
+    final db = ref.watch(sync_providers.databaseProvider);
+    return db.taxonomiesDao.watchByGroup(group.value).map(
+          (list) => list.map(_convertFromDrift).whereType<Taxonomy>().toList(),
+        );
   },
 );
 
@@ -148,7 +132,7 @@ final bridgeTaxonomiesByGroupProvider = StreamProvider.family<List<Taxonomy>, Ta
 final bridgeTaxonomiesByGroupOnceProvider = FutureProvider.family<List<Taxonomy>, TaxonomyGroup>((ref, group) async {
   final db = ref.read(sync_providers.databaseProvider);
   final items = await db.taxonomiesDao.getByGroup(group.value);
-  return items.map(_convertFromDrift).toList();
+  return items.map(_convertFromDrift).whereType<Taxonomy>().toList();
 });
 
 // ═══════════════════════════════════════════════════════════════

@@ -3,6 +3,7 @@ import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../../domain/repositories/taxonomy_repository.dart';
 import '../datasources/taxonomy_local_datasource.dart';
+import '../datasources/taxonomy_local_drift_datasource.dart';
 import '../datasources/taxonomy_remote_datasource.dart';
 import '../models/taxonomy_dto.dart';
 
@@ -204,11 +205,26 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     try {
       final lastSync = await _localDataSource.getLastSyncTime();
 
-      final response = await _remoteDataSource.getAllTaxonomies(since: lastSync);
+      var response = await _remoteDataSource.getAllTaxonomies(since: lastSync);
 
       if (response.data.isNotEmpty) {
-        final taxonomies = response.data.map((d) => d.toEntity()).toList();
-        await _localDataSource.saveTaxonomies(taxonomies);
+        await _saveCanonicalDtos(response.data);
+      }
+
+      // Fallback: if incremental sync leaves most groups empty, force a full sync once.
+      final statsAfterIncremental = await _localDataSource.getStatistics();
+      final nonEmptyGroups = statsAfterIncremental.countByGroup.values.where((count) => count > 0).length;
+      final totalGroups = TaxonomyGroup.values.length;
+      final coverageTooLow = nonEmptyGroups <= 2 || nonEmptyGroups < (totalGroups ~/ 3);
+
+      if (coverageTooLow) {
+        final fullResponse = await _remoteDataSource.getAllTaxonomies(since: null);
+        if (fullResponse.data.isNotEmpty) {
+          await _saveCanonicalDtos(fullResponse.data);
+          response = fullResponse;
+        }
+
+        await _backfillMissingGroups();
       }
 
       final syncTime = response.syncTimestamp ?? DateTime.now();
@@ -237,8 +253,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       final response = await _remoteDataSource.getTaxonomiesByGroup(group);
 
       if (response.data.isNotEmpty) {
-        final taxonomies = response.data.map((d) => d.toEntity()).toList();
-        await _localDataSource.saveTaxonomies(taxonomies);
+        await _saveCanonicalDtos(response.data);
       }
 
       await _localDataSource.updateLastSyncTime(DateTime.now());
@@ -288,8 +303,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       final response = await _remoteDataSource.getAllTaxonomies(since: null);
 
       if (response.data.isNotEmpty) {
-        final taxonomies = response.data.map((d) => d.toEntity()).toList();
-        await _localDataSource.saveTaxonomies(taxonomies);
+        await _saveCanonicalDtos(response.data);
       }
 
       await _localDataSource.updateLastSyncTime(DateTime.now());
@@ -342,5 +356,25 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     // Same as resetAndSync
     final result = await resetAndSync();
     return result.isSuccess ? Success(null) : Failure((result as Failure).error);
+  }
+
+  Future<void> _saveCanonicalDtos(List<TaxonomyDTO> dtos) async {
+    final local = _localDataSource;
+    if (local is! TaxonomyLocalDriftDataSource) {
+      final taxonomies = dtos.map((dto) => dto.toEntity()).toList();
+      await _localDataSource.saveTaxonomies(taxonomies);
+      return;
+    }
+
+    final companions = dtos.map((dto) {
+      final normalizedGroup = TaxonomyGroup.normalizeValue(dto.groupValue) ?? dto.groupValue;
+      return dto.copyWith(groupValue: normalizedGroup).toDbCompanion();
+    }).toList();
+
+    await local.upsertCompanions(companions);
+  }
+
+  Future<void> _backfillMissingGroups() async {
+    return;
   }
 }
