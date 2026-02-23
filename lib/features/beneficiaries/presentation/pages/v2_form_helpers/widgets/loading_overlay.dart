@@ -11,9 +11,7 @@ class LoadingOverlay extends StatelessWidget {
   final String message;
 
   const LoadingOverlay({
-    super.key,
-    required this.isVisible,
-    required this.message,
+    required this.isVisible, required this.message, super.key,
   });
 
   @override
@@ -22,7 +20,6 @@ class LoadingOverlay extends StatelessWidget {
 
     return SlideAndFade(
       show: isVisible,
-      duration: const Duration(milliseconds: 300),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
         child: Container(

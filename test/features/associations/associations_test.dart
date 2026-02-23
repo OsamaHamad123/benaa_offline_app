@@ -15,7 +15,6 @@ void main() {
         bankName: 'بنك بغداد',
         accountNumber: '123456789',
         representativeId: 'rep-id-001',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -44,7 +43,6 @@ void main() {
         bankPhone: '07801234567',
         accountCurrency: 'USD',
         representativeId: 'rep-id-002',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -67,7 +65,6 @@ void main() {
         bankName: 'Bank',
         accountNumber: '12345',
         representativeId: 'rep-id',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -79,7 +76,6 @@ void main() {
         bankName: 'Bank',
         accountNumber: '12345',
         representativeId: 'rep-id',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -98,7 +94,6 @@ void main() {
         bankName: 'Test Bank',
         accountNumber: '12345',
         representativeId: 'rep-id',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -116,7 +111,6 @@ void main() {
         bankName: 'Bank',
         accountNumber: '12345',
         representativeId: 'rep-id',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -134,7 +128,6 @@ void main() {
         bankName: 'Bank',
         accountNumber: '12345',
         representativeId: 'rep-id',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );
@@ -146,7 +139,6 @@ void main() {
         bankName: 'Bank',
         accountNumber: '12345',
         representativeId: 'rep-id',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       );

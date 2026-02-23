@@ -101,7 +101,6 @@ class DatabaseDownloadService {
       // Download ZIP file with resume support, authentication, and retry
       await RetryHelper.retry(
         operationName: 'Database Download',
-        maxAttempts: 3,
         initialDelaySeconds: 3,
         onRetry: (attempt, error) {
           onProgress(
@@ -132,7 +131,7 @@ class DatabaseDownloadService {
                 // Add downloaded length for resume
                 final actualReceived = received + downloadedLength;
                 final actualTotal = total + downloadedLength;
-                final percentage = (actualReceived / actualTotal * 100);
+                final percentage = actualReceived / actualTotal * 100;
 
                 // Calculate speed
                 final now = DateTime.now();

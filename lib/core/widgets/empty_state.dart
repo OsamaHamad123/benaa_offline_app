@@ -10,10 +10,7 @@ class EmptyState extends StatelessWidget {
   final Color? color;
 
   const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.description,
+    required this.icon, required this.title, required this.description, super.key,
     this.action,
     this.color,
   });

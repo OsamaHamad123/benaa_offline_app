@@ -66,7 +66,7 @@ class SkeletonLoader {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                textLine(width: double.infinity, height: 16),
+                textLine(width: double.infinity),
                 SizedBox(height: 8.h),
                 textLine(width: 200.w, height: 12),
               ],
@@ -134,8 +134,7 @@ class ShimmerWrapper extends StatelessWidget {
   final Color? highlightColor;
 
   const ShimmerWrapper({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.baseColor,
     this.highlightColor,
   });
@@ -149,7 +148,6 @@ class ShimmerWrapper extends StatelessWidget {
           theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
       highlightColor:
           highlightColor ?? theme.colorScheme.surface.withOpacity(0.8),
-      period: const Duration(milliseconds: 1500),
       child: child,
     );
   }

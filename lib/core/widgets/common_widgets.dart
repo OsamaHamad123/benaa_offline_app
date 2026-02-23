@@ -23,10 +23,7 @@ class SectionCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const SectionCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.child,
+    required this.title, required this.icon, required this.child, super.key,
     this.color,
     this.padding,
   });
@@ -92,9 +89,7 @@ class InfoRow extends StatelessWidget {
   final IconData? icon;
 
   const InfoRow({
-    super.key,
-    required this.label,
-    required this.value,
+    required this.label, required this.value, super.key,
     this.icon,
   });
 
@@ -140,9 +135,7 @@ class StatusBadge extends StatelessWidget {
   final bool isGlowing;
 
   const StatusBadge({
-    super.key,
-    required this.label,
-    required this.color,
+    required this.label, required this.color, super.key,
     this.icon,
     this.isGlowing = false,
   });
@@ -195,10 +188,7 @@ class EmptyStateWidget extends StatelessWidget {
   final Widget? action;
 
   const EmptyStateWidget({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
+    required this.icon, required this.title, required this.message, super.key,
     this.action,
   });
 
@@ -278,11 +268,7 @@ class StatCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const StatCard({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
+    required this.label, required this.value, required this.icon, required this.color, super.key,
     this.onTap,
   });
 
@@ -352,12 +338,7 @@ class ActionButtonCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const ActionButtonCard({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
+    required this.title, required this.subtitle, required this.icon, required this.color, required this.onTap, super.key,
   });
 
   @override
@@ -484,7 +465,6 @@ void showErrorSnackBar(BuildContext context, String message) {
       backgroundColor: Colors.red,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
-      duration: const Duration(seconds: 4),
     ),
   );
 }

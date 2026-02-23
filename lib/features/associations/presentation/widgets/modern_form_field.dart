@@ -17,12 +17,9 @@ class ModernFormField extends StatelessWidget {
   final bool required;
 
   const ModernFormField({
-    super.key,
-    required this.controller,
+    required this.controller, required this.labelText, required this.icon, super.key,
     this.focusNode,
-    required this.labelText,
     this.hintText,
-    required this.icon,
     this.keyboardType,
     this.textInputAction,
     this.validator,
@@ -81,14 +78,12 @@ class ModernFormField extends StatelessWidget {
               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               borderSide: BorderSide(
                 color: theme.colorScheme.outline,
-                width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               borderSide: BorderSide(
                 color: theme.colorScheme.outline,
-                width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -102,7 +97,6 @@ class ModernFormField extends StatelessWidget {
               borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               borderSide: BorderSide(
                 color: theme.colorScheme.error,
-                width: 1,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(

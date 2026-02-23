@@ -80,13 +80,9 @@ class AssociationParams {
   final bool isActive;
 
   const AssociationParams({
-    this.id,
-    required this.name,
+    required this.name, required this.phone, required this.bankName, required this.accountNumber, this.id,
     this.shortName,
-    required this.phone,
     this.email,
-    required this.bankName,
-    required this.accountNumber,
     this.swiftCode,
     this.bankPhone,
     this.accountCurrency,

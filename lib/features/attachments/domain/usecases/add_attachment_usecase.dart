@@ -11,8 +11,7 @@ class AddAttachmentUseCase {
 
   Future<Result<Attachment>> execute({
     required String beneficiaryId,
-    String? visitId,
-    required File sourceFile,
+    required File sourceFile, String? visitId,
   }) async {
     return await _repository.addAttachment(
       beneficiaryId: beneficiaryId,

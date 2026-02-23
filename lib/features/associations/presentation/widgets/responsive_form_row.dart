@@ -6,8 +6,7 @@ class ResponsiveFormRow extends StatelessWidget {
   final List<Widget> children;
 
   const ResponsiveFormRow({
-    super.key,
-    required this.children,
+    required this.children, super.key,
   });
 
   @override

@@ -37,9 +37,7 @@ class AutocompleteField<T extends Object> extends StatefulWidget {
   final bool caseSensitive;
 
   const AutocompleteField({
-    super.key,
-    required this.label,
-    required this.suggestions,
+    required this.label, required this.suggestions, super.key,
     this.onSelected,
     this.controller,
     this.displayStringForOption,
@@ -246,8 +244,7 @@ class DistrictAutocomplete extends StatelessWidget {
   final ValueChanged<String>? onSelected;
 
   const DistrictAutocomplete({
-    super.key,
-    required this.controller,
+    required this.controller, super.key,
     this.onSelected,
   });
 
@@ -271,8 +268,7 @@ class SubDistrictAutocomplete extends StatelessWidget {
   final String? parentDistrict;
 
   const SubDistrictAutocomplete({
-    super.key,
-    required this.controller,
+    required this.controller, super.key,
     this.onSelected,
     this.parentDistrict,
   });
@@ -301,8 +297,7 @@ class OrganizationAutocomplete extends StatelessWidget {
   final ValueChanged<String>? onSelected;
 
   const OrganizationAutocomplete({
-    super.key,
-    required this.controller,
+    required this.controller, super.key,
     this.onSelected,
   });
 

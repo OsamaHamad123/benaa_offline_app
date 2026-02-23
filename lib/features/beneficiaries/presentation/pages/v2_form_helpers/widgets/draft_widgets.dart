@@ -31,7 +31,7 @@ class DraftIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.orange.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
+          border: Border.all(color: Colors.orange.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -85,10 +85,7 @@ class ResumeDraftDialog extends StatelessWidget {
   final Function(String draftId) onDelete;
 
   const ResumeDraftDialog({
-    super.key,
-    required this.drafts,
-    required this.onResume,
-    required this.onDelete,
+    required this.drafts, required this.onResume, required this.onDelete, super.key,
   });
 
   @override

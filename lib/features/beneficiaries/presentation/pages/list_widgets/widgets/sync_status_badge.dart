@@ -8,8 +8,7 @@ class SyncStatusBadge extends StatelessWidget {
   final bool showLabel;
 
   const SyncStatusBadge({
-    super.key,
-    required this.syncState,
+    required this.syncState, super.key,
     this.size = 20,
     this.showLabel = false,
   });

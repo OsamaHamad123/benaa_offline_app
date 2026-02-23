@@ -31,8 +31,7 @@ class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   final bool isSelected;
 
   const BeneficiaryCardV2({
-    super.key,
-    required this.beneficiary,
+    required this.beneficiary, super.key,
     this.onTap,
     this.onLongPress,
     this.onDelete,
@@ -169,7 +168,6 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
     return Hero(
       tag: 'beneficiary_avatar_${widget.beneficiary.id}',
       child: CachedAvatar(
-        imageUrl: null, // TODO: Add photo URL when available
         initials: BeneficiaryHelpers.getInitials(widget.beneficiary.fullName),
         color: categoryColor,
         size: rv.isTablet ? 64 : 56,
@@ -191,7 +189,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Row(
           children: [
             Icon(
@@ -199,7 +197,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
               size: rv.isTablet ? 15 : 14,
               color: Colors.grey,
             ),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             Text(
               widget.beneficiary.fileIdNumber ?? 'لا يوجد',
               style: TextStyle(
@@ -218,7 +216,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
     return Column(
       children: [
         SyncStatusBadge(syncState: widget.beneficiary.syncState),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         _QuickActionsButton(
           beneficiary: widget.beneficiary,
           onDelete: widget.onDelete,
@@ -291,7 +289,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
             size: rv.isTablet ? 18 : 16,
             color: Colors.orange.shade700,
           ),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           Text(
             'بانتظار المزامنة',
             style: TextStyle(
@@ -378,7 +376,7 @@ class _QuickActionsButton extends StatelessWidget {
                 color: Colors.red,
               ),
               SizedBox(width: rv.spacing),
-              Text('حذف', style: TextStyle(color: Colors.red)),
+              const Text('حذف', style: TextStyle(color: Colors.red)),
             ],
           ),
         ),

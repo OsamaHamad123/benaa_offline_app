@@ -14,10 +14,7 @@ class BeneficiaryTabBar extends StatelessWidget {
   final Map<int, double> tabCompletionPercentages;
 
   const BeneficiaryTabBar({
-    super.key,
-    required this.controller,
-    required this.tabErrorCounts,
-    required this.tabCompletionPercentages,
+    required this.controller, required this.tabErrorCounts, required this.tabCompletionPercentages, super.key,
   });
 
   @override

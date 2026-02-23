@@ -8,8 +8,7 @@ class CardEntranceAnimation extends StatefulWidget {
   final Duration duration;
 
   const CardEntranceAnimation({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.index = 0,
     this.delay = const Duration(milliseconds: 50),
     this.duration = const Duration(milliseconds: 400),
@@ -87,9 +86,7 @@ class StaggeredListAnimation extends StatelessWidget {
   final Duration duration;
 
   const StaggeredListAnimation({
-    super.key,
-    required this.itemCount,
-    required this.itemBuilder,
+    required this.itemCount, required this.itemBuilder, super.key,
     this.delay = const Duration(milliseconds: 50),
     this.duration = const Duration(milliseconds: 400),
   });
@@ -117,8 +114,7 @@ class ScaleFadeAnimation extends StatefulWidget {
   final Duration duration;
 
   const ScaleFadeAnimation({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.delay = Duration.zero,
     this.duration = const Duration(milliseconds: 300),
   });

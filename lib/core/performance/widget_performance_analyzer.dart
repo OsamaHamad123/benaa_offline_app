@@ -164,9 +164,7 @@ class PerformanceTrackedWidget extends StatelessWidget {
   final Widget child;
 
   const PerformanceTrackedWidget({
-    super.key,
-    required this.name,
-    required this.child,
+    required this.name, required this.child, super.key,
   });
 
   @override

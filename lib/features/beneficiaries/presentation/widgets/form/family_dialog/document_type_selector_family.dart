@@ -9,9 +9,7 @@ class DocumentTypeSelector extends StatelessWidget {
   final ValueChanged<int> onTypeSelected;
 
   const DocumentTypeSelector({
-    super.key,
-    required this.selectedType,
-    required this.onTypeSelected,
+    required this.selectedType, required this.onTypeSelected, super.key,
   });
 
   @override

@@ -1,6 +1,7 @@
 ///
 /// ملف واحد لتصدير جميع widgets الخاصة بنوافذ أفراد الأسرة
 /// الآن كل widget في ملف منفصل لسهولة الصيانة والقراءة
+library;
 
 export 'name_fields_section.dart';
 export 'national_id_field.dart';

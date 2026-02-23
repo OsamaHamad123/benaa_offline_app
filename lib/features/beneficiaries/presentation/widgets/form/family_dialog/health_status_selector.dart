@@ -9,9 +9,7 @@ class HealthStatusSelector extends StatelessWidget {
   final ValueChanged<int> onStatusSelected;
 
   const HealthStatusSelector({
-    super.key,
-    required this.selectedStatus,
-    required this.onStatusSelected,
+    required this.selectedStatus, required this.onStatusSelected, super.key,
   });
 
   @override

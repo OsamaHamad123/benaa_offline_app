@@ -15,10 +15,8 @@ class FamilyMembersForm extends ConsumerStatefulWidget {
   final VoidCallback onSaved;
 
   const FamilyMembersForm({
-    super.key,
-    required this.beneficiaryId,
+    required this.beneficiaryId, required this.onSaved, super.key,
     this.existingMember,
-    required this.onSaved,
   });
 
   @override
@@ -506,7 +504,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
 
             // الجنس
             DropdownButtonFormField<int>(
-              value: _selectedGender,
+              initialValue: _selectedGender,
               decoration: const InputDecoration(
                 labelText: 'الجنس *',
                 border: OutlineInputBorder(),
@@ -532,7 +530,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
 
             // الحالة الصحية
             DropdownButtonFormField<int>(
-              value: _selectedHealthStatus,
+              initialValue: _selectedHealthStatus,
               decoration: const InputDecoration(
                 labelText: 'الحالة الصحية *',
                 border: OutlineInputBorder(),
@@ -562,7 +560,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
 
             // حالة الكفالة
             DropdownButtonFormField<int>(
-              value: _selectedSponsorshipStatus,
+              initialValue: _selectedSponsorshipStatus,
               decoration: const InputDecoration(
                 labelText: 'حالة الكفالة',
                 border: OutlineInputBorder(),
@@ -581,7 +579,7 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
 
             // نوع الكفالة
             DropdownButtonFormField<int>(
-              value: _selectedSponsorshipType,
+              initialValue: _selectedSponsorshipType,
               decoration: const InputDecoration(
                 labelText: 'نوع الكفالة',
                 border: OutlineInputBorder(),

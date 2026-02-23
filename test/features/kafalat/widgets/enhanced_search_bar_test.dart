@@ -73,7 +73,6 @@ void main() {
 
     testWidgets('should clear text when clear button is tapped', (tester) async {
       // Arrange
-      var searchCalled = false;
       String? searchValue;
 
       // Act
@@ -82,7 +81,6 @@ void main() {
           EnhancedSearchBar(
             controller: controller,
             onSearch: (v) {
-              searchCalled = true;
               searchValue = v;
             },
           ),

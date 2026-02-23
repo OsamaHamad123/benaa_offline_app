@@ -321,7 +321,7 @@ class DailyPerformanceSection extends ConsumerWidget {
                   Container(
                     width: effectiveCircleSize,
                     height: effectiveCircleSize,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.background,
                     ),

@@ -31,10 +31,7 @@ class PersonInfoCard extends StatelessWidget {
   static final _dividerColor = Colors.blue.withOpacity(0.2);
 
   const PersonInfoCard({
-    super.key,
-    required this.person,
-    required this.onCopy,
-    required this.onAddAsBeneficiary,
+    required this.person, required this.onCopy, required this.onAddAsBeneficiary, super.key,
     this.expanded = false,
     this.searchQuery,
   });
@@ -63,8 +60,6 @@ class PersonInfoCard extends StatelessWidget {
             onAddAsBeneficiary();
           },
           borderRadius: BorderRadius.circular(16),
-          // ⚡ تحسين الأداء - تقليل rebuild area
-          excludeFromSemantics: false,
           child: Padding(
             padding: rv.padding,
             child: Column(
@@ -159,7 +154,7 @@ class PersonInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _dividerColor, width: 1),
+        border: Border.all(color: _dividerColor),
       ),
       child: Row(
         children: [
@@ -184,7 +179,7 @@ class PersonInfoCard extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   person.nationalId,
                   style: TextStyle(
@@ -231,7 +226,7 @@ class PersonInfoCard extends StatelessWidget {
                 Colors.blue,
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildSmallDetail(
                 Icons.family_restroom,
@@ -242,7 +237,7 @@ class PersonInfoCard extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 8),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
@@ -253,7 +248,7 @@ class PersonInfoCard extends StatelessWidget {
                 Colors.green,
               ),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: _buildSmallDetail(
                 Icons.supervisor_account,
@@ -284,7 +279,7 @@ class PersonInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor, width: 1),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,7 +336,7 @@ class PersonInfoCard extends StatelessWidget {
             color: Colors.grey.shade700,
           ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         if (hasMotherName)
           PersonDetailRow(
             icon: Icons.woman,
@@ -349,7 +344,7 @@ class PersonInfoCard extends StatelessWidget {
             value: person.motherName!,
             iconColor: Colors.pink,
           ),
-        if (hasMotherName && hasBirthDate) SizedBox(height: 8),
+        if (hasMotherName && hasBirthDate) const SizedBox(height: 8),
         if (hasBirthDate)
           PersonDetailRow(
             icon: Icons.cake,
@@ -371,18 +366,18 @@ class PersonInfoCard extends StatelessWidget {
               HapticPatterns.selection();
               _copyToClipboard(context);
             },
-            icon: Icon(Icons.copy, size: 18),
+            icon: const Icon(Icons.copy, size: 18),
             label: Text('نسخ', style: TextStyle(fontSize: rv.fontSize)),
             style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              side: BorderSide(color: Colors.blue, width: 1.5),
+              side: const BorderSide(color: Colors.blue, width: 1.5),
             ),
           ),
         ),
-        SizedBox(width: 12),
+        const SizedBox(width: 12),
         Expanded(
           flex: 2,
           child: ElevatedButton.icon(
@@ -390,7 +385,7 @@ class PersonInfoCard extends StatelessWidget {
               HapticPatterns.submit(); // ✨ تأثير اهتزازي عند الضغط
               onAddAsBeneficiary();
             },
-            icon: Icon(Icons.person_add_rounded, size: 18),
+            icon: const Icon(Icons.person_add_rounded, size: 18),
             label: Text(
               'إضافة كمستفيد',
               style: TextStyle(
@@ -399,7 +394,7 @@ class PersonInfoCard extends StatelessWidget {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(vertical: 14),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               backgroundColor: Colors.blue.shade700,
               foregroundColor: Colors.white,
               elevation: 3,

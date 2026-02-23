@@ -122,8 +122,7 @@ class CommonDialogs {
   /// ❗ Dialog خطأ
   static Future<void> showError(
     BuildContext context, {
-    String title = 'خطأ',
-    required String message,
+    required String message, String title = 'خطأ',
   }) {
     return showDialog(
       context: context,

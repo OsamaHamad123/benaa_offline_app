@@ -118,7 +118,6 @@ extension ContextExtensions on BuildContext {
         ),
         backgroundColor: Colors.red[700],
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
         action: SnackBarAction(
           label: 'حسناً',
           textColor: Colors.white,

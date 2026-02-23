@@ -27,7 +27,7 @@ void main() {
         controllers: controllers,
         beneficiaryId: null,
         fileNo: 'F-100',
-        createdAt: DateTime(2026, 1, 1),
+        createdAt: DateTime(2026),
       );
 
       expect(entity.gender, Gender.male);

@@ -31,24 +31,23 @@ class TaxonomyDTO {
     required this.group,
     required this.code,
     required this.label,
-    this.parentId,
     required this.sortOrder,
     required this.isActive,
     required this.updatedAt,
+    this.parentId,
   });
 
   /// From JSON (من API)
-  factory TaxonomyDTO.fromJson(Map<String, dynamic> json) =>
-      _$TaxonomyDTOFromJson(json);
+  factory TaxonomyDTO.fromJson(Map<String, dynamic> json) => _$TaxonomyDTOFromJson(json);
 
   /// To JSON (للـ API)
   Map<String, dynamic> toJson() => _$TaxonomyDTOToJson(this);
 
   /// Convert to Drift Companion (للحفظ في Database)
-  TaxonomiesCompanion toCompanion() {
+  TaxonomiesCompanion toCompanion({String? normalizedGroup}) {
     return TaxonomiesCompanion.insert(
       id: id,
-      group: group,
+      group: normalizedGroup ?? group,
       code: code,
       label: label,
       updatedAt: updatedAt,
@@ -77,10 +76,7 @@ class TaxonomyDTO {
 
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is TaxonomyDTO &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
+      identical(this, other) || other is TaxonomyDTO && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

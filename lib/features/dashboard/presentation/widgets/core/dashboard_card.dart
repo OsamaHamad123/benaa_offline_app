@@ -20,8 +20,7 @@ class DashboardCard extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const DashboardCard({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.accentColor,
     this.onTap,
     this.padding,
@@ -76,11 +75,7 @@ class StatDashboardCard extends StatelessWidget {
   final Widget? trailing;
 
   const StatDashboardCard({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
+    required this.label, required this.value, required this.icon, required this.color, super.key,
     this.onTap,
     this.trailing,
   });

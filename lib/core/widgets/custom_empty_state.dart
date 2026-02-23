@@ -27,9 +27,7 @@ class CustomEmptyState extends StatelessWidget {
   final double? iconSize;
 
   const CustomEmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
+    required this.icon, required this.title, super.key,
     this.message,
     this.onAction,
     this.actionLabel,
@@ -112,7 +110,7 @@ class EmptySearchState extends StatelessWidget {
   final String query;
   final VoidCallback? onClearSearch;
 
-  const EmptySearchState({super.key, required this.query, this.onClearSearch});
+  const EmptySearchState({required this.query, super.key, this.onClearSearch});
 
   @override
   Widget build(BuildContext context) {
@@ -134,8 +132,7 @@ class EmptyListState extends StatelessWidget {
   final VoidCallback? onAdd;
 
   const EmptyListState({
-    super.key,
-    required this.itemName,
+    required this.itemName, super.key,
     this.icon,
     this.onAdd,
   });

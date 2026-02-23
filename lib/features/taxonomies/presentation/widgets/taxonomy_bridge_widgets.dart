@@ -51,9 +51,12 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
   /// التزيين
   final InputDecoration? decoration;
 
+  /// خيارات جاهزة مسبقاً لتقليل الأحمال (عند توفرها لا يتم الاشتراك في provider)
+  final List<Taxonomy>? preloadedOptions;
+
   const TaxonomyBridgeDropdown({
-    super.key,
     required this.group,
+    super.key,
     this.selectedCode,
     this.selectedId,
     this.onCodeChanged,
@@ -65,10 +68,16 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
     this.enabled = true,
     this.errorText,
     this.decoration,
+    this.preloadedOptions,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final preloaded = preloadedOptions;
+    if (preloaded != null) {
+      return _buildDropdown(context, preloaded);
+    }
+
     final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(group));
 
     return taxonomiesAsync.when(
@@ -100,7 +109,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
     }
 
     return DropdownButtonFormField<String>(
-      value: selectedTaxonomy?.code,
+      initialValue: selectedTaxonomy?.code,
       decoration: decoration ??
           InputDecoration(
             labelText: labelText ?? group.arabicName,
@@ -231,6 +240,14 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
         return Icons.business_rounded;
       case TaxonomyGroup.sponsorshipType:
         return Icons.volunteer_activism_rounded;
+      case TaxonomyGroup.documentType:
+        return Icons.description_rounded;
+      case TaxonomyGroup.bankName:
+        return Icons.account_balance_rounded;
+      case TaxonomyGroup.currency:
+        return Icons.currency_exchange_rounded;
+      case TaxonomyGroup.deathReason:
+        return Icons.heart_broken_rounded;
       case TaxonomyGroup.gender:
         return Icons.wc_rounded;
       case TaxonomyGroup.visitType:
@@ -268,9 +285,9 @@ class TaxonomyLabel extends ConsumerWidget {
   final String? placeholder;
 
   const TaxonomyLabel({
-    super.key,
     required this.group,
     required this.code,
+    super.key,
     this.style,
     this.placeholder,
   });
@@ -308,9 +325,9 @@ class TaxonomyBridgeChip extends ConsumerWidget {
   final Color? backgroundColor;
 
   const TaxonomyBridgeChip({
-    super.key,
     required this.group,
     required this.code,
+    super.key,
     this.onDeleted,
     this.backgroundColor,
   });
@@ -330,7 +347,7 @@ class TaxonomyBridgeChip extends ConsumerWidget {
         return Chip(
           label: Text(taxonomy.label),
           backgroundColor:
-              backgroundColor ?? (taxonomy.color != null ? _parseColor(taxonomy.color!).withOpacity(0.2) : null),
+              backgroundColor ?? (taxonomy.color != null ? _parseColor(taxonomy.color!).withValues(alpha: 0.2) : null),
           deleteIcon: onDeleted != null ? Icon(Icons.close, size: 16.sp) : null,
           onDeleted: onDeleted,
         );

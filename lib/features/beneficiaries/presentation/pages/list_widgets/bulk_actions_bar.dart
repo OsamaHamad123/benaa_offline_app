@@ -151,7 +151,6 @@ class BulkActionsBar extends ConsumerWidget {
                 textColor: Colors.white,
                 onPressed: () => _showDeleteConfirmation(context, ref),
               ),
-              duration: const Duration(seconds: 4),
             ),
           );
         }

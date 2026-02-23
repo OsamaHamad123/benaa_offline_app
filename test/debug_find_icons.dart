@@ -7,10 +7,10 @@ import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/list
 void main() {
   testWidgets('debug icons', (tester) async {
     await tester.pumpWidget(
-      ProviderScope(
+      const ProviderScope(
         child: ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+          designSize: Size(375, 812),
+          child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
         ),
       ),
     );

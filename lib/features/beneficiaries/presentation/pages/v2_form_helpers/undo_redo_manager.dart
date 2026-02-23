@@ -82,10 +82,7 @@ class UndoRedoButtons extends StatelessWidget {
   final VoidCallback onRedo;
 
   const UndoRedoButtons({
-    super.key,
-    required this.undoRedoManager,
-    required this.onUndo,
-    required this.onRedo,
+    required this.undoRedoManager, required this.onUndo, required this.onRedo, super.key,
   });
 
   @override

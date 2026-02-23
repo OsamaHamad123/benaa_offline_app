@@ -29,7 +29,6 @@ class V2FormActions extends StatelessWidget {
         border: Border(
           top: BorderSide(
             color: colorScheme.outlineVariant.withOpacity(0.5),
-            width: 1,
           ),
         ),
       ),

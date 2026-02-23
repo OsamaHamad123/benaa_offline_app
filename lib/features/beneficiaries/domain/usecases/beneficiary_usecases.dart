@@ -10,10 +10,10 @@ class CreateBeneficiaryUseCase {
   Future<Result<Beneficiary>> execute(Beneficiary beneficiary) async {
     // Business validation
     if (beneficiary.fullName.trim().isEmpty) {
-      return Failure(ValidationFailure('الاسم الكامل مطلوب'));
+      return const Failure(ValidationFailure('الاسم الكامل مطلوب'));
     }
     if (beneficiary.nationalId.trim().isEmpty) {
-      return Failure(ValidationFailure('الرقم الوطني مطلوب'));
+      return const Failure(ValidationFailure('الرقم الوطني مطلوب'));
     }
 
     return await repository.create(beneficiary);
@@ -105,7 +105,7 @@ class LoadFromCivilRegistryUseCase {
     // Validate national ID format
     final cleaned = nationalId.replaceAll(RegExp(r'[^\d]'), '');
     if (cleaned.length < 8) {
-      return Failure(ValidationFailure('الرقم الوطني غير صحيح'));
+      return const Failure(ValidationFailure('الرقم الوطني غير صحيح'));
     }
 
     return await repository.loadFromCivilRegistry(cleaned);

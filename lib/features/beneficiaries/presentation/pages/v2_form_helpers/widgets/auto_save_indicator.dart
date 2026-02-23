@@ -8,8 +8,7 @@ class AutoSaveIndicator extends StatefulWidget {
   final bool hasUnsavedChanges;
 
   const AutoSaveIndicator({
-    super.key,
-    required this.isSaving,
+    required this.isSaving, super.key,
     this.lastSaved,
     this.hasUnsavedChanges = false,
   });

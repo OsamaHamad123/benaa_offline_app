@@ -17,13 +17,8 @@ class ModernTextField extends StatelessWidget {
   final bool enabled;
 
   const ModernTextField({
-    super.key,
-    required this.controller,
+    required this.controller, required this.labelText, required this.hintText, required this.icon, required this.iconColor, super.key,
     this.focusNode,
-    required this.labelText,
-    required this.hintText,
-    required this.icon,
-    required this.iconColor,
     this.keyboardType,
     this.textInputAction,
     this.validator,
@@ -176,13 +171,7 @@ class ModernDropdownField<T> extends StatelessWidget {
   final String? Function(T?)? validator;
 
   const ModernDropdownField({
-    super.key,
-    required this.labelText,
-    required this.hintText,
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.items,
+    required this.labelText, required this.hintText, required this.icon, required this.iconColor, required this.value, required this.items, super.key,
     this.onChanged,
     this.validator,
   });
@@ -202,7 +191,7 @@ class ModernDropdownField<T> extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
       ),
       child: DropdownButtonFormField<T>(
-        value: value,
+        initialValue: value,
         items: items,
         onChanged: onChanged,
         validator: validator,
@@ -282,13 +271,7 @@ class ModernSwitchTile extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   const ModernSwitchTile({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.onChanged,
+    required this.title, required this.subtitle, required this.icon, required this.iconColor, required this.value, required this.onChanged, super.key,
   });
 
   @override
@@ -358,7 +341,7 @@ class ModernSwitchTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: iconColor,
+            activeThumbColor: iconColor,
             thumbIcon: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return Icon(Icons.check, color: Colors.white, size: 16.sp);
@@ -380,11 +363,7 @@ class ModernSectionHeader extends StatelessWidget {
   final Color iconColor;
 
   const ModernSectionHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
+    required this.title, required this.subtitle, required this.icon, required this.iconColor, super.key,
   });
 
   @override

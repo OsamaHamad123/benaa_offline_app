@@ -11,9 +11,7 @@ class FormProgressIndicator extends StatelessWidget {
   final Color? backgroundColor;
 
   const FormProgressIndicator({
-    super.key,
-    required this.totalRequiredFields,
-    required this.filledFields,
+    required this.totalRequiredFields, required this.filledFields, super.key,
     this.progressColor,
     this.backgroundColor,
   });

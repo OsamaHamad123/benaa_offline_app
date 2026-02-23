@@ -10,7 +10,7 @@ void main() {
       timestamp: DateTime(2024, 1, 1, 10, 30),
       beneficiaryId: 'ben_123',
       beneficiaryName: 'محمد أحمد',
-      metadata: {'field1': 'value1', 'field2': 'value2'},
+      metadata: const {'field1': 'value1', 'field2': 'value2'},
     );
 
     test('should be a valid Activity instance', () {
@@ -31,14 +31,14 @@ void main() {
         id: '1',
         type: 'beneficiary',
         description: 'تم إضافة مستفيد',
-        timestamp: DateTime(2024, 1, 1),
+        timestamp: DateTime(2024),
       );
 
       final activity2 = Activity(
         id: '1',
         type: 'beneficiary',
         description: 'تم إضافة مستفيد',
-        timestamp: DateTime(2024, 1, 1),
+        timestamp: DateTime(2024),
       );
 
       final activity3 = Activity(
@@ -59,7 +59,7 @@ void main() {
         id: '1',
         type: 'sync',
         description: 'تم المزامنة',
-        timestamp: DateTime(2024, 1, 1),
+        timestamp: DateTime(2024),
       );
 
       // assert
@@ -76,20 +76,20 @@ void main() {
         id: '1',
         type: 'beneficiary',
         description: 'تم إضافة مستفيد',
-        timestamp: DateTime(2024, 1, 1),
+        timestamp: DateTime(2024),
         beneficiaryId: 'ben_123',
         beneficiaryName: 'محمد',
-        metadata: {'key': 'value'},
+        metadata: const {'key': 'value'},
       );
 
       final activity2 = Activity(
         id: '1',
         type: 'beneficiary',
         description: 'تم إضافة مستفيد',
-        timestamp: DateTime(2024, 1, 1),
+        timestamp: DateTime(2024),
         beneficiaryId: 'ben_123',
         beneficiaryName: 'أحمد', // Different name
-        metadata: {'key': 'value'},
+        metadata: const {'key': 'value'},
       );
 
       // assert - should be different because beneficiaryName differs

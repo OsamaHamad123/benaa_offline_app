@@ -25,22 +25,13 @@ class V2AdditionalInfoTab extends StatelessWidget {
   final Function(String?) onBeneficiaryStatusChanged;
 
   const V2AdditionalInfoTab({
-    super.key,
+    required this.onEducationLevelChanged, required this.onEmploymentStatusChanged, required this.hasDisability, required this.onDisabilityChanged, required this.onHealthStatusChanged, required this.chronicDiseasesController, required this.onHousingStatusChanged, required this.onHousingTypeChanged, required this.onBeneficiaryStatusChanged, super.key,
     this.selectedEducationLevel,
-    required this.onEducationLevelChanged,
     this.selectedEmploymentStatus,
-    required this.onEmploymentStatusChanged,
-    required this.hasDisability,
-    required this.onDisabilityChanged,
     this.selectedHealthStatus,
-    required this.onHealthStatusChanged,
-    required this.chronicDiseasesController,
     this.selectedHousingStatus,
-    required this.onHousingStatusChanged,
     this.selectedHousingType,
-    required this.onHousingTypeChanged,
     this.selectedBeneficiaryStatus,
-    required this.onBeneficiaryStatusChanged,
   });
 
   @override

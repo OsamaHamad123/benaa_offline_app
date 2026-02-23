@@ -11,8 +11,7 @@ class OrganizedAttachmentsCard extends StatelessWidget {
   final ValueChanged<PendingAttachment>? onDelete;
 
   const OrganizedAttachmentsCard({
-    super.key,
-    required this.attachments,
+    required this.attachments, super.key,
     this.onDelete,
   });
 
@@ -328,7 +327,6 @@ class _EmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         side: BorderSide(
           color: colorScheme.outlineVariant,
-          style: BorderStyle.solid,
         ),
       ),
       child: Padding(

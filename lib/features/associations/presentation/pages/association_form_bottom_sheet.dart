@@ -852,7 +852,7 @@ class _CurrencyDropdown extends StatelessWidget {
       valueListenable: currencyNotifier,
       builder: (context, selectedCurrency, _) {
         return DropdownButtonFormField<String>(
-          value: selectedCurrency,
+          initialValue: selectedCurrency,
           decoration: InputDecoration(
             labelText: 'عملة الحساب *',
             prefixIcon: Icon(Icons.attach_money, size: 20.r),

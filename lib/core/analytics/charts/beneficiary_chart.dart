@@ -9,8 +9,7 @@ class BeneficiaryChart extends StatelessWidget {
   final bool showVisits;
 
   const BeneficiaryChart({
-    super.key,
-    required this.monthlyData,
+    required this.monthlyData, super.key,
     this.showVisits = false,
   });
 
@@ -53,8 +52,6 @@ class BeneficiaryChart extends StatelessWidget {
 
     return LineChartData(
       gridData: FlGridData(
-        show: true,
-        drawVerticalLine: true,
         horizontalInterval: 5,
         getDrawingHorizontalLine: (value) {
           return FlLine(
@@ -103,10 +100,10 @@ class BeneficiaryChart extends StatelessWidget {
           ),
         ),
         topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
+          
         ),
         rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
+          
         ),
       ),
       borderData: FlBorderData(
@@ -123,7 +120,6 @@ class BeneficiaryChart extends StatelessWidget {
           barWidth: 3,
           isStrokeCapRound: true,
           dotData: FlDotData(
-            show: true,
             getDotPainter: (spot, percent, barData, index) {
               return FlDotCirclePainter(
                 radius: 4,
@@ -146,7 +142,7 @@ class BeneficiaryChart extends StatelessWidget {
               final monthName = monthlyData[spot.x.toInt()]['monthName'];
               return LineTooltipItem(
                 '$monthName\n${spot.y.toInt()}',
-                TextStyle(
+                const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

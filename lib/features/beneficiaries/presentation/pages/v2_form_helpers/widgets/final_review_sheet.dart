@@ -12,11 +12,11 @@ class FinalReviewSheet extends StatelessWidget {
   final VoidCallback onEdit;
 
   const FinalReviewSheet({
-    super.key,
     required this.formControllers,
     required this.scrollController,
     required this.onConfirm,
     required this.onEdit,
+    super.key,
   });
 
   @override
@@ -33,7 +33,6 @@ class FinalReviewSheet extends StatelessWidget {
             border: Border(
               bottom: BorderSide(
                 color: theme.colorScheme.outlineVariant,
-                width: 1,
               ),
             ),
           ),
@@ -99,15 +98,21 @@ class FinalReviewSheet extends StatelessWidget {
                   'الرقم الوطني',
                   formControllers.nationalIdController.text,
                 ),
+                _buildItem('رقم الملف', formControllers.fileNumberController.text),
                 _buildItem(
                   'تاريخ الميلاد',
                   formControllers.birthDateController.text,
                 ),
                 _buildItem('الجنس', formControllers.selectedGender ?? '---'),
+                _buildItem('فئة المستفيد', formControllers.selectedCategory ?? '---'),
+                _buildItem('القسم', formControllers.selectedSection ?? '---'),
+                _buildItem('حالة الطلب', formControllers.selectedRequestStatus ?? '---'),
+                _buildItem('نوع المساعدة', formControllers.selectedAssistanceType ?? '---'),
                 _buildItem(
                   'الحالة الاجتماعية',
                   formControllers.selectedMaritalStatus ?? '---',
                 ),
+                _buildItem('صلة القرابة', formControllers.selectedRelationship ?? '---'),
               ]),
 
               SizedBox(height: 16.h),
@@ -139,6 +144,24 @@ class FinalReviewSheet extends StatelessWidget {
                   formControllers.altPhoneController.text,
                 ),
                 _buildItem('العنوان', formControllers.addressController.text),
+                _buildItem('الحي', formControllers.neighborhoodController.text),
+                _buildItem('المدينة', formControllers.selectedCity ?? '---'),
+                _buildItem('المحافظة', formControllers.selectedProvince ?? '---'),
+              ]),
+
+              SizedBox(height: 16.h),
+
+              _buildSection(context, 'حالات إضافية', Icons.fact_check_rounded, [
+                _buildItem('المستوى التعليمي', formControllers.selectedEducationLevel ?? '---'),
+                _buildItem('حالة التوظيف', formControllers.selectedEmploymentStatus ?? '---'),
+                _buildItem('الحالة الصحية', formControllers.selectedHealthStatus ?? '---'),
+                _buildItem('حالة النزوح', formControllers.selectedDisplacementStatus ?? '---'),
+                _buildItem('حالة السكن', formControllers.selectedHousingStatus ?? '---'),
+                _buildItem('نوع السكن', formControllers.selectedHousingType ?? '---'),
+                _buildItem('نوع الإعاقة', formControllers.selectedDisabilityType ?? '---'),
+                _buildItem('مصدر الدخل', formControllers.selectedIncomeSource ?? '---'),
+                _buildItem('الأمراض المزمنة', formControllers.chronicDiseasesController.text),
+                _buildItem('عدد ذوي الاحتياجات الخاصة', formControllers.specialNeedsCountController.text),
               ]),
 
               SizedBox(height: 16.h),
@@ -267,8 +290,7 @@ class FinalReviewSheet extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.h),
       child: Row(
-        crossAxisAlignment:
-            isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 120.w,

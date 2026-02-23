@@ -15,8 +15,7 @@ class BiometricAuthButton extends ConsumerStatefulWidget {
   final bool showLabel;
 
   const BiometricAuthButton({
-    super.key,
-    required this.onSuccess,
+    required this.onSuccess, super.key,
     this.onFailure,
     this.customMessage,
     this.showLabel = true,
@@ -208,10 +207,10 @@ class _BiometricSettingsTileState extends ConsumerState<BiometricSettingsTile> {
         final capabilities = snapshot.data!;
 
         if (!capabilities.hasAnyBiometric) {
-          return ListTile(
-            leading: const Icon(Icons.fingerprint, color: Colors.grey),
-            title: const Text('المصادقة البيومترية'),
-            subtitle: const Text('غير متوفرة على هذا الجهاز'),
+          return const ListTile(
+            leading: Icon(Icons.fingerprint, color: Colors.grey),
+            title: Text('المصادقة البيومترية'),
+            subtitle: Text('غير متوفرة على هذا الجهاز'),
             enabled: false,
           );
         }

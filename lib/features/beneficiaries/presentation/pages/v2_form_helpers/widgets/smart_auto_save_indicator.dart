@@ -8,8 +8,7 @@ class SmartAutoSaveIndicator extends StatefulWidget {
   final bool hasUnsavedChanges;
 
   const SmartAutoSaveIndicator({
-    super.key,
-    required this.isSaving,
+    required this.isSaving, super.key,
     this.lastSaved,
     this.hasUnsavedChanges = false,
   });
@@ -125,7 +124,7 @@ class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator>
       decoration: BoxDecoration(
         color: Colors.green.shade50,
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.green.shade200, width: 1),
+        border: Border.all(color: Colors.green.shade200),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -155,7 +154,7 @@ class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator>
       decoration: BoxDecoration(
         color: Colors.orange.shade50,
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.orange.shade200, width: 1),
+        border: Border.all(color: Colors.orange.shade200),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -189,7 +188,7 @@ class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator>
 class AutoSaveProgressBar extends StatelessWidget {
   final double progress; // 0.0 to 1.0
 
-  const AutoSaveProgressBar({super.key, required this.progress});
+  const AutoSaveProgressBar({required this.progress, super.key});
 
   @override
   Widget build(BuildContext context) {

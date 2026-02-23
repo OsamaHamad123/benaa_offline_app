@@ -14,9 +14,8 @@ class ApiClientWithMock {
   final bool _useMock;
 
   ApiClientWithMock({
-    ApiClient? realClient,
+    required bool useMock, ApiClient? realClient,
     MockApiServer? mockServer,
-    required bool useMock,
   })  : _realClient = realClient,
         _mockServer = mockServer,
         _useMock = useMock;

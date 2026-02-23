@@ -26,19 +26,7 @@ class FormAppBarWidget extends StatelessWidget implements PreferredSizeWidget {
   final PreferredSizeWidget? bottom;
 
   const FormAppBarWidget({
-    super.key,
-    required this.beneficiaryId,
-    required this.isSaving,
-    required this.lastSaved,
-    required this.hasUnsavedChanges,
-    required this.showStatistics,
-    required this.showFieldHelpers,
-    required this.onToggleStatistics,
-    required this.onToggleFieldHelpers,
-    required this.onViewDrafts,
-    required this.onSaveDraft,
-    required this.onShowHelp,
-    required this.onDelete,
+    required this.beneficiaryId, required this.isSaving, required this.lastSaved, required this.hasUnsavedChanges, required this.showStatistics, required this.showFieldHelpers, required this.onToggleStatistics, required this.onToggleFieldHelpers, required this.onViewDrafts, required this.onSaveDraft, required this.onShowHelp, required this.onDelete, super.key,
     this.onUndo,
     this.onRedo,
     this.bottom,

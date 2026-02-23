@@ -24,7 +24,7 @@ void main() {
         await tester.pumpWidget(
           appWrapper(
             testDb: testDb,
-            child: SizedBox(
+            child: const SizedBox(
               height: 800,
               child: MaterialApp(
                 home: Scaffold(body: GeographicDistributionSection()),
@@ -64,10 +64,10 @@ void main() {
       final total = cityData.values.fold(0, (a, b) => a + b);
 
       expect(total, 100);
-      expect((cityData['دمشق']! / total * 100), 50.0);
-      expect((cityData['حلب']! / total * 100), 30.0);
-      expect((cityData['حمص']! / total * 100), 15.0);
-      expect((cityData['حماة']! / total * 100), 5.0);
+      expect(cityData['دمشق']! / total * 100, 50.0);
+      expect(cityData['حلب']! / total * 100, 30.0);
+      expect(cityData['حمص']! / total * 100, 15.0);
+      expect(cityData['حماة']! / total * 100, 5.0);
     });
 
     test('Geographic distribution sorting by count', () {
@@ -105,20 +105,20 @@ void main() {
     });
 
     test('Bar height calculation for visualization', () {
-      final maxCount = 100;
-      final maxBarHeight = 150.0;
+      const maxCount = 100;
+      const maxBarHeight = 150.0;
 
       // Test different values
-      final count1 = 100;
-      final height1 = (count1 / maxCount) * maxBarHeight;
+      const count1 = 100;
+      const height1 = (count1 / maxCount) * maxBarHeight;
       expect(height1, 150.0);
 
-      final count2 = 50;
-      final height2 = (count2 / maxCount) * maxBarHeight;
+      const count2 = 50;
+      const height2 = (count2 / maxCount) * maxBarHeight;
       expect(height2, 75.0);
 
-      final count3 = 25;
-      final height3 = (count3 / maxCount) * maxBarHeight;
+      const count3 = 25;
+      const height3 = (count3 / maxCount) * maxBarHeight;
       expect(height3, 37.5);
     });
   });

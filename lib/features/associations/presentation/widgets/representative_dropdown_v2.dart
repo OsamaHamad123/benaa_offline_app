@@ -19,11 +19,7 @@ class RepresentativeDropdownV2 extends StatefulWidget {
   final VoidCallback onAddNew;
 
   const RepresentativeDropdownV2({
-    super.key,
-    required this.selectedId,
-    required this.onChanged,
-    required this.representatives,
-    required this.onAddNew,
+    required this.selectedId, required this.onChanged, required this.representatives, required this.onAddNew, super.key,
   });
 
   @override
@@ -69,7 +65,7 @@ class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
       children: [
         // Dropdown
         DropdownButtonFormField<String?>(
-          value: widget.selectedId,
+          initialValue: widget.selectedId,
           decoration: InputDecoration(
             labelText: 'المندوب *',
             prefixIcon: Icon(Icons.person, size: 20.r),
@@ -120,7 +116,7 @@ class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
 class AddRepresentativeBottomSheet extends StatefulWidget {
   final Function(dynamic) onAdded;
 
-  const AddRepresentativeBottomSheet({super.key, required this.onAdded});
+  const AddRepresentativeBottomSheet({required this.onAdded, super.key});
 
   @override
   State<AddRepresentativeBottomSheet> createState() => _AddRepresentativeBottomSheetState();

@@ -18,7 +18,6 @@ final dataCacheProvider = Provider<CacheManager<String, dynamic>>((ref) {
 // Cache للمستفيدين
 final beneficiariesCacheProvider = Provider<CacheManager<int, dynamic>>((ref) {
   return CacheManager(
-    maxSize: 100,
     ttl: const Duration(minutes: 30),
   );
 });
@@ -34,7 +33,6 @@ final associationsCacheProvider = Provider<CacheManager<int, dynamic>>((ref) {
 // Cache للكفالات
 final sponsorshipsCacheProvider = Provider<CacheManager<int, dynamic>>((ref) {
   return CacheManager(
-    maxSize: 100,
     ttl: const Duration(minutes: 20),
   );
 });

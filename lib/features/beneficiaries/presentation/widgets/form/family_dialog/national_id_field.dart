@@ -13,12 +13,7 @@ class NationalIdWithCivilRegistry extends StatelessWidget {
   final bool hideButtonAfterFetch;
 
   const NationalIdWithCivilRegistry({
-    super.key,
-    required this.nationalIdController,
-    required this.isFetching,
-    required this.statusMessage,
-    required this.onFetch,
-    required this.onChanged,
+    required this.nationalIdController, required this.isFetching, required this.statusMessage, required this.onFetch, required this.onChanged, super.key,
     this.hideButtonAfterFetch = false,
   });
 
@@ -52,7 +47,7 @@ class NationalIdWithCivilRegistry extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 0.0),
+                  padding: const EdgeInsets.only(),
                   child: FilledButton.tonalIcon(
                     onPressed: isFetching ? null : onFetch,
                     icon: isFetching
@@ -88,7 +83,7 @@ class NationalIdWithCivilRegistry extends StatelessWidget {
 class CivilRegistryStatus extends StatelessWidget {
   final String message;
 
-  const CivilRegistryStatus({super.key, required this.message});
+  const CivilRegistryStatus({required this.message, super.key});
 
   @override
   Widget build(BuildContext context) {

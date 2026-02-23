@@ -338,7 +338,7 @@ class TextNormalizationService {
       variations.add(word.substring(0, word.length - 1));
 
       // Add variation with alef: "ولاء" → "ولاا"
-      variations.add(word.substring(0, word.length - 1) + 'ا');
+      variations.add('${word.substring(0, word.length - 1)}ا');
     }
 
     // Check if word ends with alef + hamza-like chars
@@ -392,7 +392,7 @@ class TextNormalizationService {
       return '';
     }
 
-    return normalize(parts.join(' '), keepHamza: false);
+    return normalize(parts.join(' '));
   }
 
   /// Build FTS match query from normalized text

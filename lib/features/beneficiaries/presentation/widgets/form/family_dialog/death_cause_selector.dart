@@ -9,9 +9,7 @@ class DeathCauseSelector extends StatelessWidget {
   final ValueChanged<int> onCauseSelected;
 
   const DeathCauseSelector({
-    super.key,
-    required this.selectedCause,
-    required this.onCauseSelected,
+    required this.selectedCause, required this.onCauseSelected, super.key,
   });
 
   @override

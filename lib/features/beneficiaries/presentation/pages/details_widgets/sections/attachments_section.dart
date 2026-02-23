@@ -8,7 +8,7 @@ import '../../../../../attachments/presentation/widgets/attachments_section_enha
 class AttachmentsSection extends StatelessWidget {
   final String beneficiaryId;
 
-  const AttachmentsSection({super.key, required this.beneficiaryId});
+  const AttachmentsSection({required this.beneficiaryId, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,6 @@ class AttachmentsSection extends StatelessWidget {
             padding: EdgeInsets.all(16.r),
             child: AttachmentsSectionEnhanced(
               beneficiaryId: beneficiaryId,
-              readOnly: false,
             ),
           ),
         ),

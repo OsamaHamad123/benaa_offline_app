@@ -44,7 +44,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
       final association = await database.associationsDao.getAssociationById(id);
 
       if (association == null) {
-        return Failure(NotFoundFailure('الجمعية غير موجودة'));
+        return const Failure(NotFoundFailure('الجمعية غير موجودة'));
       }
 
       return Success(_mapToDomain(association));
@@ -96,7 +96,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
       // Get the created association
       final result = await database.associationsDao.getAssociationById(id);
       if (result == null) {
-        return Failure(DatabaseFailure('فشل إنشاء الجمعية'));
+        return const Failure(DatabaseFailure('فشل إنشاء الجمعية'));
       }
 
       return Success(_mapToDomain(result));
@@ -132,7 +132,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
           await database.associationsDao.updateAssociation(companion);
 
       if (!success) {
-        return Failure(DatabaseFailure('فشل تحديث الجمعية'));
+        return const Failure(DatabaseFailure('فشل تحديث الجمعية'));
       }
 
       return Success(association.copyWith(updatedAt: DateTime.now()));
@@ -145,7 +145,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
   Future<Result<void>> deactivateAssociation(String id) async {
     try {
       await database.associationsDao.deactivateAssociation(id);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل تعطيل الجمعية', stackTrace));
     }
@@ -155,7 +155,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
   Future<Result<void>> deleteAssociation(String id) async {
     try {
       await database.associationsDao.deleteAssociation(id);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل حذف الجمعية', stackTrace));
     }
@@ -191,7 +191,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
       final rep = await database.associationsDao.getRepresentativeById(id);
 
       if (rep == null) {
-        return Failure(NotFoundFailure('المندوب غير موجود'));
+        return const Failure(NotFoundFailure('المندوب غير موجود'));
       }
 
       return Success(_mapRepToDomain(rep));
@@ -231,7 +231,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
 
       final result = await database.associationsDao.getRepresentativeById(id);
       if (result == null) {
-        return Failure(DatabaseFailure('فشل إنشاء المندوب'));
+        return const Failure(DatabaseFailure('فشل إنشاء المندوب'));
       }
 
       return Success(_mapRepToDomain(result));
@@ -257,7 +257,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
           await database.associationsDao.updateRepresentative(companion);
 
       if (!success) {
-        return Failure(DatabaseFailure('فشل تحديث المندوب'));
+        return const Failure(DatabaseFailure('فشل تحديث المندوب'));
       }
 
       return Success(rep.copyWith(updatedAt: DateTime.now()));
@@ -270,7 +270,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
   Future<Result<void>> deleteRepresentative(String id) async {
     try {
       await database.associationsDao.deleteRepresentative(id);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل حذف المندوب', stackTrace));
     }

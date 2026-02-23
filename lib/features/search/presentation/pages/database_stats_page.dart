@@ -107,7 +107,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => const AlertDialog(
         title: Text('إعادة بناء الفهارس'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -136,7 +136,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
       Navigator.pop(context); // Close loading dialog
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('✅ تم تحديث الفهارس بنجاح'),
           backgroundColor: Colors.green,
         ),
@@ -161,7 +161,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
       SearchAnalytics.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('✅ تم مسح الـ Cache بنجاح'),
           backgroundColor: Colors.green,
         ),
@@ -182,37 +182,37 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('إحصائيات قاعدة البيانات'),
+        title: const Text('إحصائيات قاعدة البيانات'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadStats,
             tooltip: 'تحديث',
           ),
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red),
-                      SizedBox(height: 16),
-                      Text(
+                      const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      const SizedBox(height: 16),
+                      const Text(
                         'حدث خطأ:',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: Text(_error!, textAlign: TextAlign.center),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadStats,
-                        child: Text('إعادة المحاولة'),
+                        child: const Text('إعادة المحاولة'),
                       ),
                     ],
                   ),
@@ -220,25 +220,25 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
               : EnhancedRefreshIndicator(
                   onRefresh: _loadStats,
                   child: ListView(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     children: [
                       // Database Info Section
                       _buildSectionHeader('معلومات قاعدة البيانات', Icons.storage),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       _buildStatCard(
                         title: 'حجم القاعدة',
                         value: '${_dbStats!['sizeMB']} MB',
                         icon: Icons.data_usage,
                         color: Colors.blue,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _buildStatCard(
                         title: 'عدد السجلات',
                         value: _formatNumber(_dbStats!['totalPersons']),
                         icon: Icons.people,
                         color: Colors.green,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
                           Expanded(
@@ -250,7 +250,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                               compact: true,
                             ),
                           ),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _buildStatCard(
                               title: 'إناث',
@@ -262,7 +262,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _buildStatCard(
                         title: 'عدد المحافظات',
                         value: '${_dbStats!['cityCount']}',
@@ -270,43 +270,43 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                         color: Colors.orange,
                       ),
 
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
                       // Indexes Section
                       _buildSectionHeader('الفهارس (Indexes)', Icons.list_alt),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       _buildStatCard(
                         title: 'عدد الفهارس',
                         value: '${_dbStats!['indexCount']}',
                         icon: Icons.numbers,
                         color: Colors.purple,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Card(
                         child: ExpansionTile(
-                          leading: Icon(Icons.visibility),
-                          title: Text('عرض قائمة الفهارس'),
+                          leading: const Icon(Icons.visibility),
+                          title: const Text('عرض قائمة الفهارس'),
                           children: [
                             Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: (_dbStats!['indexes'] as List<String>)
                                     .map(
                                       (idx) => Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.symmetric(vertical: 4),
                                         child: Row(
                                           children: [
-                                            Icon(
+                                            const Icon(
                                               Icons.check_circle,
                                               size: 16,
                                               color: Colors.green,
                                             ),
-                                            SizedBox(width: 8),
+                                            const SizedBox(width: 8),
                                             Expanded(
                                               child: Text(
                                                 idx,
-                                                style: TextStyle(
+                                                style: const TextStyle(
                                                   fontFamily: 'monospace',
                                                   fontSize: 12,
                                                 ),
@@ -323,32 +323,32 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                         ),
                       ),
 
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
                       // Search Analytics Section
                       _buildSectionHeader('إحصائيات البحث', Icons.analytics),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       _buildStatCard(
                         title: 'إجمالي عمليات البحث',
                         value: '${_searchStats!['totalSearches']}',
                         icon: Icons.search,
                         color: Colors.teal,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _buildStatCard(
                         title: 'عمليات بحث ناجحة',
                         value: '${_searchStats!['successfulSearches']}',
                         icon: Icons.check_circle,
                         color: Colors.green,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _buildStatCard(
                         title: 'معدل النجاح',
                         value: '${(_searchStats!['successRate'] * 100).toStringAsFixed(1)}%',
                         icon: Icons.trending_up,
                         color: Colors.indigo,
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       _buildStatCard(
                         title: 'متوسط وقت البحث',
                         value: '${_searchStats!['averageSearchDuration'].toStringAsFixed(1)} ms',
@@ -356,17 +356,17 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                         color: Colors.amber,
                       ),
 
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
                       // Popular Queries
                       if ((_searchStats!['popularQueries'] as List).isNotEmpty) ...[
                         Card(
                           child: ExpansionTile(
-                            leading: Icon(Icons.star),
-                            title: Text('الاستعلامات الأكثر شيوعاً'),
+                            leading: const Icon(Icons.star),
+                            title: const Text('الاستعلامات الأكثر شيوعاً'),
                             children: [
                               Padding(
-                                padding: EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(16),
                                 child: Column(
                                   children: (_searchStats!['popularQueries'] as List<MapEntry>)
                                       .map(
@@ -376,7 +376,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                                             backgroundColor: Colors.blue.shade100,
                                             child: Text(
                                               '${entry.value}',
-                                              style: TextStyle(fontSize: 12),
+                                              style: const TextStyle(fontSize: 12),
                                             ),
                                           ),
                                           title: Text(entry.key),
@@ -388,7 +388,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                             ],
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                       ],
 
                       // Slow Queries
@@ -396,17 +396,17 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                         Card(
                           color: Colors.orange.shade50,
                           child: ExpansionTile(
-                            leading: Icon(Icons.warning, color: Colors.orange),
-                            title: Text('استعلامات بطيئة (> 200ms)'),
+                            leading: const Icon(Icons.warning, color: Colors.orange),
+                            title: const Text('استعلامات بطيئة (> 200ms)'),
                             children: [
                               Padding(
-                                padding: EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(16),
                                 child: Column(
                                   children: (_searchStats!['slowQueries'] as List<String>)
                                       .map(
                                         (query) => ListTile(
                                           dense: true,
-                                          leading: Icon(
+                                          leading: const Icon(
                                             Icons.access_time,
                                             size: 16,
                                             color: Colors.orange,
@@ -422,41 +422,41 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                         ),
                       ],
 
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
                       // Maintenance Actions
                       _buildSectionHeader('عمليات الصيانة', Icons.build),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
                       ElevatedButton.icon(
                         onPressed: _rebuildIndexes,
-                        icon: Icon(Icons.refresh),
-                        label: Text('تحديث الفهارس (ANALYZE)'),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('تحديث الفهارس (ANALYZE)'),
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
                           backgroundColor: Colors.blue.shade700,
                         ),
                       ),
 
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
 
                       ElevatedButton.icon(
                         onPressed: _clearCache,
-                        icon: Icon(Icons.clear_all),
-                        label: Text('مسح الـ Cache'),
+                        icon: const Icon(Icons.clear_all),
+                        label: const Text('مسح الـ Cache'),
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
                           backgroundColor: Colors.orange.shade700,
                         ),
                       ),
 
-                      SizedBox(height: 24),
+                      const SizedBox(height: 24),
 
                       // Database Path
                       Card(
                         color: Colors.grey.shade100,
                         child: Padding(
-                          padding: EdgeInsets.all(16),
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -467,7 +467,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                                     size: 20,
                                     color: Colors.grey.shade700,
                                   ),
-                                  SizedBox(width: 8),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'مسار القاعدة:',
                                     style: TextStyle(
@@ -477,7 +477,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               SelectableText(
                                 _dbStats!['path'],
                                 style: TextStyle(
@@ -491,7 +491,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                         ),
                       ),
 
-                      SizedBox(height: 32),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
@@ -502,7 +502,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
     return Row(
       children: [
         Icon(icon, color: Colors.grey.shade700),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
           title,
           style: TextStyle(
@@ -536,7 +536,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
               ),
               child: Icon(icon, color: color, size: compact ? 20 : 24),
             ),
-            SizedBox(width: 12),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,7 +548,7 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                       color: Colors.grey.shade600,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     value,
                     style: TextStyle(

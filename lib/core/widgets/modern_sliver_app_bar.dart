@@ -17,9 +17,7 @@ class ModernSliverAppBar extends StatelessWidget {
   final bool isTablet;
 
   const ModernSliverAppBar({
-    super.key,
-    required this.title,
-    required this.icon,
+    required this.title, required this.icon, super.key,
     this.actions,
     this.expandedHeight,
     this.isTablet = false,
@@ -33,7 +31,6 @@ class ModernSliverAppBar extends StatelessWidget {
 
     return SliverAppBar(
       expandedHeight: effectiveExpandedHeight,
-      floating: false,
       pinned: true,
       elevation: 0,
       backgroundColor: colorScheme.primary,
@@ -112,9 +109,7 @@ class ModernActionButton extends StatelessWidget {
   final int? badge;
 
   const ModernActionButton({
-    super.key,
-    required this.icon,
-    required this.tooltip,
+    required this.icon, required this.tooltip, super.key,
     this.onPressed,
     this.iconSize = 24,
     this.badge,
@@ -122,7 +117,7 @@ class ModernActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget iconButton = IconButton(
+    final Widget iconButton = IconButton(
       icon: Icon(icon, size: iconSize.sp),
       tooltip: tooltip,
       padding: EdgeInsets.symmetric(horizontal: 12.w),

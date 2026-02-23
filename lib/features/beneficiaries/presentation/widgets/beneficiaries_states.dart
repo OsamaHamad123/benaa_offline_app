@@ -60,9 +60,7 @@ class BeneficiariesErrorState extends StatelessWidget {
   final VoidCallback onRetry;
 
   const BeneficiariesErrorState({
-    super.key,
-    required this.error,
-    required this.onRetry,
+    required this.error, required this.onRetry, super.key,
   });
 
   @override

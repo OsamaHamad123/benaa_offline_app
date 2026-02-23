@@ -17,8 +17,7 @@ class ResponsiveBuilder extends StatelessWidget {
   final Widget Function(BuildContext context, BoxConstraints constraints)? desktop;
 
   const ResponsiveBuilder({
-    super.key,
-    required this.mobile,
+    required this.mobile, super.key,
     this.tablet,
     this.desktop,
   });
@@ -58,11 +57,9 @@ class ResponsiveValue<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T value) builder;
 
   const ResponsiveValue({
-    super.key,
-    required this.mobile,
+    required this.mobile, required this.builder, super.key,
     this.tablet,
     this.desktop,
-    required this.builder,
   });
 
   @override
@@ -96,8 +93,7 @@ class ResponsiveSliverGrid extends StatelessWidget {
   final double crossAxisSpacing;
 
   const ResponsiveSliverGrid({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.mobileColumns,
     this.tabletColumns,
     this.desktopColumns,
@@ -139,8 +135,7 @@ class ResponsiveGrid extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   const ResponsiveGrid({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.mobileColumns,
     this.tabletColumns,
     this.desktopColumns,

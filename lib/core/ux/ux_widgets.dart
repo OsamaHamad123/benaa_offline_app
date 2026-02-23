@@ -13,10 +13,7 @@ class EmptyStateWidget extends StatelessWidget {
   final Color? iconColor;
 
   const EmptyStateWidget({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
+    required this.icon, required this.title, required this.message, super.key,
     this.action,
     this.iconColor,
   });
@@ -61,8 +58,7 @@ class SkeletonLoader extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const SkeletonLoader({
-    super.key,
-    required this.height,
+    required this.height, super.key,
     this.width,
     this.borderRadius,
   });
@@ -107,8 +103,6 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
             gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
               colors: [
                 Colors.grey.shade300,
                 Colors.grey.shade200,
@@ -174,9 +168,7 @@ class PullToRefreshWrapper extends StatelessWidget {
   final Color? color;
 
   const PullToRefreshWrapper({
-    super.key,
-    required this.onRefresh,
-    required this.child,
+    required this.onRefresh, required this.child, super.key,
     this.color,
   });
 
@@ -187,7 +179,6 @@ class PullToRefreshWrapper extends StatelessWidget {
       color: color ?? Theme.of(context).primaryColor,
       backgroundColor: Colors.white,
       strokeWidth: 3.0,
-      displacement: 40,
       child: child,
     );
   }
@@ -201,9 +192,7 @@ class LoadingOverlay extends StatelessWidget {
   final Color? overlayColor;
 
   const LoadingOverlay({
-    super.key,
-    required this.isLoading,
-    required this.child,
+    required this.isLoading, required this.child, super.key,
     this.loadingMessage,
     this.overlayColor,
   });
@@ -255,8 +244,7 @@ class BadgeWidget extends StatelessWidget {
   final Color? textColor;
 
   const BadgeWidget({
-    super.key,
-    required this.label,
+    required this.label, super.key,
     this.color,
     this.textColor,
   });
@@ -288,9 +276,7 @@ class TooltipWrapper extends StatelessWidget {
   final bool preferBelow;
 
   const TooltipWrapper({
-    super.key,
-    required this.message,
-    required this.child,
+    required this.message, required this.child, super.key,
     this.preferBelow = true,
   });
 
@@ -319,11 +305,8 @@ class EnhancedCheckboxListTile extends StatelessWidget {
   final IconData? icon;
 
   const EnhancedCheckboxListTile({
-    super.key,
-    required this.title,
+    required this.title, required this.value, required this.onChanged, super.key,
     this.subtitle,
-    required this.value,
-    required this.onChanged,
     this.icon,
   });
 
@@ -357,8 +340,7 @@ class ProgressBarWidget extends StatelessWidget {
   final Color? backgroundColor;
 
   const ProgressBarWidget({
-    super.key,
-    required this.value,
+    required this.value, super.key,
     this.label,
     this.color,
     this.backgroundColor,
@@ -415,7 +397,7 @@ class DividerWithText extends StatelessWidget {
   final String text;
   final Color? color;
 
-  const DividerWithText({super.key, required this.text, this.color});
+  const DividerWithText({required this.text, super.key, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -449,9 +431,7 @@ class NotificationBadge extends StatelessWidget {
   final Widget child;
 
   const NotificationBadge({
-    super.key,
-    required this.count,
-    required this.child,
+    required this.count, required this.child, super.key,
   });
 
   @override

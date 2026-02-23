@@ -22,12 +22,11 @@ class AdvancedFiltersSheet extends StatefulWidget {
   }) onApplyFilters;
 
   const AdvancedFiltersSheet({
-    super.key,
+    required this.onApplyFilters, super.key,
     this.startDate,
     this.endDate,
     this.minAmount,
     this.maxAmount,
-    required this.onApplyFilters,
   });
 
   @override
@@ -355,7 +354,7 @@ class _DateSelector extends StatelessWidget {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            dialogBackgroundColor: Theme.of(context).colorScheme.surface,
+            dialogTheme: DialogThemeData(backgroundColor: Theme.of(context).colorScheme.surface),
           ),
           child: child!,
         );

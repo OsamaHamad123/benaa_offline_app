@@ -21,7 +21,7 @@ void main() {
         currentDraftId: 'existing_id',
         beneficiaryId: 'beneficiary_1',
         nationalId: '12345678901',
-        now: DateTime(2026, 1, 1),
+        now: DateTime(2026),
       );
 
       expect(id, equals('existing_id'));
@@ -32,7 +32,7 @@ void main() {
         currentDraftId: null,
         beneficiaryId: 'beneficiary_1',
         nationalId: '12345678901',
-        now: DateTime(2026, 1, 1),
+        now: DateTime(2026),
       );
 
       expect(id, equals('beneficiary_1'));

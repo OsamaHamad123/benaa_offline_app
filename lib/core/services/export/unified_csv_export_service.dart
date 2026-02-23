@@ -3,8 +3,8 @@
 /// خدمة موحدة لتصدير CSV في كامل التطبيق
 /// تدعم: المستفيدين، الزيارات، الأنشطة، التقارير
 /// مع دعم كامل للعربية UTF-8
+library;
 
-import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -122,10 +122,7 @@ class UnifiedCsvExportService implements BaseExportService {
   /// Escape CSV special characters
   String _escapeCsv(String value) {
     // If value contains comma, newline, or double quote, wrap in quotes
-    if (value.contains(',') ||
-        value.contains('\n') ||
-        value.contains('"') ||
-        value.contains('\r')) {
+    if (value.contains(',') || value.contains('\n') || value.contains('"') || value.contains('\r')) {
       // Escape double quotes by doubling them
       final escaped = value.replaceAll('"', '""');
       return '"$escaped"';
@@ -145,7 +142,7 @@ class UnifiedCsvExportService implements BaseExportService {
 
     // Write with UTF-8 encoding (supports Arabic)
     final file = File(filePath);
-    await file.writeAsString(csvContent, encoding: utf8, mode: FileMode.write);
+    await file.writeAsString(csvContent);
 
     return filePath;
   }

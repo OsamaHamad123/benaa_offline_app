@@ -16,8 +16,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showGradient;
 
   const CustomAppBar({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.actions,
     this.leading,
     this.showBackButton = false,
@@ -143,8 +142,7 @@ class SimpleAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
 
   const SimpleAppBar({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.actions,
     this.showBackButton = true,
     this.onBackPressed,
@@ -185,8 +183,7 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onProfileTap;
 
   const DashboardAppBar({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.notificationCount = 0,
     this.onNotificationTap,
     this.onSyncTap,
@@ -200,7 +197,6 @@ class DashboardAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return CustomAppBar(
       title: title,
-      showBackButton: false,
       actions: [
         // Sync Button
         _buildActionButton(

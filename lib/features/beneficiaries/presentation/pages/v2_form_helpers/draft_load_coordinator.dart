@@ -12,6 +12,20 @@ class DraftLoadResult {
 class DraftLoadCoordinator {
   const DraftLoadCoordinator();
 
+  String? _safeTaxonomyValue(dynamic value) {
+    if (value == null) return null;
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    if (value is num || value is bool) {
+      return value.toString();
+    }
+
+    return null;
+  }
+
   DraftLoadResult applyDraft({
     required BeneficiaryFormControllers controllers,
     required Map<String, dynamic> draft,
@@ -36,19 +50,36 @@ class DraftLoadCoordinator {
     final birthDate = formDataRaw['birthDate'];
     controllers.birthDateController.text = birthDate == null ? '' : birthDate.toString();
 
-    controllers.selectedGender = formDataRaw['selectedGender']?.toString();
-    controllers.selectedMaritalStatus = formDataRaw['selectedMaritalStatus']?.toString();
-    controllers.selectedEducationLevel = formDataRaw['selectedEducationLevel']?.toString();
-    controllers.selectedEmploymentStatus = formDataRaw['selectedEmploymentStatus']?.toString();
-    controllers.selectedCategory = formDataRaw['selectedCategory']?.toString();
-    controllers.selectedRelationship = formDataRaw['selectedRelationship']?.toString();
-    controllers.selectedSection = formDataRaw['selectedSection']?.toString();
-    controllers.selectedCity = formDataRaw['selectedCity']?.toString();
-    controllers.selectedProvince = formDataRaw['selectedProvince']?.toString();
-    controllers.selectedDisplacementStatus = formDataRaw['selectedDisplacementStatus']?.toString();
-    controllers.selectedHealthStatus = formDataRaw['selectedHealthStatus']?.toString();
-    controllers.selectedHousingStatus = formDataRaw['selectedHousingStatus']?.toString();
-    controllers.selectedHousingType = formDataRaw['selectedHousingType']?.toString();
+    controllers.selectedGender = _safeTaxonomyValue(formDataRaw['selectedGender'] ?? formDataRaw['gender']);
+    controllers.selectedMaritalStatus =
+        _safeTaxonomyValue(formDataRaw['selectedMaritalStatus'] ?? formDataRaw['maritalStatus']);
+    controllers.selectedEducationLevel =
+        _safeTaxonomyValue(formDataRaw['selectedEducationLevel'] ?? formDataRaw['educationLevel']);
+    controllers.selectedEmploymentStatus =
+        _safeTaxonomyValue(formDataRaw['selectedEmploymentStatus'] ?? formDataRaw['employmentStatus']);
+    controllers.selectedCategory = _safeTaxonomyValue(formDataRaw['selectedCategory'] ?? formDataRaw['category']);
+    controllers.selectedRelationship =
+        _safeTaxonomyValue(formDataRaw['selectedRelationship'] ?? formDataRaw['relationship']);
+    controllers.selectedSection = _safeTaxonomyValue(formDataRaw['selectedSection'] ?? formDataRaw['section']);
+    controllers.selectedCity = _safeTaxonomyValue(formDataRaw['selectedCity'] ?? formDataRaw['city']);
+    controllers.selectedProvince = _safeTaxonomyValue(formDataRaw['selectedProvince'] ?? formDataRaw['province']);
+    controllers.selectedDisplacementStatus =
+        _safeTaxonomyValue(formDataRaw['selectedDisplacementStatus'] ?? formDataRaw['displacementStatus']);
+    controllers.selectedHealthStatus =
+        _safeTaxonomyValue(formDataRaw['selectedHealthStatus'] ?? formDataRaw['healthStatus']);
+    controllers.selectedHousingStatus =
+        _safeTaxonomyValue(formDataRaw['selectedHousingStatus'] ?? formDataRaw['housingStatus']);
+    controllers.selectedHousingType =
+        _safeTaxonomyValue(formDataRaw['selectedHousingType'] ?? formDataRaw['housingType']);
+    controllers.selectedDisabilityType =
+        _safeTaxonomyValue(formDataRaw['selectedDisabilityType'] ?? formDataRaw['disabilityType']);
+    controllers.selectedIncomeSource =
+        _safeTaxonomyValue(formDataRaw['selectedIncomeSource'] ?? formDataRaw['incomeSource']);
+    controllers.selectedRequestStatus =
+        _safeTaxonomyValue(formDataRaw['selectedRequestStatus'] ?? formDataRaw['requestStatus']);
+    controllers.selectedAssistanceType =
+        _safeTaxonomyValue(formDataRaw['selectedAssistanceType'] ?? formDataRaw['assistanceType']);
+    controllers.specialNeedsCountController.text = (formDataRaw['specialNeedsCount'] ?? '').toString();
 
     final rawTab = draft['currentTab'];
     final currentTab = rawTab is int ? rawTab : int.tryParse(rawTab?.toString() ?? '') ?? 0;

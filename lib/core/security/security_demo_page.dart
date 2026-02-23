@@ -244,7 +244,7 @@ class _SecurityDemoPageState extends ConsumerState<SecurityDemoPage> {
 
   Widget _buildSessionTimeoutSetting() {
     return DropdownButtonFormField<int>(
-      value: _sessionManager.sessionTimeoutMinutes,
+      initialValue: _sessionManager.sessionTimeoutMinutes,
       decoration: InputDecoration(
         labelText: 'مهلة الجلسة',
         prefixIcon: const Icon(Icons.timer),

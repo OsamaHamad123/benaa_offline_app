@@ -8,10 +8,8 @@ class CardGradientHeader extends StatelessWidget {
   final bool isActive;
 
   const CardGradientHeader({
-    super.key,
-    required this.name,
+    required this.name, required this.isActive, super.key,
     this.shortName,
-    required this.isActive,
   });
 
   @override

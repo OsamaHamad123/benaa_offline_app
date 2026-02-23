@@ -10,8 +10,7 @@ void main() {
     testWidgets('EnhancedAssociationsStatsCard renders with correct stats', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(360, 690),
+        const ScreenUtilInit(
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -47,8 +46,7 @@ void main() {
     testWidgets('EnhancedAssociationsStatsCard uses Wrap layout', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(360, 690),
+        const ScreenUtilInit(
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -72,8 +70,7 @@ void main() {
     testWidgets('EnhancedAssociationsStatsCard handles zero counts', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(360, 690),
+        const ScreenUtilInit(
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -107,7 +104,6 @@ void main() {
         accountCurrency: 'IQD',
         swiftCode: 'SWIFT123',
         bankPhone: '07801112233',
-        isActive: true,
         representativeId: 'rep-1',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -115,7 +111,6 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -164,7 +159,6 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -190,7 +184,6 @@ void main() {
       // Arrange
       bool editTapped = false;
       bool deleteTapped = false;
-      bool cardTapped = false;
 
       final testAssociation = Association(
         id: '3',
@@ -199,7 +192,6 @@ void main() {
         bankName: 'البنك',
         accountNumber: '123',
         accountCurrency: 'IQD',
-        isActive: true,
         representativeId: 'rep-3',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -207,13 +199,12 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
               body: ModernAssociationCard(
                 association: testAssociation,
-                onTap: () => cardTapped = true,
+                onTap: () {},
                 onDelete: () => deleteTapped = true,
                 onEdit: () => editTapped = true,
               ),
@@ -244,7 +235,6 @@ void main() {
         bankName: 'البنك',
         accountNumber: '123',
         accountCurrency: 'IQD',
-        isActive: true,
         representativeId: 'rep-4',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -252,7 +242,6 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -284,7 +273,6 @@ void main() {
         bankName: 'البنك',
         accountNumber: '123',
         accountCurrency: 'IQD',
-        isActive: true,
         representativeId: 'rep-5',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -292,13 +280,11 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
               body: ModernAssociationCard(
                 association: testAssociation,
-                representativeName: null,
                 onTap: () {},
                 onDelete: () {},
                 onEdit: () {},
@@ -322,8 +308,8 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(280, 600));
 
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(280, 600),
+        const ScreenUtilInit(
+          designSize: Size(280, 600),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -361,7 +347,6 @@ void main() {
         bankName: 'البنك',
         accountNumber: '123',
         accountCurrency: 'IQD',
-        isActive: true,
         representativeId: 'rep-6',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -377,7 +362,7 @@ void main() {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    EnhancedAssociationsStatsCard(
+                    const EnhancedAssociationsStatsCard(
                       totalCount: 10,
                       activeCount: 7,
                       inactiveCount: 3,

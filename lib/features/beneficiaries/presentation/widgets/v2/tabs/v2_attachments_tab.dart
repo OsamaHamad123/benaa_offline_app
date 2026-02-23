@@ -31,7 +31,6 @@ class V2AttachmentsTab extends ConsumerWidget {
         if (beneficiaryId != null && beneficiaryId!.isNotEmpty)
           AttachmentsSectionEnhanced(
             beneficiaryId: beneficiaryId!,
-            readOnly: false,
             showTitle: false,
           )
         else

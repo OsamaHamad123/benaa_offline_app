@@ -18,7 +18,7 @@ class DashboardSearchDelegate extends SearchDelegate<String> {
   @override
   ThemeData appBarTheme(BuildContext context) {
     return Theme.of(context).copyWith(
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: DashboardColors.totalBeneficiaries,
         elevation: 0,
       ),
@@ -80,7 +80,7 @@ class DashboardSearchDelegate extends SearchDelegate<String> {
       itemBuilder: (context, index) {
         final suggestion = suggestions[index];
         return ListTile(
-          leading: Icon(Icons.search, color: DashboardColors.totalBeneficiaries),
+          leading: const Icon(Icons.search, color: DashboardColors.totalBeneficiaries),
           title: Text(suggestion, style: DashboardTextStyles.cardSubtitle),
           onTap: () {
             query = suggestion;

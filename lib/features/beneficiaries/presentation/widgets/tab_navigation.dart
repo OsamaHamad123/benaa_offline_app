@@ -8,9 +8,7 @@ class BeneficiaryTabNavigation extends StatelessWidget {
   final List<TabData> tabs;
 
   const BeneficiaryTabNavigation({
-    super.key,
-    required this.controller,
-    required this.tabs,
+    required this.controller, required this.tabs, super.key,
   });
 
   @override

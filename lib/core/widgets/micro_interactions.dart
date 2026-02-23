@@ -263,8 +263,6 @@ class _ShimmerEffectState extends State<_ShimmerEffect>
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
               colors: [baseColor, highlightColor, baseColor],
               stops: [
                 _controller.value - 0.3,

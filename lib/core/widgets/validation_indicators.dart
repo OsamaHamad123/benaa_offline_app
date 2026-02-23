@@ -31,7 +31,6 @@ class ValidationIndicator extends StatelessWidget {
           color: isValid!
               ? Colors.green.withOpacity(0.3)
               : Colors.red.withOpacity(0.3),
-          width: 1,
         ),
       ),
       child: Row(
@@ -71,8 +70,7 @@ class FieldHelperText extends StatelessWidget {
   final Color? color;
 
   const FieldHelperText({
-    super.key,
-    required this.text,
+    required this.text, super.key,
     this.icon = Icons.info_outline,
     this.color,
   });
@@ -115,8 +113,7 @@ class RealTimeValidatedField extends StatefulWidget {
   final String? successMessage;
 
   const RealTimeValidatedField({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.validator,
     this.controller,
     this.showSuccessIndicator = true,

@@ -10,11 +10,7 @@ class FormSectionHeader extends StatelessWidget {
   final Color color;
 
   const FormSectionHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
+    required this.title, required this.subtitle, required this.icon, required this.color, super.key,
   });
 
   @override
@@ -104,13 +100,9 @@ class ModernFormField extends StatelessWidget {
   final bool required;
 
   const ModernFormField({
-    super.key,
-    required this.controller,
+    required this.controller, required this.labelText, required this.icon, required this.iconColor, super.key,
     this.focusNode,
-    required this.labelText,
     this.hintText,
-    required this.icon,
-    required this.iconColor,
     this.keyboardType,
     this.textInputAction,
     this.validator,
@@ -242,13 +234,8 @@ class ModernDropdown<T> extends StatelessWidget {
   final bool required;
 
   const ModernDropdown({
-    super.key,
-    required this.labelText,
+    required this.labelText, required this.icon, required this.iconColor, required this.value, required this.items, super.key,
     this.hintText,
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.items,
     this.onChanged,
     this.validator,
     this.required = false,
@@ -259,7 +246,7 @@ class ModernDropdown<T> extends StatelessWidget {
     final theme = Theme.of(context);
 
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items,
       onChanged: onChanged,
       validator: validator,
@@ -343,13 +330,7 @@ class ModernSwitch extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   const ModernSwitch({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.onChanged,
+    required this.title, required this.subtitle, required this.icon, required this.iconColor, required this.value, required this.onChanged, super.key,
   });
 
   @override
@@ -419,7 +400,7 @@ class ModernSwitch extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: iconColor,
+            activeThumbColor: iconColor,
             thumbIcon: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return Icon(
@@ -443,8 +424,7 @@ class ResponsiveFormRow extends StatelessWidget {
   final double spacing;
 
   const ResponsiveFormRow({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.spacing = 12,
   });
 

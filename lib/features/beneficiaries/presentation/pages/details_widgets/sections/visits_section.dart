@@ -15,12 +15,7 @@ class VisitsSection extends ConsumerWidget {
   final VoidCallback onToggleView;
 
   const VisitsSection({
-    super.key,
-    required this.beneficiary,
-    required this.beneficiaryId,
-    required this.visitState,
-    required this.showTimelineView,
-    required this.onToggleView,
+    required this.beneficiary, required this.beneficiaryId, required this.visitState, required this.showTimelineView, required this.onToggleView, super.key,
   });
 
   @override
@@ -79,10 +74,7 @@ class VisitsCard extends ConsumerStatefulWidget {
   final dynamic beneficiary;
 
   const VisitsCard({
-    super.key,
-    required this.visitState,
-    required this.beneficiaryId,
-    required this.beneficiary,
+    required this.visitState, required this.beneficiaryId, required this.beneficiary, super.key,
   });
 
   @override

@@ -184,7 +184,8 @@ class TaxonomyLocalDataSourceImpl implements TaxonomyLocalDataSource {
 
     if (index >= 0) {
       all[index] = all[index].copyWith(
-        deletedAt: null,
+        clearDeletedAt: true,
+        updatedAt: DateTime.now(),
       );
       await _saveTaxonomies(all);
     }

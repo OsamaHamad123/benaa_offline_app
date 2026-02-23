@@ -10,10 +10,7 @@ class AuthToken extends Equatable {
 
   const AuthToken({
     required this.accessToken,
-    this.tokenType = 'Bearer',
-    required this.expiresAt,
-    required this.expiresInDays,
-    required this.expiresInSeconds,
+    required this.expiresAt, required this.expiresInDays, required this.expiresInSeconds, this.tokenType = 'Bearer',
   });
 
   /// ⏰ هل انتهت صلاحية الـ token؟

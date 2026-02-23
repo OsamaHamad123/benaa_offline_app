@@ -10,8 +10,7 @@ class SeparatedColumn extends StatelessWidget {
   final MainAxisSize mainAxisSize;
 
   const SeparatedColumn({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.spacing = 16,
     this.crossAxisAlignment = CrossAxisAlignment.start,
     this.mainAxisAlignment = MainAxisAlignment.start,
@@ -48,8 +47,7 @@ class SeparatedRow extends StatelessWidget {
   final MainAxisSize mainAxisSize;
 
   const SeparatedRow({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.spacing = 12,
     this.crossAxisAlignment = CrossAxisAlignment.center,
     this.mainAxisAlignment = MainAxisAlignment.start,

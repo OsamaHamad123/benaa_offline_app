@@ -7,7 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class NeedsSection extends StatelessWidget {
   final dynamic beneficiary;
 
-  const NeedsSection({super.key, required this.beneficiary});
+  const NeedsSection({required this.beneficiary, super.key});
 
   @override
   Widget build(BuildContext context) {

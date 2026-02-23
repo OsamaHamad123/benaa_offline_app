@@ -288,7 +288,6 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
   Widget _buildLogo() {
     return FadeSlideTransition(
-      duration: AppDurations.normal,
       child: Hero(
         tag: 'app_logo',
         child: Container(
@@ -317,7 +316,6 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
   Widget _buildTitle() {
     return FadeSlideTransition(
-      duration: AppDurations.normal,
       child: Column(
         children: [
           Text(
@@ -405,7 +403,7 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
               const SizedBox(height: 8),
               Text(
                 'آخر مستخدم: ${lastUser.name}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
                 ),
@@ -429,11 +427,11 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.withOpacity(0.3)),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(Icons.wifi_off, color: Colors.grey, size: 20),
-          const SizedBox(width: 12),
-          const Expanded(
+          Icon(Icons.wifi_off, color: Colors.grey, size: 20),
+          SizedBox(width: 12),
+          Expanded(
             child: Text(
               'لا يوجد اتصال بالإنترنت',
               style: TextStyle(color: Colors.grey, fontSize: 13),
@@ -450,9 +448,9 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
       child: TextFormField(
         controller: _emailController,
         enabled: !isLoading,
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           labelText: 'البريد الإلكتروني',
-          prefixIcon: const Icon(Icons.email_outlined),
+          prefixIcon: Icon(Icons.email_outlined),
           hintText: 'أدخل البريد الإلكتروني',
           filled: true,
           fillColor: Colors.white,
@@ -524,7 +522,7 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
         const Spacer(),
         TextButton(
           onPressed: isLoading ? null : () => context.go('/forgot-password'),
-          child: Text(
+          child: const Text(
             'نسيت كلمة المرور؟',
             style: TextStyle(color: AppColors.primary),
           ),

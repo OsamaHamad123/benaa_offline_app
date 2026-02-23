@@ -94,7 +94,7 @@ class BeforeAfterExample4 {
   // ❌ قبل
   Widget oldDropdown(String? value, ValueChanged<String?>? onChanged) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: onChanged,
       decoration: const InputDecoration(
         labelText: 'الفئة',

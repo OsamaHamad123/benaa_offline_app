@@ -115,7 +115,6 @@ class GlobalErrorHandler {
         ),
         backgroundColor: _getErrorColor(error.type),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
         action: onRetry != null
             ? SnackBarAction(
                 label: 'إعادة المحاولة',
@@ -303,8 +302,7 @@ class ErrorBoundary extends ConsumerStatefulWidget {
   final Function(Object error, StackTrace stackTrace)? onError;
 
   const ErrorBoundary({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.errorBuilder,
     this.onError,
   });
@@ -381,9 +379,7 @@ class RetryWidget extends StatelessWidget {
   final IconData icon;
 
   const RetryWidget({
-    super.key,
-    required this.message,
-    required this.onRetry,
+    required this.message, required this.onRetry, super.key,
     this.icon = Icons.refresh_rounded,
   });
 

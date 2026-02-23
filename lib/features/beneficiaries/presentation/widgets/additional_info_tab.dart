@@ -34,29 +34,7 @@ class AdditionalInfoTab extends StatelessWidget {
   final Function(bool) onHasAssetsChanged;
 
   const AdditionalInfoTab({
-    super.key,
-    required this.maritalStatus,
-    required this.educationLevel,
-    required this.healthStatus,
-    required this.displacementStatus,
-    required this.employmentStatus,
-    required this.housingStatus,
-    required this.housingType,
-    required this.monthlyIncomeController,
-    required this.hasFinancialSupport,
-    required this.supportSourceController,
-    required this.supportAmountController,
-    required this.hasAssets,
-    required this.assetsDescriptionController,
-    required this.onMaritalStatusChanged,
-    required this.onEducationLevelChanged,
-    required this.onHealthStatusChanged,
-    required this.onDisplacementStatusChanged,
-    required this.onEmploymentStatusChanged,
-    required this.onHousingStatusChanged,
-    required this.onHousingTypeChanged,
-    required this.onHasFinancialSupportChanged,
-    required this.onHasAssetsChanged,
+    required this.maritalStatus, required this.educationLevel, required this.healthStatus, required this.displacementStatus, required this.employmentStatus, required this.housingStatus, required this.housingType, required this.monthlyIncomeController, required this.hasFinancialSupport, required this.supportSourceController, required this.supportAmountController, required this.hasAssets, required this.assetsDescriptionController, required this.onMaritalStatusChanged, required this.onEducationLevelChanged, required this.onHealthStatusChanged, required this.onDisplacementStatusChanged, required this.onEmploymentStatusChanged, required this.onHousingStatusChanged, required this.onHousingTypeChanged, required this.onHasFinancialSupportChanged, required this.onHasAssetsChanged, super.key,
   });
 
   @override

@@ -21,10 +21,7 @@ class CollapsibleSection extends StatefulWidget {
   final bool initiallyExpanded;
 
   const CollapsibleSection({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.child,
+    required this.title, required this.icon, required this.child, super.key,
     this.accentColor,
     this.initiallyExpanded = false,
   });

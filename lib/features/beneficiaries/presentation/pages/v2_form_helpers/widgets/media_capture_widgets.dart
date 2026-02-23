@@ -15,11 +15,8 @@ class PhotoCaptureCard extends StatelessWidget {
   final bool required;
 
   const PhotoCaptureCard({
-    super.key,
-    required this.label,
+    required this.label, required this.onCamera, required this.onGallery, super.key,
     this.photoPath,
-    required this.onCamera,
-    required this.onGallery,
     this.onDelete,
     this.required = false,
   });
@@ -170,10 +167,7 @@ class PhotosGrid extends StatelessWidget {
   final int maxPhotos;
 
   const PhotosGrid({
-    super.key,
-    required this.photos,
-    required this.onAddPhoto,
-    required this.onDeletePhoto,
+    required this.photos, required this.onAddPhoto, required this.onDeletePhoto, super.key,
     this.maxPhotos = 10,
   });
 
@@ -207,7 +201,6 @@ class PhotosGrid extends StatelessWidget {
             crossAxisCount: 3,
             crossAxisSpacing: 12.w,
             mainAxisSpacing: 12.h,
-            childAspectRatio: 1,
           ),
           itemCount: photos.length + (canAdd ? 1 : 0),
           itemBuilder: (context, index) {
@@ -221,7 +214,6 @@ class PhotosGrid extends StatelessWidget {
                     border: Border.all(
                       color: Colors.grey.shade300,
                       width: 2,
-                      style: BorderStyle.solid,
                     ),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
@@ -308,11 +300,8 @@ class VoiceNoteRecorder extends StatelessWidget {
   final VoidCallback? onDeleteNote;
 
   const VoiceNoteRecorder({
-    super.key,
-    required this.isRecording,
+    required this.isRecording, required this.onStartRecording, required this.onStopRecording, super.key,
     this.recordingDuration,
-    required this.onStartRecording,
-    required this.onStopRecording,
     this.savedNotePath,
     this.onPlayNote,
     this.onDeleteNote,

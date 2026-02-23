@@ -12,11 +12,9 @@ class SwipeActionsWrapper extends StatelessWidget {
   final String itemName;
 
   const SwipeActionsWrapper({
-    super.key,
-    required this.child,
+    required this.child, required this.itemName, super.key,
     this.onEdit,
     this.onDelete,
-    required this.itemName,
   });
 
   @override

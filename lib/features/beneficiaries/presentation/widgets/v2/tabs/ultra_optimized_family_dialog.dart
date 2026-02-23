@@ -21,11 +21,10 @@ class UltraOptimizedFamilyDialog extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onSave;
 
   const UltraOptimizedFamilyDialog({
-    super.key,
+    required this.onSave, super.key,
     this.existingMember,
     this.isDeceased = false,
     this.presetDeceasedType,
-    required this.onSave,
   });
 
   @override
@@ -133,7 +132,7 @@ class _UltraOptimizedFamilyDialogState
     try {
       // TODO: Implement civil registry fetch
       await Future.delayed(const Duration(milliseconds: 500));
-      final Map<String, dynamic>? data = null; // Placeholder
+      const Map<String, dynamic>? data = null; // Placeholder
 
       if (data != null && mounted) {
         _firstNameController.text = data['firstName'] ?? '';
@@ -509,7 +508,6 @@ class _LightTextField extends StatelessWidget {
         focusNode: focusNode,
         keyboardType: keyboardType,
         maxLength: maxLength,
-        maxLines: 1, // ⚡ Explicit single line
         enableInteractiveSelection: false, // ⚡ Disable selection UI for speed
         textInputAction:
             nextFocus != null ? TextInputAction.next : TextInputAction.done,

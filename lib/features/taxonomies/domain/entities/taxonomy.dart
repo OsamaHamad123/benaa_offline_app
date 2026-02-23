@@ -56,6 +56,8 @@ class Taxonomy extends Equatable {
     required this.group,
     required this.code,
     required this.label,
+    required this.createdAt,
+    required this.updatedAt,
     this.labelEn,
     this.parentId,
     this.sortOrder = 0,
@@ -64,8 +66,6 @@ class Taxonomy extends Equatable {
     this.color,
     this.icon,
     this.metadata,
-    required this.createdAt,
-    required this.updatedAt,
     this.deletedAt,
   });
 
@@ -95,6 +95,7 @@ class Taxonomy extends Equatable {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    bool clearDeletedAt = false,
   }) {
     return Taxonomy(
       id: id ?? this.id,
@@ -111,7 +112,7 @@ class Taxonomy extends Equatable {
       metadata: metadata ?? this.metadata,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      deletedAt: deletedAt ?? this.deletedAt,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
     );
   }
 
@@ -170,7 +171,6 @@ class TaxonomyStatistics extends Equatable {
       activeCount: 0,
       inactiveCount: 0,
       countByGroup: {},
-      lastSyncTime: null,
     );
   }
 

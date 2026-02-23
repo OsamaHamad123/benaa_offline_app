@@ -138,8 +138,7 @@ class ResponsiveBuilder extends StatelessWidget {
   final Widget Function(BuildContext context, ResponsiveHelper helper) builder;
 
   const ResponsiveBuilder({
-    super.key,
-    required this.builder,
+    required this.builder, super.key,
   });
 
   @override
@@ -155,8 +154,7 @@ class ResponsiveLayout extends StatelessWidget {
   final Widget? desktop;
 
   const ResponsiveLayout({
-    super.key,
-    required this.mobile,
+    required this.mobile, super.key,
     this.tablet,
     this.desktop,
   });
@@ -182,8 +180,7 @@ class ResponsiveGrid extends StatelessWidget {
   final EdgeInsets? padding;
 
   const ResponsiveGrid({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.mobileColumns,
     this.tabletColumns,
     this.desktopColumns,
@@ -222,8 +219,7 @@ class ResponsiveContainer extends StatelessWidget {
   final double? maxWidth;
 
   const ResponsiveContainer({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.padding,
     this.maxWidth,
   });

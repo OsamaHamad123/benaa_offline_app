@@ -9,10 +9,7 @@ class PersonDetailRow extends StatelessWidget {
   final bool highlighted;
 
   const PersonDetailRow({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
+    required this.icon, required this.label, required this.value, super.key,
     this.iconColor,
     this.highlighted = false,
   });
@@ -22,26 +19,26 @@ class PersonDetailRow extends StatelessWidget {
     final effectiveIconColor = iconColor ?? Colors.blue.shade700;
 
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: highlighted
           ? BoxDecoration(
               color: Colors.blue.withOpacity(0.05),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.2), width: 1),
+              border: Border.all(color: Colors.blue.withOpacity(0.2)),
             )
           : null,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.all(8),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: effectiveIconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: effectiveIconColor, size: 18),
           ),
-          SizedBox(width: 12),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +51,7 @@ class PersonDetailRow extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   value,
                   style: TextStyle(

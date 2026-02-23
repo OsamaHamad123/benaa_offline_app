@@ -1,5 +1,4 @@
 import 'dart:async' show unawaited;
-import 'dart:typed_data';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:excel/excel.dart' hide Border;
@@ -109,7 +108,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.r),
-                  side: BorderSide(color: theme.colorScheme.primary, width: 1),
+                  side: BorderSide(color: theme.colorScheme.primary),
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(16.r),
@@ -1036,7 +1035,7 @@ class _SimpleDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       onChanged: enabled ? onChanged : null,
       decoration: InputDecoration(
         labelText: label,
@@ -1065,7 +1064,7 @@ class _AssociationDropdown extends ConsumerWidget {
     return state.when(
       data: (items) {
         return DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           onChanged: enabled ? onChanged : null,
           decoration: const InputDecoration(
             labelText: 'المؤسسة الكافلة',

@@ -50,7 +50,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ValidationIndicator(isValid: null),
+            body: ValidationIndicator(),
           ),
         ),
       );
@@ -70,7 +70,6 @@ void main() {
               designSize: const Size(390, 844),
               builder: (context, child) => const FieldHelperText(
                 text: 'مثال: 0595735352',
-                icon: Icons.info_outline,
               ),
             ),
           ),

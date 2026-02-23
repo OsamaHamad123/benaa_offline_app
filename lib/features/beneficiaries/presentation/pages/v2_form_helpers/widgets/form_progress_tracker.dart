@@ -33,8 +33,7 @@ class FormSection {
 
   const FormSection({
     required this.name,
-    this.icon = Icons.text_fields,
-    required this.requiredFields,
+    required this.requiredFields, this.icon = Icons.text_fields,
     this.optionalFields = 0,
     this.completedRequiredFields = 0,
     this.completedOptionalFields = 0,
@@ -96,8 +95,7 @@ class FormProgressTracker extends StatelessWidget {
   final VoidCallback? onTapIncomplete;
 
   const FormProgressTracker({
-    super.key,
-    required this.sections,
+    required this.sections, super.key,
     this.showMotivationalMessage = true,
     this.showCompactView = false,
     this.onTapIncomplete,
@@ -493,7 +491,7 @@ class ProgressBadge extends StatelessWidget {
   final double progress;
   final VoidCallback? onTap;
 
-  const ProgressBadge({super.key, required this.progress, this.onTap});
+  const ProgressBadge({required this.progress, super.key, this.onTap});
 
   Color get color {
     if (progress >= 100) return Colors.green;

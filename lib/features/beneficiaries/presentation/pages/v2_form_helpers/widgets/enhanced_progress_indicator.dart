@@ -14,9 +14,7 @@ class EnhancedProgressIndicator extends StatelessWidget {
   final Color? backgroundColor;
 
   const EnhancedProgressIndicator({
-    super.key,
-    required this.currentStep,
-    required this.totalSteps,
+    required this.currentStep, required this.totalSteps, super.key,
     this.progressColor,
     this.backgroundColor,
   });

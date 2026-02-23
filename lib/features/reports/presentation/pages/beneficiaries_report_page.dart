@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/widgets/loading_state.dart';
 import '../../../../data/db/drift_database.dart';
@@ -218,7 +217,7 @@ class _BeneficiariesReportPageState
           debugPrint('🔍 [DEBUG] Is empty: ${allBeneficiaries.isEmpty}');
 
           // Apply Filters
-          var filteredBeneficiaries = allBeneficiaries.where((b) {
+          final filteredBeneficiaries = allBeneficiaries.where((b) {
             // Search filter
             if (_searchQuery.isNotEmpty) {
               final query = _searchQuery.toLowerCase();
@@ -355,10 +354,9 @@ class _BeneficiariesReportPageState
                                 filled: true,
                                 fillColor: Colors.grey[50],
                               ),
-                              value: _selectedSyncState,
+                              initialValue: _selectedSyncState,
                               items: const [
                                 DropdownMenuItem(
-                                  value: null,
                                   child: Text('الكل'),
                                 ),
                                 DropdownMenuItem(

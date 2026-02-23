@@ -50,7 +50,7 @@ class FileIdRemoteDataSourceImpl implements FileIdRemoteDataSource {
           return ids;
         }
 
-        final activeReservation = (data['data']?['active_reservation'] ?? data['active_reservation']);
+        final activeReservation = data['data']?['active_reservation'] ?? data['active_reservation'];
         if (activeReservation is Map<String, dynamic>) {
           final startId = int.tryParse(activeReservation['start_id']?.toString() ?? '');
           final endId = int.tryParse(activeReservation['end_id']?.toString() ?? '');

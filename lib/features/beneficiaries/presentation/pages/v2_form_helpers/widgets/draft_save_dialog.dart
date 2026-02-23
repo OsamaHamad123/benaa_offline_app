@@ -124,7 +124,7 @@ class _DraftSaveDialogState extends State<DraftSaveDialog> {
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.blue.shade200, width: 1),
+                border: Border.all(color: Colors.blue.shade200),
               ),
               child: Row(
                 children: [

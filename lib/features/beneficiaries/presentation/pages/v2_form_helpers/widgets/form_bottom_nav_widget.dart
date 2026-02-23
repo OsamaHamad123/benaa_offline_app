@@ -14,12 +14,7 @@ class FormBottomNavWidget extends StatelessWidget {
   final bool isLoading;
 
   const FormBottomNavWidget({
-    super.key,
-    required this.tabController,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onSave,
-    required this.isLoading,
+    required this.tabController, required this.onPrevious, required this.onNext, required this.onSave, required this.isLoading, super.key,
   });
 
   @override

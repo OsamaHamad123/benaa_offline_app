@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
 import '../components/v2_dropdown_field.dart';
@@ -23,17 +22,10 @@ class V2ContactInfoTab extends StatelessWidget {
   final TextEditingController? addressBeforeDisplacementController;
 
   const V2ContactInfoTab({
-    super.key,
-    required this.phoneController,
-    required this.altPhoneController,
-    required this.addressController,
-    required this.neighborhoodController,
+    required this.phoneController, required this.altPhoneController, required this.addressController, required this.neighborhoodController, required this.onCityChanged, required this.onProvinceChanged, required this.onDisplacementStatusChanged, super.key,
     this.selectedCity,
-    required this.onCityChanged,
     this.selectedProvince,
-    required this.onProvinceChanged,
     this.selectedDisplacementStatus,
-    required this.onDisplacementStatusChanged,
     this.addressBeforeDisplacementController,
   });
 

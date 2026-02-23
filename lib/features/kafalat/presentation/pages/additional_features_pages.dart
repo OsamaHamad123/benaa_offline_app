@@ -150,7 +150,7 @@ class AdvancedDashboardPage extends StatelessWidget {
       ),
       body: ListView(
         padding: EdgeInsets.all(16.w),
-        children: [
+        children: const [
           _KPICard(
             title: 'إجمالي الكفالات',
             value: '127',

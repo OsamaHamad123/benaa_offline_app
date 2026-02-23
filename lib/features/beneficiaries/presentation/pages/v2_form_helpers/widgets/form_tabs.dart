@@ -20,12 +20,7 @@ class BeneficiaryFormTabs extends StatefulWidget {
   final String? beneficiaryId;
 
   const BeneficiaryFormTabs({
-    super.key,
-    required this.controller,
-    required this.formControllers,
-    required this.onBirthDateTap,
-    required this.firstFieldFocusNode,
-    required this.beneficiaryId,
+    required this.controller, required this.formControllers, required this.onBirthDateTap, required this.firstFieldFocusNode, required this.beneficiaryId, super.key,
   });
 
   @override

@@ -1,5 +1,6 @@
 /// 🔒 Security System
 /// Barrel file for security exports
+library;
 
 export 'biometric_auth_service.dart';
 export 'session_manager.dart';

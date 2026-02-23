@@ -15,7 +15,7 @@ class VisitRepositoryImpl implements VisitRepository {
     try {
       final companion = VisitModel.toDrift(visit);
       await localDataSource.insertVisit(companion);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('Failed to create visit: $e', stackTrace));
     }
@@ -64,7 +64,7 @@ class VisitRepositoryImpl implements VisitRepository {
 
       // Note: This needs a Drift Visit object, not a model
       // You may need to add a method in datasource to handle this
-      return Failure(
+      return const Failure(
           UnknownFailure('Update visit needs proper Drift implementation'));
     } catch (e, stackTrace) {
       return Failure(UnknownFailure('Failed to update visit: $e', stackTrace));
@@ -75,7 +75,7 @@ class VisitRepositoryImpl implements VisitRepository {
   Future<Result<void>> deleteVisit(String id) async {
     try {
       await localDataSource.deleteVisit(id);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('Failed to delete visit: $e', stackTrace));
     }
@@ -96,7 +96,7 @@ class VisitRepositoryImpl implements VisitRepository {
     try {
       final date = await localDataSource.getLastVisitDate(beneficiaryId);
       if (date == null) {
-        return Failure(NotFoundFailure('No visits found for beneficiary'));
+        return const Failure(NotFoundFailure('No visits found for beneficiary'));
       }
       return Success(date);
     } catch (e, stackTrace) {

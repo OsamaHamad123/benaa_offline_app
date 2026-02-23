@@ -25,7 +25,7 @@ class PendingSyncAlert extends ConsumerWidget {
             color: Colors.orange[50],
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.orange[200]!, width: 1),
+              side: BorderSide(color: Colors.orange[200]!),
             ),
             child: ListTile(
               leading: Container(
@@ -81,8 +81,8 @@ class LastSyncStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO: Get real sync data from provider
-    final lastSyncTime = '3 ساعات';
-    final syncedCount = 42;
+    const lastSyncTime = '3 ساعات';
+    const syncedCount = 42;
 
     return Semantics(
       label: 'آخر مزامنة ناجحة: منذ $lastSyncTime - $syncedCount سجل',
@@ -93,7 +93,7 @@ class LastSyncStatus extends StatelessWidget {
         color: Colors.green[50],
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: Colors.green[200]!, width: 1),
+          side: BorderSide(color: Colors.green[200]!),
         ),
         child: ListTile(
           leading: Container(
@@ -276,7 +276,6 @@ class ConnectionStatusBar extends StatelessWidget {
         border: Border(
           bottom: BorderSide(
             color: isOnline ? Colors.green[200]! : Colors.orange[200]!,
-            width: 1,
           ),
         ),
       ),
@@ -318,9 +317,9 @@ class PerformanceMetricsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // TODO: Get real data from activity logger
-    final todayCount = 12;
-    final avgDaily = 8.5;
-    final monthCount = 245;
+    const todayCount = 12;
+    const avgDaily = 8.5;
+    const monthCount = 245;
 
     return Card(
       elevation: 2,
@@ -354,7 +353,7 @@ class PerformanceMetricsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            Row(
+            const Row(
               children: [
                 Expanded(
                   child: _MetricItem(
@@ -369,7 +368,6 @@ class PerformanceMetricsCard extends StatelessWidget {
                     label: 'متوسط يومي',
                     value: '$avgDaily',
                     trend: 'مستقر',
-                    trendUp: null,
                   ),
                 ),
                 Expanded(

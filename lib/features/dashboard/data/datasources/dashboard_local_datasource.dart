@@ -161,7 +161,6 @@ class DashboardLocalDataSource {
         description: item.description,
         timestamp: item.createdAt,
         beneficiaryId: item.beneficiaryId,
-        beneficiaryName: null, // TODO: Join with beneficiaries if needed
         metadata: {'userId': item.userId},
       );
     }).toList();

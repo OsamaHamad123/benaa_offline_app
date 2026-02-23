@@ -11,9 +11,7 @@ class AnimatedSectionHeader extends StatelessWidget {
   final VoidCallback? onTap;
 
   const AnimatedSectionHeader({
-    super.key,
-    required this.title,
-    required this.icon,
+    required this.title, required this.icon, super.key,
     this.isComplete = false,
     this.onTap,
   });
@@ -126,11 +124,8 @@ class AnimatedSectionCard extends StatelessWidget {
   final Color? color;
 
   const AnimatedSectionCard({
-    super.key,
-    required this.title,
-    required this.icon,
+    required this.title, required this.icon, required this.children, super.key,
     this.isComplete = false,
-    required this.children,
     this.padding,
     this.color,
   });
@@ -227,9 +222,7 @@ class CompletionProgressCard extends StatelessWidget {
   final String? subtitle;
 
   const CompletionProgressCard({
-    super.key,
-    required this.completedFields,
-    required this.totalFields,
+    required this.completedFields, required this.totalFields, super.key,
     this.subtitle,
   });
 

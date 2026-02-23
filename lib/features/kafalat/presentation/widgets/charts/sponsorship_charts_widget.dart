@@ -16,8 +16,7 @@ class SponsorshipChartsWidget extends ConsumerStatefulWidget {
   final List<SponsorshipWithDetails> sponsorships;
 
   const SponsorshipChartsWidget({
-    super.key,
-    required this.sponsorships,
+    required this.sponsorships, super.key,
   });
 
   @override
@@ -423,7 +422,6 @@ class _MonthlyBarChart extends StatelessWidget {
           ),
         ),
         titlesData: FlTitlesData(
-          show: true,
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -452,11 +450,10 @@ class _MonthlyBarChart extends StatelessWidget {
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
         ),
         gridData: FlGridData(
-          show: true,
           drawVerticalLine: false,
           horizontalInterval: 5,
           getDrawingHorizontalLine: (value) {
@@ -477,7 +474,7 @@ class _MonthlyBarChart extends StatelessWidget {
 
     // تحويل البيانات الشهرية إلى أسماء الأشهر بالعربي
     for (final entry in monthlyCounts.entries) {
-      final monthName = DateFormat('MMM', 'ar').format(DateTime(2024, entry.key, 1));
+      final monthName = DateFormat('MMM', 'ar').format(DateTime(2024, entry.key));
       monthlyData[monthName] = entry.value.toDouble();
     }
 
@@ -540,7 +537,6 @@ class _TrendLineChart extends StatelessWidget {
           ),
         ),
         gridData: FlGridData(
-          show: true,
           drawVerticalLine: false,
           horizontalInterval: 5,
           getDrawingHorizontalLine: (value) {
@@ -579,8 +575,8 @@ class _TrendLineChart extends StatelessWidget {
               },
             ),
           ),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
         ),
         borderData: FlBorderData(show: false),
         lineBarsData: [
@@ -590,7 +586,6 @@ class _TrendLineChart extends StatelessWidget {
             color: Colors.purple,
             barWidth: 3,
             dotData: FlDotData(
-              show: true,
               getDotPainter: (spot, percent, barData, index) {
                 return FlDotCirclePainter(
                   radius: 4.r,

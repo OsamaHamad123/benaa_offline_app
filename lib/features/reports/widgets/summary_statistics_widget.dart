@@ -96,13 +96,13 @@ class SummaryStatisticsWidget extends ConsumerWidget {
     final maleCount = genderCounts
         .firstWhere(
           (g) => g.gender == 'ذكر',
-          orElse: () => GenderCount(gender: 'ذكر', count: 0),
+          orElse: () => const GenderCount(gender: 'ذكر', count: 0),
         )
         .count;
     final femaleCount = genderCounts
         .firstWhere(
           (g) => g.gender == 'أنثى',
-          orElse: () => GenderCount(gender: 'أنثى', count: 0),
+          orElse: () => const GenderCount(gender: 'أنثى', count: 0),
         )
         .count;
 

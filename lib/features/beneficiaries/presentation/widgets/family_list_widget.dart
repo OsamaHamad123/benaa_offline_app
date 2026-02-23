@@ -13,7 +13,7 @@ import 'family_members_form.dart';
 class FamilyListWidget extends ConsumerStatefulWidget {
   final int beneficiaryId;
 
-  const FamilyListWidget({super.key, required this.beneficiaryId});
+  const FamilyListWidget({required this.beneficiaryId, super.key});
 
   @override
   ConsumerState<FamilyListWidget> createState() => _FamilyListWidgetState();

@@ -52,8 +52,7 @@ class AnimatedButton extends StatefulWidget {
   final Duration duration;
 
   const AnimatedButton({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onPressed,
     this.duration = const Duration(milliseconds: 200),
   });

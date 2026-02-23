@@ -9,11 +9,10 @@ class AdvancedFiltersWidget extends StatefulWidget {
   final Function(String?, String?, bool?) onApply;
 
   const AdvancedFiltersWidget({
-    super.key,
+    required this.onApply, super.key,
     this.selectedCategory,
     this.selectedGovernorate,
     this.syncedOnly,
-    required this.onApply,
   });
 
   @override
@@ -149,7 +148,7 @@ class _AdvancedFiltersWidgetState extends State<AdvancedFiltersWidget> {
               title: 'المحافظة',
               icon: Icons.location_on,
               child: DropdownButtonFormField<String>(
-                value: _selectedGovernorate ?? 'الكل',
+                initialValue: _selectedGovernorate ?? 'الكل',
                 decoration: InputDecoration(
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 12.w,

@@ -13,9 +13,7 @@ class StaggeredGridAnimation extends StatelessWidget {
   final Curve curve;
 
   const StaggeredGridAnimation({
-    super.key,
-    required this.child,
-    required this.index,
+    required this.child, required this.index, super.key,
     this.columnCount = 2,
     this.duration = const Duration(milliseconds: 400),
     this.delay = const Duration(milliseconds: 50),
@@ -52,9 +50,7 @@ class WaveListAnimation extends StatefulWidget {
   final Duration duration;
 
   const WaveListAnimation({
-    super.key,
-    required this.child,
-    required this.index,
+    required this.child, required this.index, super.key,
     this.duration = const Duration(milliseconds: 1500),
   });
 
@@ -114,9 +110,7 @@ class RotateScaleAnimation extends StatefulWidget {
   final int maxItems;
 
   const RotateScaleAnimation({
-    super.key,
-    required this.child,
-    required this.index,
+    required this.child, required this.index, super.key,
     this.duration = const Duration(milliseconds: 600),
     this.maxItems = 20,
   });
@@ -190,9 +184,7 @@ class FlipAnimation extends StatefulWidget {
   final Duration duration;
 
   const FlipAnimation({
-    super.key,
-    required this.child,
-    required this.index,
+    required this.child, required this.index, super.key,
     this.duration = const Duration(milliseconds: 800),
   });
 
@@ -256,8 +248,7 @@ class ShimmerLoading extends StatefulWidget {
   final Duration duration;
 
   const ShimmerLoading({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.baseColor,
     this.highlightColor,
     this.duration = const Duration(milliseconds: 1500),
@@ -321,9 +312,7 @@ class HeroAnimationWrapper extends StatelessWidget {
   final Duration duration;
 
   const HeroAnimationWrapper({
-    super.key,
-    required this.tag,
-    required this.child,
+    required this.tag, required this.child, super.key,
     this.duration = const Duration(milliseconds: 300),
   });
 

@@ -8,10 +8,7 @@ class QuickStatsCard extends StatelessWidget {
   final String lastVisitDate;
 
   const QuickStatsCard({
-    super.key,
-    required this.visitsCount,
-    required this.attachmentsCount,
-    required this.lastVisitDate,
+    required this.visitsCount, required this.attachmentsCount, required this.lastVisitDate, super.key,
   });
 
   @override

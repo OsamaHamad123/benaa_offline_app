@@ -58,7 +58,6 @@ class _ResponsiveTestPageState extends State<ResponsiveTestPage> {
     accountCurrency: 'IQD',
     swiftCode: 'SWIFT123',
     bankPhone: '07801112233',
-    isActive: true,
     representativeId: '1',
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
@@ -148,7 +147,7 @@ class _ResponsiveTestPageState extends State<ResponsiveTestPage> {
                 const SizedBox(height: 24),
                 _buildTestCase(
                   'Test 2: بدون email',
-                  testAssociation.copyWith(email: null),
+                  testAssociation.copyWith(),
                   'المندوب أحمد',
                 ),
                 const SizedBox(height: 24),

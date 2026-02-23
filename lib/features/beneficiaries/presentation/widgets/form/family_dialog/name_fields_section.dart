@@ -17,11 +17,7 @@ class NameFieldsSection extends StatelessWidget {
   final FocusNode? familyNameFocus;
 
   const NameFieldsSection({
-    super.key,
-    required this.firstNameController,
-    required this.secondNameController,
-    required this.thirdNameController,
-    required this.familyNameController,
+    required this.firstNameController, required this.secondNameController, required this.thirdNameController, required this.familyNameController, super.key,
     this.firstNameFocus,
     this.secondNameFocus,
     this.thirdNameFocus,

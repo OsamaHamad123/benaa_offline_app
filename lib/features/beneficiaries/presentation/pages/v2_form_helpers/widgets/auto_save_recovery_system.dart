@@ -28,9 +28,8 @@ class AutoSaveManager {
   int _saveCount = 0;
 
   AutoSaveManager({
-    this.saveInterval = const Duration(seconds: 30),
+    required this.onSave, this.saveInterval = const Duration(seconds: 30),
     this.debounceDelay = const Duration(seconds: 2),
-    required this.onSave,
     this.onSaveStart,
     this.onSaveComplete,
     this.onSaveError,
@@ -278,10 +277,7 @@ class Draft {
   Draft({
     required this.id,
     required this.name,
-    this.notes,
-    required this.timestamp,
-    required this.progress,
-    required this.data,
+    required this.timestamp, required this.progress, required this.data, this.notes,
   });
 
   Map<String, dynamic> toJson() => {
@@ -319,8 +315,7 @@ class AutoSaveIndicator extends StatelessWidget {
   final bool hasUnsavedChanges;
 
   const AutoSaveIndicator({
-    super.key,
-    required this.isSaving,
+    required this.isSaving, super.key,
     this.lastSaveTime,
     this.hasUnsavedChanges = false,
   });
@@ -387,10 +382,8 @@ class RecoveryDialog extends StatelessWidget {
   final VoidCallback onDiscard;
 
   const RecoveryDialog({
-    super.key,
+    required this.onRestore, required this.onDiscard, super.key,
     this.lastSaveTime,
-    required this.onRestore,
-    required this.onDiscard,
   });
 
   @override
@@ -466,7 +459,7 @@ class RecoveryDialog extends StatelessWidget {
 class DraftsListDialog extends StatefulWidget {
   final Function(Draft draft) onRestore;
 
-  const DraftsListDialog({super.key, required this.onRestore});
+  const DraftsListDialog({required this.onRestore, super.key});
 
   @override
   State<DraftsListDialog> createState() => _DraftsListDialogState();

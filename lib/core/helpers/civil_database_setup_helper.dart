@@ -44,7 +44,6 @@ class CivilDatabaseSetupHelper {
         MaterialPageRoute(
           builder: (context) => const InitialSetupPage(
             downloadUrl: DOWNLOAD_URL,
-            expectedChecksum: EXPECTED_CHECKSUM,
           ),
           fullscreenDialog: true,
         ),
@@ -68,7 +67,6 @@ class CivilDatabaseSetupHelper {
       MaterialPageRoute(
         builder: (context) => const InitialSetupPage(
           downloadUrl: DOWNLOAD_URL,
-          expectedChecksum: EXPECTED_CHECKSUM,
         ),
       ),
     );

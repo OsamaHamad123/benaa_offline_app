@@ -8,12 +8,12 @@ void main() {
       final visit = Visit(
         id: 'visit_123',
         beneficiaryId: 'ben_456',
-        visitDate: DateTime(2023, 10, 1),
+        visitDate: DateTime(2023, 10),
         staffName: 'Staff User',
         notes: 'Test notes',
         isSubmitted: true,
-        createdAt: DateTime(2023, 10, 1, 10, 0),
-        updatedAt: DateTime(2023, 10, 1, 10, 0),
+        createdAt: DateTime(2023, 10, 1, 10),
+        updatedAt: DateTime(2023, 10, 1, 10),
         syncState: 'pending',
       );
 

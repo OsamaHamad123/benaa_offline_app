@@ -22,18 +22,13 @@ class Association extends Equatable {
   const Association({
     required this.id,
     required this.name,
-    this.shortName,
-    required this.phone,
+    required this.phone, required this.bankName, required this.accountNumber, required this.createdAt, required this.updatedAt, this.shortName,
     this.email,
-    required this.bankName,
-    required this.accountNumber,
     this.swiftCode,
     this.bankPhone,
     this.accountCurrency,
     this.representativeId,
     this.isActive = true,
-    required this.createdAt,
-    required this.updatedAt,
   });
 
   /// Display name (الاسم المختصر أو الكامل)

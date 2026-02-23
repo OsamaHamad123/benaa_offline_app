@@ -13,10 +13,8 @@ class ValidationSummaryWidget extends StatelessWidget {
   final VoidCallback onDismiss;
 
   const ValidationSummaryWidget({
-    super.key,
-    required this.validationErrors,
+    required this.validationErrors, required this.onDismiss, super.key,
     this.onFixFirstError,
-    required this.onDismiss,
   });
 
   int get totalErrors => validationErrors.values.expand((errors) => errors).length;

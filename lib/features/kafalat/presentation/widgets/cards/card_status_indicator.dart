@@ -7,8 +7,7 @@ class CardStatusIndicator extends StatelessWidget {
   final DateTime? endDate;
 
   const CardStatusIndicator({
-    super.key,
-    required this.createdAt,
+    required this.createdAt, super.key,
     this.endDate,
   });
 

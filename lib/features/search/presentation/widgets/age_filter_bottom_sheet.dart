@@ -10,10 +10,9 @@ class AgeFilterBottomSheet extends StatefulWidget {
   final Function(int? minAge, int? maxAge) onApply;
 
   const AgeFilterBottomSheet({
-    super.key,
+    required this.onApply, super.key,
     this.initialMinAge,
     this.initialMaxAge,
-    required this.onApply,
   });
 
   @override
@@ -48,7 +47,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
           right: 20,
           bottom: MediaQuery.of(context).padding.bottom + 20,
         ),
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -67,13 +66,13 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             // Title
             Row(
               children: [
                 Icon(Icons.filter_list, color: Colors.blue.shade700),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Text(
                   'فلتر العمر',
                   style: TextStyle(
@@ -82,7 +81,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                     color: Colors.grey.shade800,
                   ),
                 ),
-                Spacer(),
+                const Spacer(),
                 // Enable/Disable switch
                 Switch(
                   value: _isEnabled,
@@ -93,12 +92,12 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                 ),
               ],
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Age range display
             if (_isEnabled) ...[
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
                   borderRadius: BorderRadius.circular(12),
@@ -115,9 +114,9 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                         color: Colors.blue.shade900,
                       ),
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Icon(Icons.arrow_back, color: Colors.blue.shade700),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     Text(
                       'إلى ${_ageRange.end.round()} سنة',
                       style: TextStyle(
@@ -129,12 +128,11 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                   ],
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
 
               // Range Slider
               RangeSlider(
                 values: _ageRange,
-                min: _minAge,
                 max: _maxAge,
                 divisions: 100,
                 labels: RangeLabels(
@@ -150,7 +148,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
               ),
 
               // Quick age preset chips
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'اختيارات سريعة:',
                 style: TextStyle(
@@ -159,7 +157,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                   color: Colors.grey.shade700,
                 ),
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -172,7 +170,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
               ),
             ],
 
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Action buttons
             Row(
@@ -181,15 +179,15 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text('إلغاء'),
+                    child: const Text('إلغاء'),
                   ),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
                   child: ElevatedButton(
@@ -208,13 +206,13 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade700,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 2,
                     ),
-                    child: Text(
+                    child: const Text(
                       'تطبيق الفلتر',
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -244,7 +242,7 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? Colors.blue.shade700 : Colors.grey.shade100,
           borderRadius: BorderRadius.circular(20),

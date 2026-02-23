@@ -2,6 +2,7 @@
 ///
 /// خدمة موحدة لتصدير Excel في كامل التطبيق
 /// تدعم: المستفيدين، الزيارات، الأنشطة، التقارير
+library;
 
 import 'dart:io';
 import 'package:excel/excel.dart';

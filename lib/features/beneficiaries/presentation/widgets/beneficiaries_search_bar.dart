@@ -17,9 +17,7 @@ class BeneficiariesSearchBar extends StatefulWidget {
   final Duration debounceDuration;
 
   const BeneficiariesSearchBar({
-    super.key,
-    required this.controller,
-    required this.onChanged,
+    required this.controller, required this.onChanged, super.key,
     this.onClear,
     this.hintText = 'بحث عن مستفيد...',
     this.padding,
@@ -80,7 +78,7 @@ class _BeneficiariesSearchBarState extends State<BeneficiariesSearchBar> {
               : null,
           filled: true,
           fillColor:
-              Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+              Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

@@ -6,7 +6,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:benaa_offline_app/core/error_handling/result.dart';
 
-import '../../domain/entities/taxonomy_group.dart';
 import '../providers/taxonomy_providers.dart';
 import '../providers/taxonomy_bridge_providers.dart';
 
@@ -17,10 +16,10 @@ class TaxonomyAutoSyncManager extends ConsumerStatefulWidget {
   final bool enabled;
 
   const TaxonomyAutoSyncManager({
-    super.key,
     required this.child,
     required this.syncInterval,
     required this.freshnessThreshold,
+    super.key,
     this.enabled = true,
   });
 
@@ -29,7 +28,7 @@ class TaxonomyAutoSyncManager extends ConsumerStatefulWidget {
 }
 
 class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManager> with WidgetsBindingObserver {
-  static const Duration _startupDelay = Duration(seconds: 12);
+  static const Duration _startupDelay = Duration(seconds: 60);
   static const Duration _minAttemptGap = Duration(minutes: 2);
   static const Duration _maxBackoff = Duration(minutes: 30);
 
@@ -39,6 +38,7 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
   bool _syncInFlight = false;
   int _failureCount = 0;
   DateTime? _lastAttemptAt;
+  bool _hasEnteredBackground = false;
 
   @override
   void initState() {
@@ -56,7 +56,7 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
       _publishState((state) => state.copyWith(enabled: widget.enabled));
       if (!widget.enabled) {
         _timer?.cancel();
-        _publishState((state) => state.copyWith(nextAttemptAt: null));
+        _publishState((state) => state.copyWith(clearNextAttemptAt: true));
         return;
       }
       _scheduleNext(delay: _withJitter(const Duration(seconds: 5)));
@@ -70,8 +70,13 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (widget.enabled && state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _hasEnteredBackground = true;
+    }
+
+    if (widget.enabled && state == AppLifecycleState.resumed && _hasEnteredBackground) {
       unawaited(_attemptSync(reason: 'resume', force: true));
+      _hasEnteredBackground = false;
     }
   }
 
@@ -87,6 +92,17 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
     bool force = false,
   }) async {
     if (!mounted || _syncInFlight || !widget.enabled) return;
+
+    final isSuspended = ref.read(taxonomyAutoSyncSuspendedProvider);
+    final routePath = ref.read(taxonomyAutoSyncRoutePathProvider);
+    final emergency = ref.read(taxonomyAutoSyncEmergencyModeProvider);
+    final blockedByRoute = isHeavyUiRouteForSync(routePath);
+
+    if (isSuspended || emergency || blockedByRoute) {
+      _publishState((state) => state.copyWith(lastSkipReason: 'ui_heavy_screen'));
+      _scheduleNext(delay: _withJitter(const Duration(seconds: 20)));
+      return;
+    }
 
     final now = DateTime.now();
     final lastAttemptAt = _lastAttemptAt;
@@ -133,11 +149,8 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
         ref.invalidate(allTaxonomiesProvider);
         ref.invalidate(taxonomyStatisticsProvider);
         ref.invalidate(lastSyncTimeProvider);
-        for (final group in TaxonomyGroup.values) {
-          ref.invalidate(taxonomiesByGroupProvider(group));
-          ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
-          ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
-        }
+        ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+        ref.invalidate(taxonomiesByGroupProvider);
       } else {
         _failureCount = (_failureCount + 1).clamp(1, 8);
         final failure = result as Failure;
@@ -167,7 +180,7 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
   void _scheduleNext({Duration? delay}) {
     if (!widget.enabled) {
       _timer?.cancel();
-      _publishState((state) => state.copyWith(nextAttemptAt: null));
+      _publishState((state) => state.copyWith(clearNextAttemptAt: true));
       return;
     }
 
@@ -180,11 +193,11 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
   }
 
   void _publishState(TaxonomyAutoSyncState Function(TaxonomyAutoSyncState) updater) {
-    final applyUpdate = () {
+    Null applyUpdate() {
       if (!mounted) return;
       final notifier = ref.read(taxonomyAutoSyncStateProvider.notifier);
       notifier.state = updater(notifier.state);
-    };
+    }
 
     final phase = SchedulerBinding.instance.schedulerPhase;
     final isBuildingFrame = phase == SchedulerPhase.transientCallbacks ||

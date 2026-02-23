@@ -89,9 +89,9 @@ class ReportsDashboardPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
 
-            Row(
+            const Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: _StatCard(
                     title: 'إجمالي التقارير',
                     value: '24',
@@ -99,8 +99,8 @@ class ReportsDashboardPage extends ConsumerWidget {
                     color: Colors.blue,
                   ),
                 ),
-                const SizedBox(width: 16),
-                const Expanded(
+                SizedBox(width: 16),
+                Expanded(
                   child: _StatCard(
                     title: 'هذا الشهر',
                     value: '8',

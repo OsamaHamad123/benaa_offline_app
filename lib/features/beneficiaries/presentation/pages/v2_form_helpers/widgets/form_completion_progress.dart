@@ -8,9 +8,7 @@ class FormCompletionProgress extends StatelessWidget {
   final List<String> requiredFieldsEmpty;
 
   const FormCompletionProgress({
-    super.key,
-    required this.totalFields,
-    required this.filledFields,
+    required this.totalFields, required this.filledFields, super.key,
     this.requiredFieldsEmpty = const [],
   });
 

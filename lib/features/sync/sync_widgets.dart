@@ -2,7 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/widgets/loading_state.dart';
-import '../../core/sync/sync_manager.dart';
+import '../../core/sync/mobile_sync_service.dart';
+import 'mobile_sync_page.dart';
+
+final mobileSyncStatusProvider = StreamProvider<MobileSyncStatus>((ref) {
+  final syncService = ref.watch(mobileSyncServiceProvider);
+  return syncService.statusStream;
+});
+
+Future<void> _runOfficialSync(MobileSyncService syncService) async {
+  await syncService.syncDown();
+  await syncService.syncUp();
+}
 
 /// شريط عرض حالة المزامنة
 class SyncStatusBar extends ConsumerWidget {
@@ -10,7 +21,7 @@ class SyncStatusBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncStatusAsync = ref.watch(syncStatusProvider);
+    final syncStatusAsync = ref.watch(mobileSyncStatusProvider);
 
     return syncStatusAsync.when(
       data: (status) {
@@ -20,9 +31,7 @@ class SyncStatusBar extends ConsumerWidget {
 
         return Container(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-          color: status.lastError != null
-              ? Colors.red.shade100
-              : Colors.blue.shade100,
+          color: status.lastError != null ? Colors.red.shade100 : Colors.blue.shade100,
           child: Row(
             children: [
               if (status.isSyncing)
@@ -37,7 +46,7 @@ class SyncStatusBar extends ConsumerWidget {
                   children: [
                     if (status.isSyncing)
                       Text(
-                        'جاري المزامنة... ${status.currentEntity ?? ""}',
+                        'جاري المزامنة... ${status.currentOperation}',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       )
                     else if (status.lastError != null)
@@ -50,7 +59,7 @@ class SyncStatusBar extends ConsumerWidget {
                       ),
                     if (status.isSyncing)
                       Text(
-                        '${status.completedItems} من ${status.totalItems}',
+                        '${(status.progress * 100).toStringAsFixed(0)}%',
                         style: TextStyle(
                           fontSize: 12.sp,
                           color: Colors.grey.shade700,
@@ -89,29 +98,21 @@ class SyncButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncStatusAsync = ref.watch(syncStatusProvider);
-    final syncManager = ref.watch(syncManagerProvider);
+    final syncStatusAsync = ref.watch(mobileSyncStatusProvider);
+    final syncService = ref.watch(mobileSyncServiceProvider);
 
     return syncStatusAsync.when(
       data: (status) {
         return IconButton(
-          icon: status.isSyncing
-              ? const SmallLoadingIndicator()
-              : Badge(
-                  label: status.totalItems > 0
-                      ? Text('${status.totalItems}')
-                      : null,
-                  isLabelVisible: status.totalItems > 0,
-                  child: const Icon(Icons.sync),
-                ),
-          onPressed: status.isSyncing ? null : () => syncManager.syncAll(),
+          icon: status.isSyncing ? const SmallLoadingIndicator() : const Icon(Icons.sync),
+          onPressed: status.isSyncing ? null : () => _runOfficialSync(syncService),
           tooltip: status.isSyncing ? 'جاري المزامنة...' : 'مزامنة',
         );
       },
       loading: () => const IconButton(icon: Icon(Icons.sync), onPressed: null),
       error: (_, __) => IconButton(
         icon: const Icon(Icons.sync_problem),
-        onPressed: () => syncManager.syncAll(),
+        onPressed: () => _runOfficialSync(syncService),
         tooltip: 'إعادة المحاولة',
       ),
     );
@@ -124,8 +125,8 @@ class SyncDetailsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final syncStatusAsync = ref.watch(syncStatusProvider);
-    final syncManager = ref.watch(syncManagerProvider);
+    final syncStatusAsync = ref.watch(mobileSyncStatusProvider);
+    final syncService = ref.watch(mobileSyncServiceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -133,7 +134,7 @@ class SyncDetailsPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => syncManager.syncAll(),
+            onPressed: () => _runOfficialSync(syncService),
             tooltip: 'مزامنة الآن',
           ),
         ],
@@ -183,7 +184,7 @@ class SyncDetailsPage extends ConsumerWidget {
                         LinearProgressIndicator(value: status.progress),
                         const SizedBox(height: 8),
                         Text(
-                          '${status.completedItems} من ${status.totalItems}',
+                          '${(status.progress * 100).toStringAsFixed(0)}%',
                           style: TextStyle(color: Colors.grey.shade600),
                         ),
                       ],
@@ -239,7 +240,7 @@ class SyncDetailsPage extends ConsumerWidget {
                       leading: const Icon(Icons.cloud_upload),
                       title: const Text('عناصر في الانتظار'),
                       trailing: Text(
-                        '${status.totalItems}',
+                        status.isSyncing ? '...' : '-',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -255,7 +256,7 @@ class SyncDetailsPage extends ConsumerWidget {
               // زر المزامنة
               if (!status.isSyncing)
                 ElevatedButton.icon(
-                  onPressed: () => syncManager.syncAll(),
+                  onPressed: () => _runOfficialSync(syncService),
                   icon: const Icon(Icons.sync),
                   label: const Text('مزامنة الآن'),
                   style: ElevatedButton.styleFrom(
@@ -275,7 +276,7 @@ class SyncDetailsPage extends ConsumerWidget {
               Text('خطأ: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => syncManager.syncAll(),
+                onPressed: () => _runOfficialSync(syncService),
                 child: const Text('إعادة المحاولة'),
               ),
             ],

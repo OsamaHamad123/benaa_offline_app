@@ -22,9 +22,7 @@ class NotificationsService {
 
     // iOS settings
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      
     );
 
     const initializationSettings = InitializationSettings(
@@ -87,7 +85,6 @@ class NotificationsService {
       channelDescription: 'إشعارات تطبيق بناء',
       importance: Importance.high,
       priority: Priority.high,
-      showWhen: true,
     );
 
     const iosDetails = DarwinNotificationDetails(

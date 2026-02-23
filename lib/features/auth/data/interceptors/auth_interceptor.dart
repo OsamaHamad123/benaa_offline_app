@@ -95,7 +95,7 @@ class AuthInterceptor extends QueuedInterceptor {
         case Failure(error: final failure):
           UnifiedLogger.error('❌ Token refresh failed: ${failure.message}');
           return false;
-        case Success(value: final newToken):
+        case Success():
           UnifiedLogger.success('✅ Token refreshed successfully');
           return true;
       }

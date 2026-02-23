@@ -42,6 +42,18 @@ enum TaxonomyGroup {
   /// نوع الكفالة
   sponsorshipType('sponsorship_type', 'نوع الكفالة', 'spons'),
 
+  /// أنواع الوثائق
+  documentType('document_type', 'أنواع الوثائق', 'doc'),
+
+  /// أسماء البنوك
+  bankName('bank_name', 'أسماء البنوك', 'bank'),
+
+  /// العملات
+  currency('currency', 'العملات', 'curr'),
+
+  /// أسباب الوفاة
+  deathReason('death_reason', 'أسباب الوفاة', 'death'),
+
   /// الجنس
   gender('gender', 'الجنس', 'gen'),
 
@@ -108,6 +120,12 @@ enum TaxonomyGroup {
     if (trimmed.contains('مصدر الدخل')) return 'income_source';
     if (trimmed.contains('نوع الجمعية')) return 'association_type';
     if (trimmed.contains('نوع الكفالة')) return 'sponsorship_type';
+    if (trimmed.contains('الوثائ')) return 'document_type';
+    if (trimmed.contains('البنوك') || trimmed.contains('البنك')) return 'bank_name';
+    if (trimmed.contains('العملات') || trimmed.contains('عملة')) return 'currency';
+    if (trimmed.contains('أسباب الوفاة') || trimmed.contains('اسباب الوفاة') || trimmed.contains('الوفاة')) {
+      return 'death_reason';
+    }
     if (trimmed.contains('نوع الزيارة')) return 'visit_type';
     if (trimmed.contains('نوع المساعدة')) return 'assistance_type';
     if (trimmed.contains('حالة المستفيد')) return 'beneficiary_status';
@@ -122,6 +140,7 @@ enum TaxonomyGroup {
       'provinces': 'governorate',
       'governorates': 'governorate',
       'cities': 'governorate',
+      'relations': 'relationship',
       'marital_statuses': 'marital_status',
       'social_status': 'marital_status',
       'social_statuses': 'marital_status',
@@ -135,6 +154,7 @@ enum TaxonomyGroup {
       'health_statuses': 'health_status',
       'health_conditions': 'health_status',
       'housing_types': 'housing_type',
+      'accommodation_types': 'housing_type',
       'residence_types': 'housing_type',
       'housing_statuses': 'housing_status',
       'housing_conditions': 'housing_status',
@@ -145,16 +165,28 @@ enum TaxonomyGroup {
       'association_types': 'association_type',
       'associations_types': 'association_type',
       'sponsorship_types': 'sponsorship_type',
+      'document_types': 'document_type',
+      'document_type': 'document_type',
+      'bank_names': 'bank_name',
+      'bank_name': 'bank_name',
+      'currencies': 'currency',
+      'currency': 'currency',
+      'death_reasons': 'death_reason',
+      'death_reason': 'death_reason',
       'visit_types': 'visit_type',
       'assistance_types': 'assistance_type',
       'aid_types': 'assistance_type',
+      'aid_statuses': 'assistance_type',
       'beneficiary_statuses': 'beneficiary_status',
+      'request_statuses': 'beneficiary_status',
+      'sponsorship_statuses': 'beneficiary_status',
       'beneficiary_state': 'beneficiary_status',
       'relationships': 'relationship',
       'kinship': 'relationship',
       'departments': 'section',
       'department': 'section',
       'sections': 'section',
+      'guarantee_types': 'sponsorship_type',
       'sex': 'gender',
       'genders': 'gender',
     };
@@ -176,8 +208,14 @@ enum TaxonomyGroup {
     if (direct.contains('income')) return 'income_source';
     if (direct.contains('association')) return 'association_type';
     if (direct.contains('sponsorship')) return 'sponsorship_type';
+    if (direct.contains('document_type') || direct.contains('document')) return 'document_type';
+    if (direct.contains('bank_name') || direct.contains('bank')) return 'bank_name';
+    if (direct.contains('currency') || direct.contains('currenc')) return 'currency';
+    if (direct.contains('death_reason') || direct.contains('death')) return 'death_reason';
     if (direct.contains('visit')) return 'visit_type';
-    if (direct.contains('assistance') || direct.contains('aid_type')) return 'assistance_type';
+    if (direct.contains('assistance') || direct.contains('aid_type') || direct.contains('aid_status')) {
+      return 'assistance_type';
+    }
     if (direct.contains('beneficiary_status') || direct.contains('beneficiary_state')) return 'beneficiary_status';
     if (direct.contains('relationship') || direct.contains('kinship')) return 'relationship';
     if (direct.contains('section') || direct.contains('department')) return 'section';
@@ -245,6 +283,14 @@ extension TaxonomyGroupExtension on TaxonomyGroup {
         return 'business';
       case TaxonomyGroup.sponsorshipType:
         return 'volunteer_activism';
+      case TaxonomyGroup.documentType:
+        return 'description';
+      case TaxonomyGroup.bankName:
+        return 'account_balance';
+      case TaxonomyGroup.currency:
+        return 'currency_exchange';
+      case TaxonomyGroup.deathReason:
+        return 'heart_broken';
       case TaxonomyGroup.gender:
         return 'wc';
       case TaxonomyGroup.visitType:

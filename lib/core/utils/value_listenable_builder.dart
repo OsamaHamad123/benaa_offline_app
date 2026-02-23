@@ -13,11 +13,7 @@ class ValueListenableBuilder3<A, B, C> extends StatelessWidget {
   final Widget? child;
 
   const ValueListenableBuilder3({
-    super.key,
-    required this.first,
-    required this.second,
-    required this.third,
-    required this.builder,
+    required this.first, required this.second, required this.third, required this.builder, super.key,
     this.child,
   });
 
@@ -50,10 +46,7 @@ class ValueListenableBuilder2<A, B> extends StatelessWidget {
   final Widget? child;
 
   const ValueListenableBuilder2({
-    super.key,
-    required this.first,
-    required this.second,
-    required this.builder,
+    required this.first, required this.second, required this.builder, super.key,
     this.child,
   });
 

@@ -41,7 +41,7 @@ class CivilDbDownloadNotifier extends StateNotifier<CivilDbDownloadState> {
     required this.downloadUseCase,
     required this.cancelUseCase,
   }) : super(
-          CivilDbDownloadState(
+          const CivilDbDownloadState(
             status: CivilDbStatus(status: CivilDbStatusType.notDownloaded),
           ),
         );
@@ -64,7 +64,7 @@ class CivilDbDownloadNotifier extends StateNotifier<CivilDbDownloadState> {
 
   /// Start downloading database
   Future<void> startDownload(String downloadUrl) async {
-    state = state.copyWith(isDownloading: true, errorMessage: null);
+    state = state.copyWith(isDownloading: true);
 
     try {
       await for (final status in downloadUseCase(downloadUrl)) {
@@ -96,7 +96,7 @@ class CivilDbDownloadNotifier extends StateNotifier<CivilDbDownloadState> {
   Future<void> cancelDownload() async {
     await cancelUseCase();
     state = state.copyWith(
-      status: CivilDbStatus(status: CivilDbStatusType.notDownloaded),
+      status: const CivilDbStatus(status: CivilDbStatusType.notDownloaded),
       isDownloading: false,
     );
   }

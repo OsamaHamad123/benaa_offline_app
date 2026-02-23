@@ -83,9 +83,7 @@ class DashboardUIStateNotifier extends StateNotifier<DashboardUIState> {
 
   void clearAdvancedFilters() {
     state = state.copyWith(
-      selectedCategory: null,
-      selectedGovernorate: null,
-      syncedOnly: null,
+      
     );
   }
 

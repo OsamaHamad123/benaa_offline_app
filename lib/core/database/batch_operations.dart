@@ -259,7 +259,6 @@ class BatchOperations {
       table: table,
       records: records,
       batchSize: batchSize,
-      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 

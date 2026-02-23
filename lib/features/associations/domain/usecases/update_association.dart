@@ -11,7 +11,7 @@ class UpdateAssociationUseCase {
   Future<Result<Association>> execute(Association association) async {
     // Validation
     if (!association.isValid) {
-      return Failure(ValidationFailure('بيانات الجمعية غير صحيحة'));
+      return const Failure(ValidationFailure('بيانات الجمعية غير صحيحة'));
     }
 
     // Update

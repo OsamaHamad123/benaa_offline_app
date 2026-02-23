@@ -69,8 +69,7 @@ class ValidationIcon extends StatelessWidget {
   final bool showIcon;
 
   const ValidationIcon({
-    super.key,
-    required this.isValid,
+    required this.isValid, super.key,
     this.showIcon = true,
   });
 

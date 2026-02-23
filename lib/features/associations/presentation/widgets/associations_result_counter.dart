@@ -9,9 +9,7 @@ class AssociationsResultCounter extends StatelessWidget {
   final bool hasActiveFilters;
 
   const AssociationsResultCounter({
-    super.key,
-    required this.count,
-    required this.hasActiveFilters,
+    required this.count, required this.hasActiveFilters, super.key,
   });
 
   @override

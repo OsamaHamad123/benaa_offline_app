@@ -121,7 +121,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
 
       final id = int.tryParse(beneficiary.id);
       if (id == null) {
-        return Failure(ValidationFailure('Invalid beneficiary ID'));
+        return const Failure(ValidationFailure('Invalid beneficiary ID'));
       }
 
       await localDataSource.update(id, companion);
@@ -147,7 +147,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
     try {
       final intId = int.tryParse(id);
       if (intId == null) {
-        return Failure(ValidationFailure('Invalid beneficiary ID'));
+        return const Failure(ValidationFailure('Invalid beneficiary ID'));
       }
 
       final result = await localDataSource.getById(intId);
@@ -168,7 +168,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       // تنظيف الرقم الوطني من الفراغات والأحرف غير الرقمية
       final cleanedId = nationalId.trim().replaceAll(RegExp(r'\D'), '');
       if (cleanedId.isEmpty) {
-        return Failure(ValidationFailure('Invalid national ID'));
+        return const Failure(ValidationFailure('Invalid national ID'));
       }
 
       final intNationalId = int.tryParse(cleanedId);
@@ -176,7 +176,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
         debugPrint(
           '⚠️ getByNationalId: Failed to parse national ID: $nationalId (cleaned: $cleanedId)',
         );
-        return Failure(ValidationFailure('Invalid national ID format'));
+        return const Failure(ValidationFailure('Invalid national ID format'));
       }
 
       final result = await localDataSource.getByNationalId(intNationalId);
@@ -206,11 +206,11 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
     try {
       final intId = int.tryParse(id);
       if (intId == null) {
-        return Failure(ValidationFailure('Invalid beneficiary ID'));
+        return const Failure(ValidationFailure('Invalid beneficiary ID'));
       }
 
       await localDataSource.delete(intId);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(
           DatabaseFailure('Failed to delete beneficiary: $e', stackTrace));
@@ -274,7 +274,7 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
     try {
       // This will be implemented when we integrate with civil registry feature
       // For now, return not found
-      return Failure(
+      return const Failure(
           NotFoundFailure('Civil registry integration not yet implemented'));
     } catch (e, stackTrace) {
       return Failure(

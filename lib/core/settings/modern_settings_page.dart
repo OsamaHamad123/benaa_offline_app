@@ -63,7 +63,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
                 indicatorColor: theme.colorScheme.primary,
                 labelColor: theme.colorScheme.primary,
                 unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                tabs: [
+                tabs: const [
                   Tab(icon: Icon(Icons.palette), text: 'المظهر'),
                   Tab(icon: Icon(Icons.notifications), text: 'الإشعارات'),
                   Tab(icon: Icon(Icons.sync), text: 'المزامنة'),
@@ -102,7 +102,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.brightness_6,
           children: [
             _buildThemeModeTile(settings, notifier),
-            Divider(height: 1),
+            const Divider(height: 1),
             _buildColorSchemeTile(settings, notifier),
           ],
         ),
@@ -112,13 +112,13 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.text_fields,
           children: [
             _buildFontSizeTile(settings, notifier),
-            Divider(height: 1),
+            const Divider(height: 1),
             SwitchListTile(
-              title: Text('Material Design 3'),
-              subtitle: Text('استخدام التصميم الحديث'),
+              title: const Text('Material Design 3'),
+              subtitle: const Text('استخدام التصميم الحديث'),
               value: settings.useMaterial3,
               onChanged: notifier.setUseMaterial3,
-              secondary: Icon(Icons.design_services),
+              secondary: const Icon(Icons.design_services),
             ),
           ],
         ),
@@ -128,13 +128,13 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.view_list,
           children: [
             _buildItemsPerPageTile(settings, notifier),
-            Divider(height: 1),
+            const Divider(height: 1),
             SwitchListTile(
-              title: Text('عرض الإحصائيات'),
-              subtitle: Text('إظهار لوحة الإحصائيات في الرئيسية'),
+              title: const Text('عرض الإحصائيات'),
+              subtitle: const Text('إظهار لوحة الإحصائيات في الرئيسية'),
               value: settings.showStatistics,
               onChanged: notifier.setShowStatistics,
-              secondary: Icon(Icons.bar_chart),
+              secondary: const Icon(Icons.bar_chart),
             ),
           ],
         ),
@@ -174,7 +174,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
                       ),
                       Text(
                         notificationsState.isInitialized ? 'مفعّلة' : 'غير مفعّلة',
-                        style: TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -184,7 +184,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
                     onPressed: () async {
                       await ref.read(notificationsStateProvider.notifier).requestPermissions();
                     },
-                    child: Text('تفعيل'),
+                    child: const Text('تفعيل'),
                   ),
               ],
             ),
@@ -197,27 +197,27 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.settings,
           children: [
             SwitchListTile(
-              title: Text('تفعيل الإشعارات'),
-              subtitle: Text('إظهار إشعارات للأحداث المهمة'),
+              title: const Text('تفعيل الإشعارات'),
+              subtitle: const Text('إظهار إشعارات للأحداث المهمة'),
               value: settings.notificationsEnabled,
               onChanged: notifier.setNotificationsEnabled,
-              secondary: Icon(Icons.notifications_active),
+              secondary: const Icon(Icons.notifications_active),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             SwitchListTile(
-              title: Text('الصوت'),
-              subtitle: Text('تشغيل الأصوات مع الإشعارات'),
+              title: const Text('الصوت'),
+              subtitle: const Text('تشغيل الأصوات مع الإشعارات'),
               value: settings.soundEnabled,
               onChanged: settings.notificationsEnabled ? notifier.setSoundEnabled : null,
-              secondary: Icon(Icons.volume_up),
+              secondary: const Icon(Icons.volume_up),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             SwitchListTile(
-              title: Text('الاهتزاز'),
-              subtitle: Text('اهتزاز الجهاز عند الإجراءات'),
+              title: const Text('الاهتزاز'),
+              subtitle: const Text('اهتزاز الجهاز عند الإجراءات'),
               value: settings.vibrationEnabled,
               onChanged: settings.notificationsEnabled ? notifier.setVibrationEnabled : null,
-              secondary: Icon(Icons.vibration),
+              secondary: const Icon(Icons.vibration),
             ),
           ],
         ),
@@ -226,11 +226,11 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
         // إشعارات مجدولة
         Card(
           child: ListTile(
-            leading: Icon(Icons.schedule),
-            title: Text('الإشعارات المجدولة'),
+            leading: const Icon(Icons.schedule),
+            title: const Text('الإشعارات المجدولة'),
             subtitle: Text('${notificationsState.scheduledCount} إشعار'),
             trailing: IconButton(
-              icon: Icon(Icons.clear_all),
+              icon: const Icon(Icons.clear_all),
               onPressed: notificationsState.scheduledCount > 0 ? () => _cancelAllNotifications() : null,
               tooltip: 'إلغاء الكل',
             ),
@@ -241,10 +241,10 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
         // اختبار الإشعارات
         Card(
           child: ListTile(
-            leading: Icon(Icons.notifications_active, color: Colors.blue),
-            title: Text('اختبار الإشعارات'),
-            subtitle: Text('إرسال إشعار تجريبي'),
-            trailing: Icon(Icons.arrow_forward_ios, size: 16),
+            leading: const Icon(Icons.notifications_active, color: Colors.blue),
+            title: const Text('اختبار الإشعارات'),
+            subtitle: const Text('إرسال إشعار تجريبي'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => _testNotification(),
           ),
         ),
@@ -262,21 +262,21 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.sync,
           children: [
             SwitchListTile(
-              title: Text('تفعيل المزامنة التلقائية'),
-              subtitle: Text('مزامنة البيانات في الخلفية'),
+              title: const Text('تفعيل المزامنة التلقائية'),
+              subtitle: const Text('مزامنة البيانات في الخلفية'),
               value: settings.autoSyncEnabled,
               onChanged: notifier.setAutoSyncEnabled,
-              secondary: Icon(Icons.cloud_sync),
+              secondary: const Icon(Icons.cloud_sync),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             SwitchListTile(
-              title: Text('WiFi فقط'),
-              subtitle: Text('المزامنة عند الاتصال بـ WiFi فقط'),
+              title: const Text('WiFi فقط'),
+              subtitle: const Text('المزامنة عند الاتصال بـ WiFi فقط'),
               value: settings.wifiOnlySync,
               onChanged: settings.autoSyncEnabled ? notifier.setWifiOnlySync : null,
-              secondary: Icon(Icons.wifi),
+              secondary: const Icon(Icons.wifi),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             _buildSyncIntervalTile(settings, notifier),
           ],
         ),
@@ -286,18 +286,18 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.backup,
           children: [
             ListTile(
-              leading: Icon(Icons.backup),
-              title: Text('نسخ احتياطي الآن'),
-              subtitle: Text('حفظ نسخة من البيانات'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              leading: const Icon(Icons.backup),
+              title: const Text('نسخ احتياطي الآن'),
+              subtitle: const Text('حفظ نسخة من البيانات'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _performBackup(),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             ListTile(
-              leading: Icon(Icons.restore),
-              title: Text('استعادة من نسخة احتياطية'),
-              subtitle: Text('استرجاع البيانات المحفوظة'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              leading: const Icon(Icons.restore),
+              title: const Text('استعادة من نسخة احتياطية'),
+              subtitle: const Text('استرجاع البيانات المحفوظة'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _restoreBackup(),
             ),
           ],
@@ -316,13 +316,13 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.fingerprint,
           children: [
             SwitchListTile(
-              title: Text('المصادقة البيومترية'),
-              subtitle: Text('البصمة أو التعرف على الوجه'),
+              title: const Text('المصادقة البيومترية'),
+              subtitle: const Text('البصمة أو التعرف على الوجه'),
               value: settings.biometricAuthEnabled,
               onChanged: notifier.setBiometricAuthEnabled,
-              secondary: Icon(Icons.fingerprint),
+              secondary: const Icon(Icons.fingerprint),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             _buildSessionTimeoutTile(settings, notifier),
           ],
         ),
@@ -332,17 +332,17 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.password,
           children: [
             SwitchListTile(
-              title: Text('كلمة مرور قوية'),
-              subtitle: Text('يجب أن تحتوي على 8 أحرف على الأقل'),
+              title: const Text('كلمة مرور قوية'),
+              subtitle: const Text('يجب أن تحتوي على 8 أحرف على الأقل'),
               value: settings.requireStrongPassword,
               onChanged: notifier.setRequireStrongPassword,
-              secondary: Icon(Icons.security),
+              secondary: const Icon(Icons.security),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             ListTile(
-              leading: Icon(Icons.lock_reset),
-              title: Text('تغيير كلمة المرور'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              leading: const Icon(Icons.lock_reset),
+              title: const Text('تغيير كلمة المرور'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _changePassword(),
             ),
           ],
@@ -361,20 +361,20 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.storage,
           children: [
             SwitchListTile(
-              title: Text('وضع عدم الاتصال'),
-              subtitle: Text('العمل بدون إنترنت'),
+              title: const Text('وضع عدم الاتصال'),
+              subtitle: const Text('العمل بدون إنترنت'),
               value: settings.offlineMode,
               onChanged: notifier.setOfflineMode,
-              secondary: Icon(Icons.cloud_off),
+              secondary: const Icon(Icons.cloud_off),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             _buildCacheDurationTile(settings, notifier),
-            Divider(height: 1),
+            const Divider(height: 1),
             ListTile(
-              leading: Icon(Icons.delete_sweep, color: Colors.red),
-              title: Text('مسح الذاكرة المؤقتة'),
-              subtitle: Text('حذف البيانات المخزنة مؤقتاً'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              leading: const Icon(Icons.delete_sweep, color: Colors.red),
+              title: const Text('مسح الذاكرة المؤقتة'),
+              subtitle: const Text('حذف البيانات المخزنة مؤقتاً'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _clearCache(),
             ),
           ],
@@ -385,28 +385,28 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           icon: Icons.code,
           children: [
             SwitchListTile(
-              title: Text('وضع المطور'),
-              subtitle: Text('عرض خيارات التطوير'),
+              title: const Text('وضع المطور'),
+              subtitle: const Text('عرض خيارات التطوير'),
               value: settings.developerMode,
               onChanged: notifier.setDeveloperMode,
-              secondary: Icon(Icons.developer_mode),
+              secondary: const Icon(Icons.developer_mode),
             ),
             if (settings.developerMode) ...[
-              Divider(height: 1),
+              const Divider(height: 1),
               SwitchListTile(
-                title: Text('سجل التصحيح'),
-                subtitle: Text('حفظ سجلات التصحيح'),
+                title: const Text('سجل التصحيح'),
+                subtitle: const Text('حفظ سجلات التصحيح'),
                 value: settings.debugLogging,
                 onChanged: notifier.setDebugLogging,
-                secondary: Icon(Icons.bug_report),
+                secondary: const Icon(Icons.bug_report),
               ),
-              Divider(height: 1),
+              const Divider(height: 1),
               SwitchListTile(
-                title: Text('معلومات التصحيح'),
-                subtitle: Text('عرض معلومات التصحيح في الواجهة'),
+                title: const Text('معلومات التصحيح'),
+                subtitle: const Text('عرض معلومات التصحيح في الواجهة'),
                 value: settings.showDebugInfo,
                 onChanged: notifier.setShowDebugInfo,
-                secondary: Icon(Icons.info),
+                secondary: const Icon(Icons.info),
               ),
             ],
           ],
@@ -416,23 +416,23 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           title: 'عن التطبيق',
           icon: Icons.info,
           children: [
-            ListTile(
+            const ListTile(
               leading: Icon(Icons.info_outline),
               title: Text('الإصدار'),
               subtitle: Text('1.0.0'),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             ListTile(
-              leading: Icon(Icons.privacy_tip),
-              title: Text('سياسة الخصوصية'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              leading: const Icon(Icons.privacy_tip),
+              title: const Text('سياسة الخصوصية'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _showPrivacyPolicy(),
             ),
-            Divider(height: 1),
+            const Divider(height: 1),
             ListTile(
-              leading: Icon(Icons.description),
-              title: Text('شروط الاستخدام'),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              leading: const Icon(Icons.description),
+              title: const Text('شروط الاستخدام'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
               onTap: () => _showTermsOfService(),
             ),
           ],
@@ -476,9 +476,9 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
   Widget _buildThemeModeTile(SettingsState settings, SettingsNotifier notifier) {
     return ListTile(
       leading: Icon(_getThemeModeIcon(settings.themeMode)),
-      title: Text('وضع المظهر'),
+      title: const Text('وضع المظهر'),
       subtitle: Text(_getThemeModeLabel(settings.themeMode)),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _showThemeModeDialog(settings, notifier),
     );
   }
@@ -489,39 +489,39 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
         backgroundColor: _getColorFromScheme(settings.colorScheme),
         radius: 16,
       ),
-      title: Text('لون التطبيق'),
+      title: const Text('لون التطبيق'),
       subtitle: Text(_getColorSchemeLabel(settings.colorScheme)),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _showColorSchemeDialog(settings, notifier),
     );
   }
 
   Widget _buildFontSizeTile(SettingsState settings, SettingsNotifier notifier) {
     return ListTile(
-      leading: Icon(Icons.text_fields),
-      title: Text('حجم الخط'),
+      leading: const Icon(Icons.text_fields),
+      title: const Text('حجم الخط'),
       subtitle: Text('${settings.fontSize.toInt()} نقطة'),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _showFontSizeDialog(settings, notifier),
     );
   }
 
   Widget _buildItemsPerPageTile(SettingsState settings, SettingsNotifier notifier) {
     return ListTile(
-      leading: Icon(Icons.list),
-      title: Text('عدد العناصر في الصفحة'),
+      leading: const Icon(Icons.list),
+      title: const Text('عدد العناصر في الصفحة'),
       subtitle: Text('${settings.itemsPerPage} عنصر'),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _showItemsPerPageDialog(settings, notifier),
     );
   }
 
   Widget _buildSyncIntervalTile(SettingsState settings, SettingsNotifier notifier) {
     return ListTile(
-      leading: Icon(Icons.schedule),
-      title: Text('فترة المزامنة'),
+      leading: const Icon(Icons.schedule),
+      title: const Text('فترة المزامنة'),
       subtitle: Text('كل ${settings.syncIntervalHours} ساعة'),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       enabled: settings.autoSyncEnabled,
       onTap: settings.autoSyncEnabled ? () => _showSyncIntervalDialog(settings, notifier) : null,
     );
@@ -529,20 +529,20 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
 
   Widget _buildSessionTimeoutTile(SettingsState settings, SettingsNotifier notifier) {
     return ListTile(
-      leading: Icon(Icons.timer),
-      title: Text('مهلة الجلسة'),
+      leading: const Icon(Icons.timer),
+      title: const Text('مهلة الجلسة'),
       subtitle: Text('${settings.sessionTimeoutMinutes} دقيقة'),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _showSessionTimeoutDialog(settings, notifier),
     );
   }
 
   Widget _buildCacheDurationTile(SettingsState settings, SettingsNotifier notifier) {
     return ListTile(
-      leading: Icon(Icons.access_time),
-      title: Text('مدة الذاكرة المؤقتة'),
+      leading: const Icon(Icons.access_time),
+      title: const Text('مدة الذاكرة المؤقتة'),
       subtitle: Text('${settings.cacheDurationMinutes} دقيقة'),
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _showCacheDurationDialog(settings, notifier),
     );
   }
@@ -552,24 +552,24 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('وضع المظهر'),
+        title: const Text('وضع المظهر'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             RadioListTile<String>(
-              title: Text('فاتح'),
+              title: const Text('فاتح'),
               value: 'light',
               groupValue: settings.themeMode,
               onChanged: (value) => Navigator.pop(context, value),
             ),
             RadioListTile<String>(
-              title: Text('داكن'),
+              title: const Text('داكن'),
               value: 'dark',
               groupValue: settings.themeMode,
               onChanged: (value) => Navigator.pop(context, value),
             ),
             RadioListTile<String>(
-              title: Text('تلقائي (حسب النظام)'),
+              title: const Text('تلقائي (حسب النظام)'),
               value: 'system',
               groupValue: settings.themeMode,
               onChanged: (value) => Navigator.pop(context, value),
@@ -599,12 +599,12 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('لون التطبيق'),
+        title: const Text('لون التطبيق'),
         content: SizedBox(
           width: double.maxFinite,
           child: GridView.builder(
             shrinkWrap: true,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 8,
               mainAxisSpacing: 8,
@@ -626,8 +626,8 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (isSelected) Icon(Icons.check, color: Colors.white),
-                        SizedBox(height: 4),
+                        if (isSelected) const Icon(Icons.check, color: Colors.white),
+                        const SizedBox(height: 4),
                         Text(
                           entry.value['name'] as String,
                           style: TextStyle(
@@ -658,7 +658,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('حجم الخط'),
+          title: const Text('حجم الخط'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -666,7 +666,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
                 'معاينة النص',
                 style: TextStyle(fontSize: fontSize),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Slider(
                 value: fontSize,
                 min: 12,
@@ -683,14 +683,14 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('إلغاء'),
+              child: const Text('إلغاء'),
             ),
             TextButton(
               onPressed: () {
                 notifier.setFontSize(fontSize);
                 Navigator.pop(context);
               },
-              child: Text('حفظ'),
+              child: const Text('حفظ'),
             ),
           ],
         ),
@@ -702,7 +702,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('عدد العناصر في الصفحة'),
+        title: const Text('عدد العناصر في الصفحة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [10, 20, 30, 50, 100].map((count) {
@@ -726,30 +726,30 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('فترة المزامنة التلقائية'),
+        title: const Text('فترة المزامنة التلقائية'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             RadioListTile<int>(
-              title: Text('كل ساعة'),
+              title: const Text('كل ساعة'),
               value: 1,
               groupValue: settings.syncIntervalHours,
               onChanged: (value) => Navigator.pop(context, value),
             ),
             RadioListTile<int>(
-              title: Text('كل 6 ساعات'),
+              title: const Text('كل 6 ساعات'),
               value: 6,
               groupValue: settings.syncIntervalHours,
               onChanged: (value) => Navigator.pop(context, value),
             ),
             RadioListTile<int>(
-              title: Text('كل 12 ساعة'),
+              title: const Text('كل 12 ساعة'),
               value: 12,
               groupValue: settings.syncIntervalHours,
               onChanged: (value) => Navigator.pop(context, value),
             ),
             RadioListTile<int>(
-              title: Text('كل 24 ساعة'),
+              title: const Text('كل 24 ساعة'),
               value: 24,
               groupValue: settings.syncIntervalHours,
               onChanged: (value) => Navigator.pop(context, value),
@@ -768,7 +768,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('مهلة الجلسة'),
+        title: const Text('مهلة الجلسة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [5, 15, 30, 60].map((minutes) {
@@ -792,7 +792,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('مدة الذاكرة المؤقتة'),
+        title: const Text('مدة الذاكرة المؤقتة'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [15, 30, 60, 120].map((minutes) {
@@ -816,16 +816,16 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('استعادة الإعدادات'),
-        content: Text('هل تريد استعادة جميع الإعدادات إلى القيم الافتراضية؟'),
+        title: const Text('استعادة الإعدادات'),
+        content: const Text('هل تريد استعادة جميع الإعدادات إلى القيم الافتراضية؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: const Text('إلغاء'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('استعادة'),
+            child: const Text('استعادة'),
           ),
         ],
       ),
@@ -835,7 +835,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
       await notifier.resetToDefaults();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم استعادة الإعدادات الافتراضية')),
+          const SnackBar(content: Text('تم استعادة الإعدادات الافتراضية')),
         );
       }
     }
@@ -854,16 +854,16 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('إلغاء الإشعارات'),
-        content: Text('هل تريد إلغاء جميع الإشعارات المجدولة؟'),
+        title: const Text('إلغاء الإشعارات'),
+        content: const Text('هل تريد إلغاء جميع الإشعارات المجدولة؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: const Text('إلغاء'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('نعم'),
+            child: const Text('نعم'),
           ),
         ],
       ),
@@ -873,7 +873,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
       await ref.read(notificationsStateProvider.notifier).cancelAllNotifications();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('تم إلغاء جميع الإشعارات')),
+          const SnackBar(content: Text('تم إلغاء جميع الإشعارات')),
         );
       }
     }
@@ -882,7 +882,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
   Future<void> _performBackup() async {
     // TODO: Implement backup
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('جاري إنشاء نسخة احتياطية...')),
+      const SnackBar(content: Text('جاري إنشاء نسخة احتياطية...')),
     );
   }
 
@@ -898,16 +898,16 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('مسح الذاكرة المؤقتة'),
-        content: Text('هل تريد حذف جميع البيانات المخزنة مؤقتاً؟'),
+        title: const Text('مسح الذاكرة المؤقتة'),
+        content: const Text('هل تريد حذف جميع البيانات المخزنة مؤقتاً؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('إلغاء'),
+            child: const Text('إلغاء'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('مسح'),
+            child: const Text('مسح'),
           ),
         ],
       ),
@@ -916,7 +916,7 @@ class _ModernSettingsPageState extends ConsumerState<ModernSettingsPage> with Si
     if (confirm == true) {
       // TODO: Clear cache
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('تم مسح الذاكرة المؤقتة')),
+        const SnackBar(content: Text('تم مسح الذاكرة المؤقتة')),
       );
     }
   }

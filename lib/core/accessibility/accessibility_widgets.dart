@@ -36,8 +36,7 @@ class AccessibleButton extends StatelessWidget {
   final bool outlined;
 
   const AccessibleButton({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onPressed,
     this.backgroundColor,
     this.foregroundColor,
@@ -96,8 +95,7 @@ class AccessibleIconButton extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const AccessibleIconButton({
-    super.key,
-    required this.icon,
+    required this.icon, super.key,
     this.onPressed,
     this.color,
     this.backgroundColor,
@@ -157,9 +155,8 @@ class AccessibleListTile extends StatelessWidget {
   final double? minHeight;
 
   const AccessibleListTile({
-    super.key,
+    required this.title, super.key,
     this.leading,
-    required this.title,
     this.subtitle,
     this.trailing,
     this.onTap,
@@ -195,9 +192,7 @@ class SemanticWrapper extends StatelessWidget {
   final bool excludeSemantics;
 
   const SemanticWrapper({
-    super.key,
-    required this.child,
-    required this.label,
+    required this.child, required this.label, super.key,
     this.hint,
     this.excludeSemantics = false,
   });
@@ -238,10 +233,10 @@ class AccessibleSpacing {
   AccessibleSpacing._();
 
   /// Minimum spacing between interactive elements
-  static SizedBox get minVertical => SizedBox(height: AccessibilityConstants.minSpacing);
+  static SizedBox get minVertical => const SizedBox(height: AccessibilityConstants.minSpacing);
 
   /// Minimum spacing between interactive elements
-  static SizedBox get minHorizontal => SizedBox(width: AccessibilityConstants.minSpacing);
+  static SizedBox get minHorizontal => const SizedBox(width: AccessibilityConstants.minSpacing);
 
   /// Recommended spacing for better UX
   static SizedBox get recommendedVertical => SizedBox(height: 16.h);

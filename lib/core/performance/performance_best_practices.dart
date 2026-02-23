@@ -24,7 +24,7 @@ class GoodExample {
 /// ❌ خطأ - لا يستخدم const
 class BadExample {
   Widget build() {
-    return Column(children: [SizedBox(height: 16), Text('مثال'), Divider()]);
+    return const Column(children: [SizedBox(height: 16), Text('مثال'), Divider()]);
   }
 }
 
@@ -52,7 +52,6 @@ class OptimizedListView {
     return ListView.builder(
       // ⚡ Performance optimizations
       addAutomaticKeepAlives: false, // لا تحتفظ بالعناصر خارج الشاشة
-      addRepaintBoundaries: true, // كل عنصر له repaint boundary
       cacheExtent: 500, // تخزين 500px قبل/بعد
       itemCount: 100,
       itemBuilder: (context, index) {
@@ -128,7 +127,6 @@ class ImageOptimization {
       url,
       cacheWidth: 400, // تحديد عرض الكاش
       cacheHeight: 400, // تحديد ارتفاع الكاش
-      filterQuality: FilterQuality.medium,
     );
   }
 }
@@ -233,11 +231,11 @@ class _KeepAliveCardState extends State<KeepAliveCard>
 */
 
 // Example provider reference (not executable)
-final counterProvider = 0;
+const counterProvider = 0;
 
 class ItemWidget extends StatelessWidget {
   final int index;
-  const ItemWidget({super.key, required this.index});
+  const ItemWidget({required this.index, super.key});
 
   @override
   Widget build(BuildContext context) => const SizedBox();
@@ -245,7 +243,7 @@ class ItemWidget extends StatelessWidget {
 
 class ComplexWidget extends StatelessWidget {
   final dynamic item;
-  const ComplexWidget({super.key, required this.item});
+  const ComplexWidget({required this.item, super.key});
 
   @override
   Widget build(BuildContext context) => const SizedBox();

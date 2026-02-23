@@ -55,8 +55,8 @@ class SyncFailure extends SyncResult {
 
   const SyncFailure({
     required this.error,
-    this.stackTrace,
     required this.failedAt,
+    this.stackTrace,
   });
 
   @override
@@ -101,8 +101,7 @@ class SyncConflict extends Equatable {
   bool get isLocalNewer => localUpdatedAt.isAfter(serverUpdatedAt);
 
   /// هل التعديلات في نفس الوقت؟
-  bool get isSameTime =>
-      serverUpdatedAt.difference(localUpdatedAt).inSeconds.abs() < 5;
+  bool get isSameTime => serverUpdatedAt.difference(localUpdatedAt).inSeconds.abs() < 5;
 }
 
 /// أسباب التعارضات

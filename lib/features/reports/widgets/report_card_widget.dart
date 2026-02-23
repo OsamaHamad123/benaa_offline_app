@@ -11,12 +11,7 @@ class ReportCardWidget extends StatelessWidget {
   final LinearGradient? gradient;
 
   const ReportCardWidget({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.onTap,
+    required this.title, required this.description, required this.icon, required this.color, required this.onTap, super.key,
     this.gradient,
   });
 

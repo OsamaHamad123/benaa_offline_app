@@ -10,7 +10,7 @@ import '../../../core/constants/category_colors.dart';
 class AgeBarChart extends StatefulWidget {
   final List<AgeCount> data;
 
-  const AgeBarChart({super.key, required this.data});
+  const AgeBarChart({required this.data, super.key});
 
   @override
   State<AgeBarChart> createState() => _AgeBarChartState();
@@ -53,12 +53,11 @@ class _AgeBarChartState extends State<AgeBarChart> {
               },
             ),
             titlesData: FlTitlesData(
-              show: true,
               rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
+                
               ),
               topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
+                
               ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
@@ -98,7 +97,6 @@ class _AgeBarChartState extends State<AgeBarChart> {
             borderData: FlBorderData(show: false),
             barGroups: _getBarGroups(),
             gridData: FlGridData(
-              show: true,
               drawVerticalLine: false,
               horizontalInterval: _calculateInterval(),
               getDrawingHorizontalLine: (value) {

@@ -6,7 +6,7 @@ class GenderBadge extends StatelessWidget {
   final Gender gender;
   final bool compact;
 
-  const GenderBadge({super.key, required this.gender, this.compact = false});
+  const GenderBadge({required this.gender, super.key, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +24,7 @@ class GenderBadge extends StatelessWidget {
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

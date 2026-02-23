@@ -56,7 +56,6 @@ class CustomSnackBar {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
         action: onRetry != null
             ? SnackBarAction(
                 label: 'إعادة المحاولة',

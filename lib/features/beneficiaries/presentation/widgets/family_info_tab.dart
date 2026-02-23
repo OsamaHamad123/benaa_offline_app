@@ -21,20 +21,7 @@ class FamilyInfoTab extends StatelessWidget {
   final Function(bool) onHasChronicallyIllChanged;
 
   const FamilyInfoTab({
-    super.key,
-    required this.motherNameController,
-    required this.fatherNameController,
-    required this.grandFatherNameController,
-    required this.familyNameController,
-    required this.familySizeController,
-    required this.numMalesController,
-    required this.numFemalesController,
-    required this.numChildrenController,
-    required this.numElderlyController,
-    required this.hasPwd,
-    required this.hasChronicallyIll,
-    required this.onHasPwdChanged,
-    required this.onHasChronicallyIllChanged,
+    required this.motherNameController, required this.fatherNameController, required this.grandFatherNameController, required this.familyNameController, required this.familySizeController, required this.numMalesController, required this.numFemalesController, required this.numChildrenController, required this.numElderlyController, required this.hasPwd, required this.hasChronicallyIll, required this.onHasPwdChanged, required this.onHasChronicallyIllChanged, super.key,
   });
 
   @override

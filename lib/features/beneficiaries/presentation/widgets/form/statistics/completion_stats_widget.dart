@@ -15,12 +15,7 @@ class CompletionStatsWidget extends StatelessWidget {
   final VoidCallback onTap;
 
   const CompletionStatsWidget({
-    super.key,
-    required this.overallCompletion,
-    required this.completedFields,
-    required this.totalFields,
-    required this.tabCompletions,
-    required this.onTap,
+    required this.overallCompletion, required this.completedFields, required this.totalFields, required this.tabCompletions, required this.onTap, super.key,
   });
 
   @override

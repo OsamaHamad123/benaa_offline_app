@@ -12,11 +12,7 @@ class SmartSuggestionsCard extends StatelessWidget {
   final VoidCallback? onDismiss;
 
   const SmartSuggestionsCard({
-    super.key,
-    required this.suggestion,
-    required this.description,
-    required this.icon,
-    required this.onApply,
+    required this.suggestion, required this.description, required this.icon, required this.onApply, super.key,
     this.onDismiss,
   });
 
@@ -104,8 +100,7 @@ class FieldHelper extends StatelessWidget {
   final Color? color;
 
   const FieldHelper({
-    super.key,
-    required this.hint,
+    required this.hint, super.key,
     this.example,
     this.icon = Icons.info_outline,
     this.color,
@@ -122,7 +117,7 @@ class FieldHelper extends StatelessWidget {
       decoration: BoxDecoration(
         color: helperColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: helperColor.withOpacity(0.2), width: 1),
+        border: Border.all(color: helperColor.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,9 +164,7 @@ class StatusBadge extends StatelessWidget {
   final IconData? icon;
 
   const StatusBadge({
-    super.key,
-    required this.label,
-    required this.color,
+    required this.label, required this.color, super.key,
     this.icon,
   });
 

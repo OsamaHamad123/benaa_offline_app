@@ -9,9 +9,7 @@ class StatisticsBarChart extends StatefulWidget {
   final Color? primaryColor;
 
   const StatisticsBarChart({
-    super.key,
-    required this.data,
-    required this.title,
+    required this.data, required this.title, super.key,
     this.primaryColor,
   });
 
@@ -73,7 +71,6 @@ class _StatisticsBarChartState extends State<StatisticsBarChart> {
                     },
                   ),
                   titlesData: FlTitlesData(
-                    show: true,
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -108,14 +105,13 @@ class _StatisticsBarChartState extends State<StatisticsBarChart> {
                       ),
                     ),
                     topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                     rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                   ),
                   gridData: FlGridData(
-                    show: true,
                     drawVerticalLine: false,
                     horizontalInterval: _getMaxY() / 5,
                   ),
@@ -172,10 +168,7 @@ class TrendLineChart extends StatelessWidget {
   final Color? lineColor;
 
   const TrendLineChart({
-    super.key,
-    required this.data,
-    required this.labels,
-    required this.title,
+    required this.data, required this.labels, required this.title, super.key,
     this.lineColor,
   });
 
@@ -200,7 +193,7 @@ class TrendLineChart extends StatelessWidget {
               height: 180.h,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true, drawVerticalLine: false),
+                  gridData: const FlGridData(drawVerticalLine: false),
                   titlesData: FlTitlesData(
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
@@ -234,10 +227,10 @@ class TrendLineChart extends StatelessWidget {
                       ),
                     ),
                     topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                     rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                   ),
                   borderData: FlBorderData(show: false),
@@ -251,7 +244,6 @@ class TrendLineChart extends StatelessWidget {
                       barWidth: 3.w,
                       isStrokeCapRound: true,
                       dotData: FlDotData(
-                        show: true,
                         getDotPainter: (spot, percent, barData, index) {
                           return FlDotCirclePainter(
                             radius: 4.r,
@@ -292,10 +284,7 @@ class ProgressPieChart extends StatelessWidget {
   final Color? color;
 
   const ProgressPieChart({
-    super.key,
-    required this.progress,
-    required this.title,
-    required this.subtitle,
+    required this.progress, required this.title, required this.subtitle, super.key,
     this.color,
   });
 
@@ -379,11 +368,7 @@ class MiniSparklineCard extends StatelessWidget {
   final bool isPositive;
 
   const MiniSparklineCard({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.data,
-    required this.color,
+    required this.title, required this.value, required this.data, required this.color, super.key,
     this.isPositive = true,
   });
 

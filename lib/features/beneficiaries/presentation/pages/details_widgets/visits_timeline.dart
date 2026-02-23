@@ -9,7 +9,7 @@ class VisitsTimeline extends StatelessWidget {
   final List<VisitEntity> visits;
   final VoidCallback? onVisitTap;
 
-  const VisitsTimeline({super.key, required this.visits, this.onVisitTap});
+  const VisitsTimeline({required this.visits, super.key, this.onVisitTap});
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +90,7 @@ class _VisitTimelineCard extends StatelessWidget {
     final latestText = isLatest ? 'أحدث زيارة, ' : '';
     return Semantics(
       label:
-          '${latestText}زيارة من ${visit.staffName}, ${_formatDate(visit.visitDate)}',
+          '$latestTextزيارة من ${visit.staffName}, ${_formatDate(visit.visitDate)}',
       hint: 'اضغط لعرض تفاصيل الزيارة',
       button: true,
       child: GestureDetector(

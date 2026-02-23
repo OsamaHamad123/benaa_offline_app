@@ -79,8 +79,7 @@ void main() {
 
   group('State Management Tests', () {
     test('state copyWith preserves unchanged values', () {
-      final state = BeneficiariesListState(
-        items: const [],
+      const state = BeneficiariesListState(
         isLoading: false,
         currentPage: 5,
         totalCount: 100,
@@ -94,7 +93,7 @@ void main() {
     });
 
     test('isEmpty and hasData work correctly', () {
-      const emptyState = BeneficiariesListState(items: [], isLoading: false);
+      const emptyState = BeneficiariesListState(isLoading: false);
 
       expect(emptyState.isEmpty, true);
       expect(emptyState.hasData, false);

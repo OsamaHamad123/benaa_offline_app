@@ -6,14 +6,18 @@ class CardGradientHeader extends StatelessWidget {
   final String beneficiaryName;
   final String associationName;
   final String status;
+  final String? statusLabel;
+  final bool showLegacyBadge;
   final Color statusColor;
 
   const CardGradientHeader({
-    super.key,
     required this.beneficiaryName,
     required this.associationName,
     required this.status,
     required this.statusColor,
+    this.statusLabel,
+    this.showLegacyBadge = false,
+    super.key,
   });
 
   String _getStatusLabel(String st) {
@@ -125,12 +129,29 @@ class CardGradientHeader extends StatelessWidget {
                 ),
                 SizedBox(width: 6.w),
                 Text(
-                  _getStatusLabel(status),
+                  statusLabel ?? _getStatusLabel(status),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (showLegacyBadge) ...[
+                  SizedBox(width: 6.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      'Legacy',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: statusColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

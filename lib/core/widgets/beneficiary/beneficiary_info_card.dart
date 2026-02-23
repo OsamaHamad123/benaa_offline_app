@@ -9,8 +9,7 @@ class BeneficiaryInfoCard extends StatelessWidget {
   final bool compact;
 
   const BeneficiaryInfoCard({
-    super.key,
-    required this.beneficiary,
+    required this.beneficiary, super.key,
     this.compact = false,
   });
 

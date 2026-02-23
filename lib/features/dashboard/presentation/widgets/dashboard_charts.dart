@@ -11,7 +11,7 @@ import '../../../../theme/app_colors.dart';
 class GrowthChart extends StatelessWidget {
   final List<GrowthDataPoint> growthData;
 
-  const GrowthChart({super.key, required this.growthData});
+  const GrowthChart({required this.growthData, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,6 @@ class GrowthChart extends StatelessWidget {
                 child: LineChart(
                   LineChartData(
                     lineTouchData: LineTouchData(
-                      enabled: true,
                       touchTooltipData: LineTouchTooltipData(
                         getTooltipColor: (touchedSpot) =>
                             AppColors.infoDark.withOpacity(0.8),
@@ -63,7 +62,6 @@ class GrowthChart extends StatelessWidget {
                       ),
                     ),
                     gridData: FlGridData(
-                      show: true,
                       drawVerticalLine: false,
                       horizontalInterval: 1,
                       getDrawingHorizontalLine: (value) {
@@ -74,12 +72,11 @@ class GrowthChart extends StatelessWidget {
                       },
                     ),
                     titlesData: FlTitlesData(
-                      show: true,
                       rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
+                        
                       ),
                       topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
+                        
                       ),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
@@ -143,7 +140,6 @@ class GrowthChart extends StatelessWidget {
                         barWidth: 3,
                         isStrokeCapRound: true,
                         dotData: FlDotData(
-                          show: true,
                           getDotPainter: (spot, percent, barData, index) {
                             return FlDotCirclePainter(
                               radius: 4,
@@ -182,7 +178,7 @@ class GrowthChart extends StatelessWidget {
 class CategoryDistributionChart extends StatelessWidget {
   final Map<String, int> categoryCounts;
 
-  const CategoryDistributionChart({super.key, required this.categoryCounts});
+  const CategoryDistributionChart({required this.categoryCounts, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +286,7 @@ class CategoryDistributionChart extends StatelessWidget {
     };
 
     return categoryCounts.entries.map((entry) {
-      final percentage = (entry.value / total * 100);
+      final percentage = entry.value / total * 100;
       return PieChartSectionData(
         value: entry.value.toDouble(),
         title: '${percentage.toStringAsFixed(0)}%',

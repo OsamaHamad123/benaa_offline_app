@@ -14,11 +14,8 @@ class TabCompletionBadge extends StatelessWidget {
   final int totalFields;
 
   const TabCompletionBadge({
-    super.key,
-    required this.progress,
+    required this.progress, required this.completedFields, required this.totalFields, super.key,
     this.showCheckmark = true,
-    required this.completedFields,
-    required this.totalFields,
   });
 
   @override
@@ -53,7 +50,7 @@ class TabCompletionBadge extends StatelessWidget {
           if (isComplete && showCheckmark)
             Container(
               padding: EdgeInsets.all(2.w),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.green,
                 shape: BoxShape.circle,
               ),
@@ -65,7 +62,7 @@ class TabCompletionBadge extends StatelessWidget {
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(color: color, width: 1),
+                border: Border.all(color: color),
               ),
               child: Text(
                 '$percentage%',
@@ -105,12 +102,7 @@ class EnhancedTabWithBadge extends StatelessWidget {
   final bool isActive;
 
   const EnhancedTabWithBadge({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.progress,
-    required this.completedFields,
-    required this.totalFields,
+    required this.icon, required this.label, required this.progress, required this.completedFields, required this.totalFields, super.key,
     this.isActive = false,
   });
 

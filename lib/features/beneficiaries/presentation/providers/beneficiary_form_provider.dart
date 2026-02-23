@@ -71,7 +71,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
   /// Load existing beneficiary by ID
   Future<void> loadBeneficiary(String id) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     try {
       final result = await _getUseCase.execute(id);
@@ -113,7 +113,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
   /// Load data from civil registry
   Future<void> loadFromCivilRegistry(String nationalId) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     try {
       final result = await _loadFromCivilRegistry.execute(nationalId);
@@ -161,7 +161,6 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
     state = state.copyWith(
       beneficiary: updated,
       hasUnsavedChanges: true,
-      errorMessage: null,
     );
   }
 
@@ -169,7 +168,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
   Future<bool> save() async {
     if (state.beneficiary == null) return false;
 
-    state = state.copyWith(isSaving: true, errorMessage: null);
+    state = state.copyWith(isSaving: true);
 
     try {
       final beneficiary = state.beneficiary!;
@@ -290,7 +289,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
   /// Clear error message
   void clearError() {
-    state = state.copyWith(errorMessage: null);
+    state = state.copyWith();
   }
 
   /// Reset form

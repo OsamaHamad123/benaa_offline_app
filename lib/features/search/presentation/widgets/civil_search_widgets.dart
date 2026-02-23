@@ -7,10 +7,7 @@ class StatChip extends StatelessWidget {
   final IconData icon;
 
   const StatChip({
-    super.key,
-    required this.value,
-    required this.label,
-    required this.icon,
+    required this.value, required this.label, required this.icon, super.key,
   });
 
   @override
@@ -61,10 +58,7 @@ class CivilSearchAppBar extends StatelessWidget {
   final int femalesCount;
 
   const CivilSearchAppBar({
-    super.key,
-    required this.totalPersons,
-    required this.malesCount,
-    required this.femalesCount,
+    required this.totalPersons, required this.malesCount, required this.femalesCount, super.key,
   });
 
   @override
@@ -75,7 +69,6 @@ class CivilSearchAppBar extends StatelessWidget {
 
     return SliverAppBar(
       expandedHeight: isMobile ? 180 : 200,
-      floating: false,
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
@@ -148,12 +141,7 @@ class CivilSearchBar extends StatelessWidget {
   final String query;
 
   const CivilSearchBar({
-    super.key,
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-    required this.isSearching,
-    required this.query,
+    required this.controller, required this.onChanged, required this.onClear, required this.isSearching, required this.query, super.key,
   });
 
   @override
@@ -233,13 +221,7 @@ class CivilSearchFilters extends StatelessWidget {
   final VoidCallback onClearFilters;
 
   const CivilSearchFilters({
-    super.key,
-    required this.selectedGovernorate,
-    required this.selectedGender,
-    required this.governorates,
-    required this.onGovernorateChanged,
-    required this.onGenderChanged,
-    required this.onClearFilters,
+    required this.selectedGovernorate, required this.selectedGender, required this.governorates, required this.onGovernorateChanged, required this.onGenderChanged, required this.onClearFilters, super.key,
   });
 
   @override
@@ -301,9 +283,9 @@ class CivilSearchFilters extends StatelessWidget {
 
               final result = await showDialog<String>(
                 context: context,
-                builder: (context) => SimpleDialog(
-                  title: const Text('اختر الجنس'),
-                  children: const [
+                builder: (context) => const SimpleDialog(
+                  title: Text('اختر الجنس'),
+                  children: [
                     SimpleDialogOption(child: Text('ذكر')),
                     SimpleDialogOption(child: Text('أنثى')),
                   ],

@@ -11,12 +11,12 @@ class ModernAssociationCard extends StatelessWidget {
   final VoidCallback onEdit;
 
   const ModernAssociationCard({
-    super.key,
     required this.association,
-    this.representativeName,
     required this.onTap,
     required this.onDelete,
     required this.onEdit,
+    super.key,
+    this.representativeName,
   });
 
   @override
@@ -56,7 +56,6 @@ class ModernAssociationCard extends StatelessWidget {
               padding: EdgeInsets.all(10.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Header مدمج
@@ -230,75 +229,6 @@ class ModernAssociationCard extends StatelessWidget {
     if (lowerName.contains('تعليم')) return Icons.school_rounded;
     if (lowerName.contains('بنك')) return Icons.account_balance_rounded;
     return Icons.business_rounded;
-  }
-}
-
-/// صندوق معلومات حديث
-class _ModernInfoBox extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
-  const _ModernInfoBox({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: EdgeInsets.all(10.w),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color.withOpacity(0.1),
-            color.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16.sp, color: color),
-              SizedBox(width: 4.w),
-              Flexible(
-                child: Text(
-                  label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: color.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -17,65 +17,137 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<void> _pumpFormPage(
+  WidgetTester tester, {
+  required drift_db.AppDatabase mockDb,
+  required List<Taxonomy> Function(Object? group) taxonomyBuilder,
+}) async {
+  SharedPreferences.setMockInitialValues({});
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        core_providers.appConfigProvider.overrideWith((ref) => const AppConfig(apiBaseUrl: 'http://test')),
+        core_providers.sharedPreferencesProvider.overrideWith((ref) async => SharedPreferences.getInstance()),
+        core_providers.databaseProvider.overrideWith((ref) => mockDb),
+        dashboard_providers.dashboardDatabaseProvider.overrideWith((ref) => mockDb),
+        visit_providers.databaseProvider.overrideWith((ref) => mockDb),
+        beneficiary_providers.databaseProvider.overrideWith((ref) => mockDb),
+        sync_providers.databaseProvider.overrideWith((ref) => mockDb),
+        sync_providers.apiClientProvider.overrideWith((ref) => ref.watch(core_providers.apiClientProvider)),
+        bridgeTaxonomiesByGroupProvider.overrideWith(
+          (ref, group) => Stream.value(taxonomyBuilder(group)),
+        ),
+      ],
+      child: ScreenUtilInit(
+        designSize: const Size(375, 812),
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) {
+          return const MaterialApp(
+            home: BeneficiaryFormPageV3(),
+          );
+        },
+      ),
+    ),
+  );
+
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 2));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _teardownFormPage(WidgetTester tester, drift_db.AppDatabase mockDb) async {
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1));
+  await tester.pump(const Duration(seconds: 1));
+  await mockDb.close();
+}
+
+Future<void> _animateToTab(WidgetTester tester, int index) async {
+  final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+  final controller = tabBar.controller;
+  expect(controller, isNotNull);
+
+  controller!.animateTo(index);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('BeneficiaryFormPageV3 renders correctly', (WidgetTester tester) async {
-    // Create a mock database
+  testWidgets('BeneficiaryFormPageV3 opens with missing taxonomy groups', (WidgetTester tester) async {
     final mockDb = drift_db.AppDatabase(NativeDatabase.memory());
 
-    // Build the widget tree with overrides
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          // Core
-          core_providers.appConfigProvider.overrideWith((ref) => const AppConfig(apiBaseUrl: 'http://test')),
-          core_providers.sharedPreferencesProvider
-              .overrideWith((ref) => SharedPreferences.setMockInitialValues({}) as dynamic),
-          core_providers.databaseProvider.overrideWith((ref) => mockDb),
-
-          // Feature specific database overrides
-          dashboard_providers.dashboardDatabaseProvider.overrideWith((ref) => mockDb),
-          visit_providers.databaseProvider.overrideWith((ref) => mockDb),
-          beneficiary_providers.databaseProvider.overrideWith((ref) => mockDb),
-          sync_providers.databaseProvider.overrideWith((ref) => mockDb),
-
-          // Sync API overrides
-          sync_providers.apiClientProvider.overrideWith((ref) => ref.watch(core_providers.apiClientProvider)),
-
-          // Avoid drift-backed taxonomy stream timers in widget tests.
-          bridgeTaxonomiesByGroupProvider.overrideWith(
-            (ref, group) => Stream.value(const <Taxonomy>[]),
-          ),
-        ],
-        child: ScreenUtilInit(
-          designSize: const Size(375, 812),
-          minTextAdapt: true,
-          splitScreenMode: true,
-          builder: (context, child) {
-            return const MaterialApp(
-              home: BeneficiaryFormPageV3(),
-            );
-          },
-        ),
-      ),
+    await _pumpFormPage(
+      tester,
+      mockDb: mockDb,
+      taxonomyBuilder: (_) => const <Taxonomy>[],
     );
 
-    // Allow animations and async operations to complete
-    // We explicitly pump to handle the timers (tour guide, auto-save checks)
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-    await tester.pumpAndSettle();
-
-    // Verify that the form is present
     expect(find.byType(BeneficiaryFormPageV3), findsOneWidget);
 
-    // Explicitly unmount to avoid pending timer assertions from providers/streams.
-    await tester.pumpWidget(const SizedBox.shrink());
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 1));
-    await tester.pump(const Duration(seconds: 1));
+    await _teardownFormPage(tester, mockDb);
+  });
 
-    await mockDb.close();
+  testWidgets('BeneficiaryFormPageV3 opens with unexpected taxonomy codes', (WidgetTester tester) async {
+    final mockDb = drift_db.AppDatabase(NativeDatabase.memory());
+
+    await _pumpFormPage(
+      tester,
+      mockDb: mockDb,
+      taxonomyBuilder: (group) {
+        final dynamic dynamicGroup = group;
+        return [
+          Taxonomy(
+            id: '${dynamicGroup?.value}_unknown',
+            group: dynamicGroup,
+            code: 'unexpected_code',
+            label: 'قيمة غير متوقعة',
+            createdAt: DateTime(2026, 1),
+            updatedAt: DateTime(2026, 1),
+          ),
+        ];
+      },
+    );
+
+    expect(find.byType(BeneficiaryFormPageV3), findsOneWidget);
+
+    await _teardownFormPage(tester, mockDb);
+  });
+
+  testWidgets('BeneficiaryFormPageV3 updates content when navigating back from review tab',
+      (WidgetTester tester) async {
+    final mockDb = drift_db.AppDatabase(NativeDatabase.memory());
+    const reviewHeader = 'مراجعة جميع المعلومات المدخلة';
+
+    await _pumpFormPage(
+      tester,
+      mockDb: mockDb,
+      taxonomyBuilder: (_) => const <Taxonomy>[],
+    );
+
+    // Go to review tab by tab bar controller (same path used by tab indicator)
+    await _animateToTab(tester, 4);
+
+    expect(find.text(reviewHeader), findsOneWidget);
+
+    // Go back to personal tab and ensure review content is gone
+    await _animateToTab(tester, 0);
+
+    expect(find.text(reviewHeader), findsNothing);
+
+    // Navigate forward again
+    await _animateToTab(tester, 4);
+
+    expect(find.text(reviewHeader), findsOneWidget);
+
+    // Navigate back and ensure tab view updates
+    await _animateToTab(tester, 3);
+
+    expect(find.text(reviewHeader), findsNothing);
+
+    await _teardownFormPage(tester, mockDb);
   });
 }

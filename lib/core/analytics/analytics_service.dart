@@ -48,7 +48,7 @@ class AnalyticsService {
     final List<Map<String, dynamic>> monthlyData = [];
 
     for (int month = 1; month <= 12; month++) {
-      final startDate = DateTime(year, month, 1).toIso8601String();
+      final startDate = DateTime(year, month).toIso8601String();
       final endDate = DateTime(year, month + 1, 0).toIso8601String();
 
       final beneficiaries = await _database
@@ -218,7 +218,7 @@ class AnalyticsService {
 
   /// احصاءات سنوية
   Future<Map<String, int>> getYearStats(int year) async {
-    final startDate = DateTime(year, 1, 1).toIso8601String();
+    final startDate = DateTime(year).toIso8601String();
     final endDate = DateTime(year, 12, 31).toIso8601String();
 
     final beneficiaries = await _database

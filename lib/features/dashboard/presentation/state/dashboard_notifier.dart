@@ -37,7 +37,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
   Future<void> loadStatistics({bool forceRefresh = false}) async {
     try {
-      state = state.copyWith(isLoadingStats: true, errorMessage: null);
+      state = state.copyWith(isLoadingStats: true);
 
       // ✅ Lazy Loading: تحميل البيانات الأساسية أولاً
       final result = await getDashboardStatistics(forceRefresh: forceRefresh);
@@ -74,7 +74,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       _currentPage = 0;
       state = state.copyWith(isLoadingActivities: true, activities: []);
 
-      final result = await getRecentActivities(limit: _pageSize, offset: 0);
+      final result = await getRecentActivities();
 
       if (result is Failure<List<Activity>>) {
         throw Exception(result.error.message);
@@ -122,7 +122,6 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
       _currentPage++;
       final result = await getRecentActivities(
-        limit: _pageSize,
         offset: _currentPage * _pageSize,
       );
 
@@ -158,6 +157,6 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   // ============================================================================
 
   void clearError() {
-    state = state.copyWith(errorMessage: null);
+    state = state.copyWith();
   }
 }

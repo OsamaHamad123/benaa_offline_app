@@ -11,8 +11,7 @@ class WelcomeBanner extends StatefulWidget {
   final VoidCallback? onDismiss;
 
   const WelcomeBanner({
-    super.key,
-    required this.userName,
+    required this.userName, super.key,
     this.message,
     this.onGetStarted,
     this.onDismiss,

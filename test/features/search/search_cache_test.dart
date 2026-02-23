@@ -93,7 +93,7 @@ void main() {
         final person = createMockPerson('00$i');
         addToCache('key_$i', [person]);
         await Future.delayed(
-          Duration(milliseconds: 1),
+          const Duration(milliseconds: 1),
         ); // Ensure different timestamps
       }
 
@@ -112,7 +112,7 @@ void main() {
     });
 
     test('Cache should calculate person size correctly', () {
-      final person = CivilPerson(
+      const person = CivilPerson(
         nationalId: '12345678901', // 11 chars
         firstName: 'John', // 4 chars
         fatherName: 'Doe', // 3 chars
@@ -154,7 +154,7 @@ void main() {
       // Fill cache
       for (int i = 0; i < maxCacheSize; i++) {
         addToCache('key_$i', [createMockPerson('00$i')]);
-        await Future.delayed(Duration(milliseconds: 1));
+        await Future.delayed(const Duration(milliseconds: 1));
       }
 
       final firstAccessTime = cacheAccess['key_0'];
@@ -190,13 +190,13 @@ void main() {
       // Add max entries
       for (int i = 0; i < maxCacheSize; i++) {
         addToCache('key_$i', [createMockPerson('00$i')]);
-        await Future.delayed(Duration(milliseconds: 1));
+        await Future.delayed(const Duration(milliseconds: 1));
       }
 
       // Add more - should evict oldest (key_0, key_1, etc)
       for (int i = 0; i < 5; i++) {
         addToCache('new_key_$i', [createMockPerson('new_$i')]);
-        await Future.delayed(Duration(milliseconds: 1));
+        await Future.delayed(const Duration(milliseconds: 1));
       }
 
       expect(cache.containsKey('key_0'), false);

@@ -11,13 +11,7 @@ class ModernSwitch extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   const ModernSwitch({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.iconColor,
-    required this.value,
-    required this.onChanged,
+    required this.title, required this.subtitle, required this.icon, required this.iconColor, required this.value, required this.onChanged, super.key,
   });
 
   @override
@@ -87,7 +81,7 @@ class ModernSwitch extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: iconColor,
+            activeThumbColor: iconColor,
             thumbIcon: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.selected)) {
                 return Icon(

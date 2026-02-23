@@ -7,7 +7,7 @@ import 'family_list_widget.dart';
 class FamilySection extends StatelessWidget {
   final int beneficiaryId;
 
-  const FamilySection({super.key, required this.beneficiaryId});
+  const FamilySection({required this.beneficiaryId, super.key});
 
   @override
   Widget build(BuildContext context) {

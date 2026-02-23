@@ -9,8 +9,7 @@ class ShimmerLoading extends StatefulWidget {
   final Duration duration;
 
   const ShimmerLoading({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.baseColor,
     this.highlightColor,
     this.duration = const Duration(milliseconds: 1500),
@@ -48,7 +47,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = widget.baseColor ??
         (isDark
-            ? theme.colorScheme.surfaceVariant
+            ? theme.colorScheme.surfaceContainerHighest
             : theme.colorScheme.surface.withOpacity(0.3));
     final highlightColor = widget.highlightColor ??
         (isDark
@@ -94,7 +93,7 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: borderRadius ?? BorderRadius.circular(8.r),
       ),
     );

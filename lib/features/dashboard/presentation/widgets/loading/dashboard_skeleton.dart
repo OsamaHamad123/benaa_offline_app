@@ -63,7 +63,6 @@ class DashboardSkeleton extends StatelessWidget {
       crossAxisCount: 3,
       mainAxisSpacing: 12.h,
       crossAxisSpacing: 12.w,
-      childAspectRatio: 1.0,
       children: List.generate(6, (index) => SkeletonCard(height: 100.h)),
     );
   }

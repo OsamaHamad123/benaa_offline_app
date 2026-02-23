@@ -11,12 +11,7 @@ class GenderStatCard extends StatelessWidget {
   final MaterialColor color;
 
   const GenderStatCard({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.total,
-    required this.color,
+    required this.icon, required this.label, required this.count, required this.total, required this.color, super.key,
   });
 
   @override
@@ -34,7 +29,7 @@ class GenderStatCard extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: color.shade200, width: 1),
+          border: Border.all(color: color.shade200),
         ),
         child: Column(
           children: [

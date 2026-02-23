@@ -179,7 +179,6 @@ class AppTheme {
       textTheme: textTheme,
       colorScheme: ColorScheme.light(
         primary: primaryColor,
-        onPrimary: Colors.white,
         primaryContainer: primaryLight,
         onPrimaryContainer: primaryDark,
         secondary: primaryColor.withOpacity(0.8),
@@ -189,10 +188,8 @@ class AppTheme {
         tertiary: primaryColor.withOpacity(0.6),
         onTertiary: Colors.white,
         error: const Color(0xFFD32F2F),
-        onError: Colors.white,
         errorContainer: const Color(0xFFFFCDD2),
         onErrorContainer: const Color(0xFFB71C1C),
-        surface: Colors.white,
         onSurface: const Color(0xFF1A1A1A),
         surfaceContainerHighest: const Color(0xFFF5F5F5),
         outline: const Color(0xFFE0E0E0),

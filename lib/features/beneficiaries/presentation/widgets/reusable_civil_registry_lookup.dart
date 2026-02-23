@@ -25,8 +25,7 @@ class CivilRegistryLookup extends ConsumerStatefulWidget {
   final Widget? customPreview; // معاينة مخصصة
 
   const CivilRegistryLookup({
-    super.key,
-    required this.nationalIdController,
+    required this.nationalIdController, super.key,
     this.onDataFetched,
     this.onAutofill,
     this.autoFetch = true,
@@ -188,9 +187,7 @@ class CompactCivilRegistryLookup extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onDataFetched;
 
   const CompactCivilRegistryLookup({
-    super.key,
-    required this.nationalIdController,
-    required this.onDataFetched,
+    required this.nationalIdController, required this.onDataFetched, super.key,
   });
 
   @override
@@ -282,7 +279,7 @@ class _CompactCivilRegistryLookupState extends ConsumerState<CompactCivilRegistr
             SizedBox(
               width: 14.w,
               height: 14.w,
-              child: CircularProgressIndicator(strokeWidth: 2),
+              child: const CircularProgressIndicator(strokeWidth: 2),
             ),
             SizedBox(width: 8.w),
             Text(

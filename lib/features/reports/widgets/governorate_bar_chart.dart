@@ -9,7 +9,7 @@ import '../domain/entities/report_data.dart';
 class GovernorateBarChart extends StatefulWidget {
   final List<GovernorateCount> data;
 
-  const GovernorateBarChart({super.key, required this.data});
+  const GovernorateBarChart({required this.data, super.key});
 
   @override
   State<GovernorateBarChart> createState() => _GovernorateBarChartState();
@@ -52,12 +52,11 @@ class _GovernorateBarChartState extends State<GovernorateBarChart> {
               },
             ),
             titlesData: FlTitlesData(
-              show: true,
               rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
+                
               ),
               topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
+                
               ),
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
@@ -101,7 +100,6 @@ class _GovernorateBarChartState extends State<GovernorateBarChart> {
             borderData: FlBorderData(show: false),
             barGroups: _getBarGroups(),
             gridData: FlGridData(
-              show: true,
               drawVerticalLine: false,
               horizontalInterval: _calculateInterval(),
               getDrawingHorizontalLine: (value) {

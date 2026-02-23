@@ -15,14 +15,7 @@ class ContactInfoTab extends StatelessWidget {
   final TextEditingController addressBeforeDisplacementController;
 
   const ContactInfoTab({
-    super.key,
-    required this.phoneNumberController,
-    required this.altPhoneNumberController,
-    required this.governorateController,
-    required this.districtController,
-    required this.addressController,
-    required this.currentAddressController,
-    required this.addressBeforeDisplacementController,
+    required this.phoneNumberController, required this.altPhoneNumberController, required this.governorateController, required this.districtController, required this.addressController, required this.currentAddressController, required this.addressBeforeDisplacementController, super.key,
   });
 
   @override

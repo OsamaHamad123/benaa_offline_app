@@ -13,7 +13,7 @@ import '../providers/visit_providers.dart';
 class RecordVisitPageClean extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
 
-  const RecordVisitPageClean({super.key, required this.beneficiary});
+  const RecordVisitPageClean({required this.beneficiary, super.key});
 
   @override
   ConsumerState<RecordVisitPageClean> createState() =>

@@ -67,7 +67,7 @@ class Beneficiary {
     required this.nationalId,
     required this.gender,
     required this.category,
-    this.birthDate,
+    required this.createdAt, required this.updatedAt, this.birthDate,
     this.motherName,
     this.fatherName,
     this.grandFatherName,
@@ -100,8 +100,6 @@ class Beneficiary {
     this.requestStatus,
     this.notes,
     this.createdByUser,
-    required this.createdAt,
-    required this.updatedAt,
     this.needsSync = false,
   });
 
@@ -149,7 +147,7 @@ class Beneficiary {
   /// Calculate completion percentage
   double get completionPercentage {
     int filled = 0;
-    int total = 15; // Total important fields
+    const int total = 15; // Total important fields
 
     if (fullName.isNotEmpty) filled++;
     if (nationalId.isNotEmpty) filled++;

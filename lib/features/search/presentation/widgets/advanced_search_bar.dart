@@ -16,9 +16,8 @@ class AdvancedSearchBar extends ConsumerStatefulWidget {
   final bool showFilterButton;
 
   const AdvancedSearchBar({
-    super.key,
+    required this.onSearch, super.key,
     this.hintText = 'ابحث عن مستفيد...',
-    required this.onSearch,
     this.onFilterTap,
     this.showVoiceSearch = true,
     this.showFilterButton = true,

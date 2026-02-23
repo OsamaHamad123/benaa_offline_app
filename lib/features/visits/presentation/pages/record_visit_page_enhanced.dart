@@ -17,7 +17,7 @@ import '../../../../features/taxonomies/taxonomies.dart';
 class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
 
-  const RecordVisitPageEnhanced({super.key, required this.beneficiary});
+  const RecordVisitPageEnhanced({required this.beneficiary, super.key});
 
   @override
   ConsumerState<RecordVisitPageEnhanced> createState() => _RecordVisitPageEnhancedState();
@@ -85,11 +85,8 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
+            colorScheme: const ColorScheme.light(
               primary: Colors.blue,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
             ),
           ),
           child: child!,
@@ -104,9 +101,8 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: ColorScheme.light(
+              colorScheme: const ColorScheme.light(
                 primary: Colors.blue,
-                onPrimary: Colors.white,
               ),
             ),
             child: child!,
@@ -175,8 +171,6 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
         createdAt: now,
         updatedAt: now,
         syncState: 'pending',
-        serverId: null,
-        lastSyncedAt: null,
       );
 
       // 🔥 Use CreateVisitWithActivity - يحفظ الزيارة ويسجل النشاط تلقائياً
@@ -231,7 +225,7 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
                     Navigator.pop(context); // Close dialog
                     Navigator.pop(context, true); // Close page
                   },
-                  child: Text('حسناً'),
+                  child: const Text('حسناً'),
                 ),
               ],
             ),
@@ -369,7 +363,6 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
 
               // 🏷️ Visit Type Selector
               FadeSlideTransition(
-                duration: AppDurations.normal,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -383,7 +376,6 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
 
               // 📋 Categories Selector
               FadeSlideTransition(
-                duration: AppDurations.normal,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

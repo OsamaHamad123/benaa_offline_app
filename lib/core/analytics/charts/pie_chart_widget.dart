@@ -9,9 +9,7 @@ class PieChartWidget extends StatefulWidget {
   final String title;
 
   const PieChartWidget({
-    super.key,
-    required this.data,
-    required this.title,
+    required this.data, required this.title, super.key,
   });
 
   @override

@@ -39,7 +39,6 @@ void main() {
     bankName: 'بنك الاختبار المركزي العراقي',
     accountNumber: '123456789012345678',
     accountCurrency: 'IQD',
-    isActive: true,
     representativeId: '1',
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
@@ -56,7 +55,6 @@ void main() {
             onDelete: () {},
             onEdit: () {},
           ),
-          width: 400,
         ),
       );
 
@@ -123,7 +121,6 @@ void main() {
         bankName: 'بنك ' * 10,
         accountNumber: '1234567890' * 3,
         accountCurrency: 'IQD',
-        isActive: true,
         representativeId: '1',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -196,7 +193,6 @@ void main() {
             activeCount: 888888,
             inactiveCount: 111111,
           ),
-          width: 400,
         ),
       );
 
@@ -211,10 +207,10 @@ void main() {
     testWidgets('FormRow عرض عمودي في mobile (300px)', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          ResponsiveFormRow(
+          const ResponsiveFormRow(
             children: [
-              const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 1')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 2')),
             ],
           ),
           width: 300,
@@ -231,10 +227,10 @@ void main() {
     testWidgets('FormRow عرض أفقي في tablet (700px)', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          ResponsiveFormRow(
+          const ResponsiveFormRow(
             children: [
-              const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 1')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 2')),
             ],
           ),
           width: 700,
@@ -251,11 +247,11 @@ void main() {
     testWidgets('FormRow مع عدد فردي من الحقول', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(
-          ResponsiveFormRow(
+          const ResponsiveFormRow(
             children: [
-              const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 3')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 1')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 2')),
+              TextField(decoration: InputDecoration(labelText: 'حقل 3')),
             ],
           ),
           width: 700,
@@ -279,7 +275,6 @@ void main() {
             onDelete: () {},
             onEdit: () {},
           ),
-          width: 400,
         ),
       );
 
@@ -312,7 +307,6 @@ void main() {
             activeCount: 80,
             inactiveCount: 20,
           ),
-          width: 400,
         ),
       );
 
@@ -379,7 +373,6 @@ void main() {
             onDelete: () {},
             onEdit: () {},
           ),
-          width: 400,
         ),
       );
 

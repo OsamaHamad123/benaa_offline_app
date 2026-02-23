@@ -91,7 +91,6 @@ void main() {
   group('🔎 Advanced Search Tests - البحث المتقدم', () {
     test('البحث مع فلتر الفئة', () async {
       final results = await dao.searchBeneficiariesFiltered(
-        query: '',
         category: 1, // يتيم
       );
 
@@ -101,7 +100,6 @@ void main() {
 
     test('البحث مع فلتر المحافظة', () async {
       final results = await dao.searchBeneficiariesFiltered(
-        query: '',
         governorate: 10, // صنعاء مثلاً
       );
 
@@ -135,12 +133,9 @@ void main() {
 
     test('Pagination يعمل بشكل صحيح', () async {
       final page1 = await dao.searchBeneficiariesFiltered(
-        query: '',
         limit: 2,
-        offset: 0,
       );
       final page2 = await dao.searchBeneficiariesFiltered(
-        query: '',
         limit: 2,
         offset: 2,
       );

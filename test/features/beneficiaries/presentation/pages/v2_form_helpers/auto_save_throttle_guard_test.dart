@@ -5,7 +5,7 @@ void main() {
   group('AutoSaveThrottleGuard', () {
     test('blocks attempts while save is in flight', () {
       final guard = AutoSaveThrottleGuard();
-      final now = DateTime(2026, 2, 20, 10, 0, 0);
+      final now = DateTime(2026, 2, 20, 10);
 
       expect(guard.canAttempt(now), isTrue);
       guard.markStarted();
@@ -16,7 +16,7 @@ void main() {
 
     test('enforces minimum interval after successful save', () {
       final guard = AutoSaveThrottleGuard(minInterval: const Duration(seconds: 10));
-      final t0 = DateTime(2026, 2, 20, 10, 0, 0);
+      final t0 = DateTime(2026, 2, 20, 10);
 
       guard.markStarted();
       guard.markFinished(success: true, signature: 'sig', now: t0);
@@ -27,7 +27,7 @@ void main() {
 
     test('skips unchanged signature within cooldown window', () {
       final guard = AutoSaveThrottleGuard(unchangedCooldown: const Duration(seconds: 30));
-      final t0 = DateTime(2026, 2, 20, 10, 0, 0);
+      final t0 = DateTime(2026, 2, 20, 10);
 
       guard.markStarted();
       guard.markFinished(success: true, signature: 'same', now: t0);

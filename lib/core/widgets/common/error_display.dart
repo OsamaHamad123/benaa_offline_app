@@ -14,8 +14,7 @@ class ErrorDisplay extends StatelessWidget {
   final bool isCompact;
 
   const ErrorDisplay({
-    super.key,
-    required this.error,
+    required this.error, super.key,
     this.title,
     this.onRetry,
     this.isCompact = false,
@@ -97,7 +96,7 @@ class ErrorBanner extends StatelessWidget {
   final String message;
   final VoidCallback? onDismiss;
 
-  const ErrorBanner({super.key, required this.message, this.onDismiss});
+  const ErrorBanner({required this.message, super.key, this.onDismiss});
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +159,6 @@ class ErrorSnackBar {
         backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        duration: const Duration(seconds: 4),
       ),
     );
   }

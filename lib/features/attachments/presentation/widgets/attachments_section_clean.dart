@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_file/open_file.dart';
+import '../../../../core/widgets/app_async_state_view.dart';
 import '../../domain/entities/attachment.dart';
 import '../providers/attachments_provider.dart';
 
@@ -14,8 +15,8 @@ class AttachmentsSectionClean extends ConsumerWidget {
   final bool readOnly;
 
   const AttachmentsSectionClean({
-    super.key,
     required this.beneficiaryId,
+    super.key,
     this.readOnly = false,
   });
 
@@ -24,16 +25,14 @@ class AttachmentsSectionClean extends ConsumerWidget {
     final state = ref.watch(attachmentsProvider(beneficiaryId));
 
     if (state.isLoading) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.all(24.r),
-          child: const CircularProgressIndicator(),
-        ),
+      return AppAsyncStateView.loading(
+        padding: EdgeInsets.all(24.r),
+        message: 'جاري تحميل المرفقات...',
       );
     }
 
     if (state.errorMessage != null) {
-      return _buildError(context, state.errorMessage!);
+      return _buildError(context, ref, state.errorMessage!);
     }
 
     if (state.attachments.isEmpty) {
@@ -53,54 +52,26 @@ class AttachmentsSectionClean extends ConsumerWidget {
     );
   }
 
-  Widget _buildError(BuildContext context, String error) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48.sp, color: Colors.red),
-            SizedBox(height: 12.h),
-            Text(
-              error,
-              style: TextStyle(color: Colors.red, fontSize: 14.sp),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+  Widget _buildError(BuildContext context, WidgetRef ref, String error) {
+    return AppAsyncStateView.error(
+      padding: EdgeInsets.all(24.r),
+      message: error,
+      onRetry: () => ref.read(attachmentsProvider(beneficiaryId).notifier).loadAttachments(beneficiaryId),
     );
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(24.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.attach_file_outlined,
-              size: 64.sp,
-              color: Colors.grey[400],
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'لا توجد مرفقات',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            if (!readOnly) ...[
-              SizedBox(height: 16.h),
-              _buildAddButton(context, ref),
-            ],
-          ],
+    return Column(
+      children: [
+        AppAsyncStateView.empty(
+          padding: EdgeInsets.all(24.r),
+          message: 'لا توجد مرفقات',
         ),
-      ),
+        if (!readOnly) ...[
+          SizedBox(height: 8.h),
+          _buildAddButton(context, ref),
+        ],
+      ],
     );
   }
 
@@ -135,7 +106,6 @@ class AttachmentsSectionClean extends ConsumerWidget {
         crossAxisCount: 3,
         crossAxisSpacing: 12.w,
         mainAxisSpacing: 12.h,
-        childAspectRatio: 1,
       ),
       itemCount: attachments.length,
       itemBuilder: (context, index) {
@@ -143,18 +113,18 @@ class AttachmentsSectionClean extends ConsumerWidget {
         return _AttachmentCard(
           attachment: attachment,
           onTap: () => _openAttachment(context, attachment),
-          onDelete: readOnly
-              ? null
-              : () => _deleteAttachment(context, ref, attachment),
+          onDelete: readOnly ? null : () => _deleteAttachment(context, ref, attachment),
         );
       },
     );
   }
 
   Future<void> _showAddOptions(BuildContext context, WidgetRef ref) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
@@ -165,7 +135,7 @@ class AttachmentsSectionClean extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                leading: Icon(Icons.camera_alt, color: colorScheme.primary),
                 title: const Text('التقاط صورة'),
                 onTap: () {
                   Navigator.pop(context);
@@ -173,7 +143,10 @@ class AttachmentsSectionClean extends ConsumerWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.green),
+                leading: Icon(
+                  Icons.photo_library,
+                  color: colorScheme.tertiary,
+                ),
                 title: const Text('اختيار من المعرض'),
                 onTap: () {
                   Navigator.pop(context);
@@ -181,7 +154,10 @@ class AttachmentsSectionClean extends ConsumerWidget {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+                leading: Icon(
+                  Icons.picture_as_pdf,
+                  color: colorScheme.error,
+                ),
                 title: const Text('اختيار ملف PDF'),
                 onTap: () {
                   Navigator.pop(context);
@@ -252,12 +228,13 @@ class AttachmentsSectionClean extends ConsumerWidget {
     );
 
     if (context.mounted) {
+      final colorScheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             success ? '✓ تم إضافة المرفق بنجاح' : '✗ فشل إضافة المرفق',
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          backgroundColor: success ? colorScheme.primary : colorScheme.error,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -281,7 +258,10 @@ class AttachmentsSectionClean extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('حذف'),
           ),
         ],
@@ -293,12 +273,13 @@ class AttachmentsSectionClean extends ConsumerWidget {
       final success = await notifier.deleteAttachment(attachment.id);
 
       if (context.mounted) {
+        final colorScheme = Theme.of(context).colorScheme;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               success ? '✓ تم حذف المرفق بنجاح' : '✗ فشل حذف المرفق',
             ),
-            backgroundColor: success ? Colors.green : Colors.red,
+            backgroundColor: success ? colorScheme.primary : colorScheme.error,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -314,10 +295,11 @@ class AttachmentsSectionClean extends ConsumerWidget {
     if (await file.exists()) {
       await OpenFile.open(attachment.filePath);
     } else if (context.mounted) {
+      final colorScheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الملف غير موجود'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text('الملف غير موجود'),
+          backgroundColor: colorScheme.error,
         ),
       );
     }
@@ -338,6 +320,8 @@ class _AttachmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Stack(
@@ -345,12 +329,12 @@ class _AttachmentCard extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: Colors.grey[300]!),
-              color: Colors.grey[50],
+              border: Border.all(color: colorScheme.outlineVariant),
+              color: colorScheme.surfaceContainerHighest,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12.r),
-              child: _buildThumbnail(),
+              child: _buildThumbnail(context),
             ),
           ),
           if (onDelete != null)
@@ -361,11 +345,15 @@ class _AttachmentCard extends StatelessWidget {
                 onTap: onDelete,
                 child: Container(
                   padding: EdgeInsets.all(4.r),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
+                  decoration: BoxDecoration(
+                    color: colorScheme.error,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.close, color: Colors.white, size: 16.sp),
+                  child: Icon(
+                    Icons.close,
+                    color: colorScheme.onError,
+                    size: 16.sp,
+                  ),
                 ),
               ),
             ),
@@ -377,7 +365,7 @@ class _AttachmentCard extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: colorScheme.scrim.withOpacity(0.6),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(12.r),
                   bottomRight: Radius.circular(12.r),
@@ -389,7 +377,7 @@ class _AttachmentCard extends StatelessWidget {
                   Text(
                     attachment.type.arabicLabel,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onInverseSurface,
                       fontSize: 10.sp,
                       fontWeight: FontWeight.bold,
                     ),
@@ -398,7 +386,10 @@ class _AttachmentCard extends StatelessWidget {
                   ),
                   Text(
                     attachment.fileSizeReadable,
-                    style: TextStyle(color: Colors.white70, fontSize: 9.sp),
+                    style: TextStyle(
+                      color: colorScheme.onInverseSurface.withOpacity(0.8),
+                      fontSize: 9.sp,
+                    ),
                   ),
                 ],
               ),
@@ -409,24 +400,24 @@ class _AttachmentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail() {
+  Widget _buildThumbnail(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (attachment.isImage) {
-      final thumbnailFile = attachment.thumbnailPath != null
-          ? File(attachment.thumbnailPath!)
-          : File(attachment.filePath);
+      final thumbnailFile =
+          attachment.thumbnailPath != null ? File(attachment.thumbnailPath!) : File(attachment.filePath);
 
       return Image.file(
         thumbnailFile,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) =>
-            _buildIcon(Icons.broken_image, Colors.red),
+        errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, colorScheme.error),
       );
     } else if (attachment.isPdf) {
-      return _buildIcon(Icons.picture_as_pdf, Colors.red);
+      return _buildIcon(Icons.picture_as_pdf, colorScheme.error);
     } else {
-      return _buildIcon(Icons.insert_drive_file, Colors.grey);
+      return _buildIcon(Icons.insert_drive_file, colorScheme.onSurfaceVariant);
     }
   }
 

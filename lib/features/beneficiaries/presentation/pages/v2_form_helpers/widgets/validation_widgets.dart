@@ -44,7 +44,7 @@ class ValidationIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: config.color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(compact ? 6.r : 8.r),
-        border: Border.all(color: config.color.withOpacity(0.3), width: 1),
+        border: Border.all(color: config.color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -121,8 +121,7 @@ class ValidationSummary extends StatelessWidget {
   final bool collapsible;
 
   const ValidationSummary({
-    super.key,
-    required this.errors,
+    required this.errors, super.key,
     this.onFix,
     this.collapsible = false,
   });
@@ -301,10 +300,8 @@ class FieldValidationBuilder extends StatefulWidget {
   final bool validateOnChange;
 
   const FieldValidationBuilder({
-    super.key,
+    required this.validators, required this.builder, super.key,
     this.initialValue,
-    required this.validators,
-    required this.builder,
     this.onValidationChanged,
     this.validateOnInit = false,
     this.validateOnChange = true,
@@ -367,8 +364,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
   final bool showRequirements;
 
   const PasswordStrengthIndicator({
-    super.key,
-    required this.password,
+    required this.password, super.key,
     this.showLabel = true,
     this.showRequirements = false,
   });
@@ -538,9 +534,7 @@ class CharacterCounter extends StatelessWidget {
   final bool showPercentage;
 
   const CharacterCounter({
-    super.key,
-    required this.currentLength,
-    required this.maxLength,
+    required this.currentLength, required this.maxLength, super.key,
     this.showPercentage = false,
   });
 

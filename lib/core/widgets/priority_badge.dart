@@ -6,7 +6,7 @@ class PriorityBadge extends StatelessWidget {
   final String level; // 'critical', 'high', 'medium', 'low'
   final String? label;
 
-  const PriorityBadge({super.key, required this.level, this.label});
+  const PriorityBadge({required this.level, super.key, this.label});
 
   @override
   Widget build(BuildContext context) {

@@ -12,8 +12,7 @@ class PasswordStrengthIndicator extends StatelessWidget {
   final bool showFeedback;
 
   const PasswordStrengthIndicator({
-    super.key,
-    required this.password,
+    required this.password, super.key,
     this.showFeedback = true,
   });
 
@@ -112,8 +111,7 @@ class SecurePasswordField extends StatefulWidget {
   final FormFieldValidator<String>? validator;
 
   const SecurePasswordField({
-    super.key,
-    required this.controller,
+    required this.controller, super.key,
     this.labelText,
     this.hintText,
     this.showStrengthIndicator = true,

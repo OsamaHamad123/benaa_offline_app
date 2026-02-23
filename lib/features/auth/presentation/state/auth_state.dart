@@ -45,14 +45,13 @@ sealed class AuthState {
 
   /// Pattern matching helper
   T maybeWhen<T>({
-    T Function()? initial,
+    required T Function() orElse, T Function()? initial,
     T Function(String message)? loading,
     T Function(AuthSession session, bool isOffline, bool tokenRefreshed)? authenticated,
     T Function(String? message)? unauthenticated,
     T Function(String message, String? errorCode, bool canRetry)? error,
     T Function(AuthSession session, int remainingDays)? tokenExpiring,
     T Function(AuthUser? lastUser, String message)? sessionExpired,
-    required T Function() orElse,
   }) {
     final state = this;
     if (state is AuthInitial && initial != null) return initial();

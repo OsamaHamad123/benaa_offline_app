@@ -12,8 +12,7 @@ class AnimatedProgressIndicator extends StatefulWidget {
   final Duration duration;
 
   const AnimatedProgressIndicator({
-    super.key,
-    required this.value,
+    required this.value, super.key,
     this.backgroundColor,
     this.valueColor,
     this.height = 8.0,
@@ -133,8 +132,7 @@ class AnimatedCircularProgress extends StatefulWidget {
   final Duration duration;
 
   const AnimatedCircularProgress({
-    super.key,
-    required this.value,
+    required this.value, super.key,
     this.size = 100.0,
     this.strokeWidth = 8.0,
     this.backgroundColor,

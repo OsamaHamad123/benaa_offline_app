@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../background_sync_worker.dart';
@@ -69,7 +71,7 @@ class SyncStatusIndicator extends ConsumerWidget {
     return Icon(
       Icons.cloud_done,
       size: iconSize,
-      color: Colors.white.withOpacity(0.7),
+      color: Colors.white.withValues(alpha: 0.7),
     );
   }
 }
@@ -83,9 +85,9 @@ class SyncStatusBadge extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -122,7 +124,7 @@ class SyncActionButton extends ConsumerWidget {
 
   Future<void> _handleManualSync(BuildContext context) async {
     // Show loading
-    showDialog(
+    unawaited(showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => const Center(
@@ -140,7 +142,7 @@ class SyncActionButton extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ));
 
     try {
       // Trigger manual sync

@@ -18,8 +18,7 @@ class ActionButton extends StatelessWidget {
   final ButtonType type;
 
   const ActionButton({
-    super.key,
-    required this.label,
+    required this.label, super.key,
     this.onPressed,
     this.icon,
     this.isLoading = false,
@@ -127,8 +126,7 @@ class ActionButtonRow extends StatelessWidget {
   final double spacing;
 
   const ActionButtonRow({
-    super.key,
-    required this.buttons,
+    required this.buttons, super.key,
     this.alignment = MainAxisAlignment.end,
     this.spacing = 12,
   });

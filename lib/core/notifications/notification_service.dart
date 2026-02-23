@@ -125,7 +125,7 @@ final notificationServiceProvider = Provider<AppNotificationService>((ref) {
 class NotificationOverlay extends ConsumerStatefulWidget {
   final Widget child;
 
-  const NotificationOverlay({super.key, required this.child});
+  const NotificationOverlay({required this.child, super.key});
 
   @override
   ConsumerState<NotificationOverlay> createState() =>
@@ -363,7 +363,6 @@ class QuickNotifications {
     AppNotificationService().show(
       title: title ?? 'معلومة',
       message: message,
-      type: NotificationType.info,
     );
   }
 }

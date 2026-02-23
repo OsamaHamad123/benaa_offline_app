@@ -12,7 +12,7 @@ class CategoryPieChart extends StatefulWidget {
   final List<CategoryCount> data;
   final int total;
 
-  const CategoryPieChart({super.key, required this.data, required this.total});
+  const CategoryPieChart({required this.data, required this.total, super.key});
 
   @override
   State<CategoryPieChart> createState() => _CategoryPieChartState();
@@ -61,7 +61,6 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
           ),
           SizedBox(width: isTablet ? 16.w : 8.w),
           Expanded(
-            flex: 1,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,

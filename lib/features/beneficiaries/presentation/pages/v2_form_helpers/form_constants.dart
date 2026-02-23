@@ -172,10 +172,10 @@ class FormColors {
    // Cyan - المراجعة
   // Tab Colors with gradients
   static final Map<int, List<Color>> tabGradients = {
-    0: [Color(0xFF1976D2), Color(0xFF42A5F5)], // Blue - معلومات شخصية
-    1: [Color(0xFF7B1FA2), Color(0xFFBA68C8)], // Purple - العائلة
-    2: [Color(0xFF388E3C), Color(0xFF66BB6A)], // Green - التواصل
-    3: [Color(0xFFE64A19), Color(0xFFFF7043)], // Orange - المرفقات
-    4: [Color(0xFF0288D1), Color(0xFF29B6F6)],
+    0: [const Color(0xFF1976D2), const Color(0xFF42A5F5)], // Blue - معلومات شخصية
+    1: [const Color(0xFF7B1FA2), const Color(0xFFBA68C8)], // Purple - العائلة
+    2: [const Color(0xFF388E3C), const Color(0xFF66BB6A)], // Green - التواصل
+    3: [const Color(0xFFE64A19), const Color(0xFFFF7043)], // Orange - المرفقات
+    4: [const Color(0xFF0288D1), const Color(0xFF29B6F6)],
   };
 }

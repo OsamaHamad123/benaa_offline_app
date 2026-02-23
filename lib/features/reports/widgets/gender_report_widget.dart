@@ -163,13 +163,13 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                     final males = genderCounts
                         .firstWhere(
                           (g) => g.gender == 'ذكور',
-                          orElse: () => GenderCount(gender: 'ذكور', count: 0),
+                          orElse: () => const GenderCount(gender: 'ذكور', count: 0),
                         )
                         .count;
                     final females = genderCounts
                         .firstWhere(
                           (g) => g.gender == 'إناث',
-                          orElse: () => GenderCount(gender: 'إناث', count: 0),
+                          orElse: () => const GenderCount(gender: 'إناث', count: 0),
                         )
                         .count;
 

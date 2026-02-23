@@ -12,7 +12,7 @@ import '../../../../../data/db/drift_database.dart';
 class UnsponsoredBeneficiaryCard extends ConsumerWidget {
   final Beneficiary beneficiary;
 
-  const UnsponsoredBeneficiaryCard({super.key, required this.beneficiary});
+  const UnsponsoredBeneficiaryCard({required this.beneficiary, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

@@ -11,6 +11,7 @@
 /// ```dart
 /// import '../widgets/dashboard_widgets.dart';
 /// ```
+library;
 
 // Core Widgets
 export 'core/section_title.dart';

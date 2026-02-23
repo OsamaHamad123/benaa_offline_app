@@ -7,7 +7,7 @@ class AutoSaveIndicator extends StatelessWidget {
   final bool isSaving;
   final DateTime? lastSaved;
 
-  const AutoSaveIndicator({super.key, required this.isSaving, this.lastSaved});
+  const AutoSaveIndicator({required this.isSaving, super.key, this.lastSaved});
 
   @override
   Widget build(BuildContext context) {

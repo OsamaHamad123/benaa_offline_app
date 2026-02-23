@@ -7,9 +7,7 @@ class FormSearchDialog extends StatefulWidget {
   final Function(String fieldKey) onFieldSelected;
 
   const FormSearchDialog({
-    super.key,
-    required this.searchableFields,
-    required this.onFieldSelected,
+    required this.searchableFields, required this.onFieldSelected, super.key,
   });
 
   @override

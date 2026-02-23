@@ -9,10 +9,7 @@ class FamilyDialogHeader extends StatelessWidget {
   final VoidCallback onClose;
 
   const FamilyDialogHeader({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.onClose,
+    required this.title, required this.icon, required this.onClose, super.key,
   });
 
   @override

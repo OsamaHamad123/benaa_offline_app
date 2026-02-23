@@ -19,7 +19,7 @@ class VisitNotifier extends StateNotifier<VisitState> {
 
   /// Load visits for a beneficiary
   Future<void> loadBeneficiaryVisits(String beneficiaryId) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, clearErrorMessage: true);
 
     try {
       final result = await _getBeneficiaryVisits(beneficiaryId);
@@ -45,7 +45,7 @@ class VisitNotifier extends StateNotifier<VisitState> {
 
   /// Create a new visit
   Future<bool> createNewVisit(VisitEntity visit) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true, clearErrorMessage: true);
 
     try {
       await _createVisit(visit);
@@ -65,6 +65,6 @@ class VisitNotifier extends StateNotifier<VisitState> {
 
   /// Clear error message
   void clearError() {
-    state = state.copyWith(errorMessage: null);
+    state = state.copyWith(clearErrorMessage: true);
   }
 }

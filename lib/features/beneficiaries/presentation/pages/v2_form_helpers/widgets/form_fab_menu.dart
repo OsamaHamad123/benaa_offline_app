@@ -11,9 +11,7 @@ class FormFabMenu extends StatefulWidget {
   final bool isDraftAvailable;
 
   const FormFabMenu({
-    super.key,
-    required this.onSaveDraft,
-    required this.onPreview,
+    required this.onSaveDraft, required this.onPreview, super.key,
     this.onExport,
     this.isDraftAvailable = true,
   });

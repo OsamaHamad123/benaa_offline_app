@@ -5,7 +5,7 @@ void main() {
   group('Dashboard Statistics Entity Tests', () {
     test('DashboardStatistics creates correctly', () {
       // Arrange & Act
-      final stats = DashboardStatistics(
+      const stats = DashboardStatistics(
         totalBeneficiaries: 100,
         activeBeneficiaries: 80,
         pendingSync: 5,
@@ -32,7 +32,7 @@ void main() {
 
     test('DashboardStatistics equality works correctly', () {
       // Arrange
-      final stats1 = DashboardStatistics(
+      const stats1 = DashboardStatistics(
         totalBeneficiaries: 100,
         activeBeneficiaries: 80,
         pendingSync: 5,
@@ -47,7 +47,7 @@ void main() {
         ),
       );
 
-      final stats2 = DashboardStatistics(
+      const stats2 = DashboardStatistics(
         totalBeneficiaries: 100,
         activeBeneficiaries: 80,
         pendingSync: 5,
@@ -68,17 +68,17 @@ void main() {
 
     test('GrowthDataPoint creates correctly', () {
       // Arrange & Act
-      final dataPoint = GrowthDataPoint(date: DateTime(2025, 1, 1), count: 50);
+      final dataPoint = GrowthDataPoint(date: DateTime(2025), count: 50);
 
       // Assert
-      expect(dataPoint.date, DateTime(2025, 1, 1));
+      expect(dataPoint.date, DateTime(2025));
       expect(dataPoint.count, 50);
     });
 
     test('GrowthDataPoint equality works', () {
       // Arrange
-      final point1 = GrowthDataPoint(date: DateTime(2025, 1, 1), count: 50);
-      final point2 = GrowthDataPoint(date: DateTime(2025, 1, 1), count: 50);
+      final point1 = GrowthDataPoint(date: DateTime(2025), count: 50);
+      final point2 = GrowthDataPoint(date: DateTime(2025), count: 50);
 
       // Assert
       expect(point1, equals(point2));
@@ -86,7 +86,7 @@ void main() {
 
     test('TodayStats creates correctly', () {
       // Arrange & Act
-      final todayStats = TodayStats(
+      const todayStats = TodayStats(
         newBeneficiaries: 5,
         completedVisits: 12,
         pendingTasks: 3,
@@ -102,7 +102,7 @@ void main() {
 
     test('DashboardStatistics calculates active percentage correctly', () {
       // Arrange
-      final stats = DashboardStatistics(
+      const stats = DashboardStatistics(
         totalBeneficiaries: 100,
         activeBeneficiaries: 75,
         pendingSync: 5,
@@ -118,7 +118,7 @@ void main() {
       );
       // Act
       final activePercentage =
-          (stats.activeBeneficiaries / stats.totalBeneficiaries * 100);
+          stats.activeBeneficiaries / stats.totalBeneficiaries * 100;
 
       // Assert
       expect(activePercentage, 75.0);
@@ -143,7 +143,7 @@ void main() {
     test('GrowthData trend calculation', () {
       // Arrange
       final growthData = [
-        GrowthDataPoint(date: DateTime(2025, 1, 1), count: 10),
+        GrowthDataPoint(date: DateTime(2025), count: 10),
         GrowthDataPoint(date: DateTime(2025, 1, 2), count: 15),
         GrowthDataPoint(date: DateTime(2025, 1, 3), count: 20),
         GrowthDataPoint(date: DateTime(2025, 1, 4), count: 25),
@@ -152,7 +152,7 @@ void main() {
       // Act
       final isGrowing = growthData.last.count > growthData.first.count;
       final growthAmount = growthData.last.count - growthData.first.count;
-      final growthPercentage = (growthAmount / growthData.first.count * 100);
+      final growthPercentage = growthAmount / growthData.first.count * 100;
 
       // Assert
       expect(isGrowing, true);

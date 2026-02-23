@@ -7,7 +7,7 @@ import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
 class NotesField extends StatelessWidget {
   final TextEditingController controller;
 
-  const NotesField({super.key, required this.controller});
+  const NotesField({required this.controller, super.key});
 
   @override
   Widget build(BuildContext context) {

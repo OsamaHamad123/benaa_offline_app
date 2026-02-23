@@ -12,11 +12,7 @@ class BeneficiaryAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? progressWidget;
 
   const BeneficiaryAppBar({
-    super.key,
-    required this.title,
-    required this.canSave,
-    required this.isSaving,
-    required this.onSave,
+    required this.title, required this.canSave, required this.isSaving, required this.onSave, super.key,
     this.onDelete,
     this.progressWidget,
   });

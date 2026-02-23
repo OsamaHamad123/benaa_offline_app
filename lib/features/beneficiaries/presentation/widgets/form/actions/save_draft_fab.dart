@@ -14,12 +14,10 @@ class SaveDraftFAB extends StatefulWidget {
   final bool hasUnsavedChanges;
 
   const SaveDraftFAB({
-    super.key,
-    required this.onSaveDraft,
+    required this.onSaveDraft, required this.hasUnsavedChanges, super.key,
     this.onQuickSave,
     this.onViewDrafts,
     this.onShowStatistics,
-    required this.hasUnsavedChanges,
   });
 
   @override

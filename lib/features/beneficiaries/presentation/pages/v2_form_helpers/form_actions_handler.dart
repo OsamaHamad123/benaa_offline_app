@@ -119,9 +119,6 @@ class BeneficiaryFormActionsHandler {
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
               primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
             ),
           ),
           child: child!,

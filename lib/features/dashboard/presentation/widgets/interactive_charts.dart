@@ -9,7 +9,7 @@ import '../../domain/entities/dashboard_statistics.dart';
 class InteractiveDashboardCharts extends ConsumerStatefulWidget {
   final DashboardStatistics statistics;
 
-  const InteractiveDashboardCharts({super.key, required this.statistics});
+  const InteractiveDashboardCharts({required this.statistics, super.key});
 
   @override
   ConsumerState<InteractiveDashboardCharts> createState() => _InteractiveDashboardChartsState();
@@ -138,7 +138,7 @@ class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboar
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
@@ -157,7 +157,7 @@ class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboar
                 ),
                 Text(
                   '${selectedCategory.value} مستفيد',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -192,7 +192,7 @@ class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboar
               height: 200,
               child: LineChart(
                 LineChartData(
-                  gridData: FlGridData(show: true, drawVerticalLine: false),
+                  gridData: const FlGridData(drawVerticalLine: false),
                   titlesData: _buildGrowthTitles(),
                   borderData: FlBorderData(show: false),
                   lineBarsData: [
@@ -202,7 +202,6 @@ class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboar
                       color: DashboardColors.totalBeneficiaries,
                       barWidth: 3,
                       dotData: FlDotData(
-                        show: true,
                         getDotPainter: (spot, percent, bar, index) {
                           return FlDotCirclePainter(
                             radius: index == _selectedGrowthIndex ? 6 : 4,
@@ -234,7 +233,7 @@ class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboar
                           final date = widget.statistics.growthData[spot.spotIndex].date;
                           return LineTooltipItem(
                             '${date.day}/${date.month}\n${spot.y.toInt()} مستفيد',
-                            TextStyle(
+                            const TextStyle(
                               color: AppColors.surface,
                               fontWeight: FontWeight.bold,
                             ),
@@ -290,8 +289,8 @@ class _InteractiveDashboardChartsState extends ConsumerState<InteractiveDashboar
           },
         ),
       ),
-      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: const AxisTitles(),
+      rightTitles: const AxisTitles(),
     );
   }
 

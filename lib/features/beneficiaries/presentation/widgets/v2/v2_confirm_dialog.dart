@@ -12,14 +12,11 @@ class V2ConfirmDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const V2ConfirmDialog({
-    super.key,
-    required this.title,
-    required this.message,
+    required this.title, required this.message, required this.onConfirm, super.key,
     this.confirmText = 'تأكيد',
     this.cancelText = 'إلغاء',
     this.isDangerous = false,
     this.icon,
-    required this.onConfirm,
   });
 
   @override

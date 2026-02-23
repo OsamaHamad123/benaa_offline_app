@@ -25,20 +25,9 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
   final VoidCallback onRedo;
 
   const BeneficiaryFormAppBar({
-    super.key,
-    required this.isEditMode,
+    required this.isEditMode, required this.isSavingNotifier, required this.lastSavedNotifier, required this.hasUnsavedChangesNotifier, required this.onSave, required this.onShowHistory, required this.onShowHelp, required this.canUndo, required this.canRedo, required this.onUndo, required this.onRedo, super.key,
     this.beneficiaryName,
-    required this.isSavingNotifier,
-    required this.lastSavedNotifier,
-    required this.hasUnsavedChangesNotifier,
-    required this.onSave,
     this.onDelete,
-    required this.onShowHistory,
-    required this.onShowHelp,
-    required this.canUndo,
-    required this.canRedo,
-    required this.onUndo,
-    required this.onRedo,
   });
 
   @override

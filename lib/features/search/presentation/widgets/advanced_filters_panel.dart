@@ -446,7 +446,7 @@ class _AdvancedFiltersPanelState extends ConsumerState<AdvancedFiltersPanel> {
     String hint,
   ) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       items: items.map((item) {
         return DropdownMenuItem(
           value: item,

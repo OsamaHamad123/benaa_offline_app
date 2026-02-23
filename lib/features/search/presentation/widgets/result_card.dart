@@ -11,10 +11,7 @@ class ResultCard extends StatelessWidget {
   final String? searchQuery; // 🎯 NEW: للتظليل
 
   const ResultCard({
-    super.key,
-    required this.person,
-    required this.onCopy,
-    required this.onAddAsBeneficiary,
+    required this.person, required this.onCopy, required this.onAddAsBeneficiary, super.key,
     this.searchQuery,
   });
 

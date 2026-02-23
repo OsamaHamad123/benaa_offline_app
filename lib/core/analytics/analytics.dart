@@ -1,5 +1,6 @@
 /// 📊 Analytics & Charts Exports
 /// Barrel file for Analytics Dashboard
+library;
 
 export 'analytics_service.dart';
 export 'charts/analytics_dashboard_page.dart';

@@ -2,9 +2,9 @@
 ///
 /// خدمة موحدة لتصدير PDF في كامل التطبيق
 /// تدعم: المستفيدين، الزيارات، الأنشطة، التقارير
+library;
 
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -223,9 +223,9 @@ class UnifiedPdfExportService implements BaseExportService {
                     vertical: 8,
                     horizontal: 12,
                   ),
-                  decoration: pw.BoxDecoration(
+                  decoration: const pw.BoxDecoration(
                     color: PdfColors.blue50,
-                    borderRadius: const pw.BorderRadius.all(
+                    borderRadius: pw.BorderRadius.all(
                       pw.Radius.circular(4),
                     ),
                   ),
@@ -311,9 +311,7 @@ class UnifiedPdfExportService implements BaseExportService {
   /// بناء رأس الصفحة
   pw.Widget _buildHeader({
     required String title,
-    String? subtitle,
-    required String date,
-    required String time,
+    required String date, required String time, String? subtitle,
   }) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,

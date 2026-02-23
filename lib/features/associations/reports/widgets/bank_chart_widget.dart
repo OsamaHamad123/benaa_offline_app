@@ -6,7 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 class BankChartWidget extends StatelessWidget {
   final Map<String, int> data;
 
-  const BankChartWidget({super.key, required this.data});
+  const BankChartWidget({required this.data, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,6 @@ class BankChartWidget extends StatelessWidget {
                     );
                   }).toList(),
                   titlesData: FlTitlesData(
-                    show: true,
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -96,14 +95,13 @@ class BankChartWidget extends StatelessWidget {
                       ),
                     ),
                     topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                     rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                   ),
                   gridData: FlGridData(
-                    show: true,
                     drawVerticalLine: false,
                     horizontalInterval: 1,
                     getDrawingHorizontalLine: (value) {

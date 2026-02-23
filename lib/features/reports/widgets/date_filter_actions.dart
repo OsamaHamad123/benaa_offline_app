@@ -10,12 +10,9 @@ class DateFilterActions extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const DateFilterActions({
-    super.key,
+    required this.onFilterTap, required this.onClearFilter, required this.onRefresh, super.key,
     this.startDate,
     this.endDate,
-    required this.onFilterTap,
-    required this.onClearFilter,
-    required this.onRefresh,
   });
 
   @override

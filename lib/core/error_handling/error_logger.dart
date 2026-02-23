@@ -119,6 +119,6 @@ class ErrorLogger {
     String message, {
     Map<String, dynamic>? context,
   }) async {
-    await logMessage(message, level: SentryLevel.info, context: context);
+    await logMessage(message, context: context);
   }
 }

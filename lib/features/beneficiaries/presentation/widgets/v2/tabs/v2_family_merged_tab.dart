@@ -13,7 +13,7 @@ import 'v2_family_members_tab_redesigned.dart';
 class V2FamilyMergedTab extends StatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
-  const V2FamilyMergedTab({super.key, required this.formControllers});
+  const V2FamilyMergedTab({required this.formControllers, super.key});
 
   @override
   State<V2FamilyMergedTab> createState() => _V2FamilyMergedTabState();

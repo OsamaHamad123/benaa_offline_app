@@ -199,7 +199,7 @@ class _QuickActionsFabState extends State<QuickActionsFab>
 class QuickActionsSheet extends StatelessWidget {
   final List<QuickAction> actions;
 
-  const QuickActionsSheet({super.key, required this.actions});
+  const QuickActionsSheet({required this.actions, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -236,7 +236,6 @@ class QuickActionsSheet extends StatelessWidget {
                 crossAxisCount: 3,
                 mainAxisSpacing: 16.h,
                 crossAxisSpacing: 16.w,
-                childAspectRatio: 1,
               ),
               itemCount: actions.length,
               itemBuilder: (context, index) {

@@ -21,6 +21,7 @@
 ///   onChanged: (taxonomy) => print(taxonomy?.label),
 /// )
 /// ```
+library;
 
 // Domain Layer
 export 'domain/entities/taxonomy.dart';

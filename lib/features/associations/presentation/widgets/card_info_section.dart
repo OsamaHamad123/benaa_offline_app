@@ -11,12 +11,9 @@ class CardInfoSection extends StatelessWidget {
   final String? representativeName;
 
   const CardInfoSection({
-    super.key,
-    required this.phone,
+    required this.phone, required this.bankName, required this.currency, super.key,
     this.email,
-    required this.bankName,
     this.accountNumber,
-    required this.currency,
     this.representativeName,
   });
 

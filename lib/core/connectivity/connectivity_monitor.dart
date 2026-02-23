@@ -139,8 +139,7 @@ class ConnectivityAware extends StatefulWidget {
   final bool showBanner;
 
   const ConnectivityAware({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.builder,
     this.showBanner = true,
   });
@@ -194,10 +193,10 @@ class _ConnectivityAwareState extends State<ConnectivityAware> {
         bottom: false,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          child: Row(
+          child: const Row(
             children: [
               Icon(Icons.wifi_off, color: Colors.white, size: 20),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'لا يوجد اتصال بالإنترنت',

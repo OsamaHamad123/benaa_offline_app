@@ -19,8 +19,7 @@ abstract class AttachmentRepository {
   /// Add new attachment
   Future<Result<Attachment>> addAttachment({
     required String beneficiaryId,
-    String? visitId,
-    required File sourceFile,
+    required File sourceFile, String? visitId,
   });
 
   /// Delete attachment

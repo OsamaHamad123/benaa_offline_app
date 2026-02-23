@@ -114,13 +114,14 @@ class TaxonomyAutoSyncState {
     String? lastSkipReason,
     bool clearLastError = false,
     bool clearLastSkipReason = false,
+    bool clearNextAttemptAt = false,
   }) {
     return TaxonomyAutoSyncState(
       enabled: enabled ?? this.enabled,
       inFlight: inFlight ?? this.inFlight,
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       lastSuccessAt: lastSuccessAt ?? this.lastSuccessAt,
-      nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
+      nextAttemptAt: clearNextAttemptAt ? null : (nextAttemptAt ?? this.nextAttemptAt),
       consecutiveFailures: consecutiveFailures ?? this.consecutiveFailures,
       lastError: clearLastError ? null : (lastError ?? this.lastError),
       lastSkipReason: clearLastSkipReason ? null : (lastSkipReason ?? this.lastSkipReason),
@@ -137,6 +138,25 @@ final taxonomySyncStatusProvider = StateProvider<TaxonomySyncStatus>((ref) {
 final taxonomyAutoSyncStateProvider = StateProvider<TaxonomyAutoSyncState>((ref) {
   return const TaxonomyAutoSyncState();
 });
+
+/// تعليق مزامنة التصنيفات مؤقتاً أثناء الشاشات الثقيلة (مثل نموذج إضافة/تعديل المستفيد)
+final taxonomyAutoSyncSuspendedProvider = StateProvider<bool>((ref) => false);
+
+/// Current route path used by sync guard logic.
+final taxonomyAutoSyncRoutePathProvider = StateProvider<String>((ref) => '/');
+
+/// Emergency mode enabled by runtime watchdog when UI lag bursts are detected.
+final taxonomyAutoSyncEmergencyModeProvider = StateProvider<bool>((ref) => false);
+
+bool isHeavyUiRouteForSync(String routePath) {
+  final route = routePath.trim().toLowerCase();
+  if (route.isEmpty) return false;
+
+  if (route == '/beneficiaries/add') return true;
+  if (route.endsWith('/edit') && route.contains('/beneficiaries/')) return true;
+
+  return false;
+}
 
 /// رسالة الخطأ
 final taxonomyErrorMessageProvider = StateProvider<String?>((ref) {
@@ -252,11 +272,8 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
       _ref.invalidate(allTaxonomiesProvider);
       _ref.invalidate(taxonomyStatisticsProvider);
       _ref.invalidate(lastSyncTimeProvider);
-      for (final group in TaxonomyGroup.values) {
-        _ref.invalidate(taxonomiesByGroupProvider(group));
-        _ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
-        _ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
-      }
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider);
       state = AsyncValue.data(syncResult);
     } else {
       final e = (result as Failure).error;
@@ -274,9 +291,8 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
 
     if (result.isSuccess) {
       final syncResult = (result as Success<TaxonomySyncResult>).value;
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
       _ref.invalidate(taxonomiesByGroupProvider(group));
-      _ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
-      _ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
       state = AsyncValue.data(syncResult);
     } else {
       final e = (result as Failure).error;
@@ -298,11 +314,8 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
       _ref.invalidate(allTaxonomiesProvider);
       _ref.invalidate(taxonomyStatisticsProvider);
       _ref.invalidate(lastSyncTimeProvider);
-      for (final group in TaxonomyGroup.values) {
-        _ref.invalidate(taxonomiesByGroupProvider(group));
-        _ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
-        _ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
-      }
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider);
       state = AsyncValue.data(syncResult);
     } else {
       final e = (result as Failure).error;

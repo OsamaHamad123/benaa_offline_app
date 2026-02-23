@@ -16,12 +16,7 @@ class BottomNavigationButtons extends StatelessWidget {
   final bool isLoading;
 
   const BottomNavigationButtons({
-    super.key,
-    required this.currentTab,
-    required this.totalTabs,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onSave,
+    required this.currentTab, required this.totalTabs, required this.onPrevious, required this.onNext, required this.onSave, super.key,
     this.isLoading = false,
   });
 

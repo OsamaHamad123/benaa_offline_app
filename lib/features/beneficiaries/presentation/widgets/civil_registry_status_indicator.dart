@@ -10,8 +10,8 @@ class CivilRegistryStatusIndicator extends StatelessWidget {
   final VoidCallback? onRetry;
 
   const CivilRegistryStatusIndicator({
-    super.key,
     required this.state,
+    super.key,
     this.onRetry,
   });
 
@@ -21,102 +21,117 @@ class CivilRegistryStatusIndicator extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: _getBackgroundColor(),
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: _getBorderColor(), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildIcon(),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Text(
-              _getMessage(),
-              style: TextStyle(
-                fontSize: 13.sp,
-                color: _getTextColor(),
-                fontWeight: FontWeight.w500,
+    final message = _getMessage();
+
+    return Semantics(
+      liveRegion: true,
+      label: message,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: _getBackgroundColor(context),
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(color: _getBorderColor(context)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildIcon(context),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: _getTextColor(context),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
-          if (state.status == CivilRegistryStatus.error && onRetry != null)
-            IconButton(
-              onPressed: onRetry,
-              icon: Icon(Icons.refresh, size: 20.sp),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-        ],
+            if (state.status == CivilRegistryStatus.error && onRetry != null)
+              IconButton(
+                onPressed: onRetry,
+                tooltip: 'إعادة المحاولة',
+                icon: Icon(Icons.refresh, size: 20.sp),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildIcon() {
+  Widget _buildIcon(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     switch (state.status) {
       case CivilRegistryStatus.loading:
         return SizedBox(
           width: 16.w,
           height: 16.h,
-          child: const CircularProgressIndicator(strokeWidth: 2),
+          child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary),
         );
       case CivilRegistryStatus.success:
-        return Icon(Icons.check_circle, color: Colors.green, size: 20.sp);
+        return Icon(Icons.check_circle, color: colorScheme.primary, size: 20.sp);
       case CivilRegistryStatus.notFound:
-        return Icon(Icons.warning_rounded, color: Colors.orange, size: 20.sp);
+        return Icon(Icons.warning_rounded, color: colorScheme.secondary, size: 20.sp);
       case CivilRegistryStatus.error:
-        return Icon(Icons.error_rounded, color: Colors.red, size: 20.sp);
+        return Icon(Icons.error_rounded, color: colorScheme.error, size: 20.sp);
       case CivilRegistryStatus.initial:
         return const SizedBox.shrink();
     }
   }
 
-  Color _getBackgroundColor() {
+  Color _getBackgroundColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     switch (state.status) {
       case CivilRegistryStatus.loading:
-        return Colors.blue.shade50;
+        return colorScheme.primaryContainer;
       case CivilRegistryStatus.success:
-        return Colors.green.shade50;
+        return colorScheme.primaryContainer;
       case CivilRegistryStatus.notFound:
-        return Colors.orange.shade50;
+        return colorScheme.secondaryContainer;
       case CivilRegistryStatus.error:
-        return Colors.red.shade50;
+        return colorScheme.errorContainer;
       case CivilRegistryStatus.initial:
         return Colors.transparent;
     }
   }
 
-  Color _getBorderColor() {
+  Color _getBorderColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     switch (state.status) {
       case CivilRegistryStatus.loading:
-        return Colors.blue.shade200;
+        return colorScheme.primary.withOpacity(0.35);
       case CivilRegistryStatus.success:
-        return Colors.green.shade200;
+        return colorScheme.primary.withOpacity(0.35);
       case CivilRegistryStatus.notFound:
-        return Colors.orange.shade200;
+        return colorScheme.secondary.withOpacity(0.35);
       case CivilRegistryStatus.error:
-        return Colors.red.shade200;
+        return colorScheme.error.withOpacity(0.35);
       case CivilRegistryStatus.initial:
         return Colors.transparent;
     }
   }
 
-  Color _getTextColor() {
+  Color _getTextColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     switch (state.status) {
       case CivilRegistryStatus.loading:
-        return Colors.blue.shade900;
+        return colorScheme.onPrimaryContainer;
       case CivilRegistryStatus.success:
-        return Colors.green.shade900;
+        return colorScheme.onPrimaryContainer;
       case CivilRegistryStatus.notFound:
-        return Colors.orange.shade900;
+        return colorScheme.onSecondaryContainer;
       case CivilRegistryStatus.error:
-        return Colors.red.shade900;
+        return colorScheme.onErrorContainer;
       case CivilRegistryStatus.initial:
-        return Colors.black;
+        return colorScheme.onSurface;
     }
   }
 

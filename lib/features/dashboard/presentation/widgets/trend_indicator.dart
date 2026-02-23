@@ -7,9 +7,7 @@ class TrendIndicator extends StatelessWidget {
   final bool isPositive;
 
   const TrendIndicator({
-    super.key,
-    required this.percentChange,
-    required this.isPositive,
+    required this.percentChange, required this.isPositive, super.key,
   });
 
   @override

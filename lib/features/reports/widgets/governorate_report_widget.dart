@@ -134,9 +134,6 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
     return ResponsiveBottomSheet(
       title: 'تقرير حسب المحافظة',
       icon: Icons.location_city,
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
       builder: (scrollController) {
         return reportAsync.when(
           data: (governorateCounts) {

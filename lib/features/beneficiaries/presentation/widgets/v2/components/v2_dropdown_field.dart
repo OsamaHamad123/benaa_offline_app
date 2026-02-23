@@ -14,12 +14,8 @@ class V2DropdownField<T> extends StatelessWidget {
   final bool enabled;
 
   const V2DropdownField({
-    super.key,
-    required this.value,
-    required this.items,
-    required this.label,
+    required this.value, required this.items, required this.label, required this.onChanged, super.key,
     this.hint,
-    required this.onChanged,
     this.validator,
     this.prefixIcon,
     this.isRequired = false,
@@ -31,7 +27,7 @@ class V2DropdownField<T> extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items,
       onChanged: enabled ? onChanged : null,
       validator: validator,
@@ -51,7 +47,6 @@ class V2DropdownField<T> extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: colorScheme.outline.withOpacity(0.2),
-            width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -60,7 +55,7 @@ class V2DropdownField<T> extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.error, width: 1),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

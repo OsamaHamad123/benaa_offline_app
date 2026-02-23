@@ -110,7 +110,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
   /// تحميل جميع الجمعيات النشطة
   Future<void> loadAssociations() async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     final useCase = _ref.read(getAllActiveAssociationsUseCaseProvider);
     final result = await useCase.execute();
@@ -131,7 +131,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
   /// البحث عن جمعيات
   Future<void> searchAssociations(String query) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     final useCase = _ref.read(searchAssociationsUseCaseProvider);
     final result = await useCase.execute(query);
@@ -152,7 +152,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
   /// إضافة جمعية جديدة
   Future<bool> createAssociation(AssociationParams params) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     final useCase = _ref.read(createAssociationUseCaseProvider);
     final result = await useCase.execute(params);
@@ -175,7 +175,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
   /// تحديث جمعية
   Future<bool> updateAssociation(Association association) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     final useCase = _ref.read(updateAssociationUseCaseProvider);
     final result = await useCase.execute(association);
@@ -202,7 +202,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
   /// حذف جمعية
   Future<bool> deleteAssociation(String id) async {
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     final useCase = _ref.read(deleteAssociationUseCaseProvider);
     final result = await useCase.execute(id);

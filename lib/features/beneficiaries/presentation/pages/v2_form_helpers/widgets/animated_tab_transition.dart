@@ -10,9 +10,7 @@ class AnimatedTabTransition extends StatelessWidget {
   final TransitionType type;
 
   const AnimatedTabTransition({
-    super.key,
-    required this.child,
-    required this.animation,
+    required this.child, required this.animation, super.key,
     this.type = TransitionType.fadeSlide,
   });
 
@@ -82,9 +80,7 @@ class AnimatedResponsiveTabView extends StatelessWidget {
   final Duration transitionDuration;
 
   const AnimatedResponsiveTabView({
-    super.key,
-    required this.controller,
-    required this.children,
+    required this.controller, required this.children, super.key,
     this.transitionType = TransitionType.fadeSlide,
     this.transitionDuration = const Duration(milliseconds: 300),
   });

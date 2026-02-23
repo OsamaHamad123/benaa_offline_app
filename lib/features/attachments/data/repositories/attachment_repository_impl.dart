@@ -28,7 +28,7 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
   Future<Result<List<Attachment>>> getVisitAttachments(String visitId) async {
     try {
       // TODO: Implement when visit attachments are needed
-      return Failure(UnknownFailure('Visit attachments not yet implemented'));
+      return const Failure(UnknownFailure('Visit attachments not yet implemented'));
     } catch (e, stackTrace) {
       return Failure(
           UnknownFailure('Failed to get visit attachments: $e', stackTrace));
@@ -52,8 +52,7 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
   @override
   Future<Result<Attachment>> addAttachment({
     required String beneficiaryId,
-    String? visitId,
-    required File sourceFile,
+    required File sourceFile, String? visitId,
   }) async {
     try {
       final attachment = await _dataSource.addAttachment(
@@ -103,7 +102,7 @@ class AttachmentRepositoryImpl implements AttachmentRepository {
         needsSync: needsSync,
         serverUrl: serverUrl,
       );
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(
           DatabaseFailure('Failed to update sync state: $e', stackTrace));

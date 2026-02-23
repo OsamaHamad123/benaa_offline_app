@@ -919,7 +919,7 @@ class EnhancedSettingsPage extends ConsumerWidget {
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12.r),
-                    border: isSelected ? Border.all(color: Colors.black, width: 3) : null,
+                    border: isSelected ? Border.all(width: 3) : null,
                     boxShadow: [
                       BoxShadow(
                         color: (data['color'] as Color).withOpacity(0.3),

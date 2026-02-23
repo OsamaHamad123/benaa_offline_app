@@ -42,6 +42,7 @@ import '../core/storage/secure_storage.dart';
 import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
 import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
 import '../features/taxonomies/presentation/pages/taxonomy_management_page.dart';
+import '../features/taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_ui;
 
 /// 🎬 Custom Page Transition Helper
 Page<T> _buildPageWithTransition<T>({
@@ -89,16 +90,29 @@ Page<T> _buildPageWithTransition<T>({
 enum PageTransitionType { fade, slideFromBottom, slideFromRight, scale }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final secureStorage = SecureStorage();
+
+  void updateSyncGuards(String routePath) {
+    Future.microtask(() {
+      ref.read(taxonomy_ui.taxonomyAutoSyncRoutePathProvider.notifier).state = routePath;
+      final emergency = ref.read(taxonomy_ui.taxonomyAutoSyncEmergencyModeProvider);
+      final suspended = emergency || taxonomy_ui.isHeavyUiRouteForSync(routePath);
+      ref.read(taxonomy_ui.taxonomyAutoSyncSuspendedProvider.notifier).state = suspended;
+    });
+  }
+
   return GoRouter(
     initialLocation: '/app-init',
     redirect: (context, state) async {
+      updateSyncGuards(state.matchedLocation);
+
       final isGoingToAppInit = state.matchedLocation == '/app-init';
       final isGoingToInit = state.matchedLocation == '/init';
       final isGoingToWelcome = state.matchedLocation == '/welcome';
       final isGoingToDownload = state.matchedLocation == '/download-civil-db';
       final isGoingToDbDownload = state.matchedLocation == '/database-download';
       // استخدام SecureStorage للتحقق من المصادقة (نفس الـ storage المستخدم في auth)
-      final token = await SecureStorage().getAuthToken();
+      final token = await secureStorage.getAuthToken();
       final isAuth = token != null && token.isNotEmpty;
       final isGoingToLogin = state.matchedLocation == '/login';
 
@@ -166,7 +180,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const DashboardPage(),
           state: state,
-          type: PageTransitionType.fade,
         ),
       ),
       GoRoute(
@@ -179,19 +192,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/beneficiaries/add',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => NoTransitionPage(
+          key: state.pageKey,
           child: BeneficiaryFormPageV3(
             civilRegistryData: state.extra as Map<String, dynamic>?,
           ),
-          state: state,
-          type: PageTransitionType.slideFromBottom,
         ),
       ),
       GoRoute(
         path: '/beneficiaries/:id/edit',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final id = state.pathParameters['id']!;
-          return BeneficiaryFormPageV3(beneficiaryId: id);
+          return NoTransitionPage(
+            key: state.pageKey,
+            child: BeneficiaryFormPageV3(beneficiaryId: id),
+          );
         },
       ),
 
@@ -280,7 +295,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const SponsorshipChartsPage(),
           state: state,
-          type: PageTransitionType.fade,
         ),
       ),
       GoRoute(
@@ -296,7 +310,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const ExportPage(),
           state: state,
-          type: PageTransitionType.fade,
         ),
       ),
       GoRoute(

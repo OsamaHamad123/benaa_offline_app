@@ -161,8 +161,7 @@ class UndoRedoButtons extends StatelessWidget {
   final VoidCallback? onRedo;
 
   const UndoRedoButtons({
-    super.key,
-    required this.manager,
+    required this.manager, super.key,
     this.onUndo,
     this.onRedo,
   });
@@ -219,7 +218,7 @@ class UndoRedoButtons extends StatelessWidget {
 class ActionHistoryViewer extends StatelessWidget {
   final UndoRedoManager manager;
 
-  const ActionHistoryViewer({super.key, required this.manager});
+  const ActionHistoryViewer({required this.manager, super.key});
 
   @override
   Widget build(BuildContext context) {

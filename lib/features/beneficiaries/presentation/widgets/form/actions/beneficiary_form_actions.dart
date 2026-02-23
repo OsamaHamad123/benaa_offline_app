@@ -17,13 +17,7 @@ class BeneficiaryFormActions extends StatelessWidget {
   final bool hasUnsavedChanges;
 
   const BeneficiaryFormActions({
-    super.key,
-    required this.onSaveDraft,
-    required this.onSaveAndContinue,
-    required this.onSaveAndClose,
-    required this.onCancel,
-    required this.isSaving,
-    required this.hasUnsavedChanges,
+    required this.onSaveDraft, required this.onSaveAndContinue, required this.onSaveAndClose, required this.onCancel, required this.isSaving, required this.hasUnsavedChanges, super.key,
   });
 
   @override

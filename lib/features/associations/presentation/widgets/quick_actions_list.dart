@@ -9,11 +9,9 @@ class QuickActionsList extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const QuickActionsList({
-    super.key,
-    required this.onAddAssociation,
+    required this.onAddAssociation, required this.onRefresh, super.key,
     this.onExport,
     this.onImport,
-    required this.onRefresh,
   });
 
   @override

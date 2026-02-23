@@ -14,7 +14,7 @@ void main() {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(1200, 1200),
-          builder: (context, child) => MaterialApp(
+          builder: (context, child) => const MaterialApp(
             home: Scaffold(
               body: StatCard(
                 title: 'إجمالي المستفيدين',
@@ -96,10 +96,10 @@ void main() {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          builder: (context, child) => MaterialApp(
+          builder: (context, child) => const MaterialApp(
             home: MediaQuery(
               // Provide a larger viewport to avoid layout constraints and overflow
-              data: const MediaQueryData(size: Size(1200, 1200)),
+              data: MediaQueryData(size: Size(1200, 1200)),
               child: Scaffold(
                 body: SingleChildScrollView(
                   child: SizedBox(
@@ -175,15 +175,15 @@ void main() {
 
     test('Stat percentage calculation', () {
       // Test positive change
-      final current = 150;
-      final previous = 120;
-      final change = ((current - previous) / previous * 100);
+      const current = 150;
+      const previous = 120;
+      const change = (current - previous) / previous * 100;
       expect(change, closeTo(25.0, 0.1));
 
       // Test negative change
-      final current2 = 100;
-      final previous2 = 120;
-      final change2 = ((current2 - previous2) / previous2 * 100);
+      const current2 = 100;
+      const previous2 = 120;
+      const change2 = (current2 - previous2) / previous2 * 100;
       expect(change2, closeTo(-16.67, 0.1));
     });
   });

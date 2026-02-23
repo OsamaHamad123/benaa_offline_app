@@ -84,10 +84,9 @@ class CivilRegistryResult {
   final CivilRegistryResultStatus status;
 
   const CivilRegistryResult._({
-    this.person,
+    required this.status, this.person,
     this.errorMessage,
     this.errorType,
-    required this.status,
   });
 
   factory CivilRegistryResult.success(CivilRegistryPerson person) {

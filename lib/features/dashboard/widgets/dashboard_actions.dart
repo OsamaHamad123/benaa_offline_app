@@ -15,8 +15,6 @@ class DashboardSpeedDial extends StatelessWidget {
       foregroundColor: Colors.white,
       activeBackgroundColor: Colors.red,
       activeForegroundColor: Colors.white,
-      visible: true,
-      closeManually: false,
       curve: Curves.bounceIn,
       overlayColor: Colors.black,
       overlayOpacity: 0.5,

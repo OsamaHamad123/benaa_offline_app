@@ -23,11 +23,7 @@ class QuickActionsMenu extends StatelessWidget {
   final bool enabled;
 
   const QuickActionsMenu({
-    super.key,
-    required this.onCopyFromBeneficiary,
-    required this.onClearAllFields,
-    required this.onPasteData,
-    required this.onFillDemoData,
+    required this.onCopyFromBeneficiary, required this.onClearAllFields, required this.onPasteData, required this.onFillDemoData, super.key,
     this.enabled = true,
   });
 
@@ -45,7 +41,7 @@ class QuickActionsMenu extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       offset: Offset(0, 50.h),
       itemBuilder: (context) => [
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'copy',
           child: _MenuItem(
             icon: Icons.copy,
@@ -53,7 +49,7 @@ class QuickActionsMenu extends StatelessWidget {
             subtitle: 'انسخ البيانات من مستفيد آخر',
           ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'paste',
           child: _MenuItem(
             icon: Icons.paste,
@@ -61,7 +57,7 @@ class QuickActionsMenu extends StatelessWidget {
             subtitle: 'لصق من الحافظة',
           ),
         ),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'demo',
           child: _MenuItem(
             icon: Icons.science_outlined,
@@ -70,7 +66,7 @@ class QuickActionsMenu extends StatelessWidget {
           ),
         ),
         const PopupMenuDivider(),
-        PopupMenuItem(
+        const PopupMenuItem(
           value: 'clear',
           child: _MenuItem(
             icon: Icons.clear_all,
@@ -161,11 +157,7 @@ class QuickActionsBottomSheet extends StatelessWidget {
   final VoidCallback onFillDemoData;
 
   const QuickActionsBottomSheet({
-    super.key,
-    required this.onCopyFromBeneficiary,
-    required this.onClearAllFields,
-    required this.onPasteData,
-    required this.onFillDemoData,
+    required this.onCopyFromBeneficiary, required this.onClearAllFields, required this.onPasteData, required this.onFillDemoData, super.key,
   });
 
   static void show(
@@ -350,11 +342,7 @@ class QuickActionsSpeedDial extends StatefulWidget {
   final bool enabled;
 
   const QuickActionsSpeedDial({
-    super.key,
-    required this.onCopyFromBeneficiary,
-    required this.onClearAllFields,
-    required this.onPasteData,
-    required this.onFillDemoData,
+    required this.onCopyFromBeneficiary, required this.onClearAllFields, required this.onPasteData, required this.onFillDemoData, super.key,
     this.enabled = true,
   });
 

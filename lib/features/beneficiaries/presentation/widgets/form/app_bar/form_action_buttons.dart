@@ -21,16 +21,8 @@ class FormActionButtons extends StatelessWidget {
   final bool isEditMode;
 
   const FormActionButtons({
-    super.key,
-    required this.onSave,
+    required this.onSave, required this.onShowHistory, required this.onShowHelp, required this.canUndo, required this.canRedo, required this.onUndo, required this.onRedo, required this.isEditMode, super.key,
     this.onDelete,
-    required this.onShowHistory,
-    required this.onShowHelp,
-    required this.canUndo,
-    required this.canRedo,
-    required this.onUndo,
-    required this.onRedo,
-    required this.isEditMode,
   });
 
   @override

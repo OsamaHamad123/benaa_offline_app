@@ -66,7 +66,6 @@ class SearchFilter {
 
   SearchFilter clearGovernorate() {
     return SearchFilter(
-      governorate: null,
       gender: gender,
       minAge: minAge,
       maxAge: maxAge,
@@ -76,7 +75,6 @@ class SearchFilter {
   SearchFilter clearGender() {
     return SearchFilter(
       governorate: governorate,
-      gender: null,
       minAge: minAge,
       maxAge: maxAge,
     );
@@ -86,8 +84,6 @@ class SearchFilter {
     return SearchFilter(
       governorate: governorate,
       gender: gender,
-      minAge: null,
-      maxAge: null,
     );
   }
 

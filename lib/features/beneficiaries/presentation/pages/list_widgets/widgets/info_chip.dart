@@ -10,10 +10,7 @@ class InfoChip extends StatelessWidget {
   final VoidCallback? onTap;
 
   const InfoChip({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.color,
+    required this.icon, required this.label, required this.color, super.key,
     this.bold = false,
     this.onTap,
   });

@@ -4,6 +4,8 @@ import '../../../../data/db/daos/sync_metadata_dao.dart';
 import '../../../../data/db/daos/sync_dao.dart';
 import '../../../../data/models/taxonomy_dto.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../features/beneficiaries/data/models/beneficiary_data_model.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
 import 'dart:convert' show jsonEncode;
 
 /// 💾 Local Sync DataSource
@@ -25,13 +27,43 @@ class LocalSyncDataSource {
         _syncMetadataDao = syncMetadataDao,
         _syncDao = syncDao;
 
+  Set<String> _entityAliases(String entityType) {
+    switch (entityType) {
+      case 'beneficiaries':
+      case 'beneficiary':
+        return {'beneficiary', 'beneficiaries'};
+      case 'visits':
+      case 'visit':
+        return {'visit', 'visits'};
+      case 'attachments':
+      case 'attachment':
+        return {'attachment', 'attachments'};
+      default:
+        return {entityType};
+    }
+  }
+
+  String _normalizeGroup(String rawGroup) {
+    final normalized = TaxonomyGroup.normalizeValue(rawGroup);
+    if (normalized == null || normalized.isEmpty) {
+      return rawGroup.trim();
+    }
+    return normalized;
+  }
+
   // ═══════════════════════════════════════════════════════════════════════
   // 🏷️ TAXONOMIES - Local Operations
   // ═══════════════════════════════════════════════════════════════════════
 
   /// حفظ التصنيفات محلياً (Bulk Upsert)
   Future<void> saveTaxonomies(List<TaxonomyDTO> taxonomies) async {
-    final companions = taxonomies.map((dto) => dto.toCompanion()).toList();
+    final companions = taxonomies
+        .map(
+          (dto) => dto.toCompanion(
+            normalizedGroup: _normalizeGroup(dto.group),
+          ),
+        )
+        .toList();
     await _taxonomiesDao.upsertBatch(companions);
   }
 
@@ -40,19 +72,26 @@ class LocalSyncDataSource {
     String group,
     List<TaxonomyDTO> taxonomies,
   ) async {
-    final companions = taxonomies.map((dto) => dto.toCompanion()).toList();
-    await _taxonomiesDao.syncReplaceGroup(group, companions);
+    final normalizedGroup = _normalizeGroup(group);
+    final companions = taxonomies
+        .map(
+          (dto) => dto.toCompanion(
+            normalizedGroup: _normalizeGroup(dto.group),
+          ),
+        )
+        .toList();
+    await _taxonomiesDao.syncReplaceGroup(normalizedGroup, companions);
   }
 
   /// الحصول على التصنيفات المحلية
   Future<List<TaxonomyDTO>> getLocalTaxonomies(String group) async {
-    final entities = await _taxonomiesDao.getByGroup(group);
+    final entities = await _taxonomiesDao.getByGroup(_normalizeGroup(group));
     return entities.map((e) => TaxonomyDTO.fromEntity(e)).toList();
   }
 
   /// آخر تحديث للتصنيفات
   Future<DateTime?> getTaxonomiesLastUpdate(String group) async {
-    return await _taxonomiesDao.getLastUpdate(group);
+    return await _taxonomiesDao.getLastUpdate(_normalizeGroup(group));
   }
 
   /// هل نحتاج لمزامنة التصنيفات؟
@@ -60,7 +99,7 @@ class LocalSyncDataSource {
     String group,
     DateTime serverLastUpdate,
   ) async {
-    return await _taxonomiesDao.needsSync(group, serverLastUpdate);
+    return await _taxonomiesDao.needsSync(_normalizeGroup(group), serverLastUpdate);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -77,17 +116,24 @@ class LocalSyncDataSource {
     if (since == null) return beneficiaries.map((b) => b.toJson()).toList();
 
     // Filter by date
-    return beneficiaries
-        .where((b) => b.updatedAt?.isAfter(since) ?? false)
-        .map((b) => b.toJson())
-        .toList();
+    return beneficiaries.where((b) => b.updatedAt?.isAfter(since) ?? false).map((b) => b.toJson()).toList();
   }
 
   /// حفظ مستفيد محلياً
   Future<void> saveBeneficiary(Map<String, dynamic> data) async {
-    // Implementation depends on your BeneficiaryDataModel structure
-    // This is a placeholder
-    throw UnimplementedError('Implement based on your BeneficiaryDataModel');
+    final model = BeneficiaryDataModel.fromJson(data);
+    final companion = model.toDriftCompanion(isNew: false);
+
+    final serverId = model.id;
+    if (serverId != null) {
+      final existing = await _beneficiariesDao.getBeneficiaryByServerId(serverId);
+      if (existing != null) {
+        await _beneficiariesDao.updateBeneficiaryCompanion(existing.id, companion);
+        return;
+      }
+    }
+
+    await _beneficiariesDao.insertBeneficiary(companion);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -130,13 +176,15 @@ class LocalSyncDataSource {
   /// عدد التغييرات المعلقة
   Future<int> getPendingChangesCount(String entityType) async {
     final items = await _syncDao.getSyncQueue(limit: 10000);
-    return items.where((item) => item.entity == entityType).length;
+    final aliases = _entityAliases(entityType);
+    return items.where((item) => aliases.contains(item.entity)).length;
   }
 
   /// الحصول على التغييرات المعلقة
   Future<List<SyncQueueItem>> getPendingChanges(String entityType) async {
     final allItems = await _syncDao.getSyncQueue(limit: 10000);
-    return allItems.where((item) => item.entity == entityType).toList();
+    final aliases = _entityAliases(entityType);
+    return allItems.where((item) => aliases.contains(item.entity)).toList();
   }
 
   /// إضافة تغيير لطابور المزامنة
@@ -158,19 +206,25 @@ class LocalSyncDataSource {
   }
 
   /// إزالة تغيير من طابور المزامنة (بالستخدام queueId كـ String ID)
-  Future<void> removeFromSyncQueue(int queueId) async {
-    // Note: SyncDao expects String ID, need to convert or use item.id
-    // For now, we'll clear all synced items as workaround
-    // TODO: Fix this to use proper ID
-    return;
+  Future<void> removeFromSyncQueue(String queueId) async {
+    await _syncDao.removeFromSyncQueue(queueId);
   }
 
   /// مسح طابور المزامنة
-  /// Note: Current SyncDao doesn't have clearQueue method
-  /// TODO: Implement proper queue clearing
   Future<void> clearSyncQueue([String? entityType]) async {
-    // Placeholder - needs implementation in SyncDao
-    return;
+    final allItems = await _syncDao.getSyncQueue(limit: 100000);
+
+    if (entityType == null || entityType.isEmpty) {
+      for (final item in allItems) {
+        await _syncDao.removeFromSyncQueue(item.id);
+      }
+      return;
+    }
+
+    final aliases = _entityAliases(entityType);
+    for (final item in allItems.where((row) => aliases.contains(row.entity))) {
+      await _syncDao.removeFromSyncQueue(item.id);
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════

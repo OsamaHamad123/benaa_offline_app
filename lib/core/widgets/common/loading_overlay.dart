@@ -14,9 +14,7 @@ class LoadingOverlay extends StatelessWidget {
   final Color? backgroundColor;
 
   const LoadingOverlay({
-    super.key,
-    required this.isLoading,
-    required this.child,
+    required this.isLoading, required this.child, super.key,
     this.message,
     this.backgroundColor,
   });
@@ -104,9 +102,7 @@ class ShimmerLoading extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const ShimmerLoading({
-    super.key,
-    required this.width,
-    required this.height,
+    required this.width, required this.height, super.key,
     this.borderRadius,
   });
 
@@ -144,8 +140,6 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius ?? BorderRadius.circular(8.r),
             gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
               colors: [Colors.grey[300]!, Colors.grey[200]!, Colors.grey[300]!],
               stops: [
                 _controller.value - 0.3,

@@ -1,6 +1,7 @@
 /// 🎯 User-Friendly Error Messages System
 ///
 /// يوفر رسائل خطأ واضحة وصديقة للمستخدم بدلاً من الرسائل التقنية
+library;
 
 abstract class AppError implements Exception {
   String get userMessage;

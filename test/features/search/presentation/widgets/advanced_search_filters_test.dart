@@ -25,7 +25,7 @@ void main() {
     });
 
     test('toJson should convert to map correctly', () {
-      final now = DateTime(2024, 1, 1, 12, 0);
+      final now = DateTime(2024, 1, 1, 12);
       final filters = {
         'governorates': ['دمشق'],
         'statuses': ['نشط'],

@@ -12,7 +12,7 @@ class BeneficiaryModel extends domain.Beneficiary {
     required super.nationalId,
     required super.gender,
     required super.category,
-    super.birthDate,
+    required super.createdAt, required super.updatedAt, super.birthDate,
     super.motherName,
     super.fatherName,
     super.grandFatherName,
@@ -41,8 +41,6 @@ class BeneficiaryModel extends domain.Beneficiary {
     super.housingType,
     super.requestStatus,
     super.notes,
-    required super.createdAt,
-    required super.updatedAt,
     super.needsSync = false,
   });
 
@@ -63,7 +61,6 @@ class BeneficiaryModel extends domain.Beneficiary {
       gender: data.gender == 1 ? domain.Gender.male : domain.Gender.female,
       category: domain.BeneficiaryCategory.fromCode(data.sectionId),
       birthDate: data.birthDate,
-      motherName: null, // Not in new schema
       fatherName: data.fatherName,
       grandFatherName: data.grandFatherName,
       familyName: data.familyName,
@@ -72,11 +69,9 @@ class BeneficiaryModel extends domain.Beneficiary {
           data.altPhoneNumber != 0 ? data.altPhoneNumber.toString() : null,
       governorate: data.province?.toString(),
       district: data.city?.toString(),
-      address: null, // Not directly in new schema
       currentAddress: data.currentAddress,
       addressBeforeDisplacement: data.addressBeforeDisplacement,
       fileNo: data.fileIdNumber,
-      associationName: null, // Not in new schema
       maritalStatus: _codeToMaritalStatus(data.maritalStatus),
       educationLevel: _codeToEducationLevel(data.academicQualification),
       healthStatus: _codeToHealthStatus(data.healthStatus),

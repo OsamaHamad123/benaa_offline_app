@@ -11,10 +11,7 @@ class DatePickerField extends StatelessWidget {
   final Color? iconColor;
 
   const DatePickerField({
-    super.key,
-    required this.selectedDate,
-    required this.onDateSelected,
-    required this.label,
+    required this.selectedDate, required this.onDateSelected, required this.label, super.key,
     this.icon = Icons.calendar_today,
     this.iconColor,
   });

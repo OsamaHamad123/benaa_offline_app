@@ -1,5 +1,6 @@
 /// ⚡ Smart Cache System
 /// Barrel file for cache exports
+library;
 
 export 'cache_manager.dart';
 export 'image_cache_manager.dart';

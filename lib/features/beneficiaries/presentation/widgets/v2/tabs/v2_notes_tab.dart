@@ -7,7 +7,7 @@ import '../components/v2_section_card.dart';
 class V2NotesTab extends StatelessWidget {
   final TextEditingController notesController;
 
-  const V2NotesTab({super.key, required this.notesController});
+  const V2NotesTab({required this.notesController, super.key});
 
   @override
   Widget build(BuildContext context) {

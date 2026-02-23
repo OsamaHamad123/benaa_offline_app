@@ -13,10 +13,8 @@ class LoadingOverlay extends StatelessWidget {
   final Color? indicatorColor;
 
   const LoadingOverlay({
-    super.key,
-    required this.isLoading,
+    required this.isLoading, required this.child, super.key,
     this.message,
-    required this.child,
     this.backgroundColor,
     this.indicatorColor,
   });
@@ -72,9 +70,8 @@ class DateRangePickerButton extends StatelessWidget {
   final DateTime? lastDate;
 
   const DateRangePickerButton({
-    super.key,
+    required this.onRangeSelected, super.key,
     this.selectedRange,
-    required this.onRangeSelected,
     this.label = 'اختر الفترة',
     this.icon = Icons.date_range,
     this.firstDate,
@@ -129,9 +126,7 @@ class ColorPickerButton extends StatelessWidget {
   final List<Color>? colors;
 
   const ColorPickerButton({
-    super.key,
-    required this.selectedColor,
-    required this.onColorSelected,
+    required this.selectedColor, required this.onColorSelected, super.key,
     this.label = 'اختر اللون',
     this.colors,
   });
@@ -149,7 +144,7 @@ class ColorPickerButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: selectedColor,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey, width: 1),
+              border: Border.all(color: Colors.grey),
             ),
           ),
           SizedBox(width: 8.w),
@@ -236,8 +231,7 @@ class QRCodeDisplay extends StatelessWidget {
   final Color? backgroundColor;
 
   const QRCodeDisplay({
-    super.key,
-    required this.data,
+    required this.data, super.key,
     this.size = 200,
     this.foregroundColor,
     this.backgroundColor,
@@ -297,8 +291,7 @@ class EmptyStateWidget extends StatelessWidget {
   final String? actionLabel;
 
   const EmptyStateWidget({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.message,
     this.icon = Icons.inbox,
     this.onAction,
@@ -431,9 +424,7 @@ class NotificationBadge extends StatelessWidget {
   final Color? textColor;
 
   const NotificationBadge({
-    super.key,
-    required this.count,
-    required this.child,
+    required this.count, required this.child, super.key,
     this.backgroundColor,
     this.textColor,
   });
@@ -490,9 +481,7 @@ class SkeletonLoader extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const SkeletonLoader({
-    super.key,
-    required this.width,
-    required this.height,
+    required this.width, required this.height, super.key,
     this.borderRadius,
   });
 
@@ -538,8 +527,6 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius ?? BorderRadius.circular(8.r),
             gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
               stops: [
                 (_animation.value - 1).clamp(0.0, 1.0),
                 _animation.value.clamp(0.0, 1.0),

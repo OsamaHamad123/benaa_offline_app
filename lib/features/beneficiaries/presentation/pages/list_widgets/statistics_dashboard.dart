@@ -18,7 +18,6 @@ class StatisticsDashboard extends ConsumerWidget {
 
   Widget _buildCompactStats(BuildContext context, state) {
     return FadeSlideTransition(
-      duration: AppDurations.normal,
       child: Column(
         children: [
           // الإحصائيات الرئيسية

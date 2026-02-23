@@ -11,9 +11,7 @@ class QuickReviewSheet extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const QuickReviewSheet({
-    super.key,
-    required this.controllers,
-    required this.onConfirm,
+    required this.controllers, required this.onConfirm, super.key,
   });
 
   @override
@@ -254,7 +252,7 @@ class QuickReviewSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: AppDimensions.borderRadiusMD,
-        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

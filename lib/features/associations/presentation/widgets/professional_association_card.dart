@@ -32,17 +32,11 @@ class ProfessionalAssociationCard extends StatelessWidget {
   final VoidCallback? onDelete;
 
   const ProfessionalAssociationCard({
-    super.key,
-    required this.id,
-    required this.name,
+    required this.id, required this.name, required this.phone, required this.bankName, required this.currency, required this.isActive, super.key,
     this.shortName,
-    required this.phone,
     this.email,
-    required this.bankName,
     this.accountNumber,
-    required this.currency,
     this.representativeName,
-    required this.isActive,
     this.createdAt,
     this.updatedAt,
     this.onTap,
@@ -62,7 +56,6 @@ class ProfessionalAssociationCard extends StatelessWidget {
             color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
-            spreadRadius: 0,
           ),
         ],
       ),

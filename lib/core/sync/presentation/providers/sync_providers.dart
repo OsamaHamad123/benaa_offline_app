@@ -266,7 +266,7 @@ class SyncController extends StateNotifier<SyncState> {
 
   /// Perform Delta Sync
   Future<void> deltaSync(String entityType) async {
-    state = SyncState.syncing('جارٍ المزامنة...');
+    state = const SyncState.syncing('جارٍ المزامنة...');
 
     final result = await _deltaSyncUseCase.execute(entityType);
 

@@ -15,8 +15,7 @@ class SwipeActionWrapper extends StatelessWidget {
   final bool enableView;
 
   const SwipeActionWrapper({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onEdit,
     this.onDelete,
     this.onView,

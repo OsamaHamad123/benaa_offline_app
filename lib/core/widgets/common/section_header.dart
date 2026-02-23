@@ -16,8 +16,7 @@ class SectionHeader extends StatelessWidget {
   final bool showDivider;
 
   const SectionHeader({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.subtitle,
     this.icon,
     this.action,
@@ -89,7 +88,7 @@ class SectionHeaderCompact extends StatelessWidget {
   final String title;
   final Widget? action;
 
-  const SectionHeaderCompact({super.key, required this.title, this.action});
+  const SectionHeaderCompact({required this.title, super.key, this.action});
 
   @override
   Widget build(BuildContext context) {

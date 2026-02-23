@@ -16,7 +16,7 @@ import '../../core/error_handling/error_handler.dart';
 import '../taxonomies/presentation/providers/taxonomy_providers.dart';
 import '../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../taxonomies/domain/entities/taxonomy.dart';
-import '../taxonomies/domain/entities/taxonomy_group.dart';
+import '../taxonomies/presentation/pages/taxonomy_binding_test_page.dart';
 import 'presentation/providers/file_id_providers.dart';
 import 'domain/repositories/file_id_reservation_repository.dart';
 
@@ -118,11 +118,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
     // Force taxonomy sync through notifier to guarantee provider invalidation + UI refresh.
     await ref.read(taxonomySyncNotifierProvider.notifier).sync();
-    for (final group in TaxonomyGroup.values) {
-      ref.invalidate(taxonomiesByGroupProvider(group));
-      ref.invalidate(bridgeTaxonomiesByGroupProvider(group));
-      ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
-    }
+    ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
 
     final taxonomyStatus = ref.read(taxonomySyncStatusProvider);
     final taxonomyError = ref.read(taxonomyErrorMessageProvider);
@@ -356,7 +352,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 'last_synced_at': _fileIdDiagnostics!.lastSyncedAt?.toIso8601String(),
               },
         'recommended_actions': [
-          if ((missingTaxonomyGroups?.isNotEmpty ?? false)) 'sync_taxonomies',
+          if (missingTaxonomyGroups?.isNotEmpty ?? false) 'sync_taxonomies',
           if ((_lastResult?.errorCategory ?? '').isNotEmpty) 'review_error_context',
           if ((_lastResult?.writeCounters['beneficiaries_skipped'] ?? 0) > 0) 'verify_identity_mapping',
         ],
@@ -912,6 +908,18 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 disabledBackgroundColor: Colors.grey,
                 padding: EdgeInsets.symmetric(vertical: 12.h),
               ),
+            ),
+            SizedBox(height: 8.h),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const TaxonomyBindingTestPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.science_rounded),
+              label: const Text('فتح صفحة اختبار الربط'),
             ),
           ],
         ),

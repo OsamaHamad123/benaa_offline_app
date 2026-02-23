@@ -48,9 +48,7 @@ class MonitoredAnimation extends StatefulWidget {
   final VoidCallback? onComplete;
 
   const MonitoredAnimation({
-    super.key,
-    required this.child,
-    required this.duration,
+    required this.child, required this.duration, super.key,
     this.curve = Curves.easeInOut,
     this.onComplete,
   });
@@ -136,7 +134,7 @@ class UxAnalyticsDashboard extends StatelessWidget {
             onSelected: (value) async {
               switch (value) {
                 case 'export_json':
-                  await AnalyticsExporter.shareAnalytics(format: 'json');
+                  await AnalyticsExporter.shareAnalytics();
                   break;
                 case 'export_csv':
                   await AnalyticsExporter.shareAnalytics(format: 'csv');

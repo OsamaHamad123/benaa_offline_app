@@ -121,7 +121,7 @@ class UnsponsoredTab extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const ListShimmerLoader(itemCount: 5, itemHeight: 88),
+      loading: () => const ListShimmerLoader(itemHeight: 88),
       error: (e, _) => Center(
         child: Padding(
           padding: EdgeInsets.all(32.w),

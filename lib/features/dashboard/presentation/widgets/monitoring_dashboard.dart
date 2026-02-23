@@ -251,7 +251,7 @@ class _StatCard extends StatelessWidget {
 class _PerformanceSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final slowOps = PerformanceMonitor.getSlowOperations(limit: 10);
+    final slowOps = PerformanceMonitor.getSlowOperations();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

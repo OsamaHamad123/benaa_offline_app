@@ -11,7 +11,7 @@ class CreateRepresentativeUseCase {
   Future<Result<Representative>> execute(String name) async {
     // Validation
     if (name.trim().isEmpty) {
-      return Failure(ValidationFailure('اسم المندوب مطلوب'));
+      return const Failure(ValidationFailure('اسم المندوب مطلوب'));
     }
 
     // Create

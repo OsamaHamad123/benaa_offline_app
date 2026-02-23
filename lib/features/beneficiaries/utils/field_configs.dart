@@ -258,7 +258,7 @@ class CommonDropdownConfigs {
     label: 'الحالة الاجتماعية',
     icon: Icons.family_restroom,
     items: [
-      DropdownMenuItem(value: null, child: Text('غير محدد')),
+      DropdownMenuItem(child: Text('غير محدد')),
       DropdownMenuItem(value: 'single', child: Text('أعزب/عزباء')),
       DropdownMenuItem(value: 'married', child: Text('متزوج/ة')),
       DropdownMenuItem(value: 'divorced', child: Text('مطلق/ة')),
@@ -270,7 +270,7 @@ class CommonDropdownConfigs {
     label: 'المستوى التعليمي',
     icon: Icons.school,
     items: [
-      DropdownMenuItem(value: null, child: Text('غير محدد')),
+      DropdownMenuItem(child: Text('غير محدد')),
       DropdownMenuItem(value: 'none', child: Text('أمي')),
       DropdownMenuItem(value: 'primary', child: Text('ابتدائية')),
       DropdownMenuItem(value: 'secondary', child: Text('متوسطة')),
@@ -296,7 +296,7 @@ class CommonDropdownConfigs {
     label: 'حالة النزوح',
     icon: Icons.info,
     items: [
-      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(child: Text('اختر...')),
       DropdownMenuItem(value: 0, child: Text('غير نازح')),
       DropdownMenuItem(value: 1, child: Text('نازح')),
       DropdownMenuItem(value: 2, child: Text('عائد')),
@@ -307,7 +307,7 @@ class CommonDropdownConfigs {
     label: 'حالة السكن',
     icon: Icons.home_work,
     items: [
-      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(child: Text('اختر...')),
       DropdownMenuItem(value: 0, child: Text('ملك')),
       DropdownMenuItem(value: 1, child: Text('إيجار')),
       DropdownMenuItem(value: 2, child: Text('مع العائلة')),
@@ -319,7 +319,7 @@ class CommonDropdownConfigs {
     label: 'نوع السكن',
     icon: Icons.house,
     items: [
-      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(child: Text('اختر...')),
       DropdownMenuItem(value: 0, child: Text('بيت')),
       DropdownMenuItem(value: 1, child: Text('شقة')),
       DropdownMenuItem(value: 2, child: Text('كرفان')),
@@ -331,7 +331,7 @@ class CommonDropdownConfigs {
     label: 'حالة التوظيف',
     icon: Icons.work_outline,
     items: [
-      DropdownMenuItem(value: null, child: Text('اختر...')),
+      DropdownMenuItem(child: Text('اختر...')),
       DropdownMenuItem(value: 0, child: Text('موظف')),
       DropdownMenuItem(value: 1, child: Text('عاطل')),
       DropdownMenuItem(value: 2, child: Text('متقاعد')),

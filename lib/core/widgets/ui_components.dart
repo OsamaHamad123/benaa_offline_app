@@ -10,10 +10,7 @@ class SectionHeader extends StatelessWidget {
   final Color? color;
 
   const SectionHeader({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
+    required this.icon, required this.title, required this.subtitle, super.key,
     this.color,
   });
 
@@ -80,8 +77,7 @@ class ElevatedCard extends StatelessWidget {
   final double? elevation;
 
   const ElevatedCard({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.padding,
     this.backgroundColor,
     this.elevation,
@@ -116,9 +112,7 @@ class GradientButton extends StatelessWidget {
   final List<Color>? gradientColors;
 
   const GradientButton({
-    super.key,
-    required this.onPressed,
-    required this.label,
+    required this.onPressed, required this.label, super.key,
     this.icon,
     this.isLoading = false,
     this.gradientColors,
@@ -193,8 +187,7 @@ class StatusBadge extends StatelessWidget {
   final String inactiveLabel;
 
   const StatusBadge({
-    super.key,
-    required this.isActive,
+    required this.isActive, super.key,
     this.activeLabel = 'نشط',
     this.inactiveLabel = 'غير نشط',
   });

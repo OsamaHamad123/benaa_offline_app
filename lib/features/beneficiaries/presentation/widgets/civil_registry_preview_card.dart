@@ -10,8 +10,7 @@ class CivilRegistryPreviewCard extends StatelessWidget {
   final VoidCallback? onDismiss;
 
   const CivilRegistryPreviewCard({
-    super.key,
-    required this.person,
+    required this.person, super.key,
     this.onDismiss,
   });
 

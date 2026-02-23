@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class RepresentativeChartWidget extends StatelessWidget {
   final Map<String, int> data;
 
-  const RepresentativeChartWidget({super.key, required this.data});
+  const RepresentativeChartWidget({required this.data, super.key});
 
   @override
   Widget build(BuildContext context) {

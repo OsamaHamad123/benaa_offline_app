@@ -7,9 +7,7 @@ class CardAnimationWrapper extends StatelessWidget {
   final Duration delay;
 
   const CardAnimationWrapper({
-    super.key,
-    required this.child,
-    required this.index,
+    required this.child, required this.index, super.key,
     this.delay = const Duration(milliseconds: 50),
   });
 
@@ -39,9 +37,7 @@ class UpdateAnimationWrapper extends StatefulWidget {
   final String itemId;
 
   const UpdateAnimationWrapper({
-    super.key,
-    required this.child,
-    required this.itemId,
+    required this.child, required this.itemId, super.key,
   });
 
   @override

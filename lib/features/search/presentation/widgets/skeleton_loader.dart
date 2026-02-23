@@ -153,8 +153,7 @@ class _ShimmerBox extends StatelessWidget {
   const _ShimmerBox({
     required this.width,
     required this.height,
-    this.borderRadius,
-    required this.gradientPosition,
+    required this.gradientPosition, this.borderRadius,
   });
 
   @override
@@ -165,8 +164,6 @@ class _ShimmerBox extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius ?? 8),
         gradient: LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
           colors: [
             Colors.grey.shade300,
             Colors.grey.shade200,
@@ -174,7 +171,7 @@ class _ShimmerBox extends StatelessWidget {
           ],
           stops: [
             (gradientPosition - 0.3).clamp(0.0, 1.0),
-            (gradientPosition).clamp(0.0, 1.0),
+            gradientPosition.clamp(0.0, 1.0),
             (gradientPosition + 0.3).clamp(0.0, 1.0),
           ],
         ),

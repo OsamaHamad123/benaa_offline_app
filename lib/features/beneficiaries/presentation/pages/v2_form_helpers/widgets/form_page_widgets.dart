@@ -18,11 +18,7 @@ class QuickStatWidget extends StatelessWidget {
   final Color color;
 
   const QuickStatWidget({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
+    required this.icon, required this.label, required this.value, required this.color, super.key,
   });
 
   @override
@@ -63,11 +59,7 @@ class QuickStatsPanel extends StatelessWidget {
   final VoidCallback onToggleHelpers;
 
   const QuickStatsPanel({
-    super.key,
-    required this.completed,
-    required this.total,
-    required this.showFieldHelpers,
-    required this.onToggleHelpers,
+    required this.completed, required this.total, required this.showFieldHelpers, required this.onToggleHelpers, super.key,
   });
 
   @override
@@ -162,11 +154,7 @@ class DraftListItem extends StatelessWidget {
   final VoidCallback onDelete;
 
   const DraftListItem({
-    super.key,
-    required this.draft,
-    required this.formattedDate,
-    required this.onTap,
-    required this.onDelete,
+    required this.draft, required this.formattedDate, required this.onTap, required this.onDelete, super.key,
   });
 
   @override
@@ -240,7 +228,7 @@ class UnsavedChangesDialog extends StatelessWidget {
 class DeleteDraftDialog extends StatelessWidget {
   final String draftName;
 
-  const DeleteDraftDialog({super.key, required this.draftName});
+  const DeleteDraftDialog({required this.draftName, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -277,8 +265,7 @@ class FormPageTitle extends StatelessWidget {
   final String? beneficiaryName;
 
   const FormPageTitle({
-    super.key,
-    required this.isEditMode,
+    required this.isEditMode, super.key,
     this.beneficiaryName,
   });
 
@@ -319,14 +306,7 @@ class FormAppBarActions extends StatelessWidget {
   final VoidCallback? onRedo;
 
   const FormAppBarActions({
-    super.key,
-    required this.showStatistics,
-    required this.showFieldHelpers,
-    required this.onToggleStatistics,
-    required this.onToggleFieldHelpers,
-    required this.onViewDrafts,
-    required this.onSaveDraft,
-    required this.onShowHelp,
+    required this.showStatistics, required this.showFieldHelpers, required this.onToggleStatistics, required this.onToggleFieldHelpers, required this.onViewDrafts, required this.onSaveDraft, required this.onShowHelp, super.key,
     this.onDelete,
     this.onUndo,
     this.onRedo,
@@ -404,7 +384,7 @@ class FormAppBarActions extends StatelessWidget {
           },
           itemBuilder: (context) => [
             // المسودات
-            PopupMenuItem(
+            const PopupMenuItem(
               value: 'drafts',
               child: _QuickActionItem(
                 icon: Icons.drafts_outlined,

@@ -6,9 +6,7 @@ class LoadMoreButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const LoadMoreButton({
-    super.key,
-    required this.isSearching,
-    required this.onPressed,
+    required this.isSearching, required this.onPressed, super.key,
   });
 
   @override

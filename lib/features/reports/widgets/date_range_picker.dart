@@ -8,10 +8,8 @@ class DateRangePicker extends StatelessWidget {
   final Function(DateTimeRange) onDateRangeSelected;
 
   const DateRangePicker({
-    super.key,
+    required this.onClear, required this.onDateRangeSelected, super.key,
     this.selectedRange,
-    required this.onClear,
-    required this.onDateRangeSelected,
   });
 
   @override

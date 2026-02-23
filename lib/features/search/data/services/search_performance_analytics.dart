@@ -197,8 +197,7 @@ class SearchError {
   SearchError({
     required this.query,
     required this.error,
-    this.stackTrace,
-    required this.timestamp,
+    required this.timestamp, this.stackTrace,
   });
 
   Map<String, dynamic> toJson() {

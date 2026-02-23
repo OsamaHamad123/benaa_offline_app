@@ -1,6 +1,7 @@
 /// 🔐 Auth Feature - Barrel Export
 ///
 /// تصدير جميع ملفات المصادقة
+library;
 
 // Domain - Entities
 export 'domain/entities/auth_user.dart';

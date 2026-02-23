@@ -39,6 +39,7 @@ class MobileSyncService {
   // Sync state
   final _statusController = StreamController<MobileSyncStatus>.broadcast();
   MobileSyncStatus _currentStatus = MobileSyncStatus();
+  static const int _uiYieldInterval = 20;
 
   MobileSyncService(
     this._db,
@@ -67,6 +68,12 @@ class MobileSyncService {
   void _updateStatus(MobileSyncStatus status) {
     _currentStatus = status;
     _statusController.add(status);
+  }
+
+  Future<void> _yieldToUiIfNeeded(int processedCount) async {
+    if (processedCount % _uiYieldInterval == 0) {
+      await Future<void>.delayed(Duration.zero);
+    }
   }
 
   // ========================================================================
@@ -185,7 +192,8 @@ class MobileSyncService {
         if (records.isEmpty) break;
 
         await _db.transaction(() async {
-          for (final record in records) {
+          for (var index = 0; index < records.length; index++) {
+            final record = records[index];
             try {
               final upsertResult = await _upsertBeneficiaryRecord(record as Map<String, dynamic>);
               writeCounter.record('beneficiaries', upsertResult.outcome);
@@ -209,6 +217,8 @@ class MobileSyncService {
               writeCounter.record('beneficiaries', _WriteOutcome.skipped);
               _logger.w('Failed to sync record ${record['id']}: $e');
             }
+
+            await _yieldToUiIfNeeded(index + 1);
           }
 
           await _syncRelatedEntitiesFromPage(pageResult, writeCounter, identityIndex: identityIndex);
@@ -379,10 +389,13 @@ class MobileSyncService {
       if (pageResult.rows.isEmpty) break;
 
       await _db.transaction(() async {
-        for (final row in pageResult.rows) {
+        for (var index = 0; index < pageResult.rows.length; index++) {
+          final row = pageResult.rows[index];
           final outcome = await onRow(row, sequence);
           writeCounter.record(entityKey, outcome);
           sequence++;
+
+          await _yieldToUiIfNeeded(index + 1);
         }
       });
       onCounted(pageResult.rows.length);
@@ -774,24 +787,30 @@ class MobileSyncService {
       beneficiary,
       const ['family_members', 'members', 'orphans'],
     );
-    for (final member in nestedMembers) {
+    for (var index = 0; index < nestedMembers.length; index++) {
+      final member = nestedMembers[index];
       final outcome = await _upsertFamilyMember(
         member,
         localBeneficiaryId: localBeneficiaryId,
       );
       writeCounter.record('family_members', outcome);
+
+      await _yieldToUiIfNeeded(index + 1);
     }
 
     final nestedDeceased = _extractListOfMaps(
       beneficiary,
       const ['dead_people', 'family_deceased', 'deceased'],
     );
-    for (final deceased in nestedDeceased) {
+    for (var index = 0; index < nestedDeceased.length; index++) {
+      final deceased = nestedDeceased[index];
       final outcome = await _upsertFamilyDeceased(
         deceased,
         localBeneficiaryId: localBeneficiaryId,
       );
       writeCounter.record('dead_people', outcome);
+
+      await _yieldToUiIfNeeded(index + 1);
     }
   }
 
@@ -819,9 +838,12 @@ class MobileSyncService {
       } else {
         writeCounter.record('attachments', _WriteOutcome.skipped);
       }
+
+      await _yieldToUiIfNeeded(i + 1);
     }
 
-    for (final member in pageResult.familyMembers) {
+    for (var i = 0; i < pageResult.familyMembers.length; i++) {
+      final member = pageResult.familyMembers[i];
       final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(member, index: identityIndex);
       if (localBeneficiaryId != null) {
         final outcome = await _upsertFamilyMember(
@@ -832,9 +854,12 @@ class MobileSyncService {
       } else {
         writeCounter.record('family_members', _WriteOutcome.skipped);
       }
+
+      await _yieldToUiIfNeeded(i + 1);
     }
 
-    for (final deceased in pageResult.familyDeceased) {
+    for (var i = 0; i < pageResult.familyDeceased.length; i++) {
+      final deceased = pageResult.familyDeceased[i];
       final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(deceased, index: identityIndex);
       if (localBeneficiaryId != null) {
         final outcome = await _upsertFamilyDeceased(
@@ -845,6 +870,8 @@ class MobileSyncService {
       } else {
         writeCounter.record('dead_people', _WriteOutcome.skipped);
       }
+
+      await _yieldToUiIfNeeded(i + 1);
     }
   }
 
@@ -1171,6 +1198,7 @@ class MobileSyncService {
   String? _extractNationalIdCandidate(Map<String, dynamic> row) {
     final value = row['beneficiary_national_id'] ??
         row['beneficiaryNationalId'] ??
+        row['person_identity_number'] ??
         row['data_national_id'] ??
         row['dataNationalId'] ??
         row['national_id'] ??
@@ -1200,6 +1228,7 @@ class MobileSyncService {
       if (nested is Map<String, dynamic>) {
         final nestedValue = nested['national_id'] ??
             nested['nationalId'] ??
+            nested['person_identity_number'] ??
             nested['data_national_id'] ??
             nested['dataNationalId'] ??
             nested['id_number'] ??
@@ -1269,7 +1298,7 @@ class MobileSyncService {
       documentType: drift.Value((row['document_type'] ?? row['documentType'])?.toString()),
       personType: drift.Value((row['person_type'] ?? row['personType'])?.toString()),
       personId: drift.Value((row['person_id'] ?? row['personId'])?.toString()),
-      notes: drift.Value((row['notes'])?.toString()),
+      notes: drift.Value(row['notes']?.toString()),
     );
 
     final existing = await (_db.select(_db.attachments)..where((a) => a.id.equals(attachmentId))).getSingleOrNull();
@@ -1295,8 +1324,8 @@ class MobileSyncService {
       firstName: drift.Value((row['first_name'] ?? row['name'] ?? '').toString().isEmpty
           ? 'غير محدد'
           : (row['first_name'] ?? row['name']).toString()),
-      secondName: drift.Value((row['second_name'])?.toString()),
-      thirdName: drift.Value((row['third_name'])?.toString()),
+      secondName: drift.Value(row['second_name']?.toString()),
+      thirdName: drift.Value(row['third_name']?.toString()),
       familyName: drift.Value((row['family_name'] ?? row['last_name'] ?? 'غير محدد').toString()),
       birthDate: drift.Value(_parseDateTimeLoose(row['birth_date']) ?? now),
       age: drift.Value(_asInt(row['age'])),
@@ -1304,10 +1333,10 @@ class MobileSyncService {
       healthStatus: drift.Value(_parseHealthStatus(row['health_status'])),
       sponsorshipStatus: drift.Value(_asInt(row['sponsorship_status'])),
       sponsorshipType: drift.Value(_asInt(row['sponsorship_type'])),
-      sponsorName: drift.Value((row['sponsor_name'])?.toString()),
+      sponsorName: drift.Value(row['sponsor_name']?.toString()),
       sponsorshipStartDate: drift.Value(_parseDateTimeLoose(row['sponsorship_start_date'])),
-      notes: drift.Value((row['notes'])?.toString()),
-      attachments: drift.Value((row['attachments'])?.toString()),
+      notes: drift.Value(row['notes']?.toString()),
+      attachments: drift.Value(row['attachments']?.toString()),
       createdAt: drift.Value(_parseDateTimeLoose(row['created_at'])),
       updatedAt: drift.Value(_parseDateTimeLoose(row['updated_at']) ?? now),
       syncState: const drift.Value('synced'),
@@ -1342,15 +1371,15 @@ class MobileSyncService {
       firstName: drift.Value((row['first_name'] ?? row['name'] ?? '').toString().isEmpty
           ? 'غير محدد'
           : (row['first_name'] ?? row['name']).toString()),
-      secondName: drift.Value((row['second_name'])?.toString()),
-      thirdName: drift.Value((row['third_name'])?.toString()),
+      secondName: drift.Value(row['second_name']?.toString()),
+      thirdName: drift.Value(row['third_name']?.toString()),
       familyName: drift.Value((row['family_name'] ?? row['last_name'] ?? 'غير محدد').toString()),
       nationalId: drift.Value(_asInt(row['national_id'] ?? row['id_number']) ?? 0),
       deathDate: drift.Value(_parseDateTimeLoose(row['death_date']) ?? now),
       deathCause: drift.Value(_parseDeathCause(row['death_cause'])),
       documentType: drift.Value(_asInt(row['document_type'])),
-      documentPath: drift.Value((row['document_path'])?.toString()),
-      notes: drift.Value((row['notes'])?.toString()),
+      documentPath: drift.Value(row['document_path']?.toString()),
+      notes: drift.Value(row['notes']?.toString()),
       createdAt: drift.Value(_parseDateTimeLoose(row['created_at'])),
       updatedAt: drift.Value(_parseDateTimeLoose(row['updated_at']) ?? now),
       syncState: const drift.Value('synced'),
@@ -1461,7 +1490,7 @@ class MobileSyncService {
       }
 
       // Process in batches
-      final batchSize = ApiConfig.batchSize;
+      const batchSize = ApiConfig.batchSize;
       int uploaded = 0;
       int failed = 0;
 
@@ -1567,19 +1596,31 @@ class MobileSyncService {
       for (final attachment in pendingAttachments) {
         try {
           final file = File(attachment.filePath);
-          if (!await file.exists()) {
+          if (!file.existsSync()) {
             _logger.w('File not found: ${attachment.filePath}');
             failedCount++;
             continue;
           }
 
+          final personIdentityNumber = await _resolvePersonIdentityNumberForAttachment(attachment);
+          if (personIdentityNumber == null || personIdentityNumber.isEmpty) {
+            _logger.w('Missing person_identity_number for attachment ${attachment.id}');
+            failedCount++;
+            continue;
+          }
+
+          final resolvedFileType = _resolveAttachmentFileTypeForUpload(attachment, file);
+
           final formData = FormData.fromMap({
             'file': await MultipartFile.fromFile(file.path, filename: attachment.fileName),
+            'person_identity_number': personIdentityNumber,
+            if (resolvedFileType != null) 'file_type': resolvedFileType,
             'entity_type': 'beneficiary',
             'entity_id': attachment.beneficiaryId,
             'device_id': deviceId,
-            'document_type': attachment.documentType,
-            'notes': attachment.notes,
+            if (attachment.documentType != null && attachment.documentType!.trim().isNotEmpty)
+              'document_type': attachment.documentType,
+            if (attachment.notes != null && attachment.notes!.trim().isNotEmpty) 'notes': attachment.notes,
           });
 
           final response = await _dio.post(
@@ -1616,6 +1657,43 @@ class MobileSyncService {
     }
   }
 
+  Future<String?> _resolvePersonIdentityNumberForAttachment(Attachment attachment) async {
+    final directPersonId = attachment.personId?.trim();
+    if (directPersonId != null && directPersonId.isNotEmpty) {
+      return directPersonId;
+    }
+
+    final localBeneficiaryId = int.tryParse(attachment.beneficiaryId);
+    if (localBeneficiaryId == null) {
+      return null;
+    }
+
+    final beneficiary =
+        await (_db.select(_db.beneficiaries)..where((b) => b.id.equals(localBeneficiaryId))).getSingleOrNull();
+
+    final idNumber = beneficiary?.idNumber;
+    if (idNumber == null) {
+      return null;
+    }
+
+    return idNumber.toString();
+  }
+
+  String? _resolveAttachmentFileTypeForUpload(Attachment attachment, File file) {
+    final explicitType = attachment.documentType?.trim();
+    if (explicitType != null && explicitType.isNotEmpty) {
+      return explicitType;
+    }
+
+    final fileName = file.path.split(Platform.pathSeparator).last;
+    final dotIndex = fileName.lastIndexOf('.');
+    if (dotIndex <= 0 || dotIndex >= fileName.length - 1) {
+      return null;
+    }
+
+    return fileName.substring(dotIndex + 1).toLowerCase();
+  }
+
   /// مزامنة الزيارات محلية الرفع للسيرفر
   Future<MobileSyncResult> _syncVisitsUp(String deviceId) async {
     int uploaded = 0;
@@ -1630,7 +1708,7 @@ class MobileSyncService {
       }
 
       // Process in batches
-      final batchSize = ApiConfig.batchSize;
+      const batchSize = ApiConfig.batchSize;
       for (int i = 0; i < pendingVisits.length; i += batchSize) {
         final end = (i + batchSize < pendingVisits.length) ? i + batchSize : pendingVisits.length;
         final batch = pendingVisits.sublist(i, end);

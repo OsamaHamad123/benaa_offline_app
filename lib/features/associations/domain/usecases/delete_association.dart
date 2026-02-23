@@ -10,7 +10,7 @@ class DeleteAssociationUseCase {
   /// Soft delete (تعطيل فقط)
   Future<Result<void>> execute(String id, {bool hardDelete = false}) async {
     if (id.trim().isEmpty) {
-      return Failure(ValidationFailure('معرف الجمعية مطلوب'));
+      return const Failure(ValidationFailure('معرف الجمعية مطلوب'));
     }
 
     if (hardDelete) {

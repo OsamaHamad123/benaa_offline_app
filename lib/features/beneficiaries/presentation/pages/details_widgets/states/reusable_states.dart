@@ -76,8 +76,7 @@ class ErrorStateWidget extends StatelessWidget {
   final VoidCallback? onBack;
 
   const ErrorStateWidget({
-    super.key,
-    required this.message,
+    required this.message, super.key,
     this.onRetry,
     this.onBack,
   });
@@ -239,10 +238,9 @@ class DeleteConfirmationDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const DeleteConfirmationDialog({
-    super.key,
+    required this.onConfirm, super.key,
     this.title = 'تأكيد الحذف',
     this.content = 'هل أنت متأكد من الحذف؟',
-    required this.onConfirm,
   });
 
   static Future<bool?> show(

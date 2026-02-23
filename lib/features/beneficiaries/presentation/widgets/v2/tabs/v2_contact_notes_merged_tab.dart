@@ -11,7 +11,7 @@ import '../../../../../../features/taxonomies/taxonomies.dart';
 class V2ContactNotesMergedTab extends StatelessWidget {
   final BeneficiaryFormControllers formControllers;
 
-  const V2ContactNotesMergedTab({super.key, required this.formControllers});
+  const V2ContactNotesMergedTab({required this.formControllers, super.key});
 
   @override
   Widget build(BuildContext context) {

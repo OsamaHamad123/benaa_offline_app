@@ -16,8 +16,7 @@ class SafeRow extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const SafeRow({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.mainAxisAlignment = MainAxisAlignment.start,
     this.crossAxisAlignment = CrossAxisAlignment.center,
     this.mainAxisSize = MainAxisSize.max,
@@ -56,8 +55,7 @@ class SafeColumn extends StatelessWidget {
   final bool shrinkWrap;
 
   const SafeColumn({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.mainAxisAlignment = MainAxisAlignment.start,
     this.crossAxisAlignment = CrossAxisAlignment.center,
     this.mainAxisSize = MainAxisSize.max,
@@ -198,8 +196,7 @@ class SafeContainer extends StatelessWidget {
   final BoxConstraints? constraints;
 
   const SafeContainer({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.width,
     this.height,
     this.padding,

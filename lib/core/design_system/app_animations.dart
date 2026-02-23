@@ -62,8 +62,7 @@ class ScaleTransitionWidget extends StatelessWidget {
   final bool reverse;
 
   const ScaleTransitionWidget({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.duration = AppDurations.normal,
     this.delay,
     this.curve = AppCurves.smooth,
@@ -107,8 +106,7 @@ class FadeTransitionWidget extends StatelessWidget {
   final bool reverse;
 
   const FadeTransitionWidget({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.duration = AppDurations.normal,
     this.curve = AppCurves.standard,
     this.reverse = false,
@@ -137,8 +135,7 @@ class SlideTransitionWidget extends StatelessWidget {
   final Curve curve;
 
   const SlideTransitionWidget({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.begin = const Offset(0, 1),
     this.end = Offset.zero,
     this.duration = AppDurations.normal,
@@ -167,8 +164,7 @@ class FadeSlideTransition extends StatelessWidget {
   final Offset slideOffset;
 
   const FadeSlideTransition({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.duration = AppDurations.normal,
     this.delay,
     this.slideOffset = const Offset(0, 0.3),
@@ -220,8 +216,7 @@ class ShimmerLoading extends StatefulWidget {
   final Color highlightColor;
 
   const ShimmerLoading({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.duration = AppDurations.shimmer,
     this.baseColor = const Color(0xFFE0E0E0),
     this.highlightColor = const Color(0xFFF5F5F5),
@@ -347,8 +342,7 @@ class PulseAnimation extends StatefulWidget {
   final double maxScale;
 
   const PulseAnimation({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.duration = const Duration(milliseconds: 1000),
     this.minScale = 0.95,
     this.maxScale = 1.05,
@@ -394,8 +388,7 @@ class RippleCard extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const RippleCard({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onTap,
     this.splashColor,
     this.borderRadius,

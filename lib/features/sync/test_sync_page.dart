@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/sync/sync_manager.dart';
+import '../../core/sync/mobile_sync_service.dart';
+import 'mobile_sync_page.dart';
+
+final testMobileSyncStatusProvider = StreamProvider<MobileSyncStatus>((ref) {
+  final service = ref.watch(mobileSyncServiceProvider);
+  return service.statusStream;
+});
 
 /// صفحة تجربة المزامنة مع Backend
 class TestSyncPage extends ConsumerStatefulWidget {
@@ -21,12 +27,12 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
     });
 
     try {
-      final syncManager = ref.read(syncManagerProvider);
-      final count = await syncManager.pullBeneficiariesFromServer();
+      final service = ref.read(mobileSyncServiceProvider);
+      final result = await service.syncDown();
 
       setState(() {
         _isLoading = false;
-        _statusMessage = 'تم جلب $count مستفيد بنجاح ✅';
+        _statusMessage = 'تم جلب ${result.recordsSynced} سجل بنجاح ✅';
       });
     } catch (e) {
       setState(() {
@@ -43,12 +49,12 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
     });
 
     try {
-      final syncManager = ref.read(syncManagerProvider);
-      await syncManager.syncAll();
+      final service = ref.read(mobileSyncServiceProvider);
+      final result = await service.syncUp();
 
       setState(() {
         _isLoading = false;
-        _statusMessage = 'تم رفع البيانات بنجاح ✅';
+        _statusMessage = 'تم رفع ${result.recordsSynced} سجل بنجاح ✅';
       });
     } catch (e) {
       setState(() {
@@ -60,7 +66,7 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
 
   @override
   Widget build(BuildContext context) {
-    final syncStatus = ref.watch(syncStatusProvider);
+    final syncStatus = ref.watch(testMobileSyncStatusProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('اختبار المزامنة')),
@@ -90,21 +96,21 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
                             status.isSyncing ? 'جاري المزامنة...' : 'جاهز',
                             status.isSyncing ? Colors.orange : Colors.green,
                           ),
-                          if (status.totalItems > 0) ...[
+                          if (status.isSyncing) ...[
                             const SizedBox(height: 8),
                             _buildStatusRow(
                               'التقدم',
-                              '${status.completedItems}/${status.totalItems}',
+                              '${(status.progress * 100).toStringAsFixed(0)}%',
                               Colors.blue,
                             ),
                             const SizedBox(height: 8),
                             LinearProgressIndicator(value: status.progress),
                           ],
-                          if (status.currentEntity != null) ...[
+                          if (status.currentOperation.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             _buildStatusRow(
                               'العنصر الحالي',
-                              status.currentEntity!,
+                              status.currentOperation,
                               Colors.purple,
                             ),
                           ],
@@ -118,8 +124,7 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
                           ],
                         ],
                       ),
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
+                      loading: () => const Center(child: CircularProgressIndicator()),
                       error: (error, _) => Text(
                         'خطأ: $error',
                         style: const TextStyle(color: Colors.red),

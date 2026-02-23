@@ -1,6 +1,9 @@
+import 'dart:developer' as developer;
+
 import '../../../../core/error_handling/result.dart';
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
+import '../../domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../../domain/repositories/taxonomy_repository.dart';
 import '../datasources/taxonomy_local_datasource.dart';
 import '../datasources/taxonomy_local_drift_datasource.dart';
@@ -154,7 +157,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       // حذف محلياً
       await _localDataSource.deleteTaxonomy(id);
 
-      return Success(null);
+      return const Success(null);
     } on TaxonomyApiException catch (e) {
       return Failure(ServerFailure(e.message, e.statusCode));
     } catch (e, st) {
@@ -166,7 +169,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   Future<Result<void>> permanentlyDeleteTaxonomy(String id) async {
     try {
       await _localDataSource.permanentlyDeleteTaxonomy(id);
-      return Success(null);
+      return const Success(null);
     } catch (e, st) {
       return Failure(DatabaseFailure('فشل الحذف النهائي: $e', st));
     }
@@ -178,7 +181,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       await _localDataSource.restoreTaxonomy(id);
       final restored = await _localDataSource.getTaxonomyById(id);
       if (restored == null) {
-        return Failure(NotFoundFailure('التصنيف غير موجود'));
+        return const Failure(NotFoundFailure('التصنيف غير موجود'));
       }
       return Success(restored);
     } catch (e, st) {
@@ -213,22 +216,33 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
 
       // Fallback: if incremental sync leaves most groups empty, force a full sync once.
       final statsAfterIncremental = await _localDataSource.getStatistics();
-      final nonEmptyGroups = statsAfterIncremental.countByGroup.values.where((count) => count > 0).length;
+      var nonEmptyGroups = statsAfterIncremental.countByGroup.values.where((count) => count > 0).length;
       final totalGroups = TaxonomyGroup.values.length;
       final coverageTooLow = nonEmptyGroups <= 2 || nonEmptyGroups < (totalGroups ~/ 3);
 
       if (coverageTooLow) {
-        final fullResponse = await _remoteDataSource.getAllTaxonomies(since: null);
+        final fullResponse = await _remoteDataSource.getAllTaxonomies();
         if (fullResponse.data.isNotEmpty) {
           await _saveCanonicalDtos(fullResponse.data);
           response = fullResponse;
         }
 
         await _backfillMissingGroups();
+
+        final statsAfterBackfill = await _localDataSource.getStatistics();
+        nonEmptyGroups = statsAfterBackfill.countByGroup.values.where((count) => count > 0).length;
       }
+
+      final shouldRunCatalogSweep = nonEmptyGroups < (totalGroups * 2 ~/ 3);
+      if (shouldRunCatalogSweep) {
+        await _syncAllServerCatalogGroups();
+      }
+
+      await _materializeMissingGroups();
 
       final syncTime = response.syncTimestamp ?? DateTime.now();
       await _localDataSource.updateLastSyncTime(syncTime);
+      await _logCoverageSummary('syncFromServer');
 
       final result = TaxonomySyncResult(
         addedCount: response.data.length,
@@ -257,15 +271,18 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       }
 
       await _localDataSource.updateLastSyncTime(DateTime.now());
+      await _logCoverageSummary('syncGroup:${group.value}');
 
-      return Success(TaxonomySyncResult(
+      final result = TaxonomySyncResult(
         addedCount: response.data.length,
         updatedCount: 0,
         deletedCount: response.data.where((t) => t.deletedAt != null).length,
         syncTime: DateTime.now(),
         success: response.success,
         message: response.message,
-      ));
+      );
+
+      return Success(result);
     } on TaxonomyApiException catch (e) {
       return Failure(SyncFailure(e.message));
     } catch (e, st) {
@@ -287,7 +304,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   Future<Result<void>> updateLastSyncTime(DateTime time) async {
     try {
       await _localDataSource.updateLastSyncTime(time);
-      return Success(null);
+      return const Success(null);
     } catch (e, st) {
       return Failure(CacheFailure('فشل تحديث وقت المزامنة: $e', st));
     }
@@ -300,11 +317,15 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       await _localDataSource.clearAll();
 
       // جلب كل التصنيفات من السيرفر
-      final response = await _remoteDataSource.getAllTaxonomies(since: null);
+      final response = await _remoteDataSource.getAllTaxonomies();
 
       if (response.data.isNotEmpty) {
         await _saveCanonicalDtos(response.data);
       }
+
+      await _backfillMissingGroups();
+      await _syncAllServerCatalogGroups();
+      await _materializeMissingGroups();
 
       await _localDataSource.updateLastSyncTime(DateTime.now());
 
@@ -345,7 +366,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   Future<Result<void>> clearLocalCache() async {
     try {
       await _localDataSource.clearAll();
-      return Success(null);
+      return const Success(null);
     } catch (e, st) {
       return Failure(CacheFailure('فشل مسح الكاش: $e', st));
     }
@@ -355,26 +376,265 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   Future<Result<void>> refreshCache() async {
     // Same as resetAndSync
     final result = await resetAndSync();
-    return result.isSuccess ? Success(null) : Failure((result as Failure).error);
+    return result.isSuccess ? const Success(null) : Failure((result as Failure).error);
   }
 
   Future<void> _saveCanonicalDtos(List<TaxonomyDTO> dtos) async {
+    if (dtos.isEmpty) {
+      return;
+    }
+
     final local = _localDataSource;
     if (local is! TaxonomyLocalDriftDataSource) {
-      final taxonomies = dtos.map((dto) => dto.toEntity()).toList();
+      final taxonomies = dtos
+          .where((dto) {
+            final normalizedGroup = TaxonomyGroup.normalizeValue(dto.groupValue) ?? dto.groupValue;
+            return TaxonomyGroup.isValidGroup(normalizedGroup);
+          })
+          .map((dto) => dto.toEntity())
+          .toList();
+
+      if (taxonomies.isEmpty) {
+        return;
+      }
+
       await _localDataSource.saveTaxonomies(taxonomies);
       return;
     }
 
     final companions = dtos.map((dto) {
-      final normalizedGroup = TaxonomyGroup.normalizeValue(dto.groupValue) ?? dto.groupValue;
-      return dto.copyWith(groupValue: normalizedGroup).toDbCompanion();
+      final normalizedGroup = TaxonomyGroup.normalizeValue(dto.groupValue);
+      final storedGroup = normalizedGroup ?? dto.groupValue;
+      return dto.copyWith(groupValue: storedGroup).toDbCompanion();
     }).toList();
 
     await local.upsertCompanions(companions);
   }
 
+  Future<void> _syncAllServerCatalogGroups() async {
+    TaxonomyGroupsResponseDTO catalog;
+    try {
+      catalog = await _remoteDataSource.getGroups();
+    } catch (_) {
+      return;
+    }
+
+    for (final info in catalog.data) {
+      final slugCandidates = _slugCandidates(info);
+      if (slugCandidates.isEmpty) {
+        continue;
+      }
+
+      for (final slug in slugCandidates) {
+        try {
+          final response = await _remoteDataSource.getTaxonomiesBySlug(slug);
+          if (response.data.isEmpty) {
+            continue;
+          }
+          await _saveCanonicalDtos(response.data);
+          break;
+        } catch (_) {
+          continue;
+        }
+      }
+    }
+  }
+
   Future<void> _backfillMissingGroups() async {
-    return;
+    final stats = await _localDataSource.getStatistics();
+    final missingGroups = {
+      for (final entry in stats.countByGroup.entries)
+        if (entry.value <= 0) entry.key,
+    };
+
+    if (missingGroups.isEmpty) {
+      return;
+    }
+
+    TaxonomyGroupsResponseDTO? remoteGroups;
+    try {
+      remoteGroups = await _remoteDataSource.getGroups();
+    } catch (_) {
+      remoteGroups = null;
+    }
+
+    final slugCandidatesByGroup = <TaxonomyGroup, List<String>>{};
+
+    if (remoteGroups != null) {
+      for (final info in remoteGroups.data) {
+        final resolvedGroup = _resolveCatalogGroup(info);
+        if (resolvedGroup == null || !missingGroups.contains(resolvedGroup)) {
+          continue;
+        }
+
+        final candidates = _slugCandidates(info);
+        if (candidates.isEmpty) {
+          continue;
+        }
+
+        final existing = slugCandidatesByGroup.putIfAbsent(resolvedGroup, () => <String>[]);
+        for (final candidate in candidates) {
+          if (!existing.contains(candidate)) {
+            existing.add(candidate);
+          }
+        }
+      }
+    }
+
+    for (final group in missingGroups) {
+      final slugCandidates = slugCandidatesByGroup[group] ?? const <String>[];
+      var filled = false;
+
+      for (final slug in slugCandidates) {
+        try {
+          final response = await _remoteDataSource.getTaxonomiesBySlug(slug);
+          if (response.data.isEmpty) {
+            continue;
+          }
+
+          await _saveCanonicalDtos(response.data);
+          filled = true;
+          break;
+        } catch (_) {
+          continue;
+        }
+      }
+
+      if (filled) {
+        continue;
+      }
+
+      // Safety fallback for legacy servers that don't expose a catalog.
+      try {
+        final fallbackResponse = await _remoteDataSource.getTaxonomiesByGroup(group);
+        if (fallbackResponse.data.isNotEmpty) {
+          await _saveCanonicalDtos(fallbackResponse.data);
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+  }
+
+  Future<void> _materializeMissingGroups() async {
+    final stats = await _localDataSource.getStatistics();
+    final missingGroups = <TaxonomyGroup>[];
+
+    for (final entry in stats.countByGroup.entries) {
+      if (entry.value <= 0) {
+        missingGroups.add(entry.key);
+      }
+    }
+
+    if (missingGroups.isEmpty) {
+      return;
+    }
+
+    final placeholders = missingGroups
+        .map(
+          (group) => TaxonomyDTO(
+            id: '__placeholder__${group.value}',
+            groupValue: group.value,
+            code: '__placeholder__${group.value}',
+            label: '${group.arabicName} (تحتاج مزامنة)',
+            sortOrder: 999999,
+            isActive: true,
+            updatedAt: DateTime.now(),
+          ),
+        )
+        .toList(growable: false);
+
+    await _saveCanonicalDtos(placeholders);
+
+    developer.log(
+      'materialized missing taxonomy groups with placeholders: '
+      '[${missingGroups.map((g) => g.value).join(', ')}]',
+      name: 'TaxonomySync',
+    );
+  }
+
+  TaxonomyGroup? _resolveCatalogGroup(TaxonomyGroupInfoDTO info) {
+    return resolveTaxonomyGroupFromCandidates([
+      info.slug,
+      info.endpoint,
+      info.name,
+      info.arabicName,
+      info.englishName,
+    ]);
+  }
+
+  List<String> _slugCandidates(TaxonomyGroupInfoDTO info) {
+    final raw = <String?>[
+      info.slug,
+      info.name,
+      info.endpoint,
+    ];
+
+    final out = <String>[];
+    for (final item in raw) {
+      if (item == null) continue;
+      final trimmed = item.trim();
+      if (trimmed.isEmpty) continue;
+
+      final fromEndpoint = _extractSlugFromEndpoint(trimmed);
+      if (fromEndpoint != null) {
+        if (!out.contains(fromEndpoint)) {
+          out.add(fromEndpoint);
+        }
+        continue;
+      }
+
+      if (!out.contains(trimmed)) {
+        out.add(trimmed);
+      }
+    }
+    return out;
+  }
+
+  String? _extractSlugFromEndpoint(String endpoint) {
+    final value = endpoint.trim();
+    if (value.isEmpty) return null;
+
+    var candidate = value;
+    if (candidate.contains('/')) {
+      final uri = Uri.tryParse(candidate);
+      if (uri != null && uri.path.isNotEmpty) {
+        final segments = uri.pathSegments.where((segment) => segment.isNotEmpty).toList();
+        if (segments.isNotEmpty) {
+          candidate = segments.last;
+        }
+      } else {
+        candidate = candidate.split('/').where((segment) => segment.isNotEmpty).last;
+      }
+    }
+
+    if (candidate.contains('?')) {
+      candidate = candidate.split('?').first;
+    }
+
+    final normalized = candidate.trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  Future<void> _logCoverageSummary(String source) async {
+    try {
+      final stats = await _localDataSource.getStatistics();
+      final missing = <String>[];
+      for (final entry in stats.countByGroup.entries) {
+        if (entry.value <= 0) {
+          missing.add(entry.key.value);
+        }
+      }
+
+      developer.log(
+        'taxonomy coverage after $source: '
+        'filled=${TaxonomyGroup.values.length - missing.length}/${TaxonomyGroup.values.length}, '
+        'totalItems=${stats.totalCount}, '
+        'missing=[${missing.join(', ')}]',
+        name: 'TaxonomySync',
+      );
+    } catch (_) {
+      // no-op logging helper
+    }
   }
 }

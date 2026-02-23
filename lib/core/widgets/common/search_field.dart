@@ -19,10 +19,7 @@ class SearchField extends StatefulWidget {
   final Widget? suffix;
 
   const SearchField({
-    super.key,
-    required this.controller,
-    required this.hint,
-    required this.onSearch,
+    required this.controller, required this.hint, required this.onSearch, super.key,
     this.onClear,
     this.debounceMs = 300,
     this.autofocus = false,
@@ -119,11 +116,7 @@ class SearchFieldWithAction extends StatelessWidget {
   final String? actionTooltip;
 
   const SearchFieldWithAction({
-    super.key,
-    required this.controller,
-    required this.hint,
-    required this.onSearch,
-    required this.onActionPressed,
+    required this.controller, required this.hint, required this.onSearch, required this.onActionPressed, super.key,
     this.actionIcon = Icons.filter_list,
     this.actionTooltip,
   });

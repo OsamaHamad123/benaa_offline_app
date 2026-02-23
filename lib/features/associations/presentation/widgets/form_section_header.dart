@@ -9,11 +9,7 @@ class FormSectionHeader extends StatelessWidget {
   final Color color;
 
   const FormSectionHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
+    required this.title, required this.subtitle, required this.icon, required this.color, super.key,
   });
 
   @override

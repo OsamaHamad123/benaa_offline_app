@@ -183,10 +183,7 @@ class OptimizedAnimatedBuilder extends StatelessWidget {
   final Widget? child;
 
   const OptimizedAnimatedBuilder({
-    super.key,
-    required this.name,
-    required this.animation,
-    required this.builder,
+    required this.name, required this.animation, required this.builder, super.key,
     this.child,
   });
 

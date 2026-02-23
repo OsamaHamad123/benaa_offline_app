@@ -9,6 +9,9 @@ import '../../../../core/providers/providers.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../providers/kafalat_providers.dart';
 
 class SponsorshipFormSheet extends ConsumerStatefulWidget {
@@ -22,8 +25,7 @@ class SponsorshipFormSheet extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<SponsorshipFormSheet> createState() =>
-      _SponsorshipFormSheetState();
+  ConsumerState<SponsorshipFormSheet> createState() => _SponsorshipFormSheetState();
 }
 
 class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
@@ -78,29 +80,21 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
     _sponsorNameController = TextEditingController(text: s?.sponsorName ?? '');
 
     // معلومات المكفول
-    _internalFileNoController =
-        TextEditingController(text: s?.internalFileNo ?? '');
-    _externalFileNoController =
-        TextEditingController(text: s?.externalFileNo ?? '');
-    _guardianNameController =
-        TextEditingController(text: s?.guardianName ?? '');
-    _guardianIdController =
-        TextEditingController(text: s?.guardianIdNumber?.toString() ?? '');
-    _guardianPhoneController =
-        TextEditingController(text: s?.guardianPhone ?? '');
-    _guardianAltPhoneController =
-        TextEditingController(text: s?.guardianAltPhone ?? '');
+    _internalFileNoController = TextEditingController(text: s?.internalFileNo ?? '');
+    _externalFileNoController = TextEditingController(text: s?.externalFileNo ?? '');
+    _guardianNameController = TextEditingController(text: s?.guardianName ?? '');
+    _guardianIdController = TextEditingController(text: s?.guardianIdNumber?.toString() ?? '');
+    _guardianPhoneController = TextEditingController(text: s?.guardianPhone ?? '');
+    _guardianAltPhoneController = TextEditingController(text: s?.guardianAltPhone ?? '');
 
     // تفاصيل الكفالة
-    _durationMonthsController =
-        TextEditingController(text: s?.durationMonths?.toString() ?? '');
+    _durationMonthsController = TextEditingController(text: s?.durationMonths?.toString() ?? '');
     _startDate = s?.startDate ?? DateTime.now();
     _endDate = s?.endDate;
     _status = s?.status ?? 'active';
     _type = s?.sponsorshipType ?? 'monthly';
     _currency = s?.currency;
-    _amountController =
-        TextEditingController(text: s?.amount?.toString() ?? '');
+    _amountController = TextEditingController(text: s?.amount?.toString() ?? '');
     _notesController = TextEditingController(text: s?.notes ?? '');
 
     // معلومات الموقع
@@ -110,12 +104,9 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
 
     // معلومات بنكية
     _bankNameController = TextEditingController(text: s?.bankName ?? '');
-    _accountHolderNameController =
-        TextEditingController(text: s?.accountHolderName ?? '');
-    _accountHolderIdController =
-        TextEditingController(text: s?.accountHolderIdNumber?.toString() ?? '');
-    _accountNumberController =
-        TextEditingController(text: s?.accountNumber ?? '');
+    _accountHolderNameController = TextEditingController(text: s?.accountHolderName ?? '');
+    _accountHolderIdController = TextEditingController(text: s?.accountHolderIdNumber?.toString() ?? '');
+    _accountNumberController = TextEditingController(text: s?.accountNumber ?? '');
     _swiftCodeController = TextEditingController(text: s?.swiftCode ?? '');
 
     // تحميل بيانات المستفيد تلقائياً إذا لم نكن في وضع التعديل
@@ -130,8 +121,7 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
   Future<void> _loadBeneficiaryData() async {
     try {
       final db = ref.read(databaseProvider);
-      final beneficiary =
-          await db.beneficiariesDao.getBeneficiaryById(widget.beneficiaryId);
+      final beneficiary = await db.beneficiariesDao.getBeneficiaryById(widget.beneficiaryId);
 
       if (beneficiary != null && mounted) {
         setState(() {
@@ -146,8 +136,7 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
           _guardianNameController.text = fullName;
           _guardianIdController.text = beneficiary.idNumber.toString();
           _guardianPhoneController.text = beneficiary.phoneNumber.toString();
-          _guardianAltPhoneController.text =
-              beneficiary.altPhoneNumber.toString();
+          _guardianAltPhoneController.text = beneficiary.altPhoneNumber.toString();
 
           // ملء بيانات الموقع
           if (beneficiary.province != null) {
@@ -201,6 +190,26 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
   @override
   Widget build(BuildContext context) {
     final associationsState = ref.watch(kafalatActiveAssociationsProvider);
+    final sponsorshipTypeOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType));
+    final sponsorshipStatusOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.beneficiaryStatus));
+    final currencyOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.currency));
+    final hasTaxonomyValues =
+        sponsorshipTypeOptions.hasValue && sponsorshipStatusOptions.hasValue && currencyOptions.hasValue;
+    final taxonomyLoading = !hasTaxonomyValues &&
+        (sponsorshipTypeOptions.isLoading || sponsorshipStatusOptions.isLoading || currencyOptions.isLoading);
+    final typeItems = sponsorshipTypeOptions.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final statusItems = sponsorshipStatusOptions.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final currencyItems = currencyOptions.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final hasTaxonomyGap = hasTaxonomyValues && (typeItems.isEmpty || statusItems.isEmpty || currencyItems.isEmpty);
     final theme = Theme.of(context);
 
     // عرض مؤشر التحميل أثناء تحميل بيانات المستفيد
@@ -244,7 +253,7 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                     associationsState.when(
                       data: (associations) {
                         return DropdownButtonFormField<String>(
-                          value: _associationId,
+                          initialValue: _associationId,
                           decoration: const InputDecoration(
                             labelText: 'المؤسسة الكافلة *',
                             border: OutlineInputBorder(),
@@ -406,10 +415,10 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                       onPick: _saving
                           ? null
                           : () async {
-                              final picked =
-                                  await _pickDate(context, _startDate);
-                              if (picked != null)
+                              final picked = await _pickDate(context, _startDate);
+                              if (picked != null) {
                                 setState(() => _startDate = picked);
+                              }
                             },
                     ),
                     SizedBox(height: 12.h),
@@ -420,8 +429,9 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                           ? null
                           : () async {
                               final picked = await _pickDate(context, _endDate);
-                              if (picked != null)
+                              if (picked != null) {
                                 setState(() => _endDate = picked);
+                              }
                             },
                       onClear: _saving
                           ? null
@@ -430,44 +440,48 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                             },
                     ),
                     SizedBox(height: 12.h),
-                    DropdownButtonFormField<String>(
-                      value: _type,
-                      decoration: const InputDecoration(
-                        labelText: 'نوع الكفالة',
-                        border: OutlineInputBorder(),
+                    if (taxonomyLoading) ...[
+                      const _TaxonomyDropdownSkeleton(),
+                      SizedBox(height: 12.h),
+                    ] else ...[
+                      DropdownButtonFormField<String>(
+                        initialValue: _type,
+                        decoration: const InputDecoration(
+                          labelText: 'نوع الكفالة',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _buildMergedTaxonomyItems(
+                          taxonomyItems: typeItems,
+                          fallbackItems: const {
+                            'monthly': 'شهرية',
+                            'one_time': 'مرة واحدة',
+                            'other': 'أخرى',
+                          },
+                        ),
+                        onChanged: _saving ? null : (v) => setState(() => _type = v ?? _type),
                       ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'monthly', child: Text('شهرية')),
-                        DropdownMenuItem(
-                            value: 'one_time', child: Text('مرة واحدة')),
-                        DropdownMenuItem(value: 'other', child: Text('أخرى')),
-                      ],
-                      onChanged: _saving
-                          ? null
-                          : (v) => setState(() => _type = v ?? 'monthly'),
-                    ),
-                    SizedBox(height: 12.h),
-                    DropdownButtonFormField<String>(
-                      value: _status,
-                      decoration: const InputDecoration(
-                        labelText: 'حالة الكفالة',
-                        border: OutlineInputBorder(),
+                      SizedBox(height: 12.h),
+                      DropdownButtonFormField<String>(
+                        initialValue: _status,
+                        decoration: const InputDecoration(
+                          labelText: 'حالة الكفالة',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _buildMergedTaxonomyItems(
+                          taxonomyItems: statusItems,
+                          fallbackItems: const {
+                            'active': 'نشطة',
+                            'paused': 'موقوفة',
+                            'ended': 'منتهية',
+                          },
+                        ),
+                        onChanged: _saving ? null : (v) => setState(() => _status = v!),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'active', child: Text('نشطة')),
-                        DropdownMenuItem(
-                            value: 'paused', child: Text('موقوفة')),
-                        DropdownMenuItem(value: 'ended', child: Text('منتهية')),
-                      ],
-                      onChanged:
-                          _saving ? null : (v) => setState(() => _status = v!),
-                    ),
+                    ],
                     SizedBox(height: 12.h),
                     TextFormField(
                       controller: _amountController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'القيمة',
                         border: OutlineInputBorder(),
@@ -475,19 +489,45 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                     ),
                     SizedBox(height: 12.h),
                     DropdownButtonFormField<String>(
-                      value: _currency,
+                      initialValue: _currency,
                       decoration: const InputDecoration(
                         labelText: 'العملة',
                         border: OutlineInputBorder(),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'IQD', child: Text('IQD')),
-                        DropdownMenuItem(value: 'USD', child: Text('USD')),
-                        DropdownMenuItem(value: 'EUR', child: Text('EUR')),
-                      ],
-                      onChanged:
-                          _saving ? null : (v) => setState(() => _currency = v),
+                      items: _buildMergedTaxonomyItems(
+                        taxonomyItems: currencyItems,
+                        fallbackItems: const {
+                          'IQD': 'IQD',
+                          'USD': 'USD',
+                          'EUR': 'EUR',
+                        },
+                      ),
+                      onChanged: _saving ? null : (v) => setState(() => _currency = v),
                     ),
+                    if (hasTaxonomyGap) ...[
+                      SizedBox(height: 10.h),
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(color: theme.colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16.sp, color: theme.colorScheme.primary),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                'بعض التصنيفات غير متاحة حالياً، يتم استخدام قيم متوافقة مؤقتاً.',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     SizedBox(height: 12.h),
                     TextFormField(
                       controller: _notesController,
@@ -657,6 +697,25 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
     );
   }
 
+  List<DropdownMenuItem<String>> _buildMergedTaxonomyItems({
+    required List<taxonomy_domain.Taxonomy> taxonomyItems,
+    required Map<String, String> fallbackItems,
+  }) {
+    final merged = <String, String>{
+      ...fallbackItems,
+      for (final item in taxonomyItems) item.code: item.label,
+    };
+
+    return merged.entries
+        .map(
+          (entry) => DropdownMenuItem<String>(
+            value: entry.key,
+            child: Text(entry.value),
+          ),
+        )
+        .toList();
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -666,14 +725,12 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
 
       // Parse numeric fields
       final amount = double.tryParse(_amountController.text.trim());
-      final durationMonths =
-          int.tryParse(_durationMonthsController.text.trim());
+      final durationMonths = int.tryParse(_durationMonthsController.text.trim());
       final guardianId = int.tryParse(_guardianIdController.text.trim());
-      final accountHolderId =
-          int.tryParse(_accountHolderIdController.text.trim());
+      final accountHolderId = int.tryParse(_accountHolderIdController.text.trim());
 
       // Parse text fields (null if empty)
-      String? _parseText(TextEditingController controller) {
+      String? parseText(TextEditingController controller) {
         final text = controller.text.trim();
         return text.isEmpty ? null : text;
       }
@@ -686,15 +743,14 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
             beneficiaryId: drift.Value(widget.beneficiaryId),
             associationId: drift.Value(_associationId!),
             // معلومات الكافل
-            sponsorName: drift.Value(_parseText(_sponsorNameController)),
+            sponsorName: drift.Value(parseText(_sponsorNameController)),
             // معلومات المكفول
-            internalFileNo: drift.Value(_parseText(_internalFileNoController)),
-            externalFileNo: drift.Value(_parseText(_externalFileNoController)),
-            guardianName: drift.Value(_parseText(_guardianNameController)),
+            internalFileNo: drift.Value(parseText(_internalFileNoController)),
+            externalFileNo: drift.Value(parseText(_externalFileNoController)),
+            guardianName: drift.Value(parseText(_guardianNameController)),
             guardianIdNumber: drift.Value(guardianId),
-            guardianPhone: drift.Value(_parseText(_guardianPhoneController)),
-            guardianAltPhone:
-                drift.Value(_parseText(_guardianAltPhoneController)),
+            guardianPhone: drift.Value(parseText(_guardianPhoneController)),
+            guardianAltPhone: drift.Value(parseText(_guardianAltPhoneController)),
             // تفاصيل الكفالة
             durationMonths: drift.Value(durationMonths),
             startDate: drift.Value(_startDate),
@@ -703,18 +759,17 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
             currency: drift.Value(_currency),
             status: drift.Value(_status),
             sponsorshipType: drift.Value(_type),
-            notes: drift.Value(_parseText(_notesController)),
+            notes: drift.Value(parseText(_notesController)),
             // معلومات الموقع
-            governorate: drift.Value(_parseText(_governorateController)),
-            city: drift.Value(_parseText(_cityController)),
-            address: drift.Value(_parseText(_addressController)),
+            governorate: drift.Value(parseText(_governorateController)),
+            city: drift.Value(parseText(_cityController)),
+            address: drift.Value(parseText(_addressController)),
             // المعلومات البنكية
-            bankName: drift.Value(_parseText(_bankNameController)),
-            accountHolderName:
-                drift.Value(_parseText(_accountHolderNameController)),
+            bankName: drift.Value(parseText(_bankNameController)),
+            accountHolderName: drift.Value(parseText(_accountHolderNameController)),
             accountHolderIdNumber: drift.Value(accountHolderId),
-            accountNumber: drift.Value(_parseText(_accountNumberController)),
-            swiftCode: drift.Value(_parseText(_swiftCodeController)),
+            accountNumber: drift.Value(parseText(_accountNumberController)),
+            swiftCode: drift.Value(parseText(_swiftCodeController)),
             updatedAt: drift.Value(DateTime.now()),
           ),
         );
@@ -734,15 +789,14 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
           beneficiaryId: widget.beneficiaryId,
           associationId: _associationId!,
           // معلومات الكافل
-          sponsorName: drift.Value(_parseText(_sponsorNameController)),
+          sponsorName: drift.Value(parseText(_sponsorNameController)),
           // معلومات المكفول
-          internalFileNo: drift.Value(_parseText(_internalFileNoController)),
-          externalFileNo: drift.Value(_parseText(_externalFileNoController)),
-          guardianName: drift.Value(_parseText(_guardianNameController)),
+          internalFileNo: drift.Value(parseText(_internalFileNoController)),
+          externalFileNo: drift.Value(parseText(_externalFileNoController)),
+          guardianName: drift.Value(parseText(_guardianNameController)),
           guardianIdNumber: drift.Value(guardianId),
-          guardianPhone: drift.Value(_parseText(_guardianPhoneController)),
-          guardianAltPhone:
-              drift.Value(_parseText(_guardianAltPhoneController)),
+          guardianPhone: drift.Value(parseText(_guardianPhoneController)),
+          guardianAltPhone: drift.Value(parseText(_guardianAltPhoneController)),
           // تفاصيل الكفالة
           durationMonths: drift.Value(durationMonths),
           startDate: drift.Value(_startDate),
@@ -751,18 +805,17 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
           currency: drift.Value(_currency),
           status: drift.Value(_status),
           sponsorshipType: drift.Value(_type),
-          notes: drift.Value(_parseText(_notesController)),
+          notes: drift.Value(parseText(_notesController)),
           // معلومات الموقع
-          governorate: drift.Value(_parseText(_governorateController)),
-          city: drift.Value(_parseText(_cityController)),
-          address: drift.Value(_parseText(_addressController)),
+          governorate: drift.Value(parseText(_governorateController)),
+          city: drift.Value(parseText(_cityController)),
+          address: drift.Value(parseText(_addressController)),
           // المعلومات البنكية
-          bankName: drift.Value(_parseText(_bankNameController)),
-          accountHolderName:
-              drift.Value(_parseText(_accountHolderNameController)),
+          bankName: drift.Value(parseText(_bankNameController)),
+          accountHolderName: drift.Value(parseText(_accountHolderNameController)),
           accountHolderIdNumber: drift.Value(accountHolderId),
-          accountNumber: drift.Value(_parseText(_accountNumberController)),
-          swiftCode: drift.Value(_parseText(_swiftCodeController)),
+          accountNumber: drift.Value(parseText(_accountNumberController)),
+          swiftCode: drift.Value(parseText(_swiftCodeController)),
           updatedAt: drift.Value(DateTime.now()),
         ),
       );
@@ -812,6 +865,40 @@ class _SectionTitle extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TaxonomyDropdownSkeleton extends StatelessWidget {
+  const _TaxonomyDropdownSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        _SkeletonField(theme: theme),
+        SizedBox(height: 12.h),
+        _SkeletonField(theme: theme),
+      ],
+    );
+  }
+}
+
+class _SkeletonField extends StatelessWidget {
+  final ThemeData theme;
+
+  const _SkeletonField({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56.h,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
     );
   }
 }

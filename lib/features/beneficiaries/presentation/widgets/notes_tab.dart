@@ -7,7 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class NotesTab extends StatelessWidget {
   final TextEditingController notesController;
 
-  const NotesTab({super.key, required this.notesController});
+  const NotesTab({required this.notesController, super.key});
 
   @override
   Widget build(BuildContext context) {

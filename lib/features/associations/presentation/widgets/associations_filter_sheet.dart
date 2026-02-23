@@ -18,11 +18,7 @@ class AssociationsFilterSheet extends StatefulWidget {
   final Function(bool, String?, String?) onApply;
 
   const AssociationsFilterSheet({
-    super.key,
-    required this.showOnlyActive,
-    required this.selectedRepresentativeId,
-    required this.selectedCurrency,
-    required this.onApply,
+    required this.showOnlyActive, required this.selectedRepresentativeId, required this.selectedCurrency, required this.onApply, super.key,
   });
 
   @override
@@ -139,7 +135,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         onChanged: (value) => showActiveNotifier.value = value,
         title:
             const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
-        activeColor: colorScheme.primary,
+        activeThumbColor: colorScheme.primary,
       ),
     );
   }
@@ -167,7 +163,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
               valueListenable: selectedRepNotifier,
               builder: (context, selectedRep, _) =>
                   DropdownButtonFormField<String?>(
-                value: selectedRep,
+                initialValue: selectedRep,
                 decoration: InputDecoration(
                   hintText: 'اختر المندوب',
                   border: OutlineInputBorder(
@@ -180,7 +176,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
                   ),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('الكل')),
+                  const DropdownMenuItem(child: Text('الكل')),
                   ...representatives.map(
                     (rep) => DropdownMenuItem(
                       value: rep.id,
@@ -215,7 +211,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
           valueListenable: selectedCurrencyNotifier,
           builder: (context, selectedCurrency, _) =>
               DropdownButtonFormField<String?>(
-            value: selectedCurrency,
+            initialValue: selectedCurrency,
             decoration: InputDecoration(
               hintText: 'اختر العملة',
               border: OutlineInputBorder(
@@ -228,7 +224,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
               ),
             ),
             items: const [
-              DropdownMenuItem(value: null, child: Text('الكل')),
+              DropdownMenuItem(child: Text('الكل')),
               DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
               DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
               DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),

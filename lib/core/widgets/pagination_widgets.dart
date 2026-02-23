@@ -10,9 +10,7 @@ class PaginationControls extends StatelessWidget {
   final ValueChanged<int> onPageChanged;
 
   const PaginationControls({
-    super.key,
-    required this.paginationResult,
-    required this.onPageChanged,
+    required this.paginationResult, required this.onPageChanged, super.key,
   });
 
   @override
@@ -90,8 +88,7 @@ class PaginationInfo extends StatelessWidget {
   final PaginationResult paginationResult;
 
   const PaginationInfo({
-    super.key,
-    required this.paginationResult,
+    required this.paginationResult, super.key,
   });
 
   @override
@@ -137,10 +134,8 @@ class PageSizeSelector extends StatelessWidget {
   final ValueChanged<int> onPageSizeChanged;
 
   const PageSizeSelector({
-    super.key,
-    required this.currentPageSize,
+    required this.currentPageSize, required this.onPageSizeChanged, super.key,
     this.pageSizeOptions = const [10, 20, 50, 100],
-    required this.onPageSizeChanged,
   });
 
   @override

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
@@ -26,8 +25,7 @@ class VisitsListPageM3 extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPageM3> createState() => _VisitsListPageM3State();
 }
 
-class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
-    with SingleTickerProviderStateMixin {
+class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedFilter = 'all'; // all, pending, synced
   bool _showCalendar = false;
@@ -47,9 +45,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
 
   Future<void> _loadVisits() async {
     if (widget.beneficiaryId != null) {
-      await ref
-          .read(visitNotifierProvider.notifier)
-          .loadBeneficiaryVisits(widget.beneficiaryId!);
+      await ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId!);
     }
   }
 
@@ -238,7 +234,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
       itemCount: 6,
       itemBuilder: (context, index) => Padding(
         padding: EdgeInsets.only(bottom: 12.h),
-        child: SkeletonListItem(),
+        child: const SkeletonListItem(),
       ),
     );
   }
@@ -356,7 +352,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
-          side: BorderSide(color: AppColors.divider.withOpacity(0.2), width: 1),
+          side: BorderSide(color: AppColors.divider.withOpacity(0.2)),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16.r),
@@ -375,9 +371,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        visit.syncState == 'synced'
-                            ? AppColors.success
-                            : AppColors.warning,
+                        visit.syncState == 'synced' ? AppColors.success : AppColors.warning,
                         visit.syncState == 'synced'
                             ? AppColors.success.withOpacity(0.6)
                             : AppColors.warning.withOpacity(0.6),
@@ -388,9 +382,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    visit.syncState == 'synced'
-                        ? Icons.check_circle
-                        : Icons.sync,
+                    visit.syncState == 'synced' ? Icons.check_circle : Icons.sync,
                     color: Colors.white,
                     size: 24.sp,
                   ),
@@ -458,9 +450,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: isSynced
-            ? AppColors.success.withOpacity(0.1)
-            : AppColors.warning.withOpacity(0.1),
+        color: isSynced ? AppColors.success.withOpacity(0.1) : AppColors.warning.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
@@ -486,7 +476,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
   }
 
   Widget _buildCalendarView(List<VisitEntity> visits) {
-    return Center(child: Text('Calendar View - Coming Soon'));
+    return const Center(child: Text('Calendar View - Coming Soon'));
   }
 
   Future<void> _showVisitDetails(VisitEntity visit) async {
@@ -538,8 +528,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
                 'الحالة',
                 visit.syncState == 'synced' ? 'مزامنة ✅' : 'قيد المزامنة ⏳',
               ),
-              if (visit.notes.isNotEmpty)
-                _buildDetailRow('الملاحظات', visit.notes),
+              if (visit.notes.isNotEmpty) _buildDetailRow('الملاحظات', visit.notes),
               SizedBox(height: 24.h),
               Row(
                 children: [
@@ -626,8 +615,7 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
         visits: visits
             .map(
               (v) => VisitExportRow(
-                beneficiaryName: v
-                    .staffName, // Will be replaced with actual beneficiary name if available
+                beneficiaryName: v.staffName, // Will be replaced with actual beneficiary name if available
                 visitDate: DateFormat('yyyy-MM-dd').format(v.visitDate),
                 visitType: _getVisitTypeArabic(v),
                 staffName: v.staffName,
@@ -642,18 +630,14 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
           ),
           ExportStatistic(
             label: 'قيد المزامنة',
-            value:
-                visits.where((v) => v.syncState == 'pending').length.toString(),
+            value: visits.where((v) => v.syncState == 'pending').length.toString(),
           ),
           ExportStatistic(
             label: 'مزامنة',
-            value:
-                visits.where((v) => v.syncState == 'synced').length.toString(),
+            value: visits.where((v) => v.syncState == 'synced').length.toString(),
           ),
         ],
-        subtitle: _selectedFilter != 'all'
-            ? 'تمت التصفية: ${_getFilterName(_selectedFilter)}'
-            : null,
+        subtitle: _selectedFilter != 'all' ? 'تمت التصفية: ${_getFilterName(_selectedFilter)}' : null,
       );
 
       final result = await excelService.exportToExcel(exportData);
@@ -689,8 +673,15 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
   }
 
   String _getVisitTypeArabic(VisitEntity visit) {
-    // TODO: Map visit type to Arabic if needed
-    return visit.staffName; // Placeholder
+    final match = RegExp(r'^\s*نوع\s+الزيارة\s*:\s*(.+?)\s*$', multiLine: true).firstMatch(visit.notes);
+    if (match != null) {
+      final extracted = match.group(1)?.trim();
+      if (extracted != null && extracted.isNotEmpty) {
+        return extracted;
+      }
+    }
+
+    return 'غير محدد';
   }
 
   String _getFilterName(String filter) {

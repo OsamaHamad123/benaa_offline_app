@@ -16,9 +16,7 @@ class EmptyStateWidget extends StatefulWidget {
   final String? emoji;
 
   const EmptyStateWidget({
-    super.key,
-    required this.icon,
-    required this.title,
+    required this.icon, required this.title, super.key,
     this.subtitle,
     this.actionText,
     this.onAction,

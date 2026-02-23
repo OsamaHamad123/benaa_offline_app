@@ -12,7 +12,7 @@ class SmartPullToRefresh extends ConsumerWidget {
   final Widget child;
   final VoidCallback? onRefresh;
 
-  const SmartPullToRefresh({super.key, required this.child, this.onRefresh});
+  const SmartPullToRefresh({required this.child, super.key, this.onRefresh});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,8 +29,6 @@ class SmartPullToRefresh extends ConsumerWidget {
       backgroundColor: Theme.of(context).colorScheme.surface,
       strokeWidth: 3.0,
       displacement: 60.0,
-      // 🎯 Custom trigger distance
-      edgeOffset: 0.0,
       child: child,
     );
   }
@@ -41,7 +39,7 @@ class SuccessIndicator extends StatefulWidget {
   final String message;
   final VoidCallback? onDismiss;
 
-  const SuccessIndicator({super.key, required this.message, this.onDismiss});
+  const SuccessIndicator({required this.message, super.key, this.onDismiss});
 
   @override
   State<SuccessIndicator> createState() => _SuccessIndicatorState();

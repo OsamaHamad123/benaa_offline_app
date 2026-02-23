@@ -23,8 +23,7 @@ class SwipeableCardWidget extends StatefulWidget {
   final bool enabled;
 
   const SwipeableCardWidget({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onSwipeLeft,
     this.onSwipeRight,
     this.leftActionLabel = 'حذف',

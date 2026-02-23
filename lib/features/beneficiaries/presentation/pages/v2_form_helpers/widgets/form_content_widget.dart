@@ -19,13 +19,13 @@ class FormContentWidget extends StatefulWidget {
   final VoidCallback? onFinalSave; // 🆕 Callback for final save from review tab
 
   const FormContentWidget({
-    super.key,
     required this.tabController,
     required this.controllers,
     required this.onBirthDateTap,
     required this.firstFieldFocusNode,
     required this.beneficiaryId,
     required this.showFieldHelpers,
+    super.key,
     this.onFinalSave,
   });
 
@@ -99,10 +99,10 @@ class QuickSearchInput extends StatelessWidget {
   final ValueChanged<String> onSearch;
 
   const QuickSearchInput({
-    super.key,
     required this.controller,
     required this.hint,
     required this.onSearch,
+    super.key,
   });
 
   @override

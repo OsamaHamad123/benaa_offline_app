@@ -58,7 +58,6 @@ void main() {
                         ),
                         const FieldHelperText(
                           text: 'مثال: 123456789',
-                          icon: Icons.info_outline,
                         ),
                       ],
                     ),
@@ -157,7 +156,7 @@ void main() {
     });
 
     testWidgets('Visual enhancements work correctly', (WidgetTester tester) async {
-      bool isLoading = true;
+      const bool isLoading = true;
 
       await tester.pumpWidget(
         MaterialApp(
@@ -188,7 +187,6 @@ void main() {
                       // Success checkmark
                       const SuccessCheckmark(
                         key: Key('checkmark'),
-                        size: 100,
                       ),
                     ],
                   );

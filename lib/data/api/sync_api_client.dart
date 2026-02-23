@@ -38,12 +38,9 @@ class SyncApiClient {
     if (kDebugMode && ApiConfig.logNetworkRequests) {
       _dio.interceptors.add(
         LogInterceptor(
-          request: true,
-          requestHeader: true,
           requestBody: ApiConfig.logNetworkResponses,
           responseHeader: false,
           responseBody: ApiConfig.logNetworkResponses,
-          error: true,
           logPrint: (obj) => DebugLogger.info('🌐 $obj'),
         ),
       );

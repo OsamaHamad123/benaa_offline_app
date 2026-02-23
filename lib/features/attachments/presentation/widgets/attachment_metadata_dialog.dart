@@ -84,7 +84,7 @@ class _AttachmentMetadataDialogState extends State<AttachmentMetadataDialog> {
             ),
             SizedBox(height: 8.h),
             DropdownButtonFormField<String>(
-              value: _selectedDocumentType,
+              initialValue: _selectedDocumentType,
               decoration: InputDecoration(
                 hintText: 'اختر نوع الوثيقة',
                 prefixIcon: Icon(Icons.file_copy_outlined, size: 20.sp),
@@ -117,7 +117,7 @@ class _AttachmentMetadataDialogState extends State<AttachmentMetadataDialog> {
             ),
             SizedBox(height: 8.h),
             DropdownButtonFormField<String>(
-              value: _selectedPersonType,
+              initialValue: _selectedPersonType,
               decoration: InputDecoration(
                 hintText: 'اختر الشخص',
                 prefixIcon: Icon(Icons.person_outline, size: 20.sp),

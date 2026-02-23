@@ -181,11 +181,11 @@ class SyncManager {
       return;
     }
 
-    _updateStatus(_currentStatus.copyWith(isSyncing: true, lastError: null));
+    _updateStatus(_currentStatus.copyWith(isSyncing: true));
 
     try {
       // جلب قائمة المزامنة مرتبة حسب الأولوية
-      final items = await _db.syncDao.getSyncQueue(limit: 100);
+      final items = await _db.syncDao.getSyncQueue();
 
       _updateStatus(
         _currentStatus.copyWith(totalItems: items.length, completedItems: 0),
@@ -361,8 +361,7 @@ class SyncManager {
             // البحث عن مستفيد موجود بنفس الـ serverId
             final serverId = item['id'] as int?;
             if (serverId != null) {
-              final existing =
-                  await _db.beneficiariesDao.getBeneficiaryByServerId(serverId);
+              final existing = await _db.beneficiariesDao.getBeneficiaryByServerId(serverId);
 
               if (existing != null) {
                 // تحديث الموجود
@@ -379,8 +378,7 @@ class SyncManager {
               }
             } else {
               // إدراج جديد (بدون serverId)
-              await _db.beneficiariesDao
-                  .insertBeneficiary(beneficiaryCompanion);
+              await _db.beneficiariesDao.insertBeneficiary(beneficiaryCompanion);
               insertedCount++;
             }
           } catch (e) {
@@ -388,7 +386,7 @@ class SyncManager {
             debugPrint('Error processing beneficiary: $e');
           }
         },
-        batchSize: 50, // معالجة 50 مستفيد في كل دفعة
+        // معالجة 50 مستفيد في كل دفعة
       );
 
       return insertedCount;

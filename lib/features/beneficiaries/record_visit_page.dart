@@ -14,9 +14,7 @@ class RecordVisitPage extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
 
   const RecordVisitPage({
-    super.key,
-    required this.beneficiaryId,
-    required this.beneficiary,
+    required this.beneficiaryId, required this.beneficiary, super.key,
   });
 
   @override

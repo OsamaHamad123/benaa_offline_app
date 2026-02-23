@@ -26,8 +26,8 @@ void main() {
       await tester.pumpWidget(
         appWrapper(
           testDb: testDb,
-          child: RecentActivitiesList(
-            activities: const [],
+          child: const RecentActivitiesList(
+            activities: [],
             isLoading: false,
             hasMore: false,
           ),
@@ -76,8 +76,8 @@ void main() {
       await tester.pumpWidget(
         appWrapper(
           testDb: testDb,
-          child: RecentActivitiesList(
-            activities: const [],
+          child: const RecentActivitiesList(
+            activities: [],
             isLoading: true,
             hasMore: true,
           ),

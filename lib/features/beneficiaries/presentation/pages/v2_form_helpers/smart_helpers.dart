@@ -126,7 +126,7 @@ class FormCompletionCalculator {
       return ((_cachedCompletedCount! / total) * 100).round();
     }
 
-    int completed = getCompletedCount(controllers);
+    final int completed = getCompletedCount(controllers);
     final total = requiredFields.length;
 
     return ((completed / total) * 100).round();
@@ -200,7 +200,7 @@ class FormCompletionCalculator {
   static TabCompletionStats _calculatePersonalTabStats(
     BeneficiaryFormControllers controllers,
   ) {
-    int total = 12;
+    const int total = 12;
     int completed = 0;
 
     if (controllers.firstNameController.text.trim().isNotEmpty) completed++;
@@ -232,7 +232,7 @@ class FormCompletionCalculator {
   static TabCompletionStats _calculateFamilyTabStats(
     BeneficiaryFormControllers controllers,
   ) {
-    int total = 4;
+    const int total = 4;
     int completed = 0;
 
     if (controllers.motherNameController.text.trim().isNotEmpty) completed++;
@@ -256,7 +256,7 @@ class FormCompletionCalculator {
   static TabCompletionStats _calculateContactTabStats(
     BeneficiaryFormControllers controllers,
   ) {
-    int total = 7;
+    const int total = 7;
     int completed = 0;
 
     if (controllers.phoneController.text.trim().isNotEmpty) completed++;
@@ -286,7 +286,7 @@ class FormCompletionCalculator {
     final totalAttachments = controllers.pendingAttachmentFiles.length;
     final hasNotes = controllers.notesController.text.trim().isNotEmpty;
 
-    int total = 3; // نتوقع على الأقل 3 مرفقات
+    const int total = 3; // نتوقع على الأقل 3 مرفقات
     int completed = totalAttachments;
     if (hasNotes) completed++;
 

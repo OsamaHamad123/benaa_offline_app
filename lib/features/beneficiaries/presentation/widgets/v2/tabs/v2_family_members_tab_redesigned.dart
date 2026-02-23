@@ -21,8 +21,7 @@ class V2FamilyMembersTabRedesigned extends ConsumerStatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
   const V2FamilyMembersTabRedesigned({
-    super.key,
-    required this.formControllers,
+    required this.formControllers, super.key,
   });
 
   @override
@@ -41,7 +40,7 @@ class _V2FamilyMembersTabRedesignedState
     super.build(context); // ضروري لـ AutomaticKeepAliveClientMixin
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
       child: Column(
         children: [
           // 🪦 قسم الوالدين المتوفيين
@@ -66,7 +65,7 @@ class _V2FamilyMembersTabRedesignedState
 class _DeceasedParentsSection extends StatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
-  const _DeceasedParentsSection({super.key, required this.formControllers});
+  const _DeceasedParentsSection({required this.formControllers, super.key});
 
   @override
   State<_DeceasedParentsSection> createState() =>
@@ -309,7 +308,7 @@ class _ParentCard extends StatelessWidget {
 class _OrphansSection extends StatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
-  const _OrphansSection({super.key, required this.formControllers});
+  const _OrphansSection({required this.formControllers, super.key});
 
   @override
   State<_OrphansSection> createState() => _OrphansSectionState();
@@ -406,7 +405,6 @@ class _OrphansSectionState extends State<_OrphansSection> {
     showDialog(
       context: context,
       builder: (context) => ZeroLagFamilyDialog(
-        isDeceased: false,
         onSave: (memberData) {
           widget.formControllers.addLivingMember(memberData);
           ToastHelper.showSuccess('تمت الإضافة بنجاح');
@@ -424,10 +422,7 @@ class _OrphanCard extends StatelessWidget {
   // Notifier-based: onUpdate removed
 
   const _OrphanCard({
-    super.key,
-    required this.data,
-    required this.index,
-    required this.formControllers,
+    required this.data, required this.index, required this.formControllers, super.key,
     // no onUpdate
   });
 
@@ -513,7 +508,6 @@ class _OrphanCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => ZeroLagFamilyDialog(
-        isDeceased: false,
         existingMember: data,
         onSave: (memberData) {
           formControllers.updateLivingMember(index, memberData);

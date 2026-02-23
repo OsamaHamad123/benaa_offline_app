@@ -94,24 +94,17 @@ class HighContrastTheme {
     if (brightness == Brightness.dark) {
       return const ColorScheme.dark(
         primary: Colors.yellow,
-        onPrimary: Colors.black,
         secondary: Colors.cyan,
-        onSecondary: Colors.black,
         error: Colors.red,
         onError: Colors.white,
         surface: Colors.black,
-        onSurface: Colors.white,
       );
     } else {
       return const ColorScheme.light(
         primary: Colors.blue,
-        onPrimary: Colors.white,
         secondary: Colors.orange,
         onSecondary: Colors.white,
         error: Colors.red,
-        onError: Colors.white,
-        surface: Colors.white,
-        onSurface: Colors.black,
       );
     }
   }

@@ -13,13 +13,7 @@ class SettingsSwitchTile extends StatelessWidget {
   final Color color;
 
   const SettingsSwitchTile({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.value,
-    required this.onChanged,
-    required this.icon,
-    required this.color,
+    required this.title, required this.subtitle, required this.value, required this.onChanged, required this.icon, required this.color, super.key,
   });
 
   @override
@@ -58,7 +52,7 @@ class SettingsSwitchTile extends StatelessWidget {
       ),
       value: value,
       onChanged: onChanged,
-      activeColor: color,
+      activeThumbColor: color,
     );
   }
 }
@@ -75,12 +69,7 @@ class SettingsNavigationTile extends StatelessWidget {
   final Widget? trailing;
 
   const SettingsNavigationTile({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
+    required this.title, required this.subtitle, required this.icon, required this.color, required this.onTap, super.key,
     this.trailing,
   });
 
@@ -132,9 +121,7 @@ class SettingsColorSchemeTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const SettingsColorSchemeTile({
-    super.key,
-    required this.currentScheme,
-    required this.onTap,
+    required this.currentScheme, required this.onTap, super.key,
   });
 
   Color _getColorFromScheme(String scheme) {

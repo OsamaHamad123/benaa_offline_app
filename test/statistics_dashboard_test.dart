@@ -24,9 +24,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(testDb)],
-        child: ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+        child: const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
         ),
       ),
     );
@@ -42,9 +42,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(testDb)],
-        child: ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+        child: const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
         ),
       ),
     );
@@ -60,9 +60,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(testDb)],
-        child: ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(home: Scaffold(body: StatisticsDashboard())),
+        child: const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(home: Scaffold(body: StatisticsDashboard())),
         ),
       ),
     );

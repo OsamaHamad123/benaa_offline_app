@@ -16,8 +16,7 @@ class NormalizedSearchField extends StatefulWidget {
   final InputDecoration? decoration;
 
   const NormalizedSearchField({
-    super.key,
-    required this.onSearch,
+    required this.onSearch, super.key,
     this.hintText,
     this.controller,
     this.delay = const Duration(milliseconds: 300),

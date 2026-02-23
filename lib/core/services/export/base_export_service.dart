@@ -2,6 +2,7 @@
 ///
 /// كل خدمات التصدير (PDF, Excel, CSV) ترث من هذا الـ Base
 /// لضمان توحيد الواجهة والسلوك
+library;
 
 import 'dart:typed_data';
 import 'export_models.dart';

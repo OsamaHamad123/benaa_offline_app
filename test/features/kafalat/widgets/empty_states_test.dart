@@ -3,18 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:benaa_offline_app/features/kafalat/presentation/widgets/empty_states/empty_states.dart';
-import 'test_helpers.dart';
 
 void main() {
   group('EmptySponsorshipsState Tests', () {
     testWidgets('should show "no sponsorships" message when no filters', (tester) async {
       // Act
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(
+        const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(
             home: Scaffold(
-              body: EmptySponsorshipsState(hasFilters: false),
+              body: EmptySponsorshipsState(),
             ),
           ),
         ),
@@ -29,9 +28,9 @@ void main() {
     testWidgets('should show "no results" message when filters active', (tester) async {
       // Act
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(
+        const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(
             home: Scaffold(
               body: EmptySponsorshipsState(hasFilters: true),
             ),
@@ -74,11 +73,11 @@ void main() {
     testWidgets('should not show clear button when no filters', (tester) async {
       // Act
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(
+        const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(
             home: Scaffold(
-              body: EmptySponsorshipsState(hasFilters: false),
+              body: EmptySponsorshipsState(),
             ),
           ),
         ),
@@ -93,9 +92,9 @@ void main() {
     testWidgets('should show "no beneficiaries" message', (tester) async {
       // Act
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(375, 812),
-          child: const MaterialApp(
+        const ScreenUtilInit(
+          designSize: Size(375, 812),
+          child: MaterialApp(
             home: Scaffold(
               body: EmptyBeneficiariesState(),
             ),

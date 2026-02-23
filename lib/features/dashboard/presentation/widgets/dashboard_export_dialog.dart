@@ -12,8 +12,7 @@ class DashboardExportDialog extends StatelessWidget {
   final DashboardStatistics dashboard;
 
   const DashboardExportDialog({
-    super.key,
-    required this.dashboard,
+    required this.dashboard, super.key,
   });
 
   @override

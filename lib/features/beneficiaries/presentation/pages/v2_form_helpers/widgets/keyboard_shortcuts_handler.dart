@@ -13,8 +13,7 @@ class FormKeyboardShortcuts extends StatelessWidget {
   final VoidCallback? onNew;
 
   const FormKeyboardShortcuts({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onSave,
     this.onNextTab,
     this.onPreviousTab,

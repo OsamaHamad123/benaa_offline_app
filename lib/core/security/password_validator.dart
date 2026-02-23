@@ -1,6 +1,7 @@
 /// 🔐 Password Validator
 ///
 /// التحقق من قوة كلمة المرور
+library;
 
 class PasswordValidator {
   static const int minLength = 8;
@@ -143,7 +144,7 @@ class PasswordValidator {
     const numbers = '0123456789';
     const symbols = '!@#\$%^&*()_+-=[]{}|;:,.<>?';
 
-    final all = uppercase + lowercase + numbers + symbols;
+    const all = uppercase + lowercase + numbers + symbols;
     final random = DateTime.now().millisecondsSinceEpoch;
 
     String password = '';

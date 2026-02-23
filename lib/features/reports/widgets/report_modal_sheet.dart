@@ -8,10 +8,7 @@ class ReportModalSheet extends StatelessWidget {
   final List<Widget> children;
 
   const ReportModalSheet({
-    super.key,
-    required this.title,
-    required this.scrollController,
-    required this.children,
+    required this.title, required this.scrollController, required this.children, super.key,
   });
 
   @override
@@ -62,9 +59,7 @@ class CompactReportModalSheet extends StatelessWidget {
   final Widget child;
 
   const CompactReportModalSheet({
-    super.key,
-    required this.title,
-    required this.child,
+    required this.title, required this.child, super.key,
   });
 
   @override

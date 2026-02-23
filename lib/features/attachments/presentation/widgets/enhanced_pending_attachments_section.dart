@@ -308,7 +308,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
         if (mounted) {
           HapticFeedback.vibrate(); // Error haptic
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text('حجم الملف يتجاوز 10 ميجابايت'),
               backgroundColor: Colors.red,
             ),
@@ -323,7 +323,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
       if (widget.requireMetadata || mounted) {
         metadata = await showDialog<Map<String, dynamic>>(
           context: context,
-          builder: (context) => AttachmentMetadataDialog(),
+          builder: (context) => const AttachmentMetadataDialog(),
         );
 
         // User cancelled
@@ -399,7 +399,7 @@ class _EnhancedPendingAttachmentsSectionState extends State<EnhancedPendingAttac
       _notifyChanges();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('✓ تم تحديث معلومات المرفق'),
           backgroundColor: Colors.green,
         ),
@@ -529,10 +529,10 @@ class _EnhancedPendingFileCard extends StatelessWidget {
             left: 4.r,
             child: Material(
               color: Colors.blue,
-              shape: CircleBorder(),
+              shape: const CircleBorder(),
               child: InkWell(
                 onTap: onEdit,
-                customBorder: CircleBorder(),
+                customBorder: const CircleBorder(),
                 child: Padding(
                   padding: EdgeInsets.all(6.r),
                   child: Icon(Icons.edit, color: Colors.white, size: 14.sp),
@@ -547,10 +547,10 @@ class _EnhancedPendingFileCard extends StatelessWidget {
             right: 4.r,
             child: Material(
               color: Colors.red,
-              shape: CircleBorder(),
+              shape: const CircleBorder(),
               child: InkWell(
                 onTap: onDelete,
-                customBorder: CircleBorder(),
+                customBorder: const CircleBorder(),
                 child: Padding(
                   padding: EdgeInsets.all(6.r),
                   child: Icon(Icons.close, color: Colors.white, size: 14.sp),

@@ -2,6 +2,7 @@
 ///
 /// This file demonstrates various ways to use the FieldFinderHelper
 /// in widget tests.
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

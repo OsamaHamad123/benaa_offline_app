@@ -57,9 +57,7 @@ class ConflictResolver {
         final isServerNewer = serverUpdatedAt.isAfter(localUpdated);
 
         return ConflictResolution(
-          resolvedData: isServerNewer
-              ? _beneficiaryFromJson(serverVersion)
-              : localVersion,
+          resolvedData: isServerNewer ? _beneficiaryFromJson(serverVersion) : localVersion,
           strategyUsed: ConflictStrategy.newerWins,
         );
 
@@ -148,8 +146,8 @@ class ConflictResolver {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -199,9 +197,7 @@ class ConflictResolver {
     final serverTime = serverVersion.updatedAt ?? DateTime(2000);
 
     return localVersion.copyWith(
-      fullName: localTime.isAfter(serverTime)
-          ? localVersion.fullName
-          : serverVersion.fullName,
+      fullName: localTime.isAfter(serverTime) ? localVersion.fullName : serverVersion.fullName,
       // Add more fields as needed...
     );
   }

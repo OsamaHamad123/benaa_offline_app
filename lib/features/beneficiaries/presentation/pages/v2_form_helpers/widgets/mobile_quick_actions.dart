@@ -220,7 +220,7 @@ class _MobileQuickActionsState extends State<MobileQuickActions>
 class ClearFieldsDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
-  const ClearFieldsDialog({super.key, required this.onConfirm});
+  const ClearFieldsDialog({required this.onConfirm, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -260,9 +260,7 @@ class CopyFromBeneficiaryDialog extends StatefulWidget {
   final Function(String beneficiaryId) onSelect;
 
   const CopyFromBeneficiaryDialog({
-    super.key,
-    required this.beneficiaries,
-    required this.onSelect,
+    required this.beneficiaries, required this.onSelect, super.key,
   });
 
   @override
@@ -461,8 +459,7 @@ class SwipeableFieldCard extends StatelessWidget {
   final bool enableSwipe;
 
   const SwipeableFieldCard({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onClear,
     this.onCopy,
     this.enableSwipe = true,

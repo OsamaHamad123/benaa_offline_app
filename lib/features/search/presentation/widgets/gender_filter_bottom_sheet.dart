@@ -8,9 +8,8 @@ class GenderFilterBottomSheet extends StatefulWidget {
   final Function(String?) onApply;
 
   const GenderFilterBottomSheet({
-    super.key,
+    required this.onApply, super.key,
     this.currentGender,
-    required this.onApply,
   });
 
   @override
@@ -32,7 +31,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
     return ScaleTransitionWidget(
       duration: AppDurations.fast,
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -43,15 +42,15 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
             FadeSlideTransition(
               duration: AppDurations.fast,
               child: Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.purple.shade50,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.people_alt, color: Colors.purple.shade700),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'اختر الجنس',
@@ -63,7 +62,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close),
+                      icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                       color: Colors.grey.shade600,
                     ),
@@ -74,7 +73,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
 
             // Gender Options
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   // Clear Filter Option
@@ -84,7 +83,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                     value: null,
                     color: Colors.grey,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   // Male Option
                   _buildGenderOption(
                     icon: Icons.male,
@@ -92,7 +91,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                     value: 'ذكر',
                     color: Colors.blue,
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   // Female Option
                   _buildGenderOption(
                     icon: Icons.female,
@@ -106,7 +105,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
 
             // Action Buttons
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 border: Border(top: BorderSide(color: Colors.grey.shade300)),
@@ -117,13 +116,13 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         side: BorderSide(color: Colors.grey.shade400),
                       ),
-                      child: Text('إلغاء', style: TextStyle(fontSize: 16)),
+                      child: const Text('إلغاء', style: TextStyle(fontSize: 16)),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
@@ -132,10 +131,10 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         backgroundColor: Colors.purple.shade700,
                       ),
-                      child: Text(
+                      child: const Text(
                         'تطبيق',
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
@@ -167,7 +166,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
       },
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected ? color.shade50 : Colors.grey.shade50,
           border: Border.all(
@@ -179,7 +178,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isSelected ? color.shade100 : Colors.white,
                 shape: BoxShape.circle,
@@ -190,7 +189,7 @@ class _GenderFilterBottomSheetState extends State<GenderFilterBottomSheet> {
                 size: 28,
               ),
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,

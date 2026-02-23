@@ -188,11 +188,10 @@ class AnimatedDropdownField<T> extends StatefulWidget {
   final FormFieldValidator<T>? validator;
 
   const AnimatedDropdownField({
-    super.key,
+    required this.items, super.key,
     this.value,
     this.labelText,
     this.prefixIcon,
-    required this.items,
     this.onChanged,
     this.validator,
   });
@@ -239,7 +238,7 @@ class _AnimatedDropdownFieldState<T> extends State<AnimatedDropdownField<T>> {
         ),
       ),
       child: DropdownButtonFormField<T>(
-        value: widget.value,
+        initialValue: widget.value,
         focusNode: _focusNode,
         items: widget.items,
         onChanged: widget.onChanged,

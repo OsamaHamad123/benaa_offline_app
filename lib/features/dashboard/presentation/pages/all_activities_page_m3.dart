@@ -213,7 +213,7 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
       itemCount: 8,
       itemBuilder: (context, index) => Padding(
         padding: EdgeInsets.only(bottom: 12.h),
-        child: SkeletonListItem(),
+        child: const SkeletonListItem(),
       ),
     );
   }
@@ -343,7 +343,7 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
-          side: BorderSide(color: AppColors.divider.withOpacity(0.2), width: 1),
+          side: BorderSide(color: AppColors.divider.withOpacity(0.2)),
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16.r),
@@ -552,7 +552,7 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
           ),
           title: Row(
             children: [
-              Icon(Icons.delete_sweep, color: Colors.orange),
+              const Icon(Icons.delete_sweep, color: Colors.orange),
               SizedBox(width: 12.w),
               const Text('مسح الذاكرة المؤقتة'),
             ],

@@ -8,9 +8,7 @@ class FamilyDialogFooter extends StatelessWidget {
   final VoidCallback onSave;
 
   const FamilyDialogFooter({
-    super.key,
-    required this.onCancel,
-    required this.onSave,
+    required this.onCancel, required this.onSave, super.key,
   });
 
   @override

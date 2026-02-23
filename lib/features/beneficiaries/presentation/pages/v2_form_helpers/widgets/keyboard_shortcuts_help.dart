@@ -51,43 +51,43 @@ class KeyboardShortcutsSheet extends StatelessWidget {
           SizedBox(height: ResponsiveUtils.mediumSpace),
 
           // Shortcuts List
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'Ctrl + S',
             description: 'حفظ النموذج',
             icon: Icons.save_outlined,
             color: Colors.green,
           ),
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'Ctrl + Tab',
             description: 'الانتقال للتبويب التالي',
             icon: Icons.arrow_forward,
             color: Colors.blue,
           ),
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'Ctrl + Shift + Tab',
             description: 'الانتقال للتبويب السابق',
             icon: Icons.arrow_back,
             color: Colors.blue,
           ),
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'Ctrl + Z',
             description: 'التراجع',
             icon: Icons.undo,
             color: Colors.orange,
           ),
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'Ctrl + Y',
             description: 'إعادة',
             icon: Icons.redo,
             color: Colors.orange,
           ),
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'F5',
             description: 'تحديث البيانات',
             icon: Icons.refresh,
             color: Colors.purple,
           ),
-          _ShortcutItem(
+          const _ShortcutItem(
             shortcut: 'Esc',
             description: 'إلغاء / إغلاق',
             icon: Icons.close,

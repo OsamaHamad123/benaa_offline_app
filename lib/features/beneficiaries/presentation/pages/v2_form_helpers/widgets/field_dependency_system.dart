@@ -177,10 +177,7 @@ class DependentField extends StatelessWidget {
   final Duration animationDuration;
 
   const DependentField({
-    super.key,
-    required this.fieldName,
-    required this.controller,
-    required this.child,
+    required this.fieldName, required this.controller, required this.child, super.key,
     this.animationDuration = const Duration(milliseconds: 300),
   });
 
@@ -382,10 +379,7 @@ class DependencyIndicator extends StatelessWidget {
   final String message;
 
   const DependencyIndicator({
-    super.key,
-    required this.fieldName,
-    required this.controller,
-    required this.message,
+    required this.fieldName, required this.controller, required this.message, super.key,
   });
 
   @override

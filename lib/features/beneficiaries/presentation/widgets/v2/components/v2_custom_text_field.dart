@@ -23,9 +23,7 @@ class V2CustomTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
 
   const V2CustomTextField({
-    super.key,
-    required this.controller,
-    required this.label,
+    required this.controller, required this.label, super.key,
     this.hint,
     this.validator,
     this.keyboardType,
@@ -79,7 +77,6 @@ class V2CustomTextField extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: colorScheme.outline.withOpacity(0.2),
-            width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -88,7 +85,7 @@ class V2CustomTextField extends StatelessWidget {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.error, width: 1),
+          borderSide: BorderSide(color: colorScheme.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

@@ -9,9 +9,7 @@ class SmoothPageTransition extends StatelessWidget {
   final Animation<double> animation;
 
   const SmoothPageTransition({
-    super.key,
-    required this.child,
-    required this.animation,
+    required this.child, required this.animation, super.key,
   });
 
   @override
@@ -38,8 +36,7 @@ class AnimatedButtonPress extends StatefulWidget {
   final Duration duration;
 
   const AnimatedButtonPress({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onPressed,
     this.duration = const Duration(milliseconds: 100),
   });
@@ -104,9 +101,7 @@ class ShimmerLoading extends StatefulWidget {
   final Color? highlightColor;
 
   const ShimmerLoading({
-    super.key,
-    required this.child,
-    required this.isLoading,
+    required this.child, required this.isLoading, super.key,
     this.baseColor,
     this.highlightColor,
   });
@@ -176,8 +171,7 @@ class RippleEffect extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const RippleEffect({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onTap,
     this.rippleColor,
     this.borderRadius,
@@ -209,8 +203,7 @@ class AnimatedCounter extends StatelessWidget {
   final TextStyle? style;
 
   const AnimatedCounter({
-    super.key,
-    required this.value,
+    required this.value, super.key,
     this.duration = const Duration(milliseconds: 500),
     this.style,
   });
@@ -240,8 +233,7 @@ class AnimatedProgressBar extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const AnimatedProgressBar({
-    super.key,
-    required this.progress,
+    required this.progress, super.key,
     this.duration = const Duration(milliseconds: 300),
     this.color,
     this.backgroundColor,
@@ -282,9 +274,7 @@ class SlideAndFade extends StatelessWidget {
   final Duration duration;
 
   const SlideAndFade({
-    super.key,
-    required this.child,
-    required this.show,
+    required this.child, required this.show, super.key,
     this.begin = const Offset(0, 0.1),
     this.duration = const Duration(milliseconds: 300),
   });
@@ -315,9 +305,7 @@ class BounceAnimation extends StatefulWidget {
   final VoidCallback? onComplete;
 
   const BounceAnimation({
-    super.key,
-    required this.child,
-    required this.trigger,
+    required this.child, required this.trigger, super.key,
     this.onComplete,
   });
 

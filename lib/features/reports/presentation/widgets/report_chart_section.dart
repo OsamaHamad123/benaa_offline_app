@@ -79,7 +79,6 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                   maxY: 500,
                   barGroups: _buildBarGroups(),
                   titlesData: FlTitlesData(
-                    show: true,
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
@@ -110,10 +109,10 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                       ),
                     ),
                     topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                     rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      
                     ),
                   ),
                 ),

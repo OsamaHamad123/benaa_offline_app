@@ -3,7 +3,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/unified_logger.dart';
-import '../domain/repositories/auth_repository.dart';
 import '../presentation/providers/auth_providers.dart';
 import '../presentation/state/auth_notifier.dart';
 
@@ -14,7 +13,6 @@ import '../presentation/state/auth_notifier.dart';
 /// - التجديد التلقائي قبل الانتهاء
 /// - التعامل مع تغييرات الاتصال
 class TokenManager {
-  final AuthRepository _authRepository;
   final AuthNotifier _authNotifier;
   final Connectivity _connectivity;
 
@@ -29,11 +27,9 @@ class TokenManager {
   static const int _retryDelayMinutes = 30; // إعادة المحاولة بعد 30 دقيقة
 
   TokenManager({
-    required AuthRepository authRepository,
     required AuthNotifier authNotifier,
     Connectivity? connectivity,
-  })  : _authRepository = authRepository,
-        _authNotifier = authNotifier,
+  })  : _authNotifier = authNotifier,
         _connectivity = connectivity ?? Connectivity();
 
   /// 🚀 بدء مراقبة الـ Token
@@ -72,7 +68,7 @@ class TokenManager {
     _refreshTimer?.cancel();
 
     _refreshTimer = Timer.periodic(
-      Duration(hours: _checkIntervalHours),
+      const Duration(hours: _checkIntervalHours),
       (_) => _checkAndRefreshIfNeeded(),
     );
   }
@@ -106,7 +102,7 @@ class TokenManager {
 
   /// جدولة إعادة المحاولة
   void _scheduleRetry() {
-    Future.delayed(Duration(minutes: _retryDelayMinutes), () {
+    Future.delayed(const Duration(minutes: _retryDelayMinutes), () {
       _checkAndRefreshIfNeeded();
     });
   }
@@ -186,7 +182,6 @@ class TokenInfo {
 /// 🔄 Token Manager Provider
 final tokenManagerProvider = Provider<TokenManager>((ref) {
   final manager = TokenManager(
-    authRepository: ref.watch(authRepositoryProvider),
     authNotifier: ref.watch(authNotifierProvider.notifier),
   );
 

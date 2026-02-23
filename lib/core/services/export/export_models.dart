@@ -2,6 +2,7 @@
 ///
 /// هذه الـ Models تُستخدم لتوحيد البيانات المُراد تصديرها
 /// بحيث تكون متوافقة مع PDF و Excel و CSV
+library;
 
 /// نوع التصدير
 enum ExportType { pdf, excel, csv }
@@ -79,13 +80,11 @@ class BeneficiariesExportData extends ExportData {
   BeneficiariesExportData({
     required this.beneficiaries,
     this.statistics,
-    String? subtitle,
-    DateTime? timestamp,
+    super.subtitle,
+    super.timestamp,
   }) : super(
           contentType: ExportContentType.beneficiaries,
           title: 'قائمة المستفيدين',
-          subtitle: subtitle,
-          timestamp: timestamp,
         );
 
   ExportTable toTable() {
@@ -147,13 +146,11 @@ class VisitsExportData extends ExportData {
   VisitsExportData({
     required this.visits,
     this.statistics,
-    String? subtitle,
-    DateTime? timestamp,
+    super.subtitle,
+    super.timestamp,
   }) : super(
           contentType: ExportContentType.visits,
           title: 'قائمة الزيارات',
-          subtitle: subtitle,
-          timestamp: timestamp,
         );
 
   ExportTable toTable() {
@@ -207,16 +204,13 @@ class ReportExportData extends ExportData {
 
   ReportExportData({
     required this.tables,
-    required String title,
+    required super.title,
     this.statistics,
     this.charts,
-    String? subtitle,
-    DateTime? timestamp,
+    super.subtitle,
+    super.timestamp,
   }) : super(
           contentType: ExportContentType.report,
-          title: title,
-          subtitle: subtitle,
-          timestamp: timestamp,
         );
 }
 
@@ -228,13 +222,11 @@ class ActivitiesExportData extends ExportData {
   ActivitiesExportData({
     required this.activities,
     this.statistics,
-    String? subtitle,
-    DateTime? timestamp,
+    super.subtitle,
+    super.timestamp,
   }) : super(
           contentType: ExportContentType.visits, // Using visits type for now
           title: 'سجل الأنشطة',
-          subtitle: subtitle,
-          timestamp: timestamp,
         );
 
   ExportTable toTable() {
@@ -274,8 +266,7 @@ class ActivityExportRow {
   const ActivityExportRow({
     required this.activityType,
     required this.description,
-    this.userName,
-    required this.createdAt,
+    required this.createdAt, this.userName,
     this.syncState,
   });
 }
@@ -294,13 +285,11 @@ class ComprehensiveBeneficiariesExportData extends ExportData {
     this.includeAttachments = true,
     this.includeVisits = true,
     this.includeActivities = true,
-    String? subtitle,
-    DateTime? timestamp,
+    super.subtitle,
+    super.timestamp,
   }) : super(
           contentType: ExportContentType.beneficiaries,
           title: 'تقرير شامل للمستفيدين',
-          subtitle: subtitle,
-          timestamp: timestamp,
         );
 
   /// جدول المعلومات الأساسية
@@ -490,9 +479,8 @@ class ComprehensiveBeneficiaryData {
     required this.fullName,
     required this.nationalId,
     required this.gender,
-    this.birthDate,
+    required this.category, this.birthDate,
     this.age,
-    required this.category,
     this.governorate,
     this.phoneNumber,
     this.email,
@@ -519,9 +507,8 @@ class ExportResult {
 
   const ExportResult({
     required this.success,
-    this.filePath,
+    required this.type, this.filePath,
     this.errorMessage,
-    required this.type,
   });
 
   factory ExportResult.success({

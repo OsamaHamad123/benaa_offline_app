@@ -12,10 +12,7 @@ class TabNavigationBar extends StatelessWidget {
   final int totalTabs;
 
   const TabNavigationBar({
-    super.key,
-    required this.controller,
-    required this.currentIndex,
-    required this.totalTabs,
+    required this.controller, required this.currentIndex, required this.totalTabs, super.key,
   });
 
   @override

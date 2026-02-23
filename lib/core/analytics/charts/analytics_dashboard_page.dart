@@ -209,7 +209,6 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
             SizedBox(height: 16.h),
             BeneficiaryChart(
               monthlyData: monthlyData,
-              showVisits: false,
             ),
             SizedBox(height: 16.h),
             BeneficiaryChart(

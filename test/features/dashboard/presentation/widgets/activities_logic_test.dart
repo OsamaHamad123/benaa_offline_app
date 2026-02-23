@@ -32,7 +32,7 @@ void main() {
 
     test('Empty state conditions', () {
       final emptyList = <String>[];
-      final isLoading = false;
+      const isLoading = false;
 
       // يجب إظهار Empty State
       final shouldShowEmptyState = emptyList.isEmpty && !isLoading;
@@ -41,10 +41,10 @@ void main() {
 
     test('Loading state conditions', () {
       final emptyList = <String>[];
-      final isLoading = true;
+      const isLoading = true;
 
       // يجب إظهار Loading State
-      final shouldShowLoading = isLoading;
+      const shouldShowLoading = isLoading;
       expect(shouldShowLoading, true);
 
       // لا يجب إظهار Empty State أثناء التحميل

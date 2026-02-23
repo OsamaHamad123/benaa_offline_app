@@ -21,9 +21,7 @@ class LargeTouchTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
 
   const LargeTouchTextField({
-    super.key,
-    required this.label,
-    required this.controller,
+    required this.label, required this.controller, super.key,
     this.hintText,
     this.keyboardType,
     this.required = false,
@@ -100,10 +98,8 @@ class LargeTouchDatePicker extends StatelessWidget {
   final bool required;
 
   const LargeTouchDatePicker({
-    super.key,
-    required this.label,
+    required this.label, required this.onDateSelected, super.key,
     this.selectedDate,
-    required this.onDateSelected,
     this.firstDate,
     this.lastDate,
     this.required = false,
@@ -195,11 +191,8 @@ class LargeTouchRadioGroup extends StatelessWidget {
   final bool required;
 
   const LargeTouchRadioGroup({
-    super.key,
-    required this.label,
-    required this.options,
+    required this.label, required this.options, required this.onChanged, super.key,
     this.selectedValue,
-    required this.onChanged,
     this.required = false,
   });
 
@@ -299,10 +292,7 @@ class LargeTouchNumberStepper extends StatelessWidget {
   final String? unit;
 
   const LargeTouchNumberStepper({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.onChanged,
+    required this.label, required this.value, required this.onChanged, super.key,
     this.min = 0,
     this.max = 100,
     this.step = 1,

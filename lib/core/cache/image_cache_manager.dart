@@ -27,7 +27,6 @@ class ImageCacheManager {
 
   // Memory cache للـ thumbnails
   final CacheManager<String, Uint8List> _thumbnailCache = CacheManager(
-    maxSize: 100,
     ttl: const Duration(hours: 1),
   );
 
@@ -84,7 +83,6 @@ class ImageCacheManager {
         minWidth: width,
         minHeight: height,
         quality: quality,
-        format: CompressFormat.jpeg,
       );
 
       if (compressedBytes != null) {
@@ -131,7 +129,6 @@ class ImageCacheManager {
         quality: quality,
         minWidth: maxWidth ?? 1920,
         minHeight: maxHeight ?? 1080,
-        format: CompressFormat.jpeg,
       );
 
       if (compressedBytes != null) {

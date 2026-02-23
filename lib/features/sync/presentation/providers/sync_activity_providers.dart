@@ -7,8 +7,8 @@ import 'package:benaa_offline_app/features/sync/domain/usecases/sync_with_activi
 /// Provider: SyncManager
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final database = ref.watch(databaseProvider);
-  // ApiClient يمكن أن يكون null
-  return SyncManager(database, apiClient: null);
+  final apiClient = ref.watch(apiClientProvider);
+  return SyncManager(database, apiClient: apiClient);
 });
 
 /// Provider: SyncWithActivity UseCase

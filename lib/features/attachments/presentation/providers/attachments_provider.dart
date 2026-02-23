@@ -95,7 +95,7 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     debugPrint(
       '🔍 [AttachmentsProvider] Loading attachments for: $beneficiaryId',
     );
-    state = state.copyWith(isLoading: true, errorMessage: null);
+    state = state.copyWith(isLoading: true);
 
     try {
       final result = await _getAttachmentsUseCase.execute(beneficiaryId);
@@ -122,8 +122,7 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
   /// Add new attachment
   Future<bool> addAttachment({
     required String beneficiaryId,
-    String? visitId,
-    required File sourceFile,
+    required File sourceFile, String? visitId,
     String? beneficiaryName,
   }) async {
     try {
@@ -214,7 +213,7 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
 
   /// Clear error message
   void clearError() {
-    state = state.copyWith(errorMessage: null);
+    state = state.copyWith();
   }
 }
 

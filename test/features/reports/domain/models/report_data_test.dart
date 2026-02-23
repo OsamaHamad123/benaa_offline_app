@@ -14,7 +14,7 @@ void main() {
     });
 
     test('should create filters with custom values', () {
-      final filters = ReportFilters(
+      const filters = ReportFilters(
         startDate: '2024-01-01',
         endDate: '2024-12-31',
         governorate: 'دمشق',
@@ -43,7 +43,7 @@ void main() {
     });
 
     test('toJson should convert to map correctly', () {
-      final filters = ReportFilters(
+      const filters = ReportFilters(
         startDate: '2024-01-01',
         endDate: '2024-12-31',
         governorate: 'دمشق',

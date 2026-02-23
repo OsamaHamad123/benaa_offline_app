@@ -191,7 +191,7 @@ class UrgentCasesSection extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.green.withOpacity(0.3), width: 1),
+        side: BorderSide(color: Colors.green.withOpacity(0.3)),
       ),
       child: Container(
         padding: EdgeInsets.all(24.w),
@@ -314,8 +314,6 @@ class UrgentCasesSection extends ConsumerWidget {
       builder: (context) => ResponsiveBottomSheet(
         title: title,
         icon: Icons.priority_high,
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
         maxChildSize: 0.9,
         builder: (scrollController) => FutureBuilder<List<Beneficiary>>(
           future: future,

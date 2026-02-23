@@ -40,24 +40,12 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
   final BeneficiaryFormControllers? formControllers; // For autofill
 
   const V2BasicInfoTab({
-    super.key,
-    required this.firstNameController,
-    required this.fatherNameController,
-    required this.grandfatherNameController,
-    required this.lastNameController,
-    required this.motherNameController,
-    required this.nationalIdController,
-    required this.birthDateController,
+    required this.firstNameController, required this.fatherNameController, required this.grandfatherNameController, required this.lastNameController, required this.motherNameController, required this.nationalIdController, required this.birthDateController, required this.onGenderChanged, required this.onBirthDateTap, required this.onCategoryChanged, required this.onRelationshipChanged, required this.onSectionChanged, super.key,
     this.selectedGender,
-    required this.onGenderChanged,
-    required this.onBirthDateTap,
     this.firstFieldFocusNode,
     this.selectedCategory,
-    required this.onCategoryChanged,
     this.selectedRelationship,
-    required this.onRelationshipChanged,
     this.selectedSection,
-    required this.onSectionChanged,
     this.formControllers,
   });
 
@@ -252,7 +240,6 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                     Expanded(
                       child: AutofillButton(
                         onPressed: _handleAutofill,
-                        isEnabled: true,
                       ),
                     ),
                     SizedBox(width: 8.w),

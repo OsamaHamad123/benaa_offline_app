@@ -17,8 +17,7 @@ class ListAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? selectionActions;
 
   const ListAppBar({
-    super.key,
-    required this.isSelectionMode,
+    required this.isSelectionMode, super.key,
     this.selectedCount = 0,
     this.normalTitle = 'القائمة',
     this.normalActions,

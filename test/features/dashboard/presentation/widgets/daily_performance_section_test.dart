@@ -24,7 +24,7 @@ void main() {
       await tester.pumpWidget(
         appWrapper(
           testDb: testDb,
-          child: SizedBox(
+          child: const SizedBox(
             height: 800,
             child: MaterialApp(home: Scaffold(body: DailyPerformanceSection())),
           ),
@@ -56,27 +56,27 @@ void main() {
     });
 
     test('Daily target completion percentage', () {
-      final target = 10;
-      final completed = 7;
-      final percentage = (completed / target * 100);
+      const target = 10;
+      const completed = 7;
+      const percentage = completed / target * 100;
 
       expect(percentage, 70.0);
     });
 
     test('Daily performance goal met check', () {
       // تحقيق الهدف
-      final target1 = 10;
-      final completed1 = 10;
+      const target1 = 10;
+      const completed1 = 10;
       expect(completed1 >= target1, true);
 
       // عدم تحقيق الهدف
-      final target2 = 10;
-      final completed2 = 7;
+      const target2 = 10;
+      const completed2 = 7;
       expect(completed2 >= target2, false);
 
       // تجاوز الهدف
-      final target3 = 10;
-      final completed3 = 15;
+      const target3 = 10;
+      const completed3 = 15;
       expect(completed3 >= target3, true);
     });
 
@@ -96,36 +96,36 @@ void main() {
     });
 
     test('Performance trend calculation', () {
-      final todayCompleted = 10;
-      final yesterdayCompleted = 8;
-      final trend =
-          ((todayCompleted - yesterdayCompleted) / yesterdayCompleted * 100);
+      const todayCompleted = 10;
+      const yesterdayCompleted = 8;
+      const trend =
+          (todayCompleted - yesterdayCompleted) / yesterdayCompleted * 100;
 
       expect(trend, 25.0, reason: 'Should show +25% improvement');
     });
 
     test('Daily performance rating', () {
       // ممتاز: أكثر من 90%
-      final excellent = 95.0;
+      const excellent = 95.0;
       expect(excellent >= 90, true);
 
       // جيد: 70-89%
-      final good = 80.0;
+      const good = 80.0;
       expect(good >= 70 && good < 90, true);
 
       // مقبول: 50-69%
-      final fair = 60.0;
+      const fair = 60.0;
       expect(fair >= 50 && fair < 70, true);
 
       // ضعيف: أقل من 50%
-      final poor = 40.0;
+      const poor = 40.0;
       expect(poor < 50, true);
     });
 
     test('Circular progress color based on performance', () {
       // Green for > 80%
-      final highPerformance = 85.0;
-      final highColor = highPerformance >= 80
+      const highPerformance = 85.0;
+      const highColor = highPerformance >= 80
           ? Colors.green
           : highPerformance >= 50
               ? Colors.orange
@@ -133,8 +133,8 @@ void main() {
       expect(highColor, Colors.green);
 
       // Orange for 50-80%
-      final mediumPerformance = 65.0;
-      final mediumColor = mediumPerformance >= 80
+      const mediumPerformance = 65.0;
+      const mediumColor = mediumPerformance >= 80
           ? Colors.green
           : mediumPerformance >= 50
               ? Colors.orange
@@ -142,8 +142,8 @@ void main() {
       expect(mediumColor, Colors.orange);
 
       // Red for < 50%
-      final lowPerformance = 35.0;
-      final lowColor = lowPerformance >= 80
+      const lowPerformance = 35.0;
+      const lowColor = lowPerformance >= 80
           ? Colors.green
           : lowPerformance >= 50
               ? Colors.orange

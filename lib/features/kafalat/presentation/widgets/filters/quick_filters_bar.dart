@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+
 /// 🎯 Quick Filters Bar - شريط الفلاتر السريعة
-class QuickFiltersBar extends StatelessWidget {
+class QuickFiltersBar extends ConsumerWidget {
   final String selectedStatus;
   final String selectedType;
   final String? selectedAssociationId;
@@ -13,7 +18,6 @@ class QuickFiltersBar extends StatelessWidget {
   final VoidCallback? onClearFilters;
 
   const QuickFiltersBar({
-    super.key,
     required this.selectedStatus,
     required this.selectedType,
     required this.selectedAssociationId,
@@ -21,14 +25,68 @@ class QuickFiltersBar extends StatelessWidget {
     required this.onStatusChanged,
     required this.onTypeChanged,
     required this.onAssociationChanged,
+    super.key,
     this.onClearFilters,
   });
 
   bool get _hasActiveFilters => selectedStatus != 'all' || selectedType != 'all' || selectedAssociationId != null;
 
+  String _resolveTaxonomyLabel(
+    String code,
+    List<taxonomy_domain.Taxonomy> taxonomyItems,
+    Map<String, String> fallbackLabels,
+  ) {
+    for (final taxonomy in taxonomyItems) {
+      if (taxonomy.code == code) return taxonomy.label;
+    }
+    return fallbackLabels[code] ?? code;
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final statusTaxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.beneficiaryStatus),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const <taxonomy_domain.Taxonomy>[],
+        );
+    final sponsorshipTypeTaxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const <taxonomy_domain.Taxonomy>[],
+        );
+
+    final activeStatusLabel = _resolveTaxonomyLabel(
+      'active',
+      statusTaxonomies,
+      const {'active': 'نشطة', 'paused': 'موقوفة', 'ended': 'منتهية'},
+    );
+    final pausedStatusLabel = _resolveTaxonomyLabel(
+      'paused',
+      statusTaxonomies,
+      const {'active': 'نشطة', 'paused': 'موقوفة', 'ended': 'منتهية'},
+    );
+    final endedStatusLabel = _resolveTaxonomyLabel(
+      'ended',
+      statusTaxonomies,
+      const {'active': 'نشطة', 'paused': 'موقوفة', 'ended': 'منتهية'},
+    );
+    final monthlyTypeLabel = _resolveTaxonomyLabel(
+      'monthly',
+      sponsorshipTypeTaxonomies,
+      const {'monthly': 'شهرية', 'one_time': 'مرة واحدة', 'other': 'أخرى'},
+    );
+    final oneTimeTypeLabel = _resolveTaxonomyLabel(
+      'one_time',
+      sponsorshipTypeTaxonomies,
+      const {'monthly': 'شهرية', 'one_time': 'مرة واحدة', 'other': 'أخرى'},
+    );
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -37,7 +95,6 @@ class QuickFiltersBar extends StatelessWidget {
         border: Border(
           bottom: BorderSide(
             color: theme.colorScheme.outlineVariant.withOpacity(0.5),
-            width: 1,
           ),
         ),
       ),
@@ -89,7 +146,7 @@ class QuickFiltersBar extends StatelessWidget {
                 SizedBox(width: 8.w),
                 _buildChip(
                   context,
-                  label: 'نشطة',
+                  label: activeStatusLabel,
                   isSelected: selectedStatus == 'active',
                   onTap: () => onStatusChanged('active'),
                   icon: Icons.check_circle,
@@ -98,7 +155,7 @@ class QuickFiltersBar extends StatelessWidget {
                 SizedBox(width: 8.w),
                 _buildChip(
                   context,
-                  label: 'موقوفة',
+                  label: pausedStatusLabel,
                   isSelected: selectedStatus == 'paused',
                   onTap: () => onStatusChanged('paused'),
                   icon: Icons.pause_circle,
@@ -107,7 +164,7 @@ class QuickFiltersBar extends StatelessWidget {
                 SizedBox(width: 8.w),
                 _buildChip(
                   context,
-                  label: 'منتهية',
+                  label: endedStatusLabel,
                   isSelected: selectedStatus == 'ended',
                   onTap: () => onStatusChanged('ended'),
                   icon: Icons.cancel,
@@ -133,7 +190,7 @@ class QuickFiltersBar extends StatelessWidget {
                 SizedBox(width: 8.w),
                 _buildChip(
                   context,
-                  label: 'شهرية',
+                  label: monthlyTypeLabel,
                   isSelected: selectedType == 'monthly',
                   onTap: () => onTypeChanged('monthly'),
                   icon: Icons.calendar_month,
@@ -142,7 +199,7 @@ class QuickFiltersBar extends StatelessWidget {
                 SizedBox(width: 8.w),
                 _buildChip(
                   context,
-                  label: 'مرة واحدة',
+                  label: oneTimeTypeLabel,
                   isSelected: selectedType == 'one_time',
                   onTap: () => onTypeChanged('one_time'),
                   icon: Icons.bolt,

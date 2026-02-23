@@ -87,9 +87,7 @@ class ResponsiveDialog extends StatelessWidget {
   final MainAxisAlignment actionsAlignment;
 
   const ResponsiveDialog({
-    super.key,
-    required this.title,
-    required this.content,
+    required this.title, required this.content, super.key,
     this.icon,
     this.iconColor,
     this.iconSize,
@@ -173,7 +171,6 @@ class ResponsiveDialog extends StatelessWidget {
         border: Border(
           bottom: BorderSide(
             color: theme.dividerColor.withOpacity(0.1),
-            width: 1,
           ),
         ),
       ),
@@ -223,7 +220,6 @@ class ResponsiveDialog extends StatelessWidget {
         border: Border(
           top: BorderSide(
             color: Theme.of(context).dividerColor.withOpacity(0.1),
-            width: 1,
           ),
         ),
       ),

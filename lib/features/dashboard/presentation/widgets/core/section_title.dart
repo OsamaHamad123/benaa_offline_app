@@ -16,9 +16,7 @@ class SectionTitle extends StatelessWidget {
   final Widget? trailing;
 
   const SectionTitle({
-    super.key,
-    required this.title,
-    required this.icon,
+    required this.title, required this.icon, super.key,
     this.color,
     this.fontSize,
     this.trailing,

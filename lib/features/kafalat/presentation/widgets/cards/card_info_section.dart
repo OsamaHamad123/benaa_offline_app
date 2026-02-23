@@ -10,16 +10,18 @@ class CardInfoSection extends StatelessWidget {
   final String? endDate;
   final String sponsorshipType;
   final String Function(String) typeLabel;
+  final bool showLegacyBadge;
 
   const CardInfoSection({
-    super.key,
     required this.fileNo,
     required this.idNumber,
+    required this.sponsorshipType,
+    required this.typeLabel,
+    this.showLegacyBadge = false,
+    super.key,
     this.amount,
     this.startDate,
     this.endDate,
-    required this.sponsorshipType,
-    required this.typeLabel,
   });
 
   @override
@@ -84,7 +86,11 @@ class CardInfoSection extends StatelessWidget {
           SizedBox(height: 12.h),
 
           // نوع الكفالة
-          _TypeBadge(type: sponsorshipType, typeLabel: typeLabel),
+          _TypeBadge(
+            type: sponsorshipType,
+            typeLabel: typeLabel,
+            showLegacyBadge: showLegacyBadge,
+          ),
         ],
       ),
     );
@@ -116,7 +122,6 @@ class _InfoBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: color.withOpacity(0.2),
-          width: 1,
         ),
       ),
       child: Row(
@@ -157,10 +162,12 @@ class _InfoBox extends StatelessWidget {
 class _TypeBadge extends StatelessWidget {
   final String type;
   final String Function(String) typeLabel;
+  final bool showLegacyBadge;
 
   const _TypeBadge({
     required this.type,
     required this.typeLabel,
+    this.showLegacyBadge = false,
   });
 
   Color _getTypeColor(String t) {
@@ -198,7 +205,6 @@ class _TypeBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(
           color: color.withOpacity(0.3),
-          width: 1,
         ),
       ),
       child: Row(
@@ -213,6 +219,23 @@ class _TypeBadge extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
+          if (showLegacyBadge) ...[
+            SizedBox(width: 6.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Text(
+                'Legacy',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -18,10 +18,7 @@ class EmptyState extends StatelessWidget {
   final Color? iconColor;
 
   const EmptyState({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
+    required this.icon, required this.title, required this.message, super.key,
     this.actionLabel,
     this.onAction,
     this.action, // ⚡ Custom action widget
@@ -107,9 +104,7 @@ class EmptyStateCompact extends StatelessWidget {
   final String message;
 
   const EmptyStateCompact({
-    super.key,
-    required this.icon,
-    required this.message,
+    required this.icon, required this.message, super.key,
   });
 
   @override

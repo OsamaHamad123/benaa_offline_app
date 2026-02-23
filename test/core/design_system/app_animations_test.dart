@@ -80,7 +80,6 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: SlideTransitionWidget(
-              begin: Offset(0, 1),
               child: Text('Slide Test'),
             ),
           ),

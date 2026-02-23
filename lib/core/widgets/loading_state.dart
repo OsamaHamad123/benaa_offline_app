@@ -198,7 +198,7 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = isDark
-        ? theme.colorScheme.surfaceVariant
+        ? theme.colorScheme.surfaceContainerHighest
         : theme.colorScheme.surface.withOpacity(0.3);
     final highlightColor = isDark
         ? theme.colorScheme.surface
@@ -213,8 +213,6 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
           decoration: BoxDecoration(
             borderRadius: widget.borderRadius ?? BorderRadius.circular(8.r),
             gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
               colors: [baseColor, highlightColor, baseColor],
               stops: [
                 _animation.value - 0.3,

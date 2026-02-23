@@ -119,9 +119,8 @@ class MobileUserDto {
     required this.id,
     required this.name,
     required this.email,
-    this.phone,
+    required this.role, this.phone,
     this.avatar,
-    required this.role,
     this.roles = const [],
     this.permissions = const [],
   });
@@ -151,10 +150,7 @@ class MobileTokenDto {
 
   MobileTokenDto({
     required this.accessToken,
-    this.tokenType = 'Bearer',
-    required this.expiresAt,
-    required this.expiresInDays,
-    required this.expiresInSeconds,
+    required this.expiresAt, required this.expiresInDays, required this.expiresInSeconds, this.tokenType = 'Bearer',
   });
 
   factory MobileTokenDto.fromJson(Map<String, dynamic> json) => _$MobileTokenDtoFromJson(json);

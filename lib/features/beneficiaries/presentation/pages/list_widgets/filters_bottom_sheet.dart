@@ -23,9 +23,6 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
     final rv = ResponsiveUtils.getValues(context);
 
     return SlideTransitionWidget(
-      begin: const Offset(0, 1),
-      end: Offset.zero,
-      duration: AppDurations.normal,
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,

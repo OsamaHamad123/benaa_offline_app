@@ -182,7 +182,7 @@ class ErrorShakeWidget extends StatefulWidget {
   final Widget child;
   final bool shake;
 
-  const ErrorShakeWidget({super.key, required this.child, required this.shake});
+  const ErrorShakeWidget({required this.child, required this.shake, super.key});
 
   @override
   State<ErrorShakeWidget> createState() => _ErrorShakeWidgetState();

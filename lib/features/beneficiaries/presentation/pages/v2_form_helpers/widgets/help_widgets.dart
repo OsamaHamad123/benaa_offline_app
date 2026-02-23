@@ -14,9 +14,7 @@ class FormFieldHelper extends StatelessWidget {
   final Color? color;
 
   const FormFieldHelper({
-    super.key,
-    required this.title,
-    required this.description,
+    required this.title, required this.description, super.key,
     this.examples,
     this.tips,
     this.icon = Icons.help_outline,
@@ -34,7 +32,7 @@ class FormFieldHelper extends StatelessWidget {
       decoration: BoxDecoration(
         color: helperColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: helperColor.withOpacity(0.2), width: 1),
+        border: Border.all(color: helperColor.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,8 +168,7 @@ class QuickHelpOverlay extends StatefulWidget {
   final String title;
 
   const QuickHelpOverlay({
-    super.key,
-    required this.helpItems,
+    required this.helpItems, super.key,
     this.title = 'المساعدة',
   });
 
@@ -348,9 +345,7 @@ class TourGuide extends StatefulWidget {
   final VoidCallback? onSkip;
 
   const TourGuide({
-    super.key,
-    required this.steps,
-    required this.onComplete,
+    required this.steps, required this.onComplete, super.key,
     this.onSkip,
   });
 

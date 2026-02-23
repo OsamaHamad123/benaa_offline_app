@@ -19,8 +19,7 @@ class CachedImageWidget extends ConsumerWidget {
   final Widget? errorWidget;
 
   const CachedImageWidget({
-    super.key,
-    required this.imagePath,
+    required this.imagePath, super.key,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
@@ -87,8 +86,7 @@ class CachedFileImage extends StatelessWidget {
   final Widget? errorWidget;
 
   const CachedFileImage({
-    super.key,
-    required this.filePath,
+    required this.filePath, super.key,
     this.width,
     this.height,
     this.fit = BoxFit.cover,

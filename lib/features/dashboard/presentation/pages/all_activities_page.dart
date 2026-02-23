@@ -111,7 +111,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
             ),
             title: Row(
               children: [
-                Icon(Icons.delete_sweep, color: Colors.orange),
+                const Icon(Icons.delete_sweep, color: Colors.orange),
                 SizedBox(width: 12.w),
                 const Text('مسح الذاكرة المؤقتة'),
               ],
@@ -189,7 +189,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.filter_list, color: AppColors.primary),
+                  const Icon(Icons.filter_list, color: AppColors.primary),
                   SizedBox(width: 12.w),
                   Text(
                     'تصفية الأنشطة',
@@ -326,7 +326,7 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
       body: PullToRefreshWrapper(
         onRefresh: _refresh,
         child: _activities.isEmpty && !_isLoading
-            ? EmptyStateWidget(
+            ? const EmptyStateWidget(
                 icon: Icons.analytics_outlined,
                 title: 'لا توجد أنشطة',
                 message: 'ستظهر هنا جميع أنشطتك',

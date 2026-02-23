@@ -13,10 +13,7 @@ class SaveStatusIndicator extends StatelessWidget {
   final ValueNotifier<bool> hasUnsavedChangesNotifier;
 
   const SaveStatusIndicator({
-    super.key,
-    required this.isSavingNotifier,
-    required this.lastSavedNotifier,
-    required this.hasUnsavedChangesNotifier,
+    required this.isSavingNotifier, required this.lastSavedNotifier, required this.hasUnsavedChangesNotifier, super.key,
   });
 
   @override

@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import '../../domain/entities/sync_result.dart';
 import '../../domain/repositories/i_sync_repository.dart';
+import '../../models/sync_models.dart' as api_sync;
 import '../datasources/local_sync_datasource.dart';
 import '../datasources/remote_sync_datasource.dart';
 import '../../../error_handling/error_logger.dart';
+import '../../../../data/db/drift_database.dart';
+import '../../../../data/models/taxonomy_dto.dart';
 
 /// 🔄 Sync Repository Implementation
 ///
@@ -66,9 +71,8 @@ class SyncRepositoryImpl implements ISyncRepository {
         conflicts.addAll(pushResult.conflicts);
       }
 
-      final successCount =
-          (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
-              (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
+      final successCount = (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
+          (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
 
       return SyncPartial(
         successCount: successCount,
@@ -139,32 +143,20 @@ class SyncRepositoryImpl implements ISyncRepository {
   /// Pull Taxonomies from server
   Future<SyncResult> _pullTaxonomies({DateTime? since}) async {
     try {
-      // Get all taxonomy groups
-      final groups = [
-        'category',
-        'marital_status',
-        'education_level',
-        'health_status',
-        'gender',
-        'governorate',
-        'displacement_status',
-        'employment_status',
-        'housing_status',
-        'housing_type',
-      ];
+      final response = await _remote.pullTaxonomies(since: since);
+      final grouped = <String, List<TaxonomyDTO>>{};
+
+      for (final item in response.data) {
+        grouped.putIfAbsent(item.group, () => []).add(item);
+      }
 
       int totalSynced = 0;
-
-      for (final group in groups) {
-        final response = await _remote.pullTaxonomies(
-          group: group,
-          since: since,
+      for (final entry in grouped.entries) {
+        await _local.saveTaxonomiesForGroup(
+          entry.key,
+          entry.value,
         );
-
-        // Save to local database
-        await _local.saveTaxonomiesForGroup(group, response.data);
-
-        totalSynced += response.data.length;
+        totalSynced += entry.value.length;
       }
 
       return SyncSuccess(
@@ -183,8 +175,8 @@ class SyncRepositoryImpl implements ISyncRepository {
 
   /// Pull Beneficiaries from server
   Future<SyncResult> _pullBeneficiaries({
-    DateTime? since,
     required int limit,
+    DateTime? since,
   }) async {
     try {
       final response = await _remote.pullBeneficiaryChanges(
@@ -215,7 +207,7 @@ class SyncRepositoryImpl implements ISyncRepository {
   }
 
   /// Pull Visits from server
-  Future<SyncResult> _pullVisits({DateTime? since, required int limit}) async {
+  Future<SyncResult> _pullVisits({required int limit, DateTime? since}) async {
     try {
       final response = await _remote.pullVisitChanges(
         since: since,
@@ -255,12 +247,70 @@ class SyncRepositoryImpl implements ISyncRepository {
         );
       }
 
-      // TODO: Convert to SyncChangeRequest and push to server
-      // For now, just return success
-      return SyncSuccess(
-        itemsSynced: pendingChanges.length,
+      final syncChanges = _toSyncChanges(pendingChanges);
+
+      late final api_sync.SyncResponse response;
+      switch (entityType) {
+        case 'beneficiaries':
+        case 'beneficiary':
+          response = await _remote.pushBeneficiaryChanges(syncChanges);
+          break;
+        case 'visits':
+        case 'visit':
+          response = await _remote.pushVisitChanges(syncChanges);
+          break;
+        default:
+          return SyncFailure(
+            error: 'نوع غير مدعوم للرفع: $entityType',
+            failedAt: DateTime.now(),
+          );
+      }
+
+      final pendingById = <String, SyncQueueItem>{
+        for (final item in pendingChanges) item.id: item,
+      };
+
+      final successfulIds = response.success.map((s) => s.clientId).toSet();
+      if (successfulIds.isEmpty && !response.hasConflicts && !response.hasErrors) {
+        successfulIds.addAll(pendingById.keys);
+      }
+
+      for (final id in successfulIds) {
+        if (pendingById.containsKey(id)) {
+          await _local.removeFromSyncQueue(id);
+        }
+      }
+
+      final syncedCount = successfulIds.length;
+      final int failedCount = (pendingChanges.length - syncedCount).toInt();
+
+      if (failedCount <= 0 && !response.hasConflicts && !response.hasErrors) {
+        return SyncSuccess(
+          itemsSynced: syncedCount,
+          syncedAt: DateTime.now(),
+          message: 'تم رفع $syncedCount تغيير',
+        );
+      }
+
+      final conflicts = response.conflicts
+          .map(
+            (c) => SyncConflict(
+              entityId: c.clientId,
+              entityType: entityType,
+              reason: ConflictReason.versionMismatch,
+              localData: _extractPayloadMap(pendingById[c.clientId]?.payload),
+              serverData: c.serverVersion.data,
+              localUpdatedAt: DateTime.now(),
+              serverUpdatedAt: c.serverVersion.updatedAt,
+            ),
+          )
+          .toList();
+
+      return SyncPartial(
+        successCount: syncedCount,
+        failureCount: failedCount,
+        conflicts: conflicts,
         syncedAt: DateTime.now(),
-        message: 'تم رفع ${pendingChanges.length} تغيير',
       );
     } catch (e, stackTrace) {
       return SyncFailure(
@@ -268,6 +318,35 @@ class SyncRepositoryImpl implements ISyncRepository {
         stackTrace: stackTrace,
         failedAt: DateTime.now(),
       );
+    }
+  }
+
+  List<api_sync.SyncChange> _toSyncChanges(List<SyncQueueItem> pendingChanges) {
+    return pendingChanges
+        .map(
+          (item) => api_sync.SyncChange(
+            clientId: item.id,
+            action: item.operation,
+            data: _extractPayloadMap(item.payload),
+            timestamp: item.createdAt,
+          ),
+        )
+        .toList();
+  }
+
+  Map<String, dynamic> _extractPayloadMap(String? payload) {
+    if (payload == null || payload.isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return <String, dynamic>{'payload': decoded};
+    } catch (_) {
+      return <String, dynamic>{'raw': payload};
     }
   }
 
@@ -338,7 +417,7 @@ class SyncRepositoryImpl implements ISyncRepository {
   Future<SyncResult> fullSync(String entityType) async {
     try {
       // Full sync = pull all + push all
-      final pullResult = await pullChanges(entityType, since: null);
+      final pullResult = await pullChanges(entityType);
 
       if (pullResult is SyncFailure) {
         return pullResult;
@@ -346,9 +425,8 @@ class SyncRepositoryImpl implements ISyncRepository {
 
       final pushResult = await pushChanges(entityType);
 
-      final totalSynced =
-          (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
-              (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
+      final totalSynced = (pullResult is SyncSuccess ? pullResult.itemsSynced : 0) +
+          (pushResult is SyncSuccess ? pushResult.itemsSynced : 0);
 
       await _local.updateSyncSuccess(
         entityType: entityType,
@@ -393,7 +471,7 @@ class SyncRepositoryImpl implements ISyncRepository {
         totalPushed: 0, // TODO: Track separately
         conflicts: 0,
         errors: entityMetadata.failedSyncs,
-        duration: const Duration(seconds: 0),
+        duration: const Duration(),
         startedAt: entityMetadata.lastSyncTime,
         completedAt: entityMetadata.lastSyncTime,
       );

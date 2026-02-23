@@ -15,10 +15,7 @@ class EnhancedSectionHeader extends StatelessWidget {
   final IconData? actionIcon;
 
   const EnhancedSectionHeader({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.color,
+    required this.title, required this.icon, required this.color, super.key,
     this.subtitle,
     this.onActionTap,
     this.actionLabel,
@@ -148,11 +145,7 @@ class QuickStatsCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const QuickStatsCard({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
+    required this.label, required this.value, required this.icon, required this.color, super.key,
     this.onTap,
   });
 
@@ -176,7 +169,7 @@ class QuickStatsCard extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16.r),
-            border: Border.all(color: color.withOpacity(0.2), width: 1),
+            border: Border.all(color: color.withOpacity(0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,8 +232,7 @@ class InfoBanner extends StatelessWidget {
   final VoidCallback? onDismiss;
 
   const InfoBanner({
-    super.key,
-    required this.message,
+    required this.message, super.key,
     this.icon = Icons.info_outline,
     this.color,
     this.onDismiss,
@@ -259,7 +251,7 @@ class InfoBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: bannerColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: bannerColor.withOpacity(0.3), width: 1),
+        border: Border.all(color: bannerColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [

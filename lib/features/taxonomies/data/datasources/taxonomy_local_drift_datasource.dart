@@ -38,13 +38,27 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
   @override
   Future<List<Taxonomy>> getAllTaxonomies() async {
     final items = await _taxonomiesDao.getAllTaxonomies();
-    return items.map(_fromDbEntity).toList();
+    final out = <Taxonomy>[];
+    for (final item in items) {
+      final mapped = _fromDbEntityOrNull(item);
+      if (mapped != null) {
+        out.add(mapped);
+      }
+    }
+    return out;
   }
 
   @override
   Future<List<Taxonomy>> getChildTaxonomies(String parentId) async {
     final items = await _taxonomiesDao.getChildren(parentId);
-    return items.map(_fromDbEntity).toList();
+    final out = <Taxonomy>[];
+    for (final item in items) {
+      final mapped = _fromDbEntityOrNull(item);
+      if (mapped != null) {
+        out.add(mapped);
+      }
+    }
+    return out;
   }
 
   @override
@@ -56,20 +70,27 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
   Future<Taxonomy?> getTaxonomyByCode(TaxonomyGroup group, String code) async {
     final item = await _taxonomiesDao.getByCode(group.value, code);
     if (item == null) return null;
-    return _fromDbEntity(item);
+    return _fromDbEntityOrNull(item);
   }
 
   @override
   Future<Taxonomy?> getTaxonomyById(String id) async {
-    final item = await _taxonomiesDao.getById(id);
+    final item = await _taxonomiesDao.getById(id) ?? await _taxonomiesDao.getByRemoteId(id);
     if (item == null) return null;
-    return _fromDbEntity(item);
+    return _fromDbEntityOrNull(item);
   }
 
   @override
   Future<List<Taxonomy>> getTaxonomiesByGroup(TaxonomyGroup group) async {
     final items = await _taxonomiesDao.getByGroup(group.value);
-    return items.map(_fromDbEntity).toList();
+    final out = <Taxonomy>[];
+    for (final item in items) {
+      final mapped = _fromDbEntityOrNull(item);
+      if (mapped != null) {
+        out.add(mapped);
+      }
+    }
+    return out;
   }
 
   @override
@@ -123,7 +144,14 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
   @override
   Future<List<Taxonomy>> searchTaxonomies(String query) async {
     final items = await _taxonomiesDao.search(query);
-    return items.map(_fromDbEntity).toList();
+    final out = <Taxonomy>[];
+    for (final item in items) {
+      final mapped = _fromDbEntityOrNull(item);
+      if (mapped != null) {
+        out.add(mapped);
+      }
+    }
+    return out;
   }
 
   @override
@@ -139,22 +167,34 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
     await _taxonomiesDao.upsertBatch(companions);
   }
 
-  Taxonomy _fromDbEntity(dynamic entity) {
+  Future<int> purgeUnsupportedGroups() async {
+    final groups = await _taxonomiesDao.getAllGroups();
+    var deleted = 0;
+    for (final group in groups) {
+      if (TaxonomyGroup.isValidGroup(group)) {
+        continue;
+      }
+      deleted += await _taxonomiesDao.deleteByGroup(group);
+    }
+    return deleted;
+  }
+
+  Taxonomy? _fromDbEntityOrNull(dynamic entity) {
     final normalizedGroupValue = TaxonomyGroup.normalizeValue(entity.group);
-    final resolvedGroup = TaxonomyGroup.fromString(normalizedGroupValue) ?? TaxonomyGroup.category;
+    final resolvedGroup = TaxonomyGroup.fromString(normalizedGroupValue);
+    if (resolvedGroup == null) {
+      return null;
+    }
+    final remoteId = TaxonomyDTO.extractRemoteId(entity.id);
 
     return Taxonomy(
-      id: entity.id,
+      id: remoteId,
       group: resolvedGroup,
       code: entity.code,
       label: entity.label,
-      labelEn: null,
       parentId: entity.parentId,
       sortOrder: entity.sortOrder,
       isActive: entity.isActive,
-      description: null,
-      color: null,
-      icon: null,
       metadata: const {},
       createdAt: entity.updatedAt,
       updatedAt: entity.updatedAt,

@@ -66,7 +66,7 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Future<Result<void>> clearCache() async {
     try {
       await localDataSource.clearCache();
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(CacheFailure('Failed to clear cache: $e', stackTrace));
     }

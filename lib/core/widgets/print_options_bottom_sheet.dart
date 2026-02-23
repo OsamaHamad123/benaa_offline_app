@@ -20,10 +20,7 @@ class PrintOptionsBottomSheet extends StatelessWidget {
   final List<Map<String, dynamic>>? sponsorships;
 
   const PrintOptionsBottomSheet({
-    super.key,
-    required this.beneficiaryId,
-    required this.fullName,
-    required this.nationalId,
+    required this.beneficiaryId, required this.fullName, required this.nationalId, super.key,
     this.phoneNumber,
     this.address,
     this.dateOfBirth,

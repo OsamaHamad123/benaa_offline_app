@@ -12,8 +12,7 @@ class DatabaseMaintenanceManager extends ConsumerStatefulWidget {
   final Widget child;
 
   const DatabaseMaintenanceManager({
-    super.key,
-    required this.child,
+    required this.child, super.key,
   });
 
   @override

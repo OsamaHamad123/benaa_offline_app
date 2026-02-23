@@ -43,7 +43,6 @@ class CardStatusIndicator extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r),
         border: Border.all(
           color: _isNew ? Colors.green.withOpacity(0.3) : Colors.blue.withOpacity(0.3),
-          width: 1,
         ),
       ),
       child: Row(

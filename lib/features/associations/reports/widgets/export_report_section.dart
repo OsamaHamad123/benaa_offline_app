@@ -6,7 +6,7 @@ import '../providers/associations_reports_provider.dart';
 class ExportReportSection extends StatelessWidget {
   final AssociationsStats stats;
 
-  const ExportReportSection({super.key, required this.stats});
+  const ExportReportSection({required this.stats, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +130,6 @@ class _ExportButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12.r),
           border: Border.all(
             color: color.withOpacity(0.3),
-            width: 1,
           ),
         ),
         child: Column(

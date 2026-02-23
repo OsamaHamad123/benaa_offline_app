@@ -8,10 +8,7 @@ class AssociationsStatsCard extends StatelessWidget {
   final int inactiveCount;
 
   const AssociationsStatsCard({
-    super.key,
-    required this.totalCount,
-    required this.activeCount,
-    required this.inactiveCount,
+    required this.totalCount, required this.activeCount, required this.inactiveCount, super.key,
   });
 
   @override

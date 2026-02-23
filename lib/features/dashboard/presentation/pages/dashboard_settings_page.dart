@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../theme/app_colors.dart';
 import '../providers/dashboard_settings_provider.dart';
 import '../utils/dashboard_colors.dart';
 import '../utils/dashboard_text_styles.dart';
@@ -176,7 +175,7 @@ class DashboardSettingsPage extends ConsumerWidget {
       title: Text(title, style: DashboardTextStyles.cardSubtitle),
       value: value,
       onChanged: onChanged,
-      activeColor: DashboardColors.success,
+      activeThumbColor: DashboardColors.success,
       contentPadding: EdgeInsets.zero,
     );
   }
@@ -238,7 +237,7 @@ class DashboardSettingsPage extends ConsumerWidget {
     };
 
     return DropdownButtonFormField<int>(
-      value: currentSeconds,
+      initialValue: currentSeconds,
       decoration: InputDecoration(
         labelText: 'فترة التحديث التلقائي',
         border: OutlineInputBorder(

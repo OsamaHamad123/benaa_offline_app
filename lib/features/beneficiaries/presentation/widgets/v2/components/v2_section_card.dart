@@ -10,10 +10,8 @@ class V2SectionCard extends StatelessWidget {
   final Color? color;
 
   const V2SectionCard({
-    super.key,
-    required this.title,
+    required this.title, required this.children, super.key,
     this.icon,
-    required this.children,
     this.padding,
     this.color,
   });
@@ -30,7 +28,6 @@ class V2SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: colorScheme.outlineVariant.withOpacity(0.5),
-          width: 1,
         ),
       ),
       child: Padding(

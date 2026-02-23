@@ -9,8 +9,7 @@ class AssociationsEmptyState extends StatelessWidget {
   final VoidCallback onAddPressed;
 
   const AssociationsEmptyState({
-    super.key,
-    required this.onAddPressed,
+    required this.onAddPressed, super.key,
   });
 
   @override

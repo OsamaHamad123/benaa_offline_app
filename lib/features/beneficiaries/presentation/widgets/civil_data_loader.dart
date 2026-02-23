@@ -8,9 +8,7 @@ class CivilDataLoaderButton extends StatelessWidget {
   final bool isLoading;
 
   const CivilDataLoaderButton({
-    super.key,
-    required this.onPressed,
-    required this.isLoading,
+    required this.onPressed, required this.isLoading, super.key,
   });
 
   @override
@@ -44,7 +42,7 @@ class CivilDataLoaderButton extends StatelessWidget {
 class CivilDataLoaderDialog extends StatefulWidget {
   final Function(String) onLoad;
 
-  const CivilDataLoaderDialog({super.key, required this.onLoad});
+  const CivilDataLoaderDialog({required this.onLoad, super.key});
 
   @override
   State<CivilDataLoaderDialog> createState() => _CivilDataLoaderDialogState();

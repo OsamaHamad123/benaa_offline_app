@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart' as path;
+import '../../../../core/widgets/app_async_state_view.dart';
 import '../../../beneficiaries/presentation/pages/v2_form_helpers/widgets/empty_state_widget.dart'
     as BeneficiaryEmpty; // ✅ Avoid conflict
 
@@ -24,8 +25,7 @@ class PendingAttachmentsSection extends StatefulWidget {
   });
 
   @override
-  State<PendingAttachmentsSection> createState() =>
-      _PendingAttachmentsSectionState();
+  State<PendingAttachmentsSection> createState() => _PendingAttachmentsSectionState();
 }
 
 class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
@@ -55,16 +55,22 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
-        Icon(Icons.attach_file_outlined, color: Colors.blueGrey, size: 22.sp),
+        Icon(
+          Icons.attach_file_outlined,
+          color: colorScheme.onSurfaceVariant,
+          size: 22.sp,
+        ),
         SizedBox(width: 10.w),
         Expanded(
           child: Text(
             'المرفقات${_pendingFiles.isNotEmpty ? ' (${_pendingFiles.length})' : ''}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey,
+                  color: colorScheme.onSurfaceVariant,
                 ),
           ),
         ),
@@ -74,7 +80,7 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
 
   Widget _buildContent(BuildContext context) {
     if (_isUploading) {
-      return _buildLoading();
+      return _buildLoading(context);
     }
 
     if (_pendingFiles.isEmpty) {
@@ -84,22 +90,10 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
     return _buildFilesList(context);
   }
 
-  Widget _buildLoading() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(32.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(strokeWidth: 3),
-            SizedBox(height: 12.h),
-            Text(
-              'جاري إضافة الملف...',
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildLoading(BuildContext context) {
+    return AppAsyncStateView.loading(
+      message: 'جاري إضافة الملف...',
+      padding: EdgeInsets.all(24.r),
     );
   }
 
@@ -152,13 +146,15 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
   }
 
   Future<void> _showAddOptions(BuildContext context) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: colorScheme.surface,
       isScrollControlled: true,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: SafeArea(
@@ -171,27 +167,26 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
                   width: 40.w,
                   height: 4.h,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),
                 SizedBox(height: 16.h),
                 Text(
                   'إضافة مرفق',
-                  style:
-                      TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 16.h),
                 ListTile(
                   leading: Container(
                     padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Icon(
                       Icons.camera_alt,
-                      color: Colors.blue,
+                      color: colorScheme.primary,
                       size: 24.sp,
                     ),
                   ),
@@ -207,12 +202,12 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
                   leading: Container(
                     padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: colorScheme.tertiary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Icon(
                       Icons.photo_library,
-                      color: Colors.green,
+                      color: colorScheme.tertiary,
                       size: 24.sp,
                     ),
                   ),
@@ -228,12 +223,12 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
                   leading: Container(
                     padding: EdgeInsets.all(8.r),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: colorScheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8.r),
                     ),
                     child: Icon(
                       Icons.picture_as_pdf,
-                      color: Colors.red,
+                      color: colorScheme.error,
                       size: 24.sp,
                     ),
                   ),
@@ -268,43 +263,17 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
       }
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Text(
-                    e.toString().contains('camera_access_denied')
-                        ? 'لا يوجد صلاحية للوصول إلى الكاميرا'
-                        : e.toString().contains('already_active')
-                            ? 'الكاميرا مشغولة بالفعل، أغلق التطبيق الآخر أولاً'
-                            : 'فشل فتح الكاميرا: ${e.toString()}',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        _showErrorSnackBar(
+          e.toString().contains('camera_access_denied')
+              ? 'لا يوجد صلاحية للوصول إلى الكاميرا'
+              : e.toString().contains('already_active')
+                  ? 'الكاميرا مشغولة بالفعل، أغلق التطبيق الآخر أولاً'
+                  : 'فشل فتح الكاميرا: ${e.toString()}',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                Expanded(child: Text('خطأ غير متوقع: ${e.toString()}')),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        _showErrorSnackBar('خطأ غير متوقع: ${e.toString()}');
       }
     }
   }
@@ -325,41 +294,15 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
       }
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Text(
-                    e.toString().contains('photo_access_denied')
-                        ? 'لا يوجد صلاحية للوصول إلى المعرض'
-                        : 'فشل فتح المعرض: ${e.toString()}',
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
+        _showErrorSnackBar(
+          e.toString().contains('photo_access_denied')
+              ? 'لا يوجد صلاحية للوصول إلى المعرض'
+              : 'فشل فتح المعرض: ${e.toString()}',
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                Expanded(child: Text('خطأ غير متوقع: ${e.toString()}')),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        _showErrorSnackBar('خطأ غير متوقع: ${e.toString()}');
       }
     }
   }
@@ -381,35 +324,11 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
       }
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                Expanded(child: Text('فشل اختيار الملف: ${e.toString()}')),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        _showErrorSnackBar('فشل اختيار الملف: ${e.toString()}');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.error, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                Expanded(child: Text('خطأ غير متوقع: ${e.toString()}')),
-              ],
-            ),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        _showErrorSnackBar('خطأ غير متوقع: ${e.toString()}');
       }
     }
   }
@@ -424,18 +343,7 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
 
       if (fileSize > maxSize) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.error, color: Colors.white, size: 20.sp),
-                  SizedBox(width: 12.w),
-                  const Text('حجم الملف يتجاوز 10 ميجابايت'),
-                ],
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
+          _showErrorSnackBar('حجم الملف يتجاوز 10 ميجابايت');
         }
         setState(() => _isUploading = false);
         return;
@@ -449,26 +357,12 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
       _notifyChanges();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20.sp),
-                SizedBox(width: 12.w),
-                const Text('✓ تمت إضافة الملف'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        _showSuccessSnackBar('✓ تمت إضافة الملف');
       }
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e'), backgroundColor: Colors.red),
-        );
+        _showErrorSnackBar('خطأ: $e');
       }
     }
   }
@@ -479,32 +373,52 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
     });
     _notifyChanges();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20.sp),
-            SizedBox(width: 12.w),
-            const Text('✓ تم حذف الملف'),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    _showSuccessSnackBar('✓ تم حذف الملف');
   }
 
   Future<void> _openFile(File file) async {
     if (await file.exists()) {
       await OpenFile.open(file.path);
     } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الملف غير موجود'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnackBar('الملف غير موجود');
     }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error, color: colorScheme.onError, size: 20.sp),
+            SizedBox(width: 12.w),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: colorScheme.error,
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: colorScheme.onPrimary, size: 20.sp),
+            SizedBox(width: 12.w),
+            Text(message),
+          ],
+        ),
+        backgroundColor: colorScheme.primary,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 }
 
@@ -522,6 +436,8 @@ class _PendingFileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -540,7 +456,7 @@ class _PendingFileCard extends StatelessWidget {
                     borderRadius: BorderRadius.vertical(
                       top: Radius.circular(12.r),
                     ),
-                    child: _buildThumbnail(),
+                    child: _buildThumbnail(context),
                   ),
                   // Delete button
                   Positioned(
@@ -551,11 +467,11 @@ class _PendingFileCard extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.all(3.r),
                         decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.9),
+                          color: colorScheme.error.withOpacity(0.9),
                           shape: BoxShape.circle,
-                          boxShadow: const [
+                          boxShadow: [
                             BoxShadow(
-                              color: Colors.black26,
+                              color: colorScheme.shadow.withOpacity(0.3),
                               blurRadius: 2,
                               offset: Offset(0, 1),
                             ),
@@ -563,7 +479,7 @@ class _PendingFileCard extends StatelessWidget {
                         ),
                         child: Icon(
                           Icons.close,
-                          color: Colors.white,
+                          color: colorScheme.onError,
                           size: 14.sp,
                         ),
                       ),
@@ -579,13 +495,13 @@ class _PendingFileCard extends StatelessWidget {
                         vertical: 1.h,
                       ),
                       decoration: BoxDecoration(
-                        color: _getTypeColor().withOpacity(0.85),
+                        color: _getTypeColor(context).withOpacity(0.85),
                         borderRadius: BorderRadius.circular(3.r),
                       ),
                       child: Text(
                         _getTypeLabel(),
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colorScheme.onInverseSurface,
                           fontSize: 8.sp,
                           fontWeight: FontWeight.bold,
                         ),
@@ -600,7 +516,7 @@ class _PendingFileCard extends StatelessWidget {
               height: 52.h,
               padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.vertical(
                   bottom: Radius.circular(12.r),
                 ),
@@ -627,7 +543,7 @@ class _PendingFileCard extends StatelessWidget {
                         Icon(
                           Icons.storage,
                           size: 9.sp,
-                          color: Colors.grey[600],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                         SizedBox(width: 3.w),
                         Expanded(
@@ -639,7 +555,7 @@ class _PendingFileCard extends StatelessWidget {
                                   _formatFileSize(snapshot.data!),
                                   style: TextStyle(
                                     fontSize: 9.sp,
-                                    color: Colors.grey[600],
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -649,7 +565,7 @@ class _PendingFileCard extends StatelessWidget {
                                 '...',
                                 style: TextStyle(
                                   fontSize: 9.sp,
-                                  color: Colors.grey[600],
+                                  color: colorScheme.onSurfaceVariant,
                                 ),
                               );
                             },
@@ -667,25 +583,26 @@ class _PendingFileCard extends StatelessWidget {
     );
   }
 
-  Widget _buildThumbnail() {
+  Widget _buildThumbnail(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (_isImage()) {
       return Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.grey[100],
+        color: colorScheme.surfaceContainerHigh,
         child: Image.file(
           file,
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (_, __, ___) =>
-              _buildIcon(Icons.broken_image, Colors.red),
+          errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, colorScheme.error),
         ),
       );
     } else if (_isPdf()) {
-      return _buildIcon(Icons.picture_as_pdf, Colors.red);
+      return _buildIcon(Icons.picture_as_pdf, colorScheme.error);
     } else {
-      return _buildIcon(Icons.insert_drive_file, Colors.grey);
+      return _buildIcon(Icons.insert_drive_file, colorScheme.onSurfaceVariant);
     }
   }
 
@@ -707,10 +624,11 @@ class _PendingFileCard extends StatelessWidget {
     return path.extension(file.path).toLowerCase() == '.pdf';
   }
 
-  Color _getTypeColor() {
-    if (_isImage()) return Colors.green;
-    if (_isPdf()) return Colors.red;
-    return Colors.grey;
+  Color _getTypeColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (_isImage()) return colorScheme.tertiary;
+    if (_isPdf()) return colorScheme.error;
+    return colorScheme.onSurfaceVariant;
   }
 
   String _getTypeLabel() {

@@ -28,7 +28,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 150,
             active: 100,
             paused: 30,
@@ -52,7 +52,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 100,
             active: 80,
             paused: 15,
@@ -73,7 +73,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 100,
             active: 80,
             paused: 15,
@@ -90,7 +90,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 100,
             active: 75,
             paused: 15,
@@ -110,7 +110,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 0,
             active: 0,
             paused: 0,
@@ -129,7 +129,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 200,
             active: 100,
             paused: 60,
@@ -153,7 +153,7 @@ void main() {
       // Act - Use larger screen
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 150,
             active: 100,
             paused: 30,
@@ -171,7 +171,7 @@ void main() {
       // Act - Use mobile screen size
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 150,
             active: 100,
             paused: 30,
@@ -189,7 +189,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 100,
             active: 80,
             paused: 15,
@@ -207,7 +207,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 100,
             active: 80,
             paused: 15,
@@ -231,7 +231,7 @@ void main() {
       // Act
       await tester.pumpWidget(
         buildTestWidget(
-          StatsDashboardWidget(
+          const StatsDashboardWidget(
             total: 100,
             active: 80,
             paused: 15,

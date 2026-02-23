@@ -16,8 +16,7 @@ class SwipeableCard extends StatelessWidget {
   final double dismissThreshold;
 
   const SwipeableCard({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onSwipeLeft,
     this.onSwipeRight,
     this.leftActionColor = Colors.green,
@@ -109,9 +108,7 @@ class SwipeableListItem extends StatelessWidget {
   final double actionWidth;
 
   const SwipeableListItem({
-    super.key,
-    required this.child,
-    required this.actions,
+    required this.child, required this.actions, super.key,
     this.actionWidth = 80.0,
   });
 

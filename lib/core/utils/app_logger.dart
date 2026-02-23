@@ -21,7 +21,7 @@ class AppLogger {
   static const bool _isDevelopment = true;
 
   /// Minimum log level (debug, info, warning, error)
-  static final Level _logLevel = _isDevelopment ? Level.debug : Level.info;
+  static const Level _logLevel = _isDevelopment ? Level.debug : Level.info;
 
   /// Enable/disable cache logging (verbose in development)
   static const bool _enableCacheLogging = false; // Set to false to reduce noise
@@ -34,10 +34,6 @@ class AppLogger {
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
       methodCount: 0, // Reduce stack trace lines (was 2)
-      errorMethodCount: 8,
-      lineLength: 120,
-      colors: true,
-      printEmojis: true,
       printTime: false, // Disable time in production (less noise)
     ),
     level: _logLevel,

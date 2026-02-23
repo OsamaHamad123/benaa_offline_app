@@ -7,7 +7,6 @@ import 'trend_indicator.dart';
 import '../../../../theme/app_colors.dart';
 import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
-import '../utils/dashboard_haptics.dart'; // ✅ Dashboard Haptics
 import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 import '../../../../core/utils/haptic_patterns.dart';
 
@@ -23,11 +22,11 @@ class StatCard extends StatelessWidget {
   final int? previousValue; // Previous value for comparison
 
   const StatCard({
-    super.key,
     required this.title,
     required this.value,
     required this.icon,
     required this.color,
+    super.key,
     this.onTap,
     this.subtitle,
     this.trendPercentage,
@@ -80,7 +79,6 @@ class StatCard extends StatelessWidget {
                   // Treat very small heights or very narrow widths as "compact" cases.
                   if (constraints.maxHeight < 110 || constraints.maxWidth < 80) {
                     return Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Container(
                           padding: EdgeInsets.all(8.w),
@@ -98,7 +96,6 @@ class StatCard extends StatelessWidget {
                             children: [
                               // Value (scale down if needed)
                               Flexible(
-                                fit: FlexFit.loose,
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
                                   alignment: Alignment.centerLeft,
@@ -113,7 +110,6 @@ class StatCard extends StatelessWidget {
                               ),
                               SizedBox(height: DashboardSpacing.tiny),
                               Flexible(
-                                fit: FlexFit.loose,
                                 child: Text(
                                   title,
                                   style: DashboardTextStyles.statLabel.copyWith(
@@ -180,7 +176,6 @@ class StatCard extends StatelessWidget {
                       SizedBox(height: DashboardSpacing.tiny),
                       // Use FittedBox to scale the numeric value down in very tight constraints
                       Flexible(
-                        fit: FlexFit.loose,
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
@@ -197,7 +192,6 @@ class StatCard extends StatelessWidget {
                       ),
                       SizedBox(height: DashboardSpacing.tiny),
                       Flexible(
-                        fit: FlexFit.loose,
                         child: Text(
                           title,
                           style: DashboardTextStyles.statLabel.copyWith(
@@ -251,11 +245,11 @@ class StatisticsGrid extends ConsumerWidget {
   final VoidCallback? onPendingSyncTap;
 
   const StatisticsGrid({
-    super.key,
     required this.totalBeneficiaries,
     required this.activeBeneficiaries,
     required this.pendingSync,
     required this.completedVisitsToday,
+    super.key,
     this.onBeneficiariesTap,
     this.onPendingSyncTap,
   });
@@ -265,9 +259,6 @@ class StatisticsGrid extends ConsumerWidget {
     // Use ResponsiveUtils for perfect responsive layout
     final crossAxisCount = ResponsiveUtils.getCrossAxisCount(
       context,
-      mobile: 2,
-      tablet: 3,
-      desktop: 4,
     );
 
     final childAspectRatio = ResponsiveUtils.getResponsiveValue(

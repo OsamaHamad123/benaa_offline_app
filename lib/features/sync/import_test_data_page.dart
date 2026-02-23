@@ -55,7 +55,7 @@ class _ImportTestDataPageState extends ConsumerState<ImportTestDataPage> {
 
           // تحويل البيانات مباشرة إلى Companion للحفظ
           final dataModel = BeneficiaryDataModel.fromJson(row);
-          final companion = dataModel.toDriftCompanion(isNew: true);
+          final companion = dataModel.toDriftCompanion();
 
           // حفظ في قاعدة البيانات
           await db.beneficiariesDao.insertBeneficiary(companion);

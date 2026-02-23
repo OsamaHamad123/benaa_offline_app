@@ -22,10 +22,7 @@ class SyncRequestDto {
   final String userId;
 
   SyncRequestDto({
-    this.lastSyncTime,
-    required this.pendingChanges,
-    required this.deviceInfo,
-    required this.userId,
+    required this.pendingChanges, required this.deviceInfo, required this.userId, this.lastSyncTime,
   });
 
   factory SyncRequestDto.fromJson(Map<String, dynamic> json) =>
@@ -136,10 +133,7 @@ class SyncResponseDto {
 
   SyncResponseDto({
     required this.success,
-    this.message,
-    required this.updatedData,
-    required this.deletedIds,
-    required this.serverTimestamp,
+    required this.updatedData, required this.deletedIds, required this.serverTimestamp, this.message,
     this.failedChanges,
     this.stats,
   });

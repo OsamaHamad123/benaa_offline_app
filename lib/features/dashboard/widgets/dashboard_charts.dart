@@ -96,7 +96,6 @@ class BeneficiariesGrowthChart extends ConsumerWidget {
                   child: LineChart(
                     LineChartData(
                       gridData: FlGridData(
-                        show: true,
                         drawVerticalLine: false,
                         horizontalInterval: 10,
                         getDrawingHorizontalLine: (value) {
@@ -107,12 +106,11 @@ class BeneficiariesGrowthChart extends ConsumerWidget {
                         },
                       ),
                       titlesData: FlTitlesData(
-                        show: true,
                         rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
+                          
                         ),
                         topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
+                          
                         ),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
@@ -177,7 +175,6 @@ class BeneficiariesGrowthChart extends ConsumerWidget {
                           barWidth: 3,
                           isStrokeCapRound: true,
                           dotData: FlDotData(
-                            show: true,
                             getDotPainter: (spot, percent, barData, index) {
                               return FlDotCirclePainter(
                                 radius: 4,

@@ -36,7 +36,7 @@ bool _enableRebuildLogging = false;
 class RebuildLogger extends StatefulWidget {
   final String name;
   final Widget child;
-  const RebuildLogger({super.key, required this.name, required this.child});
+  const RebuildLogger({required this.name, required this.child, super.key});
 
   @override
   State<RebuildLogger> createState() => _RebuildLoggerState();
@@ -81,11 +81,10 @@ class ZeroLagFamilyDialog extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onSave;
 
   const ZeroLagFamilyDialog({
-    super.key,
+    required this.onSave, super.key,
     this.existingMember,
     this.isDeceased = false,
     this.presetDeceasedType,
-    required this.onSave,
   });
 
   @override
@@ -306,7 +305,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                               )
                             : Row(
                                 children: [
-                                  Icon(Icons.check_circle, color: Colors.green),
+                                  const Icon(Icons.check_circle, color: Colors.green),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
@@ -383,7 +382,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     if (ctx == null) return;
 
     // Instant scroll without delay for better responsiveness
-    Scrollable.ensureVisible(ctx, duration: Duration.zero, alignment: 0.12);
+    Scrollable.ensureVisible(ctx, alignment: 0.12);
   }
 
   /// 🔍 Fetch from Civil Registry
@@ -456,7 +455,6 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-        allowMultiple: false,
       );
 
       if (result != null && result.files.isNotEmpty) {
@@ -927,11 +925,7 @@ class ValueListenableBuilder3<A, B, C> extends StatelessWidget {
   final Widget? child;
 
   const ValueListenableBuilder3({
-    super.key,
-    required this.first,
-    required this.second,
-    required this.third,
-    required this.builder,
+    required this.first, required this.second, required this.third, required this.builder, super.key,
     this.child,
   });
 

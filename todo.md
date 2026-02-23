@@ -1,5 +1,68 @@
 الخطة الشاملة (مراحل تنفيذ)
 
+## خارطة طريق 2026-02-23 (إضافة مستفيد + التصنيفات)
+
+### المرحلة 0 — إيقاف النزيف (Hotfix)
+
+- [x] حماية تهيئة شاشة `BeneficiaryFormPageV3` بـ `try/catch` حتى لا ينهار التطبيق عند أي Exception.
+- [x] إصلاح mapping `aid-statuses` ليُحفظ ضمن `assistance_type` بدل `beneficiary_status`.
+- [x] تنظيف قاعدة البيانات من groups غير المدعومة في التطبيق بعد كل sync.
+
+### المرحلة 1 — تثبيت الربط الإلزامي للفورم
+
+- [x] ربط حقل `نوع المساعدة` (`assistance_type`) داخل نموذج إضافة مستفيد.
+- [x] إضافة `assistance_type` في تحقق `missing taxonomy bindings` عند فتح النموذج.
+- [x] حفظ/استرجاع قيمة `assistance_type` داخل المسودات (auto/manual draft).
+
+### المرحلة 2 — تدقيق التغطية Server ↔ Forms
+
+- [x] لوحة تشخيص تعرض: مجموعات السيرفر، المربوط محليًا، الناقص محليًا، وslugs غير المعروفة.
+- [x] زر نسخ تقرير تشخيص جاهز للإرسال لفريق backend.
+- [x] إضافة تقرير مطابقة نهائي: `group -> form fields` لكل شاشة (إضافة/تعديل/مراجعة).
+
+### المرحلة 3 — تحليل الكراش عبر الطبقات
+
+- [x] طبقة العرض: مراجعة كل `firstWhere`/`!`/async lifecycle في مسار فتح فورم إضافة مستفيد.
+- [x] طبقة المنطق: مراجعة `mapper/data-handler/draft loader` لقيم taxonomy غير المتوقعة.
+- [x] طبقة البيانات: مراجعة resolver للهوية المحلية/السيرفر (local/server id) لمسارات التحميل.
+- [x] طبقة البنية: إضافة logging موحد عند فشل فتح الفورم مع `context + stack`.
+
+### المرحلة 4 — استيعاب كل تصنيفات السيرفر (Dynamic Categories)
+
+- [x] إنشاء طبقة `dynamic taxonomy groups` (مثل `fird`) لتتبع slugs غير المدرجة في enum الحالي.
+- [x] حفظ جميع slugs القادمة من السيرفر (حتى غير المدعومة) محليًا دون كسر الفورم الحالي.
+- [x] بناء شاشة إدارة/عرض لهذه المجموعات لتحديد مكان استخدامها في الفورمات.
+- [x] تعريف policy واضحة: أي مجموعة جديدة من السيرفر تُصنّف تلقائيًا إلى:
+  - `mapped-to-existing-field`
+  - `new-field-required`
+  - `ignored-not-used`
+
+### المرحلة 5 — توسيع الفورمات بناءً على بيانات السيرفر
+
+- [x] إضافة حقول taxonomy جديدة في `Add Beneficiary` حسب أولويات العمل (category/section/visit/disability/income...).
+- [x] توحيد استخدام taxonomy في الفورمات الأخرى (تفاصيل مستفيد، زيارات، كفالات) بنفس الgroup source. (تم إنجاز مسار الزيارات في التصدير/العرض، وتحديث labels/خيارات تفاصيل المستفيد والكفالات مع fallback متوافق)
+- [x] تحديث الحفظ/التحميل/المراجعة/التصدير لاحتواء الحقول الجديدة.
+
+### المرحلة 6 — الاختبارات والحوكمة
+
+- [x] Unit tests لسيناريوهات parser/mapping (خاصة slugs الجديدة).
+- [x] Widget tests لفتح الفورم بدون crash حتى مع taxonomy ناقصة/غير متوقعة.
+- [x] Integration smoke test: sync -> open add beneficiary -> save draft -> reopen.
+- [x] Regression gate في CI يمنع دمج أي كود يخفض coverage الربط الإلزامي.
+
+### المرحلة 7 — التنسيق مع Backend (رابط التوثيق الرسمي)
+
+- [x] مراجعة دورية للـ contract وفق: https://palestine.benaadev.org/api-documentation.html
+- [x] توحيد mapping `slug -> appGroup` كعقد رسمي مشترك مع backend.
+- [x] اعتماد endpoint metadata لتعريف المجموعات الجديدة بدل hardcode داخل التطبيق.
+
+### مخرجات مستهدفة (Definition of Done)
+
+- [ ] شاشة إضافة مستفيد تفتح دائمًا بدون crash.
+- [ ] كل الحقول المربوطة في الفورم لديها taxonomy محلية محمّلة.
+- [ ] أي taxonomy من السيرفر إما مربوطة، أو مصنفة كـ dynamic، أو موثقة كغير مستخدمة.
+- [ ] تقارير التشخيص قابلة للتصدير والإرسال وتكفي لتحديد المسؤولية (App vs Backend).
+
 ## حالة التنفيذ (محدث)
 
 - ✅ المرحلة 1: Contract Lock **مكتملة**
@@ -51,6 +114,8 @@
 ### آخر تحقق (Validation)
 
 - ✅ `flutter test test/features/sync/data/datasources/file_id_remote_datasource_test.dart` مرّ بنجاح.
+- ✅ `flutter test test/core/sync/data/datasources/remote_sync_datasource_test.dart` مرّ بنجاح (2/2).
+- ✅ `flutter analyze lib/core/sync` اكتمل بدون أي مشاكل (No issues found).
 - ✅ فحص الأخطاء على ملفات `sync` و`file-id` و`mobile_sync_page` بدون أخطاء.
 
 ### تحسينات إضافية (دفعة واحدة) - مكتملة
@@ -213,3 +278,83 @@
 4. **E** أخيرًا (تثبيت ضد الرجوع Regression).
 
 > ملاحظة: هذه الخطة تحافظ على الهيكل الحالي (Riverpod + Drift + helpers) ولا تتطلب إعادة بناء معمارية كاملة؛ فقط توحيد نقطة الحقيقة للهوية وربط كل UI بها.
+
+---
+
+## تقرير الفجوات النهائي مع API (2026-02-21)
+
+### تم إغلاقه (متوافق الآن)
+
+- ✅ رفع المرفقات في مسار المزامنة الأساسي صار متوافقًا مع:
+  - `POST /api/mobile/database/attachments`
+  - الحقول: `person_identity_number` + `file_type` (مع fallback محسّن)
+- ✅ حذف المرفقات صار على:
+  - `DELETE /api/mobile/database/attachments/{id}`
+- ✅ Taxonomy CRUD في مصدر taxonomy الحديث أصبح مبنيًا على مسارات categories الديناميكية حسب الوثائق.
+
+### الفجوات المتبقية (مرتبة بالأولوية)
+
+#### P0 (حرجة قبل الإطلاق)
+
+1. **وجود مسار مزامنة قديم يعتمد `/api/v1`** في:
+
+- `lib/core/sync/data/datasources/remote_sync_datasource.dart`
+- أمثلة حالية: taxonomies/beneficiaries/visits/sync-status/timestamp
+- **الخطر:** سلوك مختلف بين مسارين للمزامنة، واحتمال استدعاء endpoints غير موثقة في `api-doc.html`.
+
+2. **تعارض معماري محتمل بين محركي sync** (المسار الحديث مقابل المسار القديم).
+
+- **الخطر:** جزء من التطبيق يرسل على contract مختلف عن المسار المعتمد.
+
+#### P1 (عالية)
+
+3. **TODOs غير مكتملة في قلب المزامنة** (update/delete/push mapping) في:
+
+- `lib/core/sync/new_sync_manager.dart`
+- `lib/core/sync/data/repositories/sync_repository_impl.dart`
+- `lib/core/sync/sync_manager.dart`
+- **الخطر:** تغطية ناقصة لحالات التحديث/الحذف أو push لبعض الكيانات.
+
+4. **local queue handling غير مكتمل بالكامل** في:
+
+- `lib/core/sync/data/datasources/local_sync_datasource.dart`
+- **الخطر:** عناصر معلقة قد لا تُدار بدقة في كل المسارات.
+
+#### P2 (متوسطة)
+
+5. **تحسينات observability إضافية** (ربط كل خطأ endpoint+payload بشكل موحد عبر كل managers).
+
+6. **زيادة اختبارات الانحدار** لتغطية المسار القديم وإثبات إيقافه/توحيده نهائيًا.
+
+---
+
+## خطة تنفيذ عملية مختصرة (Action Checklist)
+
+### المرحلة A — توحيد مسار المزامنة (P0)
+
+- [x] حصر كل استدعاءات `/api/v1` داخل `lib/core/sync/**`.
+- [x] نقلها إلى `/api/mobile/**` حسب العقد الرسمي (في `remote_sync_datasource`).
+- [x] إيقاف أي fallback route قديم غير موثق في datasource المستهدف.
+
+### المرحلة B — حسم مصدر الحقيقة للمزامنة (P0)
+
+- [x] اعتماد محرك sync الرسمي في واجهات sync (`sync_widgets` و`test_sync_page`) عبر `MobileSyncService`.
+- [x] عزل ربط المسار القديم من واجهات المستخدم الأساسية مع إبقاء التوافق الخلفي لباقي المسارات الداخلية.
+
+### المرحلة C — إغلاق TODOs الحرجة (P1)
+
+- [x] تنفيذ update/delete الناقصة الأساسية في `new_sync_manager.dart` (visit/attachment/taxonomy + deletion parser).
+- [x] إكمال push mapping في `sync_repository_impl.dart` بدل success placeholder.
+- [x] توحيد queue handling في `local_sync_datasource.dart` (aliases + remove + clear + saveBeneficiary).
+
+### المرحلة D — التحقق النهائي (P1/P2)
+
+- [x] تشغيل اختبارات sync المستهدفة + إضافة حالتين regression للمسارات التي كانت `/api/v1`.
+- [x] تشغيل analyze موجّه على `lib/core/sync/**` والتأكد من عدم وجود أخطاء مرتبطة بالتعديلات (lint/info فقط).
+
+---
+
+## القرار التنفيذي الحالي
+
+- الحالة الآن: **جاهزة للاعتماد التشغيلي** لمسار sync المستهدف بعد إغلاق A/B/C/D.
+- المتبقي غير الحرج: **تحسينات lint/observability اختيارية** بدون تأثير وظيفي مباشر على العقد الحالي.

@@ -124,9 +124,7 @@ class DarkModeToggle extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   const DarkModeToggle({
-    super.key,
-    required this.isDark,
-    required this.onChanged,
+    required this.isDark, required this.onChanged, super.key,
   });
 
   @override

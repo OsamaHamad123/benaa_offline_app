@@ -16,8 +16,7 @@ class QuickActionsMenu extends StatefulWidget {
   final String? tooltip;
 
   const QuickActionsMenu({
-    super.key,
-    required this.actions,
+    required this.actions, super.key,
     this.mainIcon = Icons.add,
     this.backgroundColor,
     this.foregroundColor,

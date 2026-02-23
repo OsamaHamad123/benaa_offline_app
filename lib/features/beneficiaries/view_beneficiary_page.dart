@@ -9,18 +9,73 @@ import '../../core/widgets/beneficiary/visit_card.dart';
 import '../../data/db/drift_database.dart';
 import '../../features/visits/presentation/pages/record_visit_page_enhanced.dart';
 import '../../features/visits/presentation/providers/visit_providers.dart';
+import '../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../attachments/presentation/widgets/attachments_section_enhanced.dart';
 import '../../core/design_system/app_animations.dart';
 
 class ViewBeneficiaryPage extends ConsumerWidget {
   final String beneficiaryId;
 
-  const ViewBeneficiaryPage({super.key, required this.beneficiaryId});
+  const ViewBeneficiaryPage({required this.beneficiaryId, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final database = ref.watch(core_providers.databaseProvider);
     final intId = int.tryParse(beneficiaryId);
+    final sectionTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section));
+    final governorateTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.governorate));
+    final maritalTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.maritalStatus));
+    final displacementTaxonomiesAsync =
+        ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.displacementStatus));
+    final housingTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.housingStatus));
+    final educationTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.educationLevel));
+    final healthTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.healthStatus));
+
+    final sectionTaxonomies = sectionTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final governorateTaxonomies = governorateTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final maritalTaxonomies = maritalTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final displacementTaxonomies = displacementTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final housingTaxonomies = housingTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final educationTaxonomies = educationTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final healthTaxonomies = healthTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final hasTaxonomyLoading = (sectionTaxonomiesAsync.isLoading && !sectionTaxonomiesAsync.hasValue) ||
+        (governorateTaxonomiesAsync.isLoading && !governorateTaxonomiesAsync.hasValue) ||
+        (maritalTaxonomiesAsync.isLoading && !maritalTaxonomiesAsync.hasValue) ||
+        (displacementTaxonomiesAsync.isLoading && !displacementTaxonomiesAsync.hasValue) ||
+        (housingTaxonomiesAsync.isLoading && !housingTaxonomiesAsync.hasValue) ||
+        (educationTaxonomiesAsync.isLoading && !educationTaxonomiesAsync.hasValue) ||
+        (healthTaxonomiesAsync.isLoading && !healthTaxonomiesAsync.hasValue);
+    final hasTaxonomyGap = !hasTaxonomyLoading &&
+        (sectionTaxonomies.isEmpty ||
+            governorateTaxonomies.isEmpty ||
+            maritalTaxonomies.isEmpty ||
+            displacementTaxonomies.isEmpty ||
+            housingTaxonomies.isEmpty ||
+            educationTaxonomies.isEmpty ||
+            healthTaxonomies.isEmpty);
 
     if (intId == null) {
       return Scaffold(
@@ -145,14 +200,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       Hero(
                         tag: 'beneficiary_avatar_$beneficiaryId',
                         child: ScaleTransitionWidget(
-                          duration: AppDurations.normal,
                           child: CircleAvatar(
                             radius: 50.r,
                             backgroundColor: categoryColor.withOpacity(0.2),
                             child: Icon(
-                              beneficiary.gender == 1
-                                  ? Icons.person
-                                  : Icons.person_outline,
+                              beneficiary.gender == 1 ? Icons.person : Icons.person_outline,
                               size: 60.sp,
                               color: categoryColor,
                             ),
@@ -162,10 +214,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       SizedBox(height: 16.h),
                       Text(
                         beneficiary.fullName,
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 4.h),
@@ -201,7 +250,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                             ),
                             SizedBox(width: 8.w),
                             Text(
-                              _getCategoryLabel(beneficiary.sectionId),
+                              _resolveTaxonomyLabel(
+                                options: sectionTaxonomies,
+                                code: beneficiary.sectionId?.toString(),
+                                fallback: _getCategoryLabel(beneficiary.sectionId),
+                              ),
                               style: TextStyle(
                                 color: categoryColor,
                                 fontWeight: FontWeight.bold,
@@ -215,6 +268,22 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   ),
                 ),
               ),
+              if (hasTaxonomyLoading) ...[
+                SizedBox(height: 12.h),
+                _buildTaxonomyStateBanner(
+                  context,
+                  icon: Icons.hourglass_bottom,
+                  message: 'جاري تحميل بيانات التصنيفات...',
+                ),
+              ],
+              if (hasTaxonomyGap) ...[
+                SizedBox(height: 12.h),
+                _buildTaxonomyStateBanner(
+                  context,
+                  icon: Icons.info_outline,
+                  message: 'بعض التصنيفات غير متوفرة حالياً، يتم عرض قيم متوافقة مؤقتاً.',
+                ),
+              ],
               SizedBox(height: 16.h),
 
               // Basic Info Section
@@ -238,7 +307,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                     InfoRow(
                       icon: Icons.location_on,
                       label: 'المحافظة',
-                      value: beneficiary.province?.toString() ?? 'غير محدد',
+                      value: _resolveTaxonomyLabel(
+                        options: governorateTaxonomies,
+                        code: beneficiary.province?.toString(),
+                        fallback: _legacyFallbackLabel(beneficiary.province?.toString()),
+                      ),
                     ),
                     const Divider(height: 1),
                     InfoRow(
@@ -250,7 +323,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                     InfoRow(
                       icon: Icons.category,
                       label: 'الفئة',
-                      value: _getCategoryLabel(beneficiary.sectionId),
+                      value: _resolveTaxonomyLabel(
+                        options: sectionTaxonomies,
+                        code: beneficiary.sectionId?.toString(),
+                        fallback: _getCategoryLabel(beneficiary.sectionId),
+                      ),
                     ),
                     if (beneficiary.birthDate != null) ...[
                       const Divider(height: 1),
@@ -285,12 +362,9 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               SizedBox(height: 16.h),
 
               // Family Info Section
-              if ((beneficiary.fatherName != null &&
-                      beneficiary.fatherName!.isNotEmpty) ||
-                  (beneficiary.grandFatherName != null &&
-                      beneficiary.grandFatherName!.isNotEmpty) ||
-                  (beneficiary.familyName != null &&
-                      beneficiary.familyName!.isNotEmpty) ||
+              if ((beneficiary.fatherName != null && beneficiary.fatherName!.isNotEmpty) ||
+                  (beneficiary.grandFatherName != null && beneficiary.grandFatherName!.isNotEmpty) ||
+                  (beneficiary.familyName != null && beneficiary.familyName!.isNotEmpty) ||
                   beneficiary.maritalStatus != null ||
                   beneficiary.numberOfMales != null ||
                   beneficiary.numberOfFemales != null) ...[
@@ -299,8 +373,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                 Card(
                   child: Column(
                     children: [
-                      if (beneficiary.fatherName != null &&
-                          beneficiary.fatherName!.isNotEmpty) ...[
+                      if (beneficiary.fatherName != null && beneficiary.fatherName!.isNotEmpty) ...[
                         InfoRow(
                           icon: Icons.person,
                           label: 'اسم الأب',
@@ -308,8 +381,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         ),
                         const Divider(height: 1),
                       ],
-                      if (beneficiary.grandFatherName != null &&
-                          beneficiary.grandFatherName!.isNotEmpty) ...[
+                      if (beneficiary.grandFatherName != null && beneficiary.grandFatherName!.isNotEmpty) ...[
                         InfoRow(
                           icon: Icons.person_outline,
                           label: 'اسم الجد',
@@ -317,8 +389,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         ),
                         const Divider(height: 1),
                       ],
-                      if (beneficiary.familyName != null &&
-                          beneficiary.familyName!.isNotEmpty) ...[
+                      if (beneficiary.familyName != null && beneficiary.familyName!.isNotEmpty) ...[
                         InfoRow(
                           icon: Icons.family_restroom,
                           label: 'اسم العائلة',
@@ -326,13 +397,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         ),
                         const Divider(height: 1),
                       ],
-                      if (beneficiary.numberOfMales != null ||
-                          beneficiary.numberOfFemales != null) ...[
+                      if (beneficiary.numberOfMales != null || beneficiary.numberOfFemales != null) ...[
                         InfoRow(
                           icon: Icons.family_restroom,
                           label: 'عدد أفراد الأسرة',
-                          value:
-                              '${(beneficiary.numberOfMales ?? 0) + (beneficiary.numberOfFemales ?? 0)} أفراد',
+                          value: '${(beneficiary.numberOfMales ?? 0) + (beneficiary.numberOfFemales ?? 0)} أفراد',
                         ),
                         const Divider(height: 1),
                       ],
@@ -356,8 +425,12 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         InfoRow(
                           icon: Icons.favorite,
                           label: 'الحالة الاجتماعية',
-                          value: _getMaritalStatusLabel(
-                            beneficiary.maritalStatus,
+                          value: _resolveTaxonomyLabel(
+                            options: maritalTaxonomies,
+                            code: beneficiary.maritalStatus?.toString(),
+                            fallback: _getMaritalStatusLabel(
+                              beneficiary.maritalStatus,
+                            ),
                           ),
                         ),
                       ],
@@ -368,8 +441,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               ],
 
               // Displacement & Housing Section
-              if ((beneficiary.currentAddress != null &&
-                      beneficiary.currentAddress!.isNotEmpty) ||
+              if ((beneficiary.currentAddress != null && beneficiary.currentAddress!.isNotEmpty) ||
                   (beneficiary.addressBeforeDisplacement != null &&
                       beneficiary.addressBeforeDisplacement!.isNotEmpty) ||
                   beneficiary.displacementStatus != null ||
@@ -379,8 +451,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                 Card(
                   child: Column(
                     children: [
-                      if (beneficiary.currentAddress != null &&
-                          beneficiary.currentAddress!.isNotEmpty) ...[
+                      if (beneficiary.currentAddress != null && beneficiary.currentAddress!.isNotEmpty) ...[
                         InfoRow(
                           icon: Icons.home,
                           label: 'العنوان الحالي',
@@ -389,8 +460,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         const Divider(height: 1),
                       ],
                       if (beneficiary.addressBeforeDisplacement != null &&
-                          beneficiary
-                              .addressBeforeDisplacement!.isNotEmpty) ...[
+                          beneficiary.addressBeforeDisplacement!.isNotEmpty) ...[
                         InfoRow(
                           icon: Icons.location_city,
                           label: 'العنوان قبل النزوح',
@@ -402,7 +472,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         InfoRow(
                           icon: Icons.move_down,
                           label: 'حالة النزوح',
-                          value: 'كود: ${beneficiary.displacementStatus}',
+                          value: _resolveTaxonomyLabel(
+                            options: displacementTaxonomies,
+                            code: beneficiary.displacementStatus?.toString(),
+                            fallback: _legacyFallbackLabel(beneficiary.displacementStatus?.toString()),
+                          ),
                         ),
                         const Divider(height: 1),
                       ],
@@ -410,7 +484,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         InfoRow(
                           icon: Icons.house,
                           label: 'حالة السكن',
-                          value: 'كود: ${beneficiary.housingStatus}',
+                          value: _resolveTaxonomyLabel(
+                            options: housingTaxonomies,
+                            code: beneficiary.housingStatus?.toString(),
+                            fallback: _legacyFallbackLabel(beneficiary.housingStatus?.toString()),
+                          ),
                         ),
                       ],
                     ],
@@ -423,8 +501,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
               if (beneficiary.academicQualification != null ||
                   beneficiary.healthStatus != null ||
                   (beneficiary.numberOfIndividualsWithChronicDiseases != null &&
-                      beneficiary.numberOfIndividualsWithChronicDiseases! >
-                          0) ||
+                      beneficiary.numberOfIndividualsWithChronicDiseases! > 0) ||
                   (beneficiary.numberOfPeopleWithSpecialNeeds != null &&
                       beneficiary.numberOfPeopleWithSpecialNeeds! > 0)) ...[
                 _buildSectionTitle(context, 'التعليم والصحة'),
@@ -436,8 +513,12 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         InfoRow(
                           icon: Icons.school,
                           label: 'المستوى التعليمي',
-                          value: _getEducationLabel(
-                            beneficiary.academicQualification,
+                          value: _resolveTaxonomyLabel(
+                            options: educationTaxonomies,
+                            code: beneficiary.academicQualification?.toString(),
+                            fallback: _getEducationLabel(
+                              beneficiary.academicQualification,
+                            ),
                           ),
                         ),
                         const Divider(height: 1),
@@ -446,21 +527,22 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         InfoRow(
                           icon: Icons.health_and_safety,
                           label: 'الحالة الصحية',
-                          value: _getHealthStatusLabel(
-                            beneficiary.healthStatus,
+                          value: _resolveTaxonomyLabel(
+                            options: healthTaxonomies,
+                            code: beneficiary.healthStatus?.toString(),
+                            fallback: _getHealthStatusLabel(
+                              beneficiary.healthStatus,
+                            ),
                           ),
                         ),
                         const Divider(height: 1),
                       ],
-                      if (beneficiary.numberOfIndividualsWithChronicDiseases !=
-                              null &&
-                          beneficiary.numberOfIndividualsWithChronicDiseases! >
-                              0) ...[
+                      if (beneficiary.numberOfIndividualsWithChronicDiseases != null &&
+                          beneficiary.numberOfIndividualsWithChronicDiseases! > 0) ...[
                         InfoRow(
                           icon: Icons.medical_services,
                           label: 'عدد الأمراض المزمنة',
-                          value:
-                              '${beneficiary.numberOfIndividualsWithChronicDiseases}',
+                          value: '${beneficiary.numberOfIndividualsWithChronicDiseases}',
                         ),
                         const Divider(height: 1),
                       ],
@@ -469,8 +551,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         InfoRow(
                           icon: Icons.accessible_forward,
                           label: 'ذوي الاحتياجات الخاصة',
-                          value:
-                              'يوجد ${beneficiary.numberOfPeopleWithSpecialNeeds} أفراد',
+                          value: 'يوجد ${beneficiary.numberOfPeopleWithSpecialNeeds} أفراد',
                         ),
                       ],
                     ],
@@ -500,17 +581,13 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                     InfoRow(
                       icon: Icons.access_time,
                       label: 'تاريخ الإنشاء',
-                      value: beneficiary.createdAt != null
-                          ? _formatDateTime(beneficiary.createdAt!)
-                          : 'غير محدد',
+                      value: beneficiary.createdAt != null ? _formatDateTime(beneficiary.createdAt!) : 'غير محدد',
                     ),
                     const Divider(height: 1),
                     InfoRow(
                       icon: Icons.update,
                       label: 'آخر تحديث',
-                      value: beneficiary.updatedAt != null
-                          ? _formatDateTime(beneficiary.updatedAt!)
-                          : 'غير محدد',
+                      value: beneficiary.updatedAt != null ? _formatDateTime(beneficiary.updatedAt!) : 'غير محدد',
                     ),
                   ],
                 ),
@@ -525,7 +602,6 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                   padding: EdgeInsets.all(16.r),
                   child: AttachmentsSectionEnhanced(
                     beneficiaryId: beneficiaryId,
-                    readOnly: false,
                   ),
                 ),
               ),
@@ -566,9 +642,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                         );
                         if (result == true) {
                           // Reload visits after successful creation
-                          ref
-                              .read(visitNotifierProvider.notifier)
-                              .loadBeneficiaryVisits(beneficiaryId);
+                          ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(beneficiaryId);
                         }
                       },
                       icon: const Icon(Icons.add),
@@ -677,6 +751,57 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
+  String _resolveTaxonomyLabel({
+    required List<taxonomy_domain.Taxonomy> options,
+    required String? code,
+    required String fallback,
+  }) {
+    if (code == null || code.trim().isEmpty) return fallback;
+    final normalized = code.trim();
+    for (final item in options) {
+      if (item.code == normalized) {
+        return item.label;
+      }
+    }
+    return fallback;
+  }
+
+  String _legacyFallbackLabel(String? code) {
+    if (code == null || code.trim().isEmpty) {
+      return 'غير محدد';
+    }
+    return 'قيمة قديمة/غير معروفة';
+  }
+
+  Widget _buildTaxonomyStateBanner(
+    BuildContext context, {
+    required IconData icon,
+    required String message,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18.sp, color: theme.colorScheme.primary),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showDeleteDialog(
     BuildContext context,
     AppDatabase database,
@@ -748,9 +873,7 @@ class _VisitsSectionState extends ConsumerState<_VisitsSection> {
     super.initState();
     // Load visits when widget is created
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(visitNotifierProvider.notifier)
-          .loadBeneficiaryVisits(widget.beneficiaryId);
+      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId);
     });
   }
 

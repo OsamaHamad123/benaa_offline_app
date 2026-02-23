@@ -70,7 +70,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     int? sectionId,
     int? gender,
   }) async {
-    var query = select(beneficiaries)
+    final query = select(beneficiaries)
       ..orderBy([(b) => OrderingTerm.desc(b.createdAt)])
       ..limit(limit, offset: offset);
 

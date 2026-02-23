@@ -11,12 +11,7 @@ class StatisticCard extends StatelessWidget {
   final Color? backgroundColor;
 
   const StatisticCard({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.count,
-    required this.percentage,
-    required this.iconColor,
+    required this.icon, required this.label, required this.count, required this.percentage, required this.iconColor, super.key,
     this.backgroundColor,
   });
 

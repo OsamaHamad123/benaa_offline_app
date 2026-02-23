@@ -46,7 +46,7 @@ class SmartHint {
 
   /// National ID hint
   static SmartHint nationalId() {
-    return SmartHint(
+    return const SmartHint(
       title: 'الرقم الوطني',
       description: 'رقم البطاقة الوطنية الموحدة',
       example: '123456789012345678 (18 رقم)',
@@ -63,7 +63,7 @@ class SmartHint {
 
   /// Phone number hint
   static SmartHint phoneNumber() {
-    return SmartHint(
+    return const SmartHint(
       title: 'رقم الهاتف',
       description: 'رقم الهاتف المحمول العراقي',
       example: '07701234567',
@@ -80,7 +80,7 @@ class SmartHint {
 
   /// Email hint
   static SmartHint email() {
-    return SmartHint(
+    return const SmartHint(
       title: 'البريد الإلكتروني',
       description: 'عنوان البريد الإلكتروني',
       example: 'example@email.com',
@@ -97,7 +97,7 @@ class SmartHint {
 
   /// Date of birth hint
   static SmartHint dateOfBirth() {
-    return SmartHint(
+    return const SmartHint(
       title: 'تاريخ الميلاد',
       description: 'تاريخ الميلاد كما في البطاقة الوطنية',
       example: '1990-05-15',
@@ -114,7 +114,7 @@ class SmartHint {
 
   /// Address hint
   static SmartHint address() {
-    return SmartHint(
+    return const SmartHint(
       title: 'العنوان',
       description: 'العنوان الكامل للسكن',
       icon: Icons.home,
@@ -130,7 +130,7 @@ class SmartHint {
 
   /// Occupation hint
   static SmartHint occupation() {
-    return SmartHint(
+    return const SmartHint(
       title: 'المهنة',
       description: 'المهنة أو العمل الحالي',
       icon: Icons.work,
@@ -148,7 +148,7 @@ class SmartHint {
 
   /// Income hint
   static SmartHint income() {
-    return SmartHint(
+    return const SmartHint(
       title: 'الدخل الشهري',
       description: 'الدخل الشهري بالدينار العراقي',
       example: '500,000 IQD',
@@ -165,7 +165,7 @@ class SmartHint {
 
   /// Family members hint
   static SmartHint familyMembers() {
-    return SmartHint(
+    return const SmartHint(
       title: 'عدد أفراد العائلة',
       description: 'عدد الأشخاص الذين تعيلهم',
       icon: Icons.people,
@@ -181,12 +181,11 @@ class SmartHint {
 
   /// UNHCR number hint
   static SmartHint unhcrNumber() {
-    return SmartHint(
+    return const SmartHint(
       title: 'رقم المفوضية',
       description: 'رقم المفوضية السامية للأمم المتحدة لشؤون اللاجئين',
       example: '123-XX-C-12345',
       icon: Icons.verified_user,
-      color: Colors.blue,
       bulletPoints: [
         '✅ يتكون من أرقام وأحرف',
         '✅ يحتوي على شرطات (-)',
@@ -198,7 +197,7 @@ class SmartHint {
 
   /// Ration card hint
   static SmartHint rationCard() {
-    return SmartHint(
+    return const SmartHint(
       title: 'رقم البطاقة التموينية',
       description: 'رقم البطاقة التموينية العراقية',
       example: '1234567890',
@@ -223,9 +222,7 @@ class SmartHintField extends StatefulWidget {
   final Alignment tooltipAlignment;
 
   const SmartHintField({
-    super.key,
-    required this.hint,
-    required this.child,
+    required this.hint, required this.child, super.key,
     this.showOnFocus = true,
     this.animationDuration = const Duration(milliseconds: 300),
     this.tooltipAlignment = Alignment.bottomLeft,
@@ -465,7 +462,6 @@ class _SmartHintFieldState extends State<SmartHintField> with SingleTickerProvid
                 fit: BoxFit.cover,
                 cacheWidth: 600, // ✅ Image Optimization: تصغير في الذاكرة
                 cacheHeight: 360,
-                filterQuality: FilterQuality.medium,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 120.h,
@@ -493,7 +489,7 @@ class HintBadge extends StatelessWidget {
   final SmartHint hint;
   final VoidCallback? onTap;
 
-  const HintBadge({super.key, required this.hint, this.onTap});
+  const HintBadge({required this.hint, super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {

@@ -10,8 +10,7 @@ class EnhancedSearchBar extends StatefulWidget {
   final TextEditingController? controller;
 
   const EnhancedSearchBar({
-    super.key,
-    required this.onSearch,
+    required this.onSearch, super.key,
     this.hintText,
     this.debounceDuration = const Duration(milliseconds: 300),
     this.controller,

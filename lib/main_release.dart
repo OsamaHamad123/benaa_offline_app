@@ -12,6 +12,7 @@ import 'features/dashboard/presentation/providers/activity_providers.dart' as da
 import 'core/config/sentry_config.dart';
 import 'core/widgets/error_boundary.dart';
 import 'core/widgets/safe_widgets.dart';
+import 'features/taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_providers;
 
 import 'package:benaa_offline_app/core/config/app_config.dart';
 
@@ -96,6 +97,13 @@ void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig) {
           // Override SharedPreferences for search feature (recent searches)
           search_providers.sharedPreferencesProvider.overrideWithValue(
             sharedPreferences,
+          ),
+          // 🏷️ Taxonomy providers (for dynamic categories from server)
+          taxonomy_providers.taxonomyDatabaseProvider.overrideWith(
+            (ref) => ref.watch(core_providers.databaseProvider),
+          ),
+          taxonomy_providers.taxonomyDioProvider.overrideWith(
+            (ref) => ref.watch(core_providers.apiClientProvider).dio,
           ),
         ],
         child: const BenaaApp(),

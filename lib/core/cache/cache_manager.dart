@@ -156,7 +156,6 @@ class AppCacheManager {
   );
 
   final queries = CacheManager<String, dynamic>(
-    maxSize: 100,
     ttl: const Duration(minutes: 2),
   );
 

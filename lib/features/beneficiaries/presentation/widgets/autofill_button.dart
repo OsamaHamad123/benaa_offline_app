@@ -11,8 +11,7 @@ class AutofillButton extends StatefulWidget {
   final int filledFieldsCount;
 
   const AutofillButton({
-    super.key,
-    required this.onPressed,
+    required this.onPressed, super.key,
     this.isEnabled = true,
     this.filledFieldsCount = 0,
   });

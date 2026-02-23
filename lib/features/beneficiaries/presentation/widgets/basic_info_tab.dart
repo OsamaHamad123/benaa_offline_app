@@ -20,19 +20,7 @@ class BasicInfoTab extends StatelessWidget {
   final VoidCallback onSelectDate;
 
   const BasicInfoTab({
-    super.key,
-    required this.fullNameController,
-    required this.nationalIdController,
-    required this.fileNoController,
-    required this.associationNameController,
-    required this.birthDateController,
-    required this.gender,
-    required this.category,
-    required this.birthDate,
-    required this.onGenderChanged,
-    required this.onCategoryChanged,
-    required this.onScanQR,
-    required this.onSelectDate,
+    required this.fullNameController, required this.nationalIdController, required this.fileNoController, required this.associationNameController, required this.birthDateController, required this.gender, required this.category, required this.birthDate, required this.onGenderChanged, required this.onCategoryChanged, required this.onScanQR, required this.onSelectDate, super.key,
   });
 
   @override
@@ -179,7 +167,7 @@ class BasicInfoTab extends StatelessWidget {
 
   Widget _buildCategorySelector(ColorScheme colorScheme) {
     return DropdownButtonFormField<BeneficiaryCategory>(
-      value: category,
+      initialValue: category,
       decoration: InputDecoration(
         labelText: 'فئة المستفيد *',
         prefixIcon: const Icon(Icons.category),

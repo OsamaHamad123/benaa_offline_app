@@ -9,9 +9,7 @@ class ActionButtons extends StatelessWidget {
   final VoidCallback onAddVisit;
 
   const ActionButtons({
-    super.key,
-    required this.onEdit,
-    required this.onAddVisit,
+    required this.onEdit, required this.onAddVisit, super.key,
   });
 
   @override

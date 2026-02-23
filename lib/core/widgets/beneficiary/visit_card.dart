@@ -8,7 +8,7 @@ class VisitCard extends StatelessWidget {
   final VisitEntity visit;
   final VoidCallback? onTap;
 
-  const VisitCard({super.key, required this.visit, this.onTap});
+  const VisitCard({required this.visit, super.key, this.onTap});
 
   static String formatDateTime(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';

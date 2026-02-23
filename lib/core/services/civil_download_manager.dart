@@ -150,7 +150,6 @@ class CivilDatabaseDownloadNotifier extends StateNotifier<DownloadProgress> {
         state: DownloadState.downloading,
         startTime: DateTime.now(),
         totalBytes: contentLength,
-        error: null,
       );
 
       _startSpeedMonitoring();

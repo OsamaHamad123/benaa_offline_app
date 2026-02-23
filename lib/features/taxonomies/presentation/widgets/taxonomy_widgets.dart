@@ -20,8 +20,8 @@ class TaxonomyDropdown extends ConsumerWidget {
   final InputDecoration? decoration;
 
   const TaxonomyDropdown({
-    super.key,
     required this.group,
+    super.key,
     this.selectedId,
     this.selectedCode,
     this.onChanged,
@@ -42,7 +42,7 @@ class TaxonomyDropdown extends ConsumerWidget {
         final selectedTaxonomy = _findSelected(taxonomies);
 
         return DropdownButtonFormField<Taxonomy>(
-          value: selectedTaxonomy,
+          initialValue: selectedTaxonomy,
           decoration: decoration ??
               InputDecoration(
                 labelText: labelText ?? group.arabicName,
@@ -87,7 +87,6 @@ class TaxonomyDropdown extends ConsumerWidget {
 
   Widget _buildLoadingDropdown() {
     return DropdownButtonFormField<Taxonomy>(
-      value: null,
       decoration: InputDecoration(
         labelText: labelText ?? group.arabicName,
         border: const OutlineInputBorder(),
@@ -104,7 +103,6 @@ class TaxonomyDropdown extends ConsumerWidget {
 
   Widget _buildErrorDropdown(String error) {
     return DropdownButtonFormField<Taxonomy>(
-      value: null,
       decoration: InputDecoration(
         labelText: labelText ?? group.arabicName,
         border: const OutlineInputBorder(),
@@ -144,6 +142,14 @@ class TaxonomyDropdown extends ConsumerWidget {
         return Icons.business;
       case TaxonomyGroup.sponsorshipType:
         return Icons.volunteer_activism;
+      case TaxonomyGroup.documentType:
+        return Icons.description;
+      case TaxonomyGroup.bankName:
+        return Icons.account_balance;
+      case TaxonomyGroup.currency:
+        return Icons.currency_exchange;
+      case TaxonomyGroup.deathReason:
+        return Icons.heart_broken;
       case TaxonomyGroup.gender:
         return Icons.person;
       case TaxonomyGroup.visitType:
@@ -170,8 +176,8 @@ class TaxonomyChip extends ConsumerWidget {
   final VoidCallback? onTap;
 
   const TaxonomyChip({
-    super.key,
     required this.taxonomyId,
+    super.key,
     this.group,
     this.onDeleted,
     this.onTap,
@@ -233,8 +239,8 @@ class TaxonomyListTile extends StatelessWidget {
   final bool showActions;
 
   const TaxonomyListTile({
-    super.key,
     required this.taxonomy,
+    super.key,
     this.onTap,
     this.onEdit,
     this.onDelete,

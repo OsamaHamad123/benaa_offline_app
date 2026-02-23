@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../features/taxonomies/taxonomies.dart';
+import '../../../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../../../../../../core/utils/debouncer.dart';
 import '../../../pages/v2_form_helpers/civil_registry_lookup_controller.dart';
 import '../../../pages/v2_form_helpers/civil_registry_autofill_feedback_helper.dart';
 import '../../../pages/v2_form_helpers/form_constants.dart';
@@ -23,9 +27,9 @@ class V2PersonalInfoMergedTab extends ConsumerStatefulWidget {
   final FocusNode? firstFieldFocusNode;
 
   const V2PersonalInfoMergedTab({
-    super.key,
     required this.formControllers,
     required this.onBirthDateTap,
+    super.key,
     this.firstFieldFocusNode,
   });
 
@@ -35,17 +39,28 @@ class V2PersonalInfoMergedTab extends ConsumerStatefulWidget {
 
 class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTab> {
   late final CivilRegistryLookupController _lookupController;
+  final Throttler _uiRefreshThrottler = Throttler(interval: const Duration(milliseconds: 120));
+  Timer? _deferredSecondarySectionsTimer;
+  bool _secondarySectionsReady = false;
 
   @override
   void initState() {
     super.initState();
     _lookupController = CivilRegistryLookupController();
     widget.formControllers.nationalIdController.addListener(_onNationalIdChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _deferredSecondarySectionsTimer = Timer(const Duration(milliseconds: 700), () {
+        if (!mounted) return;
+        _requestUiRefresh(() => _secondarySectionsReady = true);
+      });
+    });
   }
 
   @override
   void dispose() {
     widget.formControllers.nationalIdController.removeListener(_onNationalIdChanged);
+    _deferredSecondarySectionsTimer?.cancel();
     _lookupController.dispose();
     super.dispose();
   }
@@ -66,10 +81,18 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
       }(),
       resetProvider: () => ref.read(civilRegistryProvider.notifier).reset(),
       requestRebuild: () {
-        if (!mounted) return;
-        setState(() {});
+        _requestUiRefresh();
       },
     );
+  }
+
+  void _requestUiRefresh([VoidCallback? mutate]) {
+    _uiRefreshThrottler(() {
+      if (!mounted) return;
+      setState(() {
+        mutate?.call();
+      });
+    });
   }
 
   void _handleAutofill() {
@@ -82,8 +105,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
       onCompleted: () {
         _lookupController.onAutofillCompleted(
           requestRebuild: () {
-            if (!mounted) return;
-            setState(() {});
+            _requestUiRefresh();
           },
         );
       },
@@ -92,10 +114,18 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
 
   @override
   Widget build(BuildContext context) {
+    final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
+    final taxonomyReady = taxonomyIndexAsync.hasValue;
+    List<Taxonomy> optionsFor(TaxonomyGroup group) {
+      final index = taxonomyIndexAsync.asData?.value;
+      if (index == null) return const <Taxonomy>[];
+      return index[group] ?? const <Taxonomy>[];
+    }
+
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
       physics: const ClampingScrollPhysics(),
-      cacheExtent: 100,
+      cacheExtent: 24,
       children: [
         M3SectionCard(
           title: 'الاسم الكامل',
@@ -203,8 +233,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                           person: civilRegistryState.person!,
                           onDismiss: () {
                             _lookupController.dismissPreview(() {
-                              if (!mounted) return;
-                              setState(() {});
+                              _requestUiRefresh();
                             });
                           },
                         ),
@@ -220,15 +249,13 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                             Expanded(
                               child: AutofillButton(
                                 onPressed: _handleAutofill,
-                                isEnabled: true,
                               ),
                             ),
                             SizedBox(width: 8.w),
                             IconButton(
                               onPressed: () {
                                 _lookupController.togglePreview(() {
-                                  if (!mounted) return;
-                                  setState(() {});
+                                  _requestUiRefresh();
                                 });
                               },
                               icon: Icon(
@@ -260,6 +287,8 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                 ),
                 TaxonomyBridgeDropdown(
                   group: TaxonomyGroup.gender,
+                  preloadedOptions: optionsFor(TaxonomyGroup.gender),
+                  enabled: taxonomyReady,
                   selectedCode: widget.formControllers.selectedGender,
                   onCodeChanged: (value) => widget.formControllers.selectedGender = value,
                   labelText: 'الجنس',
@@ -271,6 +300,8 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
             SizedBox(height: 12.h),
             TaxonomyBridgeDropdown(
               group: TaxonomyGroup.category,
+              preloadedOptions: optionsFor(TaxonomyGroup.category),
+              enabled: taxonomyReady,
               selectedCode: widget.formControllers.selectedCategory,
               onCodeChanged: (value) => widget.formControllers.selectedCategory = value,
               labelText: 'فئة المستفيد',
@@ -289,83 +320,142 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                 ),
                 TaxonomyBridgeDropdown(
                   group: TaxonomyGroup.beneficiaryStatus,
+                  preloadedOptions: optionsFor(TaxonomyGroup.beneficiaryStatus),
+                  enabled: taxonomyReady,
                   selectedCode: widget.formControllers.selectedRequestStatus,
                   onCodeChanged: (value) => widget.formControllers.selectedRequestStatus = value,
                   labelText: 'حالة الطلب',
                   prefixIcon: Icons.pending_actions_rounded,
                 ),
-              ],
-            ),
-          ],
-        ),
-        M3SectionCard(
-          title: 'معلومات إضافية',
-          icon: Icons.info_outline_rounded,
-          headerColor: FormColors.tabGradients[0]![1].withOpacity(0.2),
-          children: [
-            ResponsiveFormLayout(
-              children: [
                 TaxonomyBridgeDropdown(
-                  group: TaxonomyGroup.educationLevel,
-                  selectedCode: widget.formControllers.selectedEducationLevel,
-                  onCodeChanged: (value) => widget.formControllers.selectedEducationLevel = value,
-                  labelText: 'المستوى التعليمي',
-                  prefixIcon: Icons.school_rounded,
+                  group: TaxonomyGroup.assistanceType,
+                  preloadedOptions: optionsFor(TaxonomyGroup.assistanceType),
+                  enabled: taxonomyReady,
+                  selectedCode: widget.formControllers.selectedAssistanceType,
+                  onCodeChanged: (value) => widget.formControllers.selectedAssistanceType = value,
+                  labelText: 'نوع المساعدة',
+                  prefixIcon: Icons.handshake_rounded,
                 ),
                 TaxonomyBridgeDropdown(
-                  group: TaxonomyGroup.employmentStatus,
-                  selectedCode: widget.formControllers.selectedEmploymentStatus,
-                  onCodeChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
-                  labelText: 'حالة التوظيف',
-                  prefixIcon: Icons.work_outline_rounded,
-                ),
-                TaxonomyBridgeDropdown(
-                  group: TaxonomyGroup.healthStatus,
-                  selectedCode: widget.formControllers.selectedHealthStatus,
-                  onCodeChanged: (value) => widget.formControllers.selectedHealthStatus = value,
-                  labelText: 'الحالة الصحية',
-                  prefixIcon: Icons.favorite_outline_rounded,
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            M3TextField(
-              controller: widget.formControllers.chronicDiseasesController,
-              label: 'الأمراض المزمنة',
-              prefixIcon: Icons.medical_services_outlined,
-              maxLines: 3,
-              helperText: 'أدخل الأمراض المزمنة إن وجدت',
-            ),
-            SizedBox(height: 12.h),
-            M3TextField(
-              controller: widget.formControllers.specialNeedsCountController,
-              label: 'عدد ذوي الاحتياجات الخاصة',
-              prefixIcon: Icons.accessible_rounded,
-              keyboardType: TextInputType.number,
-              helperText: 'عدد أفراد الأسرة من ذوي الاحتياجات الخاصة',
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            ),
-            SizedBox(height: 12.h),
-            ResponsiveFormLayout(
-              children: [
-                TaxonomyBridgeDropdown(
-                  group: TaxonomyGroup.housingStatus,
-                  selectedCode: widget.formControllers.selectedHousingStatus,
-                  onCodeChanged: (value) => widget.formControllers.selectedHousingStatus = value,
-                  labelText: 'حالة السكن',
-                  prefixIcon: Icons.home_outlined,
-                ),
-                TaxonomyBridgeDropdown(
-                  group: TaxonomyGroup.housingType,
-                  selectedCode: widget.formControllers.selectedHousingType,
-                  onCodeChanged: (value) => widget.formControllers.selectedHousingType = value,
-                  labelText: 'نوع السكن',
-                  prefixIcon: Icons.apartment_outlined,
+                  group: TaxonomyGroup.section,
+                  preloadedOptions: optionsFor(TaxonomyGroup.section),
+                  enabled: taxonomyReady,
+                  selectedCode: widget.formControllers.selectedSection,
+                  onCodeChanged: (value) => widget.formControllers.selectedSection = value,
+                  labelText: 'القسم',
+                  prefixIcon: Icons.account_tree_rounded,
                 ),
               ],
             ),
           ],
         ),
+        if (_secondarySectionsReady)
+          M3SectionCard(
+            title: 'معلومات إضافية',
+            icon: Icons.info_outline_rounded,
+            headerColor: FormColors.tabGradients[0]![1].withOpacity(0.2),
+            children: [
+              ResponsiveFormLayout(
+                children: [
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.educationLevel,
+                    preloadedOptions: optionsFor(TaxonomyGroup.educationLevel),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedEducationLevel,
+                    onCodeChanged: (value) => widget.formControllers.selectedEducationLevel = value,
+                    labelText: 'المستوى التعليمي',
+                    prefixIcon: Icons.school_rounded,
+                  ),
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.employmentStatus,
+                    preloadedOptions: optionsFor(TaxonomyGroup.employmentStatus),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedEmploymentStatus,
+                    onCodeChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
+                    labelText: 'حالة التوظيف',
+                    prefixIcon: Icons.work_outline_rounded,
+                  ),
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.healthStatus,
+                    preloadedOptions: optionsFor(TaxonomyGroup.healthStatus),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedHealthStatus,
+                    onCodeChanged: (value) => widget.formControllers.selectedHealthStatus = value,
+                    labelText: 'الحالة الصحية',
+                    prefixIcon: Icons.favorite_outline_rounded,
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              M3TextField(
+                controller: widget.formControllers.chronicDiseasesController,
+                label: 'الأمراض المزمنة',
+                prefixIcon: Icons.medical_services_outlined,
+                maxLines: 3,
+                helperText: 'أدخل الأمراض المزمنة إن وجدت',
+              ),
+              SizedBox(height: 12.h),
+              M3TextField(
+                controller: widget.formControllers.specialNeedsCountController,
+                label: 'عدد ذوي الاحتياجات الخاصة',
+                prefixIcon: Icons.accessible_rounded,
+                keyboardType: TextInputType.number,
+                helperText: 'عدد أفراد الأسرة من ذوي الاحتياجات الخاصة',
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
+              SizedBox(height: 12.h),
+              ResponsiveFormLayout(
+                children: [
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.housingStatus,
+                    preloadedOptions: optionsFor(TaxonomyGroup.housingStatus),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedHousingStatus,
+                    onCodeChanged: (value) => widget.formControllers.selectedHousingStatus = value,
+                    labelText: 'حالة السكن',
+                    prefixIcon: Icons.home_outlined,
+                  ),
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.housingType,
+                    preloadedOptions: optionsFor(TaxonomyGroup.housingType),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedHousingType,
+                    onCodeChanged: (value) => widget.formControllers.selectedHousingType = value,
+                    labelText: 'نوع السكن',
+                    prefixIcon: Icons.apartment_outlined,
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              ResponsiveFormLayout(
+                children: [
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.disabilityType,
+                    preloadedOptions: optionsFor(TaxonomyGroup.disabilityType),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedDisabilityType,
+                    onCodeChanged: (value) => widget.formControllers.selectedDisabilityType = value,
+                    labelText: 'نوع الإعاقة',
+                    prefixIcon: Icons.accessible_forward_rounded,
+                  ),
+                  TaxonomyBridgeDropdown(
+                    group: TaxonomyGroup.incomeSource,
+                    preloadedOptions: optionsFor(TaxonomyGroup.incomeSource),
+                    enabled: taxonomyReady,
+                    selectedCode: widget.formControllers.selectedIncomeSource,
+                    onCodeChanged: (value) => widget.formControllers.selectedIncomeSource = value,
+                    labelText: 'مصدر الدخل',
+                    prefixIcon: Icons.account_balance_wallet_outlined,
+                  ),
+                ],
+              ),
+            ],
+          )
+        else
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+            child: const LinearProgressIndicator(minHeight: 2),
+          ),
       ],
     );
   }

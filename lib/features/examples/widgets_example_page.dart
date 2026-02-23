@@ -16,7 +16,7 @@ class WidgetsExamplePage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // ========== SectionCard Example ==========
-          SectionCard(
+          const SectionCard(
             title: 'المعلومات الأساسية',
             icon: Icons.person,
             child: Column(
@@ -43,7 +43,7 @@ class WidgetsExamplePage extends StatelessWidget {
           const SizedBox(height: 16),
 
           // ========== Status Badges Example ==========
-          SectionCard(
+          const SectionCard(
             title: 'حالات مختلفة',
             icon: Icons.info,
             color: Colors.blue,

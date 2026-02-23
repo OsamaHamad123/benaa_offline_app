@@ -9,10 +9,7 @@ class InfoSection extends StatelessWidget {
   final Color? accentColor;
 
   const InfoSection({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.items,
+    required this.title, required this.icon, required this.items, super.key,
     this.accentColor,
   });
 
@@ -92,10 +89,7 @@ class InfoRow extends StatelessWidget {
   final Color? valueColor;
 
   const InfoRow({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
+    required this.icon, required this.label, required this.value, super.key,
     this.valueColor,
   });
 

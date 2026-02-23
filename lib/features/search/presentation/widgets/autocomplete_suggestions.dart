@@ -9,9 +9,7 @@ class AutocompleteSuggestions extends StatefulWidget {
   final double fontSize;
 
   const AutocompleteSuggestions({
-    super.key,
-    required this.suggestions,
-    required this.onSuggestionTap,
+    required this.suggestions, required this.onSuggestionTap, super.key,
     this.fontSize = 14,
   });
 

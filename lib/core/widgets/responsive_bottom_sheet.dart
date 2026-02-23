@@ -255,9 +255,7 @@ class ResponsiveDraftsList extends StatelessWidget {
   final IconData icon;
 
   const ResponsiveDraftsList({
-    super.key,
-    required this.title,
-    required this.items,
+    required this.title, required this.items, super.key,
     this.emptyState,
     this.icon = Icons.drafts,
   });

@@ -326,8 +326,7 @@ class TaxonomyFormDialog extends ConsumerStatefulWidget {
   final VoidCallback? onSaved;
 
   const TaxonomyFormDialog({
-    super.key,
-    required this.group,
+    required this.group, super.key,
     this.taxonomy,
     this.onSaved,
   });
@@ -510,8 +509,7 @@ class TaxonomyDetailsDialog extends StatelessWidget {
   final Taxonomy taxonomy;
 
   const TaxonomyDetailsDialog({
-    super.key,
-    required this.taxonomy,
+    required this.taxonomy, super.key,
   });
 
   @override

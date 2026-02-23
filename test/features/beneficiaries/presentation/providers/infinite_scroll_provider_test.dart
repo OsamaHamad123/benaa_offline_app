@@ -30,7 +30,7 @@ void main() {
     });
 
     test('copyWith should preserve original when no changes', () {
-      final original = InfiniteScrollState(
+      const original = InfiniteScrollState(
         items: ['Item 1'],
         currentPage: 1,
         isLoading: false,

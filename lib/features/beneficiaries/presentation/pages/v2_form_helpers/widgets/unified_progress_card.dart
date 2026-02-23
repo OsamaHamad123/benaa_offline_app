@@ -12,12 +12,7 @@ class UnifiedProgressCard extends StatelessWidget {
   final String currentTabTitle;
 
   const UnifiedProgressCard({
-    super.key,
-    required this.currentTab,
-    required this.totalTabs,
-    required this.completedFields,
-    required this.totalFields,
-    required this.currentTabTitle,
+    required this.currentTab, required this.totalTabs, required this.completedFields, required this.totalFields, required this.currentTabTitle, super.key,
   });
 
   double get tabProgress => (currentTab + 1) / totalTabs;

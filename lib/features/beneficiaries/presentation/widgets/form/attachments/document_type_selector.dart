@@ -12,9 +12,8 @@ class DocumentTypeSelector extends StatelessWidget {
   final bool isRequired;
 
   const DocumentTypeSelector({
-    super.key,
+    required this.onChanged, super.key,
     this.selectedType,
-    required this.onChanged,
     this.label,
     this.isRequired = false,
   });
@@ -24,7 +23,7 @@ class DocumentTypeSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return DropdownButtonFormField<String>(
-      value: selectedType,
+      initialValue: selectedType,
       decoration: InputDecoration(
         labelText: label ?? 'نوع الوثيقة ${isRequired ? '*' : ''}',
         prefixIcon: const Icon(Icons.description_rounded),
@@ -53,92 +52,92 @@ class DocumentTypeSelector extends StatelessWidget {
 
   /// قائمة أنواع الوثائق المتاحة (من الموقع)
   static final List<DocumentTypeItem> _documentTypes = [
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'death_certificate',
       label: 'شهادة الوفاة',
       icon: Icons.person_off_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'national_id',
       label: 'إفادة شهيد',
       icon: Icons.military_tech_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'id_card',
       label: 'صورة الهوية',
       icon: Icons.credit_card_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'guardianship_letter',
       label: 'حجة الوصاية',
       icon: Icons.gavel_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'medical_report',
       label: 'تقرير طبي',
       icon: Icons.medical_information_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'custody_letter',
       label: 'إقرار الحضانة',
       icon: Icons.family_restroom_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'rent_receipt',
       label: 'حضر إيرات',
       icon: Icons.receipt_long_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'orphan_care',
       label: 'حجة اعالة يتيم',
       icon: Icons.child_care_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'birth_certificate',
       label: 'شهادة الميلاد',
       icon: Icons.cake_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'recent_certificate',
       label: 'آخر شهادة حصل عليها',
       icon: Icons.school_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'test',
       label: 'test',
       icon: Icons.science_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'personal_photo',
       label: 'صور شخصية',
       icon: Icons.photo_camera_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'other_documents',
       label: 'أوراق ثبوتية أخرى',
       icon: Icons.file_copy_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'welfare_agency',
       label: 'وكالة في شؤون الولاية',
       icon: Icons.business_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'transfer_document',
       label: 'حجة ترمل',
       icon: Icons.document_scanner_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'parenthood_document',
       label: 'حجة ولاية',
       icon: Icons.family_restroom_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'long_form_id',
       label: 'صورة طويلة',
       icon: Icons.badge_rounded,
     ),
-    DocumentTypeItem(
+    const DocumentTypeItem(
       value: 'wallet_photo',
       label: 'صورة محفظة',
       icon: Icons.photo_album_rounded,
@@ -167,10 +166,8 @@ class PersonTypeSelector extends StatelessWidget {
   final String? label;
 
   const PersonTypeSelector({
-    super.key,
+    required this.onChanged, required this.availablePersons, super.key,
     this.selectedPerson,
-    required this.onChanged,
-    required this.availablePersons,
     this.label,
   });
 
@@ -179,7 +176,7 @@ class PersonTypeSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return DropdownButtonFormField<String>(
-      value: selectedPerson,
+      initialValue: selectedPerson,
       decoration: InputDecoration(
         labelText: label ?? 'اختر الشخص *',
         prefixIcon: const Icon(Icons.person_pin_rounded),

@@ -142,7 +142,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
           UnifiedLogger.warning('⚠️ Login failed: ${failure.message}');
           state = AuthError(
             message: failure.message,
-            canRetry: true,
           );
           return false;
         case Success(value: final session):
@@ -154,7 +153,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       UnifiedLogger.error('❌ Login error', error: e, stackTrace: stackTrace);
       state = AuthError(
         message: 'حدث خطأ أثناء تسجيل الدخول: ${e.toString()}',
-        canRetry: true,
       );
       return false;
     }

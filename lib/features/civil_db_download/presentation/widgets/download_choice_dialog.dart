@@ -191,7 +191,7 @@ class _DownloadChoiceDialogState extends ConsumerState<DownloadChoiceDialog> {
             SizedBox(height: 16.h),
             TextButton(
               onPressed: _isLoading ? null : () => Navigator.pop(context),
-              child: Text(
+              child: const Text(
                 'إلغاء',
                 style: TextStyle(color: Colors.grey),
               ),
@@ -207,10 +207,9 @@ class _DownloadChoiceDialogState extends ConsumerState<DownloadChoiceDialog> {
     required Color iconColor,
     required String title,
     required String description,
-    String? badge,
+    required VoidCallback onTap, String? badge,
     bool isRecommended = false,
     bool isSecondary = false,
-    required VoidCallback onTap,
   }) {
     return Material(
       color: Colors.transparent,
@@ -395,7 +394,7 @@ class BackgroundDownloadIndicator extends ConsumerWidget {
             child: CircularProgressIndicator(
               strokeWidth: 2,
               value: progress.percentage / 100,
-              valueColor: AlwaysStoppedAnimation(AppColors.primary),
+              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
             ),
           ),
           SizedBox(width: 12.w),

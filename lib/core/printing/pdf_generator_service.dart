@@ -305,9 +305,9 @@ class PdfGeneratorService {
           if (filters != null && filters.isNotEmpty)
             pw.Container(
               padding: const pw.EdgeInsets.all(8),
-              decoration: pw.BoxDecoration(
+              decoration: const pw.BoxDecoration(
                 color: PdfColors.grey200,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
               ),
               child: pw.Wrap(
                 spacing: 10,

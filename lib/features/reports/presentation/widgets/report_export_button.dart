@@ -6,9 +6,7 @@ class ReportExportButton extends StatelessWidget {
   final VoidCallback onExportExcel;
 
   const ReportExportButton({
-    super.key,
-    required this.onExportPdf,
-    required this.onExportExcel,
+    required this.onExportPdf, required this.onExportExcel, super.key,
   });
 
   @override

@@ -23,11 +23,12 @@ class VisitState extends Equatable {
     String? errorMessage,
     int? totalVisits,
     DateTime? lastVisitDate,
+    bool clearErrorMessage = false,
   }) {
     return VisitState(
       visits: visits ?? this.visits,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       totalVisits: totalVisits ?? this.totalVisits,
       lastVisitDate: lastVisitDate ?? this.lastVisitDate,
     );

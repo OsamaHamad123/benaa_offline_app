@@ -86,7 +86,7 @@ class BeneficiaryLocalDataSource {
     int? limit,
     int? offset,
   }) async {
-    var query = db.select(db.beneficiaries);
+    final query = db.select(db.beneficiaries);
 
     // Apply filters
     if (searchQuery != null && searchQuery.isNotEmpty) {
@@ -119,7 +119,7 @@ class BeneficiaryLocalDataSource {
   Future<int> count({int? category}) async {
     final countExpr = db.beneficiaries.id.count();
 
-    var query = db.selectOnly(db.beneficiaries)..addColumns([countExpr]);
+    final query = db.selectOnly(db.beneficiaries)..addColumns([countExpr]);
 
     if (category != null) {
       query.where(db.beneficiaries.sectionId.equals(category));

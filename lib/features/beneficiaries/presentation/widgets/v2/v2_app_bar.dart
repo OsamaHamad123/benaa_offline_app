@@ -12,8 +12,7 @@ class V2BeneficiaryAppBar extends StatelessWidget
   final DateTime? lastSaved;
 
   const V2BeneficiaryAppBar({
-    super.key,
-    required this.title,
+    required this.title, super.key,
     this.canSave = false,
     this.isSaving = false,
     this.onSave,

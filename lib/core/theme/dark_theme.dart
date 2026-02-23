@@ -71,21 +71,16 @@ ThemeData buildDarkTheme() {
     brightness: Brightness.dark,
 
     // نظام الألوان
-    colorScheme: ColorScheme.dark(
+    colorScheme: const ColorScheme.dark(
       primary: DarkThemeColors.primary,
       primaryContainer: DarkThemeColors.primaryContainer,
       secondary: DarkThemeColors.secondary,
       secondaryContainer: DarkThemeColors.secondaryContainer,
-      background: DarkThemeColors.background,
       surface: DarkThemeColors.surface,
-      surfaceVariant: DarkThemeColors.surfaceVariant,
+      surfaceContainerHighest: DarkThemeColors.surfaceVariant,
       error: DarkThemeColors.error,
-      onPrimary: Colors.black,
-      onSecondary: Colors.black,
-      onBackground: DarkThemeColors.onBackground,
       onSurface: DarkThemeColors.onSurface,
       onSurfaceVariant: DarkThemeColors.onSurfaceVariant,
-      onError: Colors.black,
     ),
 
     // البطاقات
@@ -99,7 +94,7 @@ ThemeData buildDarkTheme() {
     ),
 
     // AppBar
-    appBarTheme: AppBarTheme(
+    appBarTheme: const AppBarTheme(
       backgroundColor: DarkThemeColors.surface,
       foregroundColor: DarkThemeColors.onSurface,
       elevation: 0,
@@ -150,14 +145,14 @@ ThemeData buildDarkTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: DarkThemeColors.primary, width: 2),
+        borderSide: const BorderSide(color: DarkThemeColors.primary, width: 2),
       ),
-      labelStyle: TextStyle(color: DarkThemeColors.onSurfaceVariant),
+      labelStyle: const TextStyle(color: DarkThemeColors.onSurfaceVariant),
       hintStyle: TextStyle(color: DarkThemeColors.onSurfaceVariant.withOpacity(0.6)),
     ),
 
     // التبويبات
-    tabBarTheme: TabBarThemeData(
+    tabBarTheme: const TabBarThemeData(
       labelColor: DarkThemeColors.primary,
       unselectedLabelColor: DarkThemeColors.onSurfaceVariant,
       indicator: UnderlineTabIndicator(
@@ -166,12 +161,12 @@ ThemeData buildDarkTheme() {
     ),
 
     // الأيقونات
-    iconTheme: IconThemeData(
+    iconTheme: const IconThemeData(
       color: DarkThemeColors.onSurface,
     ),
 
     // النصوص
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       displayLarge: TextStyle(color: DarkThemeColors.onSurface, fontFamily: 'Cairo'),
       displayMedium: TextStyle(color: DarkThemeColors.onSurface, fontFamily: 'Cairo'),
       displaySmall: TextStyle(color: DarkThemeColors.onSurface, fontFamily: 'Cairo'),

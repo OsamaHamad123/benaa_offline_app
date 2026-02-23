@@ -171,11 +171,9 @@ class AppError {
 
   const AppError({
     required this.error,
-    this.stackTrace,
+    required this.severity, required this.timestamp, this.stackTrace,
     this.context,
     this.metadata,
-    required this.severity,
-    required this.timestamp,
   });
 
   @override

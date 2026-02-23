@@ -21,7 +21,6 @@ class AssociationsReportsPage extends ConsumerWidget {
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: const CustomAppBar(
         title: 'تقارير الجمعيات',
-        showGradient: true,
       ),
       body: RefreshIndicator(
         onRefresh: () async {

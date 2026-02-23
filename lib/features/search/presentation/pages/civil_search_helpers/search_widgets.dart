@@ -17,8 +17,7 @@ class ModernSearchAppBar extends ConsumerWidget {
   final ResponsiveValues rv;
 
   const ModernSearchAppBar({
-    super.key,
-    required this.rv,
+    required this.rv, super.key,
   });
 
   static const _kAppBarGradient = LinearGradient(
@@ -34,7 +33,6 @@ class ModernSearchAppBar extends ConsumerWidget {
     return statsAsync.when(
       data: (stats) => SliverAppBar(
         expandedHeight: rv.isMobile ? 200 : (rv.isTablet ? 220 : 240),
-        floating: false,
         pinned: true,
         elevation: 0,
         stretch: true,
@@ -130,13 +128,12 @@ class ModernSearchAppBar extends ConsumerWidget {
 class LoadingAppBar extends StatelessWidget {
   final ResponsiveValues rv;
 
-  const LoadingAppBar({super.key, required this.rv});
+  const LoadingAppBar({required this.rv, super.key});
 
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
-      floating: false,
       pinned: true,
       backgroundColor: Colors.grey.shade400,
       flexibleSpace: FlexibleSpaceBar(
@@ -151,13 +148,12 @@ class LoadingAppBar extends StatelessWidget {
 class ErrorAppBar extends StatelessWidget {
   final ResponsiveValues rv;
 
-  const ErrorAppBar({super.key, required this.rv});
+  const ErrorAppBar({required this.rv, super.key});
 
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
-      floating: false,
       pinned: true,
       backgroundColor: Colors.red.shade400,
       flexibleSpace: FlexibleSpaceBar(
@@ -175,10 +171,7 @@ class StatChip extends StatelessWidget {
   final IconData icon;
 
   const StatChip({
-    super.key,
-    required this.value,
-    required this.label,
-    required this.icon,
+    required this.value, required this.label, required this.icon, super.key,
   });
 
   @override
@@ -226,12 +219,7 @@ class FilterButtonsRow extends StatelessWidget {
   final VoidCallback onGenderFilterTap;
 
   const FilterButtonsRow({
-    super.key,
-    required this.filter,
-    required this.fontSize,
-    required this.onAgeFilterTap,
-    required this.onGovernorateFilterTap,
-    required this.onGenderFilterTap,
+    required this.filter, required this.fontSize, required this.onAgeFilterTap, required this.onGovernorateFilterTap, required this.onGenderFilterTap, super.key,
   });
 
   @override
@@ -289,13 +277,7 @@ class FilterButton extends StatelessWidget {
   final double fontSize;
 
   const FilterButton({
-    super.key,
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.activeColor,
-    required this.fontSize,
+    required this.onPressed, required this.icon, required this.label, required this.isActive, required this.activeColor, required this.fontSize, super.key,
   });
 
   @override

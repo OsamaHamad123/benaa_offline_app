@@ -28,9 +28,7 @@ class InlineValidationMessage extends StatefulWidget {
   final Duration animationDuration;
 
   const InlineValidationMessage({
-    super.key,
-    required this.message,
-    required this.level,
+    required this.message, required this.level, super.key,
     this.show = true,
     this.animationDuration = const Duration(milliseconds: 300),
   });
@@ -158,7 +156,6 @@ class _InlineValidationMessageState extends State<InlineValidationMessage>
                 borderRadius: BorderRadius.circular(8.r),
                 border: Border.all(
                   color: color.withOpacity(0.3),
-                  width: 1,
                 ),
               ),
               child: Row(

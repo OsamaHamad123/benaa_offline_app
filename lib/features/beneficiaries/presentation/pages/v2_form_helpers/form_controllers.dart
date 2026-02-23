@@ -171,11 +171,38 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     }
   }
 
+  String? _selectedDisabilityType;
+  String? get selectedDisabilityType => _selectedDisabilityType;
+  set selectedDisabilityType(String? value) {
+    if (_selectedDisabilityType != value) {
+      _selectedDisabilityType = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  String? _selectedIncomeSource;
+  String? get selectedIncomeSource => _selectedIncomeSource;
+  set selectedIncomeSource(String? value) {
+    if (_selectedIncomeSource != value) {
+      _selectedIncomeSource = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
   String? _selectedRequestStatus; // 🆕 حالة الطلب
   String? get selectedRequestStatus => _selectedRequestStatus;
   set selectedRequestStatus(String? value) {
     if (_selectedRequestStatus != value) {
       _selectedRequestStatus = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  String? _selectedAssistanceType;
+  String? get selectedAssistanceType => _selectedAssistanceType;
+  set selectedAssistanceType(String? value) {
+    if (_selectedAssistanceType != value) {
+      _selectedAssistanceType = value;
       _notifyAndScheduleAutoSave();
     }
   }
@@ -415,7 +442,10 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'selectedHealthStatus': _selectedHealthStatus,
       'selectedHousingStatus': _selectedHousingStatus,
       'selectedHousingType': _selectedHousingType,
+      'selectedDisabilityType': _selectedDisabilityType,
+      'selectedIncomeSource': _selectedIncomeSource,
       'selectedRequestStatus': _selectedRequestStatus, // 🆕 NEW
+      'selectedAssistanceType': _selectedAssistanceType,
       'selectedRelationship': _selectedRelationship,
       'hasDisability': _hasDisability,
     };
@@ -455,7 +485,10 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _selectedHealthStatus = map['selectedHealthStatus'];
     _selectedHousingStatus = map['selectedHousingStatus'];
     _selectedHousingType = map['selectedHousingType'];
+    _selectedDisabilityType = map['selectedDisabilityType'];
+    _selectedIncomeSource = map['selectedIncomeSource'];
     _selectedRequestStatus = map['selectedRequestStatus']; // 🆕 NEW
+    _selectedAssistanceType = map['selectedAssistanceType'];
     _selectedRelationship = map['selectedRelationship'];
     _hasDisability = map['hasDisability'] ?? false;
 

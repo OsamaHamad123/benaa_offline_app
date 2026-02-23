@@ -1,4 +1,5 @@
 import '../../domain/entities/taxonomy.dart';
+import '../../domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../../../../data/db/drift_database.dart' show TaxonomiesCompanion;
 import 'package:drift/drift.dart' as drift;
@@ -85,8 +86,14 @@ class TaxonomyDTO {
   }
 
   TaxonomiesCompanion toDbCompanion() {
+    final localId = buildLocalId(
+      groupValue: groupValue,
+      rawId: id,
+      code: code,
+    );
+
     return TaxonomiesCompanion.insert(
-      id: id,
+      id: localId,
       group: groupValue,
       code: code,
       label: label,
@@ -95,6 +102,40 @@ class TaxonomyDTO {
       sortOrder: drift.Value(sortOrder),
       isActive: drift.Value(isActive && deletedAt == null),
     );
+  }
+
+  static String buildLocalId({
+    required String groupValue,
+    required String rawId,
+    String? code,
+  }) {
+    final normalizedGroup = TaxonomyGroup.normalizeValue(groupValue) ?? groupValue;
+    final normalizedId = rawId.trim();
+    if (normalizedId.contains('::')) {
+      return normalizedId;
+    }
+
+    final fallback = (code ?? '').trim();
+    final resolvedRemoteId = normalizedId.isNotEmpty ? normalizedId : fallback;
+    if (resolvedRemoteId.isEmpty) {
+      return '${normalizedGroup}::unknown';
+    }
+
+    return '$normalizedGroup::$resolvedRemoteId';
+  }
+
+  static String extractRemoteId(String localId) {
+    final value = localId.trim();
+    if (value.isEmpty) {
+      return value;
+    }
+
+    final separatorIndex = value.indexOf('::');
+    if (separatorIndex < 0 || separatorIndex + 2 >= value.length) {
+      return value;
+    }
+
+    return value.substring(separatorIndex + 2);
   }
 
   /// تحويل إلى Entity
@@ -353,7 +394,11 @@ class TaxonomiesResponseDTO {
         final resolvedItemGroup = _resolveGroupValue(itemGroupRaw, itemLabelAr, itemLabelEn);
 
         taxonomies.add(TaxonomyDTO(
-          id: item['id']?.toString() ?? item['value']?.toString() ?? '',
+          id: item['id']?.toString() ??
+              item['value']?.toString() ??
+              item['code']?.toString() ??
+              item['slug']?.toString() ??
+              '',
           groupValue: resolvedItemGroup.isNotEmpty ? resolvedItemGroup : resolvedGroup,
           code: item['code']?.toString() ??
               item['slug']?.toString() ??
@@ -379,7 +424,8 @@ class TaxonomiesResponseDTO {
 
     // Parse sync timestamp
     DateTime? syncTime;
-    final syncTimestampStr = json['data']?['sync_timestamp']?.toString();
+    final dataNode = json['data'];
+    final syncTimestampStr = dataNode is Map<String, dynamic> ? dataNode['sync_timestamp']?.toString() : null;
     if (syncTimestampStr != null) {
       syncTime = DateTime.tryParse(syncTimestampStr);
     }
@@ -393,17 +439,32 @@ class TaxonomiesResponseDTO {
   }
 
   static List<({String slug, Map<String, dynamic> category})> _extractCategoryEntries(dynamic dataNode) {
-    if (dataNode is! Map<String, dynamic>) {
+    final normalizedDataNode = _asStringDynamicMap(dataNode);
+    if (normalizedDataNode == null) {
       return const [];
     }
 
-    final categoriesNode = dataNode['categories'];
+    final categoriesNode = normalizedDataNode['categories'];
     final entries = <({String slug, Map<String, dynamic> category})>[];
 
-    if (categoriesNode is Map<String, dynamic>) {
-      categoriesNode.forEach((slug, value) {
-        if (value is Map<String, dynamic>) {
-          entries.add((slug: slug.toString(), category: value));
+    final categoriesMap = _asStringDynamicMap(categoriesNode);
+    if (categoriesMap != null) {
+      categoriesMap.forEach((slug, value) {
+        final valueMap = _asStringDynamicMap(value);
+        if (valueMap != null) {
+          entries.add((slug: slug.toString(), category: valueMap));
+          return;
+        }
+
+        final valueList = _asMapList(value);
+        if (valueList.isNotEmpty) {
+          entries.add((slug: slug.toString(), category: {'items': valueList}));
+          return;
+        }
+
+        final scalarValueList = _coerceScalarListToItems(value);
+        if (scalarValueList.isNotEmpty) {
+          entries.add((slug: slug.toString(), category: {'items': scalarValueList}));
         }
       });
       return entries;
@@ -411,7 +472,8 @@ class TaxonomiesResponseDTO {
 
     if (categoriesNode is List) {
       for (final raw in categoriesNode) {
-        if (raw is Map<String, dynamic>) {
+        final rawMap = _asStringDynamicMap(raw);
+        if (rawMap != null) {
           final slug = (raw['slug'] ??
                   raw['group'] ??
                   raw['group_slug'] ??
@@ -425,7 +487,7 @@ class TaxonomiesResponseDTO {
                   '')
               .toString();
           if (slug.isNotEmpty) {
-            entries.add((slug: slug, category: raw));
+            entries.add((slug: slug, category: rawMap));
           }
         }
       }
@@ -433,10 +495,23 @@ class TaxonomiesResponseDTO {
     }
 
     final entriesFromDataMap = <({String slug, Map<String, dynamic> category})>[];
-    for (final entry in dataNode.entries) {
+    for (final entry in normalizedDataNode.entries) {
       final value = entry.value;
-      if (value is Map<String, dynamic> && _extractCategoryItems(value).isNotEmpty) {
-        entriesFromDataMap.add((slug: entry.key, category: value));
+      final valueMap = _asStringDynamicMap(value);
+      if (valueMap != null && _extractCategoryItems(valueMap).isNotEmpty) {
+        entriesFromDataMap.add((slug: entry.key, category: valueMap));
+        continue;
+      }
+
+      final valueList = _asMapList(value);
+      if (valueList.isNotEmpty) {
+        entriesFromDataMap.add((slug: entry.key, category: {'items': valueList}));
+        continue;
+      }
+
+      final scalarValueList = _coerceScalarListToItems(value);
+      if (scalarValueList.isNotEmpty) {
+        entriesFromDataMap.add((slug: entry.key, category: {'items': scalarValueList}));
       }
     }
 
@@ -448,48 +523,208 @@ class TaxonomiesResponseDTO {
   }
 
   static List<Map<String, dynamic>> _extractCategoryItems(Map<String, dynamic> categoryData) {
+    const metadataKeys = {
+      'label_ar',
+      'label_en',
+      'label',
+      'name',
+      'name_ar',
+      'name_en',
+      'title',
+      'title_ar',
+      'title_en',
+      'slug',
+      'endpoint',
+      'count',
+      'total',
+      'pagination',
+      'category',
+      'sync_timestamp',
+      'meta',
+      'message',
+      'success',
+    };
+
     for (final key in const ['items', 'values', 'options', 'records', 'data', 'children']) {
       final candidate = categoryData[key];
       if (candidate is List) {
-        final mapped = candidate.whereType<Map<String, dynamic>>().toList();
+        final mapped = _asMapList(candidate);
         if (mapped.isNotEmpty) return mapped;
+
+        final scalarMapped = _coerceScalarListToItems(candidate);
+        if (scalarMapped.isNotEmpty) return scalarMapped;
       }
-      if (candidate is Map<String, dynamic>) {
+      final candidateMap = _asStringDynamicMap(candidate);
+      if (candidateMap != null) {
         for (final nestedKey in const ['items', 'data', 'values']) {
-          final nested = candidate[nestedKey];
+          final nested = candidateMap[nestedKey];
           if (nested is List) {
-            final mapped = nested.whereType<Map<String, dynamic>>().toList();
+            final mapped = _asMapList(nested);
             if (mapped.isNotEmpty) return mapped;
+
+            final scalarMapped = _coerceScalarListToItems(nested);
+            if (scalarMapped.isNotEmpty) return scalarMapped;
+          }
+
+          final nestedMap = _asStringDynamicMap(nested);
+          if (nestedMap != null) {
+            final nestedKeyedMapped = _coerceKeyedMapToItems(nestedMap, excludedKeys: metadataKeys);
+            if (nestedKeyedMapped.isNotEmpty) return nestedKeyedMapped;
+
+            final nestedScalarMapped = _coerceScalarMapToItems(nestedMap, excludedKeys: metadataKeys);
+            if (nestedScalarMapped.isNotEmpty) return nestedScalarMapped;
           }
         }
 
-        final mapValues = candidate.values.whereType<Map<String, dynamic>>().where((item) {
+        final mapValues = candidateMap.values.map(_asStringDynamicMap).whereType<Map<String, dynamic>>().where((item) {
           return item['id'] != null ||
               item['value'] != null ||
               item['code'] != null ||
               item['label'] != null ||
               item['name'] != null ||
               item['title'] != null ||
+              item['name_arabic'] != null ||
+              item['name_english'] != null ||
+              item['text'] != null ||
+              item['display_name'] != null ||
               item['label_ar'] != null ||
               item['name_ar'] != null;
         }).toList();
         if (mapValues.isNotEmpty) return mapValues;
+
+        final fromKeyedMap = _coerceKeyedMapToItems(candidateMap, excludedKeys: metadataKeys);
+        if (fromKeyedMap.isNotEmpty) return fromKeyedMap;
+
+        final scalarMapValues = _coerceScalarMapToItems(candidateMap, excludedKeys: metadataKeys);
+        if (scalarMapValues.isNotEmpty) return scalarMapValues;
       }
     }
 
-    final directMapValues = categoryData.values.whereType<Map<String, dynamic>>().where((item) {
+    final directMapValues =
+        categoryData.values.map(_asStringDynamicMap).whereType<Map<String, dynamic>>().where((item) {
       return item['id'] != null ||
           item['value'] != null ||
           item['code'] != null ||
           item['label'] != null ||
           item['name'] != null ||
           item['title'] != null ||
+          item['name_arabic'] != null ||
+          item['name_english'] != null ||
+          item['text'] != null ||
+          item['display_name'] != null ||
           item['label_ar'] != null ||
           item['name_ar'] != null;
     }).toList();
     if (directMapValues.isNotEmpty) return directMapValues;
 
+    final fromDirectKeyedMap = _coerceKeyedMapToItems(categoryData, excludedKeys: metadataKeys);
+    if (fromDirectKeyedMap.isNotEmpty) return fromDirectKeyedMap;
+
+    final directScalarMapValues = _coerceScalarMapToItems(categoryData, excludedKeys: metadataKeys);
+    if (directScalarMapValues.isNotEmpty) return directScalarMapValues;
+
     return const [];
+  }
+
+  static List<Map<String, dynamic>> _coerceScalarListToItems(dynamic value) {
+    if (value is! List) return const [];
+
+    final out = <Map<String, dynamic>>[];
+    for (var index = 0; index < value.length; index++) {
+      final item = value[index];
+      if (item == null) continue;
+
+      final mapItem = _asStringDynamicMap(item);
+      if (mapItem != null) {
+        out.add(mapItem);
+        continue;
+      }
+
+      final text = item.toString().trim();
+      if (text.isEmpty) continue;
+      out.add({
+        'id': (index + 1).toString(),
+        'name': text,
+      });
+    }
+
+    return out;
+  }
+
+  static List<Map<String, dynamic>> _coerceScalarMapToItems(
+    Map<String, dynamic> map, {
+    Set<String> excludedKeys = const {},
+  }) {
+    final out = <Map<String, dynamic>>[];
+
+    for (final entry in map.entries) {
+      final key = entry.key.trim();
+      if (key.isEmpty || excludedKeys.contains(key)) {
+        continue;
+      }
+
+      final value = entry.value;
+      if (value == null || value is Map || value is List) {
+        continue;
+      }
+
+      final label = value.toString().trim();
+      if (label.isEmpty) continue;
+
+      out.add({
+        'id': key,
+        'name': label,
+      });
+    }
+
+    return out;
+  }
+
+  static List<Map<String, dynamic>> _coerceKeyedMapToItems(
+    Map<String, dynamic> map, {
+    Set<String> excludedKeys = const {},
+  }) {
+    final out = <Map<String, dynamic>>[];
+
+    for (final entry in map.entries) {
+      final key = entry.key.trim();
+      if (key.isEmpty || excludedKeys.contains(key)) {
+        continue;
+      }
+
+      final valueMap = _asStringDynamicMap(entry.value);
+      if (valueMap == null) {
+        continue;
+      }
+
+      final label = (valueMap['name'] ??
+              valueMap['label'] ??
+              valueMap['title'] ??
+              valueMap['name_ar'] ??
+              valueMap['label_ar'] ??
+              valueMap['name_arabic'] ??
+              valueMap['display_name'] ??
+              valueMap['text'])
+          ?.toString();
+
+      if (label == null || label.trim().isEmpty) {
+        continue;
+      }
+
+      out.add({
+        'id': (valueMap['id'] ?? valueMap['value'] ?? valueMap['code'] ?? key).toString(),
+        'code': (valueMap['code'] ?? valueMap['slug'] ?? valueMap['id'] ?? key).toString(),
+        'name': label,
+        'name_en': (valueMap['name_en'] ?? valueMap['label_en'] ?? valueMap['name_english'])?.toString(),
+        'is_active': valueMap['is_active'] ?? valueMap['active'] ?? valueMap['enabled'],
+        'sort_order': valueMap['sort_order'] ?? valueMap['sort'] ?? valueMap['order'],
+        'created_at': valueMap['created_at'],
+        'updated_at': valueMap['updated_at'],
+        'deleted_at': valueMap['deleted_at'],
+      });
+    }
+
+    return out;
   }
 
   static List<TaxonomyDTO> _extractFlatTaxonomies(Map<String, dynamic> json) {
@@ -504,7 +739,7 @@ class TaxonomiesResponseDTO {
 
     for (final candidate in flatCandidates) {
       if (candidate is List) {
-        for (final item in candidate.whereType<Map<String, dynamic>>()) {
+        for (final item in _asMapList(candidate)) {
           final dto = _flatItemToDto(item);
           if (dto != null) {
             output.add(dto);
@@ -518,10 +753,11 @@ class TaxonomiesResponseDTO {
     }
 
     final dataNode = json['data'];
-    if (dataNode is Map<String, dynamic>) {
-      for (final entry in dataNode.entries) {
+    final dataMap = _asStringDynamicMap(dataNode);
+    if (dataMap != null) {
+      for (final entry in dataMap.entries) {
         if (entry.value is List) {
-          for (final item in (entry.value as List).whereType<Map<String, dynamic>>()) {
+          for (final item in _asMapList(entry.value)) {
             final dto = _flatItemToDto(item, fallbackGroupSlug: entry.key);
             if (dto != null) {
               output.add(dto);
@@ -530,9 +766,9 @@ class TaxonomiesResponseDTO {
           continue;
         }
 
-        if (entry.value is Map<String, dynamic>) {
-          final mapNode = entry.value as Map<String, dynamic>;
-          final mapValues = mapNode.values.whereType<Map<String, dynamic>>();
+        final mapNode = _asStringDynamicMap(entry.value);
+        if (mapNode != null) {
+          final mapValues = mapNode.values.map(_asStringDynamicMap).whereType<Map<String, dynamic>>();
           for (final item in mapValues) {
             final dto = _flatItemToDto(item, fallbackGroupSlug: entry.key);
             if (dto != null) {
@@ -611,7 +847,41 @@ class TaxonomiesResponseDTO {
     return defaultValue;
   }
 
+  static Map<String, dynamic>? _asStringDynamicMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      final result = <String, dynamic>{};
+      for (final entry in value.entries) {
+        result[entry.key.toString()] = entry.value;
+      }
+      return result;
+    }
+    return null;
+  }
+
+  static List<Map<String, dynamic>> _asMapList(dynamic value) {
+    if (value is! List) return const [];
+
+    final out = <Map<String, dynamic>>[];
+    for (final item in value) {
+      final map = _asStringDynamicMap(item);
+      if (map != null) {
+        out.add(map);
+      }
+    }
+    return out;
+  }
+
   static String _resolveGroupValue(String slug, String labelAr, String? labelEn) {
+    final resolvedGroup = resolveTaxonomyGroupFromCandidates([
+      slug,
+      labelAr,
+      labelEn,
+    ]);
+    if (resolvedGroup != null) {
+      return resolvedGroup.value;
+    }
+
     final normalizedFromGroup = TaxonomyGroup.normalizeValue(slug);
     if (normalizedFromGroup != null && TaxonomyGroup.isValidGroup(normalizedFromGroup)) {
       return normalizedFromGroup;
@@ -630,6 +900,7 @@ class TaxonomiesResponseDTO {
       'governorates': 'governorate',
       'governorate': 'governorate',
       'cities': 'governorate',
+      'relations': 'relationship',
       'genders': 'gender',
       'gender': 'gender',
       'sex': 'gender',
@@ -656,6 +927,8 @@ class TaxonomiesResponseDTO {
       'residence-types': 'housing_type',
       'housing-types': 'housing_type',
       'housing-type': 'housing_type',
+      'accommodation-types': 'housing_type',
+      'accommodation-type': 'housing_type',
       'residence-status': 'housing_status',
       'housing-conditions': 'housing_status',
       'housing-condition': 'housing_status',
@@ -674,12 +947,23 @@ class TaxonomiesResponseDTO {
       'sponsorship-categories': 'sponsorship_type',
       'sponsorship-types': 'sponsorship_type',
       'sponsorship-type': 'sponsorship_type',
+      'document-types': 'document_type',
+      'document-type': 'document_type',
+      'bank-names': 'bank_name',
+      'bank-name': 'bank_name',
+      'currencies': 'currency',
+      'currency': 'currency',
+      'death-reasons': 'death_reason',
+      'death-reason': 'death_reason',
       'visits-types': 'visit_type',
       'visit-types': 'visit_type',
       'visit-type': 'visit_type',
       'aid-types': 'assistance_type',
       'assistance-types': 'assistance_type',
       'assistance-type': 'assistance_type',
+      'aid-statuses': 'assistance_type',
+      'request-statuses': 'beneficiary_status',
+      'sponsorship-statuses': 'beneficiary_status',
       'beneficiary-state': 'beneficiary_status',
       'beneficiary-condition': 'beneficiary_status',
       'beneficiary-statuses': 'beneficiary_status',
@@ -687,6 +971,8 @@ class TaxonomiesResponseDTO {
       'kinship': 'relationship',
       'relative-relationship': 'relationship',
       'relationships': 'relationship',
+      'guarantee-types': 'sponsorship_type',
+      'guarantee-type': 'sponsorship_type',
       'department': 'section',
       'departments': 'section',
       'sections': 'section',
@@ -701,14 +987,23 @@ class TaxonomiesResponseDTO {
     if (normalizedSlug.contains('education') || normalizedSlug.contains('academic-degree')) return 'education_level';
     if (normalizedSlug.contains('health')) return 'health_status';
     if (normalizedSlug.contains('housing-type') || normalizedSlug.contains('residence-type')) return 'housing_type';
-    if (normalizedSlug.contains('housing-status') || normalizedSlug.contains('housing-condition'))
+    if (normalizedSlug.contains('housing-status') || normalizedSlug.contains('housing-condition')) {
       return 'housing_status';
+    }
     if (normalizedSlug.contains('disability') || normalizedSlug.contains('special-needs')) return 'disability_type';
     if (normalizedSlug.contains('income')) return 'income_source';
     if (normalizedSlug.contains('association')) return 'association_type';
     if (normalizedSlug.contains('sponsorship')) return 'sponsorship_type';
+    if (normalizedSlug.contains('document')) return 'document_type';
+    if (normalizedSlug.contains('bank')) return 'bank_name';
+    if (normalizedSlug.contains('currency')) return 'currency';
+    if (normalizedSlug.contains('death-reason') || normalizedSlug.contains('death')) return 'death_reason';
     if (normalizedSlug.contains('visit')) return 'visit_type';
-    if (normalizedSlug.contains('assistance') || normalizedSlug.contains('aid-type')) return 'assistance_type';
+    if (normalizedSlug.contains('assistance') ||
+        normalizedSlug.contains('aid-type') ||
+        normalizedSlug.contains('aid-status')) {
+      return 'assistance_type';
+    }
     if (normalizedSlug.contains('beneficiary-status') || normalizedSlug.contains('beneficiary-state')) {
       return 'beneficiary_status';
     }
@@ -729,6 +1024,10 @@ class TaxonomiesResponseDTO {
     if (normalizedAr.contains('مصدر الدخل')) return 'income_source';
     if (normalizedAr.contains('نوع الجمعية')) return 'association_type';
     if (normalizedAr.contains('نوع الكفالة')) return 'sponsorship_type';
+    if (normalizedAr.contains('الوثائ')) return 'document_type';
+    if (normalizedAr.contains('البنك') || normalizedAr.contains('البنوك')) return 'bank_name';
+    if (normalizedAr.contains('العملات') || normalizedAr.contains('عملة')) return 'currency';
+    if (normalizedAr.contains('الوفاة')) return 'death_reason';
     if (normalizedAr.contains('نوع الزيارة')) return 'visit_type';
     if (normalizedAr.contains('نوع المساعدة')) return 'assistance_type';
     if (normalizedAr.contains('حالة المستفيد')) return 'beneficiary_status';
@@ -749,6 +1048,10 @@ class TaxonomiesResponseDTO {
     if (normalizedEn.contains('income source')) return 'income_source';
     if (normalizedEn.contains('association type')) return 'association_type';
     if (normalizedEn.contains('sponsorship type')) return 'sponsorship_type';
+    if (normalizedEn.contains('document type')) return 'document_type';
+    if (normalizedEn.contains('bank')) return 'bank_name';
+    if (normalizedEn.contains('currency')) return 'currency';
+    if (normalizedEn.contains('death reason') || normalizedEn.contains('death')) return 'death_reason';
     if (normalizedEn.contains('visit type')) return 'visit_type';
     if (normalizedEn.contains('assistance type')) return 'assistance_type';
     if (normalizedEn.contains('beneficiary status')) return 'beneficiary_status';
@@ -811,12 +1114,42 @@ class TaxonomyGroupsResponseDTO {
   });
 
   factory TaxonomyGroupsResponseDTO.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    final listNode = switch (rawData) {
+      Map<String, dynamic>() => rawData['categories'],
+      _ => rawData,
+    };
+
+    final groups = <TaxonomyGroupInfoDTO>[];
+
+    if (listNode is List) {
+      groups.addAll(
+        listNode.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).map(TaxonomyGroupInfoDTO.fromJson),
+      );
+    } else if (listNode is Map) {
+      final mapNode = Map<String, dynamic>.from(listNode);
+      for (final entry in mapNode.entries) {
+        final value = entry.value;
+        if (value is Map) {
+          final item = Map<String, dynamic>.from(value);
+          item.putIfAbsent('slug', () => entry.key);
+          item.putIfAbsent('name', () => entry.key);
+          groups.add(TaxonomyGroupInfoDTO.fromJson(item));
+          continue;
+        }
+
+        groups.add(
+          TaxonomyGroupInfoDTO.fromJson({
+            'slug': entry.key,
+            'name': entry.key,
+          }),
+        );
+      }
+    }
+
     return TaxonomyGroupsResponseDTO(
       success: json['success'] == true,
-      data: (json['data'] as List<dynamic>?)
-              ?.map((e) => TaxonomyGroupInfoDTO.fromJson(e as Map<String, dynamic>))
-              .toList() ??
-          [],
+      data: groups,
       message: json['message']?.toString(),
     );
   }
@@ -834,29 +1167,54 @@ class TaxonomyGroupsResponseDTO {
 class TaxonomyGroupInfoDTO {
   final String name;
   final String arabicName;
+  final String? englishName;
+  final String? endpoint;
   final int count;
   final bool isEditable;
 
   const TaxonomyGroupInfoDTO({
     required this.name,
     required this.arabicName,
+    this.englishName,
+    this.endpoint,
     this.count = 0,
     this.isEditable = true,
   });
 
   factory TaxonomyGroupInfoDTO.fromJson(Map<String, dynamic> json) {
+    final rawName =
+        (json['name'] ?? json['slug'] ?? json['group'] ?? json['group_slug'] ?? json['category'] ?? json['key'])
+            ?.toString();
+
+    final rawArabic = (json['arabic_name'] ??
+            json['label_ar'] ??
+            json['name_ar'] ??
+            json['title_ar'] ??
+            json['label'] ??
+            json['name'])
+        ?.toString();
+
+    final countValue = json['count'];
+    final parsedCount = countValue is int ? countValue : int.tryParse(countValue?.toString() ?? '') ?? 0;
+
     return TaxonomyGroupInfoDTO(
-      name: json['name']?.toString() ?? '',
-      arabicName: json['arabic_name']?.toString() ?? '',
-      count: (json['count'] as int?) ?? 0,
+      name: (rawName ?? '').trim(),
+      arabicName: (rawArabic ?? '').trim(),
+      englishName: (json['label_en'] ?? json['name_en'] ?? json['title_en'])?.toString(),
+      endpoint: (json['endpoint'] ?? json['url'] ?? json['path'])?.toString(),
+      count: parsedCount,
       isEditable: json['is_editable'] != false,
     );
   }
+
+  String get slug => name;
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'arabic_name': arabicName,
+      if (englishName != null) 'label_en': englishName,
+      if (endpoint != null) 'endpoint': endpoint,
       'count': count,
       'is_editable': isEditable,
     };
@@ -974,10 +1332,10 @@ class TaxonomyRequestDTO {
   final Map<String, dynamic>? metadata;
 
   const TaxonomyRequestDTO({
-    this.id,
     required this.group,
     required this.code,
     required this.label,
+    this.id,
     this.labelEn,
     this.parentId,
     this.sortOrder,

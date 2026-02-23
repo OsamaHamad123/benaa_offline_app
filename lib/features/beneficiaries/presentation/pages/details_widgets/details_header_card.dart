@@ -9,7 +9,7 @@ import '../../../../../core/widgets/cached_avatar.dart';
 class DetailsHeaderCard extends StatelessWidget {
   final BeneficiaryModel beneficiary;
 
-  const DetailsHeaderCard({super.key, required this.beneficiary});
+  const DetailsHeaderCard({required this.beneficiary, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,6 @@ class DetailsHeaderCard extends StatelessWidget {
             Hero(
               tag: 'beneficiary_avatar_${beneficiary.id}',
               child: CachedAvatar(
-                imageUrl: null, // TODO: Add photo URL when available
                 initials: BeneficiaryDomainHelpers.getInitials(
                   beneficiary.fullName,
                 ),

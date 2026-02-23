@@ -148,7 +148,7 @@ class _OptimizedInfiniteListState extends ConsumerState<OptimizedInfiniteList> {
 class _OptimizedListTile extends StatelessWidget {
   final String title;
 
-  const _OptimizedListTile({super.key, required this.title});
+  const _OptimizedListTile({required this.title, super.key});
 
   @override
   Widget build(BuildContext context) {

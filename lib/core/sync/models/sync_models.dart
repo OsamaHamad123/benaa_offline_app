@@ -13,8 +13,7 @@ class SyncRequest {
 
   const SyncRequest({required this.changes, required this.timestamp});
 
-  factory SyncRequest.fromJson(Map<String, dynamic> json) =>
-      _$SyncRequestFromJson(json);
+  factory SyncRequest.fromJson(Map<String, dynamic> json) => _$SyncRequestFromJson(json);
 
   Map<String, dynamic> toJson() => _$SyncRequestToJson(this);
 }
@@ -37,8 +36,7 @@ class SyncChange {
     required this.timestamp,
   });
 
-  factory SyncChange.fromJson(Map<String, dynamic> json) =>
-      _$SyncChangeFromJson(json);
+  factory SyncChange.fromJson(Map<String, dynamic> json) => _$SyncChangeFromJson(json);
 
   Map<String, dynamic> toJson() => _$SyncChangeToJson(this);
 }
@@ -59,8 +57,7 @@ class SyncResponse {
     required this.errors,
   });
 
-  factory SyncResponse.fromJson(Map<String, dynamic> json) =>
-      _$SyncResponseFromJson(json);
+  factory SyncResponse.fromJson(Map<String, dynamic> json) => _$SyncResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$SyncResponseToJson(this);
 
@@ -85,8 +82,7 @@ class SyncSuccess {
     required this.status,
   });
 
-  factory SyncSuccess.fromJson(Map<String, dynamic> json) =>
-      _$SyncSuccessFromJson(json);
+  factory SyncSuccess.fromJson(Map<String, dynamic> json) => _$SyncSuccessFromJson(json);
 
   Map<String, dynamic> toJson() => _$SyncSuccessToJson(this);
 }
@@ -107,8 +103,7 @@ class SyncConflict {
     required this.serverVersion,
   });
 
-  factory SyncConflict.fromJson(Map<String, dynamic> json) =>
-      _$SyncConflictFromJson(json);
+  factory SyncConflict.fromJson(Map<String, dynamic> json) => _$SyncConflictFromJson(json);
 
   Map<String, dynamic> toJson() => _$SyncConflictToJson(this);
 }
@@ -128,8 +123,7 @@ class ServerVersion {
     required this.data,
   });
 
-  factory ServerVersion.fromJson(Map<String, dynamic> json) =>
-      _$ServerVersionFromJson(json);
+  factory ServerVersion.fromJson(Map<String, dynamic> json) => _$ServerVersionFromJson(json);
 
   Map<String, dynamic> toJson() => _$ServerVersionToJson(this);
 }
@@ -143,10 +137,9 @@ class SyncError {
 
   final String? message;
 
-  const SyncError({this.clientId, required this.error, this.message});
+  const SyncError({required this.error, this.clientId, this.message});
 
-  factory SyncError.fromJson(Map<String, dynamic> json) =>
-      _$SyncErrorFromJson(json);
+  factory SyncError.fromJson(Map<String, dynamic> json) => _$SyncErrorFromJson(json);
 
   Map<String, dynamic> toJson() => _$SyncErrorToJson(this);
 }
@@ -176,8 +169,7 @@ class PullChangesResponse<T> {
   ) =>
       _$PullChangesResponseFromJson(json, fromJsonT);
 
-  Map<String, dynamic> toJson(Object? Function(T) toJsonT) =>
-      _$PullChangesResponseToJson(this, toJsonT);
+  Map<String, dynamic> toJson(Object? Function(T) toJsonT) => _$PullChangesResponseToJson(this, toJsonT);
 }
 
 @JsonSerializable()
@@ -199,8 +191,7 @@ class PaginationMeta {
     required this.hasMore,
   });
 
-  factory PaginationMeta.fromJson(Map<String, dynamic> json) =>
-      _$PaginationMetaFromJson(json);
+  factory PaginationMeta.fromJson(Map<String, dynamic> json) => _$PaginationMetaFromJson(json);
 
   Map<String, dynamic> toJson() => _$PaginationMetaToJson(this);
 }
@@ -224,8 +215,7 @@ class ChangeItem<T> {
   ) =>
       _$ChangeItemFromJson(json, fromJsonT);
 
-  Map<String, dynamic> toJson(Object? Function(T) toJsonT) =>
-      _$ChangeItemToJson(this, toJsonT);
+  Map<String, dynamic> toJson(Object? Function(T) toJsonT) => _$ChangeItemToJson(this, toJsonT);
 
   bool get isCreated => syncAction == 'created';
   bool get isUpdated => syncAction == 'updated';

@@ -50,10 +50,8 @@ class BeneficiaryDataModel {
 
   // Health & Special Needs
   final int? healthStatus; // data_health_status
-  final int?
-      numberOfIndividualsWithChronicDiseases; // data_number_of_individuals_with_chronic_diseases
-  final int?
-      numberOfPeopleWithSpecialNeeds; // data_number_of_people_with_special_needs
+  final int? numberOfIndividualsWithChronicDiseases; // data_number_of_individuals_with_chronic_diseases
+  final int? numberOfPeopleWithSpecialNeeds; // data_number_of_people_with_special_needs
 
   // Housing
   final int? housingStatus; // data_housing_status
@@ -119,9 +117,7 @@ class BeneficiaryDataModel {
       grandFatherName: json['data_grand_father_name'] as String?,
       familyName: json['data_family_name'] as String?,
       relationship: json['data_relationship'] as int?,
-      birthDate: json['data_birth_date'] != null
-          ? DateTime.parse(json['data_birth_date'] as String)
-          : null,
+      birthDate: json['data_birth_date'] != null ? DateTime.parse(json['data_birth_date'] as String) : null,
       gender: json['data_gender'] as int?,
       phoneNumber: json['data_phone_number'] as int?,
       altPhoneNumber: json['data_alt_phone_number'] as int?,
@@ -130,29 +126,21 @@ class BeneficiaryDataModel {
       numberOfMales: json['data_number_mail'] as int?,
       numberOfFemales: json['data_number_female'] as int?,
       academicQualification: json['data_academic_qualification'] as int?,
-      employmentStatusBreadwinner:
-          json['data_employment_status_breadwinner'] as int?,
+      employmentStatusBreadwinner: json['data_employment_status_breadwinner'] as int?,
       displacementStatus: json['data_displacement_status'] as int?,
-      addressBeforeDisplacement:
-          json['data_address_before_displacement'] as String?,
+      addressBeforeDisplacement: json['data_address_before_displacement'] as String?,
       currentAddress: json['data_current_address'] as String?,
       city: json['data_city'] as int?,
       province: json['data_province'] as int?,
       healthStatus: json['data_health_status'] as int?,
-      numberOfIndividualsWithChronicDiseases:
-          json['data_number_of_individuals_with_chronic_diseases'] as int?,
-      numberOfPeopleWithSpecialNeeds:
-          json['data_number_of_people_with_special_needs'] as int?,
+      numberOfIndividualsWithChronicDiseases: json['data_number_of_individuals_with_chronic_diseases'] as int?,
+      numberOfPeopleWithSpecialNeeds: json['data_number_of_people_with_special_needs'] as int?,
       housingStatus: json['data_housing_status'] as int?,
       currentHousingType: json['data_current_housing_type'] as int?,
       descriptionNeeds: json['data_description_needs'] as String?,
       userInsertData: json['data_user_insert_data'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
     );
   }
 
@@ -186,10 +174,8 @@ class BeneficiaryDataModel {
       'data_description_needs': descriptionNeeds,
       'data_number_mail': numberOfMales,
       'data_number_female': numberOfFemales,
-      'data_number_of_individuals_with_chronic_diseases':
-          numberOfIndividualsWithChronicDiseases,
-      'data_number_of_people_with_special_needs':
-          numberOfPeopleWithSpecialNeeds,
+      'data_number_of_individuals_with_chronic_diseases': numberOfIndividualsWithChronicDiseases,
+      'data_number_of_people_with_special_needs': numberOfPeopleWithSpecialNeeds,
       'data_employment_status_breadwinner': employmentStatusBreadwinner,
       'data_housing_status': housingStatus,
       'data_current_housing_type': currentHousingType,
@@ -204,14 +190,14 @@ class BeneficiaryDataModel {
     return BeneficiaryDataModel(
       id: int.tryParse(beneficiary.id),
       fileIdNumber: beneficiary.fileNo,
-      sectionId: beneficiary.category.code,
+      sectionId: beneficiary.sectionId ?? beneficiary.category.code,
       requestStatus: beneficiary.requestStatus?.code ?? 1,
       idNumber: int.tryParse(beneficiary.nationalId),
-      firstName:
-          beneficiary.fatherName, // نستخدم fatherName كـ first name مؤقتاً
+      firstName: beneficiary.firstName,
       fatherName: beneficiary.fatherName,
       grandFatherName: beneficiary.grandFatherName,
       familyName: beneficiary.familyName,
+      relationship: beneficiary.relationship,
       birthDate: beneficiary.birthDate,
       gender: beneficiary.gender == entity.Gender.male ? 1 : 2,
       phoneNumber: int.tryParse(
@@ -250,15 +236,16 @@ class BeneficiaryDataModel {
       nationalId: idNumber?.toString() ?? '0',
       gender: gender == 1 ? entity.Gender.male : entity.Gender.female,
       category: entity.BeneficiaryCategory.fromCode(sectionId ?? 1),
+      sectionId: sectionId,
       birthDate: birthDate,
       fatherName: fatherName,
       grandFatherName: grandFatherName,
       familyName: familyName,
+      relationship: relationship,
       phoneNumber: phoneNumber?.toString(),
       altPhoneNumber: altPhoneNumber != 0 ? altPhoneNumber?.toString() : null,
       governorate: city?.toString(),
       district: province?.toString(),
-      address: null, // لا يوجد حقل مباشر في DB
       currentAddress: currentAddress,
       addressBeforeDisplacement: addressBeforeDisplacement,
       fileNo: fileIdNumber,
@@ -402,7 +389,20 @@ class BeneficiaryDataModel {
 
   static int? _parseLocationCode(String? location) {
     if (location == null || location.isEmpty) return null;
-    return int.tryParse(location);
+    final normalized = location.trim();
+    if (normalized.isEmpty) return null;
+
+    final direct = int.tryParse(normalized);
+    if (direct != null) return direct;
+
+    if (normalized.contains('::')) {
+      final tail = normalized.split('::').last.trim();
+      final parsedTail = int.tryParse(tail);
+      if (parsedTail != null) return parsedTail;
+    }
+
+    final numericSuffix = RegExp(r'(\d+)$').firstMatch(normalized)?.group(1);
+    return numericSuffix == null ? null : int.tryParse(numericSuffix);
   }
 
   // ========================================================================
@@ -439,8 +439,7 @@ class BeneficiaryDataModel {
       city: drift.city,
       province: drift.province,
       healthStatus: drift.healthStatus,
-      numberOfIndividualsWithChronicDiseases:
-          drift.numberOfIndividualsWithChronicDiseases,
+      numberOfIndividualsWithChronicDiseases: drift.numberOfIndividualsWithChronicDiseases,
       numberOfPeopleWithSpecialNeeds: drift.numberOfPeopleWithSpecialNeeds,
       housingStatus: drift.housingStatus,
       currentHousingType: drift.currentHousingType,
@@ -493,8 +492,7 @@ class BeneficiaryDataModel {
       createdAt: drift.Value(createdAt),
       updatedAt: drift.Value(updatedAt),
       serverId: drift.Value(id),
-      syncState:
-          isNew ? const drift.Value('pending') : const drift.Value('synced'),
+      syncState: isNew ? const drift.Value('pending') : const drift.Value('synced'),
       lastSyncedAt: drift.Value(isNew ? null : DateTime.now()),
     );
   }

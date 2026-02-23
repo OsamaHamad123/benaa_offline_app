@@ -293,7 +293,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
                         ? SizedBox(
                             width: 16.w,
                             height: 16.h,
-                            child: CircularProgressIndicator(
+                            child: const CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Colors.deepPurple,
                             ),
@@ -556,7 +556,6 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
             content: const Text(
               'لا توجد بيانات للتصدير.\nتأكد من إضافة مستفيدين أولاً.',
             ),
-            duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: 'إعادة تشغيل',
               onPressed: () {
@@ -736,9 +735,6 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         statistics: [
           const ExportStatistic(label: 'إجمالي المستفيدين', value: '0'),
         ],
-        includeAttachments: true,
-        includeVisits: true,
-        includeActivities: true,
       );
 
       final result = await pdfService.exportToPdf(exportData);
@@ -800,9 +796,6 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         statistics: [
           const ExportStatistic(label: 'إجمالي المستفيدين', value: '0'),
         ],
-        includeAttachments: true,
-        includeVisits: true,
-        includeActivities: true,
       );
 
       final result = await excelService.exportToExcel(exportData);

@@ -8,9 +8,7 @@ class CardActionButtons extends StatelessWidget {
   final VoidCallback? onViewDetails;
 
   const CardActionButtons({
-    super.key,
-    required this.onEdit,
-    required this.onDelete,
+    required this.onEdit, required this.onDelete, super.key,
     this.onViewDetails,
   });
 

@@ -13,11 +13,9 @@ class CachedAvatar extends StatelessWidget {
   final BoxShape shape;
 
   const CachedAvatar({
-    super.key,
+    required this.initials, required this.color, super.key,
     this.imageUrl,
     this.localPath,
-    required this.initials,
-    required this.color,
     this.size = 56,
     this.shape = BoxShape.circle,
   });
@@ -128,7 +126,6 @@ class CachedAvatar extends StatelessWidget {
     return Shimmer.fromColors(
       baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
       highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-      period: const Duration(milliseconds: 1500),
       child: Container(
         width: size,
         height: size,

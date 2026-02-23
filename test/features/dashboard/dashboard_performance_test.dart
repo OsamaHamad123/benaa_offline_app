@@ -10,7 +10,7 @@ void main() {
       const afterMs = 2.0; // ~0-2ms per frame
 
       // حساب التحسين
-      final improvement = ((beforeMs - afterMs) / beforeMs * 100);
+      const improvement = (beforeMs - afterMs) / beforeMs * 100;
 
       expect(
         improvement,
@@ -29,7 +29,7 @@ void main() {
       // الوقت المتوقع مع RepaintBoundary
       const timeWithOptimization = 2.0; // ~2ms
 
-      final performanceGain = timeWithoutOptimization / timeWithOptimization;
+      const performanceGain = timeWithoutOptimization / timeWithOptimization;
       expect(
         performanceGain,
         7.0,
@@ -42,10 +42,10 @@ void main() {
       const userWaitTimeWithoutSkeleton = 100.0; // شعور بالانتظار 100%
       const userWaitTimeWithSkeleton = 30.0; // شعور بالانتظار 30%
 
-      final uxImprovement =
-          ((userWaitTimeWithoutSkeleton - userWaitTimeWithSkeleton) /
+      const uxImprovement =
+          (userWaitTimeWithoutSkeleton - userWaitTimeWithSkeleton) /
               userWaitTimeWithoutSkeleton *
-              100);
+              100;
 
       expect(
         uxImprovement,
@@ -92,8 +92,8 @@ void main() {
       // مع FutureProvider سيتم تقليلها إلى
       const optimizedQueries = 3; // مع Cache وإعادة الاستخدام
 
-      final queryReduction =
-          ((totalQueries - optimizedQueries) / totalQueries * 100);
+      const queryReduction =
+          (totalQueries - optimizedQueries) / totalQueries * 100;
       expect(
         queryReduction,
         40.0,
@@ -108,9 +108,9 @@ void main() {
       // عدد الـ Rebuilds مع const
       const rebuildsWithConst = 3;
 
-      final rebuildReduction = ((rebuildsWithoutConst - rebuildsWithConst) /
+      const rebuildReduction = (rebuildsWithoutConst - rebuildsWithConst) /
           rebuildsWithoutConst *
-          100);
+          100;
 
       expect(
         rebuildReduction,
@@ -127,7 +127,7 @@ void main() {
       const scrollRetention = 8.0; // PageStorageKey ✅
       const emptyStates = 9.0; // Better empty states ✅
 
-      final averageScore = (chartPerformance +
+      const averageScore = (chartPerformance +
               loadingUX +
               interactivity +
               scrollRetention +
@@ -160,7 +160,7 @@ void main() {
       // بعد التحسينات: 9.5/10
       const ratingAfter = 9.5;
 
-      final improvement = ratingAfter - ratingBefore;
+      const improvement = ratingAfter - ratingBefore;
       expect(improvement, 2.0, reason: '+2.0 points improvement in UX rating');
     });
 
@@ -171,8 +171,8 @@ void main() {
       // Performance after: 9.0/10
       const performanceAfter = 9.0;
 
-      final improvementPercentage =
-          ((performanceAfter - performanceBefore) / performanceBefore * 100);
+      const improvementPercentage =
+          (performanceAfter - performanceBefore) / performanceBefore * 100;
 
       expect(
         improvementPercentage,

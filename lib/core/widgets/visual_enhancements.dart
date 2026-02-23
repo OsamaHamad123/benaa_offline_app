@@ -13,9 +13,7 @@ class ShimmerLoading extends StatefulWidget {
   final Color? highlightColor;
 
   const ShimmerLoading({
-    super.key,
-    required this.child,
-    required this.isLoading,
+    required this.child, required this.isLoading, super.key,
     this.baseColor,
     this.highlightColor,
   });
@@ -84,8 +82,7 @@ class FadeInWidget extends StatefulWidget {
   final Duration delay;
 
   const FadeInWidget({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.duration = const Duration(milliseconds: 500),
     this.delay = Duration.zero,
   });
@@ -142,8 +139,7 @@ class RippleCard extends StatelessWidget {
   final List<BoxShadow>? boxShadow;
 
   const RippleCard({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.onTap,
     this.color,
     this.padding,
@@ -191,8 +187,7 @@ class GradientBackground extends StatelessWidget {
   final AlignmentGeometry end;
 
   const GradientBackground({
-    super.key,
-    required this.child,
+    required this.child, super.key,
     this.colors,
     this.begin = Alignment.topLeft,
     this.end = Alignment.bottomRight,
@@ -314,8 +309,7 @@ class AnimatedProgressBar extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const AnimatedProgressBar({
-    super.key,
-    required this.progress,
+    required this.progress, super.key,
     this.color,
     this.backgroundColor,
     this.height = 8,

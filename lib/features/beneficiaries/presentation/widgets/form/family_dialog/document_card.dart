@@ -12,12 +12,7 @@ class DocumentCard extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   const DocumentCard({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.value,
-    required this.groupValue,
-    required this.onTap,
+    required this.label, required this.icon, required this.value, required this.groupValue, required this.onTap, super.key,
   });
 
   @override

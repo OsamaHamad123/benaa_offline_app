@@ -33,8 +33,8 @@ class FormFieldTheme {
       // Material 3 Filled style
       filled: true,
       fillColor: isDark
-          ? theme.colorScheme.surfaceVariant.withOpacity(0.5)
-          : theme.colorScheme.surfaceVariant.withOpacity(0.3),
+          ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+          : theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
 
       // حدود منحنية
       border: OutlineInputBorder(
@@ -47,7 +47,6 @@ class FormFieldTheme {
         borderRadius: BorderRadius.circular(16.r),
         borderSide: BorderSide(
           color: theme.colorScheme.outline.withOpacity(0.2),
-          width: 1,
         ),
       ),
 
@@ -62,7 +61,6 @@ class FormFieldTheme {
         borderRadius: BorderRadius.circular(16.r),
         borderSide: BorderSide(
           color: theme.colorScheme.error.withOpacity(0.5),
-          width: 1,
         ),
       ),
 
@@ -318,7 +316,6 @@ class FormCard {
             borderRadius: BorderRadius.circular(20.r),
             side: BorderSide(
               color: theme.colorScheme.outline.withOpacity(0.2),
-              width: 1,
             ),
           ),
           child: Padding(

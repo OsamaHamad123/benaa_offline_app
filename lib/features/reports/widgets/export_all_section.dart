@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 class ExportAllSection extends StatelessWidget {
   final VoidCallback onExport;
 
-  const ExportAllSection({super.key, required this.onExport});
+  const ExportAllSection({required this.onExport, super.key});
 
   @override
   Widget build(BuildContext context) {

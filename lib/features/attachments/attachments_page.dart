@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AttachmentsPage extends StatelessWidget {
   final String beneficiaryId;
 
-  const AttachmentsPage({super.key, required this.beneficiaryId});
+  const AttachmentsPage({required this.beneficiaryId, super.key});
 
   @override
   Widget build(BuildContext context) {

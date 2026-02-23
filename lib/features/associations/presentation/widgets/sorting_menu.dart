@@ -14,9 +14,7 @@ class SortingMenu extends StatelessWidget {
   final ValueChanged<SortOption> onSortChanged;
 
   const SortingMenu({
-    super.key,
-    required this.currentSort,
-    required this.onSortChanged,
+    required this.currentSort, required this.onSortChanged, super.key,
   });
 
   @override

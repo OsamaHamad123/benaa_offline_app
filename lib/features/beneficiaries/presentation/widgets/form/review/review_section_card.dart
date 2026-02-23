@@ -12,11 +12,7 @@ class ReviewSectionCard extends StatelessWidget {
   final VoidCallback? onEdit;
 
   const ReviewSectionCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.children,
+    required this.title, required this.icon, required this.color, required this.children, super.key,
     this.onEdit,
   });
 

@@ -14,9 +14,7 @@ class AnimatedListItem extends StatelessWidget {
   final Curve curve;
 
   const AnimatedListItem({
-    super.key,
-    required this.child,
-    required this.index,
+    required this.child, required this.index, super.key,
     this.type = AnimationType.slide,
     this.delay = 30,
     this.duration = const Duration(milliseconds: 300),

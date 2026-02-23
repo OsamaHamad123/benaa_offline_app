@@ -69,7 +69,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with Si
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
+          icon: const Icon(
             Icons.arrow_back_ios_rounded,
             color: AppColors.primary,
           ),
@@ -165,7 +165,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with Si
             color: AppColors.success.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(
+          child: const Icon(
             Icons.mark_email_read_rounded,
             size: 50,
             color: AppColors.success,
@@ -227,7 +227,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with Si
 
   Widget _buildIcon() {
     return FadeSlideTransition(
-      duration: AppDurations.normal,
       child: Container(
         height: 80,
         width: 80,
@@ -235,7 +234,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with Si
           color: AppColors.primary.withValues(alpha: 0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(
+        child: const Icon(
           Icons.lock_reset_rounded,
           size: 40,
           color: AppColors.primary,
@@ -250,9 +249,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with Si
       child: TextFormField(
         controller: _emailController,
         enabled: !_isLoading,
-        decoration: InputDecoration(
+        decoration: const InputDecoration(
           labelText: 'البريد الإلكتروني',
-          prefixIcon: const Icon(Icons.email_outlined),
+          prefixIcon: Icon(Icons.email_outlined),
           hintText: 'أدخل بريدك الإلكتروني المسجل',
           filled: true,
           fillColor: Colors.white,
@@ -330,10 +329,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> with Si
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
       ),
-      child: Row(
+      child: const Row(
         children: [
           Icon(Icons.info_outline, color: AppColors.warning, size: 20),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Text(
               'ملاحظة: هذه الخدمة غير متوفرة حالياً.\nتواصل مع المسؤول لإعادة تعيين كلمة المرور.',

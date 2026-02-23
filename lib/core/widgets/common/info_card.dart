@@ -16,10 +16,7 @@ class InfoCard extends StatelessWidget {
   final bool isCompact;
 
   const InfoCard({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.icon,
+    required this.title, required this.value, required this.icon, super.key,
     this.color,
     this.onTap,
     this.isCompact = false,
@@ -112,10 +109,7 @@ class InfoCardCompact extends StatelessWidget {
   final Color? color;
 
   const InfoCardCompact({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.icon,
+    required this.label, required this.value, required this.icon, super.key,
     this.color,
   });
 

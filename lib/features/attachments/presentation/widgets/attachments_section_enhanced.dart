@@ -17,8 +17,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   final bool showTitle;
 
   const AttachmentsSectionEnhanced({
-    super.key,
-    required this.beneficiaryId,
+    required this.beneficiaryId, super.key,
     this.readOnly = false,
     this.showTitle = true,
   });
@@ -107,7 +106,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(strokeWidth: 3),
+            const CircularProgressIndicator(strokeWidth: 3),
             SizedBox(height: 12.h),
             Text(
               'جاري التحميل...',
@@ -394,7 +393,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
               SizedBox(
                 width: 20.sp,
                 height: 20.sp,
-                child: CircularProgressIndicator(
+                child: const CircularProgressIndicator(
                   strokeWidth: 2,
                   color: Colors.white,
                 ),
@@ -592,7 +591,7 @@ class _EnhancedAttachmentCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.red.withOpacity(0.9),
                             shape: BoxShape.circle,
-                            boxShadow: [
+                            boxShadow: const [
                               BoxShadow(
                                 color: Colors.black26,
                                 blurRadius: 2,

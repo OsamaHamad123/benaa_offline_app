@@ -366,8 +366,7 @@ class ResponsiveFormLayout extends StatelessWidget {
   final double spacing;
 
   const ResponsiveFormLayout({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.spacing = 16,
   });
 

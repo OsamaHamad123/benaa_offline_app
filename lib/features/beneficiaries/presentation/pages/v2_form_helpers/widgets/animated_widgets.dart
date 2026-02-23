@@ -13,8 +13,7 @@ class AnimatedCounter extends StatefulWidget {
   final String? prefix;
 
   const AnimatedCounter({
-    super.key,
-    required this.value,
+    required this.value, super.key,
     this.duration = const Duration(milliseconds: 800),
     this.style,
     this.suffix,
@@ -90,8 +89,7 @@ class ProgressRing extends StatelessWidget {
   final Widget? child;
 
   const ProgressRing({
-    super.key,
-    required this.progress,
+    required this.progress, super.key,
     this.size = 100,
     this.strokeWidth = 8,
     this.color,
@@ -175,8 +173,7 @@ class StatusBadge extends StatelessWidget {
   final BadgeSize size;
 
   const StatusBadge({
-    super.key,
-    required this.label,
+    required this.label, super.key,
     this.icon,
     this.color,
     this.size = BadgeSize.medium,
@@ -225,7 +222,7 @@ class StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: badgeColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: badgeColor.withOpacity(0.3), width: 1),
+        border: Border.all(color: badgeColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -262,8 +259,7 @@ class ActionChip extends StatelessWidget {
   final bool selected;
 
   const ActionChip({
-    super.key,
-    required this.label,
+    required this.label, super.key,
     this.icon,
     this.onTap,
     this.onDelete,
@@ -292,7 +288,6 @@ class ActionChip extends StatelessWidget {
               color: selected
                   ? chipColor
                   : theme.colorScheme.outline.withOpacity(0.3),
-              width: 1,
             ),
           ),
           child: Row(
@@ -348,9 +343,7 @@ class TooltipHelper extends StatelessWidget {
   final Duration? waitDuration;
 
   const TooltipHelper({
-    super.key,
-    required this.message,
-    required this.child,
+    required this.message, required this.child, super.key,
     this.waitDuration,
   });
 
@@ -381,9 +374,7 @@ class ExpandableSection extends StatefulWidget {
   final ValueChanged<bool>? onExpansionChanged;
 
   const ExpandableSection({
-    super.key,
-    required this.title,
-    required this.child,
+    required this.title, required this.child, super.key,
     this.icon,
     this.initiallyExpanded = true,
     this.onExpansionChanged,

@@ -30,12 +30,12 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
   final VoidCallback? onFinalSave; // 🆕 Callback for final save
 
   const BeneficiaryFormTabs4Merged({
-    super.key,
     required this.controller,
     required this.formControllers,
     required this.onBirthDateTap,
     required this.firstFieldFocusNode,
     required this.beneficiaryId,
+    super.key,
     this.onFinalSave,
   });
 
@@ -44,11 +44,13 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
 }
 
 class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged> {
-  final Set<int> _loadedTabs = {0}; // Always load first tab
+  final Set<int> _loadedTabs = {0};
+  int _activeTabIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _activeTabIndex = widget.controller.index;
     widget.controller.addListener(_onTabChanged);
   }
 
@@ -62,11 +64,21 @@ class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged>
     if (!mounted) return;
 
     final currentTab = widget.controller.index;
+    var shouldRebuild = false;
 
     // Load immediately if tab hasn't been loaded
     if (!_loadedTabs.contains(currentTab)) {
       _loadedTabs.add(currentTab);
-      if (mounted) setState(() {});
+      shouldRebuild = true;
+    }
+
+    if (_activeTabIndex != currentTab) {
+      _activeTabIndex = currentTab;
+      shouldRebuild = true;
+    }
+
+    if (shouldRebuild && mounted) {
+      setState(() {});
     }
   }
 
@@ -83,16 +95,13 @@ class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged>
 
   @override
   Widget build(BuildContext context) {
-    return TabBarView(
-      controller: widget.controller,
-      physics: const NeverScrollableScrollPhysics(), // Disable swipe - use buttons only
+    return IndexedStack(
+      index: _activeTabIndex,
       children: List.generate(FormConstants.totalTabs, (index) {
-        // Lazy load: only build tabs that have been visited
         if (!_loadedTabs.contains(index)) {
           return const SizedBox.shrink();
         }
 
-        // Wrap with RepaintBoundary for better performance
         return RepaintBoundary(
           key: ValueKey('tab_$index'),
           child: _buildTabAtIndex(index),
@@ -178,9 +187,9 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
   final Map<int, TabCompletionStats>? tabStats;
 
   const BeneficiaryFormTabBar4({
-    super.key,
     required this.controller,
     required this.currentIndex,
+    super.key,
     this.tabStats,
   });
 
@@ -192,7 +201,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         border: Border(
-          bottom: BorderSide(color: theme.colorScheme.outlineVariant, width: 1),
+          bottom: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
       ),
       child: TabBar(
@@ -294,7 +303,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
 class FormProgress4Tabs extends StatelessWidget {
   final int currentStep;
 
-  const FormProgress4Tabs({super.key, required this.currentStep});
+  const FormProgress4Tabs({required this.currentStep, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -332,7 +341,7 @@ class FormProgress4Tabs extends StatelessWidget {
                 ),
               ),
               Text(
-                '${((progress * 100).toInt())}%',
+                '${(progress * 100).toInt()}%',
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.bold,

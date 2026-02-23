@@ -13,8 +13,7 @@ class FieldNavigationHelper extends StatelessWidget {
   final VoidCallback? onDone;
 
   const FieldNavigationHelper({
-    super.key,
-    required this.currentFocus,
+    required this.currentFocus, super.key,
     this.nextFocus,
     this.previousFocus,
     this.onDone,
@@ -71,9 +70,7 @@ class SmartTextField extends StatefulWidget {
   final Widget? suffix;
 
   const SmartTextField({
-    super.key,
-    required this.controller,
-    required this.label,
+    required this.controller, required this.label, super.key,
     this.hint,
     this.icon,
     this.keyboardType,
@@ -172,8 +169,7 @@ class SearchField extends StatefulWidget {
   final Duration debounceDuration;
 
   const SearchField({
-    super.key,
-    required this.controller,
+    required this.controller, super.key,
     this.hint = 'بحث...',
     this.onSearch,
     this.onClear,
@@ -232,9 +228,7 @@ class ValidationMessage extends StatelessWidget {
   final ValidationStatus status;
 
   const ValidationMessage({
-    super.key,
-    required this.message,
-    required this.status,
+    required this.message, required this.status, super.key,
   });
 
   @override
@@ -273,7 +267,7 @@ class ValidationMessage extends StatelessWidget {
       decoration: BoxDecoration(
         color: getColor().withOpacity(0.1),
         borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: getColor().withOpacity(0.3), width: 1),
+        border: Border.all(color: getColor().withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -299,7 +293,7 @@ enum ValidationStatus { success, warning, error, info }
 class FormTimer extends StatefulWidget {
   final DateTime startTime;
 
-  const FormTimer({super.key, required this.startTime});
+  const FormTimer({required this.startTime, super.key});
 
   @override
   State<FormTimer> createState() => _FormTimerState();

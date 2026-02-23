@@ -9,10 +9,8 @@ class GovernorateFilterBottomSheet extends StatefulWidget {
   final Function(String?) onApply;
 
   const GovernorateFilterBottomSheet({
-    super.key,
+    required this.availableGovernorates, required this.onApply, super.key,
     this.currentGovernorate,
-    required this.availableGovernorates,
-    required this.onApply,
   });
 
   @override
@@ -45,7 +43,7 @@ class _GovernorateFilterBottomSheetState
     return ScaleTransitionWidget(
       duration: AppDurations.fast,
       child: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -56,15 +54,15 @@ class _GovernorateFilterBottomSheetState
             FadeSlideTransition(
               duration: AppDurations.fast,
               child: Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 child: Row(
                   children: [
                     Icon(Icons.location_city, color: Colors.blue.shade700),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'اختر المحافظة',
@@ -76,7 +74,7 @@ class _GovernorateFilterBottomSheetState
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close),
+                      icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
                       color: Colors.grey.shade600,
                     ),
@@ -87,11 +85,11 @@ class _GovernorateFilterBottomSheetState
 
             // Search Box
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'ابحث عن محافظة...',
-                  prefixIcon: Icon(Icons.search),
+                  prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -143,7 +141,7 @@ class _GovernorateFilterBottomSheetState
                       });
                     },
                   ),
-                  Divider(height: 1),
+                  const Divider(height: 1),
                   // Governorate Options
                   ..._filteredGovernorates.map((governorate) {
                     final isSelected = _selectedGovernorate == governorate;
@@ -181,7 +179,7 @@ class _GovernorateFilterBottomSheetState
 
             // Action Buttons
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 border: Border(top: BorderSide(color: Colors.grey.shade300)),
@@ -192,13 +190,13 @@ class _GovernorateFilterBottomSheetState
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         side: BorderSide(color: Colors.grey.shade400),
                       ),
-                      child: Text('إلغاء', style: TextStyle(fontSize: 16)),
+                      child: const Text('إلغاء', style: TextStyle(fontSize: 16)),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
@@ -207,10 +205,10 @@ class _GovernorateFilterBottomSheetState
                         Navigator.pop(context);
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         backgroundColor: Colors.blue.shade700,
                       ),
-                      child: Text(
+                      child: const Text(
                         'تطبيق',
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),

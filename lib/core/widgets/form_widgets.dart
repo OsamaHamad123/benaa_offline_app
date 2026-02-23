@@ -40,9 +40,7 @@ class CustomTextField extends StatefulWidget {
   final bool showValidationIcon;
 
   const CustomTextField({
-    super.key,
-    required this.controller,
-    required this.label,
+    required this.controller, required this.label, super.key,
     this.prefixIcon,
     this.suffixIcon,
     this.hint,
@@ -157,11 +155,7 @@ class CustomDropdown<T> extends StatelessWidget {
   final String? hint;
 
   const CustomDropdown({
-    super.key,
-    required this.value,
-    required this.label,
-    required this.items,
-    required this.onChanged,
+    required this.value, required this.label, required this.items, required this.onChanged, super.key,
     this.prefixIcon,
     this.required = false,
     this.validator,
@@ -171,7 +165,7 @@ class CustomDropdown<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: required ? '$label *' : label,
         hintText: hint,
@@ -183,7 +177,6 @@ class CustomDropdown<T> extends StatelessWidget {
       items: items,
       onChanged: onChanged,
       isExpanded: true,
-      isDense: true,
       validator: validator ??
           (required
               ? (value) {
@@ -210,11 +203,7 @@ class StatCard extends StatelessWidget {
   final Widget? trailing;
 
   const StatCard({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
+    required this.title, required this.value, required this.icon, required this.color, super.key,
     this.onTap,
     this.subtitle,
     this.trailing,
@@ -301,10 +290,7 @@ class InfoCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const InfoCard({
-    super.key,
-    required this.title,
-    required this.value,
-    required this.icon,
+    required this.title, required this.value, required this.icon, super.key,
     this.iconColor,
     this.onTap,
   });
@@ -348,10 +334,7 @@ class EmptyStateCard extends StatelessWidget {
   final VoidCallback? onAction;
 
   const EmptyStateCard({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.message,
+    required this.icon, required this.title, required this.message, super.key,
     this.actionText,
     this.onAction,
   });
@@ -418,9 +401,7 @@ class AlertCard extends StatelessWidget {
   final VoidCallback? onAction;
 
   const AlertCard({
-    super.key,
-    required this.title,
-    required this.message,
+    required this.title, required this.message, super.key,
     this.type = AlertType.info,
     this.onDismiss,
     this.actionText,
@@ -525,12 +506,8 @@ class ActionCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const ActionCard({
-    super.key,
-    required this.title,
+    required this.title, required this.icon, required this.color, required this.onTap, super.key,
     this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.onTap,
   });
 
   @override

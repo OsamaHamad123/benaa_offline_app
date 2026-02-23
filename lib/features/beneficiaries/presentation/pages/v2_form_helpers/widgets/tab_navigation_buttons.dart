@@ -12,10 +12,7 @@ class TabNavigationButtons extends StatelessWidget {
   final VoidCallback? onFinalSave; // 🆕 Callback for save button
 
   const TabNavigationButtons({
-    super.key,
-    required this.controller,
-    required this.currentIndex,
-    required this.totalTabs,
+    required this.controller, required this.currentIndex, required this.totalTabs, super.key,
     this.onFinalSave,
   });
 

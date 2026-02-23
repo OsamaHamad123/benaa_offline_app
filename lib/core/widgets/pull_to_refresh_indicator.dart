@@ -10,9 +10,7 @@ class CustomPullToRefreshIndicator extends StatelessWidget {
   final double displacement;
 
   const CustomPullToRefreshIndicator({
-    super.key,
-    required this.child,
-    required this.onRefresh,
+    required this.child, required this.onRefresh, super.key,
     this.color,
     this.backgroundColor,
     this.displacement = 40.0,
@@ -37,8 +35,7 @@ class AnimatedRefreshHeader extends StatefulWidget {
   final String? message;
 
   const AnimatedRefreshHeader({
-    super.key,
-    required this.isRefreshing,
+    required this.isRefreshing, super.key,
     this.message,
   });
 

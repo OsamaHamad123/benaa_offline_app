@@ -1,6 +1,7 @@
 /// 🔍 Advanced Search Filter Entity
 ///
 /// يمثل الفلاتر المتقدمة للبحث
+library;
 
 class AdvancedSearchFilter {
   final String? name;

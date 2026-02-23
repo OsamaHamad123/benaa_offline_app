@@ -10,12 +10,7 @@ class StatisticComparisonCard extends StatelessWidget {
   final Color color;
 
   const StatisticComparisonCard({
-    super.key,
-    required this.label,
-    required this.currentValue,
-    required this.previousValue,
-    required this.icon,
-    required this.color,
+    required this.label, required this.currentValue, required this.previousValue, required this.icon, required this.color, super.key,
   });
 
   @override

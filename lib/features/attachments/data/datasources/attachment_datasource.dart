@@ -47,8 +47,7 @@ class AttachmentDataSource {
   /// Add new attachment
   Future<AttachmentModel> addAttachment({
     required String beneficiaryId,
-    String? visitId,
-    required File sourceFile,
+    required File sourceFile, String? visitId,
   }) async {
     final resolvedBeneficiaryId = await _resolveBeneficiaryIdForQuery(beneficiaryId);
 
@@ -249,7 +248,6 @@ class AttachmentDataSource {
         sourceFile.absolute.path,
         targetPath,
         quality: 85,
-        minWidth: _maxImageSize,
         minHeight: _maxImageSize,
       );
 

@@ -1,4 +1,3 @@
-import 'dart:collection';
 import '../../domain/entities/civil_person.dart';
 
 /// 🗄️ Civil Registry Cache Layer
@@ -17,7 +16,7 @@ class CivilSearchCache {
   final int maxCacheSize;
   final Duration cacheDuration;
 
-  final _cache = LinkedHashMap<String, _CacheEntry>();
+  final _cache = <String, _CacheEntry>{};
 
   CivilSearchCache({
     this.maxCacheSize = 50, // Store last 50 searches
@@ -135,6 +134,5 @@ class CacheStats {
   });
 
   @override
-  String toString() =>
-      'CacheStats(size: $size/$maxSize, hitRate: ${(hitRate * 100).toStringAsFixed(1)}%)';
+  String toString() => 'CacheStats(size: $size/$maxSize, hitRate: ${(hitRate * 100).toStringAsFixed(1)}%)';
 }

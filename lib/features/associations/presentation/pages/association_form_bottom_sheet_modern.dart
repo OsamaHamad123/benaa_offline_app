@@ -201,7 +201,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FormSectionHeader(
+        const FormSectionHeader(
           title: 'المعلومات الأساسية',
           subtitle: 'بيانات الجمعية الرئيسية',
           icon: Icons.info_outline,
@@ -282,7 +282,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FormSectionHeader(
+        const FormSectionHeader(
           title: 'المعلومات البنكية',
           subtitle: 'تفاصيل الحساب البنكي',
           icon: Icons.account_balance,
@@ -394,7 +394,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        FormSectionHeader(
+        const FormSectionHeader(
           title: 'المندوب',
           subtitle: 'اختر المندوب المسؤول',
           icon: Icons.person,
@@ -458,7 +458,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
               ? SizedBox(
                   width: ResponsiveUtils.getIconSize(context) * 0.8,
                   height: ResponsiveUtils.getIconSize(context) * 0.8,
-                  child: CircularProgressIndicator(
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2,
                     color: Colors.white,
                   ),

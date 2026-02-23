@@ -13,9 +13,8 @@ class AuthTokens {
   const AuthTokens({
     required this.accessToken,
     required this.refreshToken,
-    this.userId,
+    required this.expiresAt, this.userId,
     this.username,
-    required this.expiresAt,
   });
 
   factory AuthTokens.fromJson(Map<String, dynamic> json) =>

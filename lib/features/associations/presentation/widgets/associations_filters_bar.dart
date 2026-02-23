@@ -11,12 +11,7 @@ class AssociationsFiltersBar extends StatelessWidget {
   final ValueChanged<String?> onBankChanged;
 
   const AssociationsFiltersBar({
-    super.key,
-    required this.selectedStatus,
-    required this.selectedBank,
-    required this.availableBanks,
-    required this.onStatusChanged,
-    required this.onBankChanged,
+    required this.selectedStatus, required this.selectedBank, required this.availableBanks, required this.onStatusChanged, required this.onBankChanged, super.key,
   });
 
   @override
@@ -157,8 +152,7 @@ class _FilterChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.icon,
-    this.color,
-    required this.onTap,
+    required this.onTap, this.color,
   });
 
   @override

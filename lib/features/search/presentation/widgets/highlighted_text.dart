@@ -15,9 +15,7 @@ class HighlightedText extends StatefulWidget {
   final TextDirection? textDirection;
 
   const HighlightedText({
-    super.key,
-    required this.text,
-    required this.query,
+    required this.text, required this.query, super.key,
     this.textStyle,
     this.highlightStyle,
     this.maxLines = 2,

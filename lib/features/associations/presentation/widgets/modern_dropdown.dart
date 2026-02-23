@@ -13,12 +13,8 @@ class ModernDropdown<T> extends StatelessWidget {
   final bool required;
 
   const ModernDropdown({
-    super.key,
-    required this.labelText,
+    required this.labelText, required this.icon, required this.value, required this.items, super.key,
     this.hintText,
-    required this.icon,
-    required this.value,
-    required this.items,
     this.onChanged,
     this.validator,
     this.required = false,
@@ -30,7 +26,7 @@ class ModernDropdown<T> extends StatelessWidget {
     final primaryColor = theme.colorScheme.primary;
 
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       items: items,
       onChanged: onChanged,
       validator: validator,
@@ -49,14 +45,12 @@ class ModernDropdown<T> extends StatelessWidget {
           borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
           borderSide: BorderSide(
             color: theme.colorScheme.outline,
-            width: 1,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
           borderSide: BorderSide(
             color: theme.colorScheme.outline,
-            width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -70,7 +64,6 @@ class ModernDropdown<T> extends StatelessWidget {
           borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
           borderSide: BorderSide(
             color: theme.colorScheme.error,
-            width: 1,
           ),
         ),
         contentPadding: EdgeInsets.symmetric(

@@ -108,14 +108,13 @@ void main() {
     });
 
     test('toJson should produce valid JSON', () {
-      final dto = TaxonomyDTO(
+      const dto = TaxonomyDTO(
         id: '123',
         groupValue: 'governorate',
         code: 'BGD',
         label: 'بغداد',
         labelEn: 'Baghdad',
         sortOrder: 1,
-        isActive: true,
       );
 
       final json = dto.toJson();
@@ -137,8 +136,7 @@ void main() {
         label: 'بغداد',
         labelEn: 'Baghdad',
         sortOrder: 1,
-        isActive: true,
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024),
         updatedAt: DateTime(2024, 1, 2),
       );
 
@@ -159,7 +157,6 @@ void main() {
         groupValue: 'category',
         code: 'orphan',
         label: 'يتيم',
-        isActive: true,
         createdAt: now,
         updatedAt: now,
       ).toEntity();
@@ -171,12 +168,30 @@ void main() {
       expect(dto.code, 'orphan');
       expect(dto.label, 'يتيم');
     });
+
+    test('toDbCompanion should generate collision-safe local id', () {
+      const dto = TaxonomyDTO(
+        id: '1',
+        groupValue: 'governorate',
+        code: 'GZA',
+        label: 'غزة',
+      );
+
+      final companion = dto.toDbCompanion();
+      expect(companion.id.value, 'governorate::1');
+    });
+
+    test('extractRemoteId should return suffix from local id', () {
+      expect(TaxonomyDTO.extractRemoteId('governorate::1'), '1');
+      expect(TaxonomyDTO.extractRemoteId('plain-id'), 'plain-id');
+      expect(TaxonomyDTO.extractRemoteId(''), '');
+    });
   });
 
   group('TaxonomySyncRequestDTO', () {
     test('toJson should include lastSync when provided', () {
       final request = TaxonomySyncRequestDTO(
-        lastSync: DateTime(2024, 1, 1, 12, 0, 0),
+        lastSync: DateTime(2024, 1, 1, 12),
       );
 
       final json = request.toJson();
@@ -185,7 +200,7 @@ void main() {
     });
 
     test('toJson should not include lastSync when null', () {
-      final request = TaxonomySyncRequestDTO();
+      const request = TaxonomySyncRequestDTO();
 
       final json = request.toJson();
 
@@ -193,7 +208,7 @@ void main() {
     });
 
     test('toJson should include group when provided', () {
-      final request = TaxonomySyncRequestDTO(
+      const request = TaxonomySyncRequestDTO(
         group: 'governorate',
       );
 
@@ -203,7 +218,7 @@ void main() {
     });
 
     test('toJson should include includeDeleted', () {
-      final request = TaxonomySyncRequestDTO(
+      const request = TaxonomySyncRequestDTO(
         includeDeleted: false,
       );
 
@@ -277,7 +292,7 @@ void main() {
         updated: 3,
         deleted: 1,
         message: 'Synced',
-        syncTime: DateTime(2024, 1, 1),
+        syncTime: DateTime(2024),
       );
 
       final json = dto.toJson();
@@ -340,6 +355,92 @@ void main() {
       expect(dto.success, true);
       expect(dto.data, hasLength(2));
       expect(dto.data.first.groupValue, 'gender');
+    });
+
+    test('maps backend API documented slugs to app groups', () {
+      final json = {
+        'success': true,
+        'data': {
+          'categories': {
+            'relations': {
+              'items': [
+                {'id': 1, 'name': 'أخ'},
+              ],
+            },
+            'provinces': {
+              'items': [
+                {'id': 2, 'name': 'غزة'},
+              ],
+            },
+            'accommodation-types': {
+              'items': [
+                {'id': 3, 'name': 'شقة'},
+              ],
+            },
+            'guarantee-types': {
+              'items': [
+                {'id': 4, 'name': 'كفالة فردية'},
+              ],
+            },
+            'document-types': {
+              'items': [
+                {'id': 5, 'name': 'هوية شخصية'},
+              ],
+            },
+            'bank-names': {
+              'items': [
+                {'id': 6, 'name': 'بنك فلسطين'},
+              ],
+            },
+            'currencies': {
+              'items': [
+                {'id': 7, 'name': 'شيكل'},
+              ],
+            },
+            'death-reasons': {
+              'items': [
+                {'id': 8, 'name': 'مرض'},
+              ],
+            },
+          },
+        },
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.data.where((item) => item.groupValue == 'relationship').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'governorate').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'housing_type').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'sponsorship_type').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'document_type').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'bank_name').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'currency').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'death_reason').length, 1);
+    });
+
+    test('parses scalar map items under category data', () {
+      final json = {
+        'success': true,
+        'data': {
+          'categories': {
+            'marital-statuses': {
+              'label_ar': 'الحالة الاجتماعية',
+              'count': 2,
+              'items': {
+                '1': 'أعزب',
+                '2': 'متزوج',
+              },
+            },
+          },
+        },
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.success, true);
+      expect(dto.data, hasLength(2));
+      expect(dto.data.every((item) => item.groupValue == 'marital_status'), true);
+      expect(dto.data.map((item) => item.label).toSet(), containsAll({'أعزب', 'متزوج'}));
     });
   });
 }

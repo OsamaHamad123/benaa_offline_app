@@ -11,8 +11,7 @@ class OfflineModeIndicator extends StatelessWidget {
   final VoidCallback? onTapSync;
 
   const OfflineModeIndicator({
-    super.key,
-    required this.isOffline,
+    required this.isOffline, super.key,
     this.pendingChanges = 0,
     this.onTapSync,
   });
@@ -94,8 +93,7 @@ class ConnectionStatusManager extends StatelessWidget {
   final VoidCallback? onSync;
 
   const ConnectionStatusManager({
-    super.key,
-    required this.isConnected,
+    required this.isConnected, super.key,
     this.lastSync,
     this.pendingUploads = 0,
     this.onSync,
@@ -214,9 +212,7 @@ class DataCacheIndicator extends StatelessWidget {
   final VoidCallback? onClearCache;
 
   const DataCacheIndicator({
-    super.key,
-    required this.cachedRecords,
-    required this.cacheSize,
+    required this.cachedRecords, required this.cacheSize, super.key,
     this.onClearCache,
   });
 

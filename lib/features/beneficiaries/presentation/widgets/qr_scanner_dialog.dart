@@ -7,7 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 class QRScannerDialog extends StatefulWidget {
   final Function(String) onScanned;
 
-  const QRScannerDialog({super.key, required this.onScanned});
+  const QRScannerDialog({required this.onScanned, super.key});
 
   @override
   State<QRScannerDialog> createState() => _QRScannerDialogState();

@@ -1,4 +1,5 @@
 package com.example.benaa_offline_app;
+
 import android.app.Application;
 import android.content.Context;
 
@@ -6,7 +7,6 @@ import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.FlutterEngineCache;
 import io.flutter.embedding.engine.dart.DartExecutor;
-import io.flutter.plugins.GeneratedPluginRegistrant;
 
 public class BenaaApplication extends Application {
     public static final String MAIN_ENGINE_ID = "benaa_main_engine";
@@ -30,7 +30,6 @@ public class BenaaApplication extends Application {
 
         FlutterEngine flutterEngine = new FlutterEngine(appContext);
         flutterEngine.getDartExecutor().executeDartEntrypoint(DartExecutor.DartEntrypoint.createDefault());
-        GeneratedPluginRegistrant.registerWith(flutterEngine);
         cache.put(MAIN_ENGINE_ID, flutterEngine);
         return flutterEngine;
     }

@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class OnboardingPage extends StatefulWidget {
   final VoidCallback onComplete;
 
-  const OnboardingPage({super.key, required this.onComplete});
+  const OnboardingPage({required this.onComplete, super.key});
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -17,27 +17,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
   int _currentPage = 0;
 
   final List<OnboardingSlide> _slides = [
-    OnboardingSlide(
+    const OnboardingSlide(
       icon: Icons.dashboard,
       title: 'مرحباً في لوحة التحكم',
       description:
           'تتبع جميع المستفيدين والإحصائيات في مكان واحد\nبشكل سهل وسريع',
       color: Colors.blue,
     ),
-    OnboardingSlide(
+    const OnboardingSlide(
       icon: Icons.cloud_off,
       title: 'العمل بدون إنترنت',
       description:
           'استمر في العمل حتى بدون اتصال بالإنترنت\nسيتم المزامنة تلقائياً عند الاتصال',
       color: Colors.orange,
     ),
-    OnboardingSlide(
+    const OnboardingSlide(
       icon: Icons.person_add,
       title: 'إضافة المستفيدين بسهولة',
       description: 'أضف وابحث عن المستفيدين بسرعة\nمع خيارات فلترة متقدمة',
       color: Colors.green,
     ),
-    OnboardingSlide(
+    const OnboardingSlide(
       icon: Icons.sync,
       title: 'مزامنة تلقائية',
       description: 'تُزامَن جميع بياناتك تلقائياً مع الخادم\nوبأمان تام',
@@ -255,10 +255,7 @@ class QuickTutorial extends StatelessWidget {
   final Alignment alignment;
 
   const QuickTutorial({
-    super.key,
-    required this.title,
-    required this.description,
-    required this.onDismiss,
+    required this.title, required this.description, required this.onDismiss, super.key,
     this.alignment = Alignment.bottomCenter,
   });
 

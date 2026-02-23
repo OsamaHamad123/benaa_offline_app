@@ -12,11 +12,7 @@ class SelectableChip extends StatelessWidget {
   final Color? color;
 
   const SelectableChip({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.groupValue,
-    required this.onTap,
+    required this.label, required this.value, required this.groupValue, required this.onTap, super.key,
     this.color,
   });
 

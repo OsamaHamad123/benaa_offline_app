@@ -16,7 +16,7 @@ void main() {
     ) async {
       // Arrange
       final growthData = [
-        GrowthDataPoint(date: DateTime(2025, 1, 1), count: 5),
+        GrowthDataPoint(date: DateTime(2025), count: 5),
         GrowthDataPoint(date: DateTime(2025, 1, 2), count: 10),
         GrowthDataPoint(date: DateTime(2025, 1, 3), count: 15),
         GrowthDataPoint(date: DateTime(2025, 1, 4), count: 12),
@@ -54,8 +54,8 @@ void main() {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          builder: (context, child) => MaterialApp(
-            home: Scaffold(body: GrowthChart(growthData: const [])),
+          builder: (context, child) => const MaterialApp(
+            home: Scaffold(body: GrowthChart(growthData: [])),
           ),
         ),
       );
@@ -112,9 +112,9 @@ void main() {
       await tester.pumpWidget(
         ScreenUtilInit(
           designSize: const Size(375, 812),
-          builder: (context, child) => MaterialApp(
+          builder: (context, child) => const MaterialApp(
             home: Scaffold(
-              body: CategoryDistributionChart(categoryCounts: const {}),
+              body: CategoryDistributionChart(categoryCounts: {}),
             ),
           ),
         ),
@@ -130,7 +130,7 @@ void main() {
     test('GrowthChart calculates max Y correctly', () {
       // Arrange
       final growthData = [
-        GrowthDataPoint(date: DateTime(2025, 1, 1), count: 5),
+        GrowthDataPoint(date: DateTime(2025), count: 5),
         GrowthDataPoint(date: DateTime(2025, 1, 2), count: 10),
         GrowthDataPoint(date: DateTime(2025, 1, 3), count: 25), // Max
       ];
@@ -151,7 +151,7 @@ void main() {
         'poor': 20,
         'disabled': 10,
       };
-      final total = 50;
+      const total = 50;
 
       // Act & Assert
       expect(categoryCounts['orphan']! / total * 100, 20.0);

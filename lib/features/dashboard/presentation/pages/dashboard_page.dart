@@ -32,14 +32,6 @@ import '../services/dashboard_navigation_service.dart';
 import '../utils/dashboard_colors.dart';
 import '../utils/dashboard_text_styles.dart';
 import '../utils/dashboard_haptics.dart';
-import '../widgets/quick_actions.dart';
-import '../widgets/activities_section.dart';
-import '../widgets/dashboard_charts.dart';
-import '../widgets/urgent_cases_section.dart';
-import '../widgets/geographic_distribution_section.dart';
-import '../widgets/daily_performance_section.dart';
-import '../widgets/dashboard_summary_widget.dart';
-import '../widgets/advanced_filters_widget.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/dashboard_search_delegate.dart';
 import '../widgets/dashboard_export_dialog.dart';
@@ -528,8 +520,8 @@ class _DashboardHome extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: const SectionTitle(
+              const Expanded(
+                child: SectionTitle(
                   title: 'التصنيفات السريعة',
                   icon: Icons.filter_alt,
                 ),
@@ -608,11 +600,11 @@ class _DashboardHome extends ConsumerWidget {
           SizedBox(height: 24.h),
 
           // Dashboard Summary Widget - لوحة المعلومات المصغرة
-          RepaintBoundary(
+          const RepaintBoundary(
             child: FadeSlideTransition(
               duration: AppDurations.fast,
-              delay: const Duration(milliseconds: 0), // ✅ Stagger: أول widget
-              child: const DashboardSummaryWidget(),
+              delay: Duration(), // ✅ Stagger: أول widget
+              child: DashboardSummaryWidget(),
             ),
           ),
 
@@ -650,7 +642,6 @@ class _DashboardHome extends ConsumerWidget {
                 DashboardNavigationService.navigateToAssociations(context);
               },
               syncBadge: stats.pendingSync,
-              reportsBadge: null,
             ),
           ),
           // 📊 Interactive Charts Section - NEW!
@@ -660,7 +651,6 @@ class _DashboardHome extends ConsumerWidget {
           // Trend Line Chart
           RepaintBoundary(
             child: FadeSlideTransition(
-              duration: AppDurations.normal,
               delay: const Duration(milliseconds: 100), // ✅ Stagger: ثالث widget
               slideOffset: const Offset(0, 0.2),
               child: TrendLineChart(
@@ -677,10 +667,10 @@ class _DashboardHome extends ConsumerWidget {
           // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
           const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
           SizedBox(height: 12.h),
-          ScaleTransitionWidget(
+          const ScaleTransitionWidget(
             duration: AppDurations.fast,
-            delay: const Duration(milliseconds: 150), // ✅ Stagger
-            child: const UrgentCasesSection(),
+            delay: Duration(milliseconds: 150), // ✅ Stagger
+            child: UrgentCasesSection(),
           ),
 
           SizedBox(height: 24.h),
@@ -688,10 +678,10 @@ class _DashboardHome extends ConsumerWidget {
           // Section: Daily Performance - مؤشر الأداء اليومي
           const SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
           SizedBox(height: 12.h),
-          ScaleTransitionWidget(
+          const ScaleTransitionWidget(
             duration: AppDurations.fast,
-            delay: const Duration(milliseconds: 200), // ✅ Stagger
-            child: const DailyPerformanceSection(),
+            delay: Duration(milliseconds: 200), // ✅ Stagger
+            child: DailyPerformanceSection(),
           ),
 
           SizedBox(height: 24.h),

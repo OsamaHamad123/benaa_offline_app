@@ -15,9 +15,8 @@ class AuthUser extends Equatable {
     required this.id,
     required this.name,
     required this.email,
-    this.phone,
+    required this.role, this.phone,
     this.avatar,
-    required this.role,
     this.roles = const [],
     this.permissions = const [],
   });

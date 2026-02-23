@@ -233,8 +233,7 @@ class NewSyncManager {
             break;
 
           default:
-            UnifiedLogger.warning(
-                '⚠️ Unknown entity type: ${entity.entityType}');
+            UnifiedLogger.warning('⚠️ Unknown entity type: ${entity.entityType}');
         }
       }
 
@@ -264,20 +263,124 @@ class NewSyncManager {
 
   /// 🔄 تحديث زيارة
   Future<void> _updateVisit(ServerEntityDto entity) async {
-    // TODO: Implement visit update
-    UnifiedLogger.info('⏭️ Visit update not implemented yet');
+    try {
+      final data = entity.data;
+      final serverId = entity.id.trim();
+      final beneficiaryId = (data['beneficiary_id'] ?? data['beneficiaryId'] ?? '').toString();
+
+      if (serverId.isEmpty || beneficiaryId.isEmpty) {
+        UnifiedLogger.warning('⚠️ Invalid visit payload for ID: ${entity.id}');
+        return;
+      }
+
+      final existing = await (_db.select(_db.visits)..where((v) => v.serverId.equals(serverId))).getSingleOrNull();
+
+      final localId = existing?.id ?? 'srv_visit_$serverId';
+      final visitDateRaw = data['visit_date'] ?? data['visitDate'];
+      final visitDate = visitDateRaw is String ? DateTime.tryParse(visitDateRaw) : null;
+
+      final companion = VisitsCompanion(
+        id: drift.Value(localId),
+        beneficiaryId: drift.Value(beneficiaryId),
+        visitDate: drift.Value(visitDate ?? entity.updatedAt),
+        staffName: drift.Value((data['staff_name'] ?? data['staffName'] ?? 'system_sync').toString()),
+        notes: drift.Value((data['notes'] ?? '').toString()),
+        isSubmitted: const drift.Value(true),
+        createdAt: drift.Value(entity.createdAt ?? entity.updatedAt),
+        updatedAt: drift.Value(entity.updatedAt),
+        syncState: const drift.Value('synced'),
+        serverId: drift.Value(serverId),
+        lastSyncedAt: drift.Value(DateTime.now()),
+      );
+
+      await _db.into(_db.visits).insertOnConflictUpdate(companion);
+      UnifiedLogger.info('✅ Updated visit: ${entity.id}');
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to update visit', error: e);
+    }
   }
 
   /// 🔄 تحديث مرفق
   Future<void> _updateAttachment(ServerEntityDto entity) async {
-    // TODO: Implement attachment update
-    UnifiedLogger.info('⏭️ Attachment update not implemented yet');
+    try {
+      final data = entity.data;
+      final serverId = entity.id.trim();
+
+      if (serverId.isEmpty) {
+        UnifiedLogger.warning('⚠️ Invalid attachment server ID: ${entity.id}');
+        return;
+      }
+
+      final beneficiaryId = (data['beneficiary_id'] ?? data['entity_id'] ?? '').toString();
+      if (beneficiaryId.isEmpty) {
+        UnifiedLogger.warning('⚠️ Missing beneficiary_id for attachment: ${entity.id}');
+        return;
+      }
+
+      final fileName = (data['file_name'] ?? data['filename'] ?? data['name'] ?? 'attachment_$serverId').toString();
+      final filePath = (data['file_path'] ?? data['path'] ?? data['url'] ?? '').toString();
+      final type = (data['type'] ?? data['file_type'] ?? 'other').toString();
+      final fileSizeRaw = data['file_size'] ?? data['size'];
+      final fileSize = fileSizeRaw is int ? fileSizeRaw : int.tryParse(fileSizeRaw?.toString() ?? '') ?? 0;
+
+      final companion = AttachmentsCompanion(
+        id: drift.Value(serverId),
+        beneficiaryId: drift.Value(beneficiaryId),
+        visitId: drift.Value(data['visit_id']?.toString()),
+        fileName: drift.Value(fileName),
+        filePath: drift.Value(filePath),
+        type: drift.Value(type),
+        fileSize: drift.Value(fileSize),
+        thumbnailPath: drift.Value(data['thumbnail_path']?.toString()),
+        documentType: drift.Value(data['document_type']?.toString()),
+        personType: drift.Value(data['person_type']?.toString()),
+        personId: drift.Value(data['person_id']?.toString()),
+        notes: drift.Value(data['notes']?.toString()),
+        createdAt: drift.Value(entity.createdAt ?? entity.updatedAt),
+        updatedAt: drift.Value(entity.updatedAt),
+        syncState: const drift.Value('synced'),
+        serverUrl: drift.Value(data['url']?.toString()),
+        lastSyncedAt: drift.Value(DateTime.now()),
+      );
+
+      await _db.into(_db.attachments).insertOnConflictUpdate(companion);
+      UnifiedLogger.info('✅ Updated attachment: ${entity.id}');
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to update attachment', error: e);
+    }
   }
 
   /// 🔄 تحديث taxonomy
   Future<void> _updateTaxonomy(ServerEntityDto entity) async {
-    // TODO: Implement taxonomy update
-    UnifiedLogger.info('⏭️ Taxonomy update not implemented yet');
+    try {
+      final data = entity.data;
+      final taxonomyId = entity.id.trim();
+
+      if (taxonomyId.isEmpty) {
+        UnifiedLogger.warning('⚠️ Invalid taxonomy ID: ${entity.id}');
+        return;
+      }
+
+      final group = (data['group'] ?? data['category'] ?? 'category').toString();
+      final code = (data['code'] ?? taxonomyId).toString();
+      final label = (data['label'] ?? data['name'] ?? taxonomyId).toString();
+
+      final companion = TaxonomiesCompanion(
+        id: drift.Value(taxonomyId),
+        group: drift.Value(group),
+        code: drift.Value(code),
+        label: drift.Value(label),
+        parentId: drift.Value(data['parent_id']?.toString()),
+        sortOrder: drift.Value(data['sort_order'] as int? ?? 0),
+        isActive: drift.Value(data['is_active'] as bool? ?? true),
+        updatedAt: drift.Value(entity.updatedAt),
+      );
+
+      await _db.into(_db.taxonomies).insertOnConflictUpdate(companion);
+      UnifiedLogger.info('✅ Updated taxonomy: ${entity.id}');
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to update taxonomy', error: e);
+    }
   }
 
   /// 🔄 تحديث فرد متوفى
@@ -345,8 +448,7 @@ class NewSyncManager {
       final serverId = int.tryParse(entity.id);
 
       if (serverId == null) {
-        UnifiedLogger.warning(
-            '⚠️ Invalid family_member server ID: ${entity.id}');
+        UnifiedLogger.warning('⚠️ Invalid family_member server ID: ${entity.id}');
         return;
       }
 
@@ -396,14 +498,79 @@ class NewSyncManager {
   /// 🗑️ معالجة الحذف
   Future<void> _processDeletedItems(List<String> deletedIds) async {
     try {
-      // TODO: Implement deletion logic based on proper ID mapping
-      // Note: Schema uses IntColumn for IDs, need to map String IDs from server
-      UnifiedLogger.info(
-        '⏭️ Deletion processing not fully implemented yet - ${deletedIds.length} items',
-      );
+      int deletedCount = 0;
+
+      for (final raw in deletedIds) {
+        final parsed = _parseDeletedToken(raw);
+        if (parsed == null) {
+          UnifiedLogger.warning('⚠️ Skipping unrecognized deleted token: $raw');
+          continue;
+        }
+
+        final entityType = parsed.$1;
+        final entityId = parsed.$2;
+
+        switch (entityType) {
+          case 'beneficiary':
+            final serverId = int.tryParse(entityId);
+            if (serverId != null) {
+              deletedCount += await (_db.delete(_db.beneficiaries)..where((b) => b.serverId.equals(serverId))).go();
+            }
+            break;
+          case 'visit':
+            deletedCount +=
+                await (_db.delete(_db.visits)..where((v) => v.serverId.equals(entityId) | v.id.equals(entityId))).go();
+            break;
+          case 'attachment':
+            deletedCount += await (_db.delete(_db.attachments)..where((a) => a.id.equals(entityId))).go();
+            break;
+          case 'taxonomy':
+            deletedCount += await (_db.delete(_db.taxonomies)..where((t) => t.id.equals(entityId))).go();
+            break;
+          case 'family_member':
+            final localId = int.tryParse(entityId);
+            if (localId != null) {
+              deletedCount += await (_db.delete(_db.familyMembersTable)
+                    ..where((f) => f.id.equals(localId) | f.serverId.equals(localId)))
+                  .go();
+            }
+            break;
+          case 'family_deceased':
+            final localId = int.tryParse(entityId);
+            if (localId != null) {
+              deletedCount += await (_db.delete(_db.familyDeceasedTable)
+                    ..where((f) => f.id.equals(localId) | f.serverId.equals(localId)))
+                  .go();
+            }
+            break;
+          default:
+            UnifiedLogger.warning('⚠️ Unsupported deleted entity type: $entityType');
+        }
+      }
+
+      UnifiedLogger.info('✅ Deleted $deletedCount item(s) from local database');
     } catch (e) {
       UnifiedLogger.error('❌ Failed to process deletions', error: e);
     }
+  }
+
+  (String, String)? _parseDeletedToken(String raw) {
+    final token = raw.trim();
+    if (token.isEmpty) {
+      return null;
+    }
+
+    final colon = token.indexOf(':');
+    if (colon > 0 && colon < token.length - 1) {
+      return (token.substring(0, colon), token.substring(colon + 1));
+    }
+
+    final hash = token.indexOf('#');
+    if (hash > 0 && hash < token.length - 1) {
+      return (token.substring(0, hash), token.substring(hash + 1));
+    }
+
+    return null;
   }
 
   /// 🗑️ حذف التغييرات الناجحة من القائمة
@@ -603,7 +770,7 @@ class NewSyncManager {
         isSyncing: _isSyncing,
       );
     } catch (e) {
-      return SyncStats(pendingChanges: 0, lastSyncTime: null, isSyncing: false);
+      return SyncStats(pendingChanges: 0, isSyncing: false);
     }
   }
 
@@ -636,8 +803,8 @@ class SyncStats {
 
   SyncStats({
     required this.pendingChanges,
-    this.lastSyncTime,
     required this.isSyncing,
+    this.lastSyncTime,
   });
 }
 

@@ -15,13 +15,19 @@ class ProfessionalSponsorshipCard extends ConsumerWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final String Function(String) typeLabel;
+  final String Function(String)? statusLabel;
+  final bool showLegacyTypeBadge;
+  final bool showLegacyStatusBadge;
 
   const ProfessionalSponsorshipCard({
-    super.key,
     required this.row,
     required this.onEdit,
     required this.onDelete,
     required this.typeLabel,
+    this.statusLabel,
+    this.showLegacyTypeBadge = false,
+    this.showLegacyStatusBadge = false,
+    super.key,
   });
 
   Color _getStatusColor(BuildContext context, String status) {
@@ -62,7 +68,6 @@ class ProfessionalSponsorshipCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(16.r),
               side: BorderSide(
                 color: statusColor.withOpacity(0.1),
-                width: 1,
               ),
             ),
             child: InkWell(
@@ -80,6 +85,8 @@ class ProfessionalSponsorshipCard extends ConsumerWidget {
                     beneficiaryName: row.beneficiary.fullName,
                     associationName: row.associationName,
                     status: s.status,
+                    statusLabel: statusLabel?.call(s.status),
+                    showLegacyBadge: showLegacyStatusBadge,
                     statusColor: statusColor,
                   ),
 
@@ -92,6 +99,7 @@ class ProfessionalSponsorshipCard extends ConsumerWidget {
                     endDate: _formatDate(s.endDate),
                     sponsorshipType: s.sponsorshipType,
                     typeLabel: typeLabel,
+                    showLegacyBadge: showLegacyTypeBadge,
                   ),
 
                   // Action Buttons

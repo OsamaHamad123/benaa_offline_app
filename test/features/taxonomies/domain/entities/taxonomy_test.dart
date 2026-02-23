@@ -15,16 +15,13 @@ void main() {
         code: 'BGD',
         label: 'بغداد',
         labelEn: 'Baghdad',
-        parentId: null,
         sortOrder: 1,
-        isActive: true,
         description: 'العاصمة',
         color: '#FF0000',
         icon: 'location_city',
-        metadata: {'population': 8000000},
+        metadata: const {'population': 8000000},
         createdAt: now,
         updatedAt: now,
-        deletedAt: null,
       );
     });
 
@@ -90,16 +87,13 @@ void main() {
         code: 'BGD',
         label: 'بغداد',
         labelEn: 'Baghdad',
-        parentId: null,
         sortOrder: 1,
-        isActive: true,
         description: 'العاصمة',
         color: '#FF0000',
         icon: 'location_city',
-        metadata: {'population': 8000000},
+        metadata: const {'population': 8000000},
         createdAt: now,
         updatedAt: now,
-        deletedAt: null,
       );
 
       expect(taxonomy, taxonomy2);
@@ -116,7 +110,7 @@ void main() {
         totalCount: 100,
         activeCount: 80,
         inactiveCount: 20,
-        countByGroup: {
+        countByGroup: const {
           TaxonomyGroup.governorate: 18,
           TaxonomyGroup.category: 10,
         },

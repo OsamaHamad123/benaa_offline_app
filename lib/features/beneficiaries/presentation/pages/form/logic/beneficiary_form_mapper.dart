@@ -69,7 +69,6 @@ class BeneficiaryFormMapper {
       fileNo: controllers.fileNumberController.text.trim().isNotEmpty
           ? controllers.fileNumberController.text.trim()
           : null, // 🆕 NEW
-      associationName: null,
 
       // Parse enums
       maritalStatus: _parseMaritalStatus(controllers.selectedMaritalStatus),

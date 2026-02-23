@@ -14,10 +14,8 @@ class TouchFriendlyButton extends StatelessWidget {
   final bool isOutlined;
 
   const TouchFriendlyButton({
-    super.key,
-    required this.label,
+    required this.label, required this.onPressed, super.key,
     this.icon,
-    required this.onPressed,
     this.color,
     this.isOutlined = false,
   });
@@ -83,11 +81,8 @@ class BottomSheetPicker extends StatelessWidget {
   final IconData? icon;
 
   const BottomSheetPicker({
-    super.key,
-    required this.title,
-    required this.options,
+    required this.title, required this.options, required this.onSelected, super.key,
     this.selectedValue,
-    required this.onSelected,
     this.icon,
   });
 
@@ -218,9 +213,7 @@ class NumberPadField extends StatelessWidget {
   final String? hintText;
 
   const NumberPadField({
-    super.key,
-    required this.label,
-    required this.controller,
+    required this.label, required this.controller, super.key,
     this.maxLength,
     this.hintText,
   });
@@ -265,10 +258,7 @@ class TouchFriendlyCheckbox extends StatelessWidget {
   final String? subtitle;
 
   const TouchFriendlyCheckbox({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.onChanged,
+    required this.label, required this.value, required this.onChanged, super.key,
     this.subtitle,
   });
 

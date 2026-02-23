@@ -12,7 +12,7 @@ class GenderDonutChart extends StatefulWidget {
   final List<GenderCount> data;
   final int total;
 
-  const GenderDonutChart({super.key, required this.data, required this.total});
+  const GenderDonutChart({required this.data, required this.total, super.key});
 
   @override
   State<GenderDonutChart> createState() => _GenderDonutChartState();

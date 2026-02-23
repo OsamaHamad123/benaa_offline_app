@@ -10,8 +10,7 @@ class SettingsSectionCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const SettingsSectionCard({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.margin,
     this.padding,
   });
@@ -55,10 +54,7 @@ class SettingsSectionHeader extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const SettingsSectionHeader({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.color,
+    required this.title, required this.icon, required this.color, super.key,
     this.padding,
   });
 

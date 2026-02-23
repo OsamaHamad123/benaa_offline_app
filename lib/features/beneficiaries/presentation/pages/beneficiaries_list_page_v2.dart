@@ -49,7 +49,7 @@ class _BeneficiariesListPageV2State
   @override
   void initState() {
     super.initState();
-    _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 300));
+    _searchDebouncer = Debouncer();
     _scrollThrottler = Throttler(interval: const Duration(milliseconds: 100));
     _scrollController.addListener(_onScroll);
 
@@ -211,7 +211,6 @@ class _BeneficiariesListPageV2State
       floatingActionButton: selection.isSelectionMode
           ? null
           : QuickActionsMenu(
-              mainIcon: Icons.add,
               tooltip: 'إضافة',
               actions: [
                 QuickAction(
@@ -319,8 +318,8 @@ class _BeneficiariesListPageV2State
       return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: 5,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.only(bottom: 16),
+        itemBuilder: (context, index) => const Padding(
+          padding: EdgeInsets.only(bottom: 16),
           child: SkeletonListItem(),
         ),
       );
@@ -344,8 +343,8 @@ class _BeneficiariesListPageV2State
           onPressed: () {
             context.push('/beneficiaries/add');
           },
-          icon: Icon(Icons.add),
-          label: Text('إضافة مستفيد'),
+          icon: const Icon(Icons.add),
+          label: const Text('إضافة مستفيد'),
         ),
       );
     }
@@ -376,7 +375,6 @@ class _BeneficiariesListPageV2State
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       // ⚡ Performance optimizations
       addAutomaticKeepAlives: false, // Don't keep offscreen items alive
-      addRepaintBoundaries: true, // Each item has repaint boundary
       cacheExtent: 800, // Increased cache for smoother scrolling
       itemCount: state.items.length + (state.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
@@ -396,7 +394,6 @@ class _BeneficiariesListPageV2State
         return RepaintBoundary(
           child: AnimatedListItem(
             index: index,
-            type: AnimationType.slide,
             child: SwipeableCardWidget(
               enabled: !selection.isSelectionMode,
               onSwipeRight: () async {
@@ -433,7 +430,6 @@ class _BeneficiariesListPageV2State
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       // ⚡ Performance optimizations
       addAutomaticKeepAlives: false,
-      addRepaintBoundaries: true,
       cacheExtent: 800, // Increased cache for smoother scrolling
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: _getGridColumns(context),

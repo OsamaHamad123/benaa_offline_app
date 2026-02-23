@@ -5,6 +5,7 @@
 ///
 /// هذا الملف موجود للتوافق مع الإصدارات القديمة فقط
 /// ⚠️ Deprecated: استخدم الملفات الجديدة مباشرة
+library;
 
 export '../../form/family_dialog/family_dialog_widgets.dart';
 

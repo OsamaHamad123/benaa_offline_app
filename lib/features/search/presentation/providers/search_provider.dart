@@ -73,7 +73,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
   // Note: Page-level adaptive debounce (50-200ms) happens first
   // This is a fallback for programmatic searches
   Timer? _debounceTimer;
-  static final Duration _debounceDuration = AppConstants.searchDebounceDuration;
+  static const Duration _debounceDuration = AppConstants.searchDebounceDuration;
 
   // 🚫 Request cancellation token
   int _requestId = 0;
@@ -189,7 +189,6 @@ class SearchNotifier extends StateNotifier<SearchState> {
         results: [],
         currentPage: 0,
         totalResults: 0,
-        error: null,
       );
     }
   }
@@ -267,7 +266,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
     // Instant clear for empty query
     if (state.query.trim().isEmpty) {
-      state = state.copyWith(results: [], currentPage: 0, error: null);
+      state = state.copyWith(results: [], currentPage: 0);
       return;
     }
 
@@ -279,13 +278,12 @@ class SearchNotifier extends StateNotifier<SearchState> {
         currentPage: 1,
         hasMore: false,
         isSearching: false,
-        error: null,
       );
       return;
     }
 
     // Show searching state immediately
-    state = state.copyWith(isSearching: true, error: null);
+    state = state.copyWith(isSearching: true);
 
     // Debounce the actual search
     _debounceTimer = Timer(_debounceDuration, () {
@@ -331,7 +329,6 @@ class SearchNotifier extends StateNotifier<SearchState> {
         currentPage: 1,
         hasMore: false,
         isSearching: false,
-        error: null,
         searchDurationMs: stopwatch.elapsedMilliseconds, // ⚡ Track duration
       );
       return;
@@ -347,12 +344,10 @@ class SearchNotifier extends StateNotifier<SearchState> {
         results: [],
         currentPage: 0,
         hasMore: false,
-        error: null,
         totalResults: 0,
-        searchDurationMs: null,
       );
     } else {
-      state = state.copyWith(isSearching: true, error: null);
+      state = state.copyWith(isSearching: true);
     }
 
     try {
@@ -610,7 +605,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
   /// Load more results (pagination)
   Future<void> loadMore() async {
     if (!state.hasMore || state.isSearching) return;
-    await search(reset: false);
+    await search();
   }
 
   /// 🎯 Get autocomplete suggestions from cache

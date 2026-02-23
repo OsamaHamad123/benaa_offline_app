@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
 import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
-import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 import '../providers/dashboard_providers.dart';
 import '../providers.dart'; // ✅ Import topGovernoratesProvider
 
@@ -63,7 +62,7 @@ class GeographicDistributionSection extends ConsumerWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
-            side: BorderSide(color: AppColors.info.withOpacity(0.3), width: 1),
+            side: BorderSide(color: AppColors.info.withOpacity(0.3)),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -171,7 +170,7 @@ class GeographicDistributionSection extends ConsumerWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
-          side: BorderSide(color: AppColors.error.withOpacity(0.3), width: 1),
+          side: BorderSide(color: AppColors.error.withOpacity(0.3)),
         ),
         child: Padding(
           padding: EdgeInsets.all(16.w),
@@ -186,7 +185,7 @@ class GeographicDistributionSection extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: AppColors.divider.withOpacity(0.3), width: 1),
+        side: BorderSide(color: AppColors.divider.withOpacity(0.3)),
       ),
       child: Container(
         padding: EdgeInsets.all(24.w),
@@ -243,8 +242,6 @@ class GeographicDistributionSection extends ConsumerWidget {
       builder: (context) => ResponsiveBottomSheet(
         title: 'جميع المحافظات (عدد ${entries.length})',
         icon: Icons.location_city,
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
         maxChildSize: 0.9,
         builder: (scrollController) {
           final maxCount = entries.first.value;
@@ -275,7 +272,7 @@ class GeographicDistributionSection extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.grey.withOpacity(0.2), width: 1),
+        side: BorderSide(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Container(
         padding: EdgeInsets.all(16.w),

@@ -12,8 +12,7 @@ class InitialSetupPage extends StatefulWidget {
   final String? expectedChecksum;
 
   const InitialSetupPage({
-    super.key,
-    required this.downloadUrl,
+    required this.downloadUrl, super.key,
     this.expectedChecksum,
   });
 

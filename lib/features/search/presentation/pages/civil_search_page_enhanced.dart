@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
@@ -324,7 +323,6 @@ class _CivilSearchPageEnhancedState
         expandedHeight: rv.isMobile
             ? 200
             : (rv.isTablet ? 220 : 240), // ⚡ Increased to prevent overlap
-        floating: false,
         pinned: true,
         elevation: 0,
         stretch: true, // ⚡ Smooth bounce effect
@@ -426,7 +424,6 @@ class _CivilSearchPageEnhancedState
   Widget _buildLoadingAppBar(ResponsiveValues rv) {
     return SliverAppBar(
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
-      floating: false,
       pinned: true,
       backgroundColor:
           Colors.grey.shade400, // ⚡ Simple color instead of gradient
@@ -440,7 +437,6 @@ class _CivilSearchPageEnhancedState
   Widget _buildErrorAppBar(ResponsiveValues rv) {
     return SliverAppBar(
       expandedHeight: rv.isMobile ? 160 : (rv.isTablet ? 180 : 200),
-      floating: false,
       pinned: true,
       backgroundColor:
           Colors.red.shade400, // ⚡ Simple color instead of gradient
@@ -460,7 +456,7 @@ class _CivilSearchPageEnhancedState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200, width: 1),
+          border: Border.all(color: Colors.grey.shade200),
           // ⚡ Removed BoxShadow for better performance
         ),
         child: Column(
@@ -548,12 +544,12 @@ class _CivilSearchPageEnhancedState
             // 🚀 LIVE SEARCH FEEDBACK
             if (searchState.query.isNotEmpty && !searchState.isSearching)
               Padding(
-                padding: EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.only(top: 12),
                 child: Row(
                   children: [
                     // Result count
                     Container(
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
                       ),
@@ -581,9 +577,9 @@ class _CivilSearchPageEnhancedState
                     ),
                     // Speed indicator
                     if (searchState.searchDurationMs != null) ...[
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Container(
-                        padding: EdgeInsets.symmetric(
+                        padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 6,
                         ),
@@ -611,7 +607,7 @@ class _CivilSearchPageEnhancedState
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Icon(
                               _getSpeedIcon(searchState.searchDurationMs!),
                               size: 16,
@@ -729,7 +725,7 @@ class _CivilSearchPageEnhancedState
                         color: Colors.amber.shade700,
                         size: 20,
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'الفلاتر النشطة',
@@ -751,7 +747,7 @@ class _CivilSearchPageEnhancedState
                     ],
                   ),
                   // Show active filters
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -860,7 +856,7 @@ class _CivilSearchPageEnhancedState
                       color: Colors.blue.shade700,
                       size: 28,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: ValueListenableBuilder<bool>(
                         valueListenable: _isFirstSearchNotifier,
@@ -988,8 +984,6 @@ class _CivilSearchPageEnhancedState
           // ⚡ Performance optimizations
           addAutomaticKeepAlives:
               false, // Don't keep state of scrolled-away items
-          addRepaintBoundaries:
-              true, // ⚡ Isolate card repaints (ResultCard no longer wraps)
           addSemanticIndexes:
               false, // Reduce overhead for assistive technologies
         ),
@@ -1129,7 +1123,7 @@ class _CivilSearchPageEnhancedState
                           size: 18,
                           color: Colors.blue.shade700,
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                         Text(
                           'جرب البحث عن:',
                           style: TextStyle(
@@ -1156,7 +1150,7 @@ class _CivilSearchPageEnhancedState
                                 .search(reset: true);
                           },
                           child: Container(
-                            padding: EdgeInsets.symmetric(
+                            padding: const EdgeInsets.symmetric(
                               horizontal: 12,
                               vertical: 6,
                             ),
@@ -1249,7 +1243,7 @@ class _CivilSearchPageEnhancedState
     MaterialColor color = Colors.blue,
   }) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: color.shade100,
         borderRadius: BorderRadius.circular(20),
@@ -1259,7 +1253,7 @@ class _CivilSearchPageEnhancedState
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 14, color: color.shade700),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
@@ -1268,7 +1262,7 @@ class _CivilSearchPageEnhancedState
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(width: 6),
+          const SizedBox(width: 6),
           InkWell(
             onTap: onRemove,
             child: Icon(Icons.close, size: 16, color: color.shade700),
@@ -1304,7 +1298,6 @@ class _CivilSearchPageEnhancedState
     return SmartSuggestionsGenerator.generateSuggestions(
       query: query,
       recentResults: ref.read(searchProvider).results,
-      maxSuggestions: 5,
     );
   }
 }
@@ -1329,7 +1322,7 @@ class _StatChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.22),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.35), width: 1),
+        border: Border.all(color: Colors.white.withOpacity(0.35)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1395,7 +1388,7 @@ class _PerformanceIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor, width: 1),
+          border: Border.all(color: borderColor),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

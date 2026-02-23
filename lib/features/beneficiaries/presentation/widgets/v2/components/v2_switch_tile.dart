@@ -11,11 +11,8 @@ class V2SwitchTile extends StatelessWidget {
   final bool enabled;
 
   const V2SwitchTile({
-    super.key,
-    required this.title,
+    required this.title, required this.value, required this.onChanged, super.key,
     this.subtitle,
-    required this.value,
-    required this.onChanged,
     this.icon,
     this.enabled = true,
   });
@@ -31,7 +28,6 @@ class V2SwitchTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: colorScheme.outline.withOpacity(0.2),
-          width: 1,
         ),
       ),
       child: SwitchListTile(

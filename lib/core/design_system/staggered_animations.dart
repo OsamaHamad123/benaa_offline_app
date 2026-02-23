@@ -9,8 +9,7 @@ class StaggeredAnimationGroup extends StatelessWidget {
   final Offset slideOffset;
 
   const StaggeredAnimationGroup({
-    super.key,
-    required this.children,
+    required this.children, super.key,
     this.delay = const Duration(milliseconds: 50),
     this.animationDuration = const Duration(milliseconds: 400),
     this.slideOffset = const Offset(0, 0.1),
@@ -48,9 +47,7 @@ class StaggeredListAnimation extends StatelessWidget {
   final bool shrinkWrap;
 
   const StaggeredListAnimation({
-    super.key,
-    required this.itemCount,
-    required this.itemBuilder,
+    required this.itemCount, required this.itemBuilder, super.key,
     this.delay = const Duration(milliseconds: 50),
     this.animationDuration = const Duration(milliseconds: 400),
     this.physics,

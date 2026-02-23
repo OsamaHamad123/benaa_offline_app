@@ -17,7 +17,7 @@ void main() {
       // Act
       await pumpTestWidget(
         tester,
-        StatCard(
+        const StatCard(
           icon: testIcon,
           label: testLabel,
           value: testValue,
@@ -62,7 +62,7 @@ void main() {
       // Act
       await pumpTestWidget(
         tester,
-        StatCard(
+        const StatCard(
           icon: Icons.pause_circle_rounded,
           label: 'موقوفة',
           value: '25',
@@ -93,7 +93,7 @@ void main() {
           designSize: const Size(375, 812),
           child: MaterialApp(
             theme: ThemeData.dark(),
-            home: Scaffold(
+            home: const Scaffold(
               body: StatCard(
                 icon: Icons.check_circle_rounded,
                 label: 'نشطة',
@@ -113,7 +113,7 @@ void main() {
       // Act
       await pumpTestWidget(
         tester,
-        StatCard(
+        const StatCard(
           icon: Icons.handshake_rounded,
           label: 'إجمالي',
           value: '150',

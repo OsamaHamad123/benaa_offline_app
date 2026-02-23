@@ -266,10 +266,9 @@ class BackupResult {
 
   BackupResult({
     required this.success,
-    this.backupPath,
+    required this.timestamp, this.backupPath,
     this.size,
     this.error,
-    required this.timestamp,
   });
 }
 

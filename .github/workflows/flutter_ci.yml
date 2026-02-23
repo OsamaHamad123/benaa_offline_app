@@ -13,6 +13,8 @@ jobs:
   analyze-and-test:
     name: Analyze & Test
     runs-on: ubuntu-latest
+    env:
+      FORM_OPEN_BASELINE_MS: 3000
 
     steps:
       - name: 📥 Checkout code
@@ -42,6 +44,38 @@ jobs:
 
       - name: 🧪 Run tests
         run: flutter test --coverage
+
+      - name: ⏱️ Form open performance guard
+        run: |
+          mkdir -p build/reports
+          flutter test \
+            test/features/beneficiaries/presentation/performance/beneficiary_form_open_ci_guard_test.dart \
+            --dart-define=FORM_OPEN_BASELINE_MS=${FORM_OPEN_BASELINE_MS} \
+            | tee build/reports/form_open_benchmark_output.txt
+
+          OPEN_MS=$(grep -Eo 'openMs=[0-9]+' build/reports/form_open_benchmark_output.txt | tail -n1 | cut -d= -f2)
+          if [ -z "$OPEN_MS" ]; then OPEN_MS="-1"; fi
+
+          {
+            echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "baseline_ms=$FORM_OPEN_BASELINE_MS"
+            echo "open_ms=$OPEN_MS"
+          } > build/reports/form_open_benchmark_metric.txt
+
+          {
+            echo "# Form Open Benchmark"
+            echo ""
+            echo "- Baseline: ${FORM_OPEN_BASELINE_MS} ms"
+            echo "- Measured: ${OPEN_MS} ms"
+            echo "- Timestamp (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > build/reports/form_open_benchmark_summary.md
+
+      - name: 📤 Upload form benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: form-open-benchmark
+          path: build/reports/form_open_benchmark_*
+          retention-days: 30
 
       - name: 📈 Upload coverage to Codecov
         uses: codecov/codecov-action@v4

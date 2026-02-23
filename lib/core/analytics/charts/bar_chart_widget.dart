@@ -11,9 +11,7 @@ class BarChartWidget extends StatelessWidget {
   final String yAxisLabel;
 
   const BarChartWidget({
-    super.key,
-    required this.data,
-    required this.title,
+    required this.data, required this.title, super.key,
     this.xAxisLabel = '',
     this.yAxisLabel = '',
   });
@@ -66,7 +64,6 @@ class BarChartWidget extends StatelessWidget {
         ),
       ),
       titlesData: FlTitlesData(
-        show: true,
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
@@ -103,10 +100,10 @@ class BarChartWidget extends StatelessWidget {
           ),
         ),
         topTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
+          
         ),
         rightTitles: const AxisTitles(
-          sideTitles: SideTitles(showTitles: false),
+          
         ),
       ),
       borderData: FlBorderData(
@@ -117,7 +114,6 @@ class BarChartWidget extends StatelessWidget {
       ),
       barGroups: _buildBarGroups(context),
       gridData: FlGridData(
-        show: true,
         drawVerticalLine: false,
         horizontalInterval: _getMaxY() / 5,
         getDrawingHorizontalLine: (value) {

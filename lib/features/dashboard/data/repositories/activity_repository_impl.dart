@@ -48,7 +48,7 @@ class ActivityRepositoryImpl implements ActivityRepository {
   Future<Result<void>> logActivity(Activity activity) async {
     try {
       await localDataSource.logActivity(activity);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('Failed to log activity: $e', stackTrace));
     }
@@ -58,7 +58,7 @@ class ActivityRepositoryImpl implements ActivityRepository {
   Future<Result<void>> deleteActivity(String activityId) async {
     try {
       await localDataSource.deleteActivity(activityId);
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(
           DatabaseFailure('Failed to delete activity: $e', stackTrace));
@@ -69,7 +69,7 @@ class ActivityRepositoryImpl implements ActivityRepository {
   Future<Result<void>> clearAllActivities() async {
     try {
       await localDataSource.clearAllActivities();
-      return Success(null);
+      return const Success(null);
     } catch (e, stackTrace) {
       return Failure(
           DatabaseFailure('Failed to clear activities: $e', stackTrace));

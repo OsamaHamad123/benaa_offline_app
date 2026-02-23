@@ -216,7 +216,6 @@ class _LoginPageState extends ConsumerState<LoginPage> with TickerProviderStateM
   Widget _buildLogo() {
     return FadeSlideTransition(
       duration: AppDurations.slow,
-      slideOffset: const Offset(0, 0.3),
       child: Hero(
         tag: 'app_logo',
         child: Column(
@@ -414,7 +413,7 @@ class _LoginPageState extends ConsumerState<LoginPage> with TickerProviderStateM
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16.r), borderSide: BorderSide.none),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
-              borderSide: BorderSide(color: Colors.white.withOpacity(0.8), width: 1),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.8)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16.r),
@@ -468,8 +467,6 @@ class _LoginPageState extends ConsumerState<LoginPage> with TickerProviderStateM
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [AppColors.primary, AppColors.primaryDark],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
           ),
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [

@@ -82,13 +82,13 @@ class M3TextField extends StatelessWidget {
                         child: Text(
                           label!,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Icon(
                         Icons.star,
                         size: 8,
@@ -98,7 +98,7 @@ class M3TextField extends StatelessWidget {
                   )
                 : Text(
                     label!,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -123,7 +123,7 @@ class M3TextField extends StatelessWidget {
         // Prefix Icon with better styling
         prefixIcon: prefixIcon != null
             ? Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(
                   prefixIcon,
                   size: 22,
@@ -144,7 +144,6 @@ class M3TextField extends StatelessWidget {
           ),
           borderSide: BorderSide(
             color: theme.colorScheme.outline.withOpacity(0.3),
-            width: 1,
           ),
         ),
         enabledBorder: OutlineInputBorder(
@@ -153,7 +152,6 @@ class M3TextField extends StatelessWidget {
           ),
           borderSide: BorderSide(
             color: theme.colorScheme.outline.withOpacity(0.2),
-            width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -218,12 +216,11 @@ class M3DropdownField<T> extends StatelessWidget {
   final String? helperText;
 
   const M3DropdownField({
-    super.key,
+    required this.items, super.key,
     this.value,
     this.label,
     this.prefixIcon,
     this.isRequired = false,
-    required this.items,
     this.onChanged,
     this.validator,
     this.helperText,
@@ -238,7 +235,7 @@ class M3DropdownField<T> extends StatelessWidget {
     final safeValue = items.any((item) => item.value == value) ? value : null;
 
     final dropdown = DropdownButtonFormField<T>(
-      value: safeValue,
+      initialValue: safeValue,
       items: items,
       onChanged: onChanged,
       validator: validator,
@@ -260,7 +257,7 @@ class M3DropdownField<T> extends StatelessWidget {
 
         prefixIcon: prefixIcon != null
             ? Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(
                   prefixIcon,
                   size: 22,
@@ -275,7 +272,6 @@ class M3DropdownField<T> extends StatelessWidget {
           ),
           borderSide: BorderSide(
             color: theme.colorScheme.outline.withOpacity(0.3),
-            width: 1,
           ),
         ),
         enabledBorder: OutlineInputBorder(
@@ -284,7 +280,6 @@ class M3DropdownField<T> extends StatelessWidget {
           ),
           borderSide: BorderSide(
             color: theme.colorScheme.outline.withOpacity(0.2),
-            width: 1,
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -301,7 +296,7 @@ class M3DropdownField<T> extends StatelessWidget {
         ),
 
         // Reduced padding to fit label + icon in narrow test constraints (146.3px)
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
       style: TextStyle(
         fontSize: 14,
@@ -336,10 +331,8 @@ class M3SectionCard extends StatelessWidget {
   final Color? headerColor;
 
   const M3SectionCard({
-    super.key,
-    required this.title,
+    required this.title, required this.children, super.key,
     this.icon,
-    required this.children,
     this.padding,
     this.headerColor,
   });
@@ -350,7 +343,7 @@ class M3SectionCard extends StatelessWidget {
 
     return RepaintBoundary(
       child: Card(
-        margin: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         elevation: FormConstants.sectionCardElevation,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
@@ -363,10 +356,10 @@ class M3SectionCard extends StatelessWidget {
           children: [
             // Header
             Container(
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
                 color: headerColor ?? theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.vertical(
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(FormConstants.defaultBorderRadius),
                 ),
               ),
@@ -378,10 +371,9 @@ class M3SectionCard extends StatelessWidget {
                       size: 24,
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                   ],
                   Flexible(
-                    fit: FlexFit.loose,
                     child: Text(
                       title,
                       style: TextStyle(
@@ -397,7 +389,7 @@ class M3SectionCard extends StatelessWidget {
 
             // Content
             Padding(
-              padding: padding ?? EdgeInsets.all(16.0),
+              padding: padding ?? const EdgeInsets.all(16.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

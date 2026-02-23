@@ -107,7 +107,7 @@ void main() {
           'token': {
             'access_token': 'test_token_123',
             'token_type': 'Bearer',
-            'expires_at': DateTime.now().add(Duration(days: 10)).toIso8601String(),
+            'expires_at': DateTime.now().add(const Duration(days: 10)).toIso8601String(),
             'expires_in_days': 10,
             'expires_in_seconds': 864000,
           },

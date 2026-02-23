@@ -16,7 +16,7 @@ class TabProgressCalculator {
     String? maritalStatus,
     String? educationLevel,
   }) {
-    int total = 10;
+    const int total = 10;
     int filled = 0;
 
     if (fullName.isNotEmpty) filled++;
@@ -43,7 +43,7 @@ class TabProgressCalculator {
     String? numberOfMales,
     String? numberOfFemales,
   }) {
-    int total = 7;
+    const int total = 7;
     int filled = 0;
 
     if (motherName?.isNotEmpty ?? false) filled++;
@@ -70,7 +70,7 @@ class TabProgressCalculator {
     int? housingStatus,
     int? housingType,
   }) {
-    int total = 10;
+    const int total = 10;
     int filled = 0;
 
     if (phoneNumber?.isNotEmpty ?? false) filled++;
@@ -96,7 +96,7 @@ class TabProgressCalculator {
     int? requestStatus,
     String? notes,
   }) {
-    int total = 6;
+    const int total = 6;
     int filled = 0;
 
     if (healthStatus.isNotEmpty) filled++;
@@ -129,7 +129,7 @@ class TabProgressIndicator extends StatelessWidget {
   final double progress;
   final Color? color;
 
-  const TabProgressIndicator({super.key, required this.progress, this.color});
+  const TabProgressIndicator({required this.progress, super.key, this.color});
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/haptic_patterns.dart';
 
@@ -11,8 +10,7 @@ class FilterChipGroup extends StatefulWidget {
   final String? selectedFilter;
 
   const FilterChipGroup({
-    super.key,
-    required this.filters,
+    required this.filters, super.key,
     this.onSelectionChanged,
     this.multiSelect = false,
     this.selectedFilter,
@@ -89,11 +87,9 @@ class _FilterChipWidget extends StatelessWidget {
 
   const _FilterChipWidget({
     required this.label,
-    this.icon,
+    required this.isSelected, required this.onTap, this.icon,
     this.count,
-    required this.isSelected,
     this.color,
-    required this.onTap,
   });
 
   @override

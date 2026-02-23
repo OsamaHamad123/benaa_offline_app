@@ -30,28 +30,33 @@ class LocationChip extends StatelessWidget {
     }
 
     final locationText = _buildLocationText();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Semantics(
       label: 'الموقع: $locationText',
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.teal.withOpacity(0.1),
+          color: colorScheme.secondaryContainer,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.teal.withOpacity(0.3), width: 1),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showIcon) ...[
-              Icon(Icons.location_on, color: Colors.teal, size: 16),
-              SizedBox(width: 6),
+              Icon(
+                Icons.location_on,
+                color: colorScheme.onSecondaryContainer,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
             ],
             Flexible(
               child: Text(
                 locationText,
                 style: TextStyle(
-                  color: Colors.teal.shade700,
+                  color: colorScheme.onSecondaryContainer,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),

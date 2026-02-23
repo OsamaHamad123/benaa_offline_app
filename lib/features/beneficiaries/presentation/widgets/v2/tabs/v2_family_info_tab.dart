@@ -15,14 +15,9 @@ class V2FamilyInfoTab extends StatelessWidget {
   final Function(String?) onRelationshipChanged;
 
   const V2FamilyInfoTab({
-    super.key,
+    required this.onMaritalStatusChanged, required this.numberOfDependentsController, required this.numberOfMalesController, required this.numberOfFemalesController, required this.onRelationshipChanged, super.key,
     this.selectedMaritalStatus,
-    required this.onMaritalStatusChanged,
-    required this.numberOfDependentsController,
-    required this.numberOfMalesController,
-    required this.numberOfFemalesController,
     this.selectedRelationship,
-    required this.onRelationshipChanged,
   });
 
   @override

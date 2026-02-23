@@ -13,8 +13,7 @@ class FieldValidationIndicator extends StatelessWidget {
   final String? errorMessage;
 
   const FieldValidationIndicator({
-    super.key,
-    required this.state,
+    required this.state, super.key,
     this.errorMessage,
   });
 
@@ -100,9 +99,7 @@ class ValidatedTextField extends StatelessWidget {
   final void Function(String)? onChanged;
 
   const ValidatedTextField({
-    super.key,
-    required this.controller,
-    required this.label,
+    required this.controller, required this.label, super.key,
     this.validator,
     this.showValidation = true,
     this.keyboardType,

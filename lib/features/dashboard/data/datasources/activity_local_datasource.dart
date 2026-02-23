@@ -83,8 +83,6 @@ class ActivityLocalDataSourceImpl implements ActivityLocalDataSource {
       timestamp: dbActivity.createdAt,
       beneficiaryId:
           dbActivity.beneficiaryId.isEmpty ? null : dbActivity.beneficiaryId,
-      beneficiaryName: null, // Will be fetched if needed
-      metadata: null, // Parse from changes if needed
     );
   }
 }

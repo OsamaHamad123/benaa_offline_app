@@ -10,10 +10,7 @@ class EmptyStateWidget extends StatelessWidget {
   final String? actionLabel;
 
   const EmptyStateWidget({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.subtitle,
+    required this.icon, required this.title, required this.subtitle, super.key,
     this.onActionPressed,
     this.actionLabel,
   });

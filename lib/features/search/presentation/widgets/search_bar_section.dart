@@ -10,12 +10,7 @@ class SearchBarSection extends StatelessWidget {
   final String query;
 
   const SearchBarSection({
-    super.key,
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-    required this.isSearching,
-    required this.query,
+    required this.controller, required this.onChanged, required this.onClear, required this.isSearching, required this.query, super.key,
   });
 
   @override

@@ -197,10 +197,7 @@ class GradientText extends StatelessWidget {
   final Gradient gradient;
 
   const GradientText({
-    super.key,
-    required this.text,
-    required this.style,
-    required this.gradient,
+    required this.text, required this.style, required this.gradient, super.key,
   });
 
   @override

@@ -220,8 +220,6 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
     state = state.copyWith(
       status: CivilRegistryStatus.loading,
       lastSearchedNationalId: normalizedId,
-      errorMessage: null,
-      errorType: null,
     );
 
     CivilRegistryLookupDiagnostics.record(
@@ -249,7 +247,6 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
 
       state = state.copyWith(
         status: CivilRegistryStatus.error,
-        person: null,
         errorMessage: 'انتهت مهلة البحث في السجل المدني. حاول مرة أخرى.',
         errorType: CivilRegistryErrorType.timeout,
       );
@@ -274,7 +271,6 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
 
       state = state.copyWith(
         status: CivilRegistryStatus.error,
-        person: null,
         errorMessage: 'تعذر تنفيذ البحث في السجل المدني حالياً.',
         errorType: CivilRegistryErrorType.unknown,
       );
@@ -315,7 +311,6 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
     } else if (result.isNotFound) {
       state = state.copyWith(
         status: CivilRegistryStatus.notFound,
-        person: null,
         errorMessage: result.errorMessage,
         errorType: result.errorType,
       );
@@ -328,7 +323,6 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
     } else {
       state = state.copyWith(
         status: CivilRegistryStatus.error,
-        person: null,
         errorMessage: result.errorMessage,
         errorType: result.errorType,
       );
@@ -374,7 +368,7 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
       undoData: state.lastAutofillResult!.undoData,
     );
 
-    state = state.copyWith(lastAutofillResult: null);
+    state = state.copyWith();
   }
 
   /// Reset state to initial
@@ -384,6 +378,6 @@ class CivilRegistryNotifier extends StateNotifier<CivilRegistryState> {
 
   /// Clear error
   void clearError() {
-    state = state.copyWith(errorMessage: null, errorType: null);
+    state = state.copyWith();
   }
 }

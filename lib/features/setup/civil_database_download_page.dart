@@ -10,8 +10,7 @@ class CivilDatabaseDownloadPage extends ConsumerStatefulWidget {
   final String? expectedChecksum;
 
   const CivilDatabaseDownloadPage({
-    super.key,
-    required this.downloadUrl,
+    required this.downloadUrl, super.key,
     this.expectedChecksum,
   });
 

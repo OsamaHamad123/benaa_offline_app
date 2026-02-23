@@ -18,13 +18,7 @@ class Attachment {
   const Attachment({
     required this.id,
     required this.beneficiaryId,
-    this.visitId,
-    required this.type,
-    required this.path,
-    required this.hash,
-    required this.size,
-    required this.createdAt,
-    required this.updatedAt,
+    required this.type, required this.path, required this.hash, required this.size, required this.createdAt, required this.updatedAt, this.visitId,
     this.syncState = 'pending',
   });
 

@@ -6,6 +6,9 @@ import '../../../../../core/providers/providers.dart';
 import '../../../../../core/utils/haptic_patterns.dart';
 import '../../../../../core/widgets/responsive_bottom_sheet.dart';
 import '../../../../../data/db/daos/sponsorships_dao.dart';
+import '../../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../../providers/kafalat_providers.dart';
 import '../sponsorship_form_sheet.dart';
 import '../cards/professional_sponsorship_card.dart';
@@ -28,6 +31,16 @@ class SponsoredTab extends ConsumerStatefulWidget {
 
 class _SponsoredTabState extends ConsumerState<SponsoredTab> {
   final TextEditingController _searchController = TextEditingController();
+  static const Map<String, String> _typeFallbackLabels = {
+    'monthly': 'شهرية',
+    'one_time': 'مرة واحدة',
+    'other': 'أخرى',
+  };
+  static const Map<String, String> _statusFallbackLabels = {
+    'active': 'نشطة',
+    'paused': 'موقوفة',
+    'ended': 'منتهية',
+  };
 
   String? _associationId;
   String _status = 'all';
@@ -110,18 +123,59 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
     );
   }
 
-  String typeLabel(String t) {
-    return switch (t) {
-      'monthly' => 'شهرية',
-      'one_time' => 'مرة واحدة',
-      'other' => 'أخرى',
-      _ => t,
-    };
+  String _resolveTaxonomyLabel(
+    String code,
+    List<taxonomy_domain.Taxonomy> taxonomyItems,
+    Map<String, String> fallbackLabels,
+  ) {
+    for (final taxonomy in taxonomyItems) {
+      if (taxonomy.code == code) return taxonomy.label;
+    }
+    return fallbackLabels[code] ?? 'قيمة قديمة/غير معروفة';
+  }
+
+  bool _isLegacyFallbackUsed(
+    String code,
+    List<taxonomy_domain.Taxonomy> taxonomyItems,
+    Map<String, String> fallbackLabels,
+  ) {
+    final existsInTaxonomy = taxonomyItems.any((item) => item.code == code);
+    if (existsInTaxonomy) return false;
+    return fallbackLabels.containsKey(code);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sponsorshipTypeTaxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const <taxonomy_domain.Taxonomy>[],
+        );
+    final beneficiaryStatusTaxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.beneficiaryStatus),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const <taxonomy_domain.Taxonomy>[],
+        );
+
+    final hasTaxonomyGap = sponsorshipTypeTaxonomies.isEmpty || beneficiaryStatusTaxonomies.isEmpty;
+
+    final resolveTypeLabel = (String value) => _resolveTaxonomyLabel(
+          value,
+          sponsorshipTypeTaxonomies,
+          _typeFallbackLabels,
+        );
+    final resolveStatusLabel = (String value) => _resolveTaxonomyLabel(
+          value,
+          beneficiaryStatusTaxonomies,
+          _statusFallbackLabels,
+        );
 
     // تمرير الفلاتر للـ provider
     final sponsorshipsAsync = ref.watch(
@@ -137,6 +191,28 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
 
     return Column(
       children: [
+        if (hasTaxonomyGap)
+          Container(
+            margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 18.sp, color: theme.colorScheme.primary),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    'لا توجد بيانات تصنيفات مكتملة بعد، يتم عرض قيم متوافقة مؤقتاً.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ),
         // شريط مبسط للإحصائيات مع زر الإظهار/الإخفاء
         sponsorshipsAsync.when(
           data: (allRows) {
@@ -169,7 +245,7 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(
-                          'نشطة: $active',
+                          '${resolveStatusLabel('active')}: $active',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: Colors.green.shade700,
                             fontWeight: FontWeight.w600,
@@ -369,7 +445,18 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
                                 row: r,
                                 onEdit: () => _openEditSheet(context, r),
                                 onDelete: () => _confirmDelete(context, r.sponsorship.fileNo),
-                                typeLabel: typeLabel,
+                                typeLabel: resolveTypeLabel,
+                                statusLabel: resolveStatusLabel,
+                                showLegacyTypeBadge: _isLegacyFallbackUsed(
+                                  r.sponsorship.sponsorshipType,
+                                  sponsorshipTypeTaxonomies,
+                                  _typeFallbackLabels,
+                                ),
+                                showLegacyStatusBadge: _isLegacyFallbackUsed(
+                                  r.sponsorship.status,
+                                  beneficiaryStatusTaxonomies,
+                                  _statusFallbackLabels,
+                                ),
                               ),
                             ),
                           );
@@ -395,7 +482,18 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
                             row: r,
                             onEdit: () => _openEditSheet(context, r),
                             onDelete: () => _confirmDelete(context, r.sponsorship.fileNo),
-                            typeLabel: typeLabel,
+                            typeLabel: resolveTypeLabel,
+                            statusLabel: resolveStatusLabel,
+                            showLegacyTypeBadge: _isLegacyFallbackUsed(
+                              r.sponsorship.sponsorshipType,
+                              sponsorshipTypeTaxonomies,
+                              _typeFallbackLabels,
+                            ),
+                            showLegacyStatusBadge: _isLegacyFallbackUsed(
+                              r.sponsorship.status,
+                              beneficiaryStatusTaxonomies,
+                              _statusFallbackLabels,
+                            ),
                           ),
                         );
                       },
@@ -433,9 +531,9 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
     sorted.sort((a, b) {
       switch (_sortOption) {
         case SortOption.dateNewest:
-          return (b.sponsorship.createdAt).compareTo(a.sponsorship.createdAt);
+          return b.sponsorship.createdAt.compareTo(a.sponsorship.createdAt);
         case SortOption.dateOldest:
-          return (a.sponsorship.createdAt).compareTo(b.sponsorship.createdAt);
+          return a.sponsorship.createdAt.compareTo(b.sponsorship.createdAt);
         case SortOption.amountHighest:
           final amountA = a.sponsorship.amount ?? 0;
           final amountB = b.sponsorship.amount ?? 0;

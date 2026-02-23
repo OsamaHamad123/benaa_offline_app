@@ -8,9 +8,7 @@ class DateTimePickerField extends StatelessWidget {
   final String label;
 
   const DateTimePickerField({
-    super.key,
-    required this.selectedDate,
-    required this.onTap,
+    required this.selectedDate, required this.onTap, super.key,
     this.label = 'تاريخ ووقت الزيارة',
   });
 

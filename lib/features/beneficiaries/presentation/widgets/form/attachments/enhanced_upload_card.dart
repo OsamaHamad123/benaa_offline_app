@@ -14,9 +14,7 @@ class EnhancedUploadAttachmentCard extends StatefulWidget {
   final ValueChanged<PendingAttachment> onAttachmentAdded;
 
   const EnhancedUploadAttachmentCard({
-    super.key,
-    required this.availableFamilyMembers,
-    required this.onAttachmentAdded,
+    required this.availableFamilyMembers, required this.onAttachmentAdded, super.key,
   });
 
   @override
@@ -27,14 +25,13 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
   String? _selectedDocumentType;
   String? _selectedPersonType;
   File? _selectedFile;
-  bool _isUploading = false;
+  final bool _isUploading = false;
 
   Future<void> _pickFile() async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-        allowMultiple: false,
       );
 
       if (result != null && result.files.single.path != null) {

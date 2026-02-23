@@ -123,7 +123,7 @@ class DashboardWidget extends ConsumerWidget {
 
   double? _calculateTrend(int current, int previous) {
     if (previous == 0) return null;
-    return ((current - previous) / previous * 100);
+    return (current - previous) / previous * 100;
   }
 }
 

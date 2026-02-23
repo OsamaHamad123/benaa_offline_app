@@ -34,13 +34,12 @@ void main() {
 
       final testToken = AuthToken(
         accessToken: 'test_token_12345',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 10)),
         expiresInDays: 10,
         expiresInSeconds: 864000,
       );
 
-      final offlineConfig = OfflineConfig(
+      const offlineConfig = OfflineConfig(
         maxOfflineDays: 7,
         requireOnlineReauth: false,
       );
@@ -76,7 +75,6 @@ void main() {
     test('❌ Login State Error - حالة الخطأ', () {
       const errorState = AuthError(
         message: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
-        canRetry: true,
       );
 
       expect(errorState, isA<AuthError>());
@@ -103,13 +101,12 @@ void main() {
 
       final testToken = AuthToken(
         accessToken: 'expiring_token',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 1)),
         expiresInDays: 1,
         expiresInSeconds: 86400,
       );
 
-      final offlineConfig = OfflineConfig(
+      const offlineConfig = OfflineConfig(
         maxOfflineDays: 7,
         requireOnlineReauth: false,
       );
@@ -186,7 +183,6 @@ void main() {
     test('✅ Token is valid - الـ Token صالح', () {
       final token = AuthToken(
         accessToken: 'valid_token_12345',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 10)),
         expiresInDays: 10,
         expiresInSeconds: 864000,
@@ -200,7 +196,6 @@ void main() {
     test('⏰ Token is expired - الـ Token منتهي', () {
       final token = AuthToken(
         accessToken: 'expired_token',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().subtract(const Duration(days: 1)),
         expiresInDays: 0,
         expiresInSeconds: 0,
@@ -214,7 +209,6 @@ void main() {
     test('⚠️ Token needs refresh - يحتاج لتجديد', () {
       final token = AuthToken(
         accessToken: 'token_needs_refresh',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 1)),
         expiresInDays: 1,
         expiresInSeconds: 86400,
@@ -228,7 +222,6 @@ void main() {
     test('🔑 Bearer token format - صيغة الـ Bearer token', () {
       final token = AuthToken(
         accessToken: 'abc123xyz',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 10)),
         expiresInDays: 10,
         expiresInSeconds: 864000,
@@ -249,13 +242,12 @@ void main() {
 
       final token = AuthToken(
         accessToken: 'session_token',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 10)),
         expiresInDays: 10,
         expiresInSeconds: 864000,
       );
 
-      final offlineConfig = OfflineConfig(
+      const offlineConfig = OfflineConfig(
         maxOfflineDays: 7,
         requireOnlineReauth: false,
       );
@@ -282,7 +274,6 @@ void main() {
 
       final oldToken = AuthToken(
         accessToken: 'old_token',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 1)),
         expiresInDays: 1,
         expiresInSeconds: 86400,
@@ -290,13 +281,12 @@ void main() {
 
       final newToken = AuthToken(
         accessToken: 'new_token',
-        tokenType: 'Bearer',
         expiresAt: DateTime.now().add(const Duration(days: 10)),
         expiresInDays: 10,
         expiresInSeconds: 864000,
       );
 
-      final offlineConfig = OfflineConfig(
+      const offlineConfig = OfflineConfig(
         maxOfflineDays: 7,
         requireOnlineReauth: false,
       );
@@ -325,7 +315,7 @@ void main() {
         role: 'user',
       );
 
-      final result = Success(testUser);
+      const result = Success(testUser);
 
       expect(result.isSuccess, true);
       expect(result.isFailure, false);
@@ -335,7 +325,7 @@ void main() {
 
     test('❌ Failure Result', () {
       const failure = AuthFailure('Authentication failed');
-      final result = Failure<AuthUser>(failure);
+      const result = Failure<AuthUser>(failure);
 
       expect(result.isSuccess, false);
       expect(result.isFailure, true);
@@ -351,7 +341,7 @@ void main() {
         role: 'guest',
       );
 
-      final failure = Failure<AuthUser>(const AuthFailure('Error'));
+      const failure = Failure<AuthUser>(AuthFailure('Error'));
       expect(failure.getOrElse(defaultUser), defaultUser);
 
       const actualUser = AuthUser(
@@ -361,7 +351,7 @@ void main() {
         role: 'user',
       );
 
-      final success = Success(actualUser);
+      const success = Success(actualUser);
       expect(success.getOrElse(defaultUser), actualUser);
     });
   });

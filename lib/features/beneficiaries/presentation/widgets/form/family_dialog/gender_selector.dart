@@ -9,9 +9,7 @@ class GenderSelector extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   const GenderSelector({
-    super.key,
-    required this.selectedGender,
-    required this.onChanged,
+    required this.selectedGender, required this.onChanged, super.key,
   });
 
   @override
@@ -39,7 +37,7 @@ class GenderSelector extends StatelessWidget {
             HapticFeedback.selectionClick();
             onChanged(v.first);
           },
-          style: ButtonStyle(visualDensity: VisualDensity.compact),
+          style: const ButtonStyle(visualDensity: VisualDensity.compact),
         ),
       ],
     );

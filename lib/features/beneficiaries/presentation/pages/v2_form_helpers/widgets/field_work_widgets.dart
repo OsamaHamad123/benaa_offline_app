@@ -197,9 +197,7 @@ class ClipRRectangle extends StatelessWidget {
   final Widget child;
 
   const ClipRRectangle({
-    super.key,
-    required this.borderRadius,
-    required this.child,
+    required this.borderRadius, required this.child, super.key,
   });
 
   @override

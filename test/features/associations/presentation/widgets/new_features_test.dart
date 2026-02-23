@@ -1,4 +1,3 @@
-import 'package:benaa_offline_app/features/associations/domain/entities/association.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/professional_association_card.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/swipe_actions_wrapper.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/associations_filters_bar.dart';
@@ -14,7 +13,6 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -49,7 +47,6 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -82,7 +79,6 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -135,14 +131,13 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
               body: AssociationsFiltersBar(
                 selectedStatus: null,
                 selectedBank: null,
-                availableBanks: ['البنك العربي', 'بنك القاهرة عمان'],
+                availableBanks: const ['البنك العربي', 'بنك القاهرة عمان'],
                 onStatusChanged: (status) {},
                 onBankChanged: (bank) {},
               ),
@@ -170,14 +165,13 @@ void main() {
 
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
               body: AssociationsFiltersBar(
                 selectedStatus: selectedStatus,
                 selectedBank: null,
-                availableBanks: [],
+                availableBanks: const [],
                 onStatusChanged: (status) {
                   selectedStatus = status;
                 },
@@ -200,7 +194,6 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -224,11 +217,11 @@ void main() {
     testWidgets('CardAnimationWrapper animates child on build', (WidgetTester tester) async {
       // Arrange
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: CardAnimationWrapper(
               index: 0,
-              child: const Text('Animated Child'),
+              child: Text('Animated Child'),
             ),
           ),
         ),
@@ -252,7 +245,6 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -279,12 +271,8 @@ void main() {
 
     testWidgets('ProfessionalAssociationCard action buttons are clickable', (WidgetTester tester) async {
       // Arrange
-      bool editClicked = false;
-      bool deleteClicked = false;
-
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -296,8 +284,8 @@ void main() {
                 currency: 'JOD',
                 isActive: true,
                 createdAt: DateTime.now(),
-                onEdit: () => editClicked = true,
-                onDelete: () => deleteClicked = true,
+                onEdit: () {},
+                onDelete: () {},
               ),
             ),
           ),
@@ -318,7 +306,6 @@ void main() {
       // Arrange - Mobile size
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690), // Mobile
           minTextAdapt: true,
           child: MaterialApp(
             home: Scaffold(
@@ -380,7 +367,6 @@ void main() {
       // Arrange
       await tester.pumpWidget(
         ScreenUtilInit(
-          designSize: const Size(360, 690),
           minTextAdapt: true,
           child: MaterialApp(
             theme: ThemeData.dark(),

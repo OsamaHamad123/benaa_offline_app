@@ -31,7 +31,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
   /// 🔄 تحميل البيانات الأولية
   Future<void> loadInitialData() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true);
 
     try {
       final filters = _filters;
@@ -63,7 +63,6 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
         isLoading: false,
         currentPage: 0,
         hasMore: items.length >= state.pageSize,
-        error: null,
       );
 
       await _updateStatistics();

@@ -8,8 +8,7 @@ class V2ErrorBanner extends StatelessWidget {
   final VoidCallback? onRetry;
 
   const V2ErrorBanner({
-    super.key,
-    required this.message,
+    required this.message, super.key,
     this.onDismiss,
     this.onRetry,
   });
@@ -31,7 +30,6 @@ class V2ErrorBanner extends StatelessWidget {
             colorScheme.error.blue,
             0.3,
           ),
-          width: 1,
         ),
       ),
       child: Row(

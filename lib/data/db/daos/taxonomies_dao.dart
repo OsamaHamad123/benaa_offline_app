@@ -9,8 +9,7 @@ part 'taxonomies_dao.g.dart';
 ///
 /// يوفر عمليات CRUD + عمليات خاصة بالتصنيفات
 @DriftAccessor(tables: [Taxonomies])
-class TaxonomiesDao extends DatabaseAccessor<AppDatabase>
-    with _$TaxonomiesDaoMixin {
+class TaxonomiesDao extends DatabaseAccessor<AppDatabase> with _$TaxonomiesDaoMixin {
   TaxonomiesDao(super.db);
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -46,14 +45,22 @@ class TaxonomiesDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
+  /// الحصول على تصنيف بالمعرف القادم من السيرفر عبر suffix في local id.
+  Future<Taxonomy?> getByRemoteId(String remoteId) async {
+    final normalized = remoteId.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    return (select(taxonomies)..where((t) => t.id.equals(normalized) | t.id.like('%::$normalized'))).getSingleOrNull();
+  }
+
   /// الحصول على تصنيف واحد بالـ code
   ///
   /// [group] المجموعة
   /// [code] الكود
   Future<Taxonomy?> getByCode(String group, String code) async {
-    return (select(taxonomies)
-          ..where((t) => t.group.equals(group) & t.code.equals(code)))
-        .getSingleOrNull();
+    return (select(taxonomies)..where((t) => t.group.equals(group) & t.code.equals(code))).getSingleOrNull();
   }
 
   /// الحصول على التصنيفات الفرعية
@@ -68,8 +75,7 @@ class TaxonomiesDao extends DatabaseAccessor<AppDatabase>
 
   /// الحصول على جميع المجموعات الموجودة
   Future<List<String>> getAllGroups() async {
-    final query = selectOnly(taxonomies, distinct: true)
-      ..addColumns([taxonomies.group]);
+    final query = selectOnly(taxonomies, distinct: true)..addColumns([taxonomies.group]);
 
     final results = await query.get();
     return results.map((row) => row.read(taxonomies.group)!).toList();
@@ -257,8 +263,7 @@ class TaxonomiesDao extends DatabaseAccessor<AppDatabase>
     bool? isActive,
     bool? hasParent,
   }) async {
-    final query = select(taxonomies)
-      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
+    final query = select(taxonomies)..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
 
     if (group != null) {
       query.where((t) => t.group.equals(group));

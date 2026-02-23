@@ -71,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration {
@@ -163,6 +163,13 @@ class AppDatabase extends _$AppDatabase {
           } catch (e) {
             // Tables might already exist if it's a new installation
           }
+        }
+
+        if (from < 19) {
+          // v19: Taxonomy local-id strategy changed to prevent cross-category ID collisions.
+          // Clear taxonomy cache and force fresh sync with new IDs.
+          await customStatement('DELETE FROM taxonomies;');
+          await customStatement("DELETE FROM sync_metadata_table WHERE entity = 'taxonomies';");
         }
 
         await _createPerformanceIndexes();

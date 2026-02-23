@@ -18,6 +18,13 @@ void main() {
       controllers.lastNameController.text = 'الحموي';
       controllers.nationalIdController.text = '12345678901';
       controllers.selectedGender = 'female';
+      controllers.selectedCategory = '2';
+      controllers.selectedSection = '1';
+      controllers.selectedAssistanceType = 'cash';
+      controllers.selectedRequestStatus = 'pending';
+      controllers.selectedDisabilityType = 'motor';
+      controllers.selectedIncomeSource = 'salary';
+      controllers.specialNeedsCountController.text = '1';
 
       final autoData = draftCoordinator.buildAutoSaveFormData(controllers);
       final envelope = draftCoordinator.buildDraftEnvelope(
@@ -34,6 +41,13 @@ void main() {
       controllers.lastNameController.clear();
       controllers.nationalIdController.clear();
       controllers.selectedGender = null;
+      controllers.selectedCategory = null;
+      controllers.selectedSection = null;
+      controllers.selectedAssistanceType = null;
+      controllers.selectedRequestStatus = null;
+      controllers.selectedDisabilityType = null;
+      controllers.selectedIncomeSource = null;
+      controllers.specialNeedsCountController.clear();
 
       final loadResult = loadCoordinator.applyDraft(
         controllers: controllers,
@@ -46,6 +60,13 @@ void main() {
       expect(controllers.firstNameController.text, 'سارة');
       expect(controllers.lastNameController.text, 'الحموي');
       expect(controllers.nationalIdController.text, '12345678901');
+      expect(controllers.selectedCategory, '2');
+      expect(controllers.selectedSection, '1');
+      expect(controllers.selectedAssistanceType, 'cash');
+      expect(controllers.selectedRequestStatus, 'pending');
+      expect(controllers.selectedDisabilityType, 'motor');
+      expect(controllers.selectedIncomeSource, 'salary');
+      expect(controllers.specialNeedsCountController.text, '1');
       expect(loadResult.currentTab, 1);
 
       final saveResult = await saveCoordinator.execute(

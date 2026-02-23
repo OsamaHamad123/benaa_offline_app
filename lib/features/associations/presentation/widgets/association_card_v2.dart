@@ -15,11 +15,8 @@ class AssociationCardV2 extends StatelessWidget {
   final VoidCallback onDelete;
 
   const AssociationCardV2({
-    super.key,
-    required this.association,
+    required this.association, required this.onTap, required this.onDelete, super.key,
     this.representativeName,
-    required this.onTap,
-    required this.onDelete,
   });
 
   @override

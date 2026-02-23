@@ -256,7 +256,7 @@ class _AllTabsCompleteDialogState extends State<_AllTabsCompleteDialog>
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: BeneficiaryFormColors.success,
                 shape: BoxShape.circle,
               ),

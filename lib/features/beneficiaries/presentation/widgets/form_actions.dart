@@ -12,12 +12,7 @@ class FormActions extends StatelessWidget {
   final VoidCallback? onDelete;
 
   const FormActions({
-    super.key,
-    required this.canSave,
-    required this.isSaving,
-    required this.isNew,
-    required this.onSave,
-    required this.onCancel,
+    required this.canSave, required this.isSaving, required this.isNew, required this.onSave, required this.onCancel, super.key,
     this.onDelete,
   });
 
@@ -126,9 +121,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
   final VoidCallback onConfirm;
 
   const DeleteConfirmationDialog({
-    super.key,
-    required this.beneficiaryName,
-    required this.onConfirm,
+    required this.beneficiaryName, required this.onConfirm, super.key,
   });
 
   @override

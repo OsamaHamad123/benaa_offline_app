@@ -16,10 +16,7 @@ class InfoRow extends StatelessWidget {
   final VoidCallback? onTap;
 
   const InfoRow({
-    super.key,
-    required this.icon,
-    required this.label,
-    required this.value,
+    required this.icon, required this.label, required this.value, super.key,
     this.iconColor,
     this.isSelectable = false,
     this.onTap,
@@ -96,9 +93,7 @@ class InfoChip extends StatelessWidget {
   final Color? color;
 
   const InfoChip({
-    super.key,
-    required this.icon,
-    required this.label,
+    required this.icon, required this.label, super.key,
     this.color,
   });
 

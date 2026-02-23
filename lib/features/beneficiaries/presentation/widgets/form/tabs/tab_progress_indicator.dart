@@ -11,9 +11,7 @@ class TabProgressIndicator extends StatelessWidget {
   final Map<int, double> tabCompletionPercentages;
 
   const TabProgressIndicator({
-    super.key,
-    required this.controller,
-    required this.tabCompletionPercentages,
+    required this.controller, required this.tabCompletionPercentages, super.key,
   });
 
   @override

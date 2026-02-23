@@ -63,7 +63,6 @@ class DatabaseDownloadState {
         status: DownloadStatus.idle,
       ),
       isAvailable: false,
-      wasSkipped: false,
     );
   }
 }
@@ -188,7 +187,7 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     await clearSkipStatus();
 
     if (!mounted) return;
-    state = state.copyWith(isAvailable: false, databaseSize: null);
+    state = state.copyWith(isAvailable: false);
 
     await downloadDatabase(url);
   }

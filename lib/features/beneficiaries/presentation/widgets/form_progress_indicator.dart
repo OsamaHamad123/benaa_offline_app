@@ -7,7 +7,7 @@ import '../../domain/entities/beneficiary.dart';
 class FormProgressIndicator extends StatelessWidget {
   final Beneficiary? beneficiary;
 
-  const FormProgressIndicator({super.key, required this.beneficiary});
+  const FormProgressIndicator({required this.beneficiary, super.key});
 
   @override
   Widget build(BuildContext context) {

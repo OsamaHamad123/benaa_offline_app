@@ -87,7 +87,7 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
   }
 
   void clearError() {
-    state = state.copyWith(errorMessage: null);
+    state = state.copyWith();
   }
 
   // ==================== Smart Features ====================

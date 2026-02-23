@@ -11,11 +11,8 @@ class EnhancedFamilyMemberCard extends StatelessWidget {
   final int? index;
 
   const EnhancedFamilyMemberCard({
-    super.key,
-    required this.member,
+    required this.member, required this.onEdit, required this.onDelete, super.key,
     this.isDeceased = false,
-    required this.onEdit,
-    required this.onDelete,
     this.index,
   });
 
@@ -270,11 +267,7 @@ class AddFamilyMemberCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const AddFamilyMemberCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
+    required this.title, required this.icon, required this.color, required this.onTap, super.key,
   });
 
   @override
@@ -286,7 +279,6 @@ class AddFamilyMemberCard extends StatelessWidget {
         border: Border.all(
           color: color.withOpacity(0.5),
           width: 2,
-          style: BorderStyle.solid,
         ),
       ),
       child: Material(

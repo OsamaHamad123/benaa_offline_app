@@ -452,10 +452,10 @@ class _DetailedMetricsTabs extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TabBar(
+          const TabBar(
             labelColor: Colors.blue,
             unselectedLabelColor: Colors.grey,
-            tabs: const [
+            tabs: [
               Tab(text: 'Widgets'),
               Tab(text: 'States'),
               Tab(text: 'Queries'),

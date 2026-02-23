@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/family_providers.dart';
+import 'shared/beneficiary_async_state_view.dart';
 
 /// ويدجت عرض إحصائيات أفراد العائلة
 class FamilyStatisticsWidget extends ConsumerWidget {
   final int beneficiaryId;
 
-  const FamilyStatisticsWidget({super.key, required this.beneficiaryId});
+  const FamilyStatisticsWidget({required this.beneficiaryId, super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -17,13 +20,13 @@ class FamilyStatisticsWidget extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.analytics, color: Colors.blue),
-                SizedBox(width: 8),
+                Icon(Icons.analytics, color: colorScheme.primary),
+                const SizedBox(width: 8),
                 Text(
                   'إحصائيات العائلة',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -39,23 +42,16 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 return statsAsync.when(
                   data: (stats) => Column(
                     children: [
-                      _buildOverallStats(stats),
+                      _buildOverallStats(context, stats),
                       const SizedBox(height: 24),
-                      _buildHealthStats(stats),
+                      _buildHealthStats(context, stats),
                     ],
                   ),
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(),
-                    ),
+                  loading: () => const BeneficiaryAsyncStateView.loading(
+                    message: 'جاري تحميل إحصائيات العائلة...',
                   ),
-                  error: (error, stack) => Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      'خطأ في تحميل الإحصائيات: $error',
-                      style: const TextStyle(color: Colors.red),
-                    ),
+                  error: (error, stack) => BeneficiaryAsyncStateView.error(
+                    message: 'تعذر تحميل إحصائيات العائلة',
                   ),
                 );
               },
@@ -71,9 +67,15 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 );
 
                 return deceasedAsync.when(
-                  data: (deceased) => _buildDeceasedStats(deceased.length),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  data: (deceased) => _buildDeceasedStats(context, deceased.length),
+                  loading: () => const BeneficiaryAsyncStateView.loading(
+                    message: 'جاري تحميل بيانات الأموات...',
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                  ),
+                  error: (_, __) => const BeneficiaryAsyncStateView.error(
+                    message: 'تعذر تحميل بيانات الأموات',
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                  ),
                 );
               },
             ),
@@ -83,13 +85,15 @@ class FamilyStatisticsWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildOverallStats(FamilyStatistics stats) {
+  Widget _buildOverallStats(BuildContext context, FamilyStatistics stats) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'الإحصائيات الإجمالية',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
@@ -99,7 +103,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'إجمالي الأفراد',
                 stats.totalMembers.toString(),
                 Icons.people,
-                Colors.blue,
+                colorScheme.primary,
               ),
             ),
             const SizedBox(width: 8),
@@ -108,7 +112,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'ذكور',
                 stats.malesCount.toString(),
                 Icons.man,
-                Colors.blue.shade700,
+                colorScheme.secondary,
               ),
             ),
             const SizedBox(width: 8),
@@ -117,7 +121,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'إناث',
                 stats.femalesCount.toString(),
                 Icons.woman,
-                Colors.pink,
+                colorScheme.tertiary,
               ),
             ),
           ],
@@ -130,7 +134,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'الأطفال (<18)',
                 stats.childrenCount.toString(),
                 Icons.child_care,
-                Colors.orange,
+                colorScheme.error,
               ),
             ),
           ],
@@ -139,13 +143,15 @@ class FamilyStatisticsWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildHealthStats(FamilyStatistics stats) {
+  Widget _buildHealthStats(BuildContext context, FamilyStatistics stats) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'الحالة الصحية',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
@@ -155,7 +161,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'سليم وآمن',
                 stats.healthySafe.toString(),
                 Icons.health_and_safety,
-                Colors.green,
+                colorScheme.primary,
               ),
             ),
             const SizedBox(width: 8),
@@ -164,7 +170,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'مريض',
                 stats.sick.toString(),
                 Icons.sick,
-                Colors.yellow.shade700,
+                colorScheme.secondary,
               ),
             ),
           ],
@@ -177,7 +183,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'مريض مزمن',
                 stats.chronicSick.toString(),
                 Icons.medical_services,
-                Colors.red,
+                colorScheme.error,
               ),
             ),
             const SizedBox(width: 8),
@@ -186,7 +192,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 'معاق',
                 stats.disabled.toString(),
                 Icons.accessible,
-                Colors.orange,
+                colorScheme.tertiary,
               ),
             ),
           ],
@@ -195,20 +201,22 @@ class FamilyStatisticsWidget extends ConsumerWidget {
     );
   }
 
-  Widget _buildDeceasedStats(int count) {
+  Widget _buildDeceasedStats(BuildContext context, int count) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'الأموات',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _buildStatCard(
           'عدد الأموات المسجلين',
           count.toString(),
           Icons.local_hospital,
-          Colors.grey,
+          colorScheme.onSurfaceVariant,
         ),
       ],
     );

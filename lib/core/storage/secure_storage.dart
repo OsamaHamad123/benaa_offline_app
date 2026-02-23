@@ -15,6 +15,7 @@ import 'package:uuid/uuid.dart';
 class SecureStorage {
   static final SecureStorage _instance = SecureStorage._internal();
   static String? _cachedDeviceId;
+  static String? _cachedAuthToken;
   static bool _secureStoragePluginUnavailable = false;
   static final Map<String, String> _memoryFallbackStore = <String, String>{};
   factory SecureStorage() => _instance;
@@ -53,13 +54,14 @@ class SecureStorage {
   /// 💾 حفظ بيانات تسجيل الدخول الكاملة
   Future<void> saveAuthData({
     required String token,
-    String? refreshToken,
     required String userId,
     required String email,
+    String? refreshToken,
     String? userName,
     String? serverUrl,
   }) async {
     try {
+      _cachedAuthToken = token;
       await Future.wait([
         _storage.write(key: _authTokenKey, value: token),
         _storage.write(key: _userIdKey, value: userId),
@@ -80,7 +82,15 @@ class SecureStorage {
   /// 🔑 الحصول على Auth Token
   Future<String?> getAuthToken() async {
     try {
-      return await _storage.read(key: _authTokenKey);
+      if (_cachedAuthToken != null && _cachedAuthToken!.isNotEmpty) {
+        return _cachedAuthToken;
+      }
+
+      final token = await _storage.read(key: _authTokenKey);
+      if (token != null && token.isNotEmpty) {
+        _cachedAuthToken = token;
+      }
+      return token;
     } catch (e) {
       UnifiedLogger.error('❌ Failed to read auth token', error: e);
       return null;
@@ -224,6 +234,7 @@ class SecureStorage {
   /// 🔄 تحديث Auth Token (بعد Refresh)
   Future<void> updateAuthToken(String newToken) async {
     try {
+      _cachedAuthToken = newToken;
       await _storage.write(key: _authTokenKey, value: newToken);
       UnifiedLogger.info('🔄 Auth token updated');
     } catch (e) {
@@ -274,11 +285,13 @@ class SecureStorage {
         await _storage.deleteAll();
       }
       _cachedDeviceId = null;
+      _cachedAuthToken = null;
       UnifiedLogger.info('🗑️ All secure storage cleared');
     } on MissingPluginException {
       _secureStoragePluginUnavailable = true;
       _memoryFallbackStore.clear();
       _cachedDeviceId = null;
+      _cachedAuthToken = null;
       UnifiedLogger.warning('⚠️ flutter_secure_storage plugin unavailable; cleared in-memory secure storage fallback');
     } catch (e) {
       UnifiedLogger.error('❌ Failed to clear storage', error: e);
@@ -289,6 +302,7 @@ class SecureStorage {
   /// 🗑️ حذف بيانات المصادقة فقط
   Future<void> clearAuthData() async {
     try {
+      _cachedAuthToken = null;
       await Future.wait([
         _storage.delete(key: _authTokenKey),
         _storage.delete(key: _refreshTokenKey),

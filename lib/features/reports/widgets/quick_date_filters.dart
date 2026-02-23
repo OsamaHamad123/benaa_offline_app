@@ -9,11 +9,9 @@ class QuickDateFilters extends StatelessWidget {
   final VoidCallback onClearFilter;
 
   const QuickDateFilters({
-    super.key,
+    required this.onFilterSelected, required this.onClearFilter, super.key,
     this.startDate,
     this.endDate,
-    required this.onFilterSelected,
-    required this.onClearFilter,
   });
 
   @override
@@ -60,7 +58,7 @@ class QuickDateFilters extends StatelessWidget {
               label: 'هذا الشهر',
               icon: Icons.calendar_month,
               onTap: () {
-                final start = DateTime(now.year, now.month, 1);
+                final start = DateTime(now.year, now.month);
                 final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
                 onFilterSelected(start, end);
               },
@@ -72,7 +70,7 @@ class QuickDateFilters extends StatelessWidget {
               label: 'هذه السنة',
               icon: Icons.calendar_today,
               onTap: () {
-                final start = DateTime(now.year, 1, 1);
+                final start = DateTime(now.year);
                 final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
                 onFilterSelected(start, end);
               },
@@ -181,7 +179,7 @@ class QuickDateFilters extends StatelessWidget {
   bool _isThisMonth(DateTime? start, DateTime? end) {
     if (start == null || end == null) return false;
     final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
+    final monthStart = DateTime(now.year, now.month);
     final startDay = DateTime(start.year, start.month, start.day);
     return startDay == monthStart;
   }
@@ -189,7 +187,7 @@ class QuickDateFilters extends StatelessWidget {
   bool _isThisYear(DateTime? start, DateTime? end) {
     if (start == null || end == null) return false;
     final now = DateTime.now();
-    final yearStart = DateTime(now.year, 1, 1);
+    final yearStart = DateTime(now.year);
     final startDay = DateTime(start.year, start.month, start.day);
     return startDay == yearStart;
   }

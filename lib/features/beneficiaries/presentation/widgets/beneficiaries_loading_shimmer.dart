@@ -25,7 +25,6 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
       itemBuilder: (context, index) => Shimmer.fromColors(
         baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
         highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
-        period: const Duration(milliseconds: 1500),
         child: Card(
           margin: const EdgeInsets.only(bottom: 16),
           child: Container(

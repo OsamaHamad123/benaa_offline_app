@@ -6,7 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 class CurrencyChartWidget extends StatelessWidget {
   final Map<String, int> data;
 
-  const CurrencyChartWidget({super.key, required this.data});
+  const CurrencyChartWidget({required this.data, super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -18,14 +18,9 @@ class AssociationsSearchBar extends StatelessWidget {
   final VoidCallback onClearAll;
 
   const AssociationsSearchBar({
-    super.key,
-    required this.controller,
-    required this.onChanged,
-    required this.searchQuery,
-    required this.showOnlyActive,
+    required this.controller, required this.onChanged, required this.searchQuery, required this.showOnlyActive, required this.onClearAll, super.key,
     this.selectedRepresentativeId,
     this.selectedCurrency,
-    required this.onClearAll,
   });
 
   @override

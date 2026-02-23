@@ -100,11 +100,11 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Hero(
+      builder: (context) => const Hero(
         tag: 'association_new',
         child: Material(
           type: MaterialType.transparency,
-          child: const AssociationFormBottomSheetModern(),
+          child: AssociationFormBottomSheetModern(),
         ),
       ),
     ).then((created) {
@@ -180,7 +180,6 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
       backgroundColor: colorScheme.surface,
       appBar: CustomAppBar(
         title: 'إدارة الجمعيات',
-        showGradient: true,
         actions: [
           // Sorting Menu
           SortingMenu(
@@ -312,7 +311,6 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   /// قائمة الجمعيات مع تصميم Responsive Grid
   Widget _buildAssociationsList(List associations) {
     final state = ref.read(associationsProvider);
-    final responsive = ResponsiveUtils.getValues(context);
 
     // حساب الإحصائيات
     final totalCount = associations.length;
@@ -367,7 +365,6 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
             SliverPadding(
               padding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
-                vertical: 0, // إزالة المسافة العمودية
               ),
               sliver: SliverGrid(
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

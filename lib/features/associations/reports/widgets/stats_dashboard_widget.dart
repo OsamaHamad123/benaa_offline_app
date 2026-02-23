@@ -6,7 +6,7 @@ import '../providers/associations_reports_provider.dart';
 class StatsDashboardWidget extends StatelessWidget {
   final AssociationsStats stats;
 
-  const StatsDashboardWidget({super.key, required this.stats});
+  const StatsDashboardWidget({required this.stats, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -89,8 +89,7 @@ class _StatCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
-    this.subtitle,
-    required this.color,
+    required this.color, this.subtitle,
   });
 
   @override
@@ -106,7 +105,6 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
           color: color.withOpacity(0.3),
-          width: 1,
         ),
       ),
       child: Column(

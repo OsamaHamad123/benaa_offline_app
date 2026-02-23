@@ -9,9 +9,8 @@ class ReportSearchField extends StatelessWidget {
   final TextEditingController? controller;
 
   const ReportSearchField({
-    super.key,
+    required this.onSearch, super.key,
     this.hint,
-    required this.onSearch,
     this.onClear,
     this.controller,
   });

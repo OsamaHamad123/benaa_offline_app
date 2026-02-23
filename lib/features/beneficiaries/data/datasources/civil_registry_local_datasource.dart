@@ -80,7 +80,6 @@ class CivilRegistryLocalDataSource {
       address: _buildAddress(civilPerson),
       province: civilPerson.governorate,
       city: civilPerson.city,
-      registrationDate: null, // Not in search database
       status: 'active', // Search database only has active records
     );
   }

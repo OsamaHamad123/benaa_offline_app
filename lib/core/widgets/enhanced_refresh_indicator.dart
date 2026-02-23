@@ -12,9 +12,7 @@ class EnhancedRefreshIndicator extends StatelessWidget {
   final double edgeOffset;
 
   const EnhancedRefreshIndicator({
-    super.key,
-    required this.child,
-    required this.onRefresh,
+    required this.child, required this.onRefresh, super.key,
     this.color,
     this.backgroundColor,
     this.displacement = 40.0,
@@ -44,9 +42,7 @@ class CustomPullToRefresh extends StatefulWidget {
   final Color? secondaryColor;
 
   const CustomPullToRefresh({
-    super.key,
-    required this.child,
-    required this.onRefresh,
+    required this.child, required this.onRefresh, super.key,
     this.primaryColor,
     this.secondaryColor,
   });
@@ -158,10 +154,7 @@ class CustomRefreshHeader extends StatelessWidget {
   final bool isRefreshing;
 
   const CustomRefreshHeader({
-    super.key,
-    required this.pullDistance,
-    required this.refreshTriggerDistance,
-    required this.isRefreshing,
+    required this.pullDistance, required this.refreshTriggerDistance, required this.isRefreshing, super.key,
   });
 
   @override

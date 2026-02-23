@@ -16,12 +16,7 @@ class LazyLoadingList<T> extends StatefulWidget {
   final double loadMoreThreshold;
 
   const LazyLoadingList({
-    super.key,
-    required this.items,
-    required this.isLoading,
-    required this.hasMore,
-    required this.onLoadMore,
-    required this.itemBuilder,
+    required this.items, required this.isLoading, required this.hasMore, required this.onLoadMore, required this.itemBuilder, super.key,
     this.loadingWidget,
     this.emptyWidget,
     this.scrollController,
@@ -128,12 +123,7 @@ class InfiniteScrollList<T> extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
 
   const InfiniteScrollList({
-    super.key,
-    required this.items,
-    required this.isLoading,
-    required this.hasMore,
-    required this.onLoadMore,
-    required this.itemBuilder,
+    required this.items, required this.isLoading, required this.hasMore, required this.onLoadMore, required this.itemBuilder, super.key,
     this.separator,
     this.emptyWidget,
     this.padding,
@@ -184,12 +174,7 @@ class LazyLoadedGrid<T> extends StatefulWidget {
   final Widget? emptyWidget;
 
   const LazyLoadedGrid({
-    super.key,
-    required this.items,
-    required this.isLoading,
-    required this.hasMore,
-    required this.onLoadMore,
-    required this.itemBuilder,
+    required this.items, required this.isLoading, required this.hasMore, required this.onLoadMore, required this.itemBuilder, super.key,
     this.crossAxisCount = 2,
     this.crossAxisSpacing = 8.0,
     this.mainAxisSpacing = 8.0,

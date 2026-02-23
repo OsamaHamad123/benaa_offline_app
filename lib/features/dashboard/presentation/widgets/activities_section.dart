@@ -9,7 +9,7 @@ import '../../../../core/widgets/swipeable_card.dart';
 class ActivityItem extends StatelessWidget {
   final Activity activity;
 
-  const ActivityItem({super.key, required this.activity});
+  const ActivityItem({required this.activity, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +30,6 @@ class ActivityItem extends StatelessWidget {
       leftActionColor: Colors.blue,
       leftActionIcon: Icons.visibility,
       leftActionLabel: 'عرض',
-      rightActionColor: Colors.red,
-      rightActionIcon: Icons.delete,
       rightActionLabel: 'حذف',
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 4.h),
@@ -117,10 +115,7 @@ class RecentActivitiesList extends ConsumerWidget {
   final VoidCallback? onLoadMore;
 
   const RecentActivitiesList({
-    super.key,
-    required this.activities,
-    required this.isLoading,
-    required this.hasMore,
+    required this.activities, required this.isLoading, required this.hasMore, super.key,
     this.onLoadMore,
   });
 

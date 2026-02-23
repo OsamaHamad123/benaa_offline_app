@@ -13,11 +13,7 @@ class FormStatisticsDashboard extends StatelessWidget {
   final Duration? timeSpent;
 
   const FormStatisticsDashboard({
-    super.key,
-    required this.totalFields,
-    required this.completedFields,
-    required this.requiredFields,
-    required this.optionalFields,
+    required this.totalFields, required this.completedFields, required this.requiredFields, required this.optionalFields, super.key,
     this.timeSpent,
   });
 
@@ -222,7 +218,7 @@ class _StatItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [

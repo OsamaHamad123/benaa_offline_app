@@ -125,7 +125,7 @@ class UpdateTaxonomyUseCase {
     // التحقق من وجود التصنيف
     final exists = await _repository.exists(taxonomy.id);
     if (!exists) {
-      return Failure(const NotFoundFailure('التصنيف غير موجود'));
+      return const Failure(NotFoundFailure('التصنيف غير موجود'));
     }
 
     // التحقق من عدم تكرار الكود
@@ -157,7 +157,7 @@ class DeleteTaxonomyUseCase {
     // التحقق من وجود التصنيف
     final exists = await _repository.exists(id);
     if (!exists) {
-      return Failure(const NotFoundFailure('التصنيف غير موجود'));
+      return const Failure(NotFoundFailure('التصنيف غير موجود'));
     }
 
     // التحقق من عدم وجود أبناء
@@ -165,7 +165,7 @@ class DeleteTaxonomyUseCase {
     if (childrenResult is Success<List<Taxonomy>>) {
       final children = childrenResult.value;
       if (children.isNotEmpty) {
-        return Failure(const ValidationFailure(
+        return const Failure(ValidationFailure(
           'لا يمكن حذف التصنيف لأنه يحتوي على تصنيفات فرعية',
         ));
       }

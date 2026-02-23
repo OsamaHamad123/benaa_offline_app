@@ -11,8 +11,7 @@ class BatteryPerformanceMonitor extends StatefulWidget {
   final VoidCallback? onEnablePowerSaving;
 
   const BatteryPerformanceMonitor({
-    super.key,
-    required this.batteryLevel,
+    required this.batteryLevel, super.key,
     this.isLowPowerMode = false,
     this.onEnablePowerSaving,
   });
@@ -131,9 +130,7 @@ class StorageSpaceMonitor extends StatelessWidget {
   final VoidCallback? onClearCache;
 
   const StorageSpaceMonitor({
-    super.key,
-    required this.usedGB,
-    required this.totalGB,
+    required this.usedGB, required this.totalGB, super.key,
     this.onClearCache,
   });
 
@@ -227,9 +224,7 @@ class DataSyncProgress extends StatelessWidget {
   final String? errorMessage;
 
   const DataSyncProgress({
-    super.key,
-    required this.totalRecords,
-    required this.syncedRecords,
+    required this.totalRecords, required this.syncedRecords, super.key,
     this.isSyncing = false,
     this.errorMessage,
   });

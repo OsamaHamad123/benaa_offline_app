@@ -122,7 +122,6 @@ class _TestScreenWithCounter extends StatelessWidget {
             showDialog(
               context: context,
               builder: (context) => const ZeroLagFamilyDialog(
-                isDeceased: false,
                 onSave: _dummySave,
               ),
             );

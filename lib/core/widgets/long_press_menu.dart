@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/haptic_patterns.dart';
 
@@ -158,9 +157,7 @@ class LongPressMenuWidget extends StatelessWidget {
   final bool useBottomSheet;
 
   const LongPressMenuWidget({
-    super.key,
-    required this.child,
-    required this.menuItems,
+    required this.child, required this.menuItems, super.key,
     this.menuTitle,
     this.useBottomSheet = false,
   });

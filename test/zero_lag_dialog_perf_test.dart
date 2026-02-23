@@ -19,7 +19,6 @@ void main() {
                     showDialog(
                       context: context,
                       builder: (_) => ZeroLagFamilyDialog(
-                        isDeceased: false,
                         onSave: (_) {},
                       ),
                     );

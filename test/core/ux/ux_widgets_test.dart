@@ -8,9 +8,9 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
-            body: LoadingOverlay(isLoading: true, child: const Text('Content')),
+            body: LoadingOverlay(isLoading: true, child: Text('Content')),
           ),
         ),
       );
@@ -23,11 +23,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: LoadingOverlay(
               isLoading: false,
-              child: const Text('Content'),
+              child: Text('Content'),
             ),
           ),
         ),
@@ -39,12 +39,12 @@ void main() {
 
     testWidgets('displays loading message when provided', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: LoadingOverlay(
               isLoading: true,
               loadingMessage: 'جاري التحميل...',
-              child: const Text('Content'),
+              child: Text('Content'),
             ),
           ),
         ),

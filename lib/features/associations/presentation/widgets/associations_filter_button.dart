@@ -10,9 +10,7 @@ class AssociationsFilterButton extends StatelessWidget {
   final bool hasActiveFilters;
 
   const AssociationsFilterButton({
-    super.key,
-    required this.onPressed,
-    required this.hasActiveFilters,
+    required this.onPressed, required this.hasActiveFilters, super.key,
   });
 
   @override

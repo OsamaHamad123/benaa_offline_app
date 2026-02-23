@@ -13,8 +13,8 @@ class DatabaseMaintenanceService {
   static const bool _automaticMaintenanceEnabled = false;
 
   // Use centralized configuration from AppConstants
-  static final Duration _vacuumInterval = AppConstants.vacuumInterval;
-  static final Duration _analyzeInterval = AppConstants.analyzeInterval;
+  static const Duration _vacuumInterval = AppConstants.vacuumInterval;
+  static const Duration _analyzeInterval = AppConstants.analyzeInterval;
   DatabaseMaintenanceService({required this.database, required this.prefs});
 
   /// Check and perform maintenance if needed

@@ -10,7 +10,7 @@ class GetAssociationByIdUseCase {
 
   Future<Result<Association>> execute(String id) async {
     if (id.trim().isEmpty) {
-      return Failure(ValidationFailure('معرف الجمعية مطلوب'));
+      return const Failure(ValidationFailure('معرف الجمعية مطلوب'));
     }
 
     return await repository.getAssociationById(id);

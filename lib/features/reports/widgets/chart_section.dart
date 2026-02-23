@@ -7,9 +7,7 @@ class ChartSection extends StatelessWidget {
   final EdgeInsets? padding;
 
   const ChartSection({
-    super.key,
-    required this.title,
-    required this.chart,
+    required this.title, required this.chart, super.key,
     this.padding,
   });
 

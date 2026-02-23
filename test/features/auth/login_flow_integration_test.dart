@@ -29,7 +29,7 @@ void main() {
             'access_token':
                 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIxIiwianRpIjoiYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoiLCJpYXQiOjE3MDQ1NTIwMDAsIm5iZiI6MTcwNDU1MjAwMCwiZXhwIjoxNzA1NDE2MDAwLCJzdWIiOiIxMjMiLCJzY29wZXMiOltdfQ.test',
             'token_type': 'Bearer',
-            'expires_at': DateTime.now().add(Duration(days: 10)).toIso8601String(),
+            'expires_at': DateTime.now().add(const Duration(days: 10)).toIso8601String(),
             'expires_in_days': 10,
             'expires_in_seconds': 864000,
           },
@@ -114,7 +114,7 @@ void main() {
           'token': {
             'access_token': 'test_token',
             'token_type': 'Bearer',
-            'expires_at': DateTime.now().add(Duration(days: 10)).toIso8601String(),
+            'expires_at': DateTime.now().add(const Duration(days: 10)).toIso8601String(),
             'expires_in_days': 10,
             'expires_in_seconds': 864000,
           },
@@ -242,7 +242,7 @@ void main() {
           'token': {
             'access_token': 'test_token',
             'token_type': 'Bearer',
-            'expires_at': DateTime.now().add(Duration(days: 10)).toIso8601String(),
+            'expires_at': DateTime.now().add(const Duration(days: 10)).toIso8601String(),
             'expires_in_days': 10,
             'expires_in_seconds': 864000,
           },

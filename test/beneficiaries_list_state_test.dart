@@ -5,17 +5,14 @@ import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/
 void main() {
   group('BeneficiariesListState Tests', () {
     test('isEmpty returns true when not loading and items empty', () {
-      const state = BeneficiariesListState(items: [], isLoading: false);
+      const state = BeneficiariesListState(isLoading: false);
 
       expect(state.isEmpty, true);
       expect(state.hasData, false);
     });
 
     test('hasData returns true when items exist', () {
-      final state = BeneficiariesListState(
-        items: [
-          // Mock beneficiary يمكن إضافته لاحقاً
-        ],
+      const state = BeneficiariesListState(
         isLoading: false,
       );
 
@@ -40,7 +37,7 @@ void main() {
     });
 
     test('activeFiltersCount counts active filters', () {
-      final filters = FiltersState(
+      const filters = FiltersState(
         categoryId: 1,
         governorateId: 2,
         onlyPendingSync: true,

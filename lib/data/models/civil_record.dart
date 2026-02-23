@@ -50,7 +50,7 @@ class CivilRecord {
     required this.fatherName,
     required this.grandFatherName,
     required this.familyName,
-    this.birthCertificateId,
+    required this.fullName, required this.fullNameNormalized, required this.createdAt, required this.updatedAt, this.birthCertificateId,
     this.birthCodeId,
     this.birthDate,
     this.sexCode,
@@ -64,12 +64,8 @@ class CivilRecord {
     this.relationId,
     this.relativeCodeId,
     this.relativeId,
-    required this.fullName,
-    required this.fullNameNormalized,
     this.governorate,
     this.district,
-    required this.createdAt,
-    required this.updatedAt,
     this.lastSyncedAt,
   });
 

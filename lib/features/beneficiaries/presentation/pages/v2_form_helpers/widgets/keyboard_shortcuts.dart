@@ -12,17 +12,13 @@ class FormKeyboardShortcuts extends StatelessWidget {
   final Widget child;
 
   const FormKeyboardShortcuts({
-    super.key,
-    required this.tabController,
-    required this.onSave,
+    required this.tabController, required this.onSave, required this.child, super.key,
     this.onDelete,
-    required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
     return Focus(
-      autofocus: false,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
           // Ctrl + S = Save

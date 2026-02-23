@@ -12,11 +12,7 @@ class StatsDashboardWidget extends StatelessWidget {
   final String? currency;
 
   const StatsDashboardWidget({
-    super.key,
-    required this.total,
-    required this.active,
-    required this.paused,
-    required this.ended,
+    required this.total, required this.active, required this.paused, required this.ended, super.key,
     this.totalAmount,
     this.currency,
   });
@@ -193,7 +189,7 @@ class StatsDashboardWidget extends StatelessWidget {
                           value: activePercentage / 100,
                           minHeight: 8.h,
                           backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          valueColor: AlwaysStoppedAnimation<Color>(
+                          valueColor: const AlwaysStoppedAnimation<Color>(
                             Colors.green,
                           ),
                         ),

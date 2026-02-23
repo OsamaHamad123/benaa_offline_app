@@ -25,7 +25,7 @@ class CivilRegistrySearchQueries {
   // Enhanced cache for recent searches (max 50 entries for better hit rate)
   final Map<String, List<CivilPerson>> _searchCache = {};
   final Map<String, int> _countCache = {};
-  static final int _maxCacheSize = SearchConstants.maxCacheSize;
+  static const int _maxCacheSize = SearchConstants.maxCacheSize;
 
   // Cache access tracking for LRU eviction
   final Map<String, DateTime> _cacheAccess = {};
@@ -112,7 +112,6 @@ class CivilRegistrySearchQueries {
   }) async {
     final normalized = TextNormalizationService.normalize(
       query,
-      keepHamza: false,
     );
     final raw = query.trim();
 
@@ -564,7 +563,6 @@ class CivilRegistrySearchQueries {
 
     final normalized = TextNormalizationService.normalize(
       query,
-      keepHamza: false,
     );
     final raw = query.trim();
 

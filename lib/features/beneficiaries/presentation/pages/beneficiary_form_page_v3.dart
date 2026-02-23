@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:developer' as developer;
 
 import 'package:benaa_offline_app/core/widgets/responsive_dialog.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/civil_registry_provider.dart';
@@ -19,7 +20,7 @@ import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsive Bottom Sheet
 import '../../../../core/providers/providers.dart'; // 🔌 Core Providers
-import '../../../../data/db/drift_database.dart' show AppDatabase;
+import '../../../../core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart' hide databaseProvider; // Hide conflicting provider
@@ -69,9 +70,12 @@ import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
 
 // ✨ NEW: Extracted Form Components (Phase 1.3)
 import '../widgets/form/app_bar/beneficiary_form_app_bar.dart';
-import '../widgets/form/actions/save_draft_fab.dart';
 import '../widgets/form/statistics/completion_stats_widget.dart';
 import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
+import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_ui;
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -101,7 +105,9 @@ class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
 
 class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> with SingleTickerProviderStateMixin {
   static const bool _enableFormTour = false;
-  static const bool _enableRuntimePerfTracing = true;
+  static const bool _enableRuntimePerfTracing = false;
+  static const bool _enableOnScreenPerfDiagnostics = true;
+  static const Duration _nonCriticalUiDelay = Duration(milliseconds: 1200);
 
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
@@ -113,6 +119,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   final ValueNotifier<bool> _isSavingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isDeletingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isTaxonomyCoverageLoadingNotifier = ValueNotifier(false);
+  final ValueNotifier<List<TaxonomyGroup>> _missingTaxonomyGroupsNotifier = ValueNotifier(const <TaxonomyGroup>[]);
   bool _isSavingLocked = false;
 
   final ValueNotifier<DateTime?> _lastSavedNotifier = ValueNotifier(null);
@@ -145,7 +153,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   // 🆕 New features state
   bool _showStatistics = false;
   bool _showTourGuide = false;
-  bool _showFieldHelpers = false; // ✅ مخفية افتراضياً - تبسيط
+  final bool _showFieldHelpers = false; // ✅ مخفية افتراضياً - تبسيط
   // ⚠️ Search moved to FormContentWidget local state for performance
 
   final FocusNode _firstFieldFocusNode = FocusNode();
@@ -156,6 +164,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   Timer? _offerAutoSavedDraftsTimer;
   // Timer to show first-time user tour (cancelable)
   Timer? _tourShowTimer;
+  Timer? _nonCriticalUiTimer;
 
   // 🚀 Phase 3 - Advanced UX Features
   FieldDependencyController? _dependencyController;
@@ -168,6 +177,16 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   int _verySlowFrames = 0;
   Duration _worstTotalFrame = Duration.zero;
   bool _previousCivilLookupDiagnosticsEnabled = false;
+  static const Duration _watchdogTick = Duration(milliseconds: 450);
+  static const Duration _watchdogLagThreshold = Duration(milliseconds: 180);
+  Timer? _uiWatchdogTimer;
+  DateTime? _uiWatchdogLastTick;
+  int _uiLagBurstCount = 0;
+  bool _uiEmergencyMode = false;
+  final ValueNotifier<int> _perfOverlayVersionNotifier = ValueNotifier(0);
+  final Map<String, _PerfAggregate> _perfAggregates = <String, _PerfAggregate>{};
+  bool _showPerfOverlay = true;
+  bool _nonCriticalUiReady = false;
 
   @override
   void initState() {
@@ -178,7 +197,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _autoSaveDebouncer = Debouncer(delay: const Duration(seconds: 2));
 
     _controllers = BeneficiaryFormControllers(onAutoSave: _performAutoSave);
-    _formHistory = FormHistory<FormStateSnapshot>(maxHistorySize: 50);
+    _formHistory = FormHistory<FormStateSnapshot>();
     _tabController = TabController(
       length: FormConstants.totalTabs,
       vsync: this,
@@ -190,9 +209,21 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       _setupFieldDependencies();
     }
     _setupSmartHints();
+    _startUiWatchdog();
+
+    _setTaxonomySyncSuspended(true);
+    _nonCriticalUiTimer = Timer(_nonCriticalUiDelay, () {
+      if (!mounted) return;
+      setState(() {
+        _nonCriticalUiReady = true;
+      });
+    });
+
+    if (kDebugMode && (_enableRuntimePerfTracing || _enableOnScreenPerfDiagnostics)) {
+      WidgetsBinding.instance.addTimingsCallback(_onFrameTimings);
+    }
 
     if (kDebugMode && _enableRuntimePerfTracing) {
-      WidgetsBinding.instance.addTimingsCallback(_onFrameTimings);
       _previousCivilLookupDiagnosticsEnabled = CivilRegistryLookupDiagnostics.enabled;
       CivilRegistryLookupDiagnostics.enabled = true;
     }
@@ -206,6 +237,53 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       _checkFirstTimeUser();
       _openBenchmark.stopAndReport();
     });
+  }
+
+  void _startUiWatchdog() {
+    _uiWatchdogLastTick = DateTime.now();
+    _uiWatchdogTimer?.cancel();
+    _uiWatchdogTimer = Timer.periodic(_watchdogTick, (_) {
+      if (!mounted) return;
+
+      final now = DateTime.now();
+      final previous = _uiWatchdogLastTick;
+      _uiWatchdogLastTick = now;
+      if (previous == null) return;
+
+      final expected = previous.add(_watchdogTick);
+      final lag = now.difference(expected);
+
+      if (lag > _watchdogLagThreshold) {
+        _uiLagBurstCount += 1;
+        _recordPerfSample('ui.mainThreadLag', lag.inMilliseconds);
+      } else if (_uiLagBurstCount > 0) {
+        _uiLagBurstCount -= 1;
+      }
+
+      final shouldEnableEmergency = _uiLagBurstCount >= 3;
+      if (shouldEnableEmergency == _uiEmergencyMode) {
+        return;
+      }
+
+      _uiEmergencyMode = shouldEnableEmergency;
+      _recordPerfSample('ui.emergencyToggle', shouldEnableEmergency ? 1 : 0);
+      Future.microtask(() {
+        if (!mounted) return;
+        ref.read(taxonomy_ui.taxonomyAutoSyncEmergencyModeProvider.notifier).state = shouldEnableEmergency;
+      });
+    });
+  }
+
+  void _recordPerfSample(String key, int durationMs) {
+    if (!kDebugMode) return;
+    if (durationMs < 0) return;
+
+    final aggregate = _perfAggregates.putIfAbsent(key, _PerfAggregate.new);
+    aggregate.add(durationMs);
+
+    if (_showPerfOverlay) {
+      _perfOverlayVersionNotifier.value = _perfOverlayVersionNotifier.value + 1;
+    }
   }
 
   void _onFrameTimings(List<FrameTiming> timings) {
@@ -230,6 +308,17 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _worstTotalFrame = totalDuration;
       }
     }
+
+    if (_enableOnScreenPerfDiagnostics && _showPerfOverlay && _totalFramesObserved % 10 == 0) {
+      _perfOverlayVersionNotifier.value = _perfOverlayVersionNotifier.value + 1;
+    }
+  }
+
+  void _setTaxonomySyncSuspended(bool suspended) {
+    Future.microtask(() {
+      if (!mounted) return;
+      ref.read(taxonomy_ui.taxonomyAutoSyncSuspendedProvider.notifier).state = suspended;
+    });
   }
 
   /// 🎓 Check if first time user and show tour
@@ -386,204 +475,169 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   }
 
   void _initializeForm() async {
+    final initStopwatch = Stopwatch()..start();
     _isLoading = true;
+    String? resolvedBeneficiaryId;
 
-    if (widget.beneficiaryId != null) {
-      await ref.read(beneficiaryFormProvider.notifier).loadBeneficiary(widget.beneficiaryId!);
+    try {
+      if (widget.beneficiaryId != null) {
+        final database = ref.read(databaseProvider);
+        resolvedBeneficiaryId = await BeneficiaryIdentityResolver.resolveLocalBeneficiaryIdAsString(
+          database: database,
+          beneficiaryId: widget.beneficiaryId,
+        );
+        final beneficiaryIdForLoad = resolvedBeneficiaryId ?? widget.beneficiaryId!;
 
-      final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
-      if (beneficiary != null) {
-        _populateControllers(beneficiary);
-        await _normalizeAllTaxonomySelections();
-        _saveToHistory('Initial load');
-      }
-    } else {
-      _clearAllControllers();
-      ref.read(beneficiaryFormProvider.notifier).createNew();
+        await ref.read(beneficiaryFormProvider.notifier).loadBeneficiary(beneficiaryIdForLoad);
 
-      // ✨ ملء البيانات من السجل المدني إذا كانت موجودة
-      if (widget.civilRegistryData != null) {
-        debugPrint('📋 Civil Registry Data received: ${widget.civilRegistryData}');
-        // تأخير بسيط للسماح للـ controllers بالتحميل
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            _fillFromCivilRegistry(widget.civilRegistryData!);
-            setState(() {
-              _hasUnsavedChanges = true;
-            });
-          }
-        });
+        final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
+        if (beneficiary != null) {
+          _populateControllers(beneficiary);
+          await _normalizeAllTaxonomySelections();
+          _saveToHistory('Initial load');
+        }
       } else {
-        // ✅ التحقق من وجود مسودات تلقائية بشكل مؤجل لتجنب أي تقطيع عند فتح الصفحة
-        _offerAutoSavedDraftsTimer = Timer(
-          const Duration(seconds: 3),
-          () async {
+        _clearAllControllers();
+        ref.read(beneficiaryFormProvider.notifier).createNew();
+
+        if (widget.civilRegistryData != null) {
+          debugPrint('📋 Civil Registry Data received: ${widget.civilRegistryData}');
+          Future.delayed(const Duration(milliseconds: 100), () {
             if (mounted) {
-              await _checkAndOfferAutoSavedDrafts();
-              _firstFieldFocusNode.requestFocus();
+              _fillFromCivilRegistry(widget.civilRegistryData!);
+              setState(() {
+                _hasUnsavedChanges = true;
+              });
             }
-          },
+          });
+        } else {
+          _offerAutoSavedDraftsTimer = Timer(
+            const Duration(milliseconds: 350),
+            () {
+              if (mounted) {
+                _firstFieldFocusNode.requestFocus();
+              }
+            },
+          );
+        }
+      }
+
+      unawaited(_refreshTaxonomyCoverage(showSnackBar: false));
+    } catch (e, stackTrace) {
+      _logFormOpenFailure(
+        error: e,
+        stackTrace: stackTrace,
+        contextData: {
+          'routeBeneficiaryId': widget.beneficiaryId,
+          'resolvedBeneficiaryId': resolvedBeneficiaryId,
+          'hasCivilRegistryData': widget.civilRegistryData != null,
+        },
+      );
+      final message = UserFriendlyError.getMessage(e, stackTrace);
+      debugPrint('❌ Form init failed: $message (technical: $e)');
+      if (mounted) {
+        EnhancedSnackbar.showError(
+          context,
+          message: 'تعذر فتح نموذج إضافة المستفيد. حاول مرة أخرى.',
         );
       }
-    }
-
-    await _verifyFormTaxonomyBindings();
-
-    if (!mounted) return;
-    _isLoading = false;
-  }
-
-  Future<void> _verifyFormTaxonomyBindings() async {
-    final db = ref.read(databaseProvider);
-    const requiredGroups = <TaxonomyGroup>[
-      TaxonomyGroup.gender,
-      TaxonomyGroup.category,
-      TaxonomyGroup.relationship,
-      TaxonomyGroup.section,
-      TaxonomyGroup.maritalStatus,
-      TaxonomyGroup.governorate,
-      TaxonomyGroup.displacementStatus,
-      TaxonomyGroup.educationLevel,
-      TaxonomyGroup.employmentStatus,
-      TaxonomyGroup.healthStatus,
-      TaxonomyGroup.housingStatus,
-      TaxonomyGroup.housingType,
-      TaxonomyGroup.beneficiaryStatus,
-    ];
-
-    final missingGroups = <TaxonomyGroup>[];
-    for (final group in requiredGroups) {
-      final rows = await db.taxonomiesDao.getByGroup(group.value);
-      if (rows.isEmpty) {
-        missingGroups.add(group);
+    } finally {
+      initStopwatch.stop();
+      _recordPerfSample('flow.initializeForm', initStopwatch.elapsedMilliseconds);
+      if (mounted) {
+        _isLoading = false;
       }
     }
+  }
 
-    if (!mounted || missingGroups.isEmpty) return;
-
-    final missingNames = missingGroups.map((g) => g.arabicName).join('، ');
-    EnhancedSnackbar.showWarning(
-      context,
-      message: '⚠️ تصنيفات غير متوفرة في الفورم: $missingNames. يرجى مزامنة التصنيفات.',
+  void _logFormOpenFailure({
+    required Object error,
+    required StackTrace stackTrace,
+    required Map<String, Object?> contextData,
+  }) {
+    developer.log(
+      'Beneficiary form open failed | context=$contextData',
+      name: 'BeneficiaryFormOpen',
+      error: error,
+      stackTrace: stackTrace,
     );
   }
 
-  /// 💾 Check for auto-saved drafts and offer to restore
-  Future<void> _checkAndOfferAutoSavedDrafts() async {
+  Future<void> _refreshTaxonomyCoverage({bool showSnackBar = false}) async {
+    if (!mounted) return;
+
+    final stopwatch = Stopwatch()..start();
+    _isTaxonomyCoverageLoadingNotifier.value = true;
+    final db = ref.read(databaseProvider);
+
     try {
-      // Skip if user already started typing.
-      final latestDraft = await _bootstrapController.getLatestAutoSavedDraft(
-        hasUserInput: _controllers.firstNameController.text.trim().isNotEmpty ||
-            _controllers.nationalIdController.text.trim().isNotEmpty,
-        limit: 15,
-      );
+      final availableGroups =
+          await db.taxonomiesDao.getAllGroups().timeout(const Duration(seconds: 2), onTimeout: () => const <String>[]);
 
-      if (latestDraft == null) return;
+      final normalizedAvailable = availableGroups.map(TaxonomyGroup.normalizeValue).whereType<String>().toSet();
 
-      // عرض أحدث مسودة تلقائية فقط
-      final draftName = latestDraft['name'] ?? 'مسودة';
-      final savedAt = DateTime.parse(latestDraft['savedAt']);
-      final timeSince = _formatDateTime(savedAt);
+      final missingGroups = requiredBeneficiaryTaxonomyGroups
+          .where((group) => !normalizedAvailable.contains(group.value))
+          .toList(growable: false);
 
       if (!mounted) return;
+      _missingTaxonomyGroupsNotifier.value = missingGroups;
 
-      final shouldRestore = await showDialog<bool>(
-        context: context,
-        builder: (context) => ResponsiveDialog(
-          title: 'استعادة مسودة تلقائية',
-          icon: Icons.restore_outlined,
-          iconColor: Colors.blue,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'تم العثور على مسودة محفوظة تلقائياً:',
-                style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade700),
-              ),
-              SizedBox(height: 12.h),
-              Container(
-                padding: EdgeInsets.all(12.w),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person,
-                          size: 16.sp,
-                          color: Colors.blue.shade700,
-                        ),
-                        SizedBox(width: 6.w),
-                        Expanded(
-                          child: Text(
-                            draftName,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade900,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 6.h),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14.sp,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          timeSince,
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                'هل تريد استعادة هذه المسودة؟',
-                style: TextStyle(fontSize: 13.sp),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('بدء جديد'),
-            ),
-            AnimatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: FilledButton.icon(
-                onPressed: null, // handled by AnimatedButton
-                icon: const Icon(Icons.restore),
-                label: const Text('استعادة المسودة'),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldRestore == true && mounted) {
-        await _loadDraft(latestDraft);
+      if (showSnackBar && missingGroups.isNotEmpty) {
+        final missingNames = missingGroups.map((g) => g.arabicName).join('، ');
+        EnhancedSnackbar.showWarning(
+          context,
+          message: '⚠️ تصنيفات غير متوفرة في الفورم: $missingNames. يرجى مزامنة التصنيفات.',
+        );
       }
-    } catch (e, stackTrace) {
-      final errorMsg = UserFriendlyError.getMessage(e, stackTrace);
-      debugPrint('❌ Error checking drafts: $errorMsg (technical: $e)');
-      // Silent failure - don't block form initialization
+    } catch (error, stackTrace) {
+      developer.log(
+        'taxonomy coverage check failed',
+        name: 'BeneficiaryFormTaxonomyCoverage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      stopwatch.stop();
+      _recordPerfSample('db.taxonomyCoverage', stopwatch.elapsedMilliseconds);
+      if (mounted) {
+        _isTaxonomyCoverageLoadingNotifier.value = false;
+      }
+    }
+  }
+
+  Future<void> _syncTaxonomiesFromCoverageCard() async {
+    if (!mounted) return;
+
+    final stopwatch = Stopwatch()..start();
+    try {
+      await ref.read(sync_providers.syncControllerProvider.notifier).deltaSync('taxonomies');
+      if (!mounted) return;
+
+      final syncState = ref.read(sync_providers.syncControllerProvider);
+      if (syncState.isError) {
+        final message =
+            (syncState.error == null || syncState.error!.trim().isEmpty) ? 'فشلت مزامنة التصنيفات.' : syncState.error!;
+        EnhancedSnackbar.showError(context, message: message);
+      } else {
+        EnhancedSnackbar.showSuccess(context, message: 'تمت مزامنة التصنيفات بنجاح.');
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'taxonomy sync from coverage card failed',
+        name: 'BeneficiaryFormTaxonomyCoverage',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: 'تعذر مزامنة التصنيفات حالياً.');
+      }
+    } finally {
+      stopwatch.stop();
+      _recordPerfSample('sync.taxonomiesDelta', stopwatch.elapsedMilliseconds);
+      if (mounted) {
+        unawaited(_refreshTaxonomyCoverage(showSnackBar: false));
+      }
     }
   }
 
@@ -618,6 +672,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _controllers.selectedHealthStatus = null;
     _controllers.selectedHousingStatus = null;
     _controllers.selectedHousingType = null;
+    _controllers.selectedAssistanceType = null;
     _controllers.selectedRequestStatus = null;
     _controllers.hasDisability = false;
     _controllers.updatePendingFiles([]);
@@ -642,94 +697,123 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   Future<void> _normalizeAllTaxonomySelections() async {
     if (!mounted) return;
+    final stopwatch = Stopwatch()..start();
+
+    final taxonomyIndex = await ref.read(bridgeTaxonomiesIndexOnceProvider.future);
 
     await _normalizeAndSet(
       group: TaxonomyGroup.gender,
       rawValue: _controllers.selectedGender,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedGender = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.category,
       rawValue: _controllers.selectedCategory,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedCategory = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.maritalStatus,
       rawValue: _controllers.selectedMaritalStatus,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedMaritalStatus = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.educationLevel,
       rawValue: _controllers.selectedEducationLevel,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedEducationLevel = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.employmentStatus,
       rawValue: _controllers.selectedEmploymentStatus,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedEmploymentStatus = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.relationship,
       rawValue: _controllers.selectedRelationship,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedRelationship = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.section,
       rawValue: _controllers.selectedSection,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedSection = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.governorate,
       rawValue: _controllers.selectedProvince,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedProvince = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.displacementStatus,
       rawValue: _controllers.selectedDisplacementStatus,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedDisplacementStatus = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.healthStatus,
       rawValue: _controllers.selectedHealthStatus,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedHealthStatus = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.housingStatus,
       rawValue: _controllers.selectedHousingStatus,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedHousingStatus = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.housingType,
       rawValue: _controllers.selectedHousingType,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedHousingType = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.assistanceType,
+      rawValue: _controllers.selectedAssistanceType,
+      taxonomyIndex: taxonomyIndex,
+      setter: (value) => _controllers.selectedAssistanceType = value,
     );
     await _normalizeAndSet(
       group: TaxonomyGroup.beneficiaryStatus,
       rawValue: _controllers.selectedRequestStatus,
+      taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedRequestStatus = value,
     );
+
+    stopwatch.stop();
+    _recordPerfSample('db.normalizeTaxonomySelections', stopwatch.elapsedMilliseconds);
   }
 
   Future<void> _normalizeAndSet({
     required TaxonomyGroup group,
     required String? rawValue,
+    required Map<TaxonomyGroup, List<taxonomy_domain.Taxonomy>> taxonomyIndex,
     required void Function(String?) setter,
   }) async {
-    final normalized = await _resolveTaxonomyCode(group: group, rawValue: rawValue);
+    final normalized = _resolveTaxonomyCode(
+      group: group,
+      rawValue: rawValue,
+      taxonomies: taxonomyIndex[group] ?? const <taxonomy_domain.Taxonomy>[],
+    );
     if (normalized != null && normalized != rawValue) {
       setter(normalized);
     }
   }
 
-  Future<String?> _resolveTaxonomyCode({
+  String? _resolveTaxonomyCode({
     required TaxonomyGroup group,
     required String? rawValue,
-  }) async {
+    required List<taxonomy_domain.Taxonomy> taxonomies,
+  }) {
     final raw = rawValue?.trim();
     if (raw == null || raw.isEmpty) return null;
 
-    final db = ref.read(databaseProvider);
-    final taxonomies = await db.taxonomiesDao.getByGroup(group.value);
     if (taxonomies.isEmpty) return raw;
 
     final candidates = {
@@ -781,6 +865,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   }
 
   Future<void> _loadFamilyMembers(String beneficiaryId) async {
+    final stopwatch = Stopwatch()..start();
     try {
       final familyData = await FamilySaveHelper.loadFamilyMembers(
         database: ref.read(databaseProvider),
@@ -796,6 +881,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           message: 'تعذر تحميل بيانات أفراد العائلة',
         );
       }
+    } finally {
+      stopwatch.stop();
+      _recordPerfSample('db.loadFamilyMembers', stopwatch.elapsedMilliseconds);
     }
   }
 
@@ -1143,7 +1231,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         EnhancedSnackbar.showSuccess(
           context,
           message: '✅ تم ملء $filledFieldsCount حقل من السجل المدني',
-          duration: const Duration(seconds: 3),
         );
       } else if (filledFieldsCount == 0) {
         debugPrint('⚠️ No fields were filled - data might be incomplete');
@@ -1208,6 +1295,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   }
 
   /// 💾 Handle Draft Save
+  // ignore: unused_element
   Future<void> _handleDraftSave() async {
     final result = await showDraftSaveDialog(context);
 
@@ -1245,7 +1333,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           // 🎬 Show success animation
           showDialog(
             context: context,
-            barrierDismissible: true,
             barrierColor: Colors.black54,
             builder: (context) => Material(
               color: Colors.transparent,
@@ -1255,7 +1342,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   decoration: BoxDecoration(
                     color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(20.r),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black26,
                         blurRadius: 20,
@@ -1265,7 +1352,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   ),
                   child: FormAnimations.successCheckmark(
                     size: 80.sp,
-                    color: Colors.green,
                   ),
                 ),
               ),
@@ -1300,6 +1386,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   }
 
   /// 📋 Show Drafts List
+  // ignore: unused_element
   Future<void> _showDraftsList() async {
     try {
       final drafts = await DraftManager.getAllDrafts();
@@ -1358,7 +1445,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         ),
                         title: Text(
                           draftName,
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         subtitle: Text(
                           'حُفظت: ${_formatDateTime(savedAt)}',
@@ -1377,7 +1464,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                                     title: 'حذف المسودة',
                                     icon: Icons.delete_outline,
                                     iconColor: Colors.red,
-                                    content: Text(
+                                    content: const Text(
                                       'هل تريد حذف هذه المسودة؟',
                                     ),
                                     actions: [
@@ -1386,7 +1473,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                                           context,
                                           false,
                                         ),
-                                        child: Text('إلغاء'),
+                                        child: const Text('إلغاء'),
                                       ),
                                       AnimatedButton(
                                         onPressed: () => Navigator.pop(
@@ -1497,6 +1584,18 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   @override
   void dispose() {
+    _uiWatchdogTimer?.cancel();
+    _nonCriticalUiTimer?.cancel();
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      Future.microtask(() {
+        container.read(taxonomy_ui.taxonomyAutoSyncSuspendedProvider.notifier).state = false;
+        container.read(taxonomy_ui.taxonomyAutoSyncEmergencyModeProvider.notifier).state = false;
+      });
+    } catch (_) {
+      // no-op in rare teardown edge-cases
+    }
+
     _autoSaveDebouncer.dispose(); // Dispose debouncer
     _offerAutoSavedDraftsTimer?.cancel();
     _tourShowTimer?.cancel();
@@ -1508,8 +1607,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _dependencyController?.dispose();
     // ⚠️ _searchController moved to FormContentWidget
 
-    if (kDebugMode && _enableRuntimePerfTracing) {
+    if (kDebugMode && (_enableRuntimePerfTracing || _enableOnScreenPerfDiagnostics)) {
       WidgetsBinding.instance.removeTimingsCallback(_onFrameTimings);
+    }
+
+    if (kDebugMode && _enableRuntimePerfTracing) {
       CivilRegistryLookupDiagnostics.enabled = _previousCivilLookupDiagnosticsEnabled;
 
       debugPrint(
@@ -1533,8 +1635,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _isSavingNotifier.dispose();
     _isDeletingNotifier.dispose();
     _isLoadingNotifier.dispose();
+    _isTaxonomyCoverageLoadingNotifier.dispose();
+    _missingTaxonomyGroupsNotifier.dispose();
     _lastSavedNotifier.dispose();
     _hasUnsavedChangesNotifier.dispose();
+    _perfOverlayVersionNotifier.dispose();
 
     super.dispose();
   }
@@ -1660,6 +1765,12 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     final trace = FormFlowTracer.start('save');
 
     try {
+      if (!isAutoSave && !await _ensureTaxonomyCoverageBeforeSave()) {
+        final elapsed = trace.end(result: 'taxonomy_coverage_blocked');
+        _flowMetricsCollector.record(operation: 'save', durationMs: elapsed);
+        return;
+      }
+
       if (!_formKey.currentState!.validate()) {
         if (isAutoSave) {
           final elapsed = trace.end(result: 'autosave_validation_failed');
@@ -1769,6 +1880,24 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     }
   }
 
+  Future<bool> _ensureTaxonomyCoverageBeforeSave() async {
+    if (_missingTaxonomyGroupsNotifier.value.isEmpty) {
+      await _refreshTaxonomyCoverage(showSnackBar: false);
+    }
+
+    final missingGroups = _missingTaxonomyGroupsNotifier.value;
+    if (missingGroups.isEmpty) {
+      return true;
+    }
+
+    final missingNames = missingGroups.map((group) => group.arabicName).join('، ');
+    _feedbackCoordinator.showWarning(
+      context,
+      'تعذّر إكمال الحفظ قبل مزامنة التصنيفات الناقصة: $missingNames',
+    );
+    return false;
+  }
+
   Future<void> _handleDelete() async {
     final beneficiary = ref.read(beneficiaryFormProvider).beneficiary;
     if (beneficiary == null) return;
@@ -1781,7 +1910,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         title: 'حذف مستفيد',
         message: 'هل أنت متأكد من حذف "${beneficiary.fullName}"؟',
         confirmText: 'حذف',
-        cancelText: 'إلغاء',
         isDangerous: true,
         icon: Icons.delete_forever_rounded,
         onConfirm: () {},
@@ -1830,9 +1958,22 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<sync_providers.SyncState>(
+      sync_providers.syncControllerProvider,
+      (previous, next) {
+        final wasSyncing = previous?.status == sync_providers.SyncStatus.syncing;
+        final isSuccess = next.status == sync_providers.SyncStatus.success;
+        if (wasSyncing && isSuccess) {
+          unawaited(_refreshTaxonomyCoverage(showSnackBar: false));
+        }
+      },
+    );
+
     final resolvedBeneficiaryId = ref.watch(
       beneficiaryFormProvider.select((state) => state.beneficiary?.id),
     );
+    final syncState = ref.watch(sync_providers.syncControllerProvider);
+    final isSyncRunning = syncState.status == sync_providers.SyncStatus.syncing;
 
     // ⚠️ DON'T use ref.watch here - causes rebuild on every provider change!
     // Use Consumer only where needed
@@ -1876,7 +2017,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
             hasUnsavedChangesNotifier: _hasUnsavedChangesNotifier,
             onSave: _handleSave,
             onDelete: widget.beneficiaryId != null ? _handleDelete : null,
-            onShowHistory: () {}, // TODO: Implement history viewer
+            onShowHistory: _showHistoryNotAvailable,
             onShowHelp: () => showKeyboardShortcutsHelp(context),
             canUndo: _formHistory.canUndo,
             canRedo: _formHistory.canRedo,
@@ -1899,6 +2040,82 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                       children: [
                         // 🚨 Error Banner - Separated widget
                         const FormErrorBanner(),
+
+                        ValueListenableBuilder<bool>(
+                          valueListenable: _isTaxonomyCoverageLoadingNotifier,
+                          builder: (context, isCoverageLoading, _) {
+                            return ValueListenableBuilder<List<TaxonomyGroup>>(
+                              valueListenable: _missingTaxonomyGroupsNotifier,
+                              builder: (context, missingGroups, __) {
+                                if (!isCoverageLoading && missingGroups.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+
+                                final totalGroups = requiredBeneficiaryTaxonomyGroups.length;
+                                final filledGroups = totalGroups - missingGroups.length;
+
+                                return Container(
+                                  width: double.infinity,
+                                  margin: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
+                                  padding: EdgeInsets.all(10.w),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(10.r),
+                                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Wrap(
+                                        spacing: 8.w,
+                                        runSpacing: 4.h,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.sync_problem, size: 18.sp, color: theme.colorScheme.primary),
+                                              SizedBox(width: 8.w),
+                                            ],
+                                          ),
+                                          ConstrainedBox(
+                                            constraints: BoxConstraints(minWidth: 160.w),
+                                            child: Text(
+                                              'Taxonomy Coverage: filled=$filledGroups/$totalGroups',
+                                              style: theme.textTheme.bodyMedium?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          TextButton.icon(
+                                            onPressed: () => unawaited(_refreshTaxonomyCoverage(showSnackBar: true)),
+                                            icon: const Icon(Icons.refresh, size: 16),
+                                            label: const Text('إعادة الفحص'),
+                                          ),
+                                          TextButton.icon(
+                                            onPressed: isSyncRunning ? null : _syncTaxonomiesFromCoverageCard,
+                                            icon: Icon(isSyncRunning ? Icons.sync : Icons.cloud_download, size: 16),
+                                            label: Text(isSyncRunning ? 'جاري المزامنة...' : 'مزامنة التصنيفات'),
+                                          ),
+                                        ],
+                                      ),
+                                      if (isCoverageLoading) ...[
+                                        SizedBox(height: 8.h),
+                                        const LinearProgressIndicator(),
+                                      ],
+                                      if (missingGroups.isNotEmpty) ...[
+                                        SizedBox(height: 8.h),
+                                        Text(
+                                          'المجموعات الناقصة: ${missingGroups.map((g) => g.value).join(', ')}',
+                                          style: theme.textTheme.bodySmall,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
 
                         if (kDebugMode)
                           _buildIdentityDebugCard(
@@ -1960,10 +2177,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                       left: 0,
                       right: 0,
                       child: CompletionStatsWidget(
-                        overallCompletion: (_calculateFilledFields() / 12 * 100),
+                        overallCompletion: _calculateFilledFields() / 12 * 100,
                         completedFields: _calculateFilledFields(),
                         totalFields: 12,
-                        tabCompletions: {
+                        tabCompletions: const {
                           'البيانات الأساسية': 75.0,
                           'أفراد الأسرة': 50.0,
                           'المرفقات': 25.0,
@@ -1976,7 +2193,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   // 🎓 Tour Guide
                   if (_showTourGuide)
                     TourGuide(
-                      steps: [
+                      steps: const [
                         TourStep(
                           title: 'مرحباً بك! 👋',
                           description: 'هذا نموذج إضافة مستفيد جديد. دعنا نأخذ جولة سريعة!',
@@ -2016,42 +2233,120 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                     ),
 
                   // 📱 Mobile Quick Actions
-                  ValueListenableBuilder<bool>(
-                    valueListenable: _isSavingNotifier,
-                    builder: (context, isSaving, _) {
-                      return ValueListenableBuilder<bool>(
-                        valueListenable: _isDeletingNotifier,
-                        builder: (context, isDeleting, _) {
-                          return MobileQuickActions(
-                            onCopyFromBeneficiary: _handleCopyFromBeneficiary,
-                            onClearAllFields: _handleClearAllFields,
-                            onPasteData: _handlePasteData,
-                            onFillDemoData: _handleFillDemoData,
-                            enabled: !isSaving && !isDeleting,
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  if (_nonCriticalUiReady)
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _isSavingNotifier,
+                      builder: (context, isSaving, _) {
+                        return ValueListenableBuilder<bool>(
+                          valueListenable: _isDeletingNotifier,
+                          builder: (context, isDeleting, _) {
+                            return MobileQuickActions(
+                              onCopyFromBeneficiary: _handleCopyFromBeneficiary,
+                              onClearAllFields: _handleClearAllFields,
+                              onPasteData: _handlePasteData,
+                              onFillDemoData: _handleFillDemoData,
+                              enabled: !isSaving && !isDeleting,
+                            );
+                          },
+                        );
+                      },
+                    ),
+
+                  if (kDebugMode && _enableOnScreenPerfDiagnostics)
+                    _buildOnScreenPerfDiagnostics(
+                      context,
+                      isSyncRunning: isSyncRunning,
+                    ),
                 ],
               );
             },
           ),
-
-          // 💾 NEW: Floating Action Button for quick draft save
-          floatingActionButton: ValueListenableBuilder<bool>(
-            valueListenable: _hasUnsavedChangesNotifier,
-            builder: (context, hasUnsavedChanges, _) {
-              return SaveDraftFAB(
-                onSaveDraft: _handleDraftSave,
-                onQuickSave: _handleSave,
-                onViewDrafts: _showDraftsList,
-                onShowStatistics: _toggleStatistics,
-                hasUnsavedChanges: hasUnsavedChanges,
-              );
-            },
-          ),
         ),
+      ),
+    );
+  }
+
+  void _showHistoryNotAvailable() {
+    if (!mounted) return;
+    EnhancedSnackbar.showInfo(
+      context,
+      message: 'سجل التغييرات سيتوفر قريبًا. يمكنك استخدام التراجع/الإعادة حاليًا.',
+    );
+  }
+
+  Widget _buildOnScreenPerfDiagnostics(
+    BuildContext context, {
+    required bool isSyncRunning,
+  }) {
+    return Positioned(
+      right: 8.w,
+      bottom: 90.h,
+      child: ValueListenableBuilder<int>(
+        valueListenable: _perfOverlayVersionNotifier,
+        builder: (context, _, __) {
+          final entries = _perfAggregates.entries.toList(growable: false)
+            ..sort((a, b) => b.value.maxMs.compareTo(a.value.maxMs));
+          final topEntries = entries.take(4).toList(growable: false);
+
+          return GestureDetector(
+            onTap: () {
+              setState(() => _showPerfOverlay = !_showPerfOverlay);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 120),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+              constraints: BoxConstraints(maxWidth: 280.w),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.70),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: _showPerfOverlay
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'PERF DEBUG',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'sync=${isSyncRunning ? 'on' : 'off'} | emergency=${_uiEmergencyMode ? 'on' : 'off'} | lagBurst=$_uiLagBurstCount',
+                          style: TextStyle(color: Colors.white70, fontSize: 10.sp),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'frames=$_totalFramesObserved slowBuild=$_slowBuildFrames slowRaster=$_slowRasterFrames verySlow=$_verySlowFrames',
+                          style: TextStyle(color: Colors.white70, fontSize: 10.sp),
+                        ),
+                        if (topEntries.isNotEmpty) ...[
+                          SizedBox(height: 6.h),
+                          for (final entry in topEntries)
+                            Text(
+                              '${entry.key}: n=${entry.value.count} avg=${entry.value.averageMs}ms max=${entry.value.maxMs}ms >50=${entry.value.over50Ms}',
+                              style: TextStyle(color: Colors.white, fontSize: 10.sp),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
+                      ],
+                    )
+                  : Text(
+                      'PERF',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -2094,85 +2389,46 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
     final familyCount = _controllers.livingMembers.length + _controllers.deceasedMembers.length;
     final pendingAttachmentsCount = _controllers.pendingAttachments.length;
-    final db = ref.read(databaseProvider);
-
-    return FutureBuilder<_FormIdentityDebugSnapshot>(
-      future: _buildDebugSnapshot(
-        database: db,
-        effectiveId: effectiveId,
-        fallbackResolvedBeneficiaryId: resolvedBeneficiaryId,
-      ),
-      builder: (context, snapshot) {
-        final debugSnapshot = snapshot.data;
-        final resolvedByResolver = debugSnapshot?.resolvedLocalId ?? resolvedBeneficiaryId ?? '-';
-        final savedFamily = debugSnapshot?.savedFamilyCount ?? 0;
-        final savedAttachments = debugSnapshot?.savedAttachmentsCount ?? 0;
-
-        return Padding(
-          padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
-          child: Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(10.r),
-              border: Border.all(color: Colors.amber.withOpacity(0.55)),
-            ),
-            child: Text(
-              'DEBUG LINK | routeId: ${routeBeneficiaryId ?? '-'} | resolvedLocalId: $resolvedByResolver | family(pending/saved): $familyCount/$savedFamily | attachments(pending/saved): $pendingAttachmentsCount/$savedAttachments',
-              style: TextStyle(
-                fontSize: 11.sp,
-                color: Colors.brown[800],
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: colorScheme.secondaryContainer.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(10.r),
+          border: Border.all(color: colorScheme.secondary.withOpacity(0.55)),
+        ),
+        child: Text(
+          'DEBUG LINK | routeId: ${routeBeneficiaryId ?? '-'} | effectiveId: $effectiveId | family(pending): $familyCount | attachments(pending): $pendingAttachmentsCount',
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: colorScheme.onSecondaryContainer,
+            fontWeight: FontWeight.w600,
           ),
-        );
-      },
-    );
-  }
-
-  Future<_FormIdentityDebugSnapshot> _buildDebugSnapshot({
-    required AppDatabase database,
-    required String effectiveId,
-    required String? fallbackResolvedBeneficiaryId,
-  }) async {
-    final resolvedByResolver = await BeneficiaryIdentityResolver.resolveLocalBeneficiaryIdAsString(
-      database: database,
-      beneficiaryId: effectiveId,
-    );
-
-    final resolvedLocalId = resolvedByResolver ?? fallbackResolvedBeneficiaryId;
-    final localIntId = int.tryParse(resolvedLocalId ?? '');
-
-    if (resolvedLocalId == null || localIntId == null) {
-      return _FormIdentityDebugSnapshot(
-        resolvedLocalId: resolvedLocalId,
-        savedFamilyCount: 0,
-        savedAttachmentsCount: 0,
-      );
-    }
-
-    final attachments = await database.attachmentsDao.getBeneficiaryAttachments(resolvedLocalId);
-    final living = await database.familyMembersDao.getMembersByBeneficiary(localIntId);
-    final deceased = await database.familyDeceasedDao.getDeceasedByBeneficiary(localIntId);
-
-    return _FormIdentityDebugSnapshot(
-      resolvedLocalId: resolvedLocalId,
-      savedFamilyCount: living.length + deceased.length,
-      savedAttachmentsCount: attachments.length,
+        ),
+      ),
     );
   }
 }
 
-class _FormIdentityDebugSnapshot {
-  final String? resolvedLocalId;
-  final int savedFamilyCount;
-  final int savedAttachmentsCount;
+class _PerfAggregate {
+  int count = 0;
+  int totalMs = 0;
+  int maxMs = 0;
+  int over50Ms = 0;
 
-  const _FormIdentityDebugSnapshot({
-    required this.resolvedLocalId,
-    required this.savedFamilyCount,
-    required this.savedAttachmentsCount,
-  });
+  int get averageMs => count == 0 ? 0 : (totalMs / count).round();
+
+  void add(int durationMs) {
+    count += 1;
+    totalMs += durationMs;
+    if (durationMs > maxMs) {
+      maxMs = durationMs;
+    }
+    if (durationMs > 50) {
+      over50Ms += 1;
+    }
+  }
 }

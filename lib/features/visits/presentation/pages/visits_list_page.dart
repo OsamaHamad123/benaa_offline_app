@@ -92,7 +92,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
           ),
           title: Row(
             children: [
-              Icon(Icons.download, color: AppColors.primary),
+              const Icon(Icons.download, color: AppColors.primary),
               SizedBox(width: 12.w),
               const Text('تصدير الزيارات'),
             ],
@@ -235,7 +235,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
         itemCount: 5,
         itemBuilder: (context, index) => Padding(
           padding: EdgeInsets.only(bottom: 16.h),
-          child: SkeletonListItem(),
+          child: const SkeletonListItem(),
         ),
       );
     }
@@ -441,7 +441,6 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
         Expanded(
           child: Center(
             child: ScaleTransitionWidget(
-              duration: AppDurations.normal,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -554,7 +553,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
             children: [
               Row(
                 children: [
-                  Icon(Icons.filter_list, color: AppColors.primary),
+                  const Icon(Icons.filter_list, color: AppColors.primary),
                   SizedBox(width: 12.w),
                   Text(
                     'فلترة الزيارات',
@@ -657,7 +656,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
           ),
           title: Row(
             children: [
-              Icon(Icons.event_note, color: AppColors.primary),
+              const Icon(Icons.event_note, color: AppColors.primary),
               SizedBox(width: 12.w),
               const Text('تفاصيل الزيارة'),
             ],

@@ -107,21 +107,21 @@ class SmartNotificationsPage extends StatelessWidget {
               ),
               SizedBox(height: 12.h),
 
-              _NotificationTile(
+              const _NotificationTile(
                 icon: Icons.alarm,
                 title: 'كفالة تنتهي قريباً',
                 message: 'كفالة محمد أحمد ستنتهي خلال 5 أيام',
                 time: 'منذ ساعتين',
                 isRead: false,
               ),
-              _NotificationTile(
+              const _NotificationTile(
                 icon: Icons.update,
                 title: 'تجديد مطلوب',
                 message: 'كفالة فاطمة علي تحتاج تجديد',
                 time: 'منذ 4 ساعات',
                 isRead: true,
               ),
-              _NotificationTile(
+              const _NotificationTile(
                 icon: Icons.check_circle,
                 title: 'تم التجديد بنجاح',
                 message: 'تم تجديد كفالة أحمد محمود بنجاح',
@@ -204,7 +204,7 @@ class _NotificationSettingCard extends StatelessWidget {
           Switch(
             value: enabled,
             onChanged: onToggle,
-            activeColor: color,
+            activeThumbColor: color,
           ),
         ],
       ),
