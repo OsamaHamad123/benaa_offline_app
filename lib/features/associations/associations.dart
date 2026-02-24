@@ -2,6 +2,7 @@
 // Domain Layer Exports
 export 'domain/entities/association.dart';
 export 'domain/entities/representative.dart';
+export 'domain/constants/associations_sync_keys.dart';
 export 'domain/repositories/association_repository.dart';
 export 'domain/usecases/get_all_active_associations.dart';
 export 'domain/usecases/get_association_by_id.dart';
@@ -14,6 +15,9 @@ export 'domain/usecases/search_associations.dart';
 
 // Data Layer Exports
 export 'data/repositories/association_repository_impl.dart';
+export 'data/models/associations_sync_dto.dart';
+export 'data/mappers/associations_sync_mapper.dart';
+export 'data/datasources/associations_remote_sync_datasource.dart';
 
 // Presentation Layer Exports
 export 'presentation/providers/associations_provider.dart';

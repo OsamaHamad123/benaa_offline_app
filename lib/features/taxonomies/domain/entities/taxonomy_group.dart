@@ -179,6 +179,7 @@ enum TaxonomyGroup {
       'aid_statuses': 'assistance_type',
       'beneficiary_statuses': 'beneficiary_status',
       'request_statuses': 'beneficiary_status',
+      'request_status': 'beneficiary_status',
       'sponsorship_statuses': 'beneficiary_status',
       'beneficiary_state': 'beneficiary_status',
       'relationships': 'relationship',
@@ -189,6 +190,11 @@ enum TaxonomyGroup {
       'guarantee_types': 'sponsorship_type',
       'sex': 'gender',
       'genders': 'gender',
+      'sexes': 'gender',
+      'visit': 'visit_type',
+      'visits': 'visit_type',
+      'association': 'association_type',
+      'associations': 'association_type',
     };
 
     final direct = aliases[normalized] ?? normalized;

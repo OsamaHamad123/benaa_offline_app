@@ -21,12 +21,22 @@ class FormActionButtons extends StatelessWidget {
   final bool isEditMode;
 
   const FormActionButtons({
-    required this.onSave, required this.onShowHistory, required this.onShowHelp, required this.canUndo, required this.canRedo, required this.onUndo, required this.onRedo, required this.isEditMode, super.key,
+    required this.onSave,
+    required this.onShowHistory,
+    required this.onShowHelp,
+    required this.canUndo,
+    required this.canRedo,
+    required this.onUndo,
+    required this.onRedo,
+    required this.isEditMode,
+    super.key,
     this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -85,11 +95,15 @@ class FormActionButtons extends StatelessWidget {
                 value: 'delete',
                 child: Row(
                   children: [
-                    Icon(Icons.delete, size: 20.sp, color: Colors.red),
+                    Icon(
+                      Icons.delete,
+                      size: 20.sp,
+                      color: colorScheme.error,
+                    ),
                     SizedBox(width: 12.w),
-                    const Text(
+                    Text(
                       'حذف المستفيد',
-                      style: TextStyle(color: Colors.red),
+                      style: TextStyle(color: colorScheme.error),
                     ),
                   ],
                 ),

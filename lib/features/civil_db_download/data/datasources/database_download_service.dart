@@ -256,13 +256,15 @@ class DatabaseDownloadService {
         }
       }
 
+      final userFriendlyError = (e is StateError) ? 'فشل التحقق من ملف قاعدة البيانات بعد التنزيل' : e.toString();
+
       onProgress(
         DownloadProgress(
           downloadedBytes: 0,
           totalBytes: 0,
           percentage: 0,
           status: DownloadStatus.failed,
-          errorMessage: e.toString(),
+          errorMessage: userFriendlyError,
         ),
       );
       rethrow;
@@ -290,9 +292,23 @@ class DatabaseDownloadService {
         return false;
       }
 
-      // TODO: Add SQLite header verification
-      final bytes = await file.openRead(0, 16).first;
-      final header = String.fromCharCodes(bytes);
+      final chunks = await file.openRead(0, 16).toList();
+      if (chunks.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('⚠️ SQLite header is empty');
+        }
+        return false;
+      }
+
+      final headerBytes = chunks.expand((chunk) => chunk).toList(growable: false);
+      if (headerBytes.length < 16) {
+        if (kDebugMode) {
+          debugPrint('⚠️ SQLite header is too short');
+        }
+        return false;
+      }
+
+      final header = String.fromCharCodes(headerBytes.sublist(0, 16));
 
       if (!header.startsWith('SQLite format')) {
         if (kDebugMode) {

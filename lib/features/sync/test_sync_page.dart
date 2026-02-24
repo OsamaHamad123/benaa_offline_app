@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/sync/mobile_sync_service.dart';
-import 'mobile_sync_page.dart';
+import 'presentation/providers/mobile_sync_operations_providers.dart';
 
 final testMobileSyncStatusProvider = StreamProvider<MobileSyncStatus>((ref) {
   final service = ref.watch(mobileSyncServiceProvider);
@@ -27,8 +27,8 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
     });
 
     try {
-      final service = ref.read(mobileSyncServiceProvider);
-      final result = await service.syncDown();
+      final syncDown = ref.read(mobileSyncDownUseCaseProvider);
+      final result = await syncDown();
 
       setState(() {
         _isLoading = false;
@@ -49,8 +49,8 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
     });
 
     try {
-      final service = ref.read(mobileSyncServiceProvider);
-      final result = await service.syncUp();
+      final syncUp = ref.read(mobileSyncUpUseCaseProvider);
+      final result = await syncUp();
 
       setState(() {
         _isLoading = false;

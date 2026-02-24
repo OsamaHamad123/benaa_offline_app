@@ -12,11 +12,15 @@ class BeneficiaryModel extends domain.Beneficiary {
     required super.nationalId,
     required super.gender,
     required super.category,
-    required super.createdAt, required super.updatedAt, super.birthDate,
+    required super.createdAt,
+    required super.updatedAt,
+    super.birthDate,
     super.motherName,
     super.fatherName,
     super.grandFatherName,
     super.familyName,
+    super.relationship,
+    super.sectionId,
     super.phoneNumber,
     super.altPhoneNumber,
     super.governorate,
@@ -25,6 +29,7 @@ class BeneficiaryModel extends domain.Beneficiary {
     super.currentAddress,
     super.addressBeforeDisplacement,
     super.fileNo,
+    super.fileIdNumber,
     super.associationName,
     super.maritalStatus,
     super.educationLevel,
@@ -41,6 +46,7 @@ class BeneficiaryModel extends domain.Beneficiary {
     super.housingType,
     super.requestStatus,
     super.notes,
+    super.createdByUser,
     super.needsSync = false,
   });
 
@@ -60,18 +66,20 @@ class BeneficiaryModel extends domain.Beneficiary {
       nationalId: data.idNumber.toString(),
       gender: data.gender == 1 ? domain.Gender.male : domain.Gender.female,
       category: domain.BeneficiaryCategory.fromCode(data.sectionId),
+      sectionId: data.sectionId,
       birthDate: data.birthDate,
       fatherName: data.fatherName,
       grandFatherName: data.grandFatherName,
       familyName: data.familyName,
+      relationship: data.relationship,
       phoneNumber: data.phoneNumber.toString(),
-      altPhoneNumber:
-          data.altPhoneNumber != 0 ? data.altPhoneNumber.toString() : null,
+      altPhoneNumber: data.altPhoneNumber != 0 ? data.altPhoneNumber.toString() : null,
       governorate: data.province?.toString(),
       district: data.city?.toString(),
       currentAddress: data.currentAddress,
       addressBeforeDisplacement: data.addressBeforeDisplacement,
       fileNo: data.fileIdNumber,
+      fileIdNumber: data.fileIdNumber,
       maritalStatus: _codeToMaritalStatus(data.maritalStatus),
       educationLevel: _codeToEducationLevel(data.academicQualification),
       healthStatus: _codeToHealthStatus(data.healthStatus),
@@ -91,6 +99,7 @@ class BeneficiaryModel extends domain.Beneficiary {
       housingType: domain.HousingType.fromCode(data.currentHousingType),
       requestStatus: domain.RequestStatus.fromCode(data.requestStatus),
       notes: data.descriptionNeeds,
+      createdByUser: data.userInsertData,
       createdAt: data.createdAt ?? DateTime.now(),
       updatedAt: data.updatedAt ?? DateTime.now(),
       needsSync: data.syncState == 'pending',
@@ -118,25 +127,21 @@ class BeneficiaryModel extends domain.Beneficiary {
     final nameParts = fullName.split(' ');
     final firstName = nameParts.isNotEmpty ? nameParts[0] : null;
     final fatherName = nameParts.length > 1 ? nameParts[1] : this.fatherName;
-    final grandFatherName =
-        nameParts.length > 2 ? nameParts[2] : this.grandFatherName;
-    final familyName =
-        nameParts.length > 3 ? nameParts.sublist(3).join(' ') : this.familyName;
+    final grandFatherName = nameParts.length > 2 ? nameParts[2] : this.grandFatherName;
+    final familyName = nameParts.length > 3 ? nameParts.sublist(3).join(' ') : this.familyName;
 
     return BeneficiariesCompanion.insert(
       idNumber: int.tryParse(nationalId) ?? 0,
-      phoneNumber:
-          int.tryParse(phoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ?? 0,
-      altPhoneNumber:
-          int.tryParse(altPhoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ??
-              0,
-      fileIdNumber: drift.Value(fileNo),
-      sectionId: drift.Value(category.code),
+      phoneNumber: int.tryParse(phoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ?? 0,
+      altPhoneNumber: int.tryParse(altPhoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ?? 0,
+      fileIdNumber: drift.Value(fileIdNumber ?? fileNo),
+      sectionId: drift.Value(sectionId ?? category.code),
       requestStatus: drift.Value(requestStatus?.code ?? 1),
       firstName: drift.Value(firstName),
       fatherName: drift.Value(fatherName),
       grandFatherName: drift.Value(grandFatherName),
       familyName: drift.Value(familyName),
+      relationship: drift.Value(relationship),
       birthDate: drift.Value(birthDate),
       gender: drift.Value(gender == domain.Gender.male ? 1 : 2),
       numberOfIndividuals: drift.Value(familySize),
@@ -156,6 +161,7 @@ class BeneficiaryModel extends domain.Beneficiary {
       housingStatus: drift.Value(housingStatus?.code),
       currentHousingType: drift.Value(housingType?.code),
       descriptionNeeds: drift.Value(notes),
+      userInsertData: drift.Value(createdByUser),
       createdAt: drift.Value(createdAt),
       updatedAt: drift.Value(updatedAt),
       syncState: drift.Value(needsSync ? 'pending' : 'synced'),

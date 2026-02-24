@@ -17,6 +17,8 @@ class StatisticsDashboard extends ConsumerWidget {
   }
 
   Widget _buildCompactStats(BuildContext context, state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return FadeSlideTransition(
       child: Column(
         children: [
@@ -27,19 +29,19 @@ class StatisticsDashboard extends ConsumerWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  Theme.of(context).colorScheme.secondary.withOpacity(0.05),
+                  colorScheme.primary.withValues(alpha: 0.1),
+                  colorScheme.secondary.withValues(alpha: 0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: colorScheme.primary.withValues(alpha: 0.2),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -54,11 +56,15 @@ class StatisticsDashboard extends ConsumerWidget {
                       icon: Icons.people,
                       label: 'الإجمالي',
                       value: state.totalCount.toString(),
-                      color: Colors.blue,
+                      color: colorScheme.primary,
                     ),
                   ),
                 ),
-                Container(width: 1.w, height: 50.h, color: Colors.grey[300]),
+                Container(
+                  width: 1.w,
+                  height: 50.h,
+                  color: colorScheme.outlineVariant,
+                ),
                 Expanded(
                   child: ScaleTransitionWidget(
                     duration: AppDurations.fast,
@@ -66,11 +72,15 @@ class StatisticsDashboard extends ConsumerWidget {
                       icon: Icons.filter_list,
                       label: 'المعروضة',
                       value: state.items.length.toString(),
-                      color: Colors.green,
+                      color: colorScheme.secondary,
                     ),
                   ),
                 ),
-                Container(width: 1.w, height: 50.h, color: Colors.grey[300]),
+                Container(
+                  width: 1.w,
+                  height: 50.h,
+                  color: colorScheme.outlineVariant,
+                ),
                 Expanded(
                   child: ScaleTransitionWidget(
                     duration: AppDurations.fast,
@@ -78,7 +88,7 @@ class StatisticsDashboard extends ConsumerWidget {
                       icon: Icons.cloud_upload,
                       label: 'قيد المزامنة',
                       value: state.pendingSyncCount.toString(),
-                      color: Colors.orange,
+                      color: colorScheme.tertiary,
                     ),
                   ),
                 ),
@@ -94,13 +104,17 @@ class StatisticsDashboard extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.bar_chart, size: 14.sp, color: Colors.grey[600]),
+                  Icon(
+                    Icons.bar_chart,
+                    size: 14.sp,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   SizedBox(width: 4.w),
                   Text(
                     'اضغط للمزيد من الإحصائيات',
                     style: TextStyle(
                       fontSize: 11.sp,
-                      color: Colors.grey[600],
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -131,12 +145,14 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Container(
           padding: EdgeInsets.all(10.r),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 28.sp),
@@ -153,7 +169,7 @@ class _StatCard extends StatelessWidget {
         SizedBox(height: 4.h),
         Text(
           label,
-          style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 12.sp, color: colorScheme.onSurfaceVariant),
         ),
       ],
     );

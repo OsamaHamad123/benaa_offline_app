@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../features/taxonomies/taxonomies.dart';
-import '../../../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../../../../../../core/utils/debouncer.dart';
 import '../../../pages/v2_form_helpers/civil_registry_lookup_controller.dart';
 import '../../../pages/v2_form_helpers/civil_registry_autofill_feedback_helper.dart';
@@ -116,6 +115,11 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
   Widget build(BuildContext context) {
     final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
     final taxonomyReady = taxonomyIndexAsync.hasValue;
+    final specialNeedsCount = int.tryParse(widget.formControllers.specialNeedsCountController.text.trim()) ?? 0;
+    final hasSpecialNeeds = specialNeedsCount > 0;
+    final hasEmploymentStatus = widget.formControllers.selectedEmploymentStatus?.trim().isNotEmpty ?? false;
+    final hasCategory = widget.formControllers.selectedCategory?.trim().isNotEmpty ?? false;
+
     List<Taxonomy> optionsFor(TaxonomyGroup group) {
       final index = taxonomyIndexAsync.asData?.value;
       if (index == null) return const <Taxonomy>[];
@@ -130,7 +134,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
         M3SectionCard(
           title: 'الاسم الكامل',
           icon: Icons.person_rounded,
-          headerColor: FormColors.tabGradients[0]![0].withOpacity(0.2),
+          headerColor: FormColors.tabGradients[0]![0].withValues(alpha: 0.2),
           children: [
             ResponsiveFormLayout(
               children: [
@@ -179,7 +183,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
         M3SectionCard(
           title: 'الهوية والسجل المدني',
           icon: Icons.credit_card_rounded,
-          headerColor: FormColors.tabGradients[0]![0].withOpacity(0.2),
+          headerColor: FormColors.tabGradients[0]![0].withValues(alpha: 0.2),
           children: [
             M3TextField(
               controller: widget.formControllers.nationalIdController,
@@ -294,6 +298,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   labelText: 'الجنس',
                   isRequired: true,
                   prefixIcon: Icons.wc_rounded,
+                  autoSyncOnEmpty: true,
                 ),
               ],
             ),
@@ -306,6 +311,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               onCodeChanged: (value) => widget.formControllers.selectedCategory = value,
               labelText: 'فئة المستفيد',
               isRequired: true,
+              autoSyncOnEmpty: true,
             ),
             SizedBox(height: 12.h),
             ResponsiveFormLayout(
@@ -326,6 +332,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   onCodeChanged: (value) => widget.formControllers.selectedRequestStatus = value,
                   labelText: 'حالة الطلب',
                   prefixIcon: Icons.pending_actions_rounded,
+                  autoSyncOnEmpty: true,
                 ),
                 TaxonomyBridgeDropdown(
                   group: TaxonomyGroup.assistanceType,
@@ -335,6 +342,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   onCodeChanged: (value) => widget.formControllers.selectedAssistanceType = value,
                   labelText: 'نوع المساعدة',
                   prefixIcon: Icons.handshake_rounded,
+                  isRequired: hasCategory,
                 ),
                 TaxonomyBridgeDropdown(
                   group: TaxonomyGroup.section,
@@ -344,6 +352,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   onCodeChanged: (value) => widget.formControllers.selectedSection = value,
                   labelText: 'القسم',
                   prefixIcon: Icons.account_tree_rounded,
+                  autoSyncOnEmpty: true,
                 ),
               ],
             ),
@@ -353,7 +362,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
           M3SectionCard(
             title: 'معلومات إضافية',
             icon: Icons.info_outline_rounded,
-            headerColor: FormColors.tabGradients[0]![1].withOpacity(0.2),
+            headerColor: FormColors.tabGradients[0]![1].withValues(alpha: 0.2),
             children: [
               ResponsiveFormLayout(
                 children: [
@@ -403,6 +412,16 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                 helperText: 'عدد أفراد الأسرة من ذوي الاحتياجات الخاصة',
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               ),
+              if (hasSpecialNeeds && (widget.formControllers.selectedDisabilityType?.trim().isNotEmpty != true)) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  'يرجى تحديد نوع الإعاقة لأن عدد ذوي الاحتياجات الخاصة أكبر من صفر',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ],
               SizedBox(height: 12.h),
               ResponsiveFormLayout(
                 children: [
@@ -437,16 +456,20 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                     onCodeChanged: (value) => widget.formControllers.selectedDisabilityType = value,
                     labelText: 'نوع الإعاقة',
                     prefixIcon: Icons.accessible_forward_rounded,
+                    isRequired: hasSpecialNeeds,
+                    autoSyncOnEmpty: true,
                   ),
-                  TaxonomyBridgeDropdown(
-                    group: TaxonomyGroup.incomeSource,
-                    preloadedOptions: optionsFor(TaxonomyGroup.incomeSource),
-                    enabled: taxonomyReady,
-                    selectedCode: widget.formControllers.selectedIncomeSource,
-                    onCodeChanged: (value) => widget.formControllers.selectedIncomeSource = value,
-                    labelText: 'مصدر الدخل',
-                    prefixIcon: Icons.account_balance_wallet_outlined,
-                  ),
+                  if (hasEmploymentStatus)
+                    TaxonomyBridgeDropdown(
+                      group: TaxonomyGroup.incomeSource,
+                      preloadedOptions: optionsFor(TaxonomyGroup.incomeSource),
+                      enabled: taxonomyReady,
+                      selectedCode: widget.formControllers.selectedIncomeSource,
+                      onCodeChanged: (value) => widget.formControllers.selectedIncomeSource = value,
+                      labelText: 'مصدر الدخل',
+                      prefixIcon: Icons.account_balance_wallet_outlined,
+                      autoSyncOnEmpty: true,
+                    ),
                 ],
               ),
             ],

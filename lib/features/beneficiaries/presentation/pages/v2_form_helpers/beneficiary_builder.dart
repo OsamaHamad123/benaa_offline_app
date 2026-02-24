@@ -20,8 +20,8 @@ class BeneficiaryEntityBuilder {
       controllers.lastNameController.text.trim(),
     ].where((s) => s.isNotEmpty).join(' ');
 
-    // Parse gender
-    final gender = controllers.selectedGender == 'ذكر' ? Gender.male : Gender.female;
+    // Parse gender from taxonomy code/label/value
+    final gender = _parseGender(controllers.selectedGender);
 
     // Generate timestamps
     final now = DateTime.now();
@@ -109,10 +109,10 @@ class BeneficiaryEntityBuilder {
 
   /// Parse category with default
   static BeneficiaryCategory _parseCategory(String? value) {
-    if (value == null) return BeneficiaryCategory.poor;
+    if (value == null) return BeneficiaryCategory.other;
     try {
       final trimmed = value.trim();
-      if (trimmed.isEmpty) return BeneficiaryCategory.poor;
+      if (trimmed.isEmpty) return BeneficiaryCategory.other;
 
       final numericCode = int.tryParse(trimmed);
       if (numericCode != null) {
@@ -121,11 +121,23 @@ class BeneficiaryEntityBuilder {
 
       return BeneficiaryCategory.values.firstWhere(
         (e) => e.name == trimmed || e.englishValue == trimmed || e.arabicLabel == trimmed,
-        orElse: () => BeneficiaryCategory.poor,
+        orElse: () => BeneficiaryCategory.other,
       );
     } catch (_) {
-      return BeneficiaryCategory.poor;
+      return BeneficiaryCategory.other;
     }
+  }
+
+  static Gender _parseGender(String? value) {
+    if (value == null || value.trim().isEmpty) return Gender.unknown;
+    final normalized = value.trim();
+    if (normalized == '1' || normalized == 'male' || normalized == 'ذكر') {
+      return Gender.male;
+    }
+    if (normalized == '2' || normalized == 'female' || normalized == 'أنثى') {
+      return Gender.female;
+    }
+    return Gender.fromString(normalized);
   }
 
   /// Parse enum with null safety

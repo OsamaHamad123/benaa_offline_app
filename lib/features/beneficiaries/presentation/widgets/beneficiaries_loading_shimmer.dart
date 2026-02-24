@@ -17,14 +17,17 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    final skeletonBase = colorScheme.surfaceContainerHighest;
+    final skeletonHighlight = colorScheme.surface;
+    final skeletonBlock = colorScheme.surface;
 
     return ListView.builder(
       itemCount: itemCount,
       padding: padding ?? const EdgeInsets.all(16),
       itemBuilder: (context, index) => Shimmer.fromColors(
-        baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-        highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+        baseColor: skeletonBase,
+        highlightColor: skeletonHighlight,
         child: Card(
           margin: const EdgeInsets.only(bottom: 16),
           child: Container(
@@ -39,8 +42,8 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
                     Container(
                       width: 56,
                       height: 56,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: skeletonBlock,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -54,7 +57,7 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
                             width: 150,
                             height: 14,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: skeletonBlock,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -63,7 +66,7 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
                             width: 100,
                             height: 10,
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: skeletonBlock,
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -82,7 +85,7 @@ class BeneficiariesLoadingShimmer extends StatelessWidget {
                         height: 24,
                         margin: const EdgeInsets.only(right: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: skeletonBlock,
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),

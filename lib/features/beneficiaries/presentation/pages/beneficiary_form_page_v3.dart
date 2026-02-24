@@ -106,7 +106,7 @@ class BeneficiaryFormPageV3 extends ConsumerStatefulWidget {
 class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> with SingleTickerProviderStateMixin {
   static const bool _enableFormTour = false;
   static const bool _enableRuntimePerfTracing = false;
-  static const bool _enableOnScreenPerfDiagnostics = true;
+  static const bool _enableOnScreenPerfDiagnostics = false;
   static const Duration _nonCriticalUiDelay = Duration(milliseconds: 1200);
 
   late TabController _tabController;
@@ -121,6 +121,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   final ValueNotifier<bool> _isLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<bool> _isTaxonomyCoverageLoadingNotifier = ValueNotifier(false);
   final ValueNotifier<List<TaxonomyGroup>> _missingTaxonomyGroupsNotifier = ValueNotifier(const <TaxonomyGroup>[]);
+  final ValueNotifier<List<String>> _unknownTaxonomyGroupsNotifier = ValueNotifier(const <String>[]);
   bool _isSavingLocked = false;
 
   final ValueNotifier<DateTime?> _lastSavedNotifier = ValueNotifier(null);
@@ -573,15 +574,24 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     try {
       final availableGroups =
           await db.taxonomiesDao.getAllGroups().timeout(const Duration(seconds: 2), onTimeout: () => const <String>[]);
-
-      final normalizedAvailable = availableGroups.map(TaxonomyGroup.normalizeValue).whereType<String>().toSet();
-
-      final missingGroups = requiredBeneficiaryTaxonomyGroups
-          .where((group) => !normalizedAvailable.contains(group.value))
-          .toList(growable: false);
+      final coverage = analyzeBeneficiaryTaxonomyCoverage(availableGroups);
+      final formCoverage = BeneficiaryTaxonomyCoverageReport(
+        resolvedGroups: coverage.resolvedGroups,
+        unknownGroups: coverage.unknownGroups,
+        missingGroups: missingEssentialBeneficiaryFormTaxonomyGroups(coverage.resolvedGroups),
+      );
+      final missingGroups = formCoverage.missingGroups;
 
       if (!mounted) return;
       _missingTaxonomyGroupsNotifier.value = missingGroups;
+      _unknownTaxonomyGroupsNotifier.value = formCoverage.unknownGroups;
+
+      if (formCoverage.unknownGroups.isNotEmpty) {
+        developer.log(
+          'taxonomy coverage contains unknown groups: ${formCoverage.unknownGroups.join(', ')}',
+          name: 'BeneficiaryFormTaxonomyCoverage',
+        );
+      }
 
       if (showSnackBar && missingGroups.isNotEmpty) {
         final missingNames = missingGroups.map((g) => g.arabicName).join('، ');
@@ -785,6 +795,18 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       taxonomyIndex: taxonomyIndex,
       setter: (value) => _controllers.selectedRequestStatus = value,
     );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.disabilityType,
+      rawValue: _controllers.selectedDisabilityType,
+      taxonomyIndex: taxonomyIndex,
+      setter: (value) => _controllers.selectedDisabilityType = value,
+    );
+    await _normalizeAndSet(
+      group: TaxonomyGroup.incomeSource,
+      rawValue: _controllers.selectedIncomeSource,
+      taxonomyIndex: taxonomyIndex,
+      setter: (value) => _controllers.selectedIncomeSource = value,
+    );
 
     stopwatch.stop();
     _recordPerfSample('db.normalizeTaxonomySelections', stopwatch.elapsedMilliseconds);
@@ -818,7 +840,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
     final candidates = {
       _normalizeTaxonomyToken(raw),
-      ..._legacyAliasesForGroup(group, raw).map(_normalizeTaxonomyToken),
     };
 
     for (final taxonomy in taxonomies) {
@@ -838,30 +859,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   String _normalizeTaxonomyToken(String value) {
     return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
-  }
-
-  List<String> _legacyAliasesForGroup(TaxonomyGroup group, String rawValue) {
-    final raw = _normalizeTaxonomyToken(rawValue);
-    switch (group) {
-      case TaxonomyGroup.gender:
-        if (raw == 'ذكر' || raw == 'male') return ['male', 'ذكر', '1'];
-        if (raw == 'أنثى' || raw == 'انثى' || raw == 'female') return ['female', 'أنثى', '2'];
-        return const [];
-      case TaxonomyGroup.maritalStatus:
-        if (raw == 'single' || raw == 'أعزب/عزباء' || raw == 'اعزب/عزباء') return ['single', 'أعزب/عزباء', '1'];
-        if (raw == 'married' || raw == 'متزوج/متزوجة') return ['married', 'متزوج/متزوجة', '2'];
-        if (raw == 'divorced' || raw == 'مطلق/مطلقة') return ['divorced', 'مطلق/مطلقة', '3'];
-        if (raw == 'widowed' || raw == 'أرمل/أرملة' || raw == 'ارمل/ارملة') return ['widowed', 'أرمل/أرملة', '4'];
-        return const [];
-      case TaxonomyGroup.displacementStatus:
-        if (raw == 'notdisplaced' || raw == 'غيرنازح') return ['notDisplaced', 'غير نازح', '0'];
-        if (raw == 'displaced' || raw == 'نازح') return ['displaced', 'نازح', '1'];
-        if (raw == 'refugee' || raw == 'لاجئ') return ['refugee', 'لاجئ', '2'];
-        if (raw == 'returned' || raw == 'عائد' || raw == 'returnee') return ['returned', 'returnee', 'عائد', '3', '4'];
-        return const [];
-      default:
-        return const [];
-    }
   }
 
   Future<void> _loadFamilyMembers(String beneficiaryId) async {
@@ -1541,8 +1538,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       await _normalizeAllTaxonomySelections();
       trace.endStep('applyDraft');
 
-      // Navigate to saved tab
-      _tabController.animateTo(result.currentTab);
+      // Navigate to saved tab (defensive clamp for legacy drafts)
+      final safeTab = result.currentTab.clamp(0, FormConstants.totalTabs - 1);
+      _tabController.animateTo(safeTab);
 
       if (!mounted) return;
       _isLoading = false;
@@ -1637,6 +1635,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _isLoadingNotifier.dispose();
     _isTaxonomyCoverageLoadingNotifier.dispose();
     _missingTaxonomyGroupsNotifier.dispose();
+    _unknownTaxonomyGroupsNotifier.dispose();
     _lastSavedNotifier.dispose();
     _hasUnsavedChangesNotifier.dispose();
     _perfOverlayVersionNotifier.dispose();
@@ -1788,10 +1787,13 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       final currentBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
       final now = DateTime.now();
+      final enteredFileNo = _controllers.fileNumberController.text.trim();
       final beneficiary = BeneficiaryFormDataHandler.buildBeneficiary(
         controllers: _controllers,
         beneficiaryId: widget.beneficiaryId,
-        fileNo: currentBeneficiary?.fileNo ?? 'F-${now.millisecondsSinceEpoch}',
+        fileNo: enteredFileNo.isNotEmpty
+            ? enteredFileNo
+            : (currentBeneficiary?.fileNo ?? 'F-${now.millisecondsSinceEpoch}'),
         createdAt: currentBeneficiary?.createdAt ?? now,
       );
       ref.read(beneficiaryFormProvider.notifier).updateField((_) => beneficiary);
@@ -2047,70 +2049,86 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                             return ValueListenableBuilder<List<TaxonomyGroup>>(
                               valueListenable: _missingTaxonomyGroupsNotifier,
                               builder: (context, missingGroups, __) {
-                                if (!isCoverageLoading && missingGroups.isEmpty) {
-                                  return const SizedBox.shrink();
-                                }
+                                return ValueListenableBuilder<List<String>>(
+                                  valueListenable: _unknownTaxonomyGroupsNotifier,
+                                  builder: (context, unknownGroups, ___) {
+                                    if (!isCoverageLoading && missingGroups.isEmpty && unknownGroups.isEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
 
-                                final totalGroups = requiredBeneficiaryTaxonomyGroups.length;
-                                final filledGroups = totalGroups - missingGroups.length;
+                                    final totalGroups = essentialBeneficiaryFormTaxonomyGroups.length;
+                                    final filledGroups = totalGroups - missingGroups.length;
 
-                                return Container(
-                                  width: double.infinity,
-                                  margin: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
-                                  padding: EdgeInsets.all(10.w),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(10.r),
-                                    border: Border.all(color: theme.colorScheme.outlineVariant),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Wrap(
-                                        spacing: 8.w,
-                                        runSpacing: 4.h,
+                                    return Container(
+                                      width: double.infinity,
+                                      margin: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
+                                      padding: EdgeInsets.all(10.w),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(10.r),
+                                        border: Border.all(color: theme.colorScheme.outlineVariant),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                          Wrap(
+                                            spacing: 8.w,
+                                            runSpacing: 4.h,
                                             children: [
-                                              Icon(Icons.sync_problem, size: 18.sp, color: theme.colorScheme.primary),
-                                              SizedBox(width: 8.w),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.sync_problem,
+                                                      size: 18.sp, color: theme.colorScheme.primary),
+                                                  SizedBox(width: 8.w),
+                                                ],
+                                              ),
+                                              ConstrainedBox(
+                                                constraints: BoxConstraints(minWidth: 160.w),
+                                                child: Text(
+                                                  'Taxonomy Coverage: filled=$filledGroups/$totalGroups',
+                                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton.icon(
+                                                onPressed: () =>
+                                                    unawaited(_refreshTaxonomyCoverage(showSnackBar: true)),
+                                                icon: const Icon(Icons.refresh, size: 16),
+                                                label: const Text('إعادة الفحص'),
+                                              ),
+                                              TextButton.icon(
+                                                onPressed: isSyncRunning ? null : _syncTaxonomiesFromCoverageCard,
+                                                icon: Icon(isSyncRunning ? Icons.sync : Icons.cloud_download, size: 16),
+                                                label: Text(isSyncRunning ? 'جاري المزامنة...' : 'مزامنة التصنيفات'),
+                                              ),
                                             ],
                                           ),
-                                          ConstrainedBox(
-                                            constraints: BoxConstraints(minWidth: 160.w),
-                                            child: Text(
-                                              'Taxonomy Coverage: filled=$filledGroups/$totalGroups',
-                                              style: theme.textTheme.bodyMedium?.copyWith(
-                                                fontWeight: FontWeight.w600,
+                                          if (isCoverageLoading) ...[
+                                            SizedBox(height: 8.h),
+                                            const LinearProgressIndicator(),
+                                          ],
+                                          if (missingGroups.isNotEmpty) ...[
+                                            SizedBox(height: 8.h),
+                                            Text(
+                                              'المجموعات الناقصة: ${missingGroups.map((g) => g.arabicName).join('، ')}',
+                                              style: theme.textTheme.bodySmall,
+                                            ),
+                                          ],
+                                          if (unknownGroups.isNotEmpty) ...[
+                                            SizedBox(height: 6.h),
+                                            Text(
+                                              'مجموعات غير معروفة في البيانات المحلية: ${unknownGroups.join(', ')}',
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                color: theme.colorScheme.error,
                                               ),
                                             ),
-                                          ),
-                                          TextButton.icon(
-                                            onPressed: () => unawaited(_refreshTaxonomyCoverage(showSnackBar: true)),
-                                            icon: const Icon(Icons.refresh, size: 16),
-                                            label: const Text('إعادة الفحص'),
-                                          ),
-                                          TextButton.icon(
-                                            onPressed: isSyncRunning ? null : _syncTaxonomiesFromCoverageCard,
-                                            icon: Icon(isSyncRunning ? Icons.sync : Icons.cloud_download, size: 16),
-                                            label: Text(isSyncRunning ? 'جاري المزامنة...' : 'مزامنة التصنيفات'),
-                                          ),
+                                          ],
                                         ],
                                       ),
-                                      if (isCoverageLoading) ...[
-                                        SizedBox(height: 8.h),
-                                        const LinearProgressIndicator(),
-                                      ],
-                                      if (missingGroups.isNotEmpty) ...[
-                                        SizedBox(height: 8.h),
-                                        Text(
-                                          'المجموعات الناقصة: ${missingGroups.map((g) => g.value).join(', ')}',
-                                          style: theme.textTheme.bodySmall,
-                                        ),
-                                      ],
-                                    ],
-                                  ),
+                                    );
+                                  },
                                 );
                               },
                             );

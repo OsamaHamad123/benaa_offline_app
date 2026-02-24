@@ -64,6 +64,106 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('RemoteSyncDataSource', () {
+    test('pullTaxonomies prioritizes backend documented slug for known group', () async {
+      final adapter = _QueueHttpClientAdapter([
+        const _QueuedResponse(
+          method: 'GET',
+          path: '/api/mobile/categories/academic-degrees',
+          statusCode: 200,
+          body: {
+            'data': {
+              'items': [
+                {
+                  'id': 7,
+                  'code': 'bachelor',
+                  'label': 'بكالوريوس',
+                  'updated_at': '2026-02-22T12:00:00.000Z',
+                },
+              ],
+            },
+          },
+        ),
+      ]);
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://palestine.benaadev.org'));
+      dio.httpClientAdapter = adapter;
+
+      final dataSource = RemoteSyncDataSource(dio);
+      final result = await dataSource.pullTaxonomies(group: 'education_level');
+
+      expect(result.data, isNotEmpty);
+      expect(result.data.first.group, 'education_level');
+      expect(adapter.capturedRequests.length, 1);
+      expect(adapter.capturedRequests.first.path, '/api/mobile/categories/academic-degrees');
+    });
+
+    test('pullTaxonomies falls back to alias slugs when first slug is not found', () async {
+      final adapter = _QueueHttpClientAdapter([
+        const _QueuedResponse(
+          method: 'GET',
+          path: '/api/mobile/categories/categories',
+          statusCode: 404,
+          body: {'message': 'Not found'},
+        ),
+        const _QueuedResponse(
+          method: 'GET',
+          path: '/api/mobile/categories/beneficiary-categories',
+          statusCode: 200,
+          body: {
+            'data': {
+              'items': [
+                {
+                  'id': 3,
+                  'code': 'orphan',
+                  'label': 'يتيم',
+                  'updated_at': '2026-02-22T12:00:00.000Z',
+                },
+              ],
+            },
+          },
+        ),
+      ]);
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://palestine.benaadev.org'));
+      dio.httpClientAdapter = adapter;
+
+      final dataSource = RemoteSyncDataSource(dio);
+      final result = await dataSource.pullTaxonomies(group: 'category');
+
+      expect(result.data, isNotEmpty);
+      expect(result.data.first.group, 'category');
+      expect(adapter.capturedRequests.length, 2);
+      expect(adapter.capturedRequests.first.path, '/api/mobile/categories/categories');
+      expect(adapter.capturedRequests[1].path, '/api/mobile/categories/beneficiary-categories');
+    });
+
+    test('getAvailableGroups resolves backend slug aliases to canonical group values', () async {
+      final adapter = _QueueHttpClientAdapter([
+        const _QueuedResponse(
+          method: 'GET',
+          path: '/api/mobile/categories',
+          statusCode: 200,
+          body: {
+            'data': {
+              'categories': [
+                {'slug': 'relations'},
+                {'slug': 'academic-degrees'},
+              ],
+            },
+          },
+        ),
+      ]);
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://palestine.benaadev.org'));
+      dio.httpClientAdapter = adapter;
+
+      final dataSource = RemoteSyncDataSource(dio);
+      final groups = await dataSource.getAvailableGroups();
+
+      expect(groups, contains('relationship'));
+      expect(groups, contains('education_level'));
+    });
+
     test('pullVisitChanges normalizes paginated mobile payload', () async {
       final adapter = _QueueHttpClientAdapter([
         const _QueuedResponse(

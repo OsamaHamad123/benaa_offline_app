@@ -10,7 +10,10 @@ class InfoChip extends StatelessWidget {
   final VoidCallback? onTap;
 
   const InfoChip({
-    required this.icon, required this.label, required this.color, super.key,
+    required this.icon,
+    required this.label,
+    required this.color,
+    super.key,
     this.bold = false,
     this.onTap,
   });
@@ -23,9 +26,9 @@ class InfoChip extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16.r),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

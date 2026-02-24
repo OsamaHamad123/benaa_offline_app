@@ -9,14 +9,18 @@ class InfoSection extends StatelessWidget {
   final Color? accentColor;
 
   const InfoSection({
-    required this.title, required this.icon, required this.items, super.key,
+    required this.title,
+    required this.icon,
+    required this.items,
+    super.key,
     this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = accentColor ?? theme.colorScheme.primary;
+    final colorScheme = theme.colorScheme;
+    final color = accentColor ?? colorScheme.primary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,9 +43,10 @@ class InfoSection extends StatelessWidget {
 
         // Section Card
         Card(
-          elevation: 2,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
+            side: BorderSide(color: colorScheme.outlineVariant),
           ),
           child: Column(
             children: List.generate(items.length, (index) {
@@ -55,7 +60,11 @@ class InfoSection extends StatelessWidget {
                     valueColor: item.valueColor,
                   ),
                   if (index < items.length - 1)
-                    Divider(height: 1, indent: 60.w),
+                    Divider(
+                      height: 1,
+                      indent: 60.w,
+                      color: colorScheme.outlineVariant,
+                    ),
                 ],
               );
             }),
@@ -89,12 +98,18 @@ class InfoRow extends StatelessWidget {
   final Color? valueColor;
 
   const InfoRow({
-    required this.icon, required this.label, required this.value, super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    super.key,
     this.valueColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       child: Row(
@@ -104,10 +119,10 @@ class InfoRow extends StatelessWidget {
             width: 40.w,
             height: 40.w,
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Icon(icon, size: 20.sp, color: Colors.grey[700]),
+            child: Icon(icon, size: 20.sp, color: colorScheme.onSurfaceVariant),
           ),
           SizedBox(width: 14.w),
 
@@ -116,9 +131,9 @@ class InfoRow extends StatelessWidget {
             flex: 2,
             child: Text(
               label,
-              style: TextStyle(
+              style: textTheme.bodyMedium?.copyWith(
                 fontSize: 14.sp,
-                color: Colors.grey[600],
+                color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -129,12 +144,12 @@ class InfoRow extends StatelessWidget {
             flex: 3,
             child: Text(
               value,
-              style: TextStyle(
+              style: textTheme.bodyMedium?.copyWith(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
-                color: valueColor ?? Colors.black87,
+                color: valueColor ?? colorScheme.onSurface,
               ),
-              textAlign: TextAlign.left,
+              textAlign: TextAlign.start,
             ),
           ),
         ],

@@ -134,33 +134,70 @@ class BeneficiaryMapper {
 
   /// Local → Backend (JSON)
   static Map<String, dynamic> toBackend(Beneficiary beneficiary) {
-    // Split name (best effort)
-    final nameParts = beneficiary.fullName.split(' ');
-
     return {
-      // File IDs
+      if (beneficiary.serverId != null) 'id': beneficiary.serverId,
+
+      // File information
       'file_id_number': beneficiary.fileIdNumber,
+      'original_file_id_from_excel': beneficiary.originalFileIdFromExcel,
+
+      // Classification & status
+      'data_section_id': beneficiary.sectionId,
+      'data_request_status': beneficiary.requestStatus,
+
+      // Personal information
       'data_id_number': beneficiary.idNumber,
+      'data_first_name': beneficiary.firstName,
+      'data_father_name': beneficiary.fatherName,
+      'data_grand_father_name': beneficiary.grandFatherName,
+      'data_family_name': beneficiary.familyName,
+      'data_relationship': beneficiary.relationship,
+      'data_birth_date': _toDateOnly(beneficiary.birthDate),
+      'data_gender': beneficiary.gender,
 
-      // Name parts
-      'data_first_name': beneficiary.firstName ?? (nameParts.isNotEmpty ? nameParts[0] : ''),
-      'data_father_name': beneficiary.fatherName ?? (nameParts.length > 1 ? nameParts[1] : ''),
-      'data_grand_father_name': beneficiary.grandFatherName ?? (nameParts.length > 2 ? nameParts[2] : ''),
-      'data_family_name': beneficiary.familyName ?? (nameParts.length > 3 ? nameParts[3] : ''),
-
-      // Contact
+      // Contact information
       'data_phone_number': beneficiary.phoneNumber,
       'data_alt_phone_number': beneficiary.altPhoneNumber,
 
-      // Location
-      'data_governorate': beneficiary.province,
+      // Family information
+      'data_number_of_individuals': beneficiary.numberOfIndividuals,
+      'data_marital_status': beneficiary.maritalStatus,
+      'data_number_mail': beneficiary.numberOfMales,
+      'data_number_female': beneficiary.numberOfFemales,
 
-      // Demographics
-      'data_gender': beneficiary.gender,
-      'data_family_type': beneficiary.relationship, // Using relationship as category
-      // Metadata (if updating)
-      if (beneficiary.serverId != null) 'id': beneficiary.serverId,
+      // Education & employment
+      'data_academic_qualification': beneficiary.academicQualification,
+      'data_employment_status_breadwinner': beneficiary.employmentStatusBreadwinner,
+
+      // Displacement & location
+      'data_displacement_status': beneficiary.displacementStatus,
+      'data_address_before_displacement': beneficiary.addressBeforeDisplacement,
+      'data_current_address': beneficiary.currentAddress,
+      'data_city': beneficiary.city,
+      'data_province': beneficiary.province,
+
+      // Health & special needs
+      'data_health_status': beneficiary.healthStatus,
+      'data_number_of_individuals_with_chronic_diseases': beneficiary.numberOfIndividualsWithChronicDiseases,
+      'data_number_of_people_with_special_needs': beneficiary.numberOfPeopleWithSpecialNeeds,
+
+      // Housing
+      'data_housing_status': beneficiary.housingStatus,
+      'data_current_housing_type': beneficiary.currentHousingType,
+
+      // Notes/system fields
+      'data_description_needs': beneficiary.descriptionNeeds,
+      'data_user_insert_data': beneficiary.userInsertData,
+
+      // Timestamps
+      'created_at': beneficiary.createdAt?.toIso8601String(),
+      'updated_at': beneficiary.updatedAt?.toIso8601String(),
     };
+  }
+
+  static String? _toDateOnly(DateTime? value) {
+    if (value == null) return null;
+    return value.toIso8601String().split('T').first;
   }
 
   // ========================================================================

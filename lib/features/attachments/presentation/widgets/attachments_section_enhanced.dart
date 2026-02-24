@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -7,8 +6,23 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_file/open_file.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../../../core/config/api_config.dart';
+import '../../../../core/providers/providers.dart';
+import '../../../../core/sync/mobile_sync_service.dart';
+import '../../../../core/utils/beneficiary_identity_resolver.dart';
 import '../../domain/entities/attachment.dart';
+import '../../../sync/presentation/providers/mobile_sync_operations_providers.dart';
 import '../providers/attachments_provider.dart';
+
+enum _AttachmentTypeFilter {
+  all,
+  image,
+  pdf,
+  other,
+}
+
+final _attachmentsTypeFilterProvider =
+    StateProvider.family<_AttachmentTypeFilter, String>((ref, beneficiaryId) => _AttachmentTypeFilter.all);
 
 /// 📎 Enhanced Attachments Section Widget - Clean Architecture V2
 class AttachmentsSectionEnhanced extends ConsumerWidget {
@@ -17,25 +31,24 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   final bool showTitle;
 
   const AttachmentsSectionEnhanced({
-    required this.beneficiaryId, super.key,
+    required this.beneficiaryId,
+    super.key,
     this.readOnly = false,
     this.showTitle = true,
   });
 
+  bool _isRefUsable(WidgetRef ref) {
+    try {
+      ref.read(attachmentsProvider(beneficiaryId));
+      return true;
+    } on StateError {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (kDebugMode) {
-      debugPrint(
-        '🎨 [AttachmentsSectionEnhanced] Building for: $beneficiaryId',
-      );
-    }
     final state = ref.watch(attachmentsProvider(beneficiaryId));
-
-    if (kDebugMode) {
-      debugPrint(
-        '📊 [AttachmentsSectionEnhanced] State - Loading: ${state.isLoading}, Attachments: ${state.attachments.length}, Error: ${state.errorMessage}',
-      );
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -52,31 +65,170 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     WidgetRef ref,
     AttachmentsState state,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Icon(Icons.attach_file_outlined, color: Colors.blueGrey, size: 22.sp),
+        Icon(Icons.attach_file_outlined, color: colorScheme.primary, size: 22.sp),
         SizedBox(width: 10.w),
         Expanded(
           child: Text(
             'المرفقات${state.attachments.isNotEmpty ? ' (${state.attachments.length})' : ''}',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey,
+                  color: colorScheme.primary,
                 ),
           ),
+        ),
+        IconButton(
+          icon: Icon(Icons.cloud_download_outlined, size: 20.sp),
+          tooltip: 'إعادة التحميل من السيرفر',
+          onPressed: state.isLoading
+              ? null
+              : () {
+                  _resyncAttachmentsFromServer(context, ref);
+                },
         ),
         if (!readOnly && state.attachments.isNotEmpty)
           IconButton(
             icon: Icon(Icons.refresh, size: 20.sp),
             tooltip: 'تحديث',
             onPressed: () {
-              ref
-                  .read(attachmentsProvider(beneficiaryId).notifier)
-                  .loadAttachments(beneficiaryId);
+              ref.read(attachmentsProvider(beneficiaryId).notifier).loadAttachments(beneficiaryId);
             },
           ),
       ],
     );
+  }
+
+  Future<void> _resyncAttachmentsFromServer(BuildContext context, WidgetRef ref) async {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final fileIdNumber = await _resolveFileIdNumberForSync(ref);
+    if (fileIdNumber == null || fileIdNumber.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('تعذر تحديد file_id_number لهذا المستفيد'),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('جاري إعادة التحميل من السيرفر للملف $fileIdNumber...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    try {
+      final syncResult = await _syncRecordByFileIdWithRetry(ref, fileIdNumber);
+
+      if (!_isRefUsable(ref)) return;
+      await ref.read(attachmentsProvider(beneficiaryId).notifier).loadAttachments(beneficiaryId);
+
+      if (!context.mounted) return;
+      final ok = syncResult.success;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? 'تم تحديث المرفقات من السيرفر بنجاح'
+                : 'اكتملت إعادة التحميل مع مشكلة: ${syncResult.error ?? 'غير معروفة'}',
+          ),
+          backgroundColor: ok ? colorScheme.secondary : colorScheme.error,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('فشلت إعادة التحميل من السيرفر: $e'),
+          backgroundColor: colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<MobileSyncResult> _syncRecordByFileIdWithRetry(WidgetRef ref, String fileIdNumber) async {
+    final syncByFileId = ref.read(mobileSyncRecordByFileIdUseCaseProvider);
+
+    MobileSyncResult? lastResult;
+    Object? lastError;
+    const maxAttempts = 3;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        final result = await syncByFileId(fileIdNumber);
+        lastResult = result;
+
+        if (result.success) {
+          return result;
+        }
+
+        if (attempt < maxAttempts) {
+          final delay = Duration(milliseconds: 350 * (1 << (attempt - 1)) + (attempt * 120));
+          await Future.delayed(delay);
+          continue;
+        }
+
+        return result;
+      } catch (e) {
+        lastError = e;
+        if (attempt < maxAttempts) {
+          final delay = Duration(milliseconds: 350 * (1 << (attempt - 1)) + (attempt * 120));
+          await Future.delayed(delay);
+          continue;
+        }
+      }
+    }
+
+    if (lastResult != null) {
+      return lastResult;
+    }
+
+    return MobileSyncResult(
+      success: false,
+      recordsSynced: 0,
+      recordsFailed: 1,
+      error: lastError?.toString() ?? 'syncRecordByFileId failed after retries',
+    );
+  }
+
+  Future<String?> _resolveFileIdNumberForSync(WidgetRef ref) async {
+    final db = ref.read(databaseProvider);
+
+    final localId = await BeneficiaryIdentityResolver.resolveLocalBeneficiaryId(
+      database: db,
+      beneficiaryId: beneficiaryId,
+    );
+
+    if (localId != null) {
+      final beneficiary = await (db.select(db.beneficiaries)..where((b) => b.id.equals(localId))).getSingleOrNull();
+      final fileId = beneficiary?.fileIdNumber?.trim();
+      if (fileId != null && fileId.isNotEmpty) {
+        return fileId;
+      }
+
+      final fallback = beneficiary?.originalFileIdFromExcel?.trim();
+      if (fallback != null && fallback.isNotEmpty) {
+        return fallback;
+      }
+    }
+
+    final raw = beneficiaryId.trim();
+    if (raw.isNotEmpty) {
+      return raw;
+    }
+
+    return null;
   }
 
   Widget _buildContent(
@@ -85,7 +237,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     AttachmentsState state,
   ) {
     if (state.isLoading) {
-      return _buildLoading();
+      return _buildLoading(context);
     }
 
     if (state.errorMessage != null) {
@@ -96,10 +248,11 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
       return _buildEmpty(context, ref);
     }
 
-    return _buildAttachmentsList(context, ref, state.attachments);
+    return _buildAttachmentsList(context, ref, state);
   }
 
-  Widget _buildLoading() {
+  Widget _buildLoading(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32.r),
@@ -110,7 +263,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
             SizedBox(height: 12.h),
             Text(
               'جاري التحميل...',
-              style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 14.sp, color: colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -119,25 +272,24 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   }
 
   Widget _buildError(BuildContext context, WidgetRef ref, String error) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(24.r),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48.sp, color: Colors.red),
+            Icon(Icons.error_outline, size: 48.sp, color: colorScheme.error),
             SizedBox(height: 12.h),
             Text(
               error,
-              style: TextStyle(color: Colors.red, fontSize: 14.sp),
+              style: TextStyle(color: colorScheme.error, fontSize: 14.sp),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 16.h),
             OutlinedButton.icon(
               onPressed: () {
-                ref
-                    .read(attachmentsProvider(beneficiaryId).notifier)
-                    .loadAttachments(beneficiaryId);
+                ref.read(attachmentsProvider(beneficiaryId).notifier).loadAttachments(beneficiaryId);
               },
               icon: const Icon(Icons.refresh),
               label: const Text('إعادة المحاولة'),
@@ -149,6 +301,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   }
 
   Widget _buildEmpty(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32.r),
@@ -158,14 +311,14 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
             Icon(
               Icons.attach_file_outlined,
               size: 64.sp,
-              color: Colors.grey[400],
+              color: colorScheme.outline,
             ),
             SizedBox(height: 12.h),
             Text(
               'لا توجد مرفقات',
               style: TextStyle(
                 fontSize: 16.sp,
-                color: Colors.grey[600],
+                color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -173,7 +326,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
               SizedBox(height: 8.h),
               Text(
                 'اضغط على الزر أدناه لإضافة مرفقات',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 12.sp, color: colorScheme.onSurfaceVariant),
               ),
               SizedBox(height: 16.h),
               _buildAddButton(context, ref),
@@ -187,38 +340,226 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   Widget _buildAttachmentsList(
     BuildContext context,
     WidgetRef ref,
-    List<Attachment> attachments,
+    AttachmentsState state,
   ) {
+    final attachments = state.attachments;
+    final selectedFilter = ref.watch(_attachmentsTypeFilterProvider(beneficiaryId));
+    final filteredAttachments = _filterAttachmentsByType(attachments, selectedFilter);
+    final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
+    final groupedAttachments = _groupAttachmentsForDisplay(filteredAttachments);
+
     return Column(
       children: [
         if (!readOnly) ...[
           _buildAddButton(context, ref),
           SizedBox(height: 16.h),
         ],
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12.w,
-            mainAxisSpacing: 12.h,
-            childAspectRatio: 0.85,
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildFilterChip(context, ref, _AttachmentTypeFilter.all, attachments),
+              SizedBox(width: 6.w),
+              _buildFilterChip(context, ref, _AttachmentTypeFilter.image, attachments),
+              SizedBox(width: 6.w),
+              _buildFilterChip(context, ref, _AttachmentTypeFilter.pdf, attachments),
+              SizedBox(width: 6.w),
+              _buildFilterChip(context, ref, _AttachmentTypeFilter.other, attachments),
+            ],
           ),
-          itemCount: attachments.length,
-          itemBuilder: (context, index) {
-            final attachment = attachments[index];
-            return _EnhancedAttachmentCard(
-              attachment: attachment,
-              onTap: () => _openAttachment(context, attachment),
-              onShare: () => _shareAttachment(context, attachment),
-              onDelete: readOnly
-                  ? null
-                  : () => _deleteAttachment(context, ref, attachment),
-            );
-          },
         ),
+        SizedBox(height: 10.h),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            'المعروض: ${filteredAttachments.length}/${attachments.length} • المجموعات: ${groupedAttachments.length}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        ...groupedAttachments.asMap().entries.map((groupEntry) {
+          final group = groupEntry.value;
+          return Padding(
+            padding: EdgeInsets.only(bottom: groupEntry.key == groupedAttachments.length - 1 ? 0 : 12.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.folder_shared_outlined,
+                        size: 16.sp,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      SizedBox(width: 6.w),
+                      Expanded(
+                        child: Text(
+                          group.label,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ),
+                      Text(
+                        '${group.items.length}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                  itemCount: group.items.length,
+                  itemBuilder: (context, index) {
+                    final attachment = group.items[index];
+                    return _EnhancedAttachmentCard(
+                      attachment: attachment,
+                      isResolving: state.resolvingAttachmentIds.contains(attachment.id),
+                      resolutionError: state.attachmentErrors[attachment.id],
+                      isCompressed: notifier.isCompressedAttachment(attachment),
+                      resolvedPath: (state.resolvedAttachmentPaths ?? const <String, String>{})[attachment.id],
+                      onTap: () => _openAttachment(context, ref, attachment),
+                      onPrimaryAction: () => _openAttachment(context, ref, attachment),
+                      onShare: () => _shareAttachment(context, ref, attachment),
+                      onDelete: readOnly ? null : () => _deleteAttachment(context, ref, attachment),
+                    );
+                  },
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
+  }
+
+  List<Attachment> _filterAttachmentsByType(
+    List<Attachment> attachments,
+    _AttachmentTypeFilter filter,
+  ) {
+    if (filter == _AttachmentTypeFilter.all) {
+      return attachments;
+    }
+
+    return attachments.where((attachment) {
+      switch (filter) {
+        case _AttachmentTypeFilter.all:
+          return true;
+        case _AttachmentTypeFilter.image:
+          return attachment.type == AttachmentType.image;
+        case _AttachmentTypeFilter.pdf:
+          return attachment.type == AttachmentType.pdf;
+        case _AttachmentTypeFilter.other:
+          return attachment.type == AttachmentType.other;
+      }
+    }).toList(growable: false);
+  }
+
+  Widget _buildFilterChip(
+    BuildContext context,
+    WidgetRef ref,
+    _AttachmentTypeFilter filter,
+    List<Attachment> attachments,
+  ) {
+    final selected = ref.watch(_attachmentsTypeFilterProvider(beneficiaryId)) == filter;
+    final label = _filterLabel(filter);
+    final count = _filterAttachmentsByType(attachments, filter).length;
+
+    return ChoiceChip(
+      selected: selected,
+      label: Text('$label ($count)'),
+      onSelected: (_) {
+        ref.read(_attachmentsTypeFilterProvider(beneficiaryId).notifier).state = filter;
+      },
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  String _filterLabel(_AttachmentTypeFilter filter) {
+    switch (filter) {
+      case _AttachmentTypeFilter.all:
+        return 'الكل';
+      case _AttachmentTypeFilter.image:
+        return 'صور';
+      case _AttachmentTypeFilter.pdf:
+        return 'PDF';
+      case _AttachmentTypeFilter.other:
+        return 'أخرى';
+    }
+  }
+
+  List<({String label, List<Attachment> items})> _groupAttachmentsForDisplay(List<Attachment> attachments) {
+    final groups = <String, ({String label, List<Attachment> items})>{};
+
+    for (final attachment in attachments) {
+      final personType = (attachment.personType ?? '').trim();
+      final personId = (attachment.personId ?? '').trim();
+      final documentType = (attachment.documentType ?? '').trim();
+
+      final personLabel = _personTypeLabel(personType.isEmpty ? 'unknown' : personType);
+      final personToken = personType.isNotEmpty ? personType : 'unknown';
+      final personIdToken = personId.isNotEmpty ? personId : 'none';
+      final documentToken = documentType.isNotEmpty ? documentType.toLowerCase() : 'untyped';
+      final groupKey = '$personToken::$personIdToken::$documentToken';
+
+      final groupLabel = [
+        if (personLabel.isNotEmpty) personLabel,
+        if (personId.isNotEmpty) personId,
+        documentType.isNotEmpty ? documentType : 'غير مصنف',
+      ].join(' • ');
+
+      final existing = groups[groupKey];
+      if (existing == null) {
+        groups[groupKey] = (label: groupLabel, items: <Attachment>[attachment]);
+      } else {
+        existing.items.add(attachment);
+      }
+    }
+
+    final output = groups.values.toList(growable: false)..sort((a, b) => a.label.compareTo(b.label));
+
+    for (final group in output) {
+      group.items.sort((a, b) {
+        final byUpdated = b.updatedAt.compareTo(a.updatedAt);
+        if (byUpdated != 0) return byUpdated;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+    }
+
+    return output;
+  }
+
+  String _personTypeLabel(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'file_owner':
+        return 'صاحب الملف';
+      case 'family_member':
+        return 'فرد عائلة';
+      case 'deceased_member':
+        return 'متوفى';
+      case 'deceased_father':
+        return 'الأب المتوفى';
+      case 'deceased_mother':
+        return 'الأم المتوفية';
+      default:
+        return 'غير محدد';
+    }
   }
 
   Widget _buildAddButton(BuildContext context, WidgetRef ref) {
@@ -236,6 +577,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
   }
 
   Future<void> _showAddOptions(BuildContext context, WidgetRef ref) async {
+    final colorScheme = Theme.of(context).colorScheme;
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -252,7 +594,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
                 width: 40.w,
                 height: 4.h,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2.r),
                 ),
               ),
@@ -266,12 +608,12 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
                 leading: Container(
                   padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
                     Icons.camera_alt,
-                    color: Colors.blue,
+                    color: colorScheme.primary,
                     size: 24.sp,
                   ),
                 ),
@@ -287,12 +629,12 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
                 leading: Container(
                   padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: colorScheme.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
                     Icons.photo_library,
-                    color: Colors.green,
+                    color: colorScheme.secondary,
                     size: 24.sp,
                   ),
                 ),
@@ -308,12 +650,12 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
                 leading: Container(
                   padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: colorScheme.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(
                     Icons.picture_as_pdf,
-                    color: Colors.red,
+                    color: colorScheme.error,
                     size: 24.sp,
                   ),
                 ),
@@ -382,6 +724,8 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     WidgetRef ref,
     File file,
   ) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (!_isRefUsable(ref)) return;
     final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
 
     // Show loading
@@ -412,6 +756,8 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
       sourceFile: file,
     );
 
+    if (!_isRefUsable(ref)) return;
+
     if (context.mounted) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -420,14 +766,14 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
             children: [
               Icon(
                 success ? Icons.check_circle : Icons.error,
-                color: Colors.white,
+                color: success ? colorScheme.onSecondary : colorScheme.onError,
                 size: 20.sp,
               ),
               SizedBox(width: 12.w),
               Text(success ? '✓ تمت إضافة المرفق بنجاح' : '✗ فشل إضافة المرفق'),
             ],
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          backgroundColor: success ? colorScheme.secondary : colorScheme.error,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -439,6 +785,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     WidgetRef ref,
     Attachment attachment,
   ) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -449,7 +796,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
           children: [
             Icon(
               Icons.warning_amber_rounded,
-              color: Colors.orange,
+              color: colorScheme.tertiary,
               size: 28.sp,
             ),
             SizedBox(width: 12.w),
@@ -465,8 +812,8 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
             child: const Text('حذف'),
           ),
@@ -475,8 +822,11 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      if (!_isRefUsable(ref)) return;
       final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
       final success = await notifier.deleteAttachment(attachment.id);
+
+      if (!_isRefUsable(ref)) return;
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -485,14 +835,14 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
               children: [
                 Icon(
                   success ? Icons.check_circle : Icons.error,
-                  color: Colors.white,
+                  color: success ? colorScheme.onSecondary : colorScheme.onError,
                   size: 20.sp,
                 ),
                 SizedBox(width: 12.w),
                 Text(success ? '✓ تم حذف المرفق بنجاح' : '✗ فشل حذف المرفق'),
               ],
             ),
-            backgroundColor: success ? Colors.green : Colors.red,
+            backgroundColor: success ? colorScheme.secondary : colorScheme.error,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -502,257 +852,464 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
 
   Future<void> _openAttachment(
     BuildContext context,
+    WidgetRef ref,
     Attachment attachment,
   ) async {
-    final file = File(attachment.filePath);
-    if (await file.exists()) {
-      await OpenFile.open(attachment.filePath);
-    } else if (context.mounted) {
+    final file = await _resolveAttachmentFile(context, ref, attachment);
+    if (file == null || !context.mounted) {
+      return;
+    }
+
+    await OpenFile.open(file.path);
+  }
+
+  Future<File?> _resolveAttachmentFile(
+    BuildContext context,
+    WidgetRef ref,
+    Attachment attachment,
+  ) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    if (!_isRefUsable(ref)) return null;
+    final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
+    notifier.clearAttachmentError(attachment.id);
+
+    final file = await notifier.resolveAttachmentFile(attachment);
+    if (!_isRefUsable(ref)) return null;
+    if (file != null && file.existsSync()) {
+      return file;
+    }
+
+    if (context.mounted && _isRefUsable(ref)) {
+      final state = ref.read(attachmentsProvider(beneficiaryId));
+      final message = state.attachmentErrors[attachment.id] ??
+          ((attachment.serverUrl != null && attachment.serverUrl!.trim().isNotEmpty)
+              ? 'تعذر تنزيل المرفق من الرابط البعيد'
+              : 'الملف غير متوفر محلياً');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.error, color: Colors.white, size: 20.sp),
+              Icon(Icons.error, color: colorScheme.onError, size: 20.sp),
               SizedBox(width: 12.w),
-              const Text('الملف غير موجود'),
+              Expanded(child: Text(message)),
             ],
           ),
-          backgroundColor: Colors.red,
+          backgroundColor: colorScheme.error,
         ),
       );
     }
+
+    return null;
   }
 
   Future<void> _shareAttachment(
     BuildContext context,
+    WidgetRef ref,
     Attachment attachment,
   ) async {
-    final file = File(attachment.filePath);
-    if (await file.exists()) {
-      await Share.shareXFiles([
-        XFile(attachment.filePath),
-      ], subject: attachment.fileName);
-    } else if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الملف غير موجود'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (!_isRefUsable(ref)) return;
+    final file = await _resolveAttachmentFile(context, ref, attachment);
+    if (file == null) {
+      return;
     }
+
+    await Share.shareXFiles([XFile(file.path)], subject: attachment.fileName);
   }
 }
 
 /// Enhanced Attachment Card Widget
 class _EnhancedAttachmentCard extends StatelessWidget {
   final Attachment attachment;
+  final bool isResolving;
+  final bool isCompressed;
+  final String? resolutionError;
+  final String? resolvedPath;
   final VoidCallback onTap;
+  final VoidCallback onPrimaryAction;
   final VoidCallback onShare;
   final VoidCallback? onDelete;
 
   const _EnhancedAttachmentCard({
     required this.attachment,
+    required this.isResolving,
+    required this.isCompressed,
+    required this.resolutionError,
+    required this.resolvedPath,
     required this.onTap,
+    required this.onPrimaryAction,
     required this.onShare,
     this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Thumbnail/Icon
-            Expanded(
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(12.r),
-                    ),
-                    child: _buildThumbnail(context),
-                  ),
-                  // Delete button
-                  if (onDelete != null)
-                    Positioned(
-                      top: 2.h,
-                      right: 2.w,
-                      child: GestureDetector(
-                        onTap: onDelete,
-                        child: Container(
-                          padding: EdgeInsets.all(3.r),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.9),
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 2,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 14.sp,
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Type badge
-                  Positioned(
-                    bottom: 2.h,
-                    left: 2.w,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 4.w,
-                        vertical: 1.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getTypeColor().withOpacity(0.85),
-                        borderRadius: BorderRadius.circular(3.r),
-                      ),
-                      child: Text(
-                        attachment.type.arabicLabel,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Info section - Fixed height to prevent overflow
-            Container(
-              height: 52.h,
-              padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 3.h),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(12.r),
+    final colorScheme = Theme.of(context).colorScheme;
+    final fileStatus = _fileSourceStatus(context);
+    return Material(
+      color: colorScheme.surface,
+      borderRadius: BorderRadius.circular(12.r),
+      child: InkWell(
+        onTap: isResolving ? null : onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          padding: EdgeInsets.all(10.r),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 56.w,
+                height: 56.w,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10.r),
+                  child: _buildThumbnail(context),
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: Text(
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
                       _getFileName(),
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Flexible(
-                    child: Row(
+                    SizedBox(height: 6.h),
+                    Wrap(
+                      spacing: 6.w,
+                      runSpacing: 6.h,
                       children: [
-                        Icon(
-                          Icons.storage,
-                          size: 9.sp,
-                          color: Colors.grey[600],
+                        _buildTag(
+                          icon: Icons.description_outlined,
+                          label: attachment.type.arabicLabel,
+                          background: _getTypeColor(context).withValues(alpha: 0.12),
+                          foreground: _getTypeColor(context),
                         ),
-                        SizedBox(width: 3.w),
-                        Expanded(
-                          child: Text(
-                            attachment.fileSizeReadable,
-                            style: TextStyle(
-                              fontSize: 9.sp,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        _buildTag(
+                          icon: Icons.storage,
+                          label: attachment.fileSizeReadable,
+                          background: colorScheme.surfaceContainerHighest,
+                          foreground: colorScheme.onSurfaceVariant,
+                        ),
+                        if (attachment.documentType != null && attachment.documentType!.trim().isNotEmpty)
+                          _buildTag(
+                            icon: Icons.badge_outlined,
+                            label: attachment.documentType!.trim(),
+                            background: colorScheme.primaryContainer,
+                            foreground: colorScheme.onPrimaryContainer,
                           ),
-                        ),
-                        InkWell(
-                          onTap: onShare,
-                          borderRadius: BorderRadius.circular(6.r),
-                          child: Container(
-                            padding: EdgeInsets.all(5.r),
-                            child: Icon(
-                              Icons.share,
-                              size: 18.sp,
-                              color: Colors.blue,
-                            ),
+                        if (attachment.personType != null && attachment.personType!.trim().isNotEmpty)
+                          _buildTag(
+                            icon: Icons.person_outline,
+                            label: _personTypeLabel(attachment.personType!),
+                            background: colorScheme.secondaryContainer,
+                            foreground: colorScheme.onSecondaryContainer,
                           ),
+                        if (attachment.personId != null && attachment.personId!.trim().isNotEmpty)
+                          _buildTag(
+                            icon: Icons.tag,
+                            label: attachment.personId!.trim(),
+                            background: colorScheme.surfaceContainerHighest,
+                            foreground: colorScheme.onSurfaceVariant,
+                          ),
+                        _buildTag(
+                          icon: fileStatus.$1,
+                          label: fileStatus.$2,
+                          background: fileStatus.$3,
+                          foreground: fileStatus.$4,
                         ),
+                        if (isCompressed)
+                          _buildTag(
+                            icon: Icons.folder_zip,
+                            label: 'ZIP',
+                            background: colorScheme.tertiaryContainer,
+                            foreground: colorScheme.onTertiaryContainer,
+                          ),
                       ],
                     ),
+                    if (resolutionError != null) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        resolutionError!,
+                        style: TextStyle(
+                          fontSize: 10.sp,
+                          color: colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(width: 6.w),
+              Column(
+                children: [
+                  IconButton(
+                    onPressed: isResolving ? null : onPrimaryAction,
+                    icon: Icon(_primaryActionIcon(), size: 20.sp),
+                    tooltip: _primaryActionLabel(),
                   ),
+                  IconButton(
+                    onPressed: isResolving ? null : onShare,
+                    icon: Icon(Icons.share, size: 20.sp),
+                    tooltip: 'مشاركة',
+                  ),
+                  if (onDelete != null)
+                    IconButton(
+                      onPressed: isResolving ? null : onDelete,
+                      icon: Icon(Icons.delete_outline, size: 20.sp, color: colorScheme.error),
+                      tooltip: 'حذف',
+                    ),
                 ],
               ),
-            ),
-          ],
+              if (isResolving)
+                Padding(
+                  padding: EdgeInsets.only(top: 6.h, right: 2.w),
+                  child: SizedBox(
+                    width: 18.sp,
+                    height: 18.sp,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildThumbnail(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (attachment.isImage) {
-      final thumbnailFile = attachment.thumbnailPath != null
-          ? File(attachment.thumbnailPath!)
-          : File(attachment.filePath);
+      final preferredPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
+      final preferredFile = File(preferredPath);
+
+      if (preferredFile.existsSync()) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: colorScheme.surfaceContainer,
+          child: Image.file(
+            preferredFile,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => _buildIcon(context, Icons.broken_image, colorScheme.error),
+          ),
+        );
+      }
+
+      final remoteUrl = _toRemoteUrl(attachment.serverUrl) ?? _toRemoteUrl(attachment.filePath);
+      if (remoteUrl != null && !_looksLikeZipReference(remoteUrl)) {
+        return Container(
+          width: double.infinity,
+          height: double.infinity,
+          color: colorScheme.surfaceContainer,
+          child: Image.network(
+            remoteUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => _buildIcon(context, Icons.broken_image, colorScheme.error),
+          ),
+        );
+      }
+
+      if (isResolving) {
+        return Container(
+          color: colorScheme.surfaceContainer,
+          child: Center(
+            child: SizedBox(
+              width: 18.sp,
+              height: 18.sp,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
+            ),
+          ),
+        );
+      }
 
       return Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.grey[100],
-        child: Image.file(
-          thumbnailFile,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          errorBuilder: (_, __, ___) =>
-              _buildIcon(Icons.broken_image, Colors.red),
-        ),
+        color: colorScheme.surfaceContainer,
+        child: _buildIcon(context, Icons.image_not_supported_outlined, colorScheme.onSurfaceVariant),
       );
     } else if (attachment.isPdf) {
-      return _buildIcon(Icons.picture_as_pdf, Colors.red);
+      return _buildIcon(context, Icons.picture_as_pdf, colorScheme.error);
     } else {
-      return _buildIcon(Icons.insert_drive_file, Colors.grey);
+      return _buildIcon(context, Icons.insert_drive_file, colorScheme.onSurfaceVariant);
     }
   }
 
-  Widget _buildIcon(IconData icon, Color color) {
+  Widget _buildIcon(BuildContext context, IconData icon, Color color) {
     return Container(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       child: Center(
         child: Icon(icon, size: 48.sp, color: color),
       ),
     );
   }
 
-  Color _getTypeColor() {
+  Color _getTypeColor(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     switch (attachment.type) {
       case AttachmentType.image:
-        return Colors.green;
+        return colorScheme.secondary;
       case AttachmentType.pdf:
-        return Colors.red;
+        return colorScheme.error;
       default:
-        return Colors.grey;
+        return colorScheme.onSurfaceVariant;
     }
   }
 
   String _getFileName() {
-    if (attachment.fileName.length > 20) {
-      return '${attachment.fileName.substring(0, 17)}...';
+    if (attachment.fileName.length > 60) {
+      return '${attachment.fileName.substring(0, 57)}...';
     }
     return attachment.fileName;
+  }
+
+  Widget _buildTag({
+    required IconData icon,
+    required String label,
+    required Color background,
+    required Color foreground,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(7.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12.sp, color: foreground),
+          SizedBox(width: 4.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.sp,
+              color: foreground,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _toRemoteUrl(String? raw) {
+    if (raw == null || raw.trim().isEmpty) {
+      return null;
+    }
+    final value = raw.trim();
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      return value;
+    }
+    if (value.startsWith('/')) {
+      return '${ApiConfig.defaultBaseUrl}$value';
+    }
+    if (value.startsWith('api/') || value.startsWith('storage/') || value.startsWith('uploads/')) {
+      return '${ApiConfig.defaultBaseUrl}/$value';
+    }
+    return null;
+  }
+
+  bool _looksLikeZipReference(String value) {
+    final lower = value.toLowerCase();
+    return lower.contains('.zip!') || lower.contains('.zip?') || lower.endsWith('.zip');
+  }
+
+  String _personTypeLabel(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'file_owner':
+        return 'صاحب الملف';
+      case 'family_member':
+        return 'فرد عائلة';
+      case 'deceased_member':
+        return 'متوفى';
+      case 'deceased_father':
+        return 'الأب المتوفى';
+      case 'deceased_mother':
+        return 'الأم المتوفية';
+      default:
+        return raw.trim();
+    }
+  }
+
+  (IconData, String, Color, Color) _fileSourceStatus(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final localPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
+    if (File(localPath).existsSync()) {
+      return (
+        Icons.check_circle_outline,
+        'محلي',
+        colorScheme.secondaryContainer,
+        colorScheme.onSecondaryContainer,
+      );
+    }
+
+    final remoteUrl = _toRemoteUrl(attachment.serverUrl) ?? _toRemoteUrl(attachment.filePath);
+    if (remoteUrl != null && remoteUrl.isNotEmpty) {
+      return (
+        Icons.cloud_outlined,
+        'عن بُعد',
+        colorScheme.primaryContainer,
+        colorScheme.onPrimaryContainer,
+      );
+    }
+
+    return (
+      Icons.error_outline,
+      'غير متاح',
+      colorScheme.errorContainer,
+      colorScheme.onErrorContainer,
+    );
+  }
+
+  IconData _primaryActionIcon() {
+    final localPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
+    if (File(localPath).existsSync()) {
+      return Icons.open_in_new;
+    }
+
+    final remoteUrl = _toRemoteUrl(attachment.serverUrl) ?? _toRemoteUrl(attachment.filePath);
+    if (remoteUrl != null && remoteUrl.isNotEmpty) {
+      return Icons.download_outlined;
+    }
+
+    return Icons.open_in_new;
+  }
+
+  String _primaryActionLabel() {
+    final localPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
+    if (File(localPath).existsSync()) {
+      return 'فتح';
+    }
+
+    final remoteUrl = _toRemoteUrl(attachment.serverUrl) ?? _toRemoteUrl(attachment.filePath);
+    if (remoteUrl != null && remoteUrl.isNotEmpty) {
+      return 'تنزيل';
+    }
+
+    return 'فتح';
   }
 }

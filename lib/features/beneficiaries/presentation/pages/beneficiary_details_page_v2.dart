@@ -7,13 +7,18 @@ import 'package:shimmer/shimmer.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:async';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../../../core/utils/beneficiary_identity_resolver.dart';
 import '../../domain/helpers/beneficiary_domain_helpers.dart';
+import '../utils/taxonomy_value_resolver.dart';
 import '../providers/details/beneficiary_details_provider.dart';
 import 'details_widgets/details_header_card.dart';
 import 'details_widgets/info_section.dart';
@@ -51,6 +56,34 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
   final ScreenshotController _screenshotController = ScreenshotController();
   bool _showTimelineView = true;
 
+  Map<String, String> _buildTaxonomyLabelMap(List<taxonomy_domain.Taxonomy> options) {
+    final labels = <String, String>{};
+
+    for (final taxonomy in options) {
+      final code = taxonomy.code.trim();
+      final id = taxonomy.id.trim();
+      if (code.isNotEmpty) {
+        labels[code] = taxonomy.label;
+        labels[code.toLowerCase()] = taxonomy.label;
+      }
+      if (id.isNotEmpty) {
+        labels[id] = taxonomy.label;
+      }
+
+      final canonical = TaxonomyValueResolver.resolveCanonicalToken(code: taxonomy.code, id: taxonomy.id);
+      if (canonical != null && canonical.isNotEmpty) {
+        labels[canonical] = taxonomy.label;
+      }
+
+      final numericValue = TaxonomyValueResolver.resolveToInt(code: taxonomy.code, id: taxonomy.id);
+      if (numericValue != null) {
+        labels[numericValue.toString()] = taxonomy.label;
+      }
+    }
+
+    return labels;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -78,8 +111,8 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     });
 
     if (_beneficiaryIntId != null) {
-      ref.read(beneficiaryDetailsProvider.notifier).loadBeneficiary(_beneficiaryIntId!);
-      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId!);
+      unawaited(ref.read(beneficiaryDetailsProvider.notifier).loadBeneficiary(_beneficiaryIntId!));
+      unawaited(ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId!));
     }
   }
 
@@ -93,6 +126,42 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     );
     final errorMessage = ref.watch(
       beneficiaryDetailsProvider.select((s) => s.errorMessage),
+    );
+    final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
+    final categoryLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
+        final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
+        final source = sectionOptions.isNotEmpty ? sectionOptions : categoryOptions;
+        return _buildTaxonomyLabelMap(source);
+      },
+      orElse: () => const <String, String>{},
+    );
+    final genderLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.gender] ?? const <taxonomy_domain.Taxonomy>[]),
+      orElse: () => const <String, String>{},
+    );
+    final governorateLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.governorate] ?? const <taxonomy_domain.Taxonomy>[]),
+      orElse: () => const <String, String>{},
+    );
+    final cityLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.governorate] ?? const <taxonomy_domain.Taxonomy>[]),
+      orElse: () => const <String, String>{},
+    );
+    final assistanceTypeLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) =>
+          _buildTaxonomyLabelMap(index[TaxonomyGroup.assistanceType] ?? const <taxonomy_domain.Taxonomy>[]),
+      orElse: () => const <String, String>{},
+    );
+    final disabilityTypeLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) =>
+          _buildTaxonomyLabelMap(index[TaxonomyGroup.disabilityType] ?? const <taxonomy_domain.Taxonomy>[]),
+      orElse: () => const <String, String>{},
+    );
+    final incomeSourceLabelsByCode = taxonomyIndexAsync.maybeWhen(
+      data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.incomeSource] ?? const <taxonomy_domain.Taxonomy>[]),
+      orElse: () => const <String, String>{},
     );
 
     if (_isResolvingIdentity) {
@@ -116,15 +185,15 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
         beneficiary: beneficiary,
         isLoading: isLoading,
         errorMessage: errorMessage,
+        categoryLabelsByCode: categoryLabelsByCode,
+        genderLabelsByCode: genderLabelsByCode,
+        governorateLabelsByCode: governorateLabelsByCode,
+        cityLabelsByCode: cityLabelsByCode,
+        assistanceTypeLabelsByCode: assistanceTypeLabelsByCode,
+        disabilityTypeLabelsByCode: disabilityTypeLabelsByCode,
+        incomeSourceLabelsByCode: incomeSourceLabelsByCode,
       ),
-      floatingActionButton: beneficiary != null
-          ? FloatingActionButton.extended(
-              onPressed: () => _navigateToRecordVisit(context),
-              icon: const Icon(Icons.add_circle_outline),
-              label: const Text('تسجيل زيارة'),
-              backgroundColor: Colors.blue,
-            )
-          : null,
+      bottomNavigationBar: beneficiary != null ? _buildBottomActionBar(context) : null,
     );
   }
 
@@ -133,11 +202,21 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
   // ============================================================================
 
   AppBar _buildAppBar(BuildContext context, beneficiary) {
+    final colorScheme = Theme.of(context).colorScheme;
     final colorInfo = beneficiary != null ? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category) : null;
+    final backgroundColor = colorInfo != null ? Color(colorInfo.light) : colorScheme.surface;
+    final foregroundColor = _foregroundFor(backgroundColor, colorScheme);
 
     return AppBar(
       title: const Text('تفاصيل المستفيد'),
-      backgroundColor: colorInfo != null ? Color(colorInfo.light) : Colors.transparent,
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      iconTheme: IconThemeData(color: foregroundColor),
+      actionsIconTheme: IconThemeData(color: foregroundColor),
+      titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: foregroundColor,
+            fontWeight: FontWeight.w700,
+          ),
       actions: [
         IconButton(
           icon: const Icon(Icons.share_outlined),
@@ -152,8 +231,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
         PopupMenuButton<String>(
           onSelected: (value) => _handleMenuAction(context, value),
           itemBuilder: (context) => [
-            PopupMenuItem(
+            CheckedPopupMenuItem(
               value: 'timeline',
+              checked: _showTimelineView,
               child: Row(
                 children: [
                   Icon(
@@ -181,9 +261,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline, size: 20.sp, color: Colors.red),
+                  Icon(Icons.delete_outline, size: 20.sp, color: colorScheme.error),
                   SizedBox(width: 10.w),
-                  const Text('حذف', style: TextStyle(color: Colors.red)),
+                  Text('حذف', style: TextStyle(color: colorScheme.error)),
                 ],
               ),
             ),
@@ -198,8 +278,18 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     required beneficiary,
     required bool isLoading,
     required String? errorMessage,
+    required Map<String, String> categoryLabelsByCode,
+    required Map<String, String> genderLabelsByCode,
+    required Map<String, String> governorateLabelsByCode,
+    required Map<String, String> cityLabelsByCode,
+    required Map<String, String> assistanceTypeLabelsByCode,
+    required Map<String, String> disabilityTypeLabelsByCode,
+    required Map<String, String> incomeSourceLabelsByCode,
   }) {
-    if (isLoading) return _buildShimmerSkeleton();
+    final colorScheme = Theme.of(context).colorScheme;
+    final sectionGap = SizedBox(height: 18.h);
+
+    if (isLoading) return _buildShimmerSkeleton(context);
     if (errorMessage != null) return _buildErrorState(context, errorMessage);
     if (beneficiary == null) return _buildEmptyState(context);
 
@@ -220,46 +310,54 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
                 if (kDebugMode) _buildIdentityDebugBanner(),
                 if (kDebugMode) SizedBox(height: 12.h),
                 DetailsHeaderCard(beneficiary: beneficiary),
-                SizedBox(height: 20.h),
+                sectionGap,
                 _buildQuickStats(beneficiary),
-                SizedBox(height: 20.h),
+                sectionGap,
+                _buildProfileStrengthCard(context, beneficiary),
+                sectionGap,
                 InfoSection(
                   title: 'المعلومات الأساسية',
                   icon: Icons.person_outline,
-                  items: InfoBuilders.buildBasicInfoItems(beneficiary),
+                  items: InfoBuilders.buildBasicInfoItems(
+                    beneficiary,
+                    categoryLabelsByCode: categoryLabelsByCode,
+                    genderLabelsByCode: genderLabelsByCode,
+                    governorateLabelsByCode: governorateLabelsByCode,
+                    cityLabelsByCode: cityLabelsByCode,
+                  ),
                 ),
-                SizedBox(height: 20.h),
+                sectionGap,
                 InfoSection(
                   title: 'معلومات التواصل',
                   icon: Icons.phone_outlined,
-                  accentColor: Colors.green,
+                  accentColor: colorScheme.secondary,
                   items: InfoBuilders.buildContactInfoItems(beneficiary),
                 ),
-                SizedBox(height: 20.h),
+                sectionGap,
                 if (BeneficiaryValidationHelpers.hasFamilyInfo(
                   beneficiary,
                 )) ...[
                   InfoSection(
                     title: 'معلومات العائلة (أساسية)',
                     icon: Icons.family_restroom,
-                    accentColor: Colors.purple,
+                    accentColor: colorScheme.tertiary,
                     items: InfoBuilders.buildFamilyInfoItems(beneficiary),
                   ),
-                  SizedBox(height: 20.h),
+                  sectionGap,
                 ],
                 // قسم أفراد العائلة التفصيلي (الجديد)
                 FamilySection(beneficiaryId: _beneficiaryIntId!),
-                SizedBox(height: 20.h),
+                sectionGap,
                 if (BeneficiaryValidationHelpers.hasLocationInfo(
                   beneficiary,
                 )) ...[
                   InfoSection(
                     title: 'السكن والنزوح',
                     icon: Icons.home_outlined,
-                    accentColor: Colors.teal,
+                    accentColor: colorScheme.primary,
                     items: InfoBuilders.buildLocationInfoItems(beneficiary),
                   ),
-                  SizedBox(height: 20.h),
+                  sectionGap,
                 ],
                 if (BeneficiaryValidationHelpers.hasEducationHealthInfo(
                   beneficiary,
@@ -267,46 +365,69 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
                   InfoSection(
                     title: 'التعليم والصحة',
                     icon: Icons.school_outlined,
-                    accentColor: Colors.indigo,
-                    items: InfoBuilders.buildEducationHealthItems(beneficiary),
+                    accentColor: colorScheme.tertiary,
+                    items: InfoBuilders.buildEducationHealthItems(
+                      beneficiary,
+                      assistanceTypeLabelsByCode: assistanceTypeLabelsByCode,
+                      disabilityTypeLabelsByCode: disabilityTypeLabelsByCode,
+                      incomeSourceLabelsByCode: incomeSourceLabelsByCode,
+                    ),
                   ),
-                  SizedBox(height: 20.h),
+                  sectionGap,
                 ],
                 if (BeneficiaryValidationHelpers.hasNotes(beneficiary)) ...[
                   NeedsSection(beneficiary: beneficiary),
-                  SizedBox(height: 20.h),
+                  sectionGap,
                 ],
                 InfoSection(
                   title: 'بيانات النظام',
                   icon: Icons.info_outline,
-                  accentColor: Colors.grey,
+                  accentColor: colorScheme.onSurfaceVariant,
                   items: InfoBuilders.buildSystemInfoItems(beneficiary),
                 ),
-                SizedBox(height: 20.h),
+                sectionGap,
                 SponsorshipsSection(beneficiaryId: _beneficiaryIntId!),
-                SizedBox(height: 20.h),
+                sectionGap,
                 AttachmentsSection(
                   beneficiaryId: _resolvedBeneficiaryId ?? widget.beneficiaryId,
                 ),
-                SizedBox(height: 20.h),
+                sectionGap,
                 VisitsSection(
                   beneficiary: beneficiary,
                   beneficiaryId: _resolvedBeneficiaryId ?? widget.beneficiaryId,
                   visitState: ref.watch(visitNotifierProvider),
                   showTimelineView: _showTimelineView,
+                  onRetry: () {
+                    unawaited(ref
+                        .read(visitNotifierProvider.notifier)
+                        .loadBeneficiaryVisits(_resolvedBeneficiaryId ?? widget.beneficiaryId));
+                  },
                   onToggleView: () {
                     setState(() => _showTimelineView = !_showTimelineView);
                   },
-                ),
-                SizedBox(height: 20.h),
-                ActionButtons(
-                  onEdit: () => _navigateToEdit(context),
-                  onAddVisit: () => _navigateToAddVisit(context, beneficiary),
                 ),
                 SizedBox(height: MediaQuery.of(context).padding.bottom + 16.h),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomActionBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 10.h),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+        ),
+        child: ActionButtons(
+          onEdit: () => _navigateToEdit(context),
+          onAddVisit: _navigateToAddVisit,
         ),
       ),
     );
@@ -329,45 +450,119 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     );
   }
 
+  Widget _buildProfileStrengthCard(BuildContext context, dynamic beneficiary) {
+    final colorScheme = Theme.of(context).colorScheme;
+    var score = 0;
+    var checks = 0;
+
+    bool addCheck(bool pass) {
+      checks += 1;
+      if (pass) score += 1;
+      return pass;
+    }
+
+    addCheck((beneficiary.fullName as String?)?.trim().isNotEmpty == true);
+    addCheck((beneficiary.nationalId as String?)?.trim().isNotEmpty == true);
+    addCheck((beneficiary.phoneNumber as String?)?.trim().isNotEmpty == true);
+    addCheck((beneficiary.governorate as String?)?.trim().isNotEmpty == true);
+    addCheck((beneficiary.district as String?)?.trim().isNotEmpty == true);
+    addCheck(beneficiary.birthDate != null);
+    addCheck(beneficiary.notes != null && (beneficiary.notes as String).trim().isNotEmpty);
+
+    final percent = checks == 0 ? 0 : ((score / checks) * 100).round();
+    final levelText = percent >= 85 ? 'ممتاز' : (percent >= 60 ? 'جيد' : 'ضعيف');
+    final levelColor =
+        percent >= 85 ? colorScheme.secondary : (percent >= 60 ? colorScheme.tertiary : colorScheme.error);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14.r),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(14.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.shield_outlined, size: 18.sp, color: colorScheme.primary),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    'Profile Strength: $percent%',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+                Text(
+                  levelText,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: levelColor,
+                      ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999.r),
+              child: LinearProgressIndicator(
+                value: percent / 100,
+                minHeight: 8.h,
+                backgroundColor: colorScheme.surfaceContainer,
+                valueColor: AlwaysStoppedAnimation<Color>(levelColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildIdentityDebugBanner() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.10),
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.40),
         borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: Colors.orange.withOpacity(0.55)),
+        border: Border.all(color: colorScheme.tertiary.withValues(alpha: 0.55)),
       ),
       child: Text(
         'DEBUG LINK | routeId: ${widget.beneficiaryId} | resolvedLocalId: ${_resolvedBeneficiaryId ?? '-'} | localIntId: ${_beneficiaryIntId ?? '-'}',
         style: TextStyle(
           fontSize: 11.sp,
-          color: Colors.brown[800],
+          color: colorScheme.onTertiaryContainer,
           fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
 
-  Widget _buildShimmerSkeleton() {
+  Widget _buildShimmerSkeleton(BuildContext context) {
     return ListView(
       padding: EdgeInsets.all(16.r),
       children: [
-        _buildShimmerCard(height: 180.h),
+        _buildShimmerCard(context, height: 180.h),
         SizedBox(height: 20.h),
-        _buildShimmerCard(height: 150.h),
+        _buildShimmerCard(context, height: 150.h),
         SizedBox(height: 20.h),
-        _buildShimmerCard(height: 120.h),
+        _buildShimmerCard(context, height: 120.h),
         SizedBox(height: 20.h),
-        _buildShimmerCard(height: 100.h),
+        _buildShimmerCard(context, height: 100.h),
       ],
     );
   }
 
-  Widget _buildShimmerCard({required double height}) {
+  Widget _buildShimmerCard(BuildContext context, {required double height}) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
+      baseColor: colorScheme.surfaceContainerHighest,
+      highlightColor: colorScheme.surfaceContainerLow,
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(
@@ -379,9 +574,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 120.w, height: 16.h, color: Colors.white),
+              Container(width: 120.w, height: 16.h, color: colorScheme.surface),
               SizedBox(height: 12.h),
-              Expanded(child: Container(color: Colors.white)),
+              Expanded(child: Container(color: colorScheme.surface)),
             ],
           ),
         ),
@@ -411,59 +606,35 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
 
   void _navigateToEdit(BuildContext context) {
     try {
-      context.push('/beneficiaries/${_resolvedBeneficiaryId ?? widget.beneficiaryId}/edit');
+      unawaited(context.push('/beneficiaries/${_resolvedBeneficiaryId ?? widget.beneficiaryId}/edit'));
     } catch (e) {
       EnhancedSnackbar.showError(context, message: 'خطأ في الانتقال: $e');
     }
   }
 
-  Future<void> _navigateToRecordVisit(BuildContext context) async {
-    try {
-      if (_beneficiaryIntId == null) return;
+  Future<void> _navigateToAddVisit() async {
+    if (!mounted) return;
 
-      LoadingDialog.show(context, message: 'جاري التحميل...');
-
-      final db = ref.read(databaseProvider);
-      final beneficiaries = await (db.select(
-        db.beneficiaries,
-      )..where((t) => t.id.equals(_beneficiaryIntId!)))
-          .get();
-
-      if (mounted) LoadingDialog.hide(context);
-
-      if (beneficiaries.isEmpty) {
-        if (mounted) {
-          EnhancedSnackbar.showError(
-            context,
-            message: 'خطأ: لم يتم العثور على المستفيد',
-          );
-        }
-        return;
-      }
-
-      final beneficiary = beneficiaries.first;
-
-      if (mounted) {
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => RecordVisitPageEnhanced(beneficiary: beneficiary),
-          ),
-        );
-
-        ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId ?? widget.beneficiaryId);
-      }
-    } catch (e) {
-      if (mounted) {
-        LoadingDialog.hide(context);
-        EnhancedSnackbar.showError(context, message: 'خطأ: $e');
-      }
+    final beneficiaryIntId = _beneficiaryIntId;
+    if (beneficiaryIntId == null) {
+      EnhancedSnackbar.showError(context, message: 'لا يمكن فتح نموذج الزيارة حالياً');
+      return;
     }
-  }
 
-  Future<void> _navigateToAddVisit(
-    BuildContext context,
-    dynamic beneficiary,
-  ) async {
+    LoadingDialog.show(context, message: 'جاري التحميل...');
+    final db = ref.read(databaseProvider);
+    final rows = await (db.select(db.beneficiaries)..where((t) => t.id.equals(beneficiaryIntId))).get();
+
+    if (!mounted || !context.mounted) return;
+    LoadingDialog.hide(context);
+
+    if (rows.isEmpty) {
+      EnhancedSnackbar.showError(context, message: 'تعذر فتح نموذج الزيارة');
+      return;
+    }
+
+    final beneficiary = rows.first;
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -471,7 +642,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       ),
     );
     if (result == true) {
-      ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(_resolvedBeneficiaryId ?? widget.beneficiaryId);
+      unawaited(ref
+          .read(visitNotifierProvider.notifier)
+          .loadBeneficiaryVisits(_resolvedBeneficiaryId ?? widget.beneficiaryId));
     }
   }
 
@@ -482,7 +655,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       await ref.read(beneficiaryDetailsProvider.notifier).refresh(_beneficiaryIntId!);
     } catch (e) {
       if (mounted) {
-        EnhancedSnackbar.showError(context, message: 'فشل تحديث البيانات');
+        EnhancedSnackbar.showError(context, message: 'تعذر تحديث البيانات');
       }
     }
   }
@@ -519,22 +692,23 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
 
         final success = await ref.read(beneficiaryDetailsProvider.notifier).deleteBeneficiary(_beneficiaryIntId!);
 
-        if (mounted) LoadingDialog.hide(context);
+        if (!mounted || !context.mounted) return;
+        LoadingDialog.hide(context);
 
-        if (success && mounted) {
+        if (success) {
           EnhancedSnackbar.showSuccess(
             context,
-            message: '✓ تم حذف المستفيد بنجاح',
+            message: 'تم حذف المستفيد بنجاح',
           );
           context.pop();
-        } else if (mounted) {
+        } else {
           final errorMsg = ref.read(beneficiaryDetailsProvider).errorMessage ?? 'خطأ غير معروف';
-          EnhancedSnackbar.showError(context, message: 'خطأ: $errorMsg');
+          EnhancedSnackbar.showError(context, message: 'تعذر حذف المستفيد: $errorMsg');
         }
       } catch (e) {
-        if (mounted) {
+        if (mounted && context.mounted) {
           LoadingDialog.hide(context);
-          EnhancedSnackbar.showError(context, message: 'خطأ غير متوقع: $e');
+          EnhancedSnackbar.showError(context, message: 'حدث خطأ غير متوقع أثناء الحذف: $e');
         }
       }
     }
@@ -547,7 +721,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       final image = await _screenshotController.capture();
 
       if (image == null) {
-        if (mounted) {
+        if (mounted && context.mounted) {
           LoadingDialog.hide(context);
           EnhancedSnackbar.showError(context, message: 'فشل التقاط الصورة');
         }
@@ -559,14 +733,14 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       final imageFile = File(imagePath);
       await imageFile.writeAsBytes(image);
 
-      if (mounted) LoadingDialog.hide(context);
+      if (!mounted || !context.mounted) return;
+      LoadingDialog.hide(context);
 
       await Share.shareXFiles([XFile(imagePath)], text: 'معلومات المستفيد');
     } catch (e) {
-      if (mounted) {
-        LoadingDialog.hide(context);
-        EnhancedSnackbar.showError(context, message: 'خطأ في المشاركة: $e');
-      }
+      if (!mounted || !context.mounted) return;
+      LoadingDialog.hide(context);
+      EnhancedSnackbar.showError(context, message: 'تعذر مشاركة التفاصيل: $e');
     }
   }
 
@@ -576,5 +750,10 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
 
   String _formatDateShort(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+  }
+
+  Color _foregroundFor(Color background, ColorScheme colorScheme) {
+    final isDark = background.computeLuminance() < 0.45;
+    return isDark ? colorScheme.onPrimary : colorScheme.onSurface;
   }
 }

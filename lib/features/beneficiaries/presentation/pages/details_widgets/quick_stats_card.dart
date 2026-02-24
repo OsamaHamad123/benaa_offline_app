@@ -8,18 +8,23 @@ class QuickStatsCard extends StatelessWidget {
   final String lastVisitDate;
 
   const QuickStatsCard({
-    required this.visitsCount, required this.attachmentsCount, required this.lastVisitDate, super.key,
+    required this.visitsCount,
+    required this.attachmentsCount,
+    required this.lastVisitDate,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
-      label:
-          'إحصائيات سريعة: $visitsCount زيارة, $attachmentsCount مرفق, آخر زيارة $lastVisitDate',
+      label: 'إحصائيات سريعة: $visitsCount زيارة, $attachmentsCount مرفق, آخر زيارة $lastVisitDate',
       child: Card(
-        elevation: 2,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          side: BorderSide(color: colorScheme.outlineVariant),
+        ),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 12.w),
           child: Row(
@@ -29,21 +34,21 @@ class QuickStatsCard extends StatelessWidget {
                 icon: Icons.event_available,
                 label: 'الزيارات',
                 value: visitsCount.toString(),
-                color: Colors.blue,
+                color: colorScheme.primary,
               ),
               _VerticalDivider(),
               _StatItem(
                 icon: Icons.attach_file,
                 label: 'المرفقات',
                 value: attachmentsCount.toString(),
-                color: Colors.orange,
+                color: colorScheme.tertiary,
               ),
               _VerticalDivider(),
               _StatItem(
                 icon: Icons.access_time,
                 label: 'آخر زيارة',
                 value: lastVisitDate,
-                color: Colors.green,
+                color: colorScheme.secondary,
                 isSmallText: true,
               ),
             ],
@@ -71,6 +76,7 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -89,7 +95,7 @@ class _StatItem extends StatelessWidget {
           SizedBox(height: 2.h),
           Text(
             label,
-            style: TextStyle(fontSize: 11.sp, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 11.sp, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
         ],
@@ -101,6 +107,6 @@ class _StatItem extends StatelessWidget {
 class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(height: 50.h, width: 1.w, color: Colors.grey[300]);
+    return Container(height: 50.h, width: 1.w, color: Theme.of(context).colorScheme.outlineVariant);
   }
 }

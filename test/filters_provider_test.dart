@@ -98,5 +98,52 @@ void main() {
       expect(state.categoryId, isNull);
       expect(state.searchQuery, 'test'); // Unchanged
     });
+
+    test('setAdvancedSearch updates advanced fields', () {
+      notifier.setAdvancedSearch(
+        nameQuery: 'أحمد',
+        nationalIdQuery: '12345',
+        fileNumberQuery: 'F-7',
+        phoneQuery: '0790',
+        gender: 1,
+        maritalStatus: 2,
+        ageFrom: 20,
+        ageTo: 50,
+      );
+
+      final state = container.read(filtersProvider);
+      expect(state.searchQuery, 'أحمد');
+      expect(state.nationalIdQuery, '12345');
+      expect(state.fileNumberQuery, 'F-7');
+      expect(state.phoneQuery, '0790');
+      expect(state.gender, 1);
+      expect(state.maritalStatus, 2);
+      expect(state.ageFrom, 20);
+      expect(state.ageTo, 50);
+      expect(state.hasSearchInput, true);
+    });
+
+    test('clearSearchInputs clears only search fields', () {
+      notifier.setAdvancedSearch(
+        nameQuery: 'ليلى',
+        nationalIdQuery: '111',
+        fileNumberQuery: 'A-1',
+        phoneQuery: '0777',
+        gender: null,
+        maritalStatus: null,
+        ageFrom: null,
+        ageTo: null,
+      );
+      notifier.setCategory(3);
+
+      notifier.clearSearchInputs();
+
+      final state = container.read(filtersProvider);
+      expect(state.searchQuery, '');
+      expect(state.nationalIdQuery, '');
+      expect(state.fileNumberQuery, '');
+      expect(state.phoneQuery, '');
+      expect(state.categoryId, 3);
+    });
   });
 }

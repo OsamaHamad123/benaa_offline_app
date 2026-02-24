@@ -253,7 +253,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                               _resolveTaxonomyLabel(
                                 options: sectionTaxonomies,
                                 code: beneficiary.sectionId?.toString(),
-                                fallback: _getCategoryLabel(beneficiary.sectionId),
+                                fallback: _taxonomyFallbackLabel(beneficiary.sectionId?.toString()),
                               ),
                               style: TextStyle(
                                 color: categoryColor,
@@ -310,7 +310,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       value: _resolveTaxonomyLabel(
                         options: governorateTaxonomies,
                         code: beneficiary.province?.toString(),
-                        fallback: _legacyFallbackLabel(beneficiary.province?.toString()),
+                        fallback: _taxonomyFallbackLabel(beneficiary.province?.toString()),
                       ),
                     ),
                     const Divider(height: 1),
@@ -326,7 +326,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                       value: _resolveTaxonomyLabel(
                         options: sectionTaxonomies,
                         code: beneficiary.sectionId?.toString(),
-                        fallback: _getCategoryLabel(beneficiary.sectionId),
+                        fallback: _taxonomyFallbackLabel(beneficiary.sectionId?.toString()),
                       ),
                     ),
                     if (beneficiary.birthDate != null) ...[
@@ -428,9 +428,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           value: _resolveTaxonomyLabel(
                             options: maritalTaxonomies,
                             code: beneficiary.maritalStatus?.toString(),
-                            fallback: _getMaritalStatusLabel(
-                              beneficiary.maritalStatus,
-                            ),
+                            fallback: _taxonomyFallbackLabel(beneficiary.maritalStatus?.toString()),
                           ),
                         ),
                       ],
@@ -475,7 +473,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           value: _resolveTaxonomyLabel(
                             options: displacementTaxonomies,
                             code: beneficiary.displacementStatus?.toString(),
-                            fallback: _legacyFallbackLabel(beneficiary.displacementStatus?.toString()),
+                            fallback: _taxonomyFallbackLabel(beneficiary.displacementStatus?.toString()),
                           ),
                         ),
                         const Divider(height: 1),
@@ -487,7 +485,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           value: _resolveTaxonomyLabel(
                             options: housingTaxonomies,
                             code: beneficiary.housingStatus?.toString(),
-                            fallback: _legacyFallbackLabel(beneficiary.housingStatus?.toString()),
+                            fallback: _taxonomyFallbackLabel(beneficiary.housingStatus?.toString()),
                           ),
                         ),
                       ],
@@ -516,9 +514,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           value: _resolveTaxonomyLabel(
                             options: educationTaxonomies,
                             code: beneficiary.academicQualification?.toString(),
-                            fallback: _getEducationLabel(
-                              beneficiary.academicQualification,
-                            ),
+                            fallback: _taxonomyFallbackLabel(beneficiary.academicQualification?.toString()),
                           ),
                         ),
                         const Divider(height: 1),
@@ -530,9 +526,7 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                           value: _resolveTaxonomyLabel(
                             options: healthTaxonomies,
                             code: beneficiary.healthStatus?.toString(),
-                            fallback: _getHealthStatusLabel(
-                              beneficiary.healthStatus,
-                            ),
+                            fallback: _taxonomyFallbackLabel(beneficiary.healthStatus?.toString()),
                           ),
                         ),
                         const Divider(height: 1),
@@ -684,69 +678,6 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     }
   }
 
-  String _getCategoryLabel(int? sectionId) {
-    switch (sectionId) {
-      case 1:
-        return 'يتيم';
-      case 2:
-        return 'فقير';
-      case 3:
-        return 'أرملة';
-      case 4:
-        return 'معاق';
-      default:
-        return sectionId?.toString() ?? '-';
-    }
-  }
-
-  String _getMaritalStatusLabel(int? status) {
-    if (status == null) return '-';
-    switch (status) {
-      case 1:
-        return 'أعزب';
-      case 2:
-        return 'متزوج';
-      case 3:
-        return 'مطلق';
-      case 4:
-        return 'أرمل';
-      default:
-        return status.toString();
-    }
-  }
-
-  String _getHealthStatusLabel(int? status) {
-    if (status == null) return '-';
-    switch (status) {
-      case 1:
-        return 'جيدة';
-      case 2:
-        return 'متوسطة';
-      case 3:
-        return 'ضعيفة';
-      case 4:
-        return 'مرض مزمن';
-      default:
-        return status.toString();
-    }
-  }
-
-  String _getEducationLabel(int? level) {
-    if (level == null) return '-';
-    switch (level) {
-      case 1:
-        return 'بدون تعليم';
-      case 2:
-        return 'ابتدائي';
-      case 3:
-        return 'متوسط/ثانوي';
-      case 4:
-        return 'جامعي';
-      default:
-        return level.toString();
-    }
-  }
-
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
@@ -766,11 +697,11 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     return fallback;
   }
 
-  String _legacyFallbackLabel(String? code) {
+  String _taxonomyFallbackLabel(String? code) {
     if (code == null || code.trim().isEmpty) {
       return 'غير محدد';
     }
-    return 'قيمة قديمة/غير معروفة';
+    return code.trim();
   }
 
   Widget _buildTaxonomyStateBanner(

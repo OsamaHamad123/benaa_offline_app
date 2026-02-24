@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../components/v2_custom_text_field.dart';
 import '../../../../../../features/taxonomies/taxonomies.dart'; // 🏷️ Taxonomy System
 import '../../../pages/v2_form_helpers/widgets/enhanced_section_widgets.dart'; // 🎨
@@ -40,7 +41,19 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
   final BeneficiaryFormControllers? formControllers; // For autofill
 
   const V2BasicInfoTab({
-    required this.firstNameController, required this.fatherNameController, required this.grandfatherNameController, required this.lastNameController, required this.motherNameController, required this.nationalIdController, required this.birthDateController, required this.onGenderChanged, required this.onBirthDateTap, required this.onCategoryChanged, required this.onRelationshipChanged, required this.onSectionChanged, super.key,
+    required this.firstNameController,
+    required this.fatherNameController,
+    required this.grandfatherNameController,
+    required this.lastNameController,
+    required this.motherNameController,
+    required this.nationalIdController,
+    required this.birthDateController,
+    required this.onGenderChanged,
+    required this.onBirthDateTap,
+    required this.onCategoryChanged,
+    required this.onRelationshipChanged,
+    required this.onSectionChanged,
+    super.key,
     this.selectedGender,
     this.firstFieldFocusNode,
     this.selectedCategory,
@@ -56,6 +69,30 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
 class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
   late final CivilRegistryLookupController _lookupController;
   bool _dismissedSuggestion = false; // Track if user dismissed suggestion
+
+  String? _resolveSuggestedCategoryCode(String suggestion) {
+    final categoriesAsync = ref.read(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category),
+    );
+    final categories = categoriesAsync.asData?.value ?? const <Taxonomy>[];
+    if (categories.isEmpty) {
+      return null;
+    }
+
+    final normalizedSuggestion = suggestion.trim().toLowerCase();
+
+    for (final taxonomy in categories) {
+      final code = taxonomy.code.trim().toLowerCase();
+      final label = taxonomy.label.trim().toLowerCase();
+      if (normalizedSuggestion.contains(label) ||
+          normalizedSuggestion.contains(code) ||
+          label.contains(normalizedSuggestion)) {
+        return taxonomy.code;
+      }
+    }
+
+    return null;
+  }
 
   @override
   void initState() {
@@ -127,9 +164,11 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
         widget.fatherNameController.text.trim().isNotEmpty &&
         widget.lastNameController.text.trim().isNotEmpty;
 
+    final requiresGender = requiredBeneficiaryTaxonomyGroups.contains(TaxonomyGroup.gender);
+    final requiresCategory = requiredBeneficiaryTaxonomyGroups.contains(TaxonomyGroup.category);
     final isPersonalInfoComplete = widget.nationalIdController.text.length == 9 &&
-        widget.selectedGender != null &&
-        widget.selectedCategory != null;
+      (!requiresGender || widget.selectedGender != null) &&
+      (!requiresCategory || widget.selectedCategory != null);
 
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),
@@ -279,7 +318,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               selectedCode: widget.selectedGender,
               onCodeChanged: widget.onGenderChanged,
               labelText: 'الجنس',
-              isRequired: true,
+              isRequired: requiresGender,
+              autoSyncOnEmpty: true,
             ),
             SizedBox(height: 12.h),
             // 🏷️ فئة المستفيد - من نظام التصنيفات
@@ -288,7 +328,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               selectedCode: widget.selectedCategory,
               onCodeChanged: widget.onCategoryChanged,
               labelText: 'فئة المستفيد',
-              isRequired: true,
+              isRequired: requiresCategory,
+              autoSyncOnEmpty: true,
             ),
             SizedBox(height: 12.h),
             // 🏷️ صلة القرابة - من نظام التصنيفات
@@ -298,6 +339,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               onCodeChanged: widget.onRelationshipChanged,
               labelText: 'صلة القرابة',
               prefixIcon: Icons.connect_without_contact_rounded,
+              autoSyncOnEmpty: true,
             ),
             SizedBox(height: 12.h),
             // 🏷️ القسم - من نظام التصنيفات
@@ -307,6 +349,7 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
               onCodeChanged: widget.onSectionChanged,
               labelText: 'القسم',
               prefixIcon: Icons.business_center_rounded,
+              autoSyncOnEmpty: true,
             ),
             SizedBox(height: 12.h),
             // 🆕 المستخدم المدخل للبيانات (Created By User)
@@ -342,21 +385,21 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                       icon: Icons.lightbulb_outline_rounded,
                       onApply: () {
                         HapticFeedback.lightImpact();
-                        // Map suggestion to dropdown value
-                        String? categoryValue;
-                        if (suggestion.contains('يتيم')) {
-                          categoryValue = 'orphan';
-                        } else if (suggestion.contains('أرملة')) {
-                          categoryValue = 'widow';
-                        } else if (suggestion.contains('نازح')) {
-                          categoryValue = 'displaced';
-                        } else if (suggestion.contains('ذوي احتياجات خاصة')) {
-                          categoryValue = 'disabled';
-                        }
+                        final categoryValue = _resolveSuggestedCategoryCode(
+                          suggestion,
+                        );
 
                         if (categoryValue != null) {
                           widget.onCategoryChanged(categoryValue);
                           setState(() => _dismissedSuggestion = true);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'تعذر مطابقة الفئة المقترحة مع تصنيفات السيرفر الحالية',
+                              ),
+                            ),
+                          );
                         }
                       },
                       onDismiss: () {

@@ -2,25 +2,14 @@ import 'package:dio/dio.dart';
 import '../../models/sync_models.dart';
 import '../../../../data/models/taxonomy_dto.dart';
 import '../../../../features/beneficiaries/data/models/beneficiary_data_model.dart';
+import '../../../../features/taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
 
 /// 🌐 Remote Sync DataSource
 ///
 /// مسؤول عن التواصل مع السيرفر لجلب ورفع البيانات
 class RemoteSyncDataSource {
   final Dio _dio;
-
-  static const Map<String, String> _taxonomyGroupToCategorySlug = {
-    'category': 'categories',
-    'marital_status': 'marital-statuses',
-    'education_level': 'academic-degrees',
-    'health_status': 'health-statuses',
-    'gender': 'genders',
-    'governorate': 'provinces',
-    'displacement_status': 'displacement-statuses',
-    'employment_status': 'employment-statuses',
-    'housing_status': 'housing-statuses',
-    'housing_type': 'accommodation-types',
-  };
 
   const RemoteSyncDataSource(this._dio);
 
@@ -40,24 +29,42 @@ class RemoteSyncDataSource {
   }) async {
     try {
       final updatedAfter = since?.toIso8601String();
-      final categorySlug = _toCategorySlug(group);
+      final categorySlugs = _toCategorySlugCandidates(group);
 
-      if (categorySlug != null) {
-        final response = await _dio.get(
-          '/api/mobile/categories/$categorySlug',
-          queryParameters: {
-            if (updatedAfter != null) 'updated_after': updatedAfter,
-            'per_page': 500,
-          },
+      if (categorySlugs.isNotEmpty) {
+        for (final categorySlug in categorySlugs) {
+          try {
+            final response = await _dio.get(
+              '/api/mobile/categories/$categorySlug',
+              queryParameters: {
+                if (updatedAfter != null) 'updated_after': updatedAfter,
+                'per_page': 500,
+              },
+            );
+
+            final normalized = _normalizeCategoryItemsResponse(
+              response.data as Map<String, dynamic>,
+              fallbackGroup: group ?? _toGroupValue(categorySlug),
+              fallbackSlug: categorySlug,
+            );
+
+            final parsed = TaxonomySyncResponse.fromJson(normalized);
+            if (parsed.data.isNotEmpty) {
+              return parsed;
+            }
+          } on DioException catch (e) {
+            if (_isNotFoundCategoryError(e)) {
+              continue;
+            }
+            throw _handleDioError(e, 'فشل جلب التصنيفات');
+          }
+        }
+
+        return TaxonomySyncResponse(
+          data: const [],
+          syncTimestamp: DateTime.now(),
+          totalCount: 0,
         );
-
-        final normalized = _normalizeCategoryItemsResponse(
-          response.data as Map<String, dynamic>,
-          fallbackGroup: group ?? _toGroupValue(categorySlug),
-          fallbackSlug: categorySlug,
-        );
-
-        return TaxonomySyncResponse.fromJson(normalized);
       }
 
       final response = await _dio.get(
@@ -75,6 +82,11 @@ class RemoteSyncDataSource {
     } on DioException catch (e) {
       throw _handleDioError(e, 'فشل جلب التصنيفات');
     }
+  }
+
+  bool _isNotFoundCategoryError(DioException e) {
+    final status = e.response?.statusCode;
+    return status == 404 || status == 405;
   }
 
   /// جلب كل المجموعات المتاحة
@@ -308,23 +320,49 @@ class RemoteSyncDataSource {
     }
   }
 
-  String? _toCategorySlug(String? group) {
+  List<String> _toCategorySlugCandidates(String? group) {
     if (group == null || group.trim().isEmpty) {
-      return null;
+      return const [];
     }
 
-    final normalized = group.trim();
-    return _taxonomyGroupToCategorySlug[normalized] ?? normalized.replaceAll('_', '-');
-  }
+    final normalized = TaxonomyGroup.normalizeValue(group) ?? group.trim();
+    final resolvedGroup = TaxonomyGroup.fromString(normalized);
 
-  String _toGroupValue(String categorySlug) {
-    for (final entry in _taxonomyGroupToCategorySlug.entries) {
-      if (entry.value == categorySlug) {
-        return entry.key;
+    final out = <String>[];
+
+    void addCandidate(String? value) {
+      if (value == null) return;
+      final candidate = value.trim();
+      if (candidate.isEmpty) return;
+      if (!out.contains(candidate)) {
+        out.add(candidate);
       }
     }
 
-    return categorySlug.replaceAll('-', '_');
+    if (resolvedGroup != null) {
+      final contractCandidates = serverCategorySlugCandidatesForGroup(resolvedGroup);
+      for (final candidate in contractCandidates) {
+        addCandidate(candidate);
+      }
+      return out;
+    }
+
+    addCandidate(normalized.replaceAll('_', '-'));
+    return out;
+  }
+
+  String _toGroupValue(String categorySlug) {
+    final normalizedSlug = normalizeBackendCategorySlug(categorySlug);
+
+    final resolved = resolveTaxonomyGroupFromCandidates(<String>[
+      normalizedSlug,
+      normalizedSlug.replaceAll('-', '_'),
+    ]);
+    if (resolved != null) {
+      return resolved.value;
+    }
+
+    return normalizedSlug.replaceAll('-', '_');
   }
 
   Map<String, dynamic> _normalizeCategoryItemsResponse(

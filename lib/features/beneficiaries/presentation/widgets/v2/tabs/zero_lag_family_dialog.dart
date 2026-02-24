@@ -3,31 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy_group.dart';
+import 'package:benaa_offline_app/features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/utils/taxonomy_value_resolver.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'family_dialog_widgets.dart';
 import '../../../providers/beneficiary_dependencies.dart';
-
-const Map<int, String> _deathCauseOptions = {
-  1: 'حرب',
-  2: 'مرض',
-  3: 'حادث',
-  8: 'أخرى',
-};
-
-const Map<int, String> _docTypeOptions = {
-  1: 'شهادة وفاة',
-  2: 'تقرير طبي',
-  3: 'إفادة',
-};
-
-const Map<int, String> _healthStatusOptions = {
-  1: 'سليم',
-  2: 'مريض',
-  3: 'مزمن',
-  4: 'معاق',
-  5: 'غير محدد',
-};
 
 // Debug helper: lightweight rebuild logger used only for performance investigation.
 // Toggle this during manual debugging to see rebuild counts.
@@ -50,8 +32,7 @@ class _RebuildLoggerState extends State<RebuildLogger> {
   Widget build(BuildContext context) {
     // Rebuild tracking is enabled in debug mode for tests and instrumentation.
     if (kDebugMode && _enableRebuildLogging) {
-      _debugRebuildCounts[widget.name] =
-          (_debugRebuildCounts[widget.name] ?? 0) + 1;
+      _debugRebuildCounts[widget.name] = (_debugRebuildCounts[widget.name] ?? 0) + 1;
     }
     return widget.child;
   }
@@ -81,15 +62,15 @@ class ZeroLagFamilyDialog extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onSave;
 
   const ZeroLagFamilyDialog({
-    required this.onSave, super.key,
+    required this.onSave,
+    super.key,
     this.existingMember,
     this.isDeceased = false,
     this.presetDeceasedType,
   });
 
   @override
-  ConsumerState<ZeroLagFamilyDialog> createState() =>
-      _ZeroLagFamilyDialogState();
+  ConsumerState<ZeroLagFamilyDialog> createState() => _ZeroLagFamilyDialogState();
 }
 
 class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
@@ -134,6 +115,82 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   late final Stopwatch _initTimer;
   bool _didLogFirstFrame = false;
   Timer? _delayedDocumentTimer;
+
+  Map<int, String> _taxonomyOptions(TaxonomyGroup group) {
+    try {
+      final taxonomiesAsync = ref.watch(
+        bridgeTaxonomiesByGroupOnceProvider(group),
+      );
+      final taxonomies = taxonomiesAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => const [],
+      );
+
+      final options = <int, String>{};
+      for (final taxonomy in taxonomies) {
+        final value = TaxonomyValueResolver.resolveToInt(
+          code: taxonomy.code,
+          id: taxonomy.id,
+          group: group,
+          source: 'zero_lag_family_dialog_options',
+        );
+        if (value == null) continue;
+        options[value] = taxonomy.label;
+      }
+
+      TaxonomyValueResolver.logSummary(
+        group: group,
+        source: 'zero_lag_family_dialog_options',
+        total: taxonomies.length,
+        resolved: options.length,
+      );
+      return options;
+    } on StateError {
+      return const <int, String>{};
+    }
+  }
+
+  int? _resolveDynamicDefault(TaxonomyGroup group) {
+    try {
+      final taxonomiesAsync = ref.read(
+        bridgeTaxonomiesByGroupOnceProvider(group),
+      );
+      final taxonomies = taxonomiesAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => const [],
+      );
+
+      var resolvedCount = 0;
+
+      for (final taxonomy in taxonomies) {
+        final value = TaxonomyValueResolver.resolveToInt(
+          code: taxonomy.code,
+          id: taxonomy.id,
+          group: group,
+          source: 'zero_lag_family_dialog_default',
+        );
+        if (value != null) {
+          resolvedCount++;
+          TaxonomyValueResolver.logSummary(
+            group: group,
+            source: 'zero_lag_family_dialog_default',
+            total: taxonomies.length,
+            resolved: resolvedCount,
+          );
+          return value;
+        }
+      }
+      TaxonomyValueResolver.logSummary(
+        group: group,
+        source: 'zero_lag_family_dialog_default',
+        total: taxonomies.length,
+        resolved: resolvedCount,
+      );
+      return null;
+    } on StateError {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -198,11 +255,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       if (!mounted) return;
       // Hoist header first frame (lightweight)
       setState(() {
-        final title = widget.isDeceased
-            ? (widget.presetDeceasedType == 1
-                ? 'إضافة أب متوفى'
-                : 'إضافة أم متوفاة')
-            : 'إضافة يتيم';
+        final title =
+            widget.isDeceased ? (widget.presetDeceasedType == 1 ? 'إضافة أب متوفى' : 'إضافة أم متوفاة') : 'إضافة يتيم';
         _hoistedHeader = RebuildLogger(
           name: 'header',
           child: Builder(
@@ -397,9 +451,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _civilStatus.value = 'جاري البحث في السجل المدني...';
 
     try {
-      await ref
-          .read(civilRegistryProvider.notifier)
-          .fetchByNationalId(nationalId);
+      await ref.read(civilRegistryProvider.notifier).fetchByNationalId(nationalId);
 
       final civilRegistryState = ref.read(civilRegistryProvider);
 
@@ -533,8 +585,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
               'الاسم',
               '${_firstNameCtrl.text} ${_familyNameCtrl.text}',
             ),
-            if (nationalId.isNotEmpty)
-              _buildConfirmationRow(Icons.badge, 'الرقم الوطني', nationalId),
+            if (nationalId.isNotEmpty) _buildConfirmationRow(Icons.badge, 'الرقم الوطني', nationalId),
             _buildConfirmationRow(
               _gender.value == 1 ? Icons.male : Icons.female,
               'الجنس',
@@ -571,7 +622,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
         'deceasedType': widget.presetDeceasedType,
         'nationalId': int.tryParse(_nationalIdCtrl.text.trim()),
         'deathDate': _date.value ?? DateTime.now(),
-        'deathCause': _deathCause.value ?? 8,
+        'deathCause': _deathCause.value ?? _resolveDynamicDefault(TaxonomyGroup.deathReason),
         'documentType': _docType.value,
         'documentFile': _selectedFile.value, // ملف الوثيقة
       });
@@ -579,10 +630,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       data.addAll({
         'orphanNationalId': int.tryParse(_nationalIdCtrl.text.trim()),
         'birthDate': _date.value ?? DateTime.now(),
-        'age': _date.value != null
-            ? DateTime.now().difference(_date.value!).inDays ~/ 365
-            : 0,
-        'healthStatus': _healthStatus.value ?? 5,
+        'age': _date.value != null ? DateTime.now().difference(_date.value!).inDays ~/ 365 : 0,
+        'healthStatus': _healthStatus.value ?? _resolveDynamicDefault(TaxonomyGroup.healthStatus),
       });
     }
 
@@ -595,9 +644,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          widget.isDeceased
-              ? '✅ تم إضافة المتوفى بنجاح'
-              : '✅ تم إضافة اليتيم بنجاح',
+          widget.isDeceased ? '✅ تم إضافة المتوفى بنجاح' : '✅ تم إضافة اليتيم بنجاح',
         ),
         backgroundColor: Colors.green,
         duration: const Duration(seconds: 2),
@@ -666,8 +713,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                           first: _isFetchingCivil,
                           second: _civilStatus,
                           third: _hideSearchButton,
-                          builder:
-                              (context, isFetching, status, hideButton, _) {
+                          builder: (context, isFetching, status, hideButton, _) {
                             return NationalIdWithCivilRegistry(
                               nationalIdController: _nationalIdCtrl,
                               isFetching: isFetching,
@@ -741,7 +787,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                             valueListenable: _deathCause,
                             builder: (_, cause, __) => _ChipSelector(
                               label: 'سبب الوفاة',
-                              options: _deathCauseOptions,
+                              options: _taxonomyOptions(TaxonomyGroup.deathReason),
                               selected: cause,
                               onSelect: (v) => _deathCause.value = v,
                             ),
@@ -751,7 +797,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                             valueListenable: _docType,
                             builder: (_, type, __) => _ChipSelector(
                               label: 'نوع الوثيقة',
-                              options: _docTypeOptions,
+                              options: _taxonomyOptions(TaxonomyGroup.documentType),
                               selected: type,
                               onSelect: (v) => _docType.value = v,
                             ),
@@ -761,7 +807,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                             valueListenable: _healthStatus,
                             builder: (_, status, __) => _ChipSelector(
                               label: 'الحالة الصحية',
-                              options: _healthStatusOptions,
+                              options: _taxonomyOptions(TaxonomyGroup.healthStatus),
                               selected: status,
                               onSelect: (v) => _healthStatus.value = v,
                             ),
@@ -866,6 +912,17 @@ class _ChipSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (options.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          const Text('لا توجد خيارات متاحة حالياً'),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -888,9 +945,7 @@ class _ChipSelector extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.blue.withOpacity(0.2)
-                      : Colors.grey.shade100,
+                  color: isSelected ? Colors.blue.withOpacity(0.2) : Colors.grey.shade100,
                   border: Border.all(
                     color: isSelected ? Colors.blue : Colors.grey.shade300,
                     width: isSelected ? 2 : 1,
@@ -901,8 +956,7 @@ class _ChipSelector extends StatelessWidget {
                   e.value,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     color: isSelected ? Colors.blue : Colors.grey.shade700,
                   ),
                 ),
@@ -920,12 +974,15 @@ class ValueListenableBuilder3<A, B, C> extends StatelessWidget {
   final ValueNotifier<A> first;
   final ValueNotifier<B> second;
   final ValueNotifier<C> third;
-  final Widget Function(BuildContext context, A a, B b, C c, Widget? child)
-      builder;
+  final Widget Function(BuildContext context, A a, B b, C c, Widget? child) builder;
   final Widget? child;
 
   const ValueListenableBuilder3({
-    required this.first, required this.second, required this.third, required this.builder, super.key,
+    required this.first,
+    required this.second,
+    required this.third,
+    required this.builder,
+    super.key,
     this.child,
   });
 

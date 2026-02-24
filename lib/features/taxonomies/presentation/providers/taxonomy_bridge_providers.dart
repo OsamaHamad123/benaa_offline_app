@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/db/drift_database.dart' as drift_db show Taxonomy;
 import '../../domain/entities/taxonomy.dart' as domain;
 import '../../domain/entities/taxonomy_group.dart';
+import '../../domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../../../../core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 
 // ═══════════════════════════════════════════════════════════════
@@ -159,6 +160,34 @@ final bridgeTaxonomiesByGroupOnceProvider =
   final index = await ref.watch(bridgeTaxonomiesIndexOnceProvider.future);
   return index[group] ?? const <domain.Taxonomy>[];
 });
+
+/// One-shot provider with equivalent-group fallback (مثل section/category).
+///
+/// يضمن أن الحقول المعتمدة على مجموعة canonical لا تبقى فارغة إذا البيانات
+/// وصلت في مجموعة مكافئة رسمية من السيرفر.
+final bridgeTaxonomiesByGroupResolvedOnceProvider =
+    FutureProvider.family<List<domain.Taxonomy>, TaxonomyGroup>((ref, group) async {
+  final index = await ref.watch(bridgeTaxonomiesIndexOnceProvider.future);
+
+  final direct = index[group] ?? const <domain.Taxonomy>[];
+  if (direct.isNotEmpty) {
+    return direct;
+  }
+
+  final equivalents = equivalentBeneficiaryTaxonomyGroups[group] ?? const <TaxonomyGroup>[];
+  for (final equivalent in equivalents) {
+    final candidate = index[equivalent] ?? const <domain.Taxonomy>[];
+    if (candidate.isNotEmpty) {
+      return candidate;
+    }
+  }
+
+  return direct;
+});
+
+/// تتبع محاولة المزامنة التلقائية لكل مجموعة في واجهات الإدخال.
+/// الهدف منع تكرار deltaSync عند إعادة بناء نفس الحقل الفارغ.
+final bridgeGroupAutoSyncAttemptedProvider = StateProvider.family<bool, TaxonomyGroup>((ref, group) => false);
 
 // ═══════════════════════════════════════════════════════════════
 // 🔍 Lookup Providers

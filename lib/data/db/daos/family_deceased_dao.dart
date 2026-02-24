@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
+import 'dart:convert' show jsonEncode;
 import '../drift_database.dart';
 import '../tables/family_deceased_table.dart';
 
 part 'family_deceased_dao.g.dart';
 
 @DriftAccessor(tables: [FamilyDeceasedTable])
-class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
-    with _$FamilyDeceasedDaoMixin {
+class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase> with _$FamilyDeceasedDaoMixin {
   FamilyDeceasedDao(super.db);
 
   /// 📋 الحصول على جميع الأموات (الأب/الأم) لمستفيد معين
@@ -23,9 +23,7 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
   Future<FamilyDeceased?> getFather(int beneficiaryId) {
     return (select(familyDeceasedTable)
           ..where(
-            (t) =>
-                t.beneficiaryId.equals(beneficiaryId) &
-                t.deceasedType.equals(1), // 1=father
+            (t) => t.beneficiaryId.equals(beneficiaryId) & t.deceasedType.equals(1), // 1=father
           ))
         .getSingleOrNull();
   }
@@ -34,9 +32,7 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
   Future<FamilyDeceased?> getMother(int beneficiaryId) {
     return (select(familyDeceasedTable)
           ..where(
-            (t) =>
-                t.beneficiaryId.equals(beneficiaryId) &
-                t.deceasedType.equals(2), // 2=mother
+            (t) => t.beneficiaryId.equals(beneficiaryId) & t.deceasedType.equals(2), // 2=mother
           ))
         .getSingleOrNull();
   }
@@ -52,7 +48,24 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// 🗑️ حذف متوفى
-  Future<int> deleteDeceased(int id) {
+  Future<int> deleteDeceased(int id, {bool trackSyncDelete = true}) async {
+    if (trackSyncDelete) {
+      final existing = await (select(familyDeceasedTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (existing != null) {
+        final entityId = existing.serverId?.toString() ?? existing.id.toString();
+        await db.syncDao.addTombstone(
+          entityType: 'dead-people',
+          entityId: entityId,
+          payload: jsonEncode({
+            'local_id': existing.id,
+            'server_id': existing.serverId,
+            'beneficiary_id': existing.beneficiaryId,
+            'deceased_type': existing.deceasedType,
+          }),
+        );
+      }
+    }
+
     return (delete(familyDeceasedTable)..where((t) => t.id.equals(id))).go();
   }
 
@@ -99,9 +112,7 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
                 t.beneficiaryId.equals(beneficiaryId) &
                 (t.firstName.lower().like(searchTerm) |
                     t.familyName.lower().like(searchTerm) |
-                    (nationalIdInt != null
-                        ? t.nationalId.equals(nationalIdInt)
-                        : const Constant(false))),
+                    (nationalIdInt != null ? t.nationalId.equals(nationalIdInt) : const Constant(false))),
           ))
         .get();
   }

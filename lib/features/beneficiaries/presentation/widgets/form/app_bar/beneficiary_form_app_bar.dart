@@ -25,13 +25,26 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
   final VoidCallback onRedo;
 
   const BeneficiaryFormAppBar({
-    required this.isEditMode, required this.isSavingNotifier, required this.lastSavedNotifier, required this.hasUnsavedChangesNotifier, required this.onSave, required this.onShowHistory, required this.onShowHelp, required this.canUndo, required this.canRedo, required this.onUndo, required this.onRedo, super.key,
+    required this.isEditMode,
+    required this.isSavingNotifier,
+    required this.lastSavedNotifier,
+    required this.hasUnsavedChangesNotifier,
+    required this.onSave,
+    required this.onShowHistory,
+    required this.onShowHelp,
+    required this.canUndo,
+    required this.canRedo,
+    required this.onUndo,
+    required this.onRedo,
+    super.key,
     this.beneficiaryName,
     this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AppBar(
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +63,7 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.normal,
-                color: Colors.white70,
+                color: colorScheme.onPrimary.withValues(alpha: 0.7),
               ),
             ),
         ],

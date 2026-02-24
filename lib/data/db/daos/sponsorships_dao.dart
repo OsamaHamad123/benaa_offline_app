@@ -9,8 +9,7 @@ part 'sponsorships_dao.g.dart';
 
 /// 🤝 Sponsorships DAO - عمليات الكفالات
 @DriftAccessor(tables: [Sponsorships, Beneficiaries, Associations])
-class SponsorshipsDao extends DatabaseAccessor<AppDatabase>
-    with _$SponsorshipsDaoMixin {
+class SponsorshipsDao extends DatabaseAccessor<AppDatabase> with _$SponsorshipsDaoMixin {
   SponsorshipsDao(super.db);
 
   // ---------------------------------------------------------------------------
@@ -25,16 +24,14 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase>
     required int fileNo,
     required SponsorshipsCompanion companion,
   }) async {
-    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo)))
-        .write(companion);
+    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo))).write(companion);
   }
 
   Future<int> endSponsorship({
     required int fileNo,
     DateTime? endDate,
   }) async {
-    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo)))
-        .write(
+    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo))).write(
       SponsorshipsCompanion(
         status: const Value('ended'),
         endDate: Value(endDate ?? DateTime.now()),
@@ -46,8 +43,7 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteSponsorship({
     required int fileNo,
   }) async {
-    return await (delete(sponsorships)..where((s) => s.fileNo.equals(fileNo)))
-        .go();
+    return await (delete(sponsorships)..where((s) => s.fileNo.equals(fileNo))).go();
   }
 
   // ---------------------------------------------------------------------------
@@ -103,6 +99,52 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase>
       )
       ORDER BY b.created_at DESC, b.id DESC
       ''',
+      readsFrom: {beneficiaries, sponsorships},
+    ).watch().map((rows) {
+      return rows.map((r) => beneficiaries.map(r.data)).toList(growable: false);
+    });
+  }
+
+  /// Unsponsored beneficiaries with optional search filtering
+  /// البحث يتم على الاسم الكامل أو رقم الهوية
+  Stream<List<Beneficiary>> watchUnsponsoredBeneficiariesFiltered({
+    String query = '',
+  }) {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) {
+      return watchUnsponsoredBeneficiaries();
+    }
+
+    final asInt = int.tryParse(normalizedQuery);
+
+    final whereBuffer = StringBuffer('''
+      NOT EXISTS (
+        SELECT 1
+        FROM sponsorships s
+        WHERE s.beneficiary_id = b.id
+          AND s.status = 'active'
+      )
+    ''');
+
+    final variables = <Variable<Object>>[];
+
+    if (asInt != null) {
+      whereBuffer.write(' AND (b.id_number = ? OR b.full_name LIKE ?)');
+      variables.add(Variable.withInt(asInt));
+      variables.add(Variable.withString('%$normalizedQuery%'));
+    } else {
+      whereBuffer.write(' AND b.full_name LIKE ?');
+      variables.add(Variable.withString('%$normalizedQuery%'));
+    }
+
+    return customSelect(
+      '''
+      SELECT b.*
+      FROM beneficiaries b
+      WHERE ${whereBuffer.toString()}
+      ORDER BY b.created_at DESC, b.id DESC
+      ''',
+      variables: variables,
       readsFrom: {beneficiaries, sponsorships},
     ).watch().map((rows) {
       return rows.map((r) => beneficiaries.map(r.data)).toList(growable: false);
@@ -179,9 +221,7 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase>
     if (q.isNotEmpty) {
       final asInt = int.tryParse(q);
       if (asInt != null) {
-        join.where(s.fileNo.equals(asInt) |
-            b.idNumber.equals(asInt) |
-            b.fullName.contains(q));
+        join.where(s.fileNo.equals(asInt) | b.idNumber.equals(asInt) | b.fullName.contains(q));
       } else {
         join.where(b.fullName.contains(q));
       }

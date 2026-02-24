@@ -83,19 +83,20 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
   /// 🚀 الانتقال بعد المصادقة - التحقق من database أولاً
   Future<void> _navigateAfterAuth() async {
-    await ref.read(databaseDownloadProvider.notifier).checkDatabase();
+    if (!mounted) return;
+    final dbNotifier = ref.read(databaseDownloadProvider.notifier);
+    await dbNotifier.checkDatabase();
+    if (!mounted) return;
+
     final dbState = ref.read(databaseDownloadProvider);
+    if (!mounted || !context.mounted) return;
 
     if (dbState.canProceed) {
       // قاعدة البيانات موجودة أو تم تخطيها
-      if (mounted && context.mounted) {
-        context.go('/dashboard');
-      }
+      context.go('/dashboard');
     } else {
       // يجب تنزيل قاعدة البيانات
-      if (mounted && context.mounted) {
-        context.go('/database-download');
-      }
+      context.go('/database-download');
     }
   }
 
@@ -140,6 +141,7 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
         onSessionExpired: () => context.go('/login'),
       );
       await SessionManager().startNewSession();
+      if (!mounted) return;
 
       // رسالة نجاح
       final user = ref.read(currentUserProvider);
@@ -149,23 +151,24 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
       );
 
       await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
 
       // التحقق من قاعدة البيانات
       if (mounted) {
-        await ref.read(databaseDownloadProvider.notifier).checkDatabase();
+        final dbNotifier = ref.read(databaseDownloadProvider.notifier);
+        await dbNotifier.checkDatabase();
+        if (!mounted) return;
+
         final dbState = ref.read(databaseDownloadProvider);
+        if (!mounted || !context.mounted) return;
 
         // 🆕 استخدام canProceed بدلاً من isAvailable فقط
         if (!dbState.canProceed) {
           // قاعدة البيانات غير موجودة ولم يتم تخطيها - الذهاب لصفحة التنزيل
-          if (mounted && context.mounted) {
-            context.go('/database-download');
-          }
+          context.go('/database-download');
         } else {
           // قاعدة البيانات موجودة أو تم تخطيها - الانتقال للوحة التحكم
-          if (mounted && context.mounted) {
-            context.go('/dashboard');
-          }
+          context.go('/dashboard');
         }
       }
     }

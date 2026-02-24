@@ -34,6 +34,11 @@ class ApiConfig {
   static const String visitsBatchSyncEndpoint = '/api/mobile/visits/batch';
   static const String attachmentUploadEndpoint = '/api/mobile/database/attachments';
 
+  // 🏢 Associations (Sponsors/Employees) Sync Endpoints
+  static const String associationsSponsorsEndpoint = '/api/mobile/associations/sponsors';
+  static const String associationsEmployeesEndpoint = '/api/mobile/associations/employees';
+  static const String associationsEmployeesBatchEndpoint = '/api/mobile/associations/employees/batch';
+
   // 📊 Data Endpoints
   static const String materialsEndpoint = '/api/materials';
   static const String stockMovementsEndpoint = '/api/stock-movements';

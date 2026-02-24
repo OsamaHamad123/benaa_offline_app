@@ -34,7 +34,7 @@ class ReviewDataRow extends StatelessWidget {
               Icon(
                 icon,
                 size: 20.sp,
-                color: isEmpty ? colorScheme.onSurfaceVariant.withOpacity(0.5) : colorScheme.primary,
+                color: isEmpty ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5) : colorScheme.primary,
               ),
               SizedBox(width: 12.w),
             ],
@@ -54,7 +54,7 @@ class ReviewDataRow extends StatelessWidget {
               child: SelectableText(
                 displayValue,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isEmpty ? colorScheme.onSurfaceVariant.withOpacity(0.5) : colorScheme.onSurface,
+                  color: isEmpty ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5) : colorScheme.onSurface,
                   fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
                 ),
                 textAlign: TextAlign.start,

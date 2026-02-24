@@ -28,23 +28,27 @@ import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../../../core/widgets/loading_state.dart';
 import '../../../../core/design_system/app_animations.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../utils/taxonomy_value_resolver.dart';
 
 /// 📋 Beneficiaries List Page V2 - Clean Architecture
 class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
   const BeneficiariesListPageV2({super.key});
 
   @override
-  ConsumerState<BeneficiariesListPageV2> createState() =>
-      _BeneficiariesListPageV2State();
+  ConsumerState<BeneficiariesListPageV2> createState() => _BeneficiariesListPageV2State();
 }
 
-class _BeneficiariesListPageV2State
-    extends ConsumerState<BeneficiariesListPageV2> {
+class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV2> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
   late final Debouncer _searchDebouncer; // ✅ Debouncer for search
   late final Throttler _scrollThrottler; // ✅ Throttler for scroll
   bool _isSearching = false;
+  String _lastCommittedSearchQuery = '';
 
   @override
   void initState() {
@@ -75,6 +79,7 @@ class _BeneficiariesListPageV2State
     }
 
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _scrollController.dispose();
     _searchDebouncer.dispose(); // ✅ Clean up Debouncer
     super.dispose();
@@ -82,8 +87,7 @@ class _BeneficiariesListPageV2State
 
   void _onScroll() {
     _scrollThrottler(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent * 0.9) {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
         ref.read(beneficiariesListProvider.notifier).loadMore();
       }
     });
@@ -108,18 +112,52 @@ class _BeneficiariesListPageV2State
   }
 
   void _onSearchChanged(String value) {
-    setState(() => _isSearching = true);
-
-    // ✅ Normalize Arabic text for better search
     final normalizedQuery = ArabicNormalizer.normalize(value);
+    if (normalizedQuery == _lastCommittedSearchQuery) return;
 
-    _searchDebouncer(() {
-      ref.read(filtersProvider.notifier).setSearchQuery(normalizedQuery);
-      ref.read(beneficiariesListProvider.notifier).refresh();
-      if (mounted) {
+    final isNumericQuery = int.tryParse(normalizedQuery) != null;
+    final canSearchNow = normalizedQuery.isEmpty || isNumericQuery || normalizedQuery.length >= 2;
+
+    if (!canSearchNow) {
+      if (_isSearching && mounted) {
         setState(() => _isSearching = false);
       }
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isSearching = true);
+    }
+
+    _searchDebouncer(() async {
+      final hadFocus = _searchFocusNode.hasFocus;
+      _lastCommittedSearchQuery = normalizedQuery;
+      ref.read(filtersProvider.notifier).setSearchQuery(normalizedQuery);
+      await ref.read(beneficiariesListProvider.notifier).refresh(showLoading: false);
+      if (mounted) {
+        setState(() => _isSearching = false);
+        if (hadFocus) {
+          _searchFocusNode.requestFocus();
+        }
+      }
     });
+  }
+
+  void _onSearchSubmitted(String value) {
+    final normalizedQuery = ArabicNormalizer.normalize(value);
+    _lastCommittedSearchQuery = normalizedQuery;
+    ref.read(filtersProvider.notifier).setSearchQuery(normalizedQuery);
+    unawaited(ref.read(beneficiariesListProvider.notifier).refresh(showLoading: false));
+  }
+
+  Map<int, String> _buildTaxonomyLabelMap(List<taxonomy_domain.Taxonomy> options) {
+    final labels = <int, String>{};
+    for (final taxonomy in options) {
+      final value = TaxonomyValueResolver.resolveToInt(code: taxonomy.code, id: taxonomy.id);
+      if (value == null) continue;
+      labels[value] = taxonomy.label;
+    }
+    return labels;
   }
 
   /// 🗑️ Optimistic Delete with rollback
@@ -152,6 +190,26 @@ class _BeneficiariesListPageV2State
     final state = ref.watch(beneficiariesListProvider);
     final filters = ref.watch(filtersProvider);
     final selection = ref.watch(selectionProvider);
+    final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final categoryLabelsById = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
+        final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
+        final source = sectionOptions.isNotEmpty ? sectionOptions : categoryOptions;
+        return _buildTaxonomyLabelMap(source);
+      },
+      orElse: () => const <int, String>{},
+    );
+
+    final governorateLabelsById = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final options = index[TaxonomyGroup.governorate] ?? const <taxonomy_domain.Taxonomy>[];
+        return _buildTaxonomyLabelMap(options);
+      },
+      orElse: () => const <int, String>{},
+    );
 
     // ⚡ Cache ResponsiveUtils to avoid rebuilds
     final rv = ResponsiveUtils.getValues(context);
@@ -173,19 +231,17 @@ class _BeneficiariesListPageV2State
       body: Column(
         children: [
           // Statistics - Lazy loaded for better performance
-          if (!_isSearching) // Hide when searching for better perf
-            RepaintBoundary(
-              child: FadeSlideTransition(
-                duration: AppDurations.fast,
-                child: GestureDetector(
-                  onTap: () {
-                    // Navigate to dedicated statistics page
-                    context.push('/statistics');
-                  },
-                  child: const StatisticsDashboard(),
-                ),
+          RepaintBoundary(
+            child: FadeSlideTransition(
+              duration: AppDurations.fast,
+              child: GestureDetector(
+                onTap: () {
+                  unawaited(context.push('/statistics'));
+                },
+                child: const StatisticsDashboard(),
               ),
             ),
+          ),
 
           // Search Bar
           RepaintBoundary(
@@ -193,7 +249,9 @@ class _BeneficiariesListPageV2State
               duration: AppDurations.fast,
               child: BeneficiariesSearchBar(
                 controller: _searchController,
+                focusNode: _searchFocusNode,
                 onChanged: _onSearchChanged,
+                onSubmitted: _onSearchSubmitted,
                 hintText: 'ابحث بالاسم، الرقم الوطني، أو رقم الملف...',
               ),
             ),
@@ -205,7 +263,15 @@ class _BeneficiariesListPageV2State
           const SizedBox(height: 8),
 
           // List
-          Expanded(child: _buildList(state, selection, rv)),
+          Expanded(
+            child: _buildList(
+              state,
+              selection,
+              rv,
+              categoryLabelsById: categoryLabelsById,
+              governorateLabelsById: governorateLabelsById,
+            ),
+          ),
         ],
       ),
       floatingActionButton: selection.isSelectionMode
@@ -220,10 +286,8 @@ class _BeneficiariesListPageV2State
                     final result = await context.push('/beneficiaries/add');
                     if (result == true && mounted) {
                       ref.read(beneficiariesListProvider.notifier).clearCache();
-                      await ref
-                          .read(beneficiariesListProvider.notifier)
-                          .refresh();
-                      if (mounted) {
+                      await ref.read(beneficiariesListProvider.notifier).refresh();
+                      if (context.mounted) {
                         VisualFeedback.showSuccess(
                           context,
                           'تمت الإضافة بنجاح',
@@ -231,7 +295,7 @@ class _BeneficiariesListPageV2State
                       }
                     }
                   },
-                  backgroundColor: Colors.blue,
+                  backgroundColor: colorScheme.primary,
                 ),
                 QuickAction(
                   label: 'بحث متقدم',
@@ -239,7 +303,7 @@ class _BeneficiariesListPageV2State
                   onTap: () {
                     _showAdvancedSearch();
                   },
-                  backgroundColor: Colors.green,
+                  backgroundColor: colorScheme.secondary,
                 ),
                 QuickAction(
                   label: 'تصدير',
@@ -247,7 +311,7 @@ class _BeneficiariesListPageV2State
                   onTap: () {
                     _exportData();
                   },
-                  backgroundColor: Colors.orange,
+                  backgroundColor: colorScheme.tertiary,
                 ),
               ],
             ),
@@ -273,16 +337,16 @@ class _BeneficiariesListPageV2State
 
   /// ⚡ Build filter button with badge (memoized)
   Widget _buildFilterButton(FiltersState filters) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Semantics(
-      label:
-          'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+      label: 'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
       button: true,
       child: Stack(
         children: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            tooltip:
-                'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+            tooltip: 'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
             onPressed: () => _showFilters(context),
           ),
           if (filters.hasActiveFilters)
@@ -291,16 +355,16 @@ class _BeneficiariesListPageV2State
               top: 8,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
+                decoration: BoxDecoration(
+                  color: colorScheme.error,
                   shape: BoxShape.circle,
                 ),
                 constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                 child: Center(
                   child: Text(
                     '${filters.activeFiltersCount}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colorScheme.onError,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -313,7 +377,13 @@ class _BeneficiariesListPageV2State
     );
   }
 
-  Widget _buildList(state, selection, ResponsiveValues rv) {
+  Widget _buildList(
+    state,
+    selection,
+    ResponsiveValues rv, {
+    required Map<int, String> categoryLabelsById,
+    required Map<int, String> governorateLabelsById,
+  }) {
     if (state.isLoading) {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -335,16 +405,24 @@ class _BeneficiariesListPageV2State
     }
 
     if (state.isEmpty) {
+      final hasSearchOrFilters = ref.read(filtersProvider).hasSearchInput || ref.read(filtersProvider).hasActiveFilters;
+
       return EmptyStateWidget(
         icon: Icons.people_outline,
-        title: 'لا يوجد مستفيدين',
-        message: 'ابدأ بإضافة مستفيد جديد',
+        title: hasSearchOrFilters ? 'لا توجد نتائج مطابقة' : 'لا يوجد مستفيدين',
+        message: hasSearchOrFilters ? 'جرّب تعديل كلمات البحث أو إزالة بعض الفلاتر' : 'ابدأ بإضافة مستفيد جديد',
         action: ElevatedButton.icon(
           onPressed: () {
-            context.push('/beneficiaries/add');
+            if (hasSearchOrFilters) {
+              _searchController.clear();
+              ref.read(filtersProvider.notifier).clearFilters();
+              unawaited(ref.read(beneficiariesListProvider.notifier).refresh());
+              return;
+            }
+            unawaited(context.push('/beneficiaries/add'));
           },
-          icon: const Icon(Icons.add),
-          label: const Text('إضافة مستفيد'),
+          icon: Icon(hasSearchOrFilters ? Icons.filter_alt_off : Icons.add),
+          label: Text(hasSearchOrFilters ? 'مسح البحث والفلاتر' : 'إضافة مستفيد'),
         ),
       );
     }
@@ -358,8 +436,20 @@ class _BeneficiariesListPageV2State
         }
       },
       child: rv.isTablet
-          ? _buildGridView(state, selection, rv)
-          : _buildListView(state, selection, rv),
+          ? _buildGridView(
+              state,
+              selection,
+              rv,
+              categoryLabelsById: categoryLabelsById,
+              governorateLabelsById: governorateLabelsById,
+            )
+          : _buildListView(
+              state,
+              selection,
+              rv,
+              categoryLabelsById: categoryLabelsById,
+              governorateLabelsById: governorateLabelsById,
+            ),
     );
   }
 
@@ -367,8 +457,10 @@ class _BeneficiariesListPageV2State
   Widget _buildListView(
     BeneficiariesListState state,
     SelectionState selection,
-    ResponsiveValues rv,
-  ) {
+    ResponsiveValues rv, {
+    required Map<int, String> categoryLabelsById,
+    required Map<int, String> governorateLabelsById,
+  }) {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
@@ -401,7 +493,7 @@ class _BeneficiariesListPageV2State
                 HapticFeedback.lightImpact();
                 await context.push('/beneficiaries/${beneficiary.id}/edit');
                 if (mounted) {
-                  ref.read(beneficiariesListProvider.notifier).refresh();
+                  unawaited(ref.read(beneficiariesListProvider.notifier).refresh());
                 }
               },
               onSwipeLeft: () => _handleDelete(beneficiary.id),
@@ -409,6 +501,8 @@ class _BeneficiariesListPageV2State
                 beneficiary: beneficiary,
                 isSelectionMode: selection.isSelectionMode,
                 isSelected: isSelected,
+                categoryLabelsById: categoryLabelsById,
+                governorateLabelsById: governorateLabelsById,
                 onDelete: () => _handleDelete(beneficiary.id),
               ),
             ),
@@ -422,8 +516,10 @@ class _BeneficiariesListPageV2State
   Widget _buildGridView(
     BeneficiariesListState state,
     SelectionState selection,
-    ResponsiveValues rv,
-  ) {
+    ResponsiveValues rv, {
+    required Map<int, String> categoryLabelsById,
+    required Map<int, String> governorateLabelsById,
+  }) {
     return GridView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(20),
@@ -462,6 +558,8 @@ class _BeneficiariesListPageV2State
               beneficiary: beneficiary,
               isSelectionMode: selection.isSelectionMode,
               isSelected: isSelected,
+              categoryLabelsById: categoryLabelsById,
+              governorateLabelsById: governorateLabelsById,
               onDelete: () => _handleDelete(beneficiary.id),
             ),
           ),

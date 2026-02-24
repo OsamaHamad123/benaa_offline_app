@@ -5,8 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../../../../core/providers/providers.dart';
 import '../../../../../../../data/db/daos/sponsorships_dao.dart';
 
-final _beneficiarySponsorshipsProvider = StreamProvider.autoDispose
-    .family<List<SponsorshipWithAssociation>, int>((ref, beneficiaryId) {
+final _beneficiarySponsorshipsProvider =
+    StreamProvider.autoDispose.family<List<SponsorshipWithAssociation>, int>((ref, beneficiaryId) {
   final db = ref.watch(databaseProvider);
   return db.sponsorshipsDao.watchSponsorshipsForBeneficiary(beneficiaryId);
 });
@@ -21,10 +21,15 @@ class SponsorshipsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
     final state = ref.watch(_beneficiarySponsorshipsProvider(beneficiaryId));
 
     return Card(
       elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.r),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       child: Padding(
         padding: EdgeInsets.all(16.r),
         child: Column(
@@ -32,15 +37,11 @@ class SponsorshipsSection extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.handshake_outlined,
-                    size: 20.sp, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.handshake_outlined, size: 20.sp, color: Theme.of(context).colorScheme.primary),
                 SizedBox(width: 10.w),
                 Text(
                   'الكفالات',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -48,9 +49,26 @@ class SponsorshipsSection extends ConsumerWidget {
             state.when(
               data: (items) {
                 if (items.isEmpty) {
-                  return Text(
-                    'لا توجد كفالات لهذا المستفيد',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.handshake_outlined,
+                            size: 36.sp,
+                            color: colorScheme.outline,
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'لا توجد كفالات لهذا المستفيد',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 
@@ -73,8 +91,40 @@ class SponsorshipsSection extends ConsumerWidget {
                   }).toList(),
                 );
               },
-              loading: () => const LinearProgressIndicator(),
-              error: (e, _) => Text('فشل تحميل الكفالات: $e'),
+              loading: () => Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.h),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+              error: (e, _) => Padding(
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.error_outline, color: colorScheme.error, size: 20.sp),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            'فشل تحميل الكفالات: $e',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.error,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10.h),
+                    OutlinedButton.icon(
+                      onPressed: () => ref.invalidate(_beneficiarySponsorshipsProvider(beneficiaryId)),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('إعادة المحاولة'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -125,29 +175,25 @@ class _SponsorshipTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'رقم الملف: $fileNo',
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
+                    style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                   ),
                 ),
                 _StatusChip(status: status),
               ],
             ),
             SizedBox(height: 8.h),
-            Text('الجمعية: $associationName',
-                style: theme.textTheme.bodyMedium),
+            Text('الجمعية: $associationName', style: theme.textTheme.bodyMedium),
             SizedBox(height: 6.h),
             Text(
               'البداية: ${_fmtDate(startDate)} • النهاية: ${_fmtDate(endDate)}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
             if (amount != null || (currency != null && currency!.isNotEmpty))
               Padding(
                 padding: EdgeInsets.only(top: 6.h),
                 child: Text(
                   'القيمة: ${amount?.toStringAsFixed(2) ?? '-'} ${currency ?? ''}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
             if (notes != null && notes!.trim().isNotEmpty)
@@ -155,8 +201,7 @@ class _SponsorshipTile extends StatelessWidget {
                 padding: EdgeInsets.only(top: 6.h),
                 child: Text(
                   'ملاحظات: ${notes!.trim()}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ),
           ],

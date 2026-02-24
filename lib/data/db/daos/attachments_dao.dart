@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'dart:convert' show jsonEncode;
 import '../drift_database.dart';
 import '../tables/attachments_table.dart';
 
@@ -30,16 +31,46 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase> with _$AttachmentsDao
   }
 
   /// Delete attachment
-  Future<void> deleteAttachment(String id) async {
+  Future<void> deleteAttachment(String id, {bool trackSyncDelete = true}) async {
+    if (trackSyncDelete) {
+      final existing = await getAttachment(id);
+      if (existing != null) {
+        await db.syncDao.addTombstone(
+          entityType: 'attachments',
+          entityId: existing.id,
+          payload: jsonEncode({
+            'attachment_id': existing.id,
+            'beneficiary_id': existing.beneficiaryId,
+            'server_url': existing.serverUrl,
+          }),
+        );
+      }
+    }
+
     await (delete(attachments)..where((a) => a.id.equals(id))).go();
   }
 
   /// Delete all attachments for a beneficiary
-  Future<void> deleteBeneficiaryAttachments(String beneficiaryId) async {
-    await (delete(
-      attachments,
-    )..where((a) => a.beneficiaryId.equals(beneficiaryId)))
-        .go();
+  Future<void> deleteBeneficiaryAttachments(
+    String beneficiaryId, {
+    bool trackSyncDelete = true,
+  }) async {
+    if (trackSyncDelete) {
+      final existingRows = await getBeneficiaryAttachments(beneficiaryId);
+      for (final existing in existingRows) {
+        await db.syncDao.addTombstone(
+          entityType: 'attachments',
+          entityId: existing.id,
+          payload: jsonEncode({
+            'attachment_id': existing.id,
+            'beneficiary_id': existing.beneficiaryId,
+            'server_url': existing.serverUrl,
+          }),
+        );
+      }
+    }
+
+    await (delete(attachments)..where((a) => a.beneficiaryId.equals(beneficiaryId))).go();
   }
 
   /// Get attachment by ID

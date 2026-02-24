@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../../../domain/entities/beneficiary.dart';
 import 'form_controllers.dart';
@@ -21,7 +23,7 @@ class BeneficiaryFormDataHandler {
   }
 
   static BeneficiaryCategory _parseCategory(String? value) {
-    if (value == null || value.trim().isEmpty) return BeneficiaryCategory.poor;
+    if (value == null || value.trim().isEmpty) return BeneficiaryCategory.other;
     final normalized = value.trim();
 
     final code = int.tryParse(normalized);
@@ -32,7 +34,7 @@ class BeneficiaryFormDataHandler {
     return BeneficiaryCategory.values.firstWhere(
       (category) =>
           category.name == normalized || category.englishValue == normalized || category.arabicLabel == normalized,
-      orElse: () => BeneficiaryCategory.poor,
+      orElse: () => BeneficiaryCategory.other,
     );
   }
 
@@ -276,6 +278,16 @@ class BeneficiaryFormDataHandler {
     final requestStatus = _parseRequestStatus(controllers.selectedRequestStatus);
     final relationshipCode = int.tryParse(controllers.selectedRelationship ?? '');
     final sectionCode = int.tryParse(controllers.selectedSection ?? '');
+    final parsedSpecialNeedsCount = controllers.specialNeedsCountController.text.trim().isEmpty
+        ? null
+        : int.tryParse(controllers.specialNeedsCountController.text.trim());
+    final hasDisability = (parsedSpecialNeedsCount ?? 0) > 0 || controllers.hasDisability;
+    final mergedNotes = _mergeExtendedFieldMetadataIntoNotes(
+      baseNotes: controllers.notesController.text,
+      assistanceType: controllers.selectedAssistanceType,
+      disabilityType: controllers.selectedDisabilityType,
+      incomeSource: controllers.selectedIncomeSource,
+    );
 
     return Beneficiary(
       id: beneficiaryId ?? '',
@@ -300,9 +312,7 @@ class BeneficiaryFormDataHandler {
       altPhoneNumber:
           controllers.altPhoneController.text.trim().isEmpty ? null : controllers.altPhoneController.text.trim(),
       address: controllers.addressController.text.trim().isEmpty ? null : controllers.addressController.text.trim(),
-      district: controllers.neighborhoodController.text.trim().isEmpty
-          ? null
-          : controllers.neighborhoodController.text.trim(),
+      district: _normalizeCityText(controllers.selectedCity),
       governorate: controllers.selectedProvince,
       relationship: relationshipCode,
       sectionId: sectionCode,
@@ -319,10 +329,11 @@ class BeneficiaryFormDataHandler {
       requestStatus: requestStatus,
       housingStatus: housingStatus,
       housingType: housingType,
-      hasDisability: controllers.hasDisability,
+      hasDisability: hasDisability,
       chronicDiseasesCount: controllers.chronicDiseasesController.text.trim().isEmpty
           ? null
           : int.tryParse(controllers.chronicDiseasesController.text.trim()),
+      specialNeedsCount: parsedSpecialNeedsCount,
       familySize: controllers.numberOfDependentsController.text.trim().isEmpty
           ? null
           : int.tryParse(controllers.numberOfDependentsController.text.trim()),
@@ -332,9 +343,65 @@ class BeneficiaryFormDataHandler {
       numberOfFemales: controllers.numberOfFemalesController.text.trim().isEmpty
           ? null
           : int.tryParse(controllers.numberOfFemalesController.text.trim()),
-      notes: controllers.notesController.text.trim().isEmpty ? null : controllers.notesController.text.trim(),
+      notes: mergedNotes,
+      createdByUser: controllers.createdByUserController.text.trim().isEmpty
+          ? null
+          : controllers.createdByUserController.text.trim(),
       createdAt: createdAt,
       updatedAt: now,
     );
+  }
+
+  static String? _mergeExtendedFieldMetadataIntoNotes({
+    required String? baseNotes,
+    required String? assistanceType,
+    required String? disabilityType,
+    required String? incomeSource,
+  }) {
+    final notes = baseNotes?.trim() ?? '';
+    final existingPayload = _extractMetadataPayload(notes);
+
+    final payload = <String, String>{
+      ...existingPayload,
+      if (assistanceType?.trim().isNotEmpty == true) 'assistanceType': assistanceType!.trim(),
+      if (disabilityType?.trim().isNotEmpty == true) 'disabilityType': disabilityType!.trim(),
+      if (incomeSource?.trim().isNotEmpty == true) 'incomeSource': incomeSource!.trim(),
+    };
+
+    if (payload.isEmpty) {
+      return notes.isEmpty ? null : notes;
+    }
+
+    final cleanNotes = _removeMetadataSuffix(notes).trimRight();
+    final metadata = '\n\n#meta:${jsonEncode(payload)}';
+    final merged = '$cleanNotes$metadata'.trim();
+    return merged.isEmpty ? null : merged;
+  }
+
+  static Map<String, String> _extractMetadataPayload(String notes) {
+    final markerIndex = notes.lastIndexOf('\n\n#meta:');
+    if (markerIndex == -1) return const <String, String>{};
+    final raw = notes.substring(markerIndex + '\n\n#meta:'.length).trim();
+    if (raw.isEmpty) return const <String, String>{};
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return const <String, String>{};
+      return decoded.map((key, value) => MapEntry(key.toString(), value.toString()));
+    } catch (_) {
+      return const <String, String>{};
+    }
+  }
+
+  static String _removeMetadataSuffix(String notes) {
+    final markerIndex = notes.lastIndexOf('\n\n#meta:');
+    if (markerIndex == -1) return notes;
+    return notes.substring(0, markerIndex);
+  }
+
+  static String? _normalizeCityText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed.replaceAll(RegExp(r'\s+'), ' ');
   }
 }

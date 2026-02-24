@@ -102,6 +102,12 @@ class ProfessionalSponsorshipCard extends ConsumerWidget {
                     showLegacyBadge: showLegacyTypeBadge,
                   ),
 
+                  _SponsorshipTimeline(
+                    startDate: s.startDate,
+                    endDate: s.endDate,
+                    status: s.status,
+                  ),
+
                   // Action Buttons
                   CardActionButtons(
                     onEdit: onEdit,
@@ -122,6 +128,63 @@ class ProfessionalSponsorshipCard extends ConsumerWidget {
             endDate: s.endDate,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SponsorshipTimeline extends StatelessWidget {
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String status;
+
+  const _SponsorshipTimeline({
+    required this.startDate,
+    required this.endDate,
+    required this.status,
+  });
+
+  String _fmt(DateTime? value) {
+    if (value == null) return '-';
+    return '${value.year}/${value.month.toString().padLeft(2, '0')}/${value.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusColor = switch (status) {
+      'active' => Colors.green,
+      'paused' => Colors.orange,
+      'ended' => theme.colorScheme.error,
+      _ => theme.colorScheme.primary,
+    };
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 8.h),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.45),
+          borderRadius: BorderRadius.circular(10.r),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.play_circle_outline, size: 16.sp, color: theme.colorScheme.primary),
+            SizedBox(width: 6.w),
+            Text('بدء: ${_fmt(startDate)}', style: theme.textTheme.labelSmall),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Container(
+                height: 2,
+                color: theme.colorScheme.outlineVariant,
+              ),
+            ),
+            SizedBox(width: 10.w),
+            Icon(Icons.flag_outlined, size: 16.sp, color: statusColor),
+            SizedBox(width: 6.w),
+            Text('نهاية: ${_fmt(endDate)}', style: theme.textTheme.labelSmall),
+          ],
+        ),
       ),
     );
   }

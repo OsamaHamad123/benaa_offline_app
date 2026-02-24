@@ -8,17 +8,33 @@ class FileSizeValidator {
 
   /// التحقق من حجم ملف واحد
   static FileSizeValidationResult validateFile(File file) {
-    final fileSize = file.lengthSync();
+    try {
+      if (!file.existsSync()) {
+        return FileSizeValidationResult(
+          isValid: false,
+          fileSizeInBytes: 0,
+          errorMessage: 'ملف غير متاح',
+        );
+      }
 
-    if (fileSize > maxFileSizeInBytes) {
+      final fileSize = file.lengthSync();
+
+      if (fileSize > maxFileSizeInBytes) {
+        return FileSizeValidationResult(
+          isValid: false,
+          fileSizeInBytes: fileSize,
+          errorMessage: 'حجم الملف يتجاوز الحد الأقصى (10 ميجابايت)',
+        );
+      }
+
+      return FileSizeValidationResult(isValid: true, fileSizeInBytes: fileSize);
+    } catch (_) {
       return FileSizeValidationResult(
         isValid: false,
-        fileSizeInBytes: fileSize,
-        errorMessage: 'حجم الملف يتجاوز الحد الأقصى (10 ميجابايت)',
+        fileSizeInBytes: 0,
+        errorMessage: 'تعذر قراءة الملف',
       );
     }
-
-    return FileSizeValidationResult(isValid: true, fileSizeInBytes: fileSize);
   }
 
   /// التحقق من حجم مجموعة ملفات
@@ -79,8 +95,7 @@ class MultiFileSizeValidationResult {
     required this.totalSizeInBytes,
   });
 
-  String get formattedTotalSize =>
-      FileSizeValidator.formatFileSize(totalSizeInBytes);
+  String get formattedTotalSize => FileSizeValidator.formatFileSize(totalSizeInBytes);
 }
 
 /// 🕐 Debounced Validator

@@ -1,5 +1,6 @@
 import '../../../../domain/entities/beneficiary.dart';
 import '../../v2_form_helpers/form_controllers.dart';
+import '../../v2_form_helpers/form_data_handler.dart';
 
 /// 🎯 Form Data Mapper - Maps between UI controllers and domain entities
 /// Updated to match actual Beneficiary entity structure
@@ -10,95 +11,20 @@ class BeneficiaryFormMapper {
     String? beneficiaryId,
     String? createdByUser,
   }) {
-    // بناء الاسم الكامل من الحقول الفردية
-    final fullName = [
-      controllers.firstNameController.text.trim(),
-      controllers.fatherNameController.text.trim(),
-      controllers.grandfatherNameController.text.trim(),
-      controllers.lastNameController.text.trim(),
-    ].where((s) => s.isNotEmpty).join(' ');
+    final creator = createdByUser?.trim();
+    if ((controllers.createdByUserController.text.trim().isEmpty) && (creator?.isNotEmpty == true)) {
+      controllers.createdByUserController.text = creator!;
+    }
 
-    return Beneficiary(
-      id: beneficiaryId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      fullName: fullName,
-      nationalId: controllers.nationalIdController.text.trim(),
+    final fileNo = controllers.fileNumberController.text.trim().isNotEmpty
+        ? controllers.fileNumberController.text.trim()
+        : 'F-${DateTime.now().millisecondsSinceEpoch}';
 
-      // Parse Gender from string to enum
-      gender: _parseGender(controllers.selectedGender),
-
-      // Parse Category from string to enum
-      category: _parseCategory(controllers.selectedCategory),
-
-      // Parse birth date string to DateTime
-      birthDate: _parseDateString(controllers.birthDateController.text),
-
-      // Family Info
-      motherName:
-          controllers.motherNameController.text.trim().isNotEmpty ? controllers.motherNameController.text.trim() : null,
-      fatherName:
-          controllers.fatherNameController.text.trim().isNotEmpty ? controllers.fatherNameController.text.trim() : null,
-      grandFatherName: controllers.grandfatherNameController.text.trim().isNotEmpty
-          ? controllers.grandfatherNameController.text.trim()
-          : null,
-      familyName:
-          controllers.lastNameController.text.trim().isNotEmpty ? controllers.lastNameController.text.trim() : null,
-
-      // Parse relationship from string to int
-      relationship: _parseRelationship(controllers.selectedRelationship),
-
-      // Parse section from string to int
-      sectionId: _parseSection(controllers.selectedSection),
-
-      // Contact Info
-      phoneNumber: controllers.phoneController.text.trim().isNotEmpty ? controllers.phoneController.text.trim() : null,
-      altPhoneNumber:
-          controllers.altPhoneController.text.trim().isNotEmpty ? controllers.altPhoneController.text.trim() : null,
-
-      // Parse governorate and district from string to int (if stored as codes)
-      governorate: controllers.selectedProvince,
-      district: controllers.selectedCity,
-
-      address: controllers.addressController.text.trim().isNotEmpty ? controllers.addressController.text.trim() : null,
-      currentAddress:
-          controllers.addressController.text.trim().isNotEmpty ? controllers.addressController.text.trim() : null,
-      addressBeforeDisplacement: controllers.addressBeforeDisplacementController.text.trim().isNotEmpty
-          ? controllers.addressBeforeDisplacementController.text.trim()
-          : null,
-
-      // Additional Info
-      fileNo: controllers.fileNumberController.text.trim().isNotEmpty
-          ? controllers.fileNumberController.text.trim()
-          : null, // 🆕 NEW
-
-      // Parse enums
-      maritalStatus: _parseMaritalStatus(controllers.selectedMaritalStatus),
-      educationLevel: _parseEducationLevel(controllers.selectedEducationLevel),
-      healthStatus: _parseHealthStatus(controllers.selectedHealthStatus) ?? HealthStatus.good,
-      hasDisability: controllers.hasDisability,
-
-      // Family Details
-      familySize: _parseInt(controllers.numberOfDependentsController.text),
-      numberOfMales: _parseInt(controllers.numberOfMalesController.text),
-      numberOfFemales: _parseInt(controllers.numberOfFemalesController.text),
-      chronicDiseasesCount: _parseInt(controllers.chronicDiseasesController.text),
-      specialNeedsCount: _parseInt(controllers.specialNeedsCountController.text), // 🆕 NEW
-
-      // Status Fields
-      displacementStatus: _parseDisplacementStatus(controllers.selectedDisplacementStatus),
-      employmentStatus: _parseEmploymentStatus(controllers.selectedEmploymentStatus),
-      housingStatus: _parseHousingStatus(controllers.selectedHousingStatus),
-      housingType: _parseHousingType(controllers.selectedHousingType),
-      requestStatus: _parseRequestStatus(controllers.selectedRequestStatus), // 🆕 NEW
-
-      notes: controllers.notesController.text.trim().isNotEmpty ? controllers.notesController.text.trim() : null,
-
-      // System Fields
-      createdByUser: controllers.createdByUserController.text.trim().isNotEmpty
-          ? controllers.createdByUserController.text.trim()
-          : createdByUser, // Use parameter if field is empty
-      createdAt: beneficiaryId == null ? DateTime.now() : DateTime.now(),
-      updatedAt: DateTime.now(),
-      needsSync: true,
+    return BeneficiaryFormDataHandler.buildBeneficiary(
+      controllers: controllers,
+      beneficiaryId: beneficiaryId,
+      fileNo: fileNo,
+      createdAt: DateTime.now(),
     );
   }
 
@@ -141,7 +67,6 @@ class BeneficiaryFormMapper {
     controllers.selectedHousingStatus = beneficiary.housingStatus?.arabicLabel;
     controllers.selectedHousingType = beneficiary.housingType?.arabicLabel;
     controllers.selectedRequestStatus = beneficiary.requestStatus?.arabicLabel; // 🆕 NEW
-    controllers.hasDisability = beneficiary.hasDisability;
     controllers.specialNeedsCountController.text = beneficiary.specialNeedsCount?.toString() ?? ''; // 🆕 NEW
 
     // Convert relationship int to string representation
@@ -152,7 +77,7 @@ class BeneficiaryFormMapper {
 
     // Convert location codes to strings
     controllers.selectedProvince = beneficiary.governorate;
-    controllers.selectedCity = beneficiary.district;
+    controllers.selectedCity = _normalizeCityText(beneficiary.district);
 
     // Family counts
     if (beneficiary.numberOfMales != null) {
@@ -197,12 +122,12 @@ class BeneficiaryFormMapper {
       'healthStatus': controllers.selectedHealthStatus,
       'housingStatus': controllers.selectedHousingStatus,
       'housingType': controllers.selectedHousingType,
-      'hasDisability': controllers.hasDisability,
+      'specialNeedsCount': controllers.specialNeedsCountController.text,
       'relationship': controllers.selectedRelationship,
       'section': controllers.selectedSection,
       'createdByUser': controllers.createdByUserController.text, // 🆕 Created by user
       'province': controllers.selectedProvince,
-      'city': controllers.selectedCity,
+      'city': _normalizeCityText(controllers.selectedCity),
       'currentTab': currentTabIndex,
       'beneficiaryId': beneficiaryId,
     };
@@ -240,12 +165,18 @@ class BeneficiaryFormMapper {
     controllers.selectedHealthStatus = formData['healthStatus'];
     controllers.selectedHousingStatus = formData['housingStatus'];
     controllers.selectedHousingType = formData['housingType'];
-    controllers.hasDisability = formData['hasDisability'] ?? false;
+    final specialNeedsCountRaw = formData['specialNeedsCount']?.toString();
+    if (specialNeedsCountRaw != null && specialNeedsCountRaw.trim().isNotEmpty) {
+      controllers.specialNeedsCountController.text = specialNeedsCountRaw;
+    } else {
+      final legacyHasDisability = formData['hasDisability'] == true;
+      controllers.specialNeedsCountController.text = legacyHasDisability ? '1' : '';
+    }
     controllers.selectedRelationship = formData['relationship'];
     controllers.selectedSection = formData['section'];
     controllers.createdByUserController.text = formData['createdByUser'] ?? ''; // 🆕 Created by user
     controllers.selectedProvince = formData['province'];
-    controllers.selectedCity = formData['city'];
+    controllers.selectedCity = _normalizeCityText(formData['city']?.toString());
 
     // Notes
     controllers.notesController.text = formData['notes'] ?? '';
@@ -273,122 +204,13 @@ class BeneficiaryFormMapper {
     return filled;
   }
 
-  // ==================== Helper Methods ====================
-
-  static Gender _parseGender(String? value) {
-    if (value == null) return Gender.unknown;
-    return Gender.values.firstWhere(
-      (g) => g.arabicLabel == value,
-      orElse: () => Gender.unknown,
-    );
-  }
-
-  static BeneficiaryCategory _parseCategory(String? value) {
-    if (value == null) return BeneficiaryCategory.other;
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return BeneficiaryCategory.other;
-
-    final numericCode = int.tryParse(trimmed);
-    if (numericCode != null) {
-      return BeneficiaryCategory.fromCode(numericCode);
-    }
-
-    return BeneficiaryCategory.values.firstWhere(
-      (c) => c.arabicLabel == trimmed || c.englishValue == trimmed || c.name == trimmed,
-      orElse: () => BeneficiaryCategory.other,
-    );
-  }
-
-  static MaritalStatus? _parseMaritalStatus(String? value) {
-    if (value == null) return null;
-    return MaritalStatus.values.firstWhere(
-      (m) => m.arabicLabel == value,
-      orElse: () => MaritalStatus.single,
-    );
-  }
-
-  static EducationLevel? _parseEducationLevel(String? value) {
-    if (value == null) return null;
-    return EducationLevel.values.firstWhere(
-      (e) => e.arabicLabel == value,
-      orElse: () => EducationLevel.none,
-    );
-  }
-
-  static HealthStatus? _parseHealthStatus(String? value) {
-    if (value == null) return null;
-    return HealthStatus.values.firstWhere(
-      (h) => h.arabicLabel == value,
-      orElse: () => HealthStatus.good,
-    );
-  }
-
-  static DisplacementStatus? _parseDisplacementStatus(String? value) {
-    if (value == null) return null;
-    return DisplacementStatus.values.firstWhere(
-      (d) => d.arabicLabel == value,
-      orElse: () => DisplacementStatus.notDisplaced,
-    );
-  }
-
-  static EmploymentStatus? _parseEmploymentStatus(String? value) {
-    if (value == null) return null;
-    return EmploymentStatus.values.firstWhere(
-      (e) => e.arabicLabel == value,
-      orElse: () => EmploymentStatus.unemployed,
-    );
-  }
-
-  static HousingStatus? _parseHousingStatus(String? value) {
-    if (value == null) return null;
-    return HousingStatus.values.firstWhere(
-      (h) => h.arabicLabel == value,
-      orElse: () => HousingStatus.rented,
-    );
-  }
-
-  static HousingType? _parseHousingType(String? value) {
-    if (value == null) return null;
-    return HousingType.values.firstWhere(
-      (h) => h.arabicLabel == value,
-      orElse: () => HousingType.house,
-    );
-  }
-
-  static RequestStatus? _parseRequestStatus(String? value) {
-    if (value == null) return null;
-    return RequestStatus.values.firstWhere(
-      (r) => r.arabicLabel == value,
-      orElse: () => RequestStatus.pending,
-    );
-  }
-
-  static int? _parseRelationship(String? value) {
-    if (value == null || value.isEmpty) return null;
-    return int.tryParse(value);
-  }
-
-  static int? _parseSection(String? value) {
-    if (value == null || value.isEmpty) return null;
-    return int.tryParse(value);
-  }
-
-  static DateTime? _parseDateString(String dateStr) {
-    if (dateStr.isEmpty) return null;
-    try {
-      // محاولة parse من تنسيقات مختلفة
-      return DateTime.parse(dateStr);
-    } catch (e) {
-      return null;
-    }
-  }
-
   static String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  static int? _parseInt(String value) {
-    if (value.isEmpty) return null;
-    return int.tryParse(value);
+  static String? _normalizeCityText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed.replaceAll(RegExp(r'\s+'), ' ');
   }
 }

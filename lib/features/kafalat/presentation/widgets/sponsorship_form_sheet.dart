@@ -407,6 +407,7 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                         labelText: 'مدة الكفالة بالأشهر',
                         border: OutlineInputBorder(),
                       ),
+                      validator: (value) => _validatePositiveInt(value, fieldName: 'مدة الكفالة'),
                     ),
                     SizedBox(height: 12.h),
                     _DateField(
@@ -486,6 +487,7 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                         labelText: 'القيمة',
                         border: OutlineInputBorder(),
                       ),
+                      validator: (value) => _validatePositiveDouble(value, fieldName: 'القيمة'),
                     ),
                     SizedBox(height: 12.h),
                     DropdownButtonFormField<String>(
@@ -716,8 +718,48 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
         .toList();
   }
 
+  String? _validatePositiveInt(String? value, {required String fieldName}) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return null;
+    final parsed = int.tryParse(text);
+    if (parsed == null || parsed <= 0) {
+      return '$fieldName يجب أن يكون رقمًا صحيحًا أكبر من صفر';
+    }
+    return null;
+  }
+
+  String? _validatePositiveDouble(String? value, {required String fieldName}) {
+    final text = (value ?? '').trim();
+    if (text.isEmpty) return null;
+    final parsed = double.tryParse(text);
+    if (parsed == null || parsed <= 0) {
+      return '$fieldName يجب أن يكون رقمًا أكبر من صفر';
+    }
+    return null;
+  }
+
+  bool _validateBusinessRules(BuildContext context) {
+    if (_startDate != null && _endDate != null && _endDate!.isBefore(_startDate!)) {
+      EnhancedSnackbar.showError(context, message: 'تاريخ النهاية يجب أن يكون بعد تاريخ البداية');
+      return false;
+    }
+
+    if (_status == 'ended' && _endDate == null) {
+      EnhancedSnackbar.showError(context, message: 'عند اختيار حالة منتهية يجب تحديد تاريخ النهاية');
+      return false;
+    }
+
+    if (_amountController.text.trim().isNotEmpty && (_currency == null || _currency!.isEmpty)) {
+      EnhancedSnackbar.showError(context, message: 'يرجى اختيار العملة عند إدخال قيمة الكفالة');
+      return false;
+    }
+
+    return true;
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_validateBusinessRules(context)) return;
 
     setState(() => _saving = true);
     try {

@@ -37,7 +37,7 @@ class BeneficiariesListState {
     bool? hasMore,
     int? currentPage,
     int? pageSize,
-    String? error,
+    Object? error = _unset,
     int? totalCount,
     int? pendingSyncCount,
   }) {
@@ -48,7 +48,7 @@ class BeneficiariesListState {
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
-      error: error ?? this.error,
+      error: identical(error, _unset) ? this.error : error as String?,
       totalCount: totalCount ?? this.totalCount,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
     );
@@ -58,9 +58,14 @@ class BeneficiariesListState {
 /// 🔍 Filters State - حالة الفلاتر
 class FiltersState {
   final String searchQuery;
+  final String nationalIdQuery;
+  final String fileNumberQuery;
+  final String phoneQuery;
   final int? categoryId; // null = الكل
   final int? governorateId; // null = الكل
   final int? cityId; // null = الكل
+  final int? gender;
+  final int? maritalStatus;
   final SortBy sortBy;
   final bool sortAscending;
   final DateTime? dateFrom;
@@ -73,9 +78,14 @@ class FiltersState {
 
   const FiltersState({
     this.searchQuery = '',
+    this.nationalIdQuery = '',
+    this.fileNumberQuery = '',
+    this.phoneQuery = '',
     this.categoryId,
     this.governorateId,
     this.cityId,
+    this.gender,
+    this.maritalStatus,
     this.sortBy = SortBy.name,
     this.sortAscending = true,
     this.dateFrom,
@@ -93,6 +103,8 @@ class FiltersState {
     if (categoryId != null) count++;
     if (governorateId != null) count++;
     if (cityId != null) count++;
+    if (gender != null) count++;
+    if (maritalStatus != null) count++;
     if (dateFrom != null || dateTo != null) count++;
     if (ageFrom != null || ageTo != null) count++;
     if (onlyPendingSync) count++;
@@ -101,18 +113,29 @@ class FiltersState {
     return count;
   }
 
+  bool get hasSearchInput =>
+      searchQuery.trim().isNotEmpty ||
+      nationalIdQuery.trim().isNotEmpty ||
+      fileNumberQuery.trim().isNotEmpty ||
+      phoneQuery.trim().isNotEmpty;
+
   /// هل يوجد فلاتر نشطة؟
   bool get hasActiveFilters => activeFiltersCount > 0;
 
   /// مفتاح الـ cache
   String get cacheKey =>
-      '$searchQuery|$categoryId|$governorateId|$cityId|$sortBy|$sortAscending|$dateFrom|$dateTo|$ageFrom|$ageTo|$onlyPendingSync|$onlyWithPhone|$onlyWithLocation';
+      '$searchQuery|$nationalIdQuery|$fileNumberQuery|$phoneQuery|$categoryId|$governorateId|$cityId|$gender|$maritalStatus|$sortBy|$sortAscending|$dateFrom|$dateTo|$ageFrom|$ageTo|$onlyPendingSync|$onlyWithPhone|$onlyWithLocation';
 
   FiltersState copyWith({
     String? searchQuery,
+    String? nationalIdQuery,
+    String? fileNumberQuery,
+    String? phoneQuery,
     Object? categoryId = _unset,
     Object? governorateId = _unset,
     Object? cityId = _unset,
+    Object? gender = _unset,
+    Object? maritalStatus = _unset,
     SortBy? sortBy,
     bool? sortAscending,
     Object? dateFrom = _unset,
@@ -125,28 +148,23 @@ class FiltersState {
   }) {
     return FiltersState(
       searchQuery: searchQuery ?? this.searchQuery,
-      categoryId:
-          identical(categoryId, _unset) ? this.categoryId : categoryId as int?,
-      governorateId: identical(governorateId, _unset)
-          ? this.governorateId
-          : governorateId as int?,
+      nationalIdQuery: nationalIdQuery ?? this.nationalIdQuery,
+      fileNumberQuery: fileNumberQuery ?? this.fileNumberQuery,
+      phoneQuery: phoneQuery ?? this.phoneQuery,
+      categoryId: identical(categoryId, _unset) ? this.categoryId : categoryId as int?,
+      governorateId: identical(governorateId, _unset) ? this.governorateId : governorateId as int?,
       cityId: identical(cityId, _unset) ? this.cityId : cityId as int?,
+      gender: identical(gender, _unset) ? this.gender : gender as int?,
+      maritalStatus: identical(maritalStatus, _unset) ? this.maritalStatus : maritalStatus as int?,
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
-      dateFrom:
-          identical(dateFrom, _unset) ? this.dateFrom : dateFrom as DateTime?,
+      dateFrom: identical(dateFrom, _unset) ? this.dateFrom : dateFrom as DateTime?,
       dateTo: identical(dateTo, _unset) ? this.dateTo : dateTo as DateTime?,
       ageFrom: identical(ageFrom, _unset) ? this.ageFrom : ageFrom as int?,
       ageTo: identical(ageTo, _unset) ? this.ageTo : ageTo as int?,
-      onlyPendingSync: identical(onlyPendingSync, _unset)
-          ? this.onlyPendingSync
-          : onlyPendingSync as bool,
-      onlyWithPhone: identical(onlyWithPhone, _unset)
-          ? this.onlyWithPhone
-          : onlyWithPhone as bool,
-      onlyWithLocation: identical(onlyWithLocation, _unset)
-          ? this.onlyWithLocation
-          : onlyWithLocation as bool,
+      onlyPendingSync: identical(onlyPendingSync, _unset) ? this.onlyPendingSync : onlyPendingSync as bool,
+      onlyWithPhone: identical(onlyWithPhone, _unset) ? this.onlyWithPhone : onlyWithPhone as bool,
+      onlyWithLocation: identical(onlyWithLocation, _unset) ? this.onlyWithLocation : onlyWithLocation as bool,
     );
   }
 }
@@ -167,8 +185,7 @@ class SelectionState {
   int get selectedCount => selectedIds.length;
 
   /// هل محدد الكل؟
-  bool isAllSelected(int totalCount) =>
-      selectedIds.isNotEmpty && selectedIds.length == totalCount;
+  bool isAllSelected(int totalCount) => selectedIds.isNotEmpty && selectedIds.length == totalCount;
 
   /// هل هذا العنصر محدد؟
   bool isSelected(int id) => selectedIds.contains(id);

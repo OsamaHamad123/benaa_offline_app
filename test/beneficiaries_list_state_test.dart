@@ -27,6 +27,13 @@ void main() {
       expect(updated.totalCount, 100);
       expect(updated.currentPage, 0); // unchanged
     });
+
+    test('copyWith can clear existing error explicitly', () {
+      const state = BeneficiariesListState(error: 'boom');
+      final updated = state.copyWith(error: null);
+
+      expect(updated.error, isNull);
+    });
   });
 
   group('FiltersState Tests', () {
@@ -47,11 +54,34 @@ void main() {
       expect(filters.hasActiveFilters, true);
     });
 
+    test('activeFiltersCount includes gender and marital status', () {
+      const filters = FiltersState(
+        gender: 1,
+        maritalStatus: 2,
+      );
+
+      expect(filters.activeFiltersCount, 2);
+      expect(filters.hasActiveFilters, true);
+    });
+
+    test('activeFiltersCount includes onlyWithLocation', () {
+      const filters = FiltersState(onlyWithLocation: true);
+
+      expect(filters.activeFiltersCount, 1);
+      expect(filters.hasActiveFilters, true);
+    });
+
     test('cacheKey changes when filters change', () {
       const filters1 = FiltersState();
       const filters2 = FiltersState(categoryId: 1);
 
       expect(filters1.cacheKey, isNot(equals(filters2.cacheKey)));
+    });
+
+    test('hasSearchInput returns true for advanced search fields', () {
+      const filters = FiltersState(phoneQuery: '0790');
+
+      expect(filters.hasSearchInput, true);
     });
 
     test('copyWith updates filters', () {

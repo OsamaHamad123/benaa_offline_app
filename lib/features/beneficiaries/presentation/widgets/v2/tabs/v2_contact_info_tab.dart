@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/v2_custom_text_field.dart';
-import '../components/v2_dropdown_field.dart';
 import '../components/v2_section_card.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart'; // 📱
 import '../../../../../../core/validation/field_validators.dart'; // 📋
@@ -22,7 +21,14 @@ class V2ContactInfoTab extends StatelessWidget {
   final TextEditingController? addressBeforeDisplacementController;
 
   const V2ContactInfoTab({
-    required this.phoneController, required this.altPhoneController, required this.addressController, required this.neighborhoodController, required this.onCityChanged, required this.onProvinceChanged, required this.onDisplacementStatusChanged, super.key,
+    required this.phoneController,
+    required this.altPhoneController,
+    required this.addressController,
+    required this.neighborhoodController,
+    required this.onCityChanged,
+    required this.onProvinceChanged,
+    required this.onDisplacementStatusChanged,
+    super.key,
     this.selectedCity,
     this.selectedProvince,
     this.selectedDisplacementStatus,
@@ -77,26 +83,20 @@ class V2ContactInfoTab extends StatelessWidget {
                   prefixIcon: Icons.map_rounded,
                   onCodeChanged: onProvinceChanged,
                 ),
-                V2DropdownField<String>(
-                  value: selectedCity,
-                  label: 'المدينة',
-                  prefixIcon: Icons.location_city_rounded,
-                  onChanged: onCityChanged,
-                  hint: 'اختر المدينة',
-                  items: const [
-                    DropdownMenuItem(
-                      value: 'damascus_city',
-                      child: Text('دمشق'),
+                TextFormField(
+                  initialValue: selectedCity,
+                  onChanged: (value) {
+                    final normalized = value.trim();
+                    onCityChanged(normalized.isEmpty ? null : normalized);
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'المدينة',
+                    prefixIcon: const Icon(Icons.location_city_rounded),
+                    hintText: 'أدخل المدينة',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    DropdownMenuItem(value: 'aleppo_city', child: Text('حلب')),
-                    DropdownMenuItem(value: 'homs_city', child: Text('حمص')),
-                    DropdownMenuItem(value: 'hama_city', child: Text('حماة')),
-                    DropdownMenuItem(
-                      value: 'latakia_city',
-                      child: Text('اللاذقية'),
-                    ),
-                    DropdownMenuItem(value: 'other', child: Text('أخرى')),
-                  ],
+                  ),
                 ),
                 V2CustomTextField(
                   controller: neighborhoodController,

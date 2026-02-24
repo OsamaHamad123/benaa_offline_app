@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'dart:convert';
 import '../drift_database.dart';
 import '../tables/associations_table.dart';
 
@@ -8,8 +9,7 @@ part 'associations_dao.g.dart';
 ///
 /// يحتوي على جميع عمليات CRUD والاستعلامات الخاصة بالجمعيات ومندوبيهم
 @DriftAccessor(tables: [Associations, AssociationRepresentatives])
-class AssociationsDao extends DatabaseAccessor<AppDatabase>
-    with _$AssociationsDaoMixin {
+class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsDaoMixin {
   AssociationsDao(super.db);
 
   // ============================================================================
@@ -26,15 +26,17 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
 
   /// الحصول على جميع الجمعيات (نشطة + معطلة)
   Future<List<Association>> getAllAssociations() async {
-    return await (select(associations)
-          ..orderBy([(a) => OrderingTerm.asc(a.name)]))
-        .get();
+    return await (select(associations)..orderBy([(a) => OrderingTerm.asc(a.name)])).get();
   }
 
   /// الحصول على جمعية بواسطة ID
   Future<Association?> getAssociationById(String id) async {
-    return await (select(associations)..where((a) => a.id.equals(id)))
-        .getSingleOrNull();
+    return await (select(associations)..where((a) => a.id.equals(id))).getSingleOrNull();
+  }
+
+  /// الحصول على جمعية بواسطة serverId
+  Future<Association?> getAssociationByServerId(int serverId) async {
+    return await (select(associations)..where((a) => a.serverId.equals(serverId))).getSingleOrNull();
   }
 
   /// البحث عن جمعيات بواسطة الاسم
@@ -42,9 +44,7 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
     final normalized = query.trim().toLowerCase();
     return await (select(associations)
           ..where(
-            (a) =>
-                a.name.lower().like('%$normalized%') |
-                a.shortName.lower().like('%$normalized%'),
+            (a) => a.name.lower().like('%$normalized%') | a.shortName.lower().like('%$normalized%'),
           )
           ..orderBy([(a) => OrderingTerm.asc(a.name)]))
         .get();
@@ -57,10 +57,7 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
 
   /// تحديث بيانات جمعية
   Future<bool> updateAssociation(AssociationsCompanion association) async {
-    return await (update(associations)
-              ..where((a) => a.id.equals(association.id.value)))
-            .write(association) >
-        0;
+    return await (update(associations)..where((a) => a.id.equals(association.id.value))).write(association) > 0;
   }
 
   /// حذف جمعية (Soft Delete - تعطيل فقط)
@@ -74,7 +71,22 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// حذف جمعية نهائياً (Hard Delete - استخدام حذر!)
-  Future<int> deleteAssociation(String id) async {
+  Future<int> deleteAssociation(String id, {bool trackSyncDelete = true}) async {
+    if (trackSyncDelete) {
+      final existing = await getAssociationById(id);
+      final serverId = existing?.serverId;
+      if (serverId != null) {
+        await db.syncDao.addTombstone(
+          entityType: 'associations_sponsors',
+          entityId: serverId.toString(),
+          payload: jsonEncode({
+            'server_id': serverId,
+            'local_id': id,
+          }),
+        );
+      }
+    }
+
     return await (delete(associations)..where((a) => a.id.equals(id))).go();
   }
 
@@ -89,9 +101,13 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
 
   /// الحصول على جمعيات تحتاج مزامنة
   Future<List<Association>> getAssociationsNeedingSync() async {
-    return await (select(associations)
-          ..where((a) => a.syncState.equals('pending')))
+    return await (select(associations)..where((a) => a.syncState.equals('pending') | a.syncState.equals('modified')))
         .get();
+  }
+
+  /// upsert جمعية حسب id المحلي
+  Future<void> upsertAssociation(AssociationsCompanion association) async {
+    await into(associations).insertOnConflictUpdate(association);
   }
 
   /// تحديث حالة المزامنة
@@ -109,22 +125,76 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// upsert backend-specific sponsor profile fields not represented in base associations table.
+  Future<void> upsertSponsorProfile({
+    required String associationId,
+    String? sponsorAddress,
+    String? countryCode,
+    String? countryName,
+    int? sponsorBankNameId,
+  }) async {
+    await customStatement(
+      '''
+      INSERT INTO associations_sponsor_profile (
+        association_id,
+        sponsor_address,
+        country_code,
+        country_name,
+        sponsor_bank_name_id,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(association_id) DO UPDATE SET
+        sponsor_address = excluded.sponsor_address,
+        country_code = excluded.country_code,
+        country_name = excluded.country_name,
+        sponsor_bank_name_id = excluded.sponsor_bank_name_id,
+        updated_at = excluded.updated_at
+      ''',
+      [
+        associationId,
+        sponsorAddress,
+        countryCode,
+        countryName,
+        sponsorBankNameId,
+        DateTime.now().toIso8601String(),
+      ],
+    );
+  }
+
+  Future<Map<String, dynamic>?> getSponsorProfileByAssociationId(
+    String associationId,
+  ) async {
+    final rows = await customSelect(
+      '''
+      SELECT association_id, sponsor_address, country_code, country_name, sponsor_bank_name_id, updated_at
+      FROM associations_sponsor_profile
+      WHERE association_id = ?
+      LIMIT 1
+      ''',
+      variables: [Variable.withString(associationId)],
+    ).get();
+
+    if (rows.isEmpty) return null;
+    return rows.first.data;
+  }
+
   // ============================================================================
   // REPRESENTATIVES OPERATIONS
   // ============================================================================
 
   /// الحصول على جميع المندوبين
   Future<List<Representative>> getAllRepresentatives() async {
-    return await (select(associationRepresentatives)
-          ..orderBy([(r) => OrderingTerm.asc(r.name)]))
-        .get();
+    return await (select(associationRepresentatives)..orderBy([(r) => OrderingTerm.asc(r.name)])).get();
   }
 
   /// الحصول على مندوب بواسطة ID
   Future<Representative?> getRepresentativeById(String id) async {
-    return await (select(associationRepresentatives)
-          ..where((r) => r.id.equals(id)))
-        .getSingleOrNull();
+    return await (select(associationRepresentatives)..where((r) => r.id.equals(id))).getSingleOrNull();
+  }
+
+  /// الحصول على مندوب بواسطة serverId
+  Future<Representative?> getRepresentativeByServerId(int serverId) async {
+    return await (select(associationRepresentatives)..where((r) => r.serverId.equals(serverId))).getSingleOrNull();
   }
 
   /// البحث عن مندوب بواسطة الاسم
@@ -143,28 +213,67 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
     await into(associationRepresentatives).insert(representative);
   }
 
+  /// upsert مندوب حسب id المحلي
+  Future<void> upsertRepresentative(
+    AssociationRepresentativesCompanion representative,
+  ) async {
+    await into(associationRepresentatives).insertOnConflictUpdate(representative);
+  }
+
   /// تحديث بيانات مندوب
-  Future<bool> updateRepresentative(
-      AssociationRepresentativesCompanion representative) async {
-    return await (update(associationRepresentatives)
-              ..where((r) => r.id.equals(representative.id.value)))
+  Future<bool> updateRepresentative(AssociationRepresentativesCompanion representative) async {
+    return await (update(associationRepresentatives)..where((r) => r.id.equals(representative.id.value)))
             .write(representative) >
         0;
   }
 
   /// حذف مندوب
-  Future<int> deleteRepresentative(String id) async {
-    return await (delete(associationRepresentatives)
-          ..where((r) => r.id.equals(id)))
-        .go();
+  Future<int> deleteRepresentative(String id, {bool trackSyncDelete = true}) async {
+    if (trackSyncDelete) {
+      final existing = await getRepresentativeById(id);
+      final serverId = existing?.serverId;
+      if (serverId != null) {
+        await db.syncDao.addTombstone(
+          entityType: 'associations_employees',
+          entityId: serverId.toString(),
+          payload: jsonEncode({
+            'server_id': serverId,
+            'local_id': id,
+          }),
+        );
+      }
+    }
+
+    return await (delete(associationRepresentatives)..where((r) => r.id.equals(id))).go();
   }
 
   /// عدد المندوبين
   Future<int> getRepresentativesCount() async {
-    final query = selectOnly(associationRepresentatives)
-      ..addColumns([associationRepresentatives.id.count()]);
+    final query = selectOnly(associationRepresentatives)..addColumns([associationRepresentatives.id.count()]);
     final result = await query.getSingle();
     return result.read(associationRepresentatives.id.count()) ?? 0;
+  }
+
+  /// الحصول على مندوبي الجمعيات الذين يحتاجون مزامنة
+  Future<List<Representative>> getRepresentativesNeedingSync() async {
+    return await (select(associationRepresentatives)
+          ..where((r) => r.syncState.equals('pending') | r.syncState.equals('modified')))
+        .get();
+  }
+
+  /// تحديث حالة مزامنة مندوب
+  Future<int> updateRepresentativeSyncState({
+    required String id,
+    required String syncState,
+    int? serverId,
+  }) async {
+    return await (update(associationRepresentatives)..where((r) => r.id.equals(id))).write(
+      AssociationRepresentativesCompanion(
+        syncState: Value(syncState),
+        serverId: serverId != null ? Value(serverId) : const Value.absent(),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   // ============================================================================
@@ -193,8 +302,7 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// الحصول على جميع الجمعيات مع معلومات المندوبين
-  Future<List<AssociationWithRepresentative>>
-      getAllAssociationsWithReps() async {
+  Future<List<AssociationWithRepresentative>> getAllAssociationsWithReps() async {
     final query = select(associations).join([
       leftOuterJoin(
         associationRepresentatives,

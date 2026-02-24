@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/draft_load_coordinator.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/form_controllers.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/form_constants.dart';
 
 void main() {
   group('DraftLoadCoordinator', () {
@@ -51,6 +52,36 @@ void main() {
         ),
         throwsFormatException,
       );
+    });
+
+    test('clamps current tab when draft tab index exceeds available tabs', () {
+      final result = coordinator.applyDraft(
+        controllers: controllers,
+        draft: {
+          'formData': {
+            'firstName': 'محمد',
+            'nationalId': '12345678901',
+          },
+          'currentTab': 999,
+        },
+      );
+
+      expect(result.currentTab, FormConstants.totalTabs - 1);
+    });
+
+    test('falls back to tab zero when currentTab is invalid text', () {
+      final result = coordinator.applyDraft(
+        controllers: controllers,
+        draft: {
+          'formData': {
+            'firstName': 'محمد',
+            'nationalId': '12345678901',
+          },
+          'currentTab': 'abc',
+        },
+      );
+
+      expect(result.currentTab, 0);
     });
   });
 }

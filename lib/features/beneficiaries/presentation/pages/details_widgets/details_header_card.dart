@@ -14,6 +14,7 @@ class DetailsHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final colorInfo = BeneficiaryDomainHelpers.getCategoryColorInfo(
       beneficiary.category,
     );
@@ -21,16 +22,16 @@ class DetailsHeaderCard extends StatelessWidget {
     final lightColor = Color(colorInfo.light);
 
     return Card(
-      elevation: 4,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20.r),
-        side: BorderSide(color: categoryColor.withAlpha(128), width: 2.w),
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20.r),
           gradient: LinearGradient(
-            colors: [lightColor, Colors.white],
+            colors: [lightColor, colorScheme.surface],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -66,7 +67,7 @@ class DetailsHeaderCard extends StatelessWidget {
               Text(
                 'رقم الملف: ${beneficiary.fileNo}',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w500,
                 ),
@@ -117,20 +118,16 @@ class DetailsHeaderCard extends StatelessWidget {
                   _QuickStat(
                     icon: Icons.cake_outlined,
                     label: BeneficiaryDomainHelpers.formatAge(beneficiary.age),
-                    color: Colors.orange,
+                    color: colorScheme.tertiary,
                   ),
                   SizedBox(width: 20.w),
                 ],
                 _QuickStat(
-                  icon: beneficiary.gender == Gender.male
-                      ? Icons.male
-                      : Icons.female,
+                  icon: beneficiary.gender == Gender.male ? Icons.male : Icons.female,
                   label: BeneficiaryDomainHelpers.getGenderLabel(
                     beneficiary.gender,
                   ),
-                  color: beneficiary.gender == Gender.male
-                      ? Colors.blue
-                      : Colors.pink,
+                  color: beneficiary.gender == Gender.male ? colorScheme.primary : colorScheme.secondary,
                 ),
               ],
             ),
@@ -189,16 +186,17 @@ class _SyncStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     Color color;
     IconData icon;
     String label;
 
     if (needsSync) {
-      color = Colors.orange;
+      color = colorScheme.tertiary;
       icon = Icons.sync_rounded;
       label = 'بانتظار المزامنة';
     } else {
-      color = Colors.green;
+      color = colorScheme.secondary;
       icon = Icons.check_circle_rounded;
       label = 'تمت المزامنة';
     }

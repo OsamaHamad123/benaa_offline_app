@@ -12,6 +12,7 @@ class AttachmentsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -19,7 +20,7 @@ class AttachmentsSection extends StatelessWidget {
           children: [
             Icon(
               Icons.attach_file_outlined,
-              color: Colors.blueGrey,
+              color: colorScheme.primary,
               size: 22.sp,
             ),
             SizedBox(width: 10.w),
@@ -27,16 +28,17 @@ class AttachmentsSection extends StatelessWidget {
               'المرفقات',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey,
+                    color: colorScheme.primary,
                   ),
             ),
           ],
         ),
         SizedBox(height: 12.h),
         Card(
-          elevation: 2,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
+            side: BorderSide(color: colorScheme.outlineVariant),
           ),
           child: Padding(
             padding: EdgeInsets.all(16.r),

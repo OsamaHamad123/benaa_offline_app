@@ -15,15 +15,29 @@ class Attachment {
   final bool needsSync;
   final String? serverUrl;
   final DateTime? lastSyncedAt;
+  final String? documentType;
+  final String? personType;
+  final String? personId;
+  final String? notes;
 
   const Attachment({
     required this.id,
     required this.beneficiaryId,
-    required this.fileName, required this.filePath, required this.type, required this.fileSize, required this.createdAt, required this.updatedAt, this.visitId,
+    required this.fileName,
+    required this.filePath,
+    required this.type,
+    required this.fileSize,
+    required this.createdAt,
+    required this.updatedAt,
+    this.visitId,
     this.thumbnailPath,
     this.needsSync = false,
     this.serverUrl,
     this.lastSyncedAt,
+    this.documentType,
+    this.personType,
+    this.personId,
+    this.notes,
   });
 
   /// حجم الملف بصيغة قابلة للقراءة
@@ -49,6 +63,21 @@ class Attachment {
 
   /// هل تم المزامنة؟
   bool get isSynced => !needsSync && serverUrl != null;
+
+  /// معرف المرفق على السيرفر (مشتق من المعرف المحلي الموحّد)
+  String? get serverAttachmentId {
+    const prefix = 'srv_att_';
+    if (id.startsWith(prefix) && id.length > prefix.length) {
+      final candidate = id.substring(prefix.length);
+      if (candidate.isNotEmpty && RegExp(r'^\d+$').hasMatch(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  /// رابط التحميل من السيرفر (حالياً مطابق serverUrl)
+  String? get downloadUrl => serverUrl;
 }
 
 /// أنواع المرفقات

@@ -9,11 +9,21 @@ class AttachmentModel extends domain.Attachment {
   const AttachmentModel({
     required super.id,
     required super.beneficiaryId,
-    required super.fileName, required super.filePath, required super.type, required super.fileSize, required super.createdAt, required super.updatedAt, super.visitId,
+    required super.fileName,
+    required super.filePath,
+    required super.type,
+    required super.fileSize,
+    required super.createdAt,
+    required super.updatedAt,
+    super.visitId,
     super.thumbnailPath,
     super.needsSync = false,
     super.serverUrl,
     super.lastSyncedAt,
+    super.documentType,
+    super.personType,
+    super.personId,
+    super.notes,
   });
 
   /// Create from Drift database row
@@ -32,6 +42,10 @@ class AttachmentModel extends domain.Attachment {
       needsSync: data.syncState == 'pending',
       serverUrl: data.serverUrl,
       lastSyncedAt: data.lastSyncedAt,
+      documentType: data.documentType,
+      personType: data.personType,
+      personId: data.personId,
+      notes: data.notes,
     );
   }
 
@@ -51,6 +65,10 @@ class AttachmentModel extends domain.Attachment {
       syncState: drift.Value(needsSync ? 'pending' : 'synced'),
       serverUrl: drift.Value(serverUrl),
       lastSyncedAt: drift.Value(lastSyncedAt),
+      documentType: drift.Value(documentType),
+      personType: drift.Value(personType),
+      personId: drift.Value(personId),
+      notes: drift.Value(notes),
     );
   }
 }

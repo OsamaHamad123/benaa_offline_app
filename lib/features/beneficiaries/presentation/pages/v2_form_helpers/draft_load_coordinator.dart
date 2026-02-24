@@ -1,4 +1,5 @@
 import 'form_controllers.dart';
+import 'form_constants.dart';
 
 class DraftLoadResult {
   final int currentTab;
@@ -82,7 +83,8 @@ class DraftLoadCoordinator {
     controllers.specialNeedsCountController.text = (formDataRaw['specialNeedsCount'] ?? '').toString();
 
     final rawTab = draft['currentTab'];
-    final currentTab = rawTab is int ? rawTab : int.tryParse(rawTab?.toString() ?? '') ?? 0;
+    final parsedTab = rawTab is int ? rawTab : int.tryParse(rawTab?.toString() ?? '') ?? 0;
+    final currentTab = parsedTab.clamp(0, FormConstants.totalTabs - 1);
 
     return DraftLoadResult(currentTab: currentTab);
   }

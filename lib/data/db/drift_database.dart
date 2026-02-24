@@ -71,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration {
@@ -79,6 +79,9 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (Migrator m) async {
         await m.createAll();
         await _createImportBatchesTable();
+        await _createFileIdReservationBatchesTable();
+        await _createSyncTombstonesTable();
+        await _createAssociationsSponsorProfileTable();
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
@@ -172,8 +175,51 @@ class AppDatabase extends _$AppDatabase {
           await customStatement("DELETE FROM sync_metadata_table WHERE entity = 'taxonomies';");
         }
 
+        if (from < 20) {
+          // v20: Add reservation-range table for central file-id batch tracking.
+          await _createFileIdReservationBatchesTable();
+        }
+
+        if (from < 21) {
+          // v21: Add delete-sync tombstones table for central sync delete tracking.
+          await _createSyncTombstonesTable();
+        }
+
+        if (from < 22) {
+          // v22: Add associations sponsor profile table for backend-specific sponsor fields.
+          await _createAssociationsSponsorProfileTable();
+        }
+
         await _createPerformanceIndexes();
       },
+    );
+  }
+
+  Future<void> _createFileIdReservationBatchesTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS file_id_reservation_batches (
+        reservation_id INTEGER PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        start_id INTEGER NOT NULL,
+        end_id INTEGER NOT NULL,
+        batch_size INTEGER NOT NULL,
+        used_count INTEGER NOT NULL DEFAULT 0,
+        remaining_count INTEGER NOT NULL DEFAULT 0,
+        next_available_id INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        expires_at TEXT,
+        created_at TEXT,
+        synced_at TEXT,
+        updated_at TEXT,
+        last_synced_used_count INTEGER NOT NULL DEFAULT 0
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_file_id_batches_status ON file_id_reservation_batches(status);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_file_id_batches_next ON file_id_reservation_batches(next_available_id);',
     );
   }
 
@@ -198,6 +244,47 @@ class AppDatabase extends _$AppDatabase {
 
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_import_batches_imported_at ON import_batches(imported_at DESC);',
+    );
+  }
+
+  Future<void> _createSyncTombstonesTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS sync_tombstones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        payload TEXT,
+        deleted_at TEXT NOT NULL,
+        sync_state TEXT NOT NULL DEFAULT 'pending',
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        last_synced_at TEXT
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sync_tombstones_pending ON sync_tombstones(sync_state, entity_type, deleted_at);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sync_tombstones_entity ON sync_tombstones(entity_type, entity_id);',
+    );
+  }
+
+  Future<void> _createAssociationsSponsorProfileTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS associations_sponsor_profile (
+        association_id TEXT PRIMARY KEY,
+        sponsor_address TEXT,
+        country_code TEXT,
+        country_name TEXT,
+        sponsor_bank_name_id INTEGER,
+        updated_at TEXT,
+        FOREIGN KEY(association_id) REFERENCES associations(id) ON DELETE CASCADE
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_assoc_sponsor_profile_country ON associations_sponsor_profile(country_code);',
     );
   }
 

@@ -15,11 +15,34 @@ import '../cards/professional_sponsorship_card.dart';
 import '../stats/stats_dashboard_widget.dart';
 import '../filters/quick_filters_bar.dart';
 import '../filters/enhanced_search_bar.dart';
+import '../filters/advanced_filters_sheet.dart';
 import '../filters/sorting_menu.dart';
 import '../actions/swipe_action_wrapper.dart';
 import '../animations/card_entrance_animation.dart';
 import '../empty_states/empty_states.dart';
 import '../loaders/sponsorship_card_shimmer.dart';
+
+class _SavedView {
+  final String name;
+  final String status;
+  final String type;
+  final String? associationId;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final double? minAmount;
+  final double? maxAmount;
+
+  const _SavedView({
+    required this.name,
+    required this.status,
+    required this.type,
+    required this.associationId,
+    this.startDate,
+    this.endDate,
+    this.minAmount,
+    this.maxAmount,
+  });
+}
 
 /// 📋 Tab "مكفول" - قائمة الكفالات
 class SponsoredTab extends ConsumerStatefulWidget {
@@ -29,7 +52,7 @@ class SponsoredTab extends ConsumerStatefulWidget {
   ConsumerState<SponsoredTab> createState() => _SponsoredTabState();
 }
 
-class _SponsoredTabState extends ConsumerState<SponsoredTab> {
+class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   static const Map<String, String> _typeFallbackLabels = {
     'monthly': 'شهرية',
@@ -46,11 +69,53 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
   String _status = 'all';
   String _type = 'all';
   String _query = '';
+  DateTime? _startDateFilter;
+  DateTime? _endDateFilter;
+  double? _minAmountFilter;
+  double? _maxAmountFilter;
   SortOption _sortOption = SortOption.dateNewest;
 
   // حالة إظهار الإحصائيات والفلاتر
   bool _showStats = false;
   bool _showFilters = false;
+  late final List<_SavedView> _savedViews;
+
+  @override
+  void initState() {
+    super.initState();
+    _savedViews = [
+      const _SavedView(
+        name: 'النشطة',
+        status: 'active',
+        type: 'all',
+        associationId: null,
+      ),
+      const _SavedView(
+        name: 'منتهية',
+        status: 'ended',
+        type: 'all',
+        associationId: null,
+      ),
+      const _SavedView(
+        name: 'شهرية',
+        status: 'all',
+        type: 'monthly',
+        associationId: null,
+      ),
+    ];
+  }
+
+  bool get _hasAdvancedFilters =>
+      _startDateFilter != null || _endDateFilter != null || _minAmountFilter != null || _maxAmountFilter != null;
+
+  int get _activeAdvancedFiltersCount {
+    var count = 0;
+    if (_startDateFilter != null) count++;
+    if (_endDateFilter != null) count++;
+    if (_minAmountFilter != null) count++;
+    if (_maxAmountFilter != null) count++;
+    return count;
+  }
 
   @override
   void dispose() {
@@ -68,11 +133,76 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
       _status = 'all';
       _type = 'all';
       _query = '';
+      _startDateFilter = null;
+      _endDateFilter = null;
+      _minAmountFilter = null;
+      _maxAmountFilter = null;
       _searchController.clear();
     });
   }
 
-  bool get _hasActiveFilters => _status != 'all' || _type != 'all' || _associationId != null || _query.isNotEmpty;
+  bool get _hasActiveFilters =>
+      _status != 'all' || _type != 'all' || _associationId != null || _query.isNotEmpty || _hasAdvancedFilters;
+
+  void _openAdvancedFilters(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AdvancedFiltersSheet(
+        startDate: _startDateFilter,
+        endDate: _endDateFilter,
+        minAmount: _minAmountFilter,
+        maxAmount: _maxAmountFilter,
+        onApplyFilters: ({startDate, endDate, minAmount, maxAmount}) {
+          if (!mounted) return;
+          setState(() {
+            _startDateFilter = startDate;
+            _endDateFilter = endDate;
+            _minAmountFilter = minAmount;
+            _maxAmountFilter = maxAmount;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم تطبيق الفلاتر المتقدمة')),
+          );
+        },
+      ),
+    );
+  }
+
+  void _applySavedView(_SavedView view) {
+    if (!mounted) return;
+    setState(() {
+      _status = view.status;
+      _type = view.type;
+      _associationId = view.associationId;
+      _startDateFilter = view.startDate;
+      _endDateFilter = view.endDate;
+      _minAmountFilter = view.minAmount;
+      _maxAmountFilter = view.maxAmount;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('تم تطبيق العرض المحفوظ: ${view.name}')),
+    );
+  }
+
+  void _saveCurrentView() {
+    final timestamp = DateTime.now();
+    final view = _SavedView(
+      name: 'عرض ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
+      status: _status,
+      type: _type,
+      associationId: _associationId,
+      startDate: _startDateFilter,
+      endDate: _endDateFilter,
+      minAmount: _minAmountFilter,
+      maxAmount: _maxAmountFilter,
+    );
+    setState(() => _savedViews.add(view));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حفظ العرض الحالي')),
+    );
+  }
 
   Future<void> _confirmDelete(BuildContext context, int fileNo) async {
     final ok = await showDialog<bool>(
@@ -144,8 +274,38 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
     return fallbackLabels.containsKey(code);
   }
 
+  List<SponsorshipWithDetails> _applyAdvancedFilters(List<SponsorshipWithDetails> rows) {
+    return rows.where((row) {
+      final startDate = row.sponsorship.startDate ?? row.sponsorship.createdAt;
+      if (_startDateFilter != null && startDate.isBefore(_startDateFilter!)) {
+        return false;
+      }
+      if (_endDateFilter != null && startDate.isAfter(_endDateFilter!)) {
+        return false;
+      }
+
+      final amount = row.sponsorship.amount;
+      if (_minAmountFilter != null) {
+        if (amount == null || amount < _minAmountFilter!) {
+          return false;
+        }
+      }
+      if (_maxAmountFilter != null) {
+        if (amount == null || amount > _maxAmountFilter!) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList(growable: false);
+  }
+
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final theme = Theme.of(context);
     final sponsorshipTypeTaxonomies = ref
         .watch(
@@ -391,12 +551,105 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
                 ),
               ),
               SizedBox(width: 12.w),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: () => _openAdvancedFilters(context),
+                    tooltip: 'فلاتر متقدمة',
+                    icon: Icon(
+                      Icons.tune_rounded,
+                      color: _hasAdvancedFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (_activeAdvancedFiltersCount > 0)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        padding: EdgeInsets.all(4.r),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$_activeAdvancedFiltersCount',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(width: 4.w),
+              PopupMenuButton<_SavedView?>(
+                tooltip: 'العروض المحفوظة',
+                icon: Icon(
+                  Icons.bookmark_outline,
+                  color: _savedViews.length > 3 ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                ),
+                onSelected: (view) {
+                  if (view == null) {
+                    _saveCurrentView();
+                    return;
+                  }
+                  _applySavedView(view);
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem<_SavedView?>(
+                    value: null,
+                    child: Row(
+                      children: [
+                        Icon(Icons.add_circle_outline),
+                        SizedBox(width: 8),
+                        Text('حفظ العرض الحالي'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  ..._savedViews.map(
+                    (view) => PopupMenuItem<_SavedView?>(
+                      value: view,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.bookmark_border),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(view.name)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(width: 4.w),
               SortingMenu(
                 currentSort: _sortOption,
                 onSortChanged: (v) => setState(() => _sortOption = v),
               ),
             ],
           ),
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: !_hasActiveFilters
+              ? const SizedBox.shrink()
+              : Container(
+                  key: ValueKey<String>('active_filters_${_status}_${_type}_${_query.isNotEmpty}'),
+                  margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+                  child: Wrap(
+                    spacing: 8.w,
+                    runSpacing: 6.h,
+                    children: [
+                      if (_status != 'all') _ActiveChip(label: 'الحالة: ${resolveStatusLabel(_status)}'),
+                      if (_type != 'all') _ActiveChip(label: 'النوع: ${resolveTypeLabel(_type)}'),
+                      if (_query.isNotEmpty) _ActiveChip(label: 'بحث: $_query'),
+                      if (_startDateFilter != null || _endDateFilter != null) const _ActiveChip(label: 'نطاق تاريخ'),
+                      if (_minAmountFilter != null || _maxAmountFilter != null) const _ActiveChip(label: 'نطاق مبلغ'),
+                    ],
+                  ),
+                ),
         ),
 
         // Content with Responsive Layout
@@ -412,6 +665,14 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
 
               // ترتيب النتائج
               final sortedRows = _sortSponsorships(rows);
+              final filteredRows = _applyAdvancedFilters(sortedRows);
+
+              if (filteredRows.isEmpty) {
+                return EmptySponsorshipsState(
+                  hasFilters: _hasActiveFilters,
+                  onClearFilters: _hasActiveFilters ? _clearFilters : null,
+                );
+              }
 
               return RefreshIndicator(
                 onRefresh: () async {
@@ -432,10 +693,10 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
                       // Mobile - قائمة عادية
                       return ListView.separated(
                         padding: EdgeInsets.all(16.w),
-                        itemCount: sortedRows.length,
+                        itemCount: filteredRows.length,
                         separatorBuilder: (_, __) => SizedBox(height: 8.h),
                         itemBuilder: (context, i) {
-                          final r = sortedRows[i];
+                          final r = filteredRows[i];
                           return CardEntranceAnimation(
                             index: i,
                             child: SwipeActionWrapper(
@@ -473,9 +734,9 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
                         crossAxisSpacing: 16.w,
                         mainAxisSpacing: 16.h,
                       ),
-                      itemCount: sortedRows.length,
+                      itemCount: filteredRows.length,
                       itemBuilder: (context, i) {
-                        final r = sortedRows[i];
+                        final r = filteredRows[i];
                         return CardEntranceAnimation(
                           index: i,
                           child: ProfessionalSponsorshipCard(
@@ -554,5 +815,27 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> {
     });
 
     return sorted;
+  }
+}
+
+class _ActiveChip extends StatelessWidget {
+  final String label;
+
+  const _ActiveChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20.r),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
   }
 }

@@ -6,6 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../providers/taxonomy_bridge_providers.dart';
@@ -54,6 +55,12 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
   /// خيارات جاهزة مسبقاً لتقليل الأحمال (عند توفرها لا يتم الاشتراك في provider)
   final List<Taxonomy>? preloadedOptions;
 
+  /// إظهار زر مزامنة التصنيفات في حالات الفراغ/الخطأ.
+  final bool showSyncAction;
+
+  /// تنفيذ مزامنة تلقائية مرة واحدة عند ظهور حالة الفراغ.
+  final bool autoSyncOnEmpty;
+
   const TaxonomyBridgeDropdown({
     required this.group,
     super.key,
@@ -69,25 +76,61 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
     this.errorText,
     this.decoration,
     this.preloadedOptions,
+    this.showSyncAction = true,
+    this.autoSyncOnEmpty = false,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preloaded = preloadedOptions;
     if (preloaded != null) {
-      return _buildDropdown(context, preloaded);
+      return _buildDropdown(context, ref, preloaded);
     }
 
-    final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(group));
+    final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupResolvedOnceProvider(group));
 
     return taxonomiesAsync.when(
-      data: (taxonomies) => _buildDropdown(context, taxonomies),
+      data: (taxonomies) => _buildDropdown(context, ref, taxonomies),
       loading: () => _buildLoadingDropdown(context),
-      error: (error, _) => _buildErrorDropdown(context, error.toString()),
+      error: (error, _) => _buildErrorDropdown(context, ref, error.toString()),
     );
   }
 
-  Widget _buildDropdown(BuildContext context, List<Taxonomy> taxonomies) {
+  void _invalidateTaxonomyCache(WidgetRef ref) {
+    if (!_isRefUsable(ref)) {
+      return;
+    }
+
+    ref.read(bridgeGroupAutoSyncAttemptedProvider(group).notifier).state = false;
+    ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+    ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
+    ref.invalidate(bridgeTaxonomiesByGroupResolvedOnceProvider(group));
+  }
+
+  bool _isRefUsable(WidgetRef ref) {
+    try {
+      ref.read(sync_providers.syncControllerProvider);
+      return true;
+    } on StateError {
+      return false;
+    }
+  }
+
+  Future<void> _syncTaxonomiesAndRefresh(WidgetRef ref) async {
+    if (!_isRefUsable(ref)) {
+      return;
+    }
+
+    await ref.read(sync_providers.syncControllerProvider.notifier).deltaSync('taxonomies');
+
+    if (!_isRefUsable(ref)) {
+      return;
+    }
+
+    _invalidateTaxonomyCache(ref);
+  }
+
+  Widget _buildDropdown(BuildContext context, WidgetRef ref, List<Taxonomy> taxonomies) {
     final theme = Theme.of(context);
 
     final uniqueTaxonomies = <Taxonomy>[];
@@ -98,6 +141,10 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
       if (seenCodes.add(code)) {
         uniqueTaxonomies.add(taxonomy);
       }
+    }
+
+    if (uniqueTaxonomies.isEmpty) {
+      return _buildEmptyDropdown(context, ref);
     }
 
     // Find selected taxonomy
@@ -170,6 +217,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
   }
 
   Widget _buildLoadingDropdown(BuildContext context) {
+    final theme = Theme.of(context);
     return InputDecorator(
       decoration: InputDecoration(
         labelText: labelText ?? group.arabicName,
@@ -178,36 +226,121 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12.r),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 16.w,
-            height: 16.w,
-            child: CircularProgressIndicator(strokeWidth: 2.w),
-          ),
-          SizedBox(width: 12.w),
           Text(
-            'جاري التحميل...',
-            style: TextStyle(color: Colors.grey[600]),
+            'جاري تحميل التصنيف...',
+            style: theme.textTheme.bodyMedium,
+          ),
+          SizedBox(height: 8.h),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8.r),
+            child: LinearProgressIndicator(
+              minHeight: 6.h,
+              color: theme.colorScheme.primary,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorDropdown(BuildContext context, String error) {
+  Widget _buildErrorDropdown(BuildContext context, WidgetRef ref, String error) {
+    final theme = Theme.of(context);
     return InputDecorator(
       decoration: InputDecoration(
         labelText: labelText ?? group.arabicName,
-        prefixIcon: Icon(Icons.error_outline, color: Colors.red, size: 22.sp),
+        prefixIcon: Icon(Icons.error_outline, color: theme.colorScheme.error, size: 22.sp),
         errorText: 'فشل تحميل البيانات',
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.r),
         ),
       ),
-      child: Text(
-        'حاول مرة أخرى',
-        style: TextStyle(color: Colors.red[400]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'تعذر تحميل بيانات ${group.arabicName}.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            error,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall,
+          ),
+          SizedBox(height: 6.h),
+          Wrap(
+            spacing: 8.w,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _invalidateTaxonomyCache(ref),
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+              if (showSyncAction)
+                FilledButton.tonalIcon(
+                  onPressed: () => _syncTaxonomiesAndRefresh(ref),
+                  icon: const Icon(Icons.sync),
+                  label: const Text('مزامنة التصنيفات'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyDropdown(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final autoSyncAttempted = ref.watch(bridgeGroupAutoSyncAttemptedProvider(group));
+
+    if (showSyncAction && autoSyncOnEmpty && !autoSyncAttempted) {
+      Future.microtask(() async {
+        if (!_isRefUsable(ref)) {
+          return;
+        }
+        ref.read(bridgeGroupAutoSyncAttemptedProvider(group).notifier).state = true;
+        await _syncTaxonomiesAndRefresh(ref);
+      });
+    }
+
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: labelText ?? group.arabicName,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'لا توجد بيانات لهذا التصنيف',
+            style: theme.textTheme.bodyMedium,
+          ),
+          SizedBox(height: 6.h),
+          Wrap(
+            spacing: 8.w,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _invalidateTaxonomyCache(ref),
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+              if (showSyncAction)
+                FilledButton.tonalIcon(
+                  onPressed: () => _syncTaxonomiesAndRefresh(ref),
+                  icon: const Icon(Icons.cloud_download),
+                  label: const Text('مزامنة التصنيفات'),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

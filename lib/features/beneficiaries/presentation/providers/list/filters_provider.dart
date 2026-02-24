@@ -14,6 +14,18 @@ class FiltersNotifier extends StateNotifier<FiltersState> {
     state = state.copyWith(searchQuery: query);
   }
 
+  void setNationalIdQuery(String query) {
+    state = state.copyWith(nationalIdQuery: query);
+  }
+
+  void setFileNumberQuery(String query) {
+    state = state.copyWith(fileNumberQuery: query);
+  }
+
+  void setPhoneQuery(String query) {
+    state = state.copyWith(phoneQuery: query);
+  }
+
   /// تحديث الفئة
   void setCategory(int? categoryId) {
     state = state.copyWith(categoryId: categoryId);
@@ -30,6 +42,36 @@ class FiltersNotifier extends StateNotifier<FiltersState> {
   /// تحديث المدينة
   void setCity(int? cityId) {
     state = state.copyWith(cityId: cityId);
+  }
+
+  void setGender(int? gender) {
+    state = state.copyWith(gender: gender);
+  }
+
+  void setMaritalStatus(int? maritalStatus) {
+    state = state.copyWith(maritalStatus: maritalStatus);
+  }
+
+  void setAdvancedSearch({
+    required String nameQuery,
+    required String nationalIdQuery,
+    required String fileNumberQuery,
+    required String phoneQuery,
+    required int? gender,
+    required int? maritalStatus,
+    required int? ageFrom,
+    required int? ageTo,
+  }) {
+    state = state.copyWith(
+      searchQuery: nameQuery,
+      nationalIdQuery: nationalIdQuery,
+      fileNumberQuery: fileNumberQuery,
+      phoneQuery: phoneQuery,
+      gender: gender,
+      maritalStatus: maritalStatus,
+      ageFrom: ageFrom,
+      ageTo: ageTo,
+    );
   }
 
   /// تحديث الترتيب
@@ -77,12 +119,29 @@ class FiltersNotifier extends StateNotifier<FiltersState> {
     state = state.copyWith(categoryId: null);
   }
 
+  void clearSearchInputs() {
+    state = state.copyWith(
+      searchQuery: '',
+      nationalIdQuery: '',
+      fileNumberQuery: '',
+      phoneQuery: '',
+    );
+  }
+
   void clearGovernorate() {
     state = state.copyWith(governorateId: null, cityId: null);
   }
 
   void clearCity() {
     state = state.copyWith(cityId: null);
+  }
+
+  void clearGender() {
+    state = state.copyWith(gender: null);
+  }
+
+  void clearMaritalStatus() {
+    state = state.copyWith(maritalStatus: null);
   }
 
   void clearDateRange() {

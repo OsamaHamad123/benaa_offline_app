@@ -442,5 +442,55 @@ void main() {
       expect(dto.data.every((item) => item.groupValue == 'marital_status'), true);
       expect(dto.data.map((item) => item.label).toSet(), containsAll({'أعزب', 'متزوج'}));
     });
+
+    test('keeps outer category group even when item category field points to request-statuses', () {
+      final json = {
+        'success': true,
+        'data': {
+          'categories': {
+            'categories': {
+              'label_ar': 'فئات المستفيد',
+              'items': [
+                {
+                  'id': 1,
+                  'name': 'يتيم',
+                  'category': 'request-statuses',
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.data, hasLength(1));
+      expect(dto.data.first.groupValue, 'category');
+    });
+
+    test('keeps outer request-statuses group even when item category field points to categories', () {
+      final json = {
+        'success': true,
+        'data': {
+          'categories': {
+            'request-statuses': {
+              'label_ar': 'حالة الطلب',
+              'items': [
+                {
+                  'id': 9,
+                  'name': 'قيد الدراسة',
+                  'category': 'categories',
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.data, hasLength(1));
+      expect(dto.data.first.groupValue, 'beneficiary_status');
+    });
   });
 }

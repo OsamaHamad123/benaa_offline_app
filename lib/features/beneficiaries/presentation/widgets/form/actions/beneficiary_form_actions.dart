@@ -17,18 +17,26 @@ class BeneficiaryFormActions extends StatelessWidget {
   final bool hasUnsavedChanges;
 
   const BeneficiaryFormActions({
-    required this.onSaveDraft, required this.onSaveAndContinue, required this.onSaveAndClose, required this.onCancel, required this.isSaving, required this.hasUnsavedChanges, super.key,
+    required this.onSaveDraft,
+    required this.onSaveAndContinue,
+    required this.onSaveAndClose,
+    required this.onCancel,
+    required this.isSaving,
+    required this.hasUnsavedChanges,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -2),
           ),
@@ -73,9 +81,11 @@ class BeneficiaryFormActions extends StatelessWidget {
                   ? SizedBox(
                       width: 20.w,
                       height: 20.h,
-                      child: const CircularProgressIndicator(
+                      child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          colorScheme.onPrimary,
+                        ),
                       ),
                     )
                   : const Icon(Icons.check),

@@ -17,12 +17,14 @@ class V2ReviewTab extends ConsumerWidget {
   final BeneficiaryFormControllers formControllers;
   final VoidCallback onFinalSave;
   final VoidCallback? onEditSection;
+  final ValueChanged<int>? onJumpToTab;
 
   const V2ReviewTab({
     required this.formControllers,
     required this.onFinalSave,
     super.key,
     this.onEditSection,
+    this.onJumpToTab,
   });
 
   @override
@@ -32,6 +34,10 @@ class V2ReviewTab extends ConsumerWidget {
     final requiredFields = _requiredFieldValues();
     final requiredCount = requiredFields.length;
     final filledRequiredCount = requiredFields.values.where((value) => value?.trim().isNotEmpty ?? false).length;
+    final missingRequiredFields = requiredFields.entries
+        .where((entry) => entry.value?.trim().isNotEmpty != true)
+        .map((entry) => entry.key)
+        .toList(growable: false);
     final completion = requiredCount == 0 ? 0.0 : filledRequiredCount / requiredCount;
     final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
     final taxonomyIndex = taxonomyIndexAsync.maybeWhen(
@@ -39,6 +45,13 @@ class V2ReviewTab extends ConsumerWidget {
       orElse: () => const <TaxonomyGroup, List<taxonomy_domain.Taxonomy>>{},
     );
     final unresolvedTaxonomyCount = _countUnresolvedTaxonomySelections(taxonomyIndex);
+    final canFinalSave = missingRequiredFields.isEmpty && unresolvedTaxonomyCount == 0;
+    final profileStrength = _calculateProfileStrength();
+    final profileStrengthColor = switch (profileStrength.$3) {
+      _ProfileStrengthLevel.strong => colorScheme.secondary,
+      _ProfileStrengthLevel.medium => colorScheme.tertiary,
+      _ProfileStrengthLevel.weak => colorScheme.error,
+    };
 
     final basicSectionColor = colorScheme.primary;
     final contactSectionColor = colorScheme.secondary;
@@ -54,10 +67,10 @@ class V2ReviewTab extends ConsumerWidget {
         // 🎯 Header Card
         Card(
           elevation: 0,
-          color: colorScheme.primaryContainer.withOpacity(0.3),
+          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
-            side: BorderSide(color: colorScheme.primary.withOpacity(0.3)),
+            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.3)),
           ),
           child: Padding(
             padding: EdgeInsets.all(20.w),
@@ -140,6 +153,56 @@ class V2ReviewTab extends ConsumerWidget {
           ),
         ),
 
+        SizedBox(height: 10.h),
+
+        Card(
+          elevation: 0,
+          color: colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14.r),
+            side: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(14.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.shield_outlined, size: 18.sp, color: colorScheme.primary),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'Profile Strength: ${profileStrength.$1}%',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      profileStrength.$2,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: profileStrengthColor,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8.h),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999.r),
+                  child: LinearProgressIndicator(
+                    value: profileStrength.$1 / 100,
+                    minHeight: 8.h,
+                    backgroundColor: colorScheme.surfaceContainer,
+                    valueColor: AlwaysStoppedAnimation<Color>(profileStrengthColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
         if (unresolvedTaxonomyCount > 0) ...[
           SizedBox(height: 10.h),
           Card(
@@ -147,7 +210,7 @@ class V2ReviewTab extends ConsumerWidget {
             color: colorScheme.errorContainer,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12.r),
-              side: BorderSide(color: colorScheme.error.withOpacity(0.3)),
+              side: BorderSide(color: colorScheme.error.withValues(alpha: 0.3)),
             ),
             child: Padding(
               padding: EdgeInsets.all(12.w),
@@ -167,6 +230,72 @@ class V2ReviewTab extends ConsumerWidget {
           ),
         ],
 
+        if (missingRequiredFields.isNotEmpty) ...[
+          SizedBox(height: 10.h),
+          Card(
+            elevation: 0,
+            color: colorScheme.errorContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              side: BorderSide(color: colorScheme.error.withValues(alpha: 0.3)),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(12.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.report_problem_outlined, color: colorScheme.error, size: 20.sp),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'لا يمكن الحفظ النهائي قبل إكمال الحقول الأساسية التالية:',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onErrorContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
+                  ...missingRequiredFields.map(
+                    (field) {
+                      final targetTab = _tabForRequiredField(field);
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 4.h, right: 28.w),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '• $field',
+                                style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onErrorContainer),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: targetTab == null
+                                  ? null
+                                  : () {
+                                      if (onJumpToTab != null) {
+                                        onJumpToTab!(targetTab);
+                                      } else {
+                                        onEditSection?.call();
+                                      }
+                                    },
+                              child: const Text('إصلاح'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+
         SizedBox(height: 20.h),
 
         // 📝 البيانات الأساسية
@@ -174,7 +303,13 @@ class V2ReviewTab extends ConsumerWidget {
           title: 'البيانات الأساسية',
           icon: Icons.person_rounded,
           color: basicSectionColor,
-          onEdit: onEditSection,
+          onEdit: () {
+            if (onJumpToTab != null) {
+              onJumpToTab!(0);
+            } else {
+              onEditSection?.call();
+            }
+          },
           children: [
             ReviewDataRow(
               label: 'الاسم الكامل',
@@ -233,7 +368,13 @@ class V2ReviewTab extends ConsumerWidget {
           title: 'معلومات التواصل',
           icon: Icons.contact_phone_rounded,
           color: contactSectionColor,
-          onEdit: onEditSection,
+          onEdit: () {
+            if (onJumpToTab != null) {
+              onJumpToTab!(2);
+            } else {
+              onEditSection?.call();
+            }
+          },
           children: [
             ReviewDataRow(
               label: 'رقم الهاتف',
@@ -279,7 +420,13 @@ class V2ReviewTab extends ConsumerWidget {
           title: 'معلومات العائلة',
           icon: Icons.family_restroom_rounded,
           color: familySectionColor,
-          onEdit: onEditSection,
+          onEdit: () {
+            if (onJumpToTab != null) {
+              onJumpToTab!(1);
+            } else {
+              onEditSection?.call();
+            }
+          },
           children: [
             ReviewDataRow(
               label: 'عدد أفراد الأسرة',
@@ -317,7 +464,13 @@ class V2ReviewTab extends ConsumerWidget {
           title: 'معلومات إضافية',
           icon: Icons.info_outline_rounded,
           color: additionalSectionColor,
-          onEdit: onEditSection,
+          onEdit: () {
+            if (onJumpToTab != null) {
+              onJumpToTab!(0);
+            } else {
+              onEditSection?.call();
+            }
+          },
           children: [
             ReviewDataRow(
               label: 'المستوى التعليمي',
@@ -379,7 +532,13 @@ class V2ReviewTab extends ConsumerWidget {
           title: 'المرفقات',
           icon: Icons.attach_file_rounded,
           color: attachmentsSectionColor,
-          onEdit: onEditSection,
+          onEdit: () {
+            if (onJumpToTab != null) {
+              onJumpToTab!(3);
+            } else {
+              onEditSection?.call();
+            }
+          },
           children: [
             ReviewDataRow(
               label: 'الوثائق المرفقة',
@@ -421,7 +580,13 @@ class V2ReviewTab extends ConsumerWidget {
             title: 'الملاحظات',
             icon: Icons.note_rounded,
             color: notesSectionColor,
-            onEdit: onEditSection,
+            onEdit: () {
+              if (onJumpToTab != null) {
+                onJumpToTab!(2);
+              } else {
+                onEditSection?.call();
+              }
+            },
             children: [
               Padding(
                 padding: EdgeInsets.all(12.w),
@@ -441,15 +606,20 @@ class V2ReviewTab extends ConsumerWidget {
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                colorScheme.primary,
-                colorScheme.secondary,
-              ],
+              colors: canFinalSave
+                  ? [
+                      colorScheme.primary,
+                      colorScheme.secondary,
+                    ]
+                  : [
+                      colorScheme.surfaceContainerHighest,
+                      colorScheme.surfaceContainer,
+                    ],
             ),
             borderRadius: BorderRadius.circular(16.r),
             boxShadow: [
               BoxShadow(
-                color: colorScheme.primary.withOpacity(0.3),
+                color: (canFinalSave ? colorScheme.primary : colorScheme.outline).withValues(alpha: 0.2),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -458,13 +628,13 @@ class V2ReviewTab extends ConsumerWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onFinalSave,
+              onTap: canFinalSave ? onFinalSave : null,
               borderRadius: BorderRadius.circular(16.r),
               child: Semantics(
                 button: true,
-                enabled: true,
+                enabled: canFinalSave,
                 label: 'حفظ السجل نهائياً',
-                hint: 'يؤكد حفظ جميع بيانات المستفيد',
+                hint: canFinalSave ? 'يؤكد حفظ جميع بيانات المستفيد' : 'عطّل الحفظ النهائي لحين إكمال المتطلبات',
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20.h),
                   child: Row(
@@ -472,16 +642,16 @@ class V2ReviewTab extends ConsumerWidget {
                     children: [
                       Icon(
                         Icons.save_rounded,
-                        color: colorScheme.onPrimary,
+                        color: canFinalSave ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                         size: 28.sp,
                       ),
                       SizedBox(width: 12.w),
                       Text(
-                        'حفظ السجل نهائياً',
+                        canFinalSave ? 'حفظ السجل نهائياً' : 'أكمل الحقول الأساسية أولاً',
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimary,
+                          color: canFinalSave ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -508,9 +678,60 @@ class V2ReviewTab extends ConsumerWidget {
     return parts.isEmpty ? 'غير محدد' : parts.join(' ');
   }
 
+  int? _tabForRequiredField(String fieldName) {
+    switch (fieldName) {
+      case 'الاسم الكامل':
+      case 'الرقم الوطني':
+      case 'الجنس':
+      case 'الفئة':
+        return 0;
+      case 'رقم الهاتف':
+      case 'المحافظة':
+      case 'المدينة':
+        return 2;
+      case 'عدد أفراد الأسرة':
+        return 1;
+      default:
+        return null;
+    }
+  }
+
+  (int, String, _ProfileStrengthLevel) _calculateProfileStrength() {
+    var score = 0;
+    var checks = 0;
+
+    bool addCheck(bool pass) {
+      checks += 1;
+      if (pass) score += 1;
+      return pass;
+    }
+
+    addCheck(_getFullName() != 'غير محدد');
+    addCheck(formControllers.nationalIdController.text.trim().isNotEmpty);
+    addCheck(formControllers.phoneController.text.trim().isNotEmpty);
+    addCheck(formControllers.selectedProvince?.trim().isNotEmpty == true);
+    addCheck(formControllers.selectedCity?.trim().isNotEmpty == true);
+    addCheck(formControllers.selectedGender?.trim().isNotEmpty == true);
+    addCheck(formControllers.selectedCategory?.trim().isNotEmpty == true);
+    addCheck(formControllers.numberOfDependentsController.text.trim().isNotEmpty);
+    addCheck(formControllers.pendingAttachments.isNotEmpty);
+    addCheck(formControllers.notesController.text.trim().isNotEmpty);
+
+    final percent = checks == 0 ? 0 : ((score / checks) * 100).round();
+
+    if (percent >= 85) {
+      return (percent, 'ممتاز', _ProfileStrengthLevel.strong);
+    }
+    if (percent >= 60) {
+      return (percent, 'جيد', _ProfileStrengthLevel.medium);
+    }
+    return (percent, 'ضعيف', _ProfileStrengthLevel.weak);
+  }
+
   Map<String, String?> _requiredFieldValues() {
+    final fullName = _getFullName();
     return <String, String?>{
-      'الاسم الكامل': _getFullName() == 'غير محدد' ? null : _getFullName(),
+      'الاسم الكامل': fullName == 'غير محدد' ? null : fullName,
       'الرقم الوطني': formControllers.nationalIdController.text,
       'رقم الهاتف': formControllers.phoneController.text,
       'الجنس': formControllers.selectedGender,
@@ -577,4 +798,10 @@ class V2ReviewTab extends ConsumerWidget {
 
     return code;
   }
+}
+
+enum _ProfileStrengthLevel {
+  weak,
+  medium,
+  strong,
 }

@@ -347,7 +347,10 @@ class TaxonomiesResponseDTO {
     final List<TaxonomyDTO> taxonomies = [];
 
     final data = json['data'];
-    final categoryEntries = _extractCategoryEntries(data);
+    var categoryEntries = _extractCategoryEntries(data);
+    if (categoryEntries.isEmpty) {
+      categoryEntries = _extractCategoryEntries(json);
+    }
 
     for (final entry in categoryEntries) {
       final slug = entry.slug;
@@ -369,6 +372,7 @@ class TaxonomiesResponseDTO {
               categoryData['slug'])
           ?.toString();
       final resolvedGroup = _resolveGroupValue(slug, labelAr, labelEn);
+      final resolvedOuterGroup = TaxonomyGroup.fromString(resolvedGroup);
 
       for (final item in items) {
         final itemGroupRaw = (item['group'] ??
@@ -392,6 +396,8 @@ class TaxonomiesResponseDTO {
             (item['name_en'] ?? item['label_en'] ?? item['title_en'] ?? item['english_name'] ?? labelEn)?.toString();
 
         final resolvedItemGroup = _resolveGroupValue(itemGroupRaw, itemLabelAr, itemLabelEn);
+        final resolvedInnerGroup = TaxonomyGroup.fromString(resolvedItemGroup);
+        final effectiveGroup = resolvedOuterGroup?.value ?? resolvedInnerGroup?.value ?? resolvedGroup;
 
         taxonomies.add(TaxonomyDTO(
           id: item['id']?.toString() ??
@@ -399,7 +405,7 @@ class TaxonomiesResponseDTO {
               item['code']?.toString() ??
               item['slug']?.toString() ??
               '',
-          groupValue: resolvedItemGroup.isNotEmpty ? resolvedItemGroup : resolvedGroup,
+          groupValue: effectiveGroup,
           code: item['code']?.toString() ??
               item['slug']?.toString() ??
               item['value']?.toString() ??
@@ -623,7 +629,53 @@ class TaxonomiesResponseDTO {
     final directScalarMapValues = _coerceScalarMapToItems(categoryData, excludedKeys: metadataKeys);
     if (directScalarMapValues.isNotEmpty) return directScalarMapValues;
 
+    final deepItems = _extractDeepCandidateItems(categoryData);
+    if (deepItems.isNotEmpty) return deepItems;
+
     return const [];
+  }
+
+  static List<Map<String, dynamic>> _extractDeepCandidateItems(dynamic node, {int depth = 0}) {
+    if (depth > 5) {
+      return const [];
+    }
+
+    if (node is List) {
+      final out = <Map<String, dynamic>>[];
+      for (final item in node) {
+        out.addAll(_extractDeepCandidateItems(item, depth: depth + 1));
+      }
+      return out;
+    }
+
+    final mapNode = _asStringDynamicMap(node);
+    if (mapNode == null) {
+      return const [];
+    }
+
+    bool looksLikeItem(Map<String, dynamic> map) {
+      final hasIdentity = map['id'] != null || map['value'] != null || map['code'] != null || map['slug'] != null;
+      final hasDisplay = map['name'] != null ||
+          map['label'] != null ||
+          map['title'] != null ||
+          map['name_ar'] != null ||
+          map['label_ar'] != null ||
+          map['name_arabic'] != null ||
+          map['display_name'] != null ||
+          map['text'] != null;
+      final looksLikeWrapper = map.containsKey('items') || map.containsKey('data') || map.containsKey('values');
+      return hasIdentity || (hasDisplay && !looksLikeWrapper);
+    }
+
+    if (looksLikeItem(mapNode)) {
+      return [mapNode];
+    }
+
+    final out = <Map<String, dynamic>>[];
+    for (final value in mapNode.values) {
+      out.addAll(_extractDeepCandidateItems(value, depth: depth + 1));
+    }
+    return out;
   }
 
   static List<Map<String, dynamic>> _coerceScalarListToItems(dynamic value) {
@@ -904,6 +956,13 @@ class TaxonomiesResponseDTO {
       'genders': 'gender',
       'gender': 'gender',
       'sex': 'gender',
+      'sexes': 'gender',
+      'visit': 'visit_type',
+      'visits': 'visit_type',
+      'association': 'association_type',
+      'associations': 'association_type',
+      'income_source': 'income_source',
+      'income_sources': 'income_source',
       'social-status': 'marital_status',
       'social-statuses': 'marital_status',
       'marital-statuses': 'marital_status',
@@ -963,6 +1022,7 @@ class TaxonomiesResponseDTO {
       'assistance-type': 'assistance_type',
       'aid-statuses': 'assistance_type',
       'request-statuses': 'beneficiary_status',
+      'request-status': 'beneficiary_status',
       'sponsorship-statuses': 'beneficiary_status',
       'beneficiary-state': 'beneficiary_status',
       'beneficiary-condition': 'beneficiary_status',
@@ -1030,7 +1090,7 @@ class TaxonomiesResponseDTO {
     if (normalizedAr.contains('الوفاة')) return 'death_reason';
     if (normalizedAr.contains('نوع الزيارة')) return 'visit_type';
     if (normalizedAr.contains('نوع المساعدة')) return 'assistance_type';
-    if (normalizedAr.contains('حالة المستفيد')) return 'beneficiary_status';
+    if (normalizedAr.contains('حالة المستفيد') || normalizedAr.contains('حالة الطلب')) return 'beneficiary_status';
     if (normalizedAr.contains('صلة القرابة')) return 'relationship';
     if (normalizedAr.contains('القسم')) return 'section';
     if (normalizedAr.contains('الجنس')) return 'gender';
@@ -1054,7 +1114,9 @@ class TaxonomiesResponseDTO {
     if (normalizedEn.contains('death reason') || normalizedEn.contains('death')) return 'death_reason';
     if (normalizedEn.contains('visit type')) return 'visit_type';
     if (normalizedEn.contains('assistance type')) return 'assistance_type';
-    if (normalizedEn.contains('beneficiary status')) return 'beneficiary_status';
+    if (normalizedEn.contains('beneficiary status') || normalizedEn.contains('request status')) {
+      return 'beneficiary_status';
+    }
     if (normalizedEn.contains('relationship')) return 'relationship';
     if (normalizedEn.contains('section')) return 'section';
     if (normalizedEn.contains('gender')) return 'gender';

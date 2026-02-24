@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
 import '../models/taxonomy_dto.dart';
 import '../../domain/entities/taxonomy_group.dart';
+import '../../domain/contracts/beneficiary_taxonomy_contract.dart';
 
 /// 🌐 Taxonomy Remote Data Source
 ///
@@ -237,35 +238,8 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
     final base = group.value;
     final hyphen = base.replaceAll('_', '-');
 
-    const aliases = <TaxonomyGroup, List<String>>{
-      TaxonomyGroup.category: ['categories', 'beneficiary-categories', 'request-statuses'],
-      TaxonomyGroup.governorate: ['governorates', 'provinces', 'cities'],
-      TaxonomyGroup.maritalStatus: ['marital-statuses', 'social-statuses', 'social-status'],
-      TaxonomyGroup.displacementStatus: ['displacement-statuses', 'displacement-status'],
-      TaxonomyGroup.employmentStatus: ['employment-statuses', 'job-statuses', 'job-status'],
-      TaxonomyGroup.educationLevel: ['education-levels', 'educational-levels', 'academic-degrees'],
-      TaxonomyGroup.healthStatus: ['health-statuses', 'health-conditions'],
-      TaxonomyGroup.housingType: ['housing-types', 'residence-types', 'accommodation-types'],
-      TaxonomyGroup.housingStatus: ['housing-statuses', 'housing-conditions', 'residence-status'],
-      TaxonomyGroup.disabilityType: ['disability-types', 'special-needs-types'],
-      TaxonomyGroup.incomeSource: ['income-sources', 'income'],
-      TaxonomyGroup.associationType: ['association-types', 'associations-types'],
-      TaxonomyGroup.sponsorshipType: ['sponsorship-types', 'sponsorship-categories', 'sponsorship', 'guarantee-types'],
-      TaxonomyGroup.gender: ['genders', 'sex'],
-      TaxonomyGroup.visitType: ['visit-types', 'visits-types'],
-      TaxonomyGroup.assistanceType: ['assistance-types', 'aid-types', 'aid-statuses'],
-      TaxonomyGroup.beneficiaryStatus: [
-        'beneficiary-statuses',
-        'beneficiary-state',
-        'aid-statuses',
-        'request-statuses'
-      ],
-      TaxonomyGroup.relationship: ['relationships', 'kinship', 'relations'],
-      TaxonomyGroup.section: ['sections', 'departments', 'department'],
-    };
-
     final out = <String>[base, hyphen];
-    out.addAll(aliases[group] ?? const []);
+    out.addAll(beneficiaryTaxonomyServerAliases[group] ?? const []);
 
     final seen = <String>{};
     final unique = <String>[];
@@ -451,7 +425,64 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
 
   bool _isFallbackCategoryError(DioException e) {
     final status = e.response?.statusCode;
-    return status == 404 || status == 405;
+    if (status == 404 || status == 405) {
+      return true;
+    }
+
+    if (status == 400 || status == 422) {
+      final message = _extractErrorMessage(e.response?.data).toLowerCase();
+      if (message.isEmpty) {
+        return false;
+      }
+
+      const fallbackSignals = <String>[
+        'category',
+        'categories',
+        'invalid category',
+        'unsupported category',
+        'unknown category',
+        'must be one of',
+        'غير صالح',
+        'فئة',
+        'تصنيف',
+      ];
+
+      return fallbackSignals.any(message.contains);
+    }
+
+    return false;
+  }
+
+  String _extractErrorMessage(dynamic payload) {
+    if (payload == null) return '';
+    if (payload is String) return payload;
+
+    if (payload is Map) {
+      final direct = payload['message'];
+      if (direct is String && direct.trim().isNotEmpty) {
+        return direct;
+      }
+
+      final error = payload['error'];
+      if (error is String && error.trim().isNotEmpty) {
+        return error;
+      }
+
+      final errors = payload['errors'];
+      if (errors is Map) {
+        final buffer = StringBuffer();
+        errors.forEach((_, value) {
+          if (value is List && value.isNotEmpty) {
+            buffer.write(' ${value.join(' ')}');
+          } else if (value is String) {
+            buffer.write(' $value');
+          }
+        });
+        return buffer.toString().trim();
+      }
+    }
+
+    return payload.toString();
   }
 
   @override

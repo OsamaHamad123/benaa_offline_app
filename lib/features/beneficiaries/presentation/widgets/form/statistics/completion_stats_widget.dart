@@ -15,11 +15,18 @@ class CompletionStatsWidget extends StatelessWidget {
   final VoidCallback onTap;
 
   const CompletionStatsWidget({
-    required this.overallCompletion, required this.completedFields, required this.totalFields, required this.tabCompletions, required this.onTap, super.key,
+    required this.overallCompletion,
+    required this.completedFields,
+    required this.totalFields,
+    required this.tabCompletions,
+    required this.onTap,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -35,7 +42,7 @@ class CompletionStatsWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(12.r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -73,9 +80,9 @@ class CompletionStatsWidget extends StatelessWidget {
                       CircularProgressIndicator(
                         value: overallCompletion / 100,
                         strokeWidth: 6,
-                        backgroundColor: Colors.grey[300],
+                        backgroundColor: colorScheme.outlineVariant,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          _getCompletionColor(overallCompletion),
+                          _getCompletionColor(overallCompletion, colorScheme),
                         ),
                       ),
                       Center(
@@ -110,7 +117,7 @@ class CompletionStatsWidget extends StatelessWidget {
                         '$completedFields من $totalFields حقل مكتمل',
                         style: TextStyle(
                           fontSize: 12.sp,
-                          color: Colors.grey[600],
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -141,9 +148,9 @@ class CompletionStatsWidget extends StatelessWidget {
                         width: 100.w,
                         child: LinearProgressIndicator(
                           value: entry.value / 100,
-                          backgroundColor: Colors.grey[300],
+                          backgroundColor: colorScheme.outlineVariant,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            _getCompletionColor(entry.value),
+                            _getCompletionColor(entry.value, colorScheme),
                           ),
                         ),
                       ),
@@ -170,11 +177,11 @@ class CompletionStatsWidget extends StatelessWidget {
     );
   }
 
-  Color _getCompletionColor(double percentage) {
-    if (percentage >= 100) return Colors.green;
-    if (percentage >= 75) return Colors.lightGreen;
-    if (percentage >= 50) return Colors.orange;
-    if (percentage >= 25) return Colors.deepOrange;
-    return Colors.red;
+  Color _getCompletionColor(double percentage, ColorScheme colorScheme) {
+    if (percentage >= 100) return colorScheme.secondary;
+    if (percentage >= 75) return colorScheme.primary;
+    if (percentage >= 50) return colorScheme.tertiary;
+    if (percentage >= 25) return colorScheme.errorContainer;
+    return colorScheme.error;
   }
 }

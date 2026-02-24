@@ -53,6 +53,18 @@ void main() {
       expect(filters.sortAscending, false);
     });
 
+    test('location filter toggle updates state', () {
+      final notifier = container.read(filtersProvider.notifier);
+
+      expect(container.read(filtersProvider).onlyWithLocation, false);
+
+      notifier.toggleWithLocation();
+      expect(container.read(filtersProvider).onlyWithLocation, true);
+
+      notifier.toggleWithLocation();
+      expect(container.read(filtersProvider).onlyWithLocation, false);
+    });
+
     test('clearing filters resets everything', () {
       final notifier = container.read(filtersProvider.notifier);
 

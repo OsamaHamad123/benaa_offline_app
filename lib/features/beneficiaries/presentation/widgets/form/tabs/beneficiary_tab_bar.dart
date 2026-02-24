@@ -14,17 +14,22 @@ class BeneficiaryTabBar extends StatelessWidget {
   final Map<int, double> tabCompletionPercentages;
 
   const BeneficiaryTabBar({
-    required this.controller, required this.tabErrorCounts, required this.tabCompletionPercentages, super.key,
+    required this.controller,
+    required this.tabErrorCounts,
+    required this.tabCompletionPercentages,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -67,13 +72,13 @@ class BeneficiaryTabBar extends StatelessWidget {
                           vertical: 2.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: colorScheme.error,
                           borderRadius: BorderRadius.circular(10.r),
                         ),
                         child: Text(
                           '$errorCount',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colorScheme.onError,
                             fontSize: 11.sp,
                             fontWeight: FontWeight.bold,
                           ),
@@ -87,7 +92,7 @@ class BeneficiaryTabBar extends StatelessWidget {
                       Icon(
                         Icons.check_circle,
                         size: 16.sp,
-                        color: Colors.green,
+                        color: colorScheme.secondary,
                       ),
                     ],
                   ],

@@ -8,8 +8,7 @@ import 'cache_manager.dart';
 import '../beneficiary_activity_providers.dart';
 
 /// 📊 Beneficiaries List Provider
-final beneficiariesListProvider =
-    StateNotifierProvider<BeneficiariesListNotifier, BeneficiariesListState>(
+final beneficiariesListProvider = StateNotifierProvider<BeneficiariesListNotifier, BeneficiariesListState>(
   (ref) => BeneficiariesListNotifier(ref),
 );
 
@@ -30,17 +29,15 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
   }
 
   /// 🔄 تحميل البيانات الأولية
-  Future<void> loadInitialData() async {
-    state = state.copyWith(isLoading: true);
+  Future<void> loadInitialData({bool showLoading = true}) async {
+    state = state.copyWith(isLoading: showLoading ? true : state.isLoading, error: null);
 
     try {
       final filters = _filters;
       final cacheKey = filters.cacheKey;
 
       // ✅ تحقق من الـ cache فقط إذا لم يكن في بحث نشط
-      if (_lastCacheKey == cacheKey &&
-          _cachedData != null &&
-          filters.searchQuery.isEmpty) {
+      if (_lastCacheKey == cacheKey && _cachedData != null && filters.searchQuery.isEmpty) {
         state = state.copyWith(
           items: _cachedData!,
           isLoading: false,
@@ -75,7 +72,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
   Future<void> loadMore() async {
     if (state.isLoadingMore || !state.hasMore) return;
 
-    state = state.copyWith(isLoadingMore: true);
+    state = state.copyWith(isLoadingMore: true, error: null);
 
     try {
       final nextPage = state.currentPage + 1;
@@ -105,16 +102,24 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     FiltersState filters,
     int page,
   ) async {
+    final sortField = _getSortField(filters.sortBy);
+    final sortDesc = sortField == 'birth_date' ? filters.sortAscending : !filters.sortAscending;
+
     // ✅ كل الفلترة في SQL - performance++
     final items = await _db.beneficiariesDao.searchBeneficiariesAdvanced(
       query: filters.searchQuery,
+      nationalIdQuery: filters.nationalIdQuery,
+      fileNumberQuery: filters.fileNumberQuery,
+      phoneQuery: filters.phoneQuery,
       categoryId: filters.categoryId,
       governorateId: filters.governorateId,
       cityId: filters.cityId,
+      gender: filters.gender,
+      maritalStatus: filters.maritalStatus,
       dateFrom: filters.dateFrom,
       dateTo: filters.dateTo,
-      sortBy: _getSortField(filters.sortBy),
-      sortDesc: !filters.sortAscending, // inverted
+      sortBy: sortField,
+      sortDesc: sortDesc,
       limit: state.pageSize,
       offset: page * state.pageSize,
     );
@@ -151,7 +156,18 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
     // Phone Filter
     if (filters.onlyWithPhone) {
-      items = items.where((b) => b.phoneNumber != 0).toList();
+      items = items.where((b) => b.phoneNumber > 0).toList();
+    }
+
+    // Location Filter
+    if (filters.onlyWithLocation) {
+      items = items.where((b) {
+        final hasProvince = b.province != null;
+        final hasCity = b.city != null;
+        final hasCurrentAddress = b.currentAddress?.trim().isNotEmpty == true;
+        final hasPreviousAddress = b.addressBeforeDisplacement?.trim().isNotEmpty == true;
+        return hasProvince || hasCity || hasCurrentAddress || hasPreviousAddress;
+      }).toList();
     }
 
     return items;
@@ -164,8 +180,11 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
         return 'created_at';
       case SortBy.fileNo:
         return 'file_id_number';
+      case SortBy.age:
+        return 'birth_date';
+      case SortBy.lastModified:
+        return 'updated_at';
       case SortBy.name:
-      default:
         return 'full_name';
     }
   }
@@ -188,10 +207,10 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
   }
 
   /// 🔄 Refresh
-  Future<void> refresh() async {
+  Future<void> refresh({bool showLoading = true}) async {
     _cachedData = null;
     _lastCacheKey = null;
-    await loadInitialData();
+    await loadInitialData(showLoading: showLoading);
   }
 
   /// 🗑️ Clear cache
@@ -211,7 +230,12 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     final oldCachedData = _cachedData;
 
     // احصل على معلومات المستفيد قبل الحذف
-    final beneficiary = state.items.firstWhere((b) => b.id == id);
+    final beneficiaryIndex = state.items.indexWhere((b) => b.id == id);
+    if (beneficiaryIndex == -1) {
+      state = state.copyWith(error: 'المستفيد غير موجود');
+      return;
+    }
+    final beneficiary = state.items[beneficiaryIndex];
 
     // حذف فوري من UI
     final newItems = state.items.where((b) => b.id != id).toList();
@@ -274,8 +298,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       );
     } catch (e, stackTrace) {
       stopwatch.stop();
-      UnifiedLogger.error('Bulk delete failed',
-          error: e, stackTrace: stackTrace);
+      UnifiedLogger.error('Bulk delete failed', error: e, stackTrace: stackTrace);
       state = state.copyWith(items: oldItems, error: e.toString());
       _cachedData = oldCachedData;
       rethrow;
@@ -292,8 +315,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
   int _calculateAge(DateTime birthDate) {
     final now = DateTime.now();
     int age = now.year - birthDate.year;
-    if (now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)) {
+    if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
       age--;
     }
     return age;

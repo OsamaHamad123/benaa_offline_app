@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy_group.dart';
+import 'package:benaa_offline_app/features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/utils/taxonomy_value_resolver.dart';
 import '../../../../../../core/theme/app_dimensions.dart';
 import '../../../../../../core/theme/app_breakpoints.dart';
 import 'family_dialog_widgets.dart';
@@ -21,19 +24,18 @@ class UltraOptimizedFamilyDialog extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onSave;
 
   const UltraOptimizedFamilyDialog({
-    required this.onSave, super.key,
+    required this.onSave,
+    super.key,
     this.existingMember,
     this.isDeceased = false,
     this.presetDeceasedType,
   });
 
   @override
-  ConsumerState<UltraOptimizedFamilyDialog> createState() =>
-      _UltraOptimizedFamilyDialogState();
+  ConsumerState<UltraOptimizedFamilyDialog> createState() => _UltraOptimizedFamilyDialogState();
 }
 
-class _UltraOptimizedFamilyDialogState
-    extends ConsumerState<UltraOptimizedFamilyDialog> {
+class _UltraOptimizedFamilyDialogState extends ConsumerState<UltraOptimizedFamilyDialog> {
   // Controllers - minimal
   late final TextEditingController _firstNameController;
   late final TextEditingController _secondNameController;
@@ -162,9 +164,39 @@ class _UltraOptimizedFamilyDialogState
     }
   }
 
+  int? _resolveDynamicDefault(TaxonomyGroup group) {
+    final options =
+        ref.read(bridgeTaxonomiesByGroupOnceProvider(group)).maybeWhen(data: (value) => value, orElse: () => const []);
+    var resolvedCount = 0;
+    for (final taxonomy in options) {
+      final resolved = TaxonomyValueResolver.resolveToInt(
+        code: taxonomy.code,
+        id: taxonomy.id,
+        group: group,
+        source: 'ultra_optimized_family_dialog_default',
+      );
+      if (resolved != null) {
+        resolvedCount++;
+        TaxonomyValueResolver.logSummary(
+          group: group,
+          source: 'ultra_optimized_family_dialog_default',
+          total: options.length,
+          resolved: resolvedCount,
+        );
+        return resolved;
+      }
+    }
+    TaxonomyValueResolver.logSummary(
+      group: group,
+      source: 'ultra_optimized_family_dialog_default',
+      total: options.length,
+      resolved: resolvedCount,
+    );
+    return null;
+  }
+
   void _handleSave() {
-    if (_firstNameController.text.trim().isEmpty ||
-        _familyNameController.text.trim().isEmpty) {
+    if (_firstNameController.text.trim().isEmpty || _familyNameController.text.trim().isEmpty) {
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -191,17 +223,15 @@ class _UltraOptimizedFamilyDialogState
         'deceasedType': widget.presetDeceasedType,
         'nationalId': int.tryParse(_nationalIdController.text.trim()),
         'deathDate': _dateNotifier.value ?? DateTime.now(),
-        'deathCause': _deathCauseNotifier.value ?? 8,
+        'deathCause': _deathCauseNotifier.value ?? _resolveDynamicDefault(TaxonomyGroup.deathReason),
         'documentType': _documentTypeNotifier.value,
       });
     } else {
       memberData.addAll({
         'orphanNationalId': int.tryParse(_nationalIdController.text.trim()),
         'birthDate': _dateNotifier.value ?? DateTime.now(),
-        'age': _dateNotifier.value != null
-            ? DateTime.now().difference(_dateNotifier.value!).inDays ~/ 365
-            : 0,
-        'healthStatus': _healthStatusNotifier.value ?? 5,
+        'age': _dateNotifier.value != null ? DateTime.now().difference(_dateNotifier.value!).inDays ~/ 365 : 0,
+        'healthStatus': _healthStatusNotifier.value ?? _resolveDynamicDefault(TaxonomyGroup.healthStatus),
       });
     }
 
@@ -224,9 +254,7 @@ class _UltraOptimizedFamilyDialogState
             // Header
             FamilyDialogHeader(
               title: widget.isDeceased
-                  ? (widget.presetDeceasedType == 1
-                      ? 'إضافة أب متوفى'
-                      : 'إضافة أم متوفاة')
+                  ? (widget.presetDeceasedType == 1 ? 'إضافة أب متوفى' : 'إضافة أم متوفاة')
                   : 'إضافة يتيم',
               icon: widget.isDeceased ? Icons.person_off : Icons.child_care,
               onClose: () => Navigator.pop(context),
@@ -265,9 +293,7 @@ class _UltraOptimizedFamilyDialogState
                     valueListenable: _dateNotifier,
                     builder: (context, date, _) => RepaintBoundary(
                       child: DatePickerField(
-                        label: widget.isDeceased
-                            ? 'تاريخ الوفاة'
-                            : 'تاريخ الميلاد',
+                        label: widget.isDeceased ? 'تاريخ الوفاة' : 'تاريخ الميلاد',
                         selectedDate: date,
                         onDateSelected: (d) => _dateNotifier.value = d,
                       ),
@@ -292,8 +318,7 @@ class _UltraOptimizedFamilyDialogState
                       builder: (context, docType, _) => RepaintBoundary(
                         child: DocumentTypeSelector(
                           selectedType: docType,
-                          onTypeSelected: (t) =>
-                              _documentTypeNotifier.value = t,
+                          onTypeSelected: (t) => _documentTypeNotifier.value = t,
                         ),
                       ),
                     ),
@@ -303,8 +328,7 @@ class _UltraOptimizedFamilyDialogState
                       builder: (context, status, _) => RepaintBoundary(
                         child: HealthStatusSelector(
                           selectedStatus: status,
-                          onStatusSelected: (s) =>
-                              _healthStatusNotifier.value = s,
+                          onStatusSelected: (s) => _healthStatusNotifier.value = s,
                         ),
                       ),
                     ),
@@ -436,9 +460,7 @@ class _UltraOptimizedFamilyDialogState
                       status,
                       style: TextStyle(
                         fontSize: 12.sp,
-                        color: status.startsWith('✅')
-                            ? Colors.green
-                            : Colors.orange,
+                        color: status.startsWith('✅') ? Colors.green : Colors.orange,
                       ),
                     ),
                   )
@@ -509,8 +531,7 @@ class _LightTextField extends StatelessWidget {
         keyboardType: keyboardType,
         maxLength: maxLength,
         enableInteractiveSelection: false, // ⚡ Disable selection UI for speed
-        textInputAction:
-            nextFocus != null ? TextInputAction.next : TextInputAction.done,
+        textInputAction: nextFocus != null ? TextInputAction.next : TextInputAction.done,
         onChanged: onChanged,
         onSubmitted: (_) {
           if (nextFocus != null) {

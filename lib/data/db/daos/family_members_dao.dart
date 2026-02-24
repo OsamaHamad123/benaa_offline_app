@@ -1,12 +1,12 @@
 import 'package:drift/drift.dart';
+import 'dart:convert' show jsonEncode;
 import '../drift_database.dart';
 import '../tables/family_members_table.dart';
 
 part 'family_members_dao.g.dart';
 
 @DriftAccessor(tables: [FamilyMembersTable])
-class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
-    with _$FamilyMembersDaoMixin {
+class FamilyMembersDao extends DatabaseAccessor<AppDatabase> with _$FamilyMembersDaoMixin {
   FamilyMembersDao(super.db);
 
   /// 📋 الحصول على جميع أفراد العائلة (الأيتام) لمستفيد معين
@@ -39,7 +39,23 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// 🗑️ حذف فرد
-  Future<int> deleteMember(int id) {
+  Future<int> deleteMember(int id, {bool trackSyncDelete = true}) async {
+    if (trackSyncDelete) {
+      final existing = await (select(familyMembersTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (existing != null) {
+        final entityId = existing.serverId?.toString() ?? existing.id.toString();
+        await db.syncDao.addTombstone(
+          entityType: 're-people',
+          entityId: entityId,
+          payload: jsonEncode({
+            'local_id': existing.id,
+            'server_id': existing.serverId,
+            'beneficiary_id': existing.beneficiaryId,
+          }),
+        );
+      }
+    }
+
     return (delete(familyMembersTable)..where((t) => t.id.equals(id))).go();
   }
 
@@ -96,9 +112,7 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
   ) {
     return (select(familyMembersTable)
           ..where(
-            (t) =>
-                t.beneficiaryId.equals(beneficiaryId) &
-                t.healthStatus.equals(healthStatus),
+            (t) => t.beneficiaryId.equals(beneficiaryId) & t.healthStatus.equals(healthStatus),
           ))
         .get();
   }
@@ -113,9 +127,7 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase>
                 t.beneficiaryId.equals(beneficiaryId) &
                 (t.firstName.lower().like(searchTerm) |
                     t.familyName.lower().like(searchTerm) |
-                    (nationalIdInt != null
-                        ? t.orphanNationalId.equals(nationalIdInt)
-                        : const Constant(false))),
+                    (nationalIdInt != null ? t.orphanNationalId.equals(nationalIdInt) : const Constant(false))),
           ))
         .get();
   }

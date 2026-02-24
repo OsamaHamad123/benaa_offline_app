@@ -1,10 +1,55 @@
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import '../../utils/taxonomy_value_resolver.dart';
 import '../../../../../data/db/drift_database.dart';
 import '../../../../../core/utils/beneficiary_identity_resolver.dart';
+import '../../../../taxonomies/domain/entities/taxonomy_group.dart';
 
 /// 👨‍👩‍👧‍👦 مساعد حفظ وتحميل بيانات أفراد العائلة
 class FamilySaveHelper {
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+
+  static Future<int> _resolveRequiredTaxonomyValue({
+    required AppDatabase database,
+    required TaxonomyGroup group,
+  }) async {
+    final taxonomies = await database.taxonomiesDao.getByGroup(group.value);
+    var resolvedCount = 0;
+    for (final taxonomy in taxonomies) {
+      final resolved = TaxonomyValueResolver.resolveToInt(
+        code: taxonomy.code,
+        id: taxonomy.id,
+        group: group,
+        source: 'family_save_helper',
+      );
+      if (resolved != null) {
+        resolvedCount++;
+        TaxonomyValueResolver.logSummary(
+          group: group,
+          source: 'family_save_helper',
+          total: taxonomies.length,
+          resolved: resolvedCount,
+        );
+        return resolved;
+      }
+    }
+
+    TaxonomyValueResolver.logSummary(
+      group: group,
+      source: 'family_save_helper',
+      total: taxonomies.length,
+      resolved: resolvedCount,
+    );
+
+    throw StateError(
+      'Missing dynamic taxonomy values for group: ${group.value}',
+    );
+  }
+
   /// ⬇️ تحميل بيانات أفراد العائلة من قاعدة البيانات
   static Future<({List<Map<String, dynamic>> living, List<Map<String, dynamic>> deceased})> loadFamilyMembers({
     required AppDatabase database,
@@ -104,6 +149,15 @@ class FamilySaveHelper {
     required List<Map<String, dynamic>> deceasedMembers,
   }) async {
     try {
+      final defaultHealthStatus = await _resolveRequiredTaxonomyValue(
+        database: database,
+        group: TaxonomyGroup.healthStatus,
+      );
+      final defaultDeathCause = await _resolveRequiredTaxonomyValue(
+        database: database,
+        group: TaxonomyGroup.deathReason,
+      );
+
       final intBeneficiaryId = await _resolveBeneficiaryLocalId(
         database: database,
         beneficiaryId: beneficiaryId,
@@ -135,15 +189,15 @@ class FamilySaveHelper {
                 database.familyMembersTable,
                 FamilyMembersTableCompanion.insert(
                   beneficiaryId: intBeneficiaryId,
-                  orphanNationalId: member['orphanNationalId'] ?? 0,
+                  orphanNationalId: _parseInt(member['orphanNationalId']) ?? 0,
                   firstName: member['firstName'] ?? '',
                   secondName: Value(member['secondName']),
                   thirdName: Value(member['thirdName']),
                   familyName: member['familyName'] ?? '',
                   birthDate: member['birthDate'] ?? DateTime.now(),
                   age: Value(member['age']),
-                  gender: member['gender'] ?? 1, // 1=male
-                  healthStatus: member['healthStatus'] ?? 5, // 5=unknown
+                  gender: _parseInt(member['gender']) ?? 1,
+                  healthStatus: _parseInt(member['healthStatus']) ?? defaultHealthStatus,
                   attachments: Value(member['attachments']),
                   notes: Value(member['notes']),
                   syncState: const Value('pending'),
@@ -161,14 +215,14 @@ class FamilySaveHelper {
                 database.familyDeceasedTable,
                 FamilyDeceasedTableCompanion.insert(
                   beneficiaryId: intBeneficiaryId,
-                  deceasedType: deceased['deceasedType'] ?? 1, // 1=father
+                  deceasedType: _parseInt(deceased['deceasedType']) ?? 1,
                   firstName: deceased['firstName'] ?? '',
                   secondName: Value(deceased['secondName']),
                   thirdName: Value(deceased['thirdName']),
                   familyName: deceased['familyName'] ?? '',
-                  nationalId: deceased['nationalId'] ?? 0,
+                  nationalId: _parseInt(deceased['nationalId']) ?? 0,
                   deathDate: deceased['deathDate'] ?? DateTime.now(),
-                  deathCause: deceased['deathCause'] ?? 8, // 8=unknown
+                  deathCause: _parseInt(deceased['deathCause']) ?? defaultDeathCause,
                   documentType: Value(deceased['documentType']),
                   documentPath: Value(deceased['documentPath']),
                   notes: Value(deceased['notes']),

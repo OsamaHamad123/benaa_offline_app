@@ -7,6 +7,9 @@ import '../../../../data/db/drift_database.dart';
 import '../providers/beneficiary_dependencies.dart';
 import '../../../../core/utils/family_enums.dart';
 import '../../../../core/utils/ux_helpers.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../utils/taxonomy_value_resolver.dart';
 
 class FamilyDeceasedForm extends ConsumerStatefulWidget {
   final int beneficiaryId;
@@ -15,7 +18,9 @@ class FamilyDeceasedForm extends ConsumerStatefulWidget {
   final int? presetDeceasedType; // لتحديد نوع المتوفى مسبقاً (1=أب، 2=أم)
 
   const FamilyDeceasedForm({
-    required this.beneficiaryId, required this.onSaved, super.key,
+    required this.beneficiaryId,
+    required this.onSaved,
+    super.key,
     this.existingDeceased,
     this.presetDeceasedType,
   });
@@ -38,6 +43,73 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
   int? _selectedDocumentType;
   DateTime? _deathDate;
   String? _documentPath;
+
+  List<DropdownMenuItem<int>> _taxonomyDropdownItems(
+    TaxonomyGroup group,
+  ) {
+    final optionsAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(group));
+    final options = optionsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const [],
+    );
+
+    return options
+        .map((taxonomy) {
+          final value = TaxonomyValueResolver.resolveToInt(
+            code: taxonomy.code,
+            id: taxonomy.id,
+            group: group,
+            source: 'family_deceased_form_dropdown',
+          );
+          if (value == null) return null;
+          return DropdownMenuItem<int>(
+            value: value,
+            child: Text(taxonomy.label),
+          );
+        })
+        .whereType<DropdownMenuItem<int>>()
+        .toList(growable: false);
+  }
+
+  int? _resolveDynamicDefault(TaxonomyGroup group) {
+    try {
+      final optionsAsync = ref.read(bridgeTaxonomiesByGroupOnceProvider(group));
+      final options = optionsAsync.maybeWhen(
+        data: (value) => value,
+        orElse: () => const [],
+      );
+
+      var resolvedCount = 0;
+
+      for (final taxonomy in options) {
+        final value = TaxonomyValueResolver.resolveToInt(
+          code: taxonomy.code,
+          id: taxonomy.id,
+          group: group,
+          source: 'family_deceased_form_default',
+        );
+        if (value != null) {
+          resolvedCount++;
+          TaxonomyValueResolver.logSummary(
+            group: group,
+            source: 'family_deceased_form_default',
+            total: options.length,
+            resolved: resolvedCount,
+          );
+          return value;
+        }
+      }
+      TaxonomyValueResolver.logSummary(
+        group: group,
+        source: 'family_deceased_form_default',
+        total: options.length,
+        resolved: resolvedCount,
+      );
+      return null;
+    } on StateError {
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -96,8 +168,21 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
   Future<void> _saveDeceased() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final resolvedDeceasedType =
+        _selectedDeceasedType ?? widget.presetDeceasedType ?? widget.existingDeceased?.deceasedType;
+    if (resolvedDeceasedType == null) {
+      ToastHelper.showError('الرجاء اختيار نوع المتوفى');
+      return;
+    }
+
     if (_deathDate == null) {
       ToastHelper.showError('الرجاء اختيار تاريخ الوفاة');
+      return;
+    }
+
+    final resolvedDeathCause = _selectedDeathCause ?? _resolveDynamicDefault(TaxonomyGroup.deathReason);
+    if (resolvedDeathCause == null) {
+      ToastHelper.showError('لا توجد أسباب وفاة ديناميكية متاحة حالياً');
       return;
     }
 
@@ -105,11 +190,9 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
     final dao = database.familyDeceasedDao;
 
     final companion = FamilyDeceasedTableCompanion(
-      id: widget.existingDeceased != null
-          ? drift.Value(widget.existingDeceased!.id)
-          : const drift.Value.absent(),
+      id: widget.existingDeceased != null ? drift.Value(widget.existingDeceased!.id) : const drift.Value.absent(),
       beneficiaryId: drift.Value(widget.beneficiaryId),
-      deceasedType: drift.Value(_selectedDeceasedType!),
+      deceasedType: drift.Value(resolvedDeceasedType),
       firstName: drift.Value(_firstNameController.text.trim()),
       secondName: _secondNameController.text.trim().isEmpty
           ? const drift.Value(null)
@@ -120,13 +203,9 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
       familyName: drift.Value(_familyNameController.text.trim()),
       nationalId: drift.Value(int.parse(_nationalIdController.text.trim())),
       deathDate: drift.Value(_deathDate!),
-      deathCause: drift.Value(_selectedDeathCause ?? DeathCause.unknown),
-      documentType: _selectedDocumentType != null
-          ? drift.Value(_selectedDocumentType)
-          : const drift.Value(null),
-      documentPath: _documentPath != null
-          ? drift.Value(_documentPath)
-          : const drift.Value(null),
+      deathCause: drift.Value(resolvedDeathCause),
+      documentType: _selectedDocumentType != null ? drift.Value(_selectedDocumentType) : const drift.Value(null),
+      documentPath: _documentPath != null ? drift.Value(_documentPath) : const drift.Value(null),
       notes: drift.Value(_notesController.text.trim()),
       syncState: const drift.Value('pending'),
       serverId: const drift.Value(null),
@@ -141,7 +220,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
       if (widget.existingDeceased != null) {
         final updateCompanion = FamilyDeceasedTableCompanion(
           id: drift.Value(widget.existingDeceased!.id),
-          deceasedType: drift.Value(_selectedDeceasedType!),
+          deceasedType: drift.Value(resolvedDeceasedType),
           firstName: drift.Value(_firstNameController.text.trim()),
           secondName: _secondNameController.text.trim().isEmpty
               ? const drift.Value(null)
@@ -152,18 +231,13 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
           familyName: drift.Value(_familyNameController.text.trim()),
           nationalId: drift.Value(int.parse(_nationalIdController.text.trim())),
           deathDate: drift.Value(_deathDate!),
-          deathCause: drift.Value(_selectedDeathCause ?? DeathCause.unknown),
-          documentType: _selectedDocumentType != null
-              ? drift.Value(_selectedDocumentType)
-              : const drift.Value(null),
-          documentPath: _documentPath != null
-              ? drift.Value(_documentPath)
-              : const drift.Value(null),
+          deathCause: drift.Value(resolvedDeathCause),
+          documentType: _selectedDocumentType != null ? drift.Value(_selectedDocumentType) : const drift.Value(null),
+          documentPath: _documentPath != null ? drift.Value(_documentPath) : const drift.Value(null),
           notes: drift.Value(_notesController.text.trim()),
           updatedAt: drift.Value(DateTime.now()),
         );
-        await (database.update(database.familyDeceasedTable)
-              ..where((t) => t.id.equals(widget.existingDeceased!.id)))
+        await (database.update(database.familyDeceasedTable)..where((t) => t.id.equals(widget.existingDeceased!.id)))
             .write(updateCompanion);
       } else {
         await dao.addDeceased(companion);
@@ -183,12 +257,21 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
 
   @override
   Widget build(BuildContext context) {
+    final deathCauseItems = _taxonomyDropdownItems(TaxonomyGroup.deathReason);
+    final documentTypeItems = _taxonomyDropdownItems(TaxonomyGroup.documentType);
+    final deathCauseValues = deathCauseItems.map((item) => item.value).whereType<int>().toSet();
+    final documentTypeValues = documentTypeItems.map((item) => item.value).whereType<int>().toSet();
+    final safeDeathCause = deathCauseValues.contains(_selectedDeathCause) ? _selectedDeathCause : null;
+    final safeDocumentType = documentTypeValues.contains(_selectedDocumentType) ? _selectedDocumentType : null;
+    final safeDeceasedType =
+        (_selectedDeceasedType == DeceasedType.father || _selectedDeceasedType == DeceasedType.mother)
+            ? _selectedDeceasedType
+            : null;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          widget.existingDeceased != null
-              ? 'تعديل بيانات متوفى'
-              : 'إضافة متوفى',
+          widget.existingDeceased != null ? 'تعديل بيانات متوفى' : 'إضافة متوفى',
         ),
         actions: [
           IconButton(icon: const Icon(Icons.save), onPressed: _saveDeceased),
@@ -202,7 +285,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
             // نوع المتوفى (أب/أم) - اخفيه إذا كان محدد مسبقاً
             if (widget.presetDeceasedType == null)
               DropdownButtonFormField<int>(
-                initialValue: _selectedDeceasedType,
+                initialValue: safeDeceasedType,
                 decoration: const InputDecoration(
                   labelText: 'نوع المتوفى *',
                   border: OutlineInputBorder(),
@@ -218,8 +301,7 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
                     child: Text('أم'),
                   ),
                 ],
-                onChanged: (value) =>
-                    setState(() => _selectedDeceasedType = value),
+                onChanged: (value) => setState(() => _selectedDeceasedType = value),
                 validator: (value) {
                   if (value == null) return 'الرجاء اختيار نوع المتوفى';
                   return null;
@@ -333,62 +415,40 @@ class _FamilyDeceasedFormState extends ConsumerState<FamilyDeceasedForm> {
 
             // سبب الوفاة
             DropdownButtonFormField<int>(
-              initialValue: _selectedDeathCause,
+              initialValue: safeDeathCause,
               decoration: const InputDecoration(
                 labelText: 'سبب الوفاة',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.medical_information),
               ),
-              items: const [
-                DropdownMenuItem(
-                  value: DeathCause.natural,
-                  child: Text('طبيعية'),
-                ),
-                DropdownMenuItem(value: DeathCause.disease, child: Text('مرض')),
-                DropdownMenuItem(value: DeathCause.sudden, child: Text('فجأة')),
-                DropdownMenuItem(
-                  value: DeathCause.accident,
-                  child: Text('حادث'),
-                ),
-                DropdownMenuItem(value: DeathCause.other, child: Text('أخرى')),
-                DropdownMenuItem(
-                  value: DeathCause.suicide,
-                  child: Text('انتحار'),
-                ),
-                DropdownMenuItem(
-                  value: DeathCause.murdered,
-                  child: Text('مغدور'),
-                ),
-                DropdownMenuItem(
-                  value: DeathCause.unknown,
-                  child: Text('غير معروف'),
-                ),
-              ],
+              items: deathCauseItems,
+              hint: const Text('اختر سبب الوفاة'),
               onChanged: (value) => setState(() => _selectedDeathCause = value),
             ),
+            if (deathCauseItems.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text('لا توجد بيانات سبب وفاة متاحة حالياً'),
+              ),
             const SizedBox(height: 16),
 
             // نوع الوثيقة
             DropdownButtonFormField<int>(
-              initialValue: _selectedDocumentType,
+              initialValue: safeDocumentType,
               decoration: const InputDecoration(
                 labelText: 'نوع الوثيقة',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.description),
               ),
-              items: const [
-                DropdownMenuItem(
-                  value: DocumentType.deathCertificate,
-                  child: Text('شهادة وفاة'),
-                ),
-                DropdownMenuItem(
-                  value: DocumentType.martyrCertificate,
-                  child: Text('إفادة شهيد'),
-                ),
-              ],
-              onChanged: (value) =>
-                  setState(() => _selectedDocumentType = value),
+              items: documentTypeItems,
+              hint: const Text('اختر نوع الوثيقة'),
+              onChanged: (value) => setState(() => _selectedDocumentType = value),
             ),
+            if (documentTypeItems.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text('لا توجد أنواع وثائق متاحة حالياً'),
+              ),
             const SizedBox(height: 16),
 
             // رفع الوثيقة

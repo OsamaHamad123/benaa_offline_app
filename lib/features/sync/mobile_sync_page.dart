@@ -9,36 +9,23 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
-import '../auth/presentation/providers/auth_providers.dart';
 import '../../core/widgets/modern_sliver_app_bar.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
 import '../../core/error_handling/error_handler.dart';
 import '../taxonomies/presentation/providers/taxonomy_providers.dart';
 import '../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../taxonomies/domain/entities/taxonomy.dart';
+import '../taxonomies/domain/entities/taxonomy_group.dart';
+import '../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
+import '../taxonomies/domain/services/taxonomy_integrity_guard.dart';
 import '../taxonomies/presentation/pages/taxonomy_binding_test_page.dart';
 import 'presentation/providers/file_id_providers.dart';
+import 'presentation/providers/mobile_sync_operations_providers.dart';
 import 'domain/repositories/file_id_reservation_repository.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
 /// ========================================================================
-
-final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
-  final database = ref.watch(databaseProvider);
-  final apiClient = ref.watch(apiClientProvider);
-  final secureStorage = ref.watch(secureStorageProvider);
-  final fileIdService = ref.watch(fileIdServiceProvider);
-  final taxonomyRepository = ref.watch(taxonomyRepositoryProvider);
-
-  return MobileSyncService(
-    database,
-    secureStorage,
-    dio: apiClient.dio,
-    fileIdService: fileIdService,
-    taxonomyRepository: taxonomyRepository,
-  );
-});
 
 class MobileSyncPage extends ConsumerStatefulWidget {
   const MobileSyncPage({super.key});
@@ -72,8 +59,20 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     // Count associations (assuming they have similar sync tracking)
     final associations = await db.select(db.associations).get();
     final assocTotal = associations.length;
-    // Note: If associations don't have syncState, we'll count them as synced
+    final assocPending = associations.where((a) => a.syncState == 'pending').length;
+    final assocModified = associations.where((a) => a.syncState == 'modified').length;
+    final assocNeedsSync = assocPending + assocModified;
     final assocSynced = associations.where((a) => a.isActive).length;
+
+    // Count association employees (represented currently by associationRepresentatives)
+    final representatives = await db.select(db.associationRepresentatives).get();
+    final repTotal = representatives.length;
+    final repPending = representatives.where((r) => r.syncState == 'pending').length;
+    final repModified = representatives.where((r) => r.syncState == 'modified').length;
+    final repNeedsSync = repPending + repModified;
+    final attachmentsTotal = await db.select(db.attachments).get().then((rows) => rows.length);
+    final familyMembersTotal = await db.select(db.familyMembersTable).get().then((rows) => rows.length);
+    final deadPeopleTotal = await db.select(db.familyDeceasedTable).get().then((rows) => rows.length);
 
     final fileIdService = ref.read(fileIdServiceProvider);
     final fileIdDiagnostics = await fileIdService.getDiagnostics();
@@ -92,10 +91,24 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           // Associations
           'assoc_total': assocTotal,
           'assoc_active': assocSynced,
+          'assoc_pending': assocPending,
+          'assoc_modified': assocModified,
+          'assoc_needsSync': assocNeedsSync,
+
+          // Association employees
+          'rep_total': repTotal,
+          'rep_pending': repPending,
+          'rep_modified': repModified,
+          'rep_needsSync': repNeedsSync,
+
+          // Related entities
+          'attachments_total': attachmentsTotal,
+          'family_members_total': familyMembersTotal,
+          'dead_people_total': deadPeopleTotal,
 
           // Combined totals
-          'total': beneficiaries.length + assocTotal,
-          'needsSync': benPending + benModified,
+          'total': beneficiaries.length + assocTotal + repTotal,
+          'needsSync': benPending + benModified + assocNeedsSync + repNeedsSync,
         };
       });
     }
@@ -113,8 +126,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Future<void> _syncDown() async {
-    final service = ref.read(mobileSyncServiceProvider);
-    final result = await service.syncDown();
+    final syncDown = ref.read(mobileSyncDownUseCaseProvider);
+    final result = await syncDown();
 
     // Force taxonomy sync through notifier to guarantee provider invalidation + UI refresh.
     await ref.read(taxonomySyncNotifierProvider.notifier).sync();
@@ -134,10 +147,16 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
       if (result.success) {
         if (!mounted) return;
         final skippedWarning = _buildSkippedThresholdWarning(result);
+        final relatedConsistency = _buildRelatedConsistencyHint(result);
         if (skippedWarning != null) {
           EnhancedSnackbar.showWarning(
             context,
             message: skippedWarning,
+          );
+        } else if (relatedConsistency.level == _SyncCheckLevel.warn) {
+          EnhancedSnackbar.showWarning(
+            context,
+            message: relatedConsistency.message,
           );
         }
         if (taxonomyStatus == TaxonomySyncStatus.success) {
@@ -163,8 +182,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Future<void> _syncUp() async {
-    final service = ref.read(mobileSyncServiceProvider);
-    final result = await service.syncUp();
+    final syncUp = ref.read(mobileSyncUpUseCaseProvider);
+    final result = await syncUp();
 
     if (mounted) {
       setState(() {
@@ -209,6 +228,50 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     EnhancedSnackbar.showError(
       context,
       message: '❌ فشل مزامنة التصنيفات: ${errorMessage ?? 'خطأ غير معروف'}',
+    );
+  }
+
+  Future<void> _syncNowOfficial() async {
+    final officialSync = ref.read(mobileOfficialSyncUseCaseProvider);
+    final result = await officialSync();
+    final combinedResult = MobileSyncResult(
+      success: result.down.success && result.up.success,
+      recordsSynced: result.down.recordsSynced + result.up.recordsSynced,
+      recordsFailed: result.down.recordsFailed + result.up.recordsFailed,
+      payloadCounters: {
+        ...result.down.payloadCounters,
+        ...result.up.payloadCounters,
+      },
+      writeCounters: {
+        ...result.down.writeCounters,
+        ...result.up.writeCounters,
+      },
+      error: result.down.error ?? result.up.error,
+      errorCategory: result.down.errorCategory ?? result.up.errorCategory,
+      errorContext: result.down.errorContext ?? result.up.errorContext,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _lastResult = combinedResult;
+    });
+
+    await _loadStats();
+
+    if (!mounted) return;
+
+    if (combinedResult.success) {
+      EnhancedSnackbar.showSuccess(
+        context,
+        message: '✅ اكتملت المزامنة الشاملة (${combinedResult.recordsSynced} سجل)',
+      );
+      return;
+    }
+
+    EnhancedSnackbar.showWarning(
+      context,
+      message: '⚠️ اكتملت المزامنة مع مشاكل (تمت ${combinedResult.recordsSynced}، فشل ${combinedResult.recordsFailed})',
     );
   }
 
@@ -291,6 +354,190 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     return (score: score, level: 'ضعيف', color: Colors.red, hint: 'يفضل تصدير التشخيص وفحص الربط.');
   }
 
+  ({_SyncCheckLevel level, String message, Color color}) _buildRelatedConsistencyHint(MobileSyncResult result) {
+    final payload = result.payloadCounters;
+    final writes = result.writeCounters;
+
+    int payloadValue(String key) => payload[key] ?? 0;
+    int writtenCount(String keyPrefix) =>
+        (writes['${keyPrefix}_inserted'] ?? 0) + (writes['${keyPrefix}_updated'] ?? 0);
+    int skippedCount(String keyPrefix) => writes['${keyPrefix}_skipped'] ?? 0;
+
+    final attachmentsPayload = payloadValue('attachments');
+    final attachmentsWritten = writtenCount('attachments');
+    final attachmentsSkipped = skippedCount('attachments');
+
+    final familyPayload = payloadValue('family_members');
+    final familyWritten = writtenCount('family_members');
+    final familySkipped = skippedCount('family_members');
+
+    final deadPayload = payloadValue('dead_people');
+    final deadWritten = writtenCount('dead_people');
+    final deadSkipped = skippedCount('dead_people');
+
+    final warnings = <String>[];
+    final infos = <String>[];
+
+    void evaluateEntity({
+      required String label,
+      required int payloadCount,
+      required int written,
+      required int skipped,
+    }) {
+      if (payloadCount <= 0) {
+        infos.add('$label: لا يوجد payload جديد');
+        return;
+      }
+
+      final unresolved = payloadCount - written;
+      if (written == 0 && skipped >= payloadCount) {
+        warnings.add('$label: تم استلام $payloadCount لكن لم يُكتب أي سجل محلياً');
+        return;
+      }
+
+      if (unresolved > 0 && unresolved >= (payloadCount * 0.4)) {
+        warnings.add('$label: فجوة واضحة بين payload ($payloadCount) والكتابة ($written)');
+      } else {
+        infos.add('$label: payload=$payloadCount، مكتوب=$written، متخطي=$skipped');
+      }
+    }
+
+    evaluateEntity(
+      label: 'المرفقات',
+      payloadCount: attachmentsPayload,
+      written: attachmentsWritten,
+      skipped: attachmentsSkipped,
+    );
+    evaluateEntity(
+      label: 'أفراد العائلة',
+      payloadCount: familyPayload,
+      written: familyWritten,
+      skipped: familySkipped,
+    );
+    evaluateEntity(
+      label: 'الأموات',
+      payloadCount: deadPayload,
+      written: deadWritten,
+      skipped: deadSkipped,
+    );
+
+    if (warnings.isNotEmpty) {
+      return (
+        level: _SyncCheckLevel.warn,
+        color: Colors.orange,
+        message: '⚠️ اتساق المزامنة: ${warnings.join(' | ')}',
+      );
+    }
+
+    return (
+      level: _SyncCheckLevel.ok,
+      color: Colors.green,
+      message: infos.isEmpty ? '✅ اتساق المزامنة جيد.' : '✅ ${infos.join(' | ')}',
+    );
+  }
+
+  ({int filled, int total, List<TaxonomyGroup> missing}) _coverageFromStats(
+    TaxonomyStatistics stats,
+    List<TaxonomyGroup> required,
+  ) {
+    final countByGroup = stats.countByGroup;
+
+    final missing = <TaxonomyGroup>[];
+    for (final group in required) {
+      final directCount = countByGroup[group] ?? 0;
+      if (directCount > 0) {
+        continue;
+      }
+
+      final equivalents = equivalentBeneficiaryTaxonomyGroups[group] ?? const <TaxonomyGroup>[];
+      final hasEquivalent = equivalents.any((equivalent) => (countByGroup[equivalent] ?? 0) > 0);
+      if (!hasEquivalent) {
+        missing.add(group);
+      }
+    }
+
+    return (
+      filled: required.length - missing.length,
+      total: required.length,
+      missing: missing,
+    );
+  }
+
+  ({int filled, int total, List<TaxonomyGroup> missing}) _requiredCoverageFromStats(TaxonomyStatistics stats) {
+    return _coverageFromStats(stats, requiredBeneficiaryTaxonomyGroups);
+  }
+
+  ({int filled, int total, List<TaxonomyGroup> missing}) _essentialCoverageFromStats(TaxonomyStatistics stats) {
+    return _coverageFromStats(stats, essentialBeneficiaryFormTaxonomyGroups);
+  }
+
+  List<TaxonomyGroup> _criticalMissingEssentialGroups(List<TaxonomyGroup> missingEssential) {
+    const critical = <TaxonomyGroup>{
+      TaxonomyGroup.gender,
+      TaxonomyGroup.documentType,
+      TaxonomyGroup.deathReason,
+      TaxonomyGroup.beneficiaryStatus,
+      TaxonomyGroup.category,
+      TaxonomyGroup.relationship,
+    };
+
+    return missingEssential.where(critical.contains).toList(growable: false);
+  }
+
+  ({String likelySource, List<String> localMappingSlugs, List<TaxonomyGroup> missingDocumentedGroups})
+      _diagnoseTaxonomyGapSource(TaxonomyStatistics stats) {
+    const guard = TaxonomyIntegrityGuard();
+    final report = guard.assess(stats);
+
+    String source;
+    switch (report.likelySource) {
+      case TaxonomyGapSource.localMapping:
+        source = 'local_mapping';
+        break;
+      case TaxonomyGapSource.backendPayload:
+        source = 'backend_payload';
+        break;
+      case TaxonomyGapSource.partialPayloadOrData:
+        source = 'partial_payload_or_data';
+        break;
+      case TaxonomyGapSource.none:
+        source = 'none';
+        break;
+    }
+
+    return (
+      likelySource: source,
+      localMappingSlugs: report.unresolvedDocumentedSlugs,
+      missingDocumentedGroups: report.missingDocumentedGroups,
+    );
+  }
+
+  String _diagnosisLabel(String source) {
+    switch (source) {
+      case 'local_mapping':
+        return 'خلل ربط محلي';
+      case 'backend_payload':
+        return 'نقص بيانات من السيرفر';
+      case 'partial_payload_or_data':
+        return 'نقص بيانات جزئي';
+      default:
+        return 'لا توجد فجوة حرجة';
+    }
+  }
+
+  Color _diagnosisColor(String source) {
+    switch (source) {
+      case 'local_mapping':
+        return Colors.orange;
+      case 'backend_payload':
+        return Colors.red;
+      case 'partial_payload_or_data':
+        return Colors.deepOrange;
+      default:
+        return Colors.green;
+    }
+  }
+
   Future<void> _exportSyncDiagnostics() async {
     if (_lastResult == null) {
       if (!mounted) return;
@@ -302,22 +549,50 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
       final now = DateTime.now();
       Map<String, int>? taxonomyGroupCounts;
       List<String>? missingTaxonomyGroups;
+      List<String>? essentialMissingTaxonomyGroups;
+      List<String>? criticalMissingTaxonomyGroups;
+      String? taxonomyLikelyIssueSource;
+      List<String>? unresolvedDocumentedSlugs;
+      List<String>? missingDocumentedBackendGroups;
+      int? localMappingGapCount;
+      int? backendPayloadGapCount;
 
       try {
         final taxonomyStats = await ref.read(taxonomyStatisticsProvider.future);
+        final requiredCoverage = _requiredCoverageFromStats(taxonomyStats);
+        final essentialCoverage = _essentialCoverageFromStats(taxonomyStats);
+        final criticalMissing = _criticalMissingEssentialGroups(essentialCoverage.missing);
+        final diagnosis = _diagnoseTaxonomyGapSource(taxonomyStats);
         taxonomyGroupCounts = {
           for (final entry in taxonomyStats.countByGroup.entries) entry.key.value: entry.value,
         };
-        missingTaxonomyGroups = taxonomyStats.countByGroup.entries
-            .where((entry) => entry.value == 0)
-            .map((entry) => entry.key.arabicName)
-            .toList();
+        missingTaxonomyGroups = requiredCoverage.missing.map((entry) => entry.arabicName).toList();
+        essentialMissingTaxonomyGroups = essentialCoverage.missing.map((entry) => entry.arabicName).toList();
+        criticalMissingTaxonomyGroups = criticalMissing.map((entry) => entry.arabicName).toList();
+        taxonomyLikelyIssueSource = diagnosis.likelySource;
+        unresolvedDocumentedSlugs = diagnosis.localMappingSlugs;
+        missingDocumentedBackendGroups = diagnosis.missingDocumentedGroups.map((entry) => entry.value).toList();
+        localMappingGapCount = diagnosis.localMappingSlugs.length;
+        backendPayloadGapCount = diagnosis.missingDocumentedGroups.length;
       } catch (_) {
         taxonomyGroupCounts = null;
         missingTaxonomyGroups = null;
+        essentialMissingTaxonomyGroups = null;
+        criticalMissingTaxonomyGroups = null;
+        taxonomyLikelyIssueSource = null;
+        unresolvedDocumentedSlugs = null;
+        missingDocumentedBackendGroups = null;
+        localMappingGapCount = null;
+        backendPayloadGapCount = null;
       }
 
       final diagnostics = {
+        'attachments_telemetry': {
+          'attachments_resolved': (_lastResult!.writeCounters['attachments_inserted'] ?? 0) +
+              (_lastResult!.writeCounters['attachments_updated'] ?? 0),
+          'preview_failed': (_lastResult!.writeCounters['attachments_skipped'] ?? 0),
+          'mapping_skipped': (_lastResult!.writeCounters['attachments_skipped'] ?? 0),
+        },
         'generated_at': now.toIso8601String(),
         'sync_status': {
           'is_syncing': _status?.isSyncing ?? false,
@@ -339,7 +614,14 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         'local_stats': _stats,
         'taxonomy_diagnostics': {
           'group_counts': taxonomyGroupCounts,
-          'missing_groups': missingTaxonomyGroups,
+          'missing_required_groups': missingTaxonomyGroups,
+          'missing_essential_form_groups': essentialMissingTaxonomyGroups,
+          'missing_critical_form_groups': criticalMissingTaxonomyGroups,
+          'likely_issue_source': taxonomyLikelyIssueSource,
+          'unresolved_documented_slugs': unresolvedDocumentedSlugs,
+          'missing_documented_backend_groups': missingDocumentedBackendGroups,
+          'local_mapping_gap_count': localMappingGapCount,
+          'backend_payload_gap_count': backendPayloadGapCount,
         },
         'file_id_diagnostics': _fileIdDiagnostics == null
             ? null
@@ -353,8 +635,11 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               },
         'recommended_actions': [
           if (missingTaxonomyGroups?.isNotEmpty ?? false) 'sync_taxonomies',
+          if (taxonomyLikelyIssueSource == 'backend_payload') 'review_backend_categories_payload',
+          if (taxonomyLikelyIssueSource == 'local_mapping') 'review_taxonomy_group_mapping',
           if ((_lastResult?.errorCategory ?? '').isNotEmpty) 'review_error_context',
           if ((_lastResult?.writeCounters['beneficiaries_skipped'] ?? 0) > 0) 'verify_identity_mapping',
+          if ((_stats?['assoc_needsSync'] ?? 0) > 0 || (_stats?['rep_needsSync'] ?? 0) > 0) 'run_associations_sync_up',
         ],
       };
 
@@ -426,6 +711,10 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  _buildSyncHubSummaryCard(status),
+
+                  SizedBox(height: 20.h),
+
                   // Warning card
                   _buildWarningCard(),
 
@@ -617,6 +906,37 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
             ),
           ),
         ),
+
+        SizedBox(height: 12.h),
+
+        Card(
+          color: Colors.teal[50],
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.dataset_linked, color: Colors.teal, size: 20.sp),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'إحصائيات البيانات المرتبطة',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                _buildStatRow('المرفقات (محلي)', '${_stats!['attachments_total']}', Colors.teal),
+                _buildStatRow('أفراد العائلة (محلي)', '${_stats!['family_members_total']}', Colors.teal),
+                _buildStatRow('الأموات (محلي)', '${_stats!['dead_people_total']}', Colors.teal),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -642,7 +962,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: color),
             ),
@@ -706,6 +1026,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               ),
             ],
 
+            SizedBox(height: 12.h),
+            _buildSyncProgressStepper(status),
+
             // Last sync time
             if (status.lastSyncAt != null) ...[
               SizedBox(height: 12.h),
@@ -753,7 +1076,21 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sync Down button
+        ElevatedButton.icon(
+          onPressed: isSyncing ? null : _syncNowOfficial,
+          icon: const Icon(Icons.sync),
+          label: const Text('مزامنة الآن (شاملة)'),
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            backgroundColor: Colors.indigo,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.grey,
+          ),
+        ),
+
+        SizedBox(height: 10.h),
+
+        // Sync Down button (secondary)
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncDown,
           icon: const Icon(Icons.cloud_download),
@@ -768,7 +1105,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
         SizedBox(height: 12.h),
 
-        // Sync Up button
+        // Sync Up button (secondary)
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncUp,
           icon: const Icon(Icons.cloud_upload),
@@ -836,7 +1173,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.15),
+                    color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12.r),
                     border: Border.all(color: statusColor),
                   ),
@@ -854,22 +1191,148 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
             SizedBox(height: 12.h),
             statsAsync.when(
               data: (stats) {
+                final requiredCoverage = _requiredCoverageFromStats(stats);
+                final essentialCoverage = _essentialCoverageFromStats(stats);
+                final criticalMissing = _criticalMissingEssentialGroups(essentialCoverage.missing);
+                final diagnosis = _diagnoseTaxonomyGapSource(stats);
                 final nonEmptyGroups = stats.countByGroup.entries.where((entry) => entry.value > 0).length;
-                final missingGroups = stats.countByGroup.entries
-                    .where((entry) => entry.value == 0)
-                    .map((entry) => entry.key.arabicName)
-                    .toList();
+                final missingGroups = requiredCoverage.missing.map((entry) => entry.arabicName).toList();
+                final missingEssentialGroups = essentialCoverage.missing.map((entry) => entry.arabicName).toList();
+                final missingCriticalGroups = criticalMissing.map((entry) => entry.arabicName).toList();
+                final missingDocumentedGroups =
+                    diagnosis.missingDocumentedGroups.map((entry) => entry.arabicName).toList();
+                final diagnosisColor = _diagnosisColor(diagnosis.likelySource);
+                final diagnosisLabel = _diagnosisLabel(diagnosis.likelySource);
+                final localMappingGapCount = diagnosis.localMappingSlugs.length;
+                final backendPayloadGapCount = diagnosis.missingDocumentedGroups.length;
+                final isLocalMappingIssue = diagnosis.likelySource == 'local_mapping';
+                final isBackendPayloadIssue = diagnosis.likelySource == 'backend_payload';
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Container(
+                      margin: EdgeInsets.only(bottom: 8.h),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                      decoration: BoxDecoration(
+                        color: diagnosisColor.withValues(alpha: 0.12),
+                        border: Border.all(color: diagnosisColor.withValues(alpha: 0.5)),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Text(
+                        'المصدر المرجّح: $diagnosisLabel',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: diagnosisColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (isLocalMappingIssue) ...[
+                      Container(
+                        margin: EdgeInsets.only(bottom: 8.h),
+                        padding: EdgeInsets.all(10.w),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.10),
+                          border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text(
+                          '⚠️ مشكلة ربط محلي: بعض slugs الموثقة غير محلولة محليًا. الإجراء: افتح اختبار الربط ثم صدّر التشخيص.',
+                          style: TextStyle(fontSize: 11.sp, color: Colors.orange[900], fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                    if (isBackendPayloadIssue) ...[
+                      Container(
+                        margin: EdgeInsets.only(bottom: 8.h),
+                        padding: EdgeInsets.all(10.w),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.08),
+                          border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text(
+                          '⛔ نقص من السيرفر: مجموعات موثقة مفقودة في payload. الإجراء: أعد مزامنة التصنيفات ثم صدّر تقرير التشخيص وراجعه مع الـ backend.',
+                          style: TextStyle(fontSize: 11.sp, color: Colors.red[900], fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                     _buildInfoRow('إجمالي التصنيفات', '${stats.totalCount}'),
                     _buildInfoRow('النشطة', '${stats.activeCount}'),
-                    _buildInfoRow('المجموعات المعبأة', '$nonEmptyGroups/${stats.countByGroup.length}'),
+                    _buildInfoRow(
+                      'تغطية مجموعات المستفيد (أساسي)',
+                      '${requiredCoverage.filled}/${requiredCoverage.total}',
+                    ),
+                    _buildInfoRow(
+                      'تغطية فورم المستفيد (Essential)',
+                      '${essentialCoverage.filled}/${essentialCoverage.total}',
+                    ),
+                    _buildInfoRow('المجموعات المعبأة (كل النظام)', '$nonEmptyGroups/${stats.countByGroup.length}'),
+                    _buildInfoRow('عدد فجوات الربط المحلي', '$localMappingGapCount'),
+                    _buildInfoRow('عدد فجوات Payload من السيرفر', '$backendPayloadGapCount'),
                     if (missingGroups.isNotEmpty) ...[
                       SizedBox(height: 6.h),
                       Text(
-                        'المجموعات غير المعبأة: ${missingGroups.join('، ')}',
+                        'المجموعات الناقصة (أساسي): ${missingGroups.join('، ')}',
                         style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
+                      ),
+                    ],
+                    if (missingEssentialGroups.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        'المجموعات الناقصة (Essential): ${missingEssentialGroups.join('، ')}',
+                        style: TextStyle(fontSize: 12.sp, color: Colors.red[900]),
+                      ),
+                    ],
+                    if (missingCriticalGroups.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        'نقص حرج للفورم: ${missingCriticalGroups.join('، ')}',
+                        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.red[900]),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        'نفّذ مزامنة التصنيفات الآن، وإذا استمر النقص فالمشكلة من بيانات السيرفر.',
+                        style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
+                      ),
+                    ],
+                    if (missingDocumentedGroups.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        'مجموعات موثقة من السيرفر لكنها فارغة محليًا: ${missingDocumentedGroups.join('، ')}',
+                        style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
+                      ),
+                    ],
+                    if (diagnosis.likelySource == 'local_mapping' && diagnosis.localMappingSlugs.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        'سبب مرجح: خلل ربط محلي (slugs غير محلولة): ${diagnosis.localMappingSlugs.join('، ')}',
+                        style: TextStyle(fontSize: 11.sp, color: Colors.orange[900]),
+                      ),
+                    ] else if (diagnosis.likelySource == 'backend_payload') ...[
+                      SizedBox(height: 6.h),
+                      Text(
+                        'سبب مرجح: نقص Payload من السيرفر لبعض المجموعات الموثقة.',
+                        style: TextStyle(fontSize: 11.sp, color: Colors.red[900], fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                    if (isLocalMappingIssue || isBackendPayloadIssue) ...[
+                      SizedBox(height: 10.h),
+                      Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _syncTaxonomies,
+                            icon: const Icon(Icons.sync_rounded),
+                            label: const Text('إعادة مزامنة التصنيفات'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _exportSyncDiagnostics,
+                            icon: const Icon(Icons.ios_share_rounded),
+                            label: const Text('تصدير التشخيص'),
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -929,6 +1392,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
   Widget _buildResultCard(MobileSyncResult result) {
     final health = _buildSyncHealthScore(result);
+    final relatedConsistency = _buildRelatedConsistencyHint(result);
 
     return Card(
       color: result.success ? Colors.green[50] : Colors.red[50],
@@ -966,6 +1430,15 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
             Text(
               '  ${health.hint}',
               style: TextStyle(fontSize: 12.sp, color: health.color),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              relatedConsistency.message,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: relatedConsistency.color,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (health.score < 65 || result.errorCategory != null) ...[
               SizedBox(height: 8.h),
@@ -1132,6 +1605,121 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     );
   }
 
+  Widget _buildSyncHubSummaryCard(MobileSyncStatus status) {
+    final hasResult = _lastResult != null;
+    final health = hasResult ? _buildSyncHealthScore(_lastResult!) : null;
+    final statusColor = status.isSyncing
+        ? Colors.blue
+        : (hasResult ? (_lastResult!.success ? Colors.green : Colors.orange) : Colors.grey);
+
+    final statusText = status.isSyncing
+        ? 'جارية الآن'
+        : (hasResult ? (_lastResult!.success ? 'مكتملة بنجاح' : 'مكتملة مع مشاكل') : 'غير متحقق');
+
+    return Card(
+      color: Colors.indigo[50],
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.hub_rounded, color: Colors.indigo, size: 22.sp),
+                SizedBox(width: 8.w),
+                Text(
+                  'Sync Hub',
+                  style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SizedBox(height: 10.h),
+            _buildInfoRow('الحالة', statusText),
+            _buildInfoRow('آخر مزامنة', status.lastSyncAt != null ? _formatDateTime(status.lastSyncAt!) : 'لا يوجد'),
+            if (health != null) _buildInfoRow('صحة المزامنة', '${health.score}/100 (${health.level})'),
+            SizedBox(height: 10.h),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: statusColor),
+              ),
+              child: Text(
+                status.currentOperation,
+                style: TextStyle(fontSize: 12.sp, color: statusColor, fontWeight: FontWeight.w700),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: status.isSyncing ? null : _syncNowOfficial,
+                icon: const Icon(Icons.sync),
+                label: const Text('مزامنة الآن (الإجراء الرئيسي)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.grey,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSyncProgressStepper(MobileSyncStatus status) {
+    final steps = <({String label, double threshold})>[
+      (label: 'تهيئة', threshold: 0.0),
+      (label: 'التصنيفات', threshold: 0.2),
+      (label: 'التنزيل/الرفع الأساسي', threshold: 0.6),
+      (label: 'البيانات المرتبطة', threshold: 0.8),
+      (label: 'اكتملت', threshold: 1.0),
+    ];
+
+    final progress = status.progress.clamp(0.0, 1.0);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'مراحل المزامنة',
+          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.grey[800]),
+        ),
+        SizedBox(height: 8.h),
+        Wrap(
+          spacing: 8.w,
+          runSpacing: 8.h,
+          children: [
+            for (final step in steps)
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                decoration: BoxDecoration(
+                  color: progress >= step.threshold
+                      ? Colors.green.withValues(alpha: 0.15)
+                      : Colors.grey.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(
+                    color: progress >= step.threshold ? Colors.green : Colors.grey,
+                  ),
+                ),
+                child: Text(
+                  step.label,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: progress >= step.threshold ? Colors.green[800] : Colors.grey[700],
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildInfoRow(String label, String value) {
     return Padding(
       padding: EdgeInsets.only(bottom: 6.h),
@@ -1166,3 +1754,5 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         '${dt.minute.toString().padLeft(2, '0')}';
   }
 }
+
+enum _SyncCheckLevel { ok, warn }

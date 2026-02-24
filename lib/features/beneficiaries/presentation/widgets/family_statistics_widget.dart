@@ -12,9 +12,15 @@ class FamilyStatisticsWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: colorScheme.outlineVariant),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -26,11 +32,11 @@ class FamilyStatisticsWidget extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   'إحصائيات العائلة',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            const Divider(height: 24),
+            Divider(height: 24, color: colorScheme.outlineVariant),
 
             // الإحصائيات الإجمالية - استخدام Provider
             Consumer(
@@ -96,46 +102,37 @@ class FamilyStatisticsWidget extends ConsumerWidget {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'إجمالي الأفراد',
-                stats.totalMembers.toString(),
-                Icons.people,
-                colorScheme.primary,
-              ),
+            _buildStatCard(
+              context,
+              'إجمالي الأفراد',
+              stats.totalMembers.toString(),
+              Icons.people,
+              colorScheme.primary,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildStatCard(
-                'ذكور',
-                stats.malesCount.toString(),
-                Icons.man,
-                colorScheme.secondary,
-              ),
+            _buildStatCard(
+              context,
+              'ذكور',
+              stats.malesCount.toString(),
+              Icons.man,
+              colorScheme.secondary,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildStatCard(
-                'إناث',
-                stats.femalesCount.toString(),
-                Icons.woman,
-                colorScheme.tertiary,
-              ),
+            _buildStatCard(
+              context,
+              'إناث',
+              stats.femalesCount.toString(),
+              Icons.woman,
+              colorScheme.tertiary,
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'الأطفال (<18)',
-                stats.childrenCount.toString(),
-                Icons.child_care,
-                colorScheme.error,
-              ),
+            _buildStatCard(
+              context,
+              'الأطفال (<18)',
+              stats.childrenCount.toString(),
+              Icons.child_care,
+              colorScheme.error,
             ),
           ],
         ),
@@ -154,46 +151,37 @@ class FamilyStatisticsWidget extends ConsumerWidget {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Expanded(
-              child: _buildStatCard(
-                'سليم وآمن',
-                stats.healthySafe.toString(),
-                Icons.health_and_safety,
-                colorScheme.primary,
-              ),
+            _buildStatCard(
+              context,
+              'سليم وآمن',
+              stats.healthySafe.toString(),
+              Icons.health_and_safety,
+              colorScheme.primary,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildStatCard(
-                'مريض',
-                stats.sick.toString(),
-                Icons.sick,
-                colorScheme.secondary,
-              ),
+            _buildStatCard(
+              context,
+              'مريض',
+              stats.sick.toString(),
+              Icons.sick,
+              colorScheme.secondary,
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                'مريض مزمن',
-                stats.chronicSick.toString(),
-                Icons.medical_services,
-                colorScheme.error,
-              ),
+            _buildStatCard(
+              context,
+              'مريض مزمن',
+              stats.chronicSick.toString(),
+              Icons.medical_services,
+              colorScheme.error,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _buildStatCard(
-                'معاق',
-                stats.disabled.toString(),
-                Icons.accessible,
-                colorScheme.tertiary,
-              ),
+            _buildStatCard(
+              context,
+              'معاق',
+              stats.disabled.toString(),
+              Icons.accessible,
+              colorScheme.tertiary,
             ),
           ],
         ),
@@ -213,6 +201,7 @@ class FamilyStatisticsWidget extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         _buildStatCard(
+          context,
           'عدد الأموات المسجلين',
           count.toString(),
           Icons.local_hospital,
@@ -223,26 +212,29 @@ class FamilyStatisticsWidget extends ConsumerWidget {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String label,
     String value,
     IconData icon,
     Color color,
   ) {
+    final textTheme = Theme.of(context).textTheme;
     return Container(
+      width: 160,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 10),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 24,
+            style: textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -250,8 +242,11 @@ class FamilyStatisticsWidget extends ConsumerWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 12, color: color.withOpacity(0.8)),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.bodySmall?.copyWith(
+              color: color.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),

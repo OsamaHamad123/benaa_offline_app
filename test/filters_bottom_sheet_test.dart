@@ -49,12 +49,12 @@ void main() {
     await tester.tap(find.text('Show'));
     await tester.pumpAndSettle();
 
-    // Category chips should be visible
+    // Base category chip should always be visible
     expect(find.text('الكل'), findsWidgets);
-    expect(find.text('يتيم'), findsOneWidget);
-    expect(find.text('أرملة'), findsOneWidget);
-    expect(find.text('فقير'), findsOneWidget);
-    expect(find.text('معاق'), findsOneWidget);
+
+    // Dynamic section chips are rendered as tappable containers
+    final tappableChips = find.byType(InkWell);
+    expect(tappableChips, findsWidgets);
   });
 
   testWidgets('FiltersBottomSheet displays sort options', (tester) async {

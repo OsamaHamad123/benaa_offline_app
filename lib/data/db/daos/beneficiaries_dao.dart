@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'dart:convert' show jsonEncode;
 import '../../../core/utils/arabic_normalizer.dart';
 import '../drift_database.dart';
 import '../tables/beneficiaries_table.dart';
@@ -8,8 +9,7 @@ part 'beneficiaries_dao.g.dart';
 /// Beneficiaries Data Access Object
 /// يحتوي على جميع عمليات CRUD والاستعلامات الخاصة بالمستفيدين
 @DriftAccessor(tables: [Beneficiaries])
-class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
-    with _$BeneficiariesDaoMixin {
+class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$BeneficiariesDaoMixin {
   BeneficiariesDao(super.db);
 
   // ============================================================================
@@ -100,8 +100,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   Future<int> countIncompleteBeneficiaries() async {
     final result = await customSelect(
       'SELECT COUNT(*) as count FROM beneficiaries '
-      'WHERE phone_number IS NULL OR phone_number = \'\' '
-      'OR address IS NULL OR address = \'\'',
+      'WHERE phone_number IS NULL OR phone_number = 0 '
+      'OR current_address IS NULL OR TRIM(current_address) = \'\'',
       readsFrom: {beneficiaries},
     ).getSingle();
     return result.read<int>('count');
@@ -129,8 +129,7 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     ).get();
 
     return {
-      for (final row in results)
-        row.read<int>('province'): row.read<int>('count'),
+      for (final row in results) row.read<int>('province'): row.read<int>('count'),
     };
   }
 
@@ -209,7 +208,27 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Delete beneficiary
-  Future<void> deleteBeneficiary(int id) async {
+  Future<void> deleteBeneficiary(int id, {bool trackSyncDelete = true}) async {
+    if (trackSyncDelete) {
+      final existing = await getBeneficiaryById(id);
+      if (existing != null) {
+        final fileId = existing.fileIdNumber?.trim();
+        final entityId =
+            (fileId != null && fileId.isNotEmpty) ? fileId : (existing.serverId?.toString() ?? existing.id.toString());
+
+        await db.syncDao.addTombstone(
+          entityType: 'data',
+          entityId: entityId,
+          payload: jsonEncode({
+            'local_id': existing.id,
+            'server_id': existing.serverId,
+            'file_id_number': existing.fileIdNumber,
+            'id_number': existing.idNumber,
+          }),
+        );
+      }
+    }
+
     await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
   }
 
@@ -218,6 +237,25 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     if (ids.isEmpty) return 0;
 
     return await transaction(() async {
+      final rowsToDelete = await (select(beneficiaries)..where((b) => b.id.isIn(ids))).get();
+
+      for (final row in rowsToDelete) {
+        final fileId = row.fileIdNumber?.trim();
+        final entityId =
+            (fileId != null && fileId.isNotEmpty) ? fileId : (row.serverId?.toString() ?? row.id.toString());
+
+        await db.syncDao.addTombstone(
+          entityType: 'data',
+          entityId: entityId,
+          payload: jsonEncode({
+            'local_id': row.id,
+            'server_id': row.serverId,
+            'file_id_number': row.fileIdNumber,
+            'id_number': row.idNumber,
+          }),
+        );
+      }
+
       int deletedCount = 0;
 
       // Delete in batches of 100 for optimal performance
@@ -251,13 +289,11 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
 
     return await (select(beneficiaries)
           ..where((b) {
-            var condition = b.fullNameNorm.like('%$normalized%') |
-                b.fileIdNumber.like('%$normalized%');
+            var condition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
 
             // إذا كان رقم، ابحث في id_number أيضاً
             if (isNumeric) {
-              condition =
-                  condition | b.idNumber.cast<String>().contains(query.trim());
+              condition = condition | b.idNumber.cast<String>().contains(query.trim());
             }
 
             return condition;
@@ -268,9 +304,14 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
   /// Advanced search with filters - OPTIMIZED SQL (no Dart filtering)
   Future<List<Beneficiary>> searchBeneficiariesAdvanced({
     String query = '',
+    String nationalIdQuery = '',
+    String fileNumberQuery = '',
+    String phoneQuery = '',
     int? categoryId,
     int? governorateId,
     int? cityId,
+    int? gender,
+    int? maritalStatus,
     DateTime? dateFrom,
     DateTime? dateTo,
     String sortBy = 'full_name',
@@ -281,6 +322,9 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
     // ✅ Use ArabicNormalizer for better Arabic search
     final normalized = ArabicNormalizer.normalize(query.trim());
     final isNumeric = int.tryParse(query.trim()) != null;
+    final hasNationalIdQuery = nationalIdQuery.trim().isNotEmpty;
+    final hasFileNumberQuery = fileNumberQuery.trim().isNotEmpty;
+    final hasPhoneQuery = phoneQuery.trim().isNotEmpty;
 
     var selectQuery = select(beneficiaries);
 
@@ -290,15 +334,25 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
 
         // 🔍 Search filter
         if (normalized.isNotEmpty) {
-          var searchCondition = b.fullNameNorm.like('%$normalized%') |
-              b.fileIdNumber.like('%$normalized%');
+          var searchCondition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
 
           if (isNumeric) {
-            searchCondition = searchCondition |
-                b.idNumber.cast<String>().contains(query.trim());
+            searchCondition = searchCondition | b.idNumber.cast<String>().contains(query.trim());
           }
 
           condition = condition & searchCondition;
+        }
+
+        if (hasNationalIdQuery) {
+          condition = condition & b.idNumber.cast<String>().contains(nationalIdQuery.trim());
+        }
+
+        if (hasFileNumberQuery) {
+          condition = condition & b.fileIdNumber.like('%${fileNumberQuery.trim()}%');
+        }
+
+        if (hasPhoneQuery) {
+          condition = condition & b.phoneNumber.cast<String>().contains(phoneQuery.trim());
         }
 
         // 🏷️ Category filter (SQL WHERE)
@@ -314,6 +368,14 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
         // 🏙️ City filter (SQL WHERE)
         if (cityId != null) {
           condition = condition & b.city.equals(cityId);
+        }
+
+        if (gender != null) {
+          condition = condition & b.gender.equals(gender);
+        }
+
+        if (maritalStatus != null) {
+          condition = condition & b.maritalStatus.equals(maritalStatus);
         }
 
         // 📅 Date range filter (SQL WHERE)
@@ -342,12 +404,16 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
             case 'id_number':
               sortColumn = b.idNumber;
               break;
+            case 'file_id_number':
+              sortColumn = b.fileIdNumber;
+              break;
+            case 'birth_date':
+              sortColumn = b.birthDate;
+              break;
             default:
               sortColumn = b.fullName;
           }
-          return sortDesc
-              ? OrderingTerm.desc(sortColumn)
-              : OrderingTerm.asc(sortColumn);
+          return sortDesc ? OrderingTerm.desc(sortColumn) : OrderingTerm.asc(sortColumn);
         },
       ])
       ..limit(limit, offset: offset);
@@ -375,13 +441,11 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase>
         // Search filter (search in fullName, fileIdNumber, and idNumber)
         if (normalized.isNotEmpty) {
           final isNumeric = int.tryParse(query.trim()) != null;
-          var searchCondition = b.fullNameNorm.like('%$normalized%') |
-              b.fileIdNumber.like('%$normalized%');
+          var searchCondition = b.fullNameNorm.like('%$normalized%') | b.fileIdNumber.like('%$normalized%');
 
           // إذا كان رقم، ابحث في id_number
           if (isNumeric) {
-            searchCondition = searchCondition |
-                b.idNumber.cast<String>().contains(query.trim());
+            searchCondition = searchCondition | b.idNumber.cast<String>().contains(query.trim());
           }
 
           condition = condition & searchCondition;

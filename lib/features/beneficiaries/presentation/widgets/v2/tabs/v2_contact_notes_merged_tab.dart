@@ -61,16 +61,20 @@ class V2ContactNotesMergedTab extends StatelessWidget {
               prefixIcon: Icons.map_rounded,
             ),
             SizedBox(height: 12.h),
-            M3DropdownField<String>(
-              value: formControllers.selectedCity,
-              label: 'المدينة',
-              prefixIcon: Icons.location_city_rounded,
-              onChanged: (value) => formControllers.selectedCity = value,
-              items: const [
-                DropdownMenuItem(value: 'مدينة 1', child: Text('مدينة 1')),
-                DropdownMenuItem(value: 'مدينة 2', child: Text('مدينة 2')),
-                DropdownMenuItem(value: 'أخرى', child: Text('أخرى')),
-              ],
+            TextFormField(
+              initialValue: formControllers.selectedCity,
+              onChanged: (value) {
+                final normalized = value.trim();
+                formControllers.selectedCity = normalized.isEmpty ? null : normalized;
+              },
+              decoration: InputDecoration(
+                labelText: 'المدينة',
+                prefixIcon: const Icon(Icons.location_city_rounded),
+                helperText: 'أدخل اسم المدينة كما هو في المصدر الرسمي',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
             ),
             SizedBox(height: 12.h),
             M3TextField(

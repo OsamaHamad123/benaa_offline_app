@@ -172,6 +172,10 @@ class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged>
       key: const ValueKey('review_tab'),
       formControllers: widget.formControllers,
       onFinalSave: widget.onFinalSave ?? () {},
+      onJumpToTab: (index) {
+        final safeIndex = index.clamp(0, FormConstants.totalTabs - 1);
+        widget.controller.animateTo(safeIndex);
+      },
       onEditSection: () {
         // العودة للتبويب الأول
         widget.controller.animateTo(0);

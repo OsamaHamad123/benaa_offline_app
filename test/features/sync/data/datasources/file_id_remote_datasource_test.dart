@@ -87,6 +87,44 @@ void main() {
       expect(payload['batch_size'], 3);
     });
 
+    test('reserveBatchSnapshot reads reservation payload when status is 201', () async {
+      final adapter = _QueueHttpClientAdapter([
+        const _QueuedResponse(
+          method: 'POST',
+          path: '/api/mobile/database/file-ids/reserve',
+          statusCode: 201,
+          body: {
+            'success': true,
+            'data': {
+              'reservation': {
+                'id': 55,
+                'start_id': 9000,
+                'end_id': 9004,
+                'batch_size': 5,
+                'used_count': 1,
+                'remaining_count': 4,
+                'next_available_id': 9001,
+                'status': 'active',
+              }
+            }
+          },
+        ),
+      ]);
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://palestine.benaadev.org'));
+      dio.httpClientAdapter = adapter;
+
+      final dataSource = FileIdRemoteDataSourceImpl(dio);
+      final snapshot = await dataSource.reserveBatchSnapshot(5);
+
+      expect(snapshot, isNotNull);
+      expect(snapshot!.reservationId, 55);
+      expect(snapshot.startId, 9000);
+      expect(snapshot.endId, 9004);
+      expect(snapshot.nextAvailableId, 9001);
+      expect(snapshot.remainingCount, 4);
+    });
+
     test('reserveIds builds ids from active_reservation range when ids list missing', () async {
       final adapter = _QueueHttpClientAdapter([
         const _QueuedResponse(
@@ -151,7 +189,7 @@ void main() {
       final syncPayload = adapter.capturedRequests.last.data as Map<String, dynamic>;
       expect(syncPayload['reservation_id'], 77);
       expect(syncPayload['used_count'], 3);
-      expect(syncPayload['used_ids'], [3001, 3002, 3003]);
+      expect(syncPayload.containsKey('used_ids'), isFalse);
     });
   });
 }

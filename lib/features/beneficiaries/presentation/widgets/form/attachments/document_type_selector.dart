@@ -1,29 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../../../taxonomies/domain/entities/taxonomy.dart';
+import '../../../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../../../../../../core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 
 /// 🎨 Document Type Selector Widget
 ///
-/// Dropdown منظم لاختيار نوع الوثيقة من قائمة محددة مسبقاً
-/// حسب تصميم الموقع
-class DocumentTypeSelector extends StatelessWidget {
+/// Dropdown منظم لاختيار نوع الوثيقة من التصنيفات الديناميكية
+class DocumentTypeSelector extends ConsumerWidget {
   final String? selectedType;
   final ValueChanged<String?> onChanged;
   final String? label;
   final bool isRequired;
 
   const DocumentTypeSelector({
-    required this.onChanged, super.key,
+    required this.onChanged,
+    super.key,
     this.selectedType,
     this.label,
     this.isRequired = false,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    bool isRefUsable() {
+      try {
+        ref.read(sync_providers.syncControllerProvider);
+        return true;
+      } on StateError {
+        return false;
+      }
+    }
 
-    return DropdownButtonFormField<String>(
-      initialValue: selectedType,
+    final theme = Theme.of(context);
+    final documentTypesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.documentType),
+    );
+    final options = documentTypesAsync.maybeWhen<List<Taxonomy>>(
+      data: (value) => value,
+      orElse: () => const <Taxonomy>[],
+    );
+    final autoSyncAttempted = ref.watch(bridgeGroupAutoSyncAttemptedProvider(TaxonomyGroup.documentType));
+    final isLoading = documentTypesAsync.isLoading && !documentTypesAsync.hasValue;
+    final hasError = documentTypesAsync.hasError;
+    final hasSelectedTypeInOptions = selectedType != null && options.any((type) => type.code == selectedType);
+    final effectiveSelectedType = hasSelectedTypeInOptions ? selectedType : null;
+
+    Future<void> retryLoad() async {
+      ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.documentType));
+    }
+
+    Future<void> syncAndReload() async {
+      await ref.read(sync_providers.syncControllerProvider.notifier).deltaSync('taxonomies');
+      await retryLoad();
+    }
+
+    if (isLoading) {
+      return InputDecorator(
+        decoration: InputDecoration(
+          labelText: label ?? 'نوع الوثيقة ${isRequired ? '*' : ''}',
+          prefixIcon: const Icon(Icons.description_rounded),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          filled: true,
+          fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('جاري تحميل أنواع الوثائق...'),
+            SizedBox(height: 8.h),
+            const LinearProgressIndicator(),
+          ],
+        ),
+      );
+    }
+
+    final dropdown = DropdownButtonFormField<String>(
+      initialValue: effectiveSelectedType,
       decoration: InputDecoration(
         labelText: label ?? 'نوع الوثيقة ${isRequired ? '*' : ''}',
         prefixIcon: const Icon(Icons.description_rounded),
@@ -31,131 +88,78 @@ class DocumentTypeSelector extends StatelessWidget {
           borderRadius: BorderRadius.circular(12.r),
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
-      items: _documentTypes.map((type) {
+      items: options.map((type) {
         return DropdownMenuItem(
-          value: type.value,
+          value: type.code,
           child: Row(
             children: [
-              Icon(type.icon, size: 20.sp),
+              Icon(Icons.description_rounded, size: 20.sp),
               SizedBox(width: 8.w),
-              Text(type.label),
+              Expanded(
+                child: Text(
+                  type.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         );
       }).toList(),
-      onChanged: onChanged,
+      onChanged: options.isEmpty ? null : onChanged,
+      disabledHint: const Text('لا توجد أنواع وثائق متاحة حالياً'),
       validator: isRequired ? (value) => value == null ? 'يرجى اختيار نوع الوثيقة' : null : null,
     );
+
+    if (options.isNotEmpty) return dropdown;
+
+    if (!autoSyncAttempted) {
+      Future.microtask(() async {
+        if (!isRefUsable()) {
+          return;
+        }
+
+        ref.read(bridgeGroupAutoSyncAttemptedProvider(TaxonomyGroup.documentType).notifier).state = true;
+        await ref.read(sync_providers.syncControllerProvider.notifier).deltaSync('taxonomies');
+
+        if (!isRefUsable()) {
+          return;
+        }
+
+        await retryLoad();
+      });
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        dropdown,
+        SizedBox(height: 8.h),
+        Text(
+          hasError ? 'تعذر تحميل هذا التصنيف حالياً' : 'لا توجد بيانات لهذا التصنيف',
+          style: theme.textTheme.bodySmall,
+        ),
+        SizedBox(height: 6.h),
+        Wrap(
+          spacing: 8.w,
+          children: [
+            OutlinedButton.icon(
+              onPressed: retryLoad,
+              icon: const Icon(Icons.refresh),
+              label: const Text('إعادة المحاولة'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: syncAndReload,
+              icon: const Icon(Icons.sync),
+              label: const Text('مزامنة التصنيفات'),
+            ),
+          ],
+        ),
+      ],
+    );
   }
-
-  /// قائمة أنواع الوثائق المتاحة (من الموقع)
-  static final List<DocumentTypeItem> _documentTypes = [
-    const DocumentTypeItem(
-      value: 'death_certificate',
-      label: 'شهادة الوفاة',
-      icon: Icons.person_off_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'national_id',
-      label: 'إفادة شهيد',
-      icon: Icons.military_tech_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'id_card',
-      label: 'صورة الهوية',
-      icon: Icons.credit_card_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'guardianship_letter',
-      label: 'حجة الوصاية',
-      icon: Icons.gavel_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'medical_report',
-      label: 'تقرير طبي',
-      icon: Icons.medical_information_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'custody_letter',
-      label: 'إقرار الحضانة',
-      icon: Icons.family_restroom_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'rent_receipt',
-      label: 'حضر إيرات',
-      icon: Icons.receipt_long_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'orphan_care',
-      label: 'حجة اعالة يتيم',
-      icon: Icons.child_care_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'birth_certificate',
-      label: 'شهادة الميلاد',
-      icon: Icons.cake_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'recent_certificate',
-      label: 'آخر شهادة حصل عليها',
-      icon: Icons.school_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'test',
-      label: 'test',
-      icon: Icons.science_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'personal_photo',
-      label: 'صور شخصية',
-      icon: Icons.photo_camera_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'other_documents',
-      label: 'أوراق ثبوتية أخرى',
-      icon: Icons.file_copy_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'welfare_agency',
-      label: 'وكالة في شؤون الولاية',
-      icon: Icons.business_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'transfer_document',
-      label: 'حجة ترمل',
-      icon: Icons.document_scanner_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'parenthood_document',
-      label: 'حجة ولاية',
-      icon: Icons.family_restroom_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'long_form_id',
-      label: 'صورة طويلة',
-      icon: Icons.badge_rounded,
-    ),
-    const DocumentTypeItem(
-      value: 'wallet_photo',
-      label: 'صورة محفظة',
-      icon: Icons.photo_album_rounded,
-    ),
-  ];
-}
-
-/// 📋 Document Type Item Model
-class DocumentTypeItem {
-  final String value;
-  final String label;
-  final IconData icon;
-
-  const DocumentTypeItem({
-    required this.value,
-    required this.label,
-    required this.icon,
-  });
 }
 
 /// 👤 Person Type Selector (صاحب الملف / أفراد الأسرة / المتوفين)
@@ -166,7 +170,9 @@ class PersonTypeSelector extends StatelessWidget {
   final String? label;
 
   const PersonTypeSelector({
-    required this.onChanged, required this.availablePersons, super.key,
+    required this.onChanged,
+    required this.availablePersons,
+    super.key,
     this.selectedPerson,
     this.label,
   });
@@ -174,9 +180,14 @@ class PersonTypeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final validPersonValues = <String>{
+      'file_owner',
+      ...availablePersons,
+    };
+    final selectedPersonValue = validPersonValues.contains(selectedPerson) ? selectedPerson : null;
 
     return DropdownButtonFormField<String>(
-      initialValue: selectedPerson,
+      initialValue: selectedPersonValue,
       decoration: InputDecoration(
         labelText: label ?? 'اختر الشخص *',
         prefixIcon: const Icon(Icons.person_pin_rounded),
@@ -184,7 +195,7 @@ class PersonTypeSelector extends StatelessWidget {
           borderRadius: BorderRadius.circular(12.r),
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
       items: [
         const DropdownMenuItem(

@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/widgets/loading_state.dart';
 import '../../core/sync/mobile_sync_service.dart';
-import 'mobile_sync_page.dart';
+import 'presentation/providers/mobile_sync_operations_providers.dart';
 
 final mobileSyncStatusProvider = StreamProvider<MobileSyncStatus>((ref) {
   final syncService = ref.watch(mobileSyncServiceProvider);
   return syncService.statusStream;
 });
 
-Future<void> _runOfficialSync(MobileSyncService syncService) async {
-  await syncService.syncDown();
-  await syncService.syncUp();
+Future<void> _runOfficialSync(WidgetRef ref) async {
+  final officialSync = ref.read(mobileOfficialSyncUseCaseProvider);
+  await officialSync();
 }
 
 /// شريط عرض حالة المزامنة
@@ -99,20 +99,19 @@ class SyncButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncStatusAsync = ref.watch(mobileSyncStatusProvider);
-    final syncService = ref.watch(mobileSyncServiceProvider);
 
     return syncStatusAsync.when(
       data: (status) {
         return IconButton(
           icon: status.isSyncing ? const SmallLoadingIndicator() : const Icon(Icons.sync),
-          onPressed: status.isSyncing ? null : () => _runOfficialSync(syncService),
+          onPressed: status.isSyncing ? null : () => _runOfficialSync(ref),
           tooltip: status.isSyncing ? 'جاري المزامنة...' : 'مزامنة',
         );
       },
       loading: () => const IconButton(icon: Icon(Icons.sync), onPressed: null),
       error: (_, __) => IconButton(
         icon: const Icon(Icons.sync_problem),
-        onPressed: () => _runOfficialSync(syncService),
+        onPressed: () => _runOfficialSync(ref),
         tooltip: 'إعادة المحاولة',
       ),
     );
@@ -126,7 +125,6 @@ class SyncDetailsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final syncStatusAsync = ref.watch(mobileSyncStatusProvider);
-    final syncService = ref.watch(mobileSyncServiceProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -134,7 +132,7 @@ class SyncDetailsPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _runOfficialSync(syncService),
+            onPressed: () => _runOfficialSync(ref),
             tooltip: 'مزامنة الآن',
           ),
         ],
@@ -256,7 +254,7 @@ class SyncDetailsPage extends ConsumerWidget {
               // زر المزامنة
               if (!status.isSyncing)
                 ElevatedButton.icon(
-                  onPressed: () => _runOfficialSync(syncService),
+                  onPressed: () => _runOfficialSync(ref),
                   icon: const Icon(Icons.sync),
                   label: const Text('مزامنة الآن'),
                   style: ElevatedButton.styleFrom(
@@ -276,7 +274,7 @@ class SyncDetailsPage extends ConsumerWidget {
               Text('خطأ: $error'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () => _runOfficialSync(syncService),
+                onPressed: () => _runOfficialSync(ref),
                 child: const Text('إعادة المحاولة'),
               ),
             ],

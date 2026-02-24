@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import '../../../../domain/helpers/beneficiary_domain_helpers.dart';
+import '../../../utils/taxonomy_value_resolver.dart';
 import '../info_section.dart';
 
 /// 🏗️ Info Builders - Clean Architecture Helper
@@ -7,40 +10,64 @@ import '../info_section.dart';
 /// Builds info items for different sections of beneficiary details
 class InfoBuilders {
   /// Build basic info items (ID, category, gender, birth date, etc.)
-  static List<InfoItem> buildBasicInfoItems(dynamic beneficiary) {
+  static List<InfoItem> buildBasicInfoItems(
+    dynamic beneficiary, {
+    Map<String, String> categoryLabelsByCode = const <String, String>{},
+    Map<String, String> genderLabelsByCode = const <String, String>{},
+    Map<String, String> governorateLabelsByCode = const <String, String>{},
+    Map<String, String> cityLabelsByCode = const <String, String>{},
+  }) {
     final items = <InfoItem>[];
 
-    items.add(
-      InfoItem(
-        icon: Icons.badge_outlined,
-        label: 'الرقم الوطني',
-        value: beneficiary.nationalId,
-      ),
-    );
-
-    if (beneficiary.fileNo != null) {
+    final nationalId = _cleanText(beneficiary.nationalId);
+    if (nationalId != null) {
       items.add(
         InfoItem(
-          icon: Icons.folder_outlined,
-          label: 'رقم الملف',
-          value: beneficiary.fileNo!,
+          icon: Icons.badge_outlined,
+          label: 'الرقم الوطني',
+          value: nationalId,
         ),
       );
     }
 
+    final fileNo = _cleanText(beneficiary.fileNo);
+    if (fileNo != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.folder_outlined,
+          label: 'رقم الملف',
+          value: fileNo,
+        ),
+      );
+    }
+
+    final categoryRaw =
+        _cleanText(beneficiary.sectionId?.toString()) ?? _cleanText(beneficiary.category?.code?.toString());
+    final categoryLabel = TaxonomyValueResolver.displayLabel(
+      rawValue: categoryRaw,
+      resolvedLabel: _resolveTaxonomyLabel(categoryRaw, categoryLabelsByCode) ??
+          BeneficiaryDomainHelpers.getCategoryLabel(beneficiary.category),
+    );
     items.add(
       InfoItem(
         icon: Icons.category_outlined,
         label: 'الفئة',
-        value: BeneficiaryDomainHelpers.getCategoryLabel(beneficiary.category),
+        value: categoryLabel,
       ),
     );
 
+    final genderRaw =
+        _cleanText(beneficiary.gender?.toString().split('.').last) ?? _cleanText(beneficiary.gender?.englishValue);
+    final genderLabel = TaxonomyValueResolver.displayLabel(
+      rawValue: genderRaw,
+      resolvedLabel: _resolveTaxonomyLabel(genderRaw, genderLabelsByCode) ??
+          BeneficiaryDomainHelpers.getGenderLabel(beneficiary.gender),
+    );
     items.add(
       InfoItem(
         icon: Icons.wc_outlined,
         label: 'الجنس',
-        value: BeneficiaryDomainHelpers.getGenderLabel(beneficiary.gender),
+        value: genderLabel,
       ),
     );
 
@@ -66,24 +93,27 @@ class InfoBuilders {
       }
     }
 
-    if (beneficiary.governorate != null) {
+    final governorate = _cleanText(beneficiary.governorate);
+    if (governorate != null) {
+      final governorateLabel = _resolveTaxonomyLabel(governorate, governorateLabelsByCode) ??
+          BeneficiaryDomainHelpers.getGovernorateName(governorate);
       items.add(
         InfoItem(
           icon: Icons.location_on_outlined,
           label: 'المحافظة',
-          value: BeneficiaryDomainHelpers.getGovernorateName(
-            beneficiary.governorate,
-          ),
+          value: governorateLabel,
         ),
       );
     }
 
-    if (beneficiary.district != null) {
+    final city = _cleanText(beneficiary.district);
+    if (city != null) {
+      final cityLabel = _resolveTaxonomyLabel(city, cityLabelsByCode) ?? BeneficiaryDomainHelpers.getDistrictName(city);
       items.add(
         InfoItem(
           icon: Icons.location_city_outlined,
           label: 'المدينة',
-          value: BeneficiaryDomainHelpers.getDistrictName(beneficiary.district),
+          value: cityLabel,
         ),
       );
     }
@@ -94,22 +124,38 @@ class InfoBuilders {
   /// Build contact info items (phone numbers)
   static List<InfoItem> buildContactInfoItems(dynamic beneficiary) {
     final items = <InfoItem>[];
+    final primaryPhone = _normalizedPhone(beneficiary.phoneNumber);
+    final altPhone = _normalizedPhone(beneficiary.altPhoneNumber);
 
-    items.add(
-      InfoItem(
-        icon: Icons.phone,
-        label: 'رقم الهاتف',
-        value: beneficiary.phoneNumber ?? '-',
-      ),
-    );
+    if (primaryPhone != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.phone,
+          label: 'رقم الهاتف',
+          value: primaryPhone,
+        ),
+      );
+    }
 
-    items.add(
-      InfoItem(
-        icon: Icons.phone_android,
-        label: 'رقم هاتف بديل',
-        value: beneficiary.altPhoneNumber ?? '-',
-      ),
-    );
+    if (altPhone != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.phone_android,
+          label: 'رقم هاتف بديل',
+          value: altPhone,
+        ),
+      );
+    }
+
+    if (items.isEmpty) {
+      items.add(
+        InfoItem(
+          icon: Icons.phone_disabled_outlined,
+          label: 'معلومات الاتصال',
+          value: 'لا يوجد رقم هاتف صالح',
+        ),
+      );
+    }
 
     return items;
   }
@@ -138,8 +184,7 @@ class InfoBuilders {
       );
     }
 
-    if (beneficiary.grandFatherName != null &&
-        beneficiary.grandFatherName!.isNotEmpty) {
+    if (beneficiary.grandFatherName != null && beneficiary.grandFatherName!.isNotEmpty) {
       items.add(
         InfoItem(
           icon: Icons.person_outline,
@@ -228,8 +273,7 @@ class InfoBuilders {
       );
     }
 
-    if (beneficiary.currentAddress != null &&
-        beneficiary.currentAddress!.isNotEmpty) {
+    if (beneficiary.currentAddress != null && beneficiary.currentAddress!.isNotEmpty) {
       items.add(
         InfoItem(
           icon: Icons.home,
@@ -239,8 +283,7 @@ class InfoBuilders {
       );
     }
 
-    if (beneficiary.addressBeforeDisplacement != null &&
-        beneficiary.addressBeforeDisplacement!.isNotEmpty) {
+    if (beneficiary.addressBeforeDisplacement != null && beneficiary.addressBeforeDisplacement!.isNotEmpty) {
       items.add(
         InfoItem(
           icon: Icons.location_city,
@@ -290,7 +333,12 @@ class InfoBuilders {
   }
 
   /// Build education and health info items
-  static List<InfoItem> buildEducationHealthItems(dynamic beneficiary) {
+  static List<InfoItem> buildEducationHealthItems(
+    dynamic beneficiary, {
+    Map<String, String> assistanceTypeLabelsByCode = const <String, String>{},
+    Map<String, String> disabilityTypeLabelsByCode = const <String, String>{},
+    Map<String, String> incomeSourceLabelsByCode = const <String, String>{},
+  }) {
     final items = <InfoItem>[];
 
     if (beneficiary.educationLevel != null) {
@@ -338,8 +386,7 @@ class InfoBuilders {
       );
     }
 
-    if (beneficiary.chronicDiseasesCount != null &&
-        beneficiary.chronicDiseasesCount! > 0) {
+    if (beneficiary.chronicDiseasesCount != null && beneficiary.chronicDiseasesCount! > 0) {
       items.add(
         InfoItem(
           icon: Icons.medical_services_outlined,
@@ -349,8 +396,7 @@ class InfoBuilders {
       );
     }
 
-    if (beneficiary.specialNeedsCount != null &&
-        beneficiary.specialNeedsCount! > 0) {
+    if (beneficiary.specialNeedsCount != null && beneficiary.specialNeedsCount! > 0) {
       items.add(
         InfoItem(
           icon: Icons.accessible_forward,
@@ -360,15 +406,111 @@ class InfoBuilders {
       );
     }
 
+    final metadata = _extractDetailsMetadata(beneficiary.notes);
+    final assistanceTypeRaw = metadata['assistanceType'];
+    final disabilityTypeRaw = metadata['disabilityType'];
+    final incomeSourceRaw = metadata['incomeSource'];
+
+    if (assistanceTypeRaw != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.handshake_outlined,
+          label: 'نوع المساعدة',
+          value: TaxonomyValueResolver.displayLabel(
+            rawValue: assistanceTypeRaw,
+            resolvedLabel: _resolveTaxonomyLabel(
+              assistanceTypeRaw,
+              assistanceTypeLabelsByCode,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (disabilityTypeRaw != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.accessible_forward_outlined,
+          label: 'نوع الإعاقة',
+          value: TaxonomyValueResolver.displayLabel(
+            rawValue: disabilityTypeRaw,
+            resolvedLabel: _resolveTaxonomyLabel(
+              disabilityTypeRaw,
+              disabilityTypeLabelsByCode,
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (incomeSourceRaw != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.account_balance_wallet_outlined,
+          label: 'مصدر الدخل',
+          value: TaxonomyValueResolver.displayLabel(
+            rawValue: incomeSourceRaw,
+            resolvedLabel: _resolveTaxonomyLabel(
+              incomeSourceRaw,
+              incomeSourceLabelsByCode,
+            ),
+          ),
+        ),
+      );
+    }
+
     return items;
+  }
+
+  static String? _cleanText(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
+
+  static String? _normalizedPhone(dynamic value) {
+    final phone = value?.toString().trim();
+    if (phone == null || phone.isEmpty || phone == '0') return null;
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.isEmpty || int.tryParse(digits) == 0) return null;
+    return phone;
+  }
+
+  static String? _resolveTaxonomyLabel(String? raw, Map<String, String> labelsByCode) {
+    final value = _cleanText(raw);
+    if (value == null) return null;
+
+    return labelsByCode[value] ??
+        labelsByCode[value.toLowerCase()] ??
+        labelsByCode[value.trim()] ??
+        labelsByCode[int.tryParse(value)?.toString() ?? ''];
+  }
+
+  static Map<String, String> _extractDetailsMetadata(String? notes) {
+    final text = _cleanText(notes);
+    if (text == null) return const <String, String>{};
+
+    const marker = '\n\n#meta:';
+    final markerIndex = text.lastIndexOf(marker);
+    if (markerIndex == -1) return const <String, String>{};
+
+    final rawJson = text.substring(markerIndex + marker.length).trim();
+    if (rawJson.isEmpty) return const <String, String>{};
+
+    try {
+      final decoded = jsonDecode(rawJson);
+      if (decoded is! Map) return const <String, String>{};
+      return decoded.map((key, value) => MapEntry(key.toString(), value.toString()));
+    } catch (_) {
+      return const <String, String>{};
+    }
   }
 
   /// Build system metadata info items
   static List<InfoItem> buildSystemInfoItems(dynamic beneficiary) {
     final items = <InfoItem>[];
 
-    if (beneficiary.associationName != null &&
-        beneficiary.associationName!.isNotEmpty) {
+    if (beneficiary.associationName != null && beneficiary.associationName!.isNotEmpty) {
       items.add(
         InfoItem(
           icon: Icons.business_outlined,

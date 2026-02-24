@@ -8,22 +8,24 @@ class SyncStatusBadge extends StatelessWidget {
   final bool showLabel;
 
   const SyncStatusBadge({
-    required this.syncState, super.key,
+    required this.syncState,
+    super.key,
     this.size = 20,
     this.showLabel = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final config = _getSyncConfig(syncState);
+    final colorScheme = Theme.of(context).colorScheme;
+    final config = _getSyncConfig(syncState, colorScheme);
 
     if (showLabel) {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
         decoration: BoxDecoration(
-          color: config.color.withOpacity(0.1),
+          color: config.color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: config.color.withOpacity(0.3)),
+          border: Border.all(color: config.color.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -46,32 +48,36 @@ class SyncStatusBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(6.r),
       decoration: BoxDecoration(
-        color: config.color.withOpacity(0.1),
+        color: config.color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(config.icon, color: config.color, size: size.sp),
     );
   }
 
-  _SyncConfig _getSyncConfig(String state) {
+  _SyncConfig _getSyncConfig(String state, ColorScheme colorScheme) {
     switch (state) {
       case 'synced':
         return _SyncConfig(
-          color: Colors.green,
+          color: colorScheme.secondary,
           icon: Icons.check_circle,
           label: 'مزامن',
         );
       case 'failed':
-        return _SyncConfig(color: Colors.red, icon: Icons.error, label: 'فشل');
+        return _SyncConfig(
+          color: colorScheme.error,
+          icon: Icons.error,
+          label: 'فشل',
+        );
       case 'syncing':
         return _SyncConfig(
-          color: Colors.blue,
+          color: colorScheme.primary,
           icon: Icons.sync,
           label: 'جاري المزامنة',
         );
       default:
         return _SyncConfig(
-          color: Colors.orange,
+          color: colorScheme.tertiary,
           icon: Icons.cloud_upload_outlined,
           label: 'قيد الانتظار',
         );

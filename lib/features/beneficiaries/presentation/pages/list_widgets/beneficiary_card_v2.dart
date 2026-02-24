@@ -24,6 +24,8 @@ import 'widgets/sync_status_badge.dart';
 /// - ⚡ AutomaticKeepAliveClientMixin for scroll performance
 class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
+  final Map<int, String> categoryLabelsById;
+  final Map<int, String> governorateLabelsById;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
@@ -31,7 +33,10 @@ class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   final bool isSelected;
 
   const BeneficiaryCardV2({
-    required this.beneficiary, super.key,
+    required this.beneficiary,
+    this.categoryLabelsById = const <int, String>{},
+    this.governorateLabelsById = const <int, String>{},
+    super.key,
     this.onTap,
     this.onLongPress,
     this.onDelete,
@@ -43,8 +48,7 @@ class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   ConsumerState<BeneficiaryCardV2> createState() => _BeneficiaryCardV2State();
 }
 
-class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
-    with AutomaticKeepAliveClientMixin {
+class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true; // Keep card alive during scroll
 
@@ -53,10 +57,9 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
     super.build(context); // MUST call super for AutomaticKeepAliveClientMixin
 
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final rv = ResponsiveUtils.getValues(context);
-    final categoryColor = BeneficiaryHelpers.getCategoryColor(
-      widget.beneficiary.sectionId,
-    );
+    final categoryColor = BeneficiaryHelpers.getCategoryColor(widget.beneficiary.sectionId);
 
     return Semantics(
       label: 'بطاقة مستفيد: ${widget.beneficiary.fullName}',
@@ -69,17 +72,13 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
           margin: EdgeInsets.only(bottom: rv.spacing),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: widget.isSelected
-                ? BorderSide(color: theme.colorScheme.primary, width: 3)
-                : BorderSide.none,
+            side: widget.isSelected ? BorderSide(color: theme.colorScheme.primary, width: 3) : BorderSide.none,
           ),
           child: InkWell(
             onTap: widget.isSelectionMode
                 ? () {
                     HapticPatterns.selection();
-                    ref
-                        .read(selectionProvider.notifier)
-                        .toggleItem(widget.beneficiary.id);
+                    ref.read(selectionProvider.notifier).toggleItem(widget.beneficiary.id);
                   }
                 : (widget.onTap ??
                     () => context.push(
@@ -88,9 +87,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
             onLongPress: widget.onLongPress ??
                 () {
                   HapticPatterns.selection();
-                  ref
-                      .read(selectionProvider.notifier)
-                      .startSelectionWith(widget.beneficiary.id);
+                  ref.read(selectionProvider.notifier).startSelectionWith(widget.beneficiary.id);
                 },
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -101,11 +98,11 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
                 children: [
                   _buildHeader(context, ref, theme, categoryColor, rv),
                   SizedBox(height: rv.spacing),
-                  _buildInfoChips(categoryColor, rv),
+                  _buildInfoChips(categoryColor, colorScheme, rv),
                   if (BeneficiaryHelpers.isPending(
                     widget.beneficiary.syncState,
                   ))
-                    _buildOfflineIndicator(rv),
+                    _buildOfflineIndicator(colorScheme, rv),
                 ],
               ),
             ),
@@ -113,6 +110,34 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
         ),
       ),
     );
+  }
+
+  String _categoryLabel() {
+    final sectionId = widget.beneficiary.sectionId;
+    if (sectionId != null) {
+      final dynamicLabel = widget.categoryLabelsById[sectionId];
+      if (dynamicLabel != null && dynamicLabel.trim().isNotEmpty) {
+        return dynamicLabel;
+      }
+    }
+    return BeneficiaryHelpers.getCategoryLabel(sectionId);
+  }
+
+  String? _governorateLabel() {
+    final province = widget.beneficiary.province;
+    if (province == null) return null;
+    final dynamicLabel = widget.governorateLabelsById[province];
+    if (dynamicLabel != null && dynamicLabel.trim().isNotEmpty) {
+      return dynamicLabel;
+    }
+    return BeneficiaryHelpers.getProvinceName(province);
+  }
+
+  String? _primaryPhone() {
+    final phone = widget.beneficiary.phoneNumber;
+    if (phone <= 0) return null;
+    final value = phone.toString().trim();
+    return value.isEmpty ? null : value;
   }
 
   /// Header: Checkbox + Avatar + Name + Actions
@@ -133,7 +158,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
         SizedBox(width: rv.spacing),
 
         // Name & File Number
-        Expanded(child: _buildNameSection(rv)),
+        Expanded(child: _buildNameSection(theme, rv)),
 
         // Sync Status & Quick Actions
         if (!widget.isSelectionMode) _buildActionsColumn(context, rv),
@@ -144,21 +169,25 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
   /// Selection Checkbox
   Widget _buildSelectionCheckbox(ThemeData theme, ResponsiveValues rv) {
     final size = rv.isTablet ? 36.0 : 32.0;
+    final colorScheme = theme.colorScheme;
     return Container(
       width: size,
       height: size,
       margin: EdgeInsets.only(left: rv.spacing),
       decoration: BoxDecoration(
-        color:
-            widget.isSelected ? theme.colorScheme.primary : Colors.transparent,
+        color: widget.isSelected ? colorScheme.primary : Colors.transparent,
         border: Border.all(
-          color: widget.isSelected ? theme.colorScheme.primary : Colors.grey,
+          color: widget.isSelected ? colorScheme.primary : colorScheme.outline,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
       child: widget.isSelected
-          ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20)
+          ? Icon(
+              Icons.check,
+              color: colorScheme.onPrimary,
+              size: rv.isTablet ? 22 : 20,
+            )
           : null,
     );
   }
@@ -176,7 +205,9 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
   }
 
   /// Name & File Number
-  Widget _buildNameSection(ResponsiveValues rv) {
+  Widget _buildNameSection(ThemeData theme, ResponsiveValues rv) {
+    final colorScheme = theme.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -195,14 +226,14 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
             Icon(
               Icons.folder_outlined,
               size: rv.isTablet ? 15 : 14,
-              color: Colors.grey,
+              color: colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 4),
             Text(
               widget.beneficiary.fileIdNumber ?? 'لا يوجد',
               style: TextStyle(
                 fontSize: rv.isTablet ? 14 : 13,
-                color: Colors.grey[600],
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -226,60 +257,57 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
   }
 
   /// Info Chips (Category, Location, Age, Phone)
-  Widget _buildInfoChips(Color categoryColor, ResponsiveValues rv) {
+  Widget _buildInfoChips(
+    Color categoryColor,
+    ColorScheme colorScheme,
+    ResponsiveValues rv,
+  ) {
+    final governorateLabel = _governorateLabel();
+    final phone = _primaryPhone();
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        // Category Chip
         InfoChip(
           icon: Icons.category_outlined,
-          label: BeneficiaryHelpers.getCategoryLabel(
-            widget.beneficiary.sectionId,
-          ),
+          label: _categoryLabel(),
           color: categoryColor,
           bold: true,
         ),
-
-        // Location Chip
-        if (widget.beneficiary.province != null)
+        if (governorateLabel != null)
           InfoChip(
             icon: Icons.location_on_outlined,
-            label: BeneficiaryHelpers.getProvinceName(
-              widget.beneficiary.province,
-            ),
-            color: Colors.blue,
+            label: governorateLabel,
+            color: colorScheme.primary,
           ),
-
-        // Age Chip (calculated from birthDate)
         if (widget.beneficiary.birthDate != null)
           InfoChip(
             icon: Icons.cake_outlined,
             label: BeneficiaryHelpers.formatAge(
               BeneficiaryHelpers.calculateAge(widget.beneficiary.birthDate),
             ),
-            color: Colors.orange,
+            color: colorScheme.tertiary,
           ),
-
-        // Phone Chip
-        InfoChip(
-          icon: Icons.phone_outlined,
-          label: widget.beneficiary.phoneNumber.toString(),
-          color: Colors.green,
-        ),
+        if (phone != null)
+          InfoChip(
+            icon: Icons.phone_outlined,
+            label: phone,
+            color: colorScheme.secondary,
+          ),
       ],
     );
   }
 
   /// Offline Pending Indicator
-  Widget _buildOfflineIndicator(ResponsiveValues rv) {
+  Widget _buildOfflineIndicator(ColorScheme colorScheme, ResponsiveValues rv) {
     return Container(
       margin: EdgeInsets.only(top: rv.spacing),
       padding: EdgeInsets.symmetric(horizontal: rv.spacing, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: colorScheme.tertiaryContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: colorScheme.tertiary),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -287,14 +315,14 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
           Icon(
             Icons.cloud_off_rounded,
             size: rv.isTablet ? 18 : 16,
-            color: Colors.orange.shade700,
+            color: colorScheme.onTertiaryContainer,
           ),
           const SizedBox(width: 6),
           Text(
             'بانتظار المزامنة',
             style: TextStyle(
               fontSize: rv.isTablet ? 12 : 11,
-              color: Colors.orange.shade700,
+              color: colorScheme.onTertiaryContainer,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -314,42 +342,45 @@ class _QuickActionsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rv = ResponsiveUtils.getValues(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasPhone = beneficiary.phoneNumber > 0;
+
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert_rounded, size: rv.isTablet ? 26 : 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) => _handleAction(context, value),
       itemBuilder: (context) => [
-        // Call Action
-        PopupMenuItem(
-          value: 'call',
-          child: Row(
-            children: [
-              Icon(
-                Icons.phone,
-                size: rv.isTablet ? 22 : 20,
-                color: Colors.green,
-              ),
-              SizedBox(width: rv.spacing),
-              const Text('اتصال'),
-            ],
+        if (hasPhone)
+          PopupMenuItem(
+            value: 'call',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.phone,
+                  size: rv.isTablet ? 22 : 20,
+                  color: colorScheme.secondary,
+                ),
+                SizedBox(width: rv.spacing),
+                const Text('اتصال'),
+              ],
+            ),
           ),
-        ),
 
-        // WhatsApp Action
-        PopupMenuItem(
-          value: 'whatsapp',
-          child: Row(
-            children: [
-              Icon(
-                Icons.chat,
-                size: rv.isTablet ? 22 : 20,
-                color: Colors.green[700],
-              ),
-              SizedBox(width: rv.spacing),
-              const Text('واتساب'),
-            ],
+        if (hasPhone)
+          PopupMenuItem(
+            value: 'whatsapp',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.chat,
+                  size: rv.isTablet ? 22 : 20,
+                  color: colorScheme.secondary,
+                ),
+                SizedBox(width: rv.spacing),
+                const Text('واتساب'),
+              ],
+            ),
           ),
-        ),
 
         const PopupMenuDivider(),
 
@@ -373,10 +404,13 @@ class _QuickActionsButton extends StatelessWidget {
               Icon(
                 Icons.delete,
                 size: rv.isTablet ? 22 : 20,
-                color: Colors.red,
+                color: colorScheme.error,
               ),
               SizedBox(width: rv.spacing),
-              const Text('حذف', style: TextStyle(color: Colors.red)),
+              Text(
+                'حذف',
+                style: TextStyle(color: colorScheme.error),
+              ),
             ],
           ),
         ),
@@ -385,15 +419,17 @@ class _QuickActionsButton extends StatelessWidget {
   }
 
   Future<void> _handleAction(BuildContext context, String action) async {
-    final phoneStr = beneficiary.phoneNumber.toString();
+    final phoneStr = beneficiary.phoneNumber > 0 ? beneficiary.phoneNumber.toString() : null;
 
     switch (action) {
       case 'call':
+        if (phoneStr == null) return;
         HapticPatterns.selection();
         await PhoneLauncherService.makeCall(phoneStr);
         break;
 
       case 'whatsapp':
+        if (phoneStr == null) return;
         HapticPatterns.selection();
         await PhoneLauncherService.openWhatsApp(phoneStr);
         break;
@@ -401,7 +437,7 @@ class _QuickActionsButton extends StatelessWidget {
       case 'edit':
         HapticPatterns.selection();
         if (context.mounted) {
-          context.push('/beneficiaries/edit/${beneficiary.id}');
+          context.push('/beneficiaries/${beneficiary.id}/edit');
         }
         break;
 

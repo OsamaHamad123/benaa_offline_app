@@ -34,8 +34,7 @@ class AutofillFromCivilRegistryUseCase {
     if (_fillIfEmpty(controllers.lastNameController, person.lastName)) {
       filledCount++;
     }
-    if (person.motherName != null &&
-        _fillIfEmpty(controllers.motherNameController, person.motherName!)) {
+    if (person.motherName != null && _fillIfEmpty(controllers.motherNameController, person.motherName!)) {
       filledCount++;
     }
 
@@ -58,16 +57,17 @@ class AutofillFromCivilRegistryUseCase {
     }
 
     // Fill address info if available
-    if (person.address != null &&
-        _fillIfEmpty(controllers.addressController, person.address!)) {
+    if (person.address != null && _fillIfEmpty(controllers.addressController, person.address!)) {
       filledCount++;
     }
     if (person.province != null && controllers.selectedProvince == null) {
-      controllers.selectedProvince = _mapProvince(person.province!);
+      final province = person.province!.trim();
+      controllers.selectedProvince = province.isEmpty ? null : province;
       filledCount++;
     }
     if (person.city != null && controllers.selectedCity == null) {
-      controllers.selectedCity = _mapCity(person.city!);
+      final city = person.city!.trim();
+      controllers.selectedCity = city.isEmpty ? null : city;
       filledCount++;
     }
 
@@ -85,8 +85,7 @@ class AutofillFromCivilRegistryUseCase {
   }) {
     controllers.firstNameController.text = undoData['firstName'] ?? '';
     controllers.fatherNameController.text = undoData['fatherName'] ?? '';
-    controllers.grandfatherNameController.text =
-        undoData['grandfatherName'] ?? '';
+    controllers.grandfatherNameController.text = undoData['grandfatherName'] ?? '';
     controllers.lastNameController.text = undoData['lastName'] ?? '';
     controllers.motherNameController.text = undoData['motherName'] ?? '';
     controllers.nationalIdController.text = undoData['nationalId'] ?? '';
@@ -126,42 +125,6 @@ class AutofillFromCivilRegistryUseCase {
   /// Format date to display string
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  /// Map province from civil registry to app format
-  String? _mapProvince(String province) {
-    // Map common province names to app values
-    final provinceMap = {
-      'دمشق': 'damascus',
-      'ريف دمشق': 'rif_dimashq',
-      'حلب': 'aleppo',
-      'حمص': 'homs',
-      'حماة': 'hama',
-      'اللاذقية': 'latakia',
-      'طرطوس': 'tartus',
-      'إدلب': 'idlib',
-      'درعا': 'daraa',
-      'السويداء': 'suwayda',
-      'القنيطرة': 'quneitra',
-      'دير الزور': 'deir_ez_zor',
-      'الرقة': 'raqqa',
-      'الحسكة': 'hasakah',
-    };
-
-    return provinceMap[province];
-  }
-
-  /// Map city from civil registry to app format
-  String? _mapCity(String city) {
-    final cityMap = {
-      'دمشق': 'damascus_city',
-      'حلب': 'aleppo_city',
-      'حمص': 'homs_city',
-      'حماة': 'hama_city',
-      'اللاذقية': 'latakia_city',
-    };
-
-    return cityMap[city] ?? 'other';
   }
 }
 

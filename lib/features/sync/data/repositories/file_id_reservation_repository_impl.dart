@@ -7,6 +7,7 @@ import '../datasources/file_id_remote_datasource.dart';
 class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   final FileIdRemoteDataSource remoteDataSource;
   final FileIdReservationDao localDao;
+  FileIdReservationSnapshot? _lastReservedSnapshot;
 
   FileIdReservationRepositoryImpl({
     required this.remoteDataSource,
@@ -16,6 +17,13 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   @override
   Future<Result<List<int>>> reserveFromRemote(int count) async {
     try {
+      final snapshot = await remoteDataSource.reserveBatchSnapshot(count);
+      if (snapshot != null) {
+        _lastReservedSnapshot = snapshot;
+        final ids = List<int>.generate(snapshot.endId - snapshot.startId + 1, (index) => snapshot.startId + index);
+        return Success(ids);
+      }
+
       final ids = await remoteDataSource.reserveIds(count);
       return Success(ids);
     } catch (e) {
@@ -26,6 +34,23 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   @override
   Future<Result<void>> saveLocal(List<int> ids) async {
     try {
+      final snapshot = _lastReservedSnapshot;
+      if (snapshot != null) {
+        await localDao.upsertActiveReservationBatch(
+          reservationId: snapshot.reservationId,
+          deviceId: snapshot.deviceId,
+          startId: snapshot.startId,
+          endId: snapshot.endId,
+          batchSize: snapshot.batchSize,
+          usedCount: snapshot.usedCount,
+          remainingCount: snapshot.remainingCount,
+          nextAvailableId: snapshot.nextAvailableId,
+          status: snapshot.status,
+          expiresAt: snapshot.expiresAt,
+          createdAt: snapshot.createdAt,
+        );
+      }
+
       await localDao.insertReservedIds(ids);
       return const Success(null);
     } catch (e) {
@@ -36,6 +61,11 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   @override
   Future<Result<int?>> getNextAvailableId() async {
     try {
+      final idFromBatch = await localDao.allocateNextAvailableFromBatch();
+      if (idFromBatch != null) {
+        return Success(idFromBatch);
+      }
+
       final id = await localDao.getNextAvailableId();
       return Success(id);
     } catch (e) {
@@ -56,6 +86,17 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   @override
   Future<Result<void>> syncUsedIds() async {
     try {
+      final reservationId = await localDao.getActiveReservationBatchId();
+      final unsyncedUsedCount = await localDao.getUnsyncedUsedCountFromBatch();
+      if (reservationId != null && unsyncedUsedCount > 0) {
+        await remoteDataSource.syncUsedCount(
+          reservationId: reservationId,
+          usedCount: unsyncedUsedCount,
+        );
+        await localDao.markBatchUsedCountSynced(reservationId);
+        return const Success(null);
+      }
+
       final usedRecords = await localDao.getUsedUnsyncedIds();
       if (usedRecords.isEmpty) return const Success(null);
 
@@ -83,6 +124,8 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   Future<Result<FileIdDiagnostics>> getDiagnostics() async {
     try {
       final availableCount = await localDao.countAvailable();
+      final activeBatch = await localDao.getActiveReservationBatch();
+      final batchRemaining = (activeBatch?['remaining_count'] as int?) ?? 0;
       final usedUnsyncedCount = await localDao.countUsedUnsynced();
       final lastReservedAt = await localDao.getLastReservedAt();
       final lastSyncedAt = await localDao.getLastSyncedAt();
@@ -100,7 +143,7 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
 
       return Success(
         FileIdDiagnostics(
-          availableCount: availableCount,
+          availableCount: batchRemaining > availableCount ? batchRemaining : availableCount,
           usedUnsyncedCount: usedUnsyncedCount,
           lastReservedAt: lastReservedAt,
           lastSyncedAt: lastSyncedAt,

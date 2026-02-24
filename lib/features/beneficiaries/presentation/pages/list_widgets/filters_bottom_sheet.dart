@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy_group.dart';
+import 'package:benaa_offline_app/features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/utils/taxonomy_value_resolver.dart';
 import '../../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../../core/utils/haptic_patterns.dart';
 import '../../providers/list/filters_provider.dart';
@@ -19,8 +22,60 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final filters = ref.watch(filtersProvider);
+    final sectionsAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section),
+    );
+    final sections = sectionsAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const [],
+    );
     final theme = Theme.of(context);
     final rv = ResponsiveUtils.getValues(context);
+
+    final sectionChips = <Widget>[
+      _FilterChip(
+        label: 'الكل',
+        isSelected: filters.categoryId == null,
+        onTap: () {
+          HapticPatterns.selection();
+          ref.read(filtersProvider.notifier).setCategory(null);
+          ref.read(beneficiariesListProvider.notifier).refresh();
+        },
+        rv: rv,
+      ),
+    ];
+
+    var resolvedSections = 0;
+    for (final section in sections) {
+      final value = TaxonomyValueResolver.resolveToInt(
+        code: section.code,
+        id: section.id,
+        group: TaxonomyGroup.section,
+        source: 'filters_bottom_sheet',
+      );
+      if (value == null) continue;
+      resolvedSections++;
+
+      sectionChips.add(
+        _FilterChip(
+          label: section.label,
+          isSelected: filters.categoryId == value,
+          onTap: () {
+            HapticPatterns.selection();
+            ref.read(filtersProvider.notifier).setCategory(value);
+            ref.read(beneficiariesListProvider.notifier).refresh();
+          },
+          rv: rv,
+        ),
+      );
+    }
+
+    TaxonomyValueResolver.logSummary(
+      group: TaxonomyGroup.section,
+      source: 'filters_bottom_sheet',
+      total: sections.length,
+      resolved: resolvedSections,
+    );
 
     return SlideTransitionWidget(
       child: Container(
@@ -42,7 +97,7 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: theme.colorScheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -104,75 +159,15 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                     Wrap(
                       spacing: rv.isTablet ? 10 : 8,
                       runSpacing: rv.isTablet ? 10 : 8,
-                      children: [
-                        _FilterChip(
-                          label: 'الكل',
-                          isSelected: filters.categoryId == null,
-                          onTap: () {
-                            HapticPatterns.selection();
-                            ref
-                                .read(filtersProvider.notifier)
-                                .setCategory(null);
-                            ref
-                                .read(beneficiariesListProvider.notifier)
-                                .refresh();
-                          },
-                          rv: rv,
-                        ),
-                        _FilterChip(
-                          label: 'يتيم',
-                          isSelected: filters.categoryId == 1,
-                          onTap: () {
-                            HapticPatterns.selection();
-                            ref.read(filtersProvider.notifier).setCategory(1);
-                            ref
-                                .read(beneficiariesListProvider.notifier)
-                                .refresh();
-                          },
-                          color: Colors.blue,
-                          rv: rv,
-                        ),
-                        _FilterChip(
-                          label: 'أرملة',
-                          isSelected: filters.categoryId == 2,
-                          onTap: () {
-                            HapticPatterns.selection();
-                            ref.read(filtersProvider.notifier).setCategory(2);
-                            ref
-                                .read(beneficiariesListProvider.notifier)
-                                .refresh();
-                          },
-                          color: Colors.purple,
-                          rv: rv,
-                        ),
-                        _FilterChip(
-                          label: 'فقير',
-                          isSelected: filters.categoryId == 3,
-                          onTap: () {
-                            HapticPatterns.selection();
-                            ref.read(filtersProvider.notifier).setCategory(3);
-                            ref
-                                .read(beneficiariesListProvider.notifier)
-                                .refresh();
-                          },
-                          color: Colors.orange,
-                          rv: rv,
-                        ),
-                        _FilterChip(
-                          label: 'معاق',
-                          isSelected: filters.categoryId == 4,
-                          onTap: () {
-                            HapticPatterns.selection();
-                            ref.read(filtersProvider.notifier).setCategory(4);
-                            ref
-                                .read(beneficiariesListProvider.notifier)
-                                .refresh();
-                          },
-                          color: Colors.red,
-                          rv: rv,
-                        ),
-                      ],
+                      children: sectionChips,
                     ),
+                    if (sectionChips.length == 1) ...[
+                      SizedBox(height: rv.isTablet ? 10 : 8),
+                      Text(
+                        'لا توجد فئات ديناميكية متاحة حالياً',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
 
                     SizedBox(height: rv.isTablet ? 28 : 24),
 
@@ -226,25 +221,15 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
                         return _FilterChip(
                           label: sort.label,
                           isSelected: isSelected,
-                          icon: isSelected
-                              ? (filters.sortAscending
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward)
-                              : null,
+                          icon: isSelected ? (filters.sortAscending ? Icons.arrow_upward : Icons.arrow_downward) : null,
                           onTap: () {
                             HapticPatterns.selection();
                             if (isSelected) {
-                              ref
-                                  .read(filtersProvider.notifier)
-                                  .toggleSortDirection();
+                              ref.read(filtersProvider.notifier).toggleSortDirection();
                             } else {
-                              ref
-                                  .read(filtersProvider.notifier)
-                                  .setSorting(sort, true);
+                              ref.read(filtersProvider.notifier).setSorting(sort, true);
                             }
-                            ref
-                                .read(beneficiariesListProvider.notifier)
-                                .refresh();
+                            ref.read(beneficiariesListProvider.notifier).refresh();
                           },
                           rv: rv,
                         );
@@ -263,12 +248,13 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
   }
 
   Widget _buildSectionTitle(String title, ResponsiveValues rv) {
+    final theme = Theme.of(context);
     return Text(
       title,
       style: TextStyle(
         fontSize: rv.isTablet ? 18 : 16,
         fontWeight: FontWeight.bold,
-        color: Colors.grey[700],
+        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }
@@ -279,7 +265,6 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  final Color? color;
   final IconData? icon;
   final ResponsiveValues rv;
 
@@ -288,14 +273,14 @@ class _FilterChip extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     required this.rv,
-    this.color,
     this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final chipColor = color ?? theme.colorScheme.primary;
+    final colorScheme = theme.colorScheme;
+    final chipColor = theme.colorScheme.primary;
     final borderRadius = rv.isTablet ? 24.0 : 20.0;
 
     return InkWell(
@@ -307,10 +292,10 @@ class _FilterChip extends StatelessWidget {
           vertical: rv.isTablet ? 12 : 10,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? chipColor : Colors.grey[100],
+          color: isSelected ? chipColor : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
-            color: isSelected ? chipColor : Colors.grey.shade300,
+            color: isSelected ? chipColor : colorScheme.outlineVariant,
             width: 2,
           ),
         ),
@@ -321,7 +306,7 @@ class _FilterChip extends StatelessWidget {
               Icon(
                 icon,
                 size: rv.isTablet ? 18 : 16,
-                color: isSelected ? Colors.white : Colors.grey[700],
+                color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
               ),
               SizedBox(width: rv.isTablet ? 8 : 6),
             ],
@@ -330,7 +315,7 @@ class _FilterChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: rv.isTablet ? 16 : 14,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.white : Colors.grey[700],
+                color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -358,16 +343,17 @@ class _SwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: EdgeInsets.only(bottom: rv.isTablet ? 10 : 8),
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(rv.isTablet ? 14 : 12),
       ),
       child: SwitchListTile(
         title: Row(
           children: [
-            Icon(icon, size: rv.isTablet ? 22 : 20, color: Colors.grey[700]),
+            Icon(icon, size: rv.isTablet ? 22 : 20, color: colorScheme.onSurfaceVariant),
             SizedBox(width: rv.isTablet ? 14 : 12),
             Text(title, style: TextStyle(fontSize: rv.isTablet ? 16 : 14)),
           ],

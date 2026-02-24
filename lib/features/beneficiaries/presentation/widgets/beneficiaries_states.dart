@@ -20,6 +20,8 @@ class BeneficiariesEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -28,18 +30,24 @@ class BeneficiariesEmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon ?? Icons.people_outline, size: 80, color: Colors.grey),
+              Icon(
+                icon ?? Icons.people_outline,
+                size: 80,
+                color: colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(height: 16),
               Text(
                 message ?? 'لا يوجد مستفيدين',
-                style: const TextStyle(fontSize: 18, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               if (actionText != null) ...[
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
-                  onPressed:
-                      onAction ?? () => context.push('/beneficiaries/add'),
+                  onPressed: onAction ?? () => context.push('/beneficiaries/add'),
                   icon: const Icon(Icons.person_add),
                   label: Text(actionText!),
                 ),
@@ -60,11 +68,15 @@ class BeneficiariesErrorState extends StatelessWidget {
   final VoidCallback onRetry;
 
   const BeneficiariesErrorState({
-    required this.error, required this.onRetry, super.key,
+    required this.error,
+    required this.onRetry,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -73,7 +85,11 @@ class BeneficiariesErrorState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(
                 'خطأ: $error',

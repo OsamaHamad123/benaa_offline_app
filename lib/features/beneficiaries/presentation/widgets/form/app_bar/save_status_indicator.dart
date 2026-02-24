@@ -13,7 +13,10 @@ class SaveStatusIndicator extends StatelessWidget {
   final ValueNotifier<bool> hasUnsavedChangesNotifier;
 
   const SaveStatusIndicator({
-    required this.isSavingNotifier, required this.lastSavedNotifier, required this.hasUnsavedChangesNotifier, super.key,
+    required this.isSavingNotifier,
+    required this.lastSavedNotifier,
+    required this.hasUnsavedChangesNotifier,
+    super.key,
   });
 
   @override
@@ -22,7 +25,7 @@ class SaveStatusIndicator extends StatelessWidget {
       valueListenable: isSavingNotifier,
       builder: (context, isSaving, _) {
         if (isSaving) {
-          return _buildSavingIndicator();
+          return _buildSavingIndicator(context);
         }
 
         return ValueListenableBuilder<DateTime?>(
@@ -44,16 +47,18 @@ class SaveStatusIndicator extends StatelessWidget {
     );
   }
 
-  Widget _buildSavingIndicator() {
+  Widget _buildSavingIndicator(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
           width: 16.w,
           height: 16.h,
-          child: const CircularProgressIndicator(
+          child: CircularProgressIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
           ),
         ),
         SizedBox(width: 8.w),
@@ -61,7 +66,7 @@ class SaveStatusIndicator extends StatelessWidget {
           'جاري الحفظ...',
           style: TextStyle(
             fontSize: 12.sp,
-            color: Colors.white70,
+            color: colorScheme.onPrimary.withValues(alpha: 0.7),
           ),
         ),
       ],
@@ -73,6 +78,8 @@ class SaveStatusIndicator extends StatelessWidget {
     DateTime? lastSaved,
     bool hasUnsavedChanges,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (lastSaved == null) {
       return const SizedBox.shrink();
     }
@@ -88,8 +95,8 @@ class SaveStatusIndicator extends StatelessWidget {
             width: 8.w,
             height: 8.h,
             margin: EdgeInsets.only(left: 4.w),
-            decoration: const BoxDecoration(
-              color: Colors.orange,
+            decoration: BoxDecoration(
+              color: colorScheme.tertiary,
               shape: BoxShape.circle,
             ),
           ),
@@ -97,7 +104,7 @@ class SaveStatusIndicator extends StatelessWidget {
         Icon(
           hasUnsavedChanges ? Icons.edit : Icons.check_circle,
           size: 16.sp,
-          color: hasUnsavedChanges ? Colors.orange : Colors.green,
+          color: hasUnsavedChanges ? colorScheme.tertiary : colorScheme.secondary,
         ),
 
         SizedBox(width: 4.w),
@@ -106,7 +113,7 @@ class SaveStatusIndicator extends StatelessWidget {
           hasUnsavedChanges ? 'تعديلات غير محفوظة' : 'حُفظ $timeAgo',
           style: TextStyle(
             fontSize: 11.sp,
-            color: Colors.white70,
+            color: colorScheme.onPrimary.withValues(alpha: 0.7),
           ),
         ),
       ],

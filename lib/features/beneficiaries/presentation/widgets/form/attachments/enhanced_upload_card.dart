@@ -14,7 +14,9 @@ class EnhancedUploadAttachmentCard extends StatefulWidget {
   final ValueChanged<PendingAttachment> onAttachmentAdded;
 
   const EnhancedUploadAttachmentCard({
-    required this.availableFamilyMembers, required this.onAttachmentAdded, super.key,
+    required this.availableFamilyMembers,
+    required this.onAttachmentAdded,
+    super.key,
   });
 
   @override
@@ -25,7 +27,7 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
   String? _selectedDocumentType;
   String? _selectedPersonType;
   File? _selectedFile;
-  final bool _isUploading = false;
+  bool _isUploading = false;
 
   Future<void> _pickFile() async {
     try {
@@ -35,8 +37,20 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
       );
 
       if (result != null && result.files.single.path != null) {
+        final candidate = File(result.files.single.path!);
+        if (!candidate.existsSync()) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('⚠️ الملف غير متاح، يرجى اختيار ملف آخر'),
+              ),
+            );
+          }
+          return;
+        }
+
         setState(() {
-          _selectedFile = File(result.files.single.path!);
+          _selectedFile = candidate;
         });
       }
     } catch (e) {
@@ -51,7 +65,7 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
     }
   }
 
-  void _uploadAttachment() {
+  Future<void> _uploadAttachment() async {
     if (_selectedFile == null || _selectedDocumentType == null || _selectedPersonType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -62,6 +76,19 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
       return;
     }
 
+    if (_isSelectedFileUnavailable()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ الملف غير متاح، اختر ملفًا صالحًا قبل الرفع'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+    });
+
     final attachment = PendingAttachment(
       file: _selectedFile!,
       documentType: _selectedDocumentType,
@@ -71,11 +98,15 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
 
     widget.onAttachmentAdded(attachment);
 
+    await Future<void>.delayed(const Duration(milliseconds: 180));
+    if (!mounted) return;
+
     // Reset form
     setState(() {
       _selectedFile = null;
       _selectedDocumentType = null;
       _selectedPersonType = null;
+      _isUploading = false;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -91,6 +122,43 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  String _safeSelectedFileName() {
+    final selectedFile = _selectedFile;
+    if (selectedFile == null) return 'ملف غير متاح';
+
+    final path = selectedFile.path.trim();
+    if (path.isEmpty) return 'ملف غير متاح';
+    if (_isSelectedFileUnavailable()) return 'ملف غير متاح';
+
+    final segments = path.split(RegExp(r'[\\/]'));
+    final last = segments.isNotEmpty ? segments.last.trim() : '';
+    return last.isEmpty ? 'ملف غير متاح' : last;
+  }
+
+  String _safeSelectedFileSizeKb() {
+    final selectedFile = _selectedFile;
+    if (selectedFile == null) return '-';
+
+    try {
+      if (!selectedFile.existsSync()) return '-';
+      return (selectedFile.lengthSync() / 1024).toStringAsFixed(1);
+    } catch (_) {
+      return '-';
+    }
+  }
+
+  bool _isSelectedFileUnavailable() {
+    final selectedFile = _selectedFile;
+    if (selectedFile == null) return true;
+    try {
+      final path = selectedFile.path.trim();
+      if (path.isEmpty) return true;
+      return !selectedFile.existsSync();
+    } catch (_) {
+      return true;
+    }
   }
 
   @override
@@ -201,7 +269,7 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _selectedFile!.path.split('/').last,
+                            _safeSelectedFileName(),
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
@@ -210,9 +278,9 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            '${(_selectedFile!.lengthSync() / 1024).toStringAsFixed(1)} KB',
+                            _isSelectedFileUnavailable() ? 'ملف غير متاح' : '${_safeSelectedFileSizeKb()} KB',
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                              color: _isSelectedFileUnavailable() ? colorScheme.error : colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -232,6 +300,10 @@ class _EnhancedUploadAttachmentCardState extends State<EnhancedUploadAttachmentC
             SizedBox(height: 20.h),
 
             // Upload Button
+            if (_isUploading) ...[
+              const LinearProgressIndicator(),
+              SizedBox(height: 8.h),
+            ],
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(

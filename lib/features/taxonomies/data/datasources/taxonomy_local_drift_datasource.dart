@@ -1,6 +1,7 @@
 import '../../../../data/db/daos/sync_metadata_dao.dart';
 import '../../../../data/db/daos/taxonomies_dao.dart';
 import '../../../../data/db/drift_database.dart' show TaxonomiesCompanion;
+import 'package:drift/drift.dart' as drift;
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../models/taxonomy_dto.dart';
@@ -177,6 +178,80 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
       deleted += await _taxonomiesDao.deleteByGroup(group);
     }
     return deleted;
+  }
+
+  /// يصلح قيَم group القديمة/غير الموحّدة ويعيد بناء الـ id المحلي بصيغة canonical.
+  ///
+  /// يعالج البيانات الموجودة مسبقًا في الأجهزة قبل اعتماد التطبيع الموحّد.
+  Future<int> repairCanonicalStorage() async {
+    final allItems = await _taxonomiesDao.getAllTaxonomies();
+    if (allItems.isEmpty) {
+      return 0;
+    }
+
+    final upsertsById = <String, TaxonomiesCompanion>{};
+    final staleIds = <String>{};
+    var changedRows = 0;
+
+    for (final item in allItems) {
+      final normalizedGroup = TaxonomyGroup.normalizeValue(item.group);
+      if (normalizedGroup == null || normalizedGroup.isEmpty) {
+        continue;
+      }
+
+      final remoteId = TaxonomyDTO.extractRemoteId(item.id);
+      final canonicalId = TaxonomyDTO.buildLocalId(
+        groupValue: normalizedGroup,
+        rawId: remoteId,
+        code: item.code,
+      );
+
+      final groupChanged = item.group != normalizedGroup;
+      final idChanged = item.id != canonicalId;
+      if (!groupChanged && !idChanged) {
+        continue;
+      }
+
+      changedRows += 1;
+      if (idChanged) {
+        staleIds.add(item.id);
+      }
+
+      final candidate = TaxonomiesCompanion.insert(
+        id: canonicalId,
+        group: normalizedGroup,
+        code: item.code,
+        label: item.label,
+        updatedAt: item.updatedAt,
+        parentId: drift.Value(item.parentId),
+        sortOrder: drift.Value(item.sortOrder),
+        isActive: drift.Value(item.isActive),
+      );
+
+      final existing = upsertsById[canonicalId];
+      if (existing == null) {
+        upsertsById[canonicalId] = candidate;
+        continue;
+      }
+
+      final existingUpdatedAt = existing.updatedAt.present ? existing.updatedAt.value : item.updatedAt;
+      final candidateUpdatedAt = candidate.updatedAt.present ? candidate.updatedAt.value : item.updatedAt;
+      if (candidateUpdatedAt.isAfter(existingUpdatedAt)) {
+        upsertsById[canonicalId] = candidate;
+      }
+    }
+
+    if (upsertsById.isEmpty) {
+      return 0;
+    }
+
+    await _taxonomiesDao.upsertBatch(upsertsById.values.toList(growable: false));
+
+    for (final staleId in staleIds) {
+      await _taxonomiesDao.deleteTaxonomy(staleId);
+    }
+
+    return changedRows;
   }
 
   Taxonomy? _fromDbEntityOrNull(dynamic entity) {

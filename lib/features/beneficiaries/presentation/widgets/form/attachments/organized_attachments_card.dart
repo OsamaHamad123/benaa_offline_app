@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../attachments/domain/models/pending_attachment.dart';
+import '../../../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// 📋 Organized Attachments Display Card
 ///
@@ -11,7 +14,8 @@ class OrganizedAttachmentsCard extends StatelessWidget {
   final ValueChanged<PendingAttachment>? onDelete;
 
   const OrganizedAttachmentsCard({
-    required this.attachments, super.key,
+    required this.attachments,
+    super.key,
     this.onDelete,
   });
 
@@ -52,8 +56,16 @@ class OrganizedAttachmentsCard extends StatelessWidget {
   String _getPersonKey(PendingAttachment attachment) {
     if (attachment.personType == 'file_owner') {
       return 'وثائق صاحب الملف';
-    } else if (attachment.personId != null) {
-      return 'وثائق ${attachment.personId}';
+    }
+
+    final personId = attachment.personId?.trim();
+    if (personId != null && personId.isNotEmpty) {
+      return 'وثائق $personId';
+    }
+
+    final personType = attachment.personType?.trim();
+    if (personType != null && personType.isNotEmpty) {
+      return 'وثائق $personType';
     } else {
       return 'وثائق أخرى';
     }
@@ -90,7 +102,7 @@ class _PersonAttachmentsSection extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withOpacity(0.5),
+              color: colorScheme.primaryContainer.withValues(alpha: 0.5),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16.r),
                 topRight: Radius.circular(16.r),
@@ -125,7 +137,7 @@ class _PersonAttachmentsSection extends StatelessWidget {
                   child: Text(
                     '${attachments.length}',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -153,7 +165,7 @@ class _PersonAttachmentsSection extends StatelessWidget {
 }
 
 /// 📄 Attachment List Tile
-class _AttachmentListTile extends StatelessWidget {
+class _AttachmentListTile extends ConsumerWidget {
   final PendingAttachment attachment;
   final VoidCallback? onDelete;
 
@@ -163,11 +175,24 @@ class _AttachmentListTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final fileName = attachment.file.path.split('/').last;
-    final fileSize = (attachment.file.lengthSync() / 1024).toStringAsFixed(1);
+    final fileUnavailable = _isFileUnavailable();
+    final fileName = _safeFileName();
+    final fileSize = _safeFileSizeKb();
+    final taxonomyAsync = ref.watch(
+      bridgeTaxonomyByCodeProvider(
+        (
+          group: TaxonomyGroup.documentType,
+          code: attachment.documentType?.trim() ?? '',
+        ),
+      ),
+    );
+    final documentTypeLabel = taxonomyAsync.maybeWhen(
+      data: (taxonomy) => taxonomy?.label,
+      orElse: () => null,
+    );
 
     return Container(
       margin: EdgeInsets.only(bottom: 8.h),
@@ -185,12 +210,12 @@ class _AttachmentListTile extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(8.w),
             decoration: BoxDecoration(
-              color: _getFileColor(fileName).withOpacity(0.2),
+              color: _getFileColor(fileName, colorScheme).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8.r),
             ),
             child: Icon(
               _getFileIcon(fileName),
-              color: _getFileColor(fileName),
+              color: _getFileColor(fileName, colorScheme),
               size: 24.sp,
             ),
           ),
@@ -203,7 +228,7 @@ class _AttachmentListTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _getDocumentTypeLabel(attachment.documentType),
+                  documentTypeLabel ?? _getDocumentTypeLabel(attachment.documentType),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -231,9 +256,9 @@ class _AttachmentListTile extends StatelessWidget {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      '$fileSize KB',
+                      fileUnavailable ? 'ملف غير متاح' : '$fileSize KB',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                        color: fileUnavailable ? colorScheme.error : colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -248,7 +273,7 @@ class _AttachmentListTile extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.delete_outline_rounded),
               onPressed: onDelete,
-              color: Colors.red,
+              color: colorScheme.error,
               iconSize: 20.sp,
               tooltip: 'حذف',
             ),
@@ -256,6 +281,36 @@ class _AttachmentListTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _safeFileName() {
+    final path = attachment.file.path.trim();
+    if (path.isEmpty) return 'ملف غير متاح';
+    if (_isFileUnavailable()) return 'ملف غير متاح';
+
+    final segments = path.split(RegExp(r'[\\/]'));
+    final last = segments.isNotEmpty ? segments.last.trim() : '';
+    return last.isEmpty ? 'ملف غير متاح' : last;
+  }
+
+  String _safeFileSizeKb() {
+    try {
+      if (!attachment.file.existsSync()) return '-';
+      final bytes = attachment.file.lengthSync();
+      return (bytes / 1024).toStringAsFixed(1);
+    } catch (_) {
+      return '-';
+    }
+  }
+
+  bool _isFileUnavailable() {
+    try {
+      final path = attachment.file.path.trim();
+      if (path.isEmpty) return true;
+      return !attachment.file.existsSync();
+    } catch (_) {
+      return true;
+    }
   }
 
   IconData _getFileIcon(String fileName) {
@@ -272,44 +327,26 @@ class _AttachmentListTile extends StatelessWidget {
     }
   }
 
-  Color _getFileColor(String fileName) {
+  Color _getFileColor(String fileName, ColorScheme colorScheme) {
     final ext = fileName.split('.').last.toLowerCase();
     switch (ext) {
       case 'pdf':
-        return Colors.red;
+        return colorScheme.error;
       case 'jpg':
       case 'jpeg':
       case 'png':
-        return Colors.blue;
+        return colorScheme.primary;
       default:
-        return Colors.grey;
+        return colorScheme.outline;
     }
   }
 
   String _getDocumentTypeLabel(String? type) {
     if (type == null) return 'وثيقة';
 
-    final labels = {
-      'death_certificate': 'شهادة الوفاة',
-      'national_id': 'إفادة شهيد',
-      'id_card': 'صورة الهوية',
-      'guardianship_letter': 'حجة الوصاية',
-      'medical_report': 'تقرير طبي',
-      'custody_letter': 'إقرار الحضانة',
-      'rent_receipt': 'حضر إيرات',
-      'orphan_care': 'حجة اعالة يتيم',
-      'birth_certificate': 'شهادة الميلاد',
-      'recent_certificate': 'آخر شهادة حصل عليها',
-      'personal_photo': 'صور شخصية',
-      'other_documents': 'أوراق ثبوتية أخرى',
-      'welfare_agency': 'وكالة في شؤون الولاية',
-      'transfer_document': 'حجة ترمل',
-      'parenthood_document': 'حجة ولاية',
-      'long_form_id': 'صورة طويلة',
-      'wallet_photo': 'صورة محفظة',
-    };
-
-    return labels[type] ?? type;
+    final value = type.trim();
+    if (value.isEmpty) return 'وثيقة';
+    return value;
   }
 }
 
@@ -322,7 +359,7 @@ class _EmptyState extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
         side: BorderSide(
@@ -336,7 +373,7 @@ class _EmptyState extends StatelessWidget {
             Icon(
               Icons.cloud_off_rounded,
               size: 64.sp,
-              color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             SizedBox(height: 16.h),
             Text(
@@ -349,7 +386,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'قم بإضافة مرفقات جديدة باستخدام الكارد أعلاه',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
               textAlign: TextAlign.center,
             ),

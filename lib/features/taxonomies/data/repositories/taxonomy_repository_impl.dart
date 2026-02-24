@@ -4,6 +4,7 @@ import '../../../../core/error_handling/result.dart';
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../../domain/contracts/beneficiary_taxonomy_contract.dart';
+import '../../domain/services/taxonomy_integrity_guard.dart';
 import '../../domain/repositories/taxonomy_repository.dart';
 import '../datasources/taxonomy_local_datasource.dart';
 import '../datasources/taxonomy_local_drift_datasource.dart';
@@ -16,12 +17,15 @@ import '../models/taxonomy_dto.dart';
 class TaxonomyRepositoryImpl implements TaxonomyRepository {
   final TaxonomyRemoteDataSource _remoteDataSource;
   final TaxonomyLocalDataSource _localDataSource;
+  final TaxonomyIntegrityGuard _integrityGuard;
 
   TaxonomyRepositoryImpl({
     required TaxonomyRemoteDataSource remoteDataSource,
     required TaxonomyLocalDataSource localDataSource,
+    TaxonomyIntegrityGuard integrityGuard = const TaxonomyIntegrityGuard(),
   })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+        _localDataSource = localDataSource,
+        _integrityGuard = integrityGuard;
 
   // ═══════════════════════════════════════════════════════════════
   // 📖 READ Operations
@@ -238,7 +242,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
         await _syncAllServerCatalogGroups();
       }
 
-      await _materializeMissingGroups();
+      await _repairLocalTaxonomyStorage();
+      await _enforceTaxonomyIntegrity();
 
       final syncTime = response.syncTimestamp ?? DateTime.now();
       await _localDataSource.updateLastSyncTime(syncTime);
@@ -269,6 +274,9 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       if (response.data.isNotEmpty) {
         await _saveCanonicalDtos(response.data);
       }
+
+      await _repairLocalTaxonomyStorage();
+      await _enforceTaxonomyIntegrity();
 
       await _localDataSource.updateLastSyncTime(DateTime.now());
       await _logCoverageSummary('syncGroup:${group.value}');
@@ -325,7 +333,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
 
       await _backfillMissingGroups();
       await _syncAllServerCatalogGroups();
-      await _materializeMissingGroups();
+      await _repairLocalTaxonomyStorage();
+      await _enforceTaxonomyIntegrity();
 
       await _localDataSource.updateLastSyncTime(DateTime.now());
 
@@ -516,43 +525,6 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     }
   }
 
-  Future<void> _materializeMissingGroups() async {
-    final stats = await _localDataSource.getStatistics();
-    final missingGroups = <TaxonomyGroup>[];
-
-    for (final entry in stats.countByGroup.entries) {
-      if (entry.value <= 0) {
-        missingGroups.add(entry.key);
-      }
-    }
-
-    if (missingGroups.isEmpty) {
-      return;
-    }
-
-    final placeholders = missingGroups
-        .map(
-          (group) => TaxonomyDTO(
-            id: '__placeholder__${group.value}',
-            groupValue: group.value,
-            code: '__placeholder__${group.value}',
-            label: '${group.arabicName} (تحتاج مزامنة)',
-            sortOrder: 999999,
-            isActive: true,
-            updatedAt: DateTime.now(),
-          ),
-        )
-        .toList(growable: false);
-
-    await _saveCanonicalDtos(placeholders);
-
-    developer.log(
-      'materialized missing taxonomy groups with placeholders: '
-      '[${missingGroups.map((g) => g.value).join(', ')}]',
-      name: 'TaxonomySync',
-    );
-  }
-
   TaxonomyGroup? _resolveCatalogGroup(TaxonomyGroupInfoDTO info) {
     return resolveTaxonomyGroupFromCandidates([
       info.slug,
@@ -619,22 +591,94 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   Future<void> _logCoverageSummary(String source) async {
     try {
       final stats = await _localDataSource.getStatistics();
-      final missing = <String>[];
+      final missingFull = <String>[];
       for (final entry in stats.countByGroup.entries) {
         if (entry.value <= 0) {
-          missing.add(entry.key.value);
+          missingFull.add(entry.key.value);
         }
       }
 
+      final integrityReport = _integrityGuard.assess(stats);
+      final missingDocumented = integrityReport.missingDocumentedGroups.map((group) => group.value).toList();
+      final missingEssential = integrityReport.missingEssentialGroups.map((group) => group.value).toList();
+
       developer.log(
         'taxonomy coverage after $source: '
-        'filled=${TaxonomyGroup.values.length - missing.length}/${TaxonomyGroup.values.length}, '
+        'filled=${TaxonomyGroup.values.length - missingFull.length}/${TaxonomyGroup.values.length}, '
         'totalItems=${stats.totalCount}, '
-        'missing=[${missing.join(', ')}]',
+        'missingDocumented=[${missingDocumented.join(', ')}], '
+        'missingEssential=[${missingEssential.join(', ')}], '
+        'missingFull=[${missingFull.join(', ')}]',
         name: 'TaxonomySync',
       );
     } catch (_) {
       // no-op logging helper
+    }
+  }
+
+  Future<void> _repairLocalTaxonomyStorage() async {
+    final local = _localDataSource;
+    if (local is! TaxonomyLocalDriftDataSource) {
+      return;
+    }
+
+    try {
+      final repairedRows = await local.repairCanonicalStorage();
+      final purgedRows = await local.purgeUnsupportedGroups();
+
+      if (repairedRows > 0 || purgedRows > 0) {
+        developer.log(
+          'taxonomy local repair: repaired=$repairedRows, purgedUnsupported=$purgedRows',
+          name: 'TaxonomySync',
+        );
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'taxonomy local repair failed',
+        name: 'TaxonomySync',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _enforceTaxonomyIntegrity() async {
+    try {
+      final stats = await _localDataSource.getStatistics();
+      final missingCriticalGroups = _integrityGuard.missingCriticalFallbackGroups(stats);
+
+      if (missingCriticalGroups.isEmpty) {
+        return;
+      }
+
+      final existingByGroup = <TaxonomyGroup, List<Taxonomy>>{};
+      for (final group in missingCriticalGroups) {
+        existingByGroup[group] = await _localDataSource.getTaxonomiesByGroup(group);
+      }
+
+      final fallbackTaxonomies = _integrityGuard.buildFallbackTaxonomies(
+        stats: stats,
+        existingByGroup: existingByGroup,
+      );
+
+      if (fallbackTaxonomies.isEmpty) {
+        return;
+      }
+
+      await _localDataSource.saveTaxonomies(fallbackTaxonomies);
+
+      developer.log(
+        'taxonomy integrity remediation inserted ${fallbackTaxonomies.length} fallback entries '
+        'for missing groups=[${missingCriticalGroups.map((g) => g.value).join(', ')}]',
+        name: 'TaxonomySync',
+      );
+    } catch (error, stackTrace) {
+      developer.log(
+        'taxonomy integrity remediation failed',
+        name: 'TaxonomySync',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 }

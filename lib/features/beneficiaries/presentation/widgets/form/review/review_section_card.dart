@@ -12,7 +12,11 @@ class ReviewSectionCard extends StatelessWidget {
   final VoidCallback? onEdit;
 
   const ReviewSectionCard({
-    required this.title, required this.icon, required this.color, required this.children, super.key,
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.children,
+    super.key,
     this.onEdit,
   });
 
@@ -24,7 +28,7 @@ class ReviewSectionCard extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: color.withOpacity(0.3)),
+        side: BorderSide(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +36,7 @@ class ReviewSectionCard extends StatelessWidget {
           // Header
           Container(
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(16.r),
                 topRight: Radius.circular(16.r),
@@ -44,7 +48,7 @@ class ReviewSectionCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Icon(icon, color: color, size: 24.sp),

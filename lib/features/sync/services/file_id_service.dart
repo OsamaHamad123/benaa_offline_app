@@ -11,8 +11,8 @@ import '../domain/repositories/file_id_reservation_repository.dart';
 class FileIdService {
   final FileIdReservationRepository _repository;
 
-  // Threshold to trigger reservation (e.g., if less than 500 IDs left)
-  static const int _lowThreshold = 500;
+  // Threshold to trigger reservation (API contract: renew when remaining < 1000)
+  static const int _lowThreshold = 1000;
   static const int _reserveBatchSize = 5000;
 
   bool _isReserving = false;

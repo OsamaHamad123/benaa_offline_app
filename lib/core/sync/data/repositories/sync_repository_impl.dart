@@ -8,6 +8,7 @@ import '../datasources/remote_sync_datasource.dart';
 import '../../../error_handling/error_logger.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../../../data/models/taxonomy_dto.dart';
+import '../../../../features/taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 
 /// 🔄 Sync Repository Implementation
 ///
@@ -150,13 +151,30 @@ class SyncRepositoryImpl implements ISyncRepository {
         grouped.putIfAbsent(item.group, () => []).add(item);
       }
 
+      final missingGroups = missingRequiredTaxonomyGroupsFromValues(grouped.keys);
+      for (final missingGroup in missingGroups) {
+        try {
+          final fallback = await _remote.pullTaxonomies(group: missingGroup.value);
+          if (fallback.data.isEmpty) {
+            continue;
+          }
+
+          for (final item in fallback.data) {
+            grouped.putIfAbsent(item.group, () => []).add(item);
+          }
+        } catch (_) {
+          continue;
+        }
+      }
+
       int totalSynced = 0;
       for (final entry in grouped.entries) {
+        final uniqueItems = _dedupeTaxonomiesById(entry.value);
         await _local.saveTaxonomiesForGroup(
           entry.key,
-          entry.value,
+          uniqueItems,
         );
-        totalSynced += entry.value.length;
+        totalSynced += uniqueItems.length;
       }
 
       return SyncSuccess(
@@ -171,6 +189,23 @@ class SyncRepositoryImpl implements ISyncRepository {
         failedAt: DateTime.now(),
       );
     }
+  }
+
+  List<TaxonomyDTO> _dedupeTaxonomiesById(List<TaxonomyDTO> items) {
+    if (items.length <= 1) {
+      return items;
+    }
+
+    final map = <String, TaxonomyDTO>{};
+    for (final item in items) {
+      final key = item.id.trim().isEmpty ? '${item.group}:${item.code}' : item.id;
+      final previous = map[key];
+      if (previous == null || item.updatedAt.isAfter(previous.updatedAt)) {
+        map[key] = item;
+      }
+    }
+
+    return map.values.toList(growable: false);
   }
 
   /// Pull Beneficiaries from server

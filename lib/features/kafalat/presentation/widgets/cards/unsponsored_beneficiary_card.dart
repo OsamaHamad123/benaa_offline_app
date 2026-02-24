@@ -11,8 +11,17 @@ import '../../../../../data/db/drift_database.dart';
 /// 🎨 Unsponsored Beneficiary Card - بطاقة مستفيد غير مكفول
 class UnsponsoredBeneficiaryCard extends ConsumerWidget {
   final Beneficiary beneficiary;
+  final int? priorityScore;
+  final bool isSelected;
+  final VoidCallback? onToggleSelection;
 
-  const UnsponsoredBeneficiaryCard({required this.beneficiary, super.key});
+  const UnsponsoredBeneficiaryCard({
+    required this.beneficiary,
+    this.priorityScore,
+    this.isSelected = false,
+    this.onToggleSelection,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,10 +31,13 @@ class UnsponsoredBeneficiaryCard extends ConsumerWidget {
       label: 'مستفيد غير مكفول: ${beneficiary.fullName}, رقم الهوية ${beneficiary.idNumber}',
       button: true,
       child: Card(
-        elevation: 2,
+        elevation: isSelected ? 4 : 2,
         shadowColor: theme.colorScheme.primary.withOpacity(0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.r),
+          side: isSelected
+              ? BorderSide(color: theme.colorScheme.primary, width: 1.5)
+              : BorderSide(color: Colors.transparent, width: 0),
         ),
         child: Container(
           decoration: BoxDecoration(
@@ -92,6 +104,22 @@ class UnsponsoredBeneficiaryCard extends ConsumerWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            if (priorityScore != null) ...[
+                              SizedBox(height: 4.h),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondaryContainer.withOpacity(0.7),
+                                  borderRadius: BorderRadius.circular(6.r),
+                                ),
+                                child: Text(
+                                  'أولوية: $priorityScore',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                             SizedBox(height: 4.h),
                             Container(
                               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
@@ -169,6 +197,17 @@ class UnsponsoredBeneficiaryCard extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  if (onToggleSelection != null) ...[
+                    SizedBox(height: 8.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: onToggleSelection,
+                        icon: Icon(isSelected ? Icons.check_circle : Icons.radio_button_unchecked),
+                        label: Text(isSelected ? 'محدد للتنفيذ الجماعي' : 'تحديد للتنفيذ الجماعي'),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

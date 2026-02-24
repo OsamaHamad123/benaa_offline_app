@@ -93,6 +93,7 @@ class BulkActionsBar extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final colorScheme = Theme.of(context).colorScheme;
     final selection = ref.read(selectionProvider);
     final confirmed = await showDialog<bool>(
       context: context,
@@ -112,7 +113,7 @@ class BulkActionsBar extends ConsumerWidget {
               HapticPatterns.error();
               Navigator.pop(context, true);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.error),
             child: const Text('حذف'),
           ),
         ],
@@ -123,9 +124,7 @@ class BulkActionsBar extends ConsumerWidget {
       try {
         HapticPatterns.warning();
 
-        await ref
-            .read(beneficiariesListProvider.notifier)
-            .bulkDelete(selection.selectedIds);
+        await ref.read(beneficiariesListProvider.notifier).bulkDelete(selection.selectedIds);
 
         ref.read(selectionProvider.notifier).deselectAll();
 
@@ -134,7 +133,7 @@ class BulkActionsBar extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('تم حذف ${selection.selectedCount} مستفيد بنجاح'),
-              backgroundColor: Colors.green,
+              backgroundColor: colorScheme.primary,
               duration: const Duration(seconds: 2),
             ),
           );
@@ -145,10 +144,10 @@ class BulkActionsBar extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('فشل الحذف: ${e.toString()}'),
-              backgroundColor: Colors.red,
+              backgroundColor: colorScheme.error,
               action: SnackBarAction(
                 label: 'إعادة المحاولة',
-                textColor: Colors.white,
+                textColor: colorScheme.onError,
                 onPressed: () => _showDeleteConfirmation(context, ref),
               ),
             ),
