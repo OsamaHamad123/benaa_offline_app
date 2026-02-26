@@ -39,6 +39,11 @@ class ApiConfig {
   static const String associationsEmployeesEndpoint = '/api/mobile/associations/employees';
   static const String associationsEmployeesBatchEndpoint = '/api/mobile/associations/employees/batch';
 
+  // 🤝 Sponsorships (Kafalat) Sync Endpoints
+  static const String sponsorshipsEndpoint = '/api/mobile/sponsorships';
+  static const String sponsorshipsBatchEndpoint = '/api/mobile/sponsorships/batch';
+  static const String sponsorshipsStatsEndpoint = '/api/mobile/sponsorships/stats';
+
   // 📊 Data Endpoints
   static const String materialsEndpoint = '/api/materials';
   static const String stockMovementsEndpoint = '/api/stock-movements';

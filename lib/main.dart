@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,22 +24,48 @@ import 'package:benaa_offline_app/core/config/app_config.dart';
 /// - Test page accessible via Developer Mode
 /// - Full error stack traces
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  await runZonedGuarded(() async {
+    final startupStopwatch = Stopwatch()..start();
 
-  // Initialize safe widgets to prevent overflow errors
-  FlutterErrorHandler.initialize();
+    WidgetsFlutterBinding.ensureInitialized();
+    _logStartup('Widgets binding initialized', startupStopwatch);
 
-  // Initialize SharedPreferences and AppConfig for synchronous provider access
-  final results = await Future.wait([
-    SharedPreferences.getInstance(),
-    AppConfig.load(),
-  ]);
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      final stack = details.stack ?? StackTrace.current;
+      debugPrint('❌ [FlutterError] ${details.exceptionAsString()}');
+      debugPrint('📍 [FlutterError stack]\n$stack');
+      Zone.current.handleUncaughtError(details.exception, stack);
+    };
 
-  final sharedPreferences = results[0] as SharedPreferences;
-  final appConfig = results[1] as AppConfig;
+    PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+      debugPrint('❌ [PlatformDispatcher] $error');
+      debugPrint('📍 [PlatformDispatcher stack]\n$stack');
+      return false;
+    };
 
-  // Run app directly
-  _runApp(sharedPreferences, appConfig);
+    FlutterErrorHandler.initialize();
+    _logStartup('Safe widgets initialized', startupStopwatch);
+
+    final results = await Future.wait([
+      SharedPreferences.getInstance(),
+      AppConfig.load(),
+    ]);
+    _logStartup('SharedPreferences + AppConfig loaded', startupStopwatch);
+
+    final sharedPreferences = results[0] as SharedPreferences;
+    final appConfig = results[1] as AppConfig;
+
+    _runApp(sharedPreferences, appConfig);
+    _logStartup('runApp called', startupStopwatch);
+  }, (Object error, StackTrace stack) {
+    debugPrint('❌ [Uncaught Zoned Error] $error');
+    debugPrint('📍 [Zoned stack]\n$stack');
+  });
+}
+
+void _logStartup(String message, Stopwatch stopwatch) {
+  debugPrint('⏱️ [STARTUP +${stopwatch.elapsedMilliseconds}ms] $message');
 }
 
 void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig) {

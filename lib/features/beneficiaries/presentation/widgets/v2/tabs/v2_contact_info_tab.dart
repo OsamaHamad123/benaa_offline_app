@@ -83,20 +83,13 @@ class V2ContactInfoTab extends StatelessWidget {
                   prefixIcon: Icons.map_rounded,
                   onCodeChanged: onProvinceChanged,
                 ),
-                TextFormField(
-                  initialValue: selectedCity,
-                  onChanged: (value) {
-                    final normalized = value.trim();
-                    onCityChanged(normalized.isEmpty ? null : normalized);
-                  },
-                  decoration: InputDecoration(
-                    labelText: 'المدينة',
-                    prefixIcon: const Icon(Icons.location_city_rounded),
-                    hintText: 'أدخل المدينة',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                  ),
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.city,
+                  selectedCode: selectedCity,
+                  labelText: 'المدينة',
+                  prefixIcon: Icons.location_city_rounded,
+                  onCodeChanged: onCityChanged,
+                  autoSyncOnEmpty: true,
                 ),
                 V2CustomTextField(
                   controller: neighborhoodController,

@@ -47,7 +47,12 @@ class AttachmentDataSource {
   /// Add new attachment
   Future<AttachmentModel> addAttachment({
     required String beneficiaryId,
-    required File sourceFile, String? visitId,
+    required File sourceFile,
+    String? visitId,
+    String? documentType,
+    String? personType,
+    String? personId,
+    String? notes,
   }) async {
     final resolvedBeneficiaryId = await _resolveBeneficiaryIdForQuery(beneficiaryId);
 
@@ -94,6 +99,10 @@ class AttachmentDataSource {
     final actualFileSize = await finalFile.length();
     final now = DateTime.now();
     final id = const Uuid().v4();
+    final normalizedDocumentType = _normalizeNullableText(documentType);
+    final normalizedPersonType = _normalizeNullableText(personType);
+    final normalizedPersonId = _normalizeNullableText(personId);
+    final normalizedNotes = _normalizeNullableText(notes);
 
     // حفظ في قاعدة البيانات
     await _database.attachmentsDao.addAttachment(
@@ -109,6 +118,10 @@ class AttachmentDataSource {
         createdAt: drift.Value(now),
         updatedAt: drift.Value(now),
         syncState: const drift.Value('pending'),
+        documentType: drift.Value(normalizedDocumentType),
+        personType: drift.Value(normalizedPersonType),
+        personId: drift.Value(normalizedPersonId),
+        notes: drift.Value(normalizedNotes),
       ),
     );
 
@@ -124,6 +137,10 @@ class AttachmentDataSource {
       createdAt: now,
       updatedAt: now,
       needsSync: true,
+      documentType: normalizedDocumentType,
+      personType: normalizedPersonType,
+      personId: normalizedPersonId,
+      notes: normalizedNotes,
     );
   }
 
@@ -286,4 +303,10 @@ class AttachmentDataSource {
       return null;
     }
   }
+}
+
+String? _normalizeNullableText(String? value) {
+  if (value == null) return null;
+  final normalized = value.trim();
+  return normalized.isEmpty ? null : normalized;
 }

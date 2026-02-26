@@ -16,6 +16,7 @@ const requiredBeneficiaryTaxonomyGroups = <TaxonomyGroup>[
   TaxonomyGroup.relationship,
   TaxonomyGroup.maritalStatus,
   TaxonomyGroup.governorate,
+  TaxonomyGroup.city,
   TaxonomyGroup.displacementStatus,
   TaxonomyGroup.educationLevel,
   TaxonomyGroup.employmentStatus,
@@ -24,6 +25,7 @@ const requiredBeneficiaryTaxonomyGroups = <TaxonomyGroup>[
   TaxonomyGroup.housingType,
   TaxonomyGroup.assistanceType,
   TaxonomyGroup.beneficiaryStatus,
+  TaxonomyGroup.guaranteeType,
 ];
 
 /// مجموعات التصنيفات التي يجب أن تكون جاهزة لتجربة فورم المستفيد بالكامل
@@ -35,6 +37,7 @@ const essentialBeneficiaryFormTaxonomyGroups = <TaxonomyGroup>[
   TaxonomyGroup.relationship,
   TaxonomyGroup.maritalStatus,
   TaxonomyGroup.governorate,
+  TaxonomyGroup.city,
   TaxonomyGroup.displacementStatus,
   TaxonomyGroup.educationLevel,
   TaxonomyGroup.employmentStatus,
@@ -45,8 +48,10 @@ const essentialBeneficiaryFormTaxonomyGroups = <TaxonomyGroup>[
   TaxonomyGroup.beneficiaryStatus,
   TaxonomyGroup.disabilityType,
   TaxonomyGroup.incomeSource,
+  TaxonomyGroup.sponsorshipType,
   TaxonomyGroup.documentType,
   TaxonomyGroup.deathReason,
+  TaxonomyGroup.guaranteeType,
 ];
 
 /// المجموعة القياسية لفئة المستفيد داخل الفورم.
@@ -58,13 +63,16 @@ const TaxonomyGroup canonicalBeneficiaryCategoryGroup = TaxonomyGroup.category;
 const equivalentBeneficiaryTaxonomyGroups = <TaxonomyGroup, List<TaxonomyGroup>>{
   TaxonomyGroup.section: [TaxonomyGroup.category],
   TaxonomyGroup.category: [TaxonomyGroup.section],
+  TaxonomyGroup.sponsorshipType: [TaxonomyGroup.beneficiaryStatus],
+  TaxonomyGroup.beneficiaryStatus: [TaxonomyGroup.sponsorshipType],
 };
 
 /// Alias mapping الرسمي بين مجموعة التصنيف وslugs السيرفر المحتملة.
 /// يستخدم كعقد domain موحّد بدل بعثرة الـ aliases داخل الطبقات المختلفة.
 const beneficiaryTaxonomyServerAliases = <TaxonomyGroup, List<String>>{
   TaxonomyGroup.category: ['categories', 'beneficiary-categories'],
-  TaxonomyGroup.governorate: ['governorates', 'provinces', 'cities'],
+  TaxonomyGroup.governorate: ['governorates', 'provinces'],
+  TaxonomyGroup.city: ['cities', 'city'],
   TaxonomyGroup.maritalStatus: ['marital-statuses', 'social-statuses', 'social-status'],
   TaxonomyGroup.displacementStatus: ['displacement-statuses', 'displacement-status'],
   TaxonomyGroup.employmentStatus: ['employment-statuses', 'job-statuses', 'job-status'],
@@ -77,7 +85,8 @@ const beneficiaryTaxonomyServerAliases = <TaxonomyGroup, List<String>>{
   TaxonomyGroup.bankName: ['bank-names', 'bank-name', 'banks'],
   TaxonomyGroup.currency: ['currencies', 'currency'],
   TaxonomyGroup.associationType: ['association-types', 'associations-types'],
-  TaxonomyGroup.sponsorshipType: ['sponsorship-types', 'sponsorship-categories', 'sponsorship', 'guarantee-types'],
+  TaxonomyGroup.sponsorshipType: ['sponsorship-types', 'sponsorship-categories', 'sponsorship'],
+  TaxonomyGroup.guaranteeType: ['guarantee-types', 'guarantee-type'],
   TaxonomyGroup.gender: ['sex', 'genders', 'sexes'],
   TaxonomyGroup.visitType: ['visit-types', 'visits-types'],
   TaxonomyGroup.assistanceType: ['assistance-types', 'aid-types', 'aid-statuses'],
@@ -115,6 +124,31 @@ const backendDocumentedCategorySlugs = <String>[
   'guarantee-types',
 ];
 
+/// Policy map (documented backend slug -> canonical app group value).
+///
+/// الهدف: منع الاعتماد على heuristics العامة في slugs الموثقة،
+/// وتثبيت قرار التطبيع بشكل صريح وقابل للمراجعة.
+const backendDocumentedSlugCanonicalGroup = <String, String>{
+  'academic-degrees': 'education_level',
+  'relations': 'relationship',
+  'aid-statuses': 'assistance_type',
+  'bank-names': 'bank_name',
+  'cities': 'city',
+  'currencies': 'currency',
+  'death-reasons': 'death_reason',
+  'displacement-statuses': 'displacement_status',
+  'document-types': 'document_type',
+  'employment-statuses': 'employment_status',
+  'health-statuses': 'health_status',
+  'housing-statuses': 'housing_status',
+  'marital-statuses': 'marital_status',
+  'provinces': 'governorate',
+  'request-statuses': 'beneficiary_status',
+  'sponsorship-statuses': 'beneficiary_status',
+  'accommodation-types': 'housing_type',
+  'guarantee-types': 'guarantee_type',
+};
+
 String normalizeBackendCategorySlug(String value) {
   return value.trim().toLowerCase().replaceAll('_', '-');
 }
@@ -122,6 +156,11 @@ String normalizeBackendCategorySlug(String value) {
 bool isBackendDocumentedCategorySlug(String value) {
   final normalized = normalizeBackendCategorySlug(value);
   return backendDocumentedCategorySlugs.any((slug) => slug == normalized);
+}
+
+String? resolveBackendDocumentedCategoryCanonicalGroup(String value) {
+  final normalized = normalizeBackendCategorySlug(value);
+  return backendDocumentedSlugCanonicalGroup[normalized];
 }
 
 List<String> serverCategorySlugCandidatesForGroup(TaxonomyGroup group) {

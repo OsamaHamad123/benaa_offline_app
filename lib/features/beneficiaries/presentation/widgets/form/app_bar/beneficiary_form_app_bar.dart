@@ -16,6 +16,8 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
   final ValueNotifier<DateTime?> lastSavedNotifier;
   final ValueNotifier<bool> hasUnsavedChangesNotifier;
   final VoidCallback onSave;
+  final VoidCallback onToggleProgressCard;
+  final bool isProgressCardVisible;
   final VoidCallback? onDelete;
   final VoidCallback onShowHistory;
   final VoidCallback onShowHelp;
@@ -30,6 +32,8 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
     required this.lastSavedNotifier,
     required this.hasUnsavedChangesNotifier,
     required this.onSave,
+    required this.onToggleProgressCard,
+    required this.isProgressCardVisible,
     required this.onShowHistory,
     required this.onShowHelp,
     required this.canUndo,
@@ -81,6 +85,8 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
         // أزرار الإجراءات
         FormActionButtons(
           onSave: onSave,
+          onToggleProgressCard: onToggleProgressCard,
+          isProgressCardVisible: isProgressCardVisible,
           onDelete: onDelete,
           onShowHistory: onShowHistory,
           onShowHelp: onShowHelp,

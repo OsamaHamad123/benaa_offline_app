@@ -179,11 +179,28 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         // 🆔 Allocate File ID from local pool
         final fileId = await _fileIdService.getNextId();
 
+        if (fileId == null) {
+          DebugLogger.warning('File ID reservation unavailable. Blocking beneficiary save.');
+          Sentry.addBreadcrumb(
+            Breadcrumb(
+              category: 'beneficiary.save',
+              message: 'Save blocked: missing reserved file ID',
+              level: SentryLevel.warning,
+            ),
+          );
+          state = state.copyWith(
+            isSaving: false,
+            errorMessage: 'تعذر حجز رقم الملف من السيرفر. يرجى تنفيذ المزامنة ثم إعادة المحاولة.',
+          );
+          return false;
+        }
+
         // Create new
         final createResult = await _createUseCase.execute(
           beneficiary.copyWith(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
-            fileIdNumber: fileId?.toString(), // Assign reserved ID
+            fileNo: fileId.toString(),
+            fileIdNumber: fileId.toString(),
             createdAt: now,
             updatedAt: now,
           ),
@@ -196,11 +213,9 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         final created = (createResult as Success<Beneficiary>).value;
 
         // ✅ Mark File ID as used if it was allocated
-        if (fileId != null) {
-          final localId = int.tryParse(created.id);
-          if (localId != null) {
-            await _fileIdService.markAsUsed(fileId, localId);
-          }
+        final localId = int.tryParse(created.id);
+        if (localId != null) {
+          await _fileIdService.markAsUsed(fileId, localId);
         }
 
         // Log activity if available

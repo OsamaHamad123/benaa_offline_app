@@ -46,8 +46,7 @@ class AuthService {
       }
 
       // إنشاء API client جديد إذا كان هناك server URL مختلف
-      final apiClient =
-          serverUrl != null ? SyncApiClient(baseUrl: serverUrl) : _apiClient;
+      final apiClient = serverUrl != null ? SyncApiClient(baseUrl: serverUrl) : _apiClient;
 
       // إنشاء طلب تسجيل الدخول
       final request = LoginRequestDto(
@@ -126,15 +125,15 @@ class AuthService {
   /// 🔄 تحديث Token (Refresh)
   Future<bool> refreshAuthToken() async {
     try {
-      final refreshToken = await _storage.getRefreshToken();
-      if (refreshToken == null) {
-        DebugLogger.warning('⚠️ No refresh token available');
+      final deviceId = await _storage.getDeviceId();
+      if (deviceId.trim().isEmpty) {
+        DebugLogger.warning('⚠️ No device ID available');
         return false;
       }
 
       DebugLogger.info('🔄 Refreshing auth token...');
 
-      final newToken = await _apiClient.refreshToken(refreshToken);
+      final newToken = await _apiClient.refreshToken(deviceId: deviceId);
       if (newToken != null) {
         await _storage.updateAuthToken(newToken);
         _apiClient.updateAuthToken(newToken);

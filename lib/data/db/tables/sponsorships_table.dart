@@ -56,8 +56,10 @@ class Sponsorships extends Table {
   TextColumn get status => text().withDefault(const Constant('active'))();
 
   /// monthly | one_time | other
-  TextColumn get sponsorshipType =>
-      text().withDefault(const Constant('monthly'))();
+  TextColumn get sponsorshipType => text().withDefault(const Constant('monthly'))();
+
+  /// نوع الكفالة (taxonomy code from guarantee-types)
+  TextColumn get guaranteeType => text().nullable()();
 
   // ========== معلومات بنكية للمكفول ==========
   /// اسم البنك (Bank Name)

@@ -4,6 +4,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/services/export/export_models.dart';
 import '../../../core/services/export/export_providers.dart';
 import '../../../core/constants/category_colors.dart';
+import '../../taxonomies/domain/entities/taxonomy.dart';
+import '../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../../../core/widgets/responsive_bottom_sheet.dart';
 import '../providers/reports_providers.dart';
 import '../domain/entities/report_data.dart';
@@ -130,6 +133,20 @@ class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
   @override
   Widget build(BuildContext context) {
     final reportAsync = ref.watch(categoryReportProvider);
+    final categoryTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category));
+    final sectionTaxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section));
+
+    final categoryTaxonomies = categoryTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <Taxonomy>[],
+    );
+
+    final sectionTaxonomies = sectionTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <Taxonomy>[],
+    );
+
+    final categoryColors = _buildCategoryColorMap(categoryTaxonomies, sectionTaxonomies);
 
     return ResponsiveBottomSheet(
       title: 'تقرير حسب الفئة',
@@ -157,6 +174,7 @@ class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
                       chart: CategoryPieChart(
                         data: categoryCounts,
                         total: total,
+                        colorByLabel: categoryColors,
                       ),
                     ),
                     SizedBox(height: 12.h),
@@ -175,9 +193,7 @@ class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
                     ),
                     SizedBox(height: 8.h),
                     ...categoryCounts.map((item) {
-                      final color = CategoryColors.getColorByName(
-                        item.category,
-                      );
+                      final color = categoryColors[item.category] ?? CategoryColors.getColorByName(item.category);
 
                       return DetailListItem(
                         title: item.category,
@@ -199,5 +215,55 @@ class _CategoryReportSheetState extends ConsumerState<CategoryReportSheet> {
         );
       },
     );
+  }
+
+  Map<String, Color> _buildCategoryColorMap(
+    List<Taxonomy> categories,
+    List<Taxonomy> sections,
+  ) {
+    final result = <String, Color>{};
+
+    void addColor(Taxonomy taxonomy) {
+      final label = taxonomy.label.trim();
+      if (label.isEmpty || result.containsKey(label)) {
+        return;
+      }
+
+      final parsed = _parseColor(taxonomy.color);
+      if (parsed != null) {
+        result[label] = parsed;
+      }
+    }
+
+    for (final taxonomy in categories) {
+      addColor(taxonomy);
+    }
+
+    for (final taxonomy in sections) {
+      addColor(taxonomy);
+    }
+
+    return result;
+  }
+
+  Color? _parseColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
   }
 }

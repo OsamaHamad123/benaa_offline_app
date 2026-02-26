@@ -14,9 +14,13 @@ import '../../features/sync/services/file_id_service.dart';
 import '../../features/sync/domain/entities/sync_flow_contract.dart';
 import '../../features/sync/domain/usecases/sync_down_flow_usecase.dart';
 import '../../features/sync/domain/usecases/sync_associations_module_usecase.dart';
+import '../../features/sync/domain/usecases/sync_sponsorships_module_usecase.dart';
 import '../../features/sync/domain/usecases/sync_related_entities_up_usecase.dart';
 import '../../features/sync/domain/usecases/sync_up_flow_usecase.dart';
 import '../../features/sync/domain/usecases/tombstone_delete_sync_usecase.dart';
+import '../../features/sync/data/parsers/mobile_sync_response_parser.dart';
+import '../../features/sync/data/repositories/mobile_sync_beneficiary_repository.dart';
+import '../../features/sync/data/repositories/mobile_sync_related_entities_repository.dart';
 import '../../features/sync/domain/utils/api_endpoint_normalizer.dart' as sync_endpoint;
 import '../../features/taxonomies/domain/repositories/taxonomy_repository.dart';
 
@@ -48,6 +52,10 @@ class MobileSyncService {
   late final SyncUpFlowUseCase _syncUpFlowUseCase;
   late final SyncRelatedEntitiesUpUseCase _syncRelatedEntitiesUpUseCase;
   final SyncAssociationsModuleUseCase? _syncAssociationsModuleUseCase;
+  final SyncSponsorshipsModuleUseCase? _syncSponsorshipsModuleUseCase;
+  final MobileSyncResponseParser _responseParser;
+  late final MobileSyncBeneficiaryRepository _beneficiaryRepository;
+  late final MobileSyncRelatedEntitiesRepository _relatedEntitiesRepository;
   final Logger _logger = Logger();
 
   // Sync state
@@ -55,8 +63,6 @@ class MobileSyncService {
   final _operationEventsController = StreamController<SyncOperationEvent>.broadcast();
   MobileSyncStatus _currentStatus = MobileSyncStatus();
   static const int _uiYieldInterval = 20;
-  static const int _deceasedFatherType = 1;
-  static const int _deceasedMotherType = 2;
 
   MobileSyncService(
     this._db,
@@ -70,10 +76,16 @@ class MobileSyncService {
     SyncUpFlowUseCase? syncUpFlowUseCase,
     SyncRelatedEntitiesUpUseCase? syncRelatedEntitiesUpUseCase,
     SyncAssociationsModuleUseCase? syncAssociationsModuleUseCase,
+    SyncSponsorshipsModuleUseCase? syncSponsorshipsModuleUseCase,
+    MobileSyncResponseParser? responseParser,
+    MobileSyncBeneficiaryRepository? beneficiaryRepository,
+    MobileSyncRelatedEntitiesRepository? relatedEntitiesRepository,
   })  : _fileIdService = fileIdService,
         _taxonomyRepository = taxonomyRepository,
         _syncRepository = syncRepository,
         _syncAssociationsModuleUseCase = syncAssociationsModuleUseCase,
+        _syncSponsorshipsModuleUseCase = syncSponsorshipsModuleUseCase,
+        _responseParser = responseParser ?? MobileSyncResponseParser(),
         _dio = dio ??
             Dio(
               BaseOptions(
@@ -110,6 +122,27 @@ class MobileSyncService {
           normalizeApiEndpoint: _normalizeApiEndpoint,
           logger: _logger,
         );
+
+    _relatedEntitiesRepository =
+        relatedEntitiesRepository ?? MobileSyncRelatedEntitiesRepository(database: _db, logger: _logger);
+
+    _beneficiaryRepository = beneficiaryRepository ?? MobileSyncBeneficiaryRepository(database: _db, logger: _logger);
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final token = await _storage.getAuthToken();
+            if (token != null && token.trim().isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer ${token.trim()}';
+            }
+          } catch (_) {}
+
+          options.headers.putIfAbsent('Accept', () => 'application/json');
+          handler.next(options);
+        },
+      ),
+    );
   }
 
   Stream<MobileSyncStatus> get statusStream => _statusController.stream;
@@ -168,7 +201,6 @@ class MobileSyncService {
       await _syncRelatedEntitiesForBeneficiary(
         record,
         upsertResult.localBeneficiaryId,
-        upsertResult.serverBeneficiaryId,
         writeCounter,
       );
 
@@ -236,74 +268,111 @@ class MobileSyncService {
     );
     final baseResult = _fromFlowResult(flowResult);
 
-    if (!baseResult.success || _syncAssociationsModuleUseCase == null) {
+    if (!baseResult.success) {
       return baseResult;
     }
 
-    try {
-      _updateStatus(
-        _currentStatus.copyWith(
-          isSyncing: true,
-          currentOperation: 'جاري مزامنة الجمعيات والموظفين... ',
-          progress: 0.95,
-        ),
-      );
+    var result = baseResult;
 
-      final counters = await _syncAssociationsModuleUseCase.syncDown();
-
-      final mergedPayload = Map<String, int>.from(baseResult.payloadCounters)
-        ..update(
-          'sponsors',
-          (value) => value + counters.uploaded,
-          ifAbsent: () => counters.uploaded,
+    if (_syncAssociationsModuleUseCase != null) {
+      try {
+        _updateStatus(
+          _currentStatus.copyWith(
+            isSyncing: true,
+            currentOperation: 'جاري مزامنة الجمعيات والموظفين... ',
+            progress: 0.95,
+          ),
         );
 
-      final result = MobileSyncResult(
-        success: baseResult.success && counters.failed == 0,
-        recordsSynced: baseResult.recordsSynced + counters.uploaded,
-        recordsFailed: baseResult.recordsFailed + counters.failed,
-        payloadCounters: mergedPayload,
-        writeCounters: baseResult.writeCounters,
-        error: counters.failed > 0 ? 'associations_sync_partial_failure' : baseResult.error,
-        errorCategory: counters.failed > 0 ? 'partial_failure' : baseResult.errorCategory,
-        errorContext: baseResult.errorContext,
-      );
+        final counters = await _syncAssociationsModuleUseCase.syncDown();
 
-      _updateStatus(
-        _currentStatus.copyWith(
-          isSyncing: false,
-          currentOperation:
-              result.success ? 'اكتملت مزامنة الجمعيات والموظفين' : 'اكتملت مزامنة الجمعيات والموظفين مع مشاكل',
-          progress: 1.0,
-          lastSyncAt: DateTime.now(),
-        ),
-      );
+        final mergedPayload = Map<String, int>.from(result.payloadCounters)
+          ..update(
+            'sponsors',
+            (value) => value + counters.uploaded,
+            ifAbsent: () => counters.uploaded,
+          );
 
-      return result;
-    } catch (e) {
-      _logger.w('Associations module sync-down step failed: $e');
-      final failedResult = MobileSyncResult(
-        success: false,
-        recordsSynced: baseResult.recordsSynced,
-        recordsFailed: baseResult.recordsFailed + 1,
-        payloadCounters: baseResult.payloadCounters,
-        writeCounters: baseResult.writeCounters,
-        error: 'associations_sync_down_failed: $e',
-        errorCategory: _classifyError(e),
-        errorContext: _extractErrorContext(e),
-      );
-
-      _updateStatus(
-        _currentStatus.copyWith(
-          isSyncing: false,
-          currentOperation: 'فشلت مزامنة الجمعيات والموظفين',
-          progress: 1.0,
-          lastError: failedResult.error,
-        ),
-      );
-
-      return failedResult;
+        result = MobileSyncResult(
+          success: result.success && counters.failed == 0,
+          recordsSynced: result.recordsSynced + counters.uploaded,
+          recordsFailed: result.recordsFailed + counters.failed,
+          payloadCounters: mergedPayload,
+          writeCounters: result.writeCounters,
+          error: counters.failed > 0 ? 'associations_sync_partial_failure' : result.error,
+          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+          errorContext: result.errorContext,
+        );
+      } catch (e) {
+        _logger.w('Associations module sync-down step failed: $e');
+        result = MobileSyncResult(
+          success: false,
+          recordsSynced: result.recordsSynced,
+          recordsFailed: result.recordsFailed + 1,
+          payloadCounters: result.payloadCounters,
+          writeCounters: result.writeCounters,
+          error: 'associations_sync_down_failed: $e',
+          errorCategory: _classifyError(e),
+          errorContext: _extractErrorContext(e),
+        );
+      }
     }
+
+    if (_syncSponsorshipsModuleUseCase != null) {
+      try {
+        _updateStatus(
+          _currentStatus.copyWith(
+            isSyncing: true,
+            currentOperation: 'جاري مزامنة الكفالات... ',
+            progress: 0.98,
+          ),
+        );
+
+        final counters = await _syncSponsorshipsModuleUseCase.syncDown();
+
+        final mergedPayload = Map<String, int>.from(result.payloadCounters)
+          ..update(
+            'sponsorships',
+            (value) => value + counters.uploaded,
+            ifAbsent: () => counters.uploaded,
+          );
+
+        result = MobileSyncResult(
+          success: result.success && counters.failed == 0,
+          recordsSynced: result.recordsSynced + counters.uploaded,
+          recordsFailed: result.recordsFailed + counters.failed,
+          payloadCounters: mergedPayload,
+          writeCounters: result.writeCounters,
+          error: counters.failed > 0 ? 'sponsorships_sync_partial_failure' : result.error,
+          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+          errorContext: result.errorContext,
+        );
+      } catch (e) {
+        _logger.w('Sponsorships module sync-down step failed: $e');
+        result = MobileSyncResult(
+          success: false,
+          recordsSynced: result.recordsSynced,
+          recordsFailed: result.recordsFailed + 1,
+          payloadCounters: result.payloadCounters,
+          writeCounters: result.writeCounters,
+          error: 'sponsorships_sync_down_failed: $e',
+          errorCategory: _classifyError(e),
+          errorContext: _extractErrorContext(e),
+        );
+      }
+    }
+
+    _updateStatus(
+      _currentStatus.copyWith(
+        isSyncing: false,
+        currentOperation: result.success ? 'اكتملت المزامنة النهائية' : 'اكتملت المزامنة مع مشاكل',
+        progress: 1.0,
+        lastSyncAt: DateTime.now(),
+        lastError: result.success ? null : result.error,
+      ),
+    );
+
+    return result;
   }
 
   /// مزامنة المستفيدين - تنزيل
@@ -360,7 +429,6 @@ class MobileSyncService {
               await _syncRelatedEntitiesForBeneficiary(
                 record,
                 upsertResult.localBeneficiaryId,
-                upsertResult.serverBeneficiaryId,
                 writeCounter,
               );
 
@@ -453,12 +521,12 @@ class MobileSyncService {
 
         final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(row, index: identityIndex);
         if (localBeneficiaryId == null) return _WriteOutcome.skipped;
-        return _upsertAttachment(
+        final outcome = await _relatedEntitiesRepository.upsertAttachment(
           row,
           localBeneficiaryId: localBeneficiaryId,
-          serverBeneficiaryId: _resolveServerBeneficiaryId(row),
           sequence: index,
         );
+        return _mapRelatedWriteOutcome(outcome);
       },
       onCounted: (count) => attachmentsSynced += count,
       writeCounter: writeCounter,
@@ -484,10 +552,11 @@ class MobileSyncService {
 
         final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(row, index: identityIndex);
         if (localBeneficiaryId == null) return _WriteOutcome.skipped;
-        return _upsertFamilyMember(
+        final outcome = await _relatedEntitiesRepository.upsertFamilyMember(
           row,
           localBeneficiaryId: localBeneficiaryId,
         );
+        return _mapRelatedWriteOutcome(outcome);
       },
       onCounted: (count) => familyMembersSynced += count,
       writeCounter: writeCounter,
@@ -503,7 +572,7 @@ class MobileSyncService {
     await _syncEndpointRows(
       entityKey: 'dead_people',
       endpoint: _normalizeApiEndpoint('/api/mobile/database/dead-people'),
-      listKeys: const ['dead_people', 'family_deceased', 'deceased', 'records', 'items', 'data'],
+      listKeys: const ['dead_people', 'family_deceased', 'deceased', 'deceased_parents', 'records', 'items', 'data'],
       pageSize: pageSize,
       onRow: (row, _) async {
         if (_isServerDeletedRow(row)) {
@@ -513,10 +582,11 @@ class MobileSyncService {
 
         final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(row, index: identityIndex);
         if (localBeneficiaryId == null) return _WriteOutcome.skipped;
-        return _upsertFamilyDeceased(
+        final outcome = await _relatedEntitiesRepository.upsertFamilyDeceased(
           row,
           localBeneficiaryId: localBeneficiaryId,
         );
+        return _mapRelatedWriteOutcome(outcome);
       },
       onCounted: (count) => familyDeceasedSynced += count,
       writeCounter: writeCounter,
@@ -618,125 +688,12 @@ class MobileSyncService {
     required int pageSize,
     required List<String> listKeys,
   }) {
-    final data = raw is Map<String, dynamic> ? raw : <String, dynamic>{};
-    final rows = _extractRowsFromPayload(data, preferredKeys: listKeys);
-    final pagination = _extractPaginationMap(data);
-
-    bool hasMore;
-    if (pagination != null) {
-      final currentPage = _asInt(pagination['current_page']) ?? _asInt(pagination['page']) ?? page;
-      final lastPage = _asInt(pagination['last_page']) ?? _asInt(pagination['total_pages']);
-      final nextPageUrl = pagination['next_page_url']?.toString();
-      final hasNextUrl = nextPageUrl != null && nextPageUrl.isNotEmpty;
-      hasMore = lastPage != null ? currentPage < lastPage : (hasNextUrl || rows.length >= pageSize);
-    } else {
-      hasMore = rows.length >= pageSize;
-    }
-
-    return (rows: rows, hasMore: hasMore);
-  }
-
-  List<Map<String, dynamic>> _extractRowsFromPayload(
-    Map<String, dynamic> root, {
-    required List<String> preferredKeys,
-  }) {
-    final directData = _extractRowsFromValue(root['data']);
-    if (directData.isNotEmpty) return directData;
-
-    final fromPreferred = _extractRowsFromMapByKeys(root, preferredKeys);
-    if (fromPreferred.isNotEmpty) return fromPreferred;
-
-    final dataNode = root['data'];
-    if (dataNode is Map<String, dynamic>) {
-      final nestedPreferred = _extractRowsFromMapByKeys(dataNode, preferredKeys);
-      if (nestedPreferred.isNotEmpty) return nestedPreferred;
-    }
-
-    final commonKeys = <String>['rows', 'records', 'items', 'results', 'entities'];
-    final fromCommon = _extractRowsFromMapByKeys(root, commonKeys);
-    if (fromCommon.isNotEmpty) return fromCommon;
-
-    if (dataNode is Map<String, dynamic>) {
-      final nestedCommon = _extractRowsFromMapByKeys(dataNode, commonKeys);
-      if (nestedCommon.isNotEmpty) return nestedCommon;
-    }
-
-    return const <Map<String, dynamic>>[];
-  }
-
-  List<Map<String, dynamic>> _extractRowsFromMapByKeys(
-    Map<String, dynamic> root,
-    List<String> keys,
-  ) {
-    for (final key in keys) {
-      final directRows = _extractRowsFromValue(root[key]);
-      if (directRows.isNotEmpty) return directRows;
-
-      for (final value in _findValuesByKeyRecursive(root, key)) {
-        final nestedRows = _extractRowsFromValue(value);
-        if (nestedRows.isNotEmpty) return nestedRows;
-      }
-    }
-    return const <Map<String, dynamic>>[];
-  }
-
-  Iterable<dynamic> _findValuesByKeyRecursive(dynamic node, String targetKey) sync* {
-    final nodeMap = _toStringDynamicMap(node);
-    if (nodeMap != null) {
-      for (final entry in nodeMap.entries) {
-        if (entry.key == targetKey) {
-          yield entry.value;
-        }
-        yield* _findValuesByKeyRecursive(entry.value, targetKey);
-      }
-    } else if (node is List) {
-      for (final item in node) {
-        yield* _findValuesByKeyRecursive(item, targetKey);
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> _extractRowsFromValue(dynamic value) {
-    if (value is List) {
-      return _toMapList(value);
-    }
-
-    if (value is Map<String, dynamic>) {
-      for (final key in const ['data', 'items', 'records', 'rows', 'results', 'entities']) {
-        final nested = value[key];
-        if (nested is List) {
-          final rows = _toMapList(nested);
-          if (rows.isNotEmpty) return rows;
-        }
-      }
-    }
-
-    return const <Map<String, dynamic>>[];
-  }
-
-  Map<String, dynamic>? _extractPaginationMap(Map<String, dynamic> root) {
-    final candidates = <dynamic>[
-      root['pagination'],
-      root['meta'],
-      root['data'] is Map<String, dynamic> ? (root['data'] as Map<String, dynamic>)['pagination'] : null,
-      root['data'] is Map<String, dynamic> ? (root['data'] as Map<String, dynamic>)['meta'] : null,
-    ];
-
-    for (final candidate in candidates) {
-      if (candidate is Map<String, dynamic>) {
-        return candidate;
-      }
-    }
-
-    for (final key in const ['pagination', 'meta']) {
-      for (final candidate in _findValuesByKeyRecursive(root, key)) {
-        if (candidate is Map<String, dynamic>) {
-          return candidate;
-        }
-      }
-    }
-
-    return null;
+    return _responseParser.parseRelatedRowsResponse(
+      raw: raw,
+      page: page,
+      pageSize: pageSize,
+      listKeys: listKeys,
+    );
   }
 
   Future<
@@ -829,102 +786,7 @@ class MobileSyncService {
     int page,
     int pageSize,
   ) {
-    final data = _toStringDynamicMap(raw) ?? <String, dynamic>{};
-    final entities = data['entities'];
-    final rawData = data['data'];
-
-    List<dynamic> records = const [];
-    final attachments = <Map<String, dynamic>>[];
-    final familyMembers = <Map<String, dynamic>>[];
-    final familyDeceased = <Map<String, dynamic>>[];
-
-    if (entities is List) {
-      final normalized = <dynamic>[];
-      for (final item in entities) {
-        final entityMap = _toStringDynamicMap(item);
-        if (entityMap == null) continue;
-
-        final entityType = (entityMap['entity_type'] ?? entityMap['entityType'])?.toString().toLowerCase().trim();
-        final payload = entityMap['data'];
-        final row = _toStringDynamicMap(payload) ?? entityMap;
-
-        if (entityType == null || entityType == 'beneficiary' || entityType == 'beneficiaries') {
-          normalized.add(row);
-        } else if (entityType.contains('attach')) {
-          attachments.add(row);
-        } else if (entityType.contains('dead') || entityType.contains('deceased')) {
-          familyDeceased.add(row);
-        } else if (entityType.contains('family_member') ||
-            entityType.contains('member') ||
-            entityType.contains('orphan') ||
-            entityType.contains('re_people')) {
-          familyMembers.add(row);
-        }
-      }
-      records = normalized;
-    } else if (rawData is List) {
-      records = rawData;
-    } else if (_toStringDynamicMap(rawData) != null) {
-      final rawDataMap = _toStringDynamicMap(rawData)!;
-      final fromKey = rawDataMap['beneficiaries'] ??
-          rawDataMap['re_people'] ??
-          rawDataMap['people'] ??
-          rawDataMap['records'] ??
-          rawDataMap['items'] ??
-          rawDataMap['data'];
-      if (fromKey is List) {
-        records = fromKey;
-      }
-
-      final rawAttachments = rawDataMap['attachments'];
-      if (rawAttachments is List) {
-        attachments.addAll(_toMapList(rawAttachments));
-      }
-
-      final rawFamilyMembers = rawDataMap['family_members'] ?? rawDataMap['members'] ?? rawDataMap['orphans'];
-      if (rawFamilyMembers is List) {
-        familyMembers.addAll(_toMapList(rawFamilyMembers));
-      }
-
-      final rawFamilyDeceased = rawDataMap['dead_people'] ?? rawDataMap['family_deceased'] ?? rawDataMap['deceased'];
-      if (rawFamilyDeceased is List) {
-        familyDeceased.addAll(_toMapList(rawFamilyDeceased));
-      }
-    } else if (data['re_people'] is List) {
-      records = data['re_people'] as List<dynamic>;
-    } else if (data['beneficiaries'] is List) {
-      records = data['beneficiaries'] as List<dynamic>;
-    }
-
-    if (data['attachments'] is List) {
-      attachments.addAll(_toMapList(data['attachments'] as List));
-    }
-    if (data['family_members'] is List) {
-      familyMembers.addAll(_toMapList(data['family_members'] as List));
-    }
-    if (data['dead_people'] is List) {
-      familyDeceased.addAll(_toMapList(data['dead_people'] as List));
-    }
-
-    final pagination = data['pagination'];
-    bool hasMore = false;
-    if (pagination is Map<String, dynamic>) {
-      final currentPage = _asInt(pagination['current_page']) ?? _asInt(pagination['page']) ?? page;
-      final lastPage = _asInt(pagination['last_page']) ?? _asInt(pagination['total_pages']);
-      if (lastPage != null) {
-        hasMore = currentPage < lastPage;
-      }
-    } else {
-      hasMore = records.length >= pageSize;
-    }
-
-    return (
-      records: records,
-      hasMore: hasMore,
-      attachments: attachments,
-      familyMembers: familyMembers,
-      familyDeceased: familyDeceased,
-    );
+    return _responseParser.parseBeneficiariesResponse(raw, page, pageSize);
   }
 
   int? _asInt(dynamic value) {
@@ -934,38 +796,12 @@ class MobileSyncService {
   }
 
   Map<String, dynamic>? _toStringDynamicMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
-    if (value is Map) {
-      final result = <String, dynamic>{};
-      for (final entry in value.entries) {
-        result[entry.key.toString()] = entry.value;
-      }
-      return result;
-    }
-    return null;
-  }
-
-  List<Map<String, dynamic>> _toMapList(dynamic value) {
-    if (value is! List) {
-      return const [];
-    }
-
-    final out = <Map<String, dynamic>>[];
-    for (final item in value) {
-      final map = _toStringDynamicMap(item);
-      if (map != null) {
-        out.add(map);
-      }
-    }
-    return out;
+    return _responseParser.toMap(value);
   }
 
   Future<void> _syncRelatedEntitiesForBeneficiary(
     Map<String, dynamic> beneficiary,
     int localBeneficiaryId,
-    int? serverBeneficiaryId,
     _EntityWriteCounter writeCounter,
   ) async {
     final nestedAttachments = _extractListOfMaps(
@@ -979,12 +815,12 @@ class MobileSyncService {
         continue;
       }
 
-      final outcome = await _upsertAttachment(
+      final relatedOutcome = await _relatedEntitiesRepository.upsertAttachment(
         nestedAttachments[i],
         localBeneficiaryId: localBeneficiaryId,
-        serverBeneficiaryId: serverBeneficiaryId,
         sequence: i,
       );
+      final outcome = _mapRelatedWriteOutcome(relatedOutcome);
       writeCounter.record('attachments', outcome);
     }
 
@@ -1001,10 +837,11 @@ class MobileSyncService {
         continue;
       }
 
-      final outcome = await _upsertFamilyMember(
+      final relatedOutcome = await _relatedEntitiesRepository.upsertFamilyMember(
         member,
         localBeneficiaryId: localBeneficiaryId,
       );
+      final outcome = _mapRelatedWriteOutcome(relatedOutcome);
       writeCounter.record('family_members', outcome);
 
       await _yieldToUiIfNeeded(index + 1);
@@ -1012,7 +849,7 @@ class MobileSyncService {
 
     final nestedDeceased = _extractListOfMaps(
       beneficiary,
-      const ['dead_people', 'family_deceased', 'deceased'],
+      const ['dead_people', 'family_deceased', 'deceased', 'deceased_parents'],
     );
     for (var index = 0; index < nestedDeceased.length; index++) {
       final deceased = nestedDeceased[index];
@@ -1023,10 +860,11 @@ class MobileSyncService {
         continue;
       }
 
-      final outcome = await _upsertFamilyDeceased(
+      final relatedOutcome = await _relatedEntitiesRepository.upsertFamilyDeceased(
         deceased,
         localBeneficiaryId: localBeneficiaryId,
       );
+      final outcome = _mapRelatedWriteOutcome(relatedOutcome);
       writeCounter.record('dead_people', outcome);
 
       await _yieldToUiIfNeeded(index + 1);
@@ -1054,12 +892,12 @@ class MobileSyncService {
 
       final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(attachment, index: identityIndex);
       if (localBeneficiaryId != null) {
-        final outcome = await _upsertAttachment(
+        final relatedOutcome = await _relatedEntitiesRepository.upsertAttachment(
           attachment,
           localBeneficiaryId: localBeneficiaryId,
-          serverBeneficiaryId: _resolveServerBeneficiaryId(attachment),
           sequence: i,
         );
+        final outcome = _mapRelatedWriteOutcome(relatedOutcome);
         writeCounter.record('attachments', outcome);
       } else {
         writeCounter.record('attachments', _WriteOutcome.skipped);
@@ -1079,10 +917,11 @@ class MobileSyncService {
 
       final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(member, index: identityIndex);
       if (localBeneficiaryId != null) {
-        final outcome = await _upsertFamilyMember(
+        final relatedOutcome = await _relatedEntitiesRepository.upsertFamilyMember(
           member,
           localBeneficiaryId: localBeneficiaryId,
         );
+        final outcome = _mapRelatedWriteOutcome(relatedOutcome);
         writeCounter.record('family_members', outcome);
       } else {
         writeCounter.record('family_members', _WriteOutcome.skipped);
@@ -1102,10 +941,11 @@ class MobileSyncService {
 
       final localBeneficiaryId = await _resolveLocalBeneficiaryIdFromPayload(deceased, index: identityIndex);
       if (localBeneficiaryId != null) {
-        final outcome = await _upsertFamilyDeceased(
+        final relatedOutcome = await _relatedEntitiesRepository.upsertFamilyDeceased(
           deceased,
           localBeneficiaryId: localBeneficiaryId,
         );
+        final outcome = _mapRelatedWriteOutcome(relatedOutcome);
         writeCounter.record('dead_people', outcome);
       } else {
         writeCounter.record('dead_people', _WriteOutcome.skipped);
@@ -1118,33 +958,13 @@ class MobileSyncService {
   Future<({int localBeneficiaryId, int? serverBeneficiaryId, _WriteOutcome outcome})> _upsertBeneficiaryRecord(
     Map<String, dynamic> record,
   ) async {
-    final companion = mapper.BeneficiaryMapper.fromBackend(record);
-
-    final serverIdRaw = record['id'];
-    final serverId =
-        serverIdRaw is int ? serverIdRaw : (serverIdRaw != null ? int.tryParse(serverIdRaw.toString()) : null);
-    late final int localBeneficiaryId;
-    _WriteOutcome outcome;
-
-    if (serverId != null) {
-      final existing =
-          await (_db.select(_db.beneficiaries)..where((b) => b.serverId.equals(serverId))).getSingleOrNull();
-      if (existing != null) {
-        await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(existing.id))).write(companion);
-        localBeneficiaryId = existing.id;
-        outcome = _WriteOutcome.updated;
-      } else {
-        localBeneficiaryId = await _db.into(_db.beneficiaries).insert(companion);
-        outcome = _WriteOutcome.inserted;
-      }
-    } else {
-      localBeneficiaryId = await _db.into(_db.beneficiaries).insert(companion);
-      outcome = _WriteOutcome.inserted;
-    }
+    final upsert = await _beneficiaryRepository.upsertFromServerRecord(record);
+    final outcome =
+        upsert.outcome == SyncBeneficiaryWriteOutcome.updated ? _WriteOutcome.updated : _WriteOutcome.inserted;
 
     return (
-      localBeneficiaryId: localBeneficiaryId,
-      serverBeneficiaryId: serverId,
+      localBeneficiaryId: upsert.localBeneficiaryId,
+      serverBeneficiaryId: upsert.serverBeneficiaryId,
       outcome: outcome,
     );
   }
@@ -1153,72 +973,18 @@ class MobileSyncService {
     Map<String, dynamic> source,
     List<String> keys,
   ) {
-    for (final key in keys) {
-      final value = source[key];
-      if (value is List) {
-        return _toMapList(value);
-      }
-    }
-    return const [];
+    return _responseParser.extractRelatedList(
+      source,
+      keys,
+      normalizeDeceased: keys.contains('deceased_parents') ||
+          keys.contains('dead_people') ||
+          keys.contains('family_deceased') ||
+          keys.contains('deceased'),
+    );
   }
 
   int? _resolveServerBeneficiaryId(Map<String, dynamic> row) {
-    const directKeys = <String>[
-      'beneficiary_id',
-      'beneficiaryId',
-      'data_id',
-      'dataId',
-      'data_record_id',
-      'beneficiary_data_id',
-      'main_beneficiary_id',
-      'main_person_id',
-      'primary_person_id',
-      'beneficiary_server_id',
-      'beneficiaryServerId',
-      'beneficiary_server',
-      're_people_id',
-      'rePeopleId',
-      're_person_id',
-      'person_id',
-      'owner_id',
-      'related_beneficiary_id',
-      'parent_beneficiary_id',
-      'orphan_parent_id',
-    ];
-
-    for (final key in directKeys) {
-      final parsed = _asIntLoose(row[key]);
-      if (parsed != null) return parsed;
-    }
-
-    const nestedKeys = <String>[
-      'beneficiary',
-      'data',
-      'beneficiary_data',
-      're_people',
-      'person',
-      'owner',
-      'main_person',
-      'primary_person',
-      'related_beneficiary',
-    ];
-    for (final nestedKey in nestedKeys) {
-      final nested = row[nestedKey];
-      if (nested is Map<String, dynamic>) {
-        final parsed = _asIntLoose(
-          nested['id'] ??
-              nested['data_id'] ??
-              nested['beneficiary_data_id'] ??
-              nested['server_id'] ??
-              nested['beneficiary_id'] ??
-              nested['beneficiary_server_id'] ??
-              nested['re_people_id'],
-        );
-        if (parsed != null) return parsed;
-      }
-    }
-
-    return null;
+    return _beneficiaryRepository.resolveServerBeneficiaryId(row);
   }
 
   Future<int?> _resolveLocalBeneficiaryIdFromPayload(
@@ -1276,7 +1042,7 @@ class MobileSyncService {
       if (byServer != null) return byServer.id;
     }
 
-    final fileIdCandidate = _extractFileIdCandidate(row);
+    final fileIdCandidate = _beneficiaryRepository.extractFileIdCandidate(row);
     if (fileIdCandidate != null && fileIdCandidate.isNotEmpty) {
       final normalized = _normalizeIdentityToken(fileIdCandidate);
       final fileCandidates = <String>{fileIdCandidate};
@@ -1291,7 +1057,7 @@ class MobileSyncService {
       if (byFileId != null) return byFileId.id;
     }
 
-    final nationalId = _extractNationalIdCandidate(row);
+    final nationalId = _beneficiaryRepository.extractNationalIdCandidate(row);
     if (nationalId != null && nationalId.isNotEmpty) {
       final normalized = _normalizeIdentityToken(nationalId);
       final nationalCandidates = <String>{nationalId};
@@ -1322,13 +1088,13 @@ class MobileSyncService {
       if (byServer != null) return byServer;
     }
 
-    final fileId = _extractFileIdCandidate(row);
+    final fileId = _beneficiaryRepository.extractFileIdCandidate(row);
     if (fileId != null && fileId.isNotEmpty) {
       final byFile = index.byFileId(fileId);
       if (byFile != null) return byFile;
     }
 
-    final nationalId = _extractNationalIdCandidate(row);
+    final nationalId = _beneficiaryRepository.extractNationalIdCandidate(row);
     if (nationalId != null && nationalId.isNotEmpty) {
       final byNational = index.byNationalId(nationalId);
       if (byNational != null) return byNational;
@@ -1366,123 +1132,15 @@ class MobileSyncService {
       index.registerServerId(serverId, localBeneficiaryId);
     }
 
-    final fileCandidate = _extractFileIdCandidate(beneficiaryRow);
+    final fileCandidate = _beneficiaryRepository.extractFileIdCandidate(beneficiaryRow);
     if (fileCandidate != null && fileCandidate.isNotEmpty) {
       index.registerFileId(fileCandidate, localBeneficiaryId);
     }
 
-    final nationalCandidate = _extractNationalIdCandidate(beneficiaryRow);
+    final nationalCandidate = _beneficiaryRepository.extractNationalIdCandidate(beneficiaryRow);
     if (nationalCandidate != null && nationalCandidate.isNotEmpty) {
       index.registerNationalId(nationalCandidate, localBeneficiaryId);
     }
-  }
-
-  String? _extractFileIdCandidate(Map<String, dynamic> row) {
-    final value = row['file_id_number'] ??
-        row['fileIdNumber'] ??
-        row['data_file_id'] ??
-        row['dataFileId'] ??
-        row['data_file_number'] ??
-        row['dataFileNumber'] ??
-        row['beneficiary_file_id'] ??
-        row['beneficiary_file_no'] ??
-        row['data_file_id_number'] ??
-        row['data_file_no'] ??
-        row['file_no'] ??
-        row['registration_id'] ??
-        row['registrationId'] ??
-        row['re_file_id'] ??
-        row['file_id'] ??
-        row['owner_file_id'] ??
-        row['beneficiary_code'];
-
-    if (value == null) {
-      for (final nestedKey in const [
-        'beneficiary',
-        'data',
-        'beneficiary_data',
-        're_people',
-        'person',
-        'owner',
-        'main_person',
-        'primary_person',
-      ]) {
-        final nested = row[nestedKey];
-        if (nested is Map<String, dynamic>) {
-          final nestedValue = nested['file_id_number'] ??
-              nested['fileIdNumber'] ??
-              nested['data_file_id'] ??
-              nested['dataFileId'] ??
-              nested['file_no'] ??
-              nested['file_id'] ??
-              nested['data_file_id_number'] ??
-              nested['data_file_no'];
-          if (nestedValue != null) {
-            final parsedNested = _asIntLoose(nestedValue);
-            if (parsedNested != null) return parsedNested.toString();
-            final rawNested = nestedValue.toString().trim();
-            if (rawNested.isNotEmpty) return rawNested;
-          }
-        }
-      }
-    }
-
-    final parsed = _asIntLoose(value);
-    if (parsed != null) return parsed.toString();
-
-    final raw = value?.toString().trim();
-    if (raw == null || raw.isEmpty) return null;
-    return raw;
-  }
-
-  String? _extractNationalIdCandidate(Map<String, dynamic> row) {
-    final value = row['beneficiary_national_id'] ??
-        row['beneficiaryNationalId'] ??
-        row['person_identity_number'] ??
-        row['data_national_id'] ??
-        row['dataNationalId'] ??
-        row['national_id'] ??
-        row['nationalId'] ??
-        row['data_id_number'] ??
-        row['data_national_id'] ??
-        row['id_number'] ??
-        row['person_national_id'] ??
-        row['identity_number'];
-
-    if (value != null) {
-      final raw = value.toString().trim();
-      if (raw.isNotEmpty) return raw;
-    }
-
-    for (final nestedKey in const [
-      'beneficiary',
-      'data',
-      'beneficiary_data',
-      're_people',
-      'person',
-      'owner',
-      'main_person',
-      'primary_person',
-    ]) {
-      final nested = row[nestedKey];
-      if (nested is Map<String, dynamic>) {
-        final nestedValue = nested['national_id'] ??
-            nested['nationalId'] ??
-            nested['person_identity_number'] ??
-            nested['data_national_id'] ??
-            nested['dataNationalId'] ??
-            nested['id_number'] ??
-            nested['data_id_number'] ??
-            nested['data_national_id'] ??
-            nested['identity_number'];
-        if (nestedValue != null) {
-          final raw = nestedValue.toString().trim();
-          if (raw.isNotEmpty) return raw;
-        }
-      }
-    }
-
-    return null;
   }
 
   String? _normalizeIdentityToken(String? value) {
@@ -1531,554 +1189,30 @@ class MobileSyncService {
   }
 
   Future<bool> _deleteBeneficiaryFromServerRow(Map<String, dynamic> row) async {
-    final serverId = _asInt(row['id'] ?? row['server_id']);
-    final fileId = _extractFileIdCandidate(row);
-    final nationalId = _extractNationalIdCandidate(row);
-
-    Beneficiary? existing;
-    if (serverId != null) {
-      final rows = await (_db.select(_db.beneficiaries)..where((b) => b.serverId.equals(serverId))).get();
-      existing = rows.isEmpty ? null : rows.first;
-    }
-
-    if (existing == null && fileId != null && fileId.isNotEmpty) {
-      final rows = await (_db.select(_db.beneficiaries)..where((b) => b.fileIdNumber.equals(fileId))).get();
-      existing = rows.isEmpty ? null : rows.first;
-    }
-
-    if (existing == null && nationalId != null && nationalId.isNotEmpty) {
-      final parsedNational = int.tryParse(nationalId);
-      if (parsedNational != null) {
-        final rows = await (_db.select(_db.beneficiaries)..where((b) => b.idNumber.equals(parsedNational))).get();
-        existing = rows.isEmpty ? null : rows.first;
-      }
-    }
-
-    if (existing == null) return false;
-    await _db.beneficiariesDao.deleteBeneficiary(existing.id, trackSyncDelete: false);
-    return true;
+    return _beneficiaryRepository.deleteFromServerRow(row);
   }
 
   Future<bool> _deleteFamilyMemberFromServerRow(Map<String, dynamic> row) async {
-    final serverId = _asInt(row['id'] ?? row['server_id'] ?? row['member_id']);
-    if (serverId == null) return false;
-
-    final existingRows = await (_db.select(_db.familyMembersTable)..where((t) => t.serverId.equals(serverId))).get();
-    final existing = existingRows.isEmpty ? null : existingRows.first;
-    if (existing == null) return false;
-
-    await _db.familyMembersDao.deleteMember(existing.id, trackSyncDelete: false);
-    return true;
+    return _relatedEntitiesRepository.deleteFamilyMemberFromServerRow(row);
   }
 
   Future<bool> _deleteFamilyDeceasedFromServerRow(Map<String, dynamic> row) async {
-    final serverId = _asInt(row['id'] ?? row['server_id'] ?? row['deceased_id']);
-    if (serverId == null) return false;
-
-    final existingRows = await (_db.select(_db.familyDeceasedTable)..where((t) => t.serverId.equals(serverId))).get();
-    final existing = existingRows.isEmpty ? null : existingRows.first;
-    if (existing == null) return false;
-
-    await _db.familyDeceasedDao.deleteDeceased(existing.id, trackSyncDelete: false);
-    return true;
+    return _relatedEntitiesRepository.deleteFamilyDeceasedFromServerRow(row);
   }
 
   Future<bool> _deleteAttachmentFromServerRow(Map<String, dynamic> row) async {
-    final rawServerId = _extractServerAttachmentId(row);
-    final localCandidateId = rawServerId == null || rawServerId.isEmpty ? null : 'srv_att_$rawServerId';
-
-    Attachment? existing;
-    if (localCandidateId != null) {
-      final rows = await (_db.select(_db.attachments)..where((a) => a.id.equals(localCandidateId))).get();
-      existing = rows.isEmpty ? null : rows.first;
-    }
-
-    final serverUrl = _buildAttachmentRemoteReference(row);
-    if (existing == null && serverUrl != null && serverUrl.isNotEmpty) {
-      final rows = await (_db.select(_db.attachments)..where((a) => a.serverUrl.equals(serverUrl))).get();
-      existing = rows.isEmpty ? null : rows.first;
-    }
-
-    if (existing == null && rawServerId != null && rawServerId.isNotEmpty) {
-      final rows = await (_db.select(_db.attachments)..where((a) => a.id.equals(rawServerId))).get();
-      existing = rows.isEmpty ? null : rows.first;
-    }
-
-    if (existing == null) return false;
-    await _db.attachmentsDao.deleteAttachment(existing.id, trackSyncDelete: false);
-    return true;
+    return _relatedEntitiesRepository.deleteAttachmentFromServerRow(row);
   }
 
-  Future<_WriteOutcome> _upsertAttachment(
-    Map<String, dynamic> row, {
-    required int localBeneficiaryId,
-    required int? serverBeneficiaryId,
-    required int sequence,
-  }) async {
-    final serverAttachmentId = _extractServerAttachmentId(row);
-    final fileName = (row['file_name'] ??
-            row['stored_file_name'] ??
-            row['original_file_name'] ??
-            row['filename'] ??
-            row['name'] ??
-            row['document_name'] ??
-            'attachment_${sequence + 1}')
-        .toString();
-    final serverUrl = _buildAttachmentRemoteReference(
-      row,
-      serverAttachmentId: serverAttachmentId,
-    );
-    final normalizedPersonId =
-        (row['person_id'] ?? row['personId'] ?? row['person_identity_number'])?.toString().trim();
-    final normalizedDocumentType = (row['document_type'] ?? row['documentType'] ?? row['file_type'])?.toString().trim();
-    final attachmentId = (serverAttachmentId != null && serverAttachmentId.isNotEmpty)
-        ? 'srv_att_$serverAttachmentId'
-        : _buildSyntheticAttachmentId(
-            localBeneficiaryId: localBeneficiaryId,
-            serverUrl: serverUrl,
-            fileName: fileName,
-            personId: normalizedPersonId,
-            documentType: normalizedDocumentType,
-            sequence: sequence,
-          );
-
-    final now = DateTime.now();
-    final createdAt = _parseDateTimeLoose(row['created_at']) ?? now;
-    final updatedAt = _parseDateTimeLoose(row['updated_at']) ?? now;
-
-    final companion = AttachmentsCompanion.insert(
-      id: attachmentId,
-      beneficiaryId: localBeneficiaryId.toString(),
-      fileName: fileName,
-      filePath: serverUrl ?? fileName,
-      type: _resolveAttachmentType(fileName, (row['type'] ?? row['mime_type'] ?? row['file_type'])?.toString()),
-      fileSize: _asInt(row['file_size'] ?? row['size'] ?? row['filesize'] ?? row['content_length']) ?? 0,
-      createdAt: createdAt,
-      updatedAt: updatedAt,
-      syncState: const drift.Value('synced'),
-      serverUrl: drift.Value(serverUrl),
-      lastSyncedAt: drift.Value(now),
-      visitId: drift.Value((row['visit_id'] ?? row['visitId'])?.toString()),
-      thumbnailPath: drift.Value((row['thumbnail_path'] ?? row['thumbnail'])?.toString()),
-      documentType: drift.Value(normalizedDocumentType),
-      personType: drift.Value((row['person_type'] ?? row['personType'])?.toString()),
-      personId: drift.Value(normalizedPersonId),
-      notes: drift.Value(row['notes']?.toString()),
-    );
-
-    Attachment? existing =
-        await (_db.select(_db.attachments)..where((a) => a.id.equals(attachmentId))).getSingleOrNull();
-    if (existing == null && serverUrl != null && serverUrl.isNotEmpty) {
-      final existingByServerUrlRows = await (_db.select(_db.attachments)
-            ..where((a) => a.beneficiaryId.equals(localBeneficiaryId.toString()) & a.serverUrl.equals(serverUrl)))
-          .get();
-      existing = existingByServerUrlRows.isEmpty ? null : existingByServerUrlRows.first;
-    }
-
-    if (existing == null && fileName.trim().isNotEmpty) {
-      final existingByNameRows = await (_db.select(_db.attachments)
-            ..where((a) => a.beneficiaryId.equals(localBeneficiaryId.toString()) & a.fileName.equals(fileName)))
-          .get();
-      existing = existingByNameRows.isEmpty ? null : existingByNameRows.first;
-    }
-
-    if (existing != null) {
-      final normalizedCompanion = companion.copyWith(id: drift.Value(existing.id));
-      await (_db.update(_db.attachments)..where((a) => a.id.equals(existing!.id))).write(normalizedCompanion);
-      return _WriteOutcome.updated;
-    }
-
-    await _db.into(_db.attachments).insert(companion);
-    return _WriteOutcome.inserted;
-  }
-
-  String? _buildAttachmentRemoteReference(
-    Map<String, dynamic> row, {
-    String? serverAttachmentId,
-  }) {
-    final entryPath = _pickStringValue(
-      row,
-      const [
-        'entry_path',
-        'entryPath',
-        'archive_entry',
-        'archiveEntry',
-        'internal_path',
-        'internalPath',
-        'zip_entry',
-        'zipEntry',
-      ],
-    );
-
-    final archiveUrl = _pickStringValue(
-      row,
-      const [
-        'archive_url',
-        'archiveUrl',
-        'zip_url',
-        'zipUrl',
-        'archive_path',
-        'archivePath',
-      ],
-    );
-
-    if (entryPath != null && archiveUrl != null) {
-      return '$archiveUrl!$entryPath';
-    }
-
-    final remoteUrl = _pickBestAttachmentRemoteReference(
-      row,
-      serverAttachmentId: serverAttachmentId,
-    );
-    return _normalizeAttachmentDownloadUrl(remoteUrl, serverAttachmentId: serverAttachmentId);
-  }
-
-  String? _pickBestAttachmentRemoteReference(
-    Map<String, dynamic> row, {
-    String? serverAttachmentId,
-  }) {
-    const keys = ['server_url', 'download_url', 'url', 'file_url', 'full_url', 'path'];
-    final candidates = <String>[];
-
-    for (final key in keys) {
-      final value = row[key]?.toString().trim();
-      if (value != null && value.isNotEmpty) {
-        candidates.add(value);
-      }
-    }
-
-    if (candidates.isEmpty) {
-      return null;
-    }
-
-    String? best;
-    var bestScore = -1;
-
-    for (final candidate in candidates) {
-      final normalized = _normalizeAttachmentDownloadUrl(
-        candidate,
-        serverAttachmentId: serverAttachmentId,
-      );
-      final score = _scoreAttachmentRemoteReference(normalized ?? candidate);
-      if (score > bestScore) {
-        bestScore = score;
-        best = normalized ?? candidate;
-      }
-    }
-
-    return best ?? candidates.first;
-  }
-
-  int _scoreAttachmentRemoteReference(String value) {
-    final lower = value.toLowerCase();
-
-    final hasStaticFilePath = lower.contains('/storage/') || lower.contains('/uploads/') || lower.contains('/files/');
-    final hasFileLikeExtension = RegExp(r'\.(jpg|jpeg|png|webp|gif|pdf|zip)(\?|$)').hasMatch(lower);
-    final isDownloadEndpoint = lower.contains('/api/mobile/database/attachments/') && lower.contains('/download');
-
-    if (hasStaticFilePath && hasFileLikeExtension) return 100;
-    if (hasStaticFilePath) return 95;
-    if (hasFileLikeExtension) return 90;
-    if (isDownloadEndpoint) return 60;
-    if (lower.startsWith('http://') || lower.startsWith('https://')) return 70;
-    return 50;
-  }
-
-  String? _extractServerAttachmentId(Map<String, dynamic> row) {
-    final attachmentId = row['attachment_id']?.toString().trim();
-    if (attachmentId != null && attachmentId.isNotEmpty) {
-      return attachmentId;
-    }
-
-    final serverId = row['server_id']?.toString().trim();
-    if (serverId != null && serverId.isNotEmpty) {
-      return serverId;
-    }
-
-    final id = row['id']?.toString().trim();
-    if (id != null && id.isNotEmpty) {
-      return id;
-    }
-
-    return null;
-  }
-
-  String? _normalizeAttachmentDownloadUrl(String? remoteUrl, {String? serverAttachmentId}) {
-    if (remoteUrl == null || remoteUrl.trim().isEmpty) {
-      return remoteUrl;
-    }
-
-    if (serverAttachmentId == null || serverAttachmentId.isEmpty) {
-      return remoteUrl;
-    }
-
-    final match = RegExp(r'(/api/mobile/database/attachments/)(\d+)(/download)').firstMatch(remoteUrl);
-    if (match == null) {
-      return remoteUrl;
-    }
-
-    final currentId = match.group(2);
-    if (currentId == null || currentId == serverAttachmentId) {
-      return remoteUrl;
-    }
-
-    return remoteUrl.replaceFirst(
-      '/api/mobile/database/attachments/$currentId/download',
-      '/api/mobile/database/attachments/$serverAttachmentId/download',
-    );
-  }
-
-  String? _pickStringValue(Map<String, dynamic> source, List<String> keys) {
-    for (final key in keys) {
-      final raw = source[key];
-      if (raw == null) {
-        continue;
-      }
-      final value = raw.toString().trim();
-      if (value.isNotEmpty) {
-        return value;
-      }
-    }
-    return null;
-  }
-
-  Future<_WriteOutcome> _upsertFamilyMember(
-    Map<String, dynamic> row, {
-    required int localBeneficiaryId,
-  }) async {
-    final now = DateTime.now();
-    final serverId = _asInt(row['id'] ?? row['server_id'] ?? row['member_id']);
-
-    final companion = FamilyMembersTableCompanion(
-      beneficiaryId: drift.Value(localBeneficiaryId),
-      orphanNationalId: drift.Value(
-        _asInt(
-              row['orphan_national_id'] ??
-                  row['person_id'] ??
-                  row['person_identity_number'] ??
-                  row['national_id'] ??
-                  row['id_number'],
-            ) ??
-            0,
-      ),
-      firstName: drift.Value((row['first_name'] ?? row['name'] ?? '').toString().isEmpty
-          ? 'غير محدد'
-          : (row['first_name'] ?? row['name']).toString()),
-      secondName: drift.Value(row['second_name']?.toString()),
-      thirdName: drift.Value(row['third_name']?.toString()),
-      familyName: drift.Value((row['family_name'] ?? row['last_name'] ?? 'غير محدد').toString()),
-      birthDate: drift.Value(_parseDateTimeLoose(row['birth_date'] ?? row['person_birth_date']) ?? now),
-      age: drift.Value(_asInt(row['age'])),
-      gender: drift.Value(_parseGender(row['gender'] ?? row['person_gender'])),
-      healthStatus: drift.Value(_parseHealthStatus(row['health_status'] ?? row['person_health_status'])),
-      sponsorshipStatus: drift.Value(_asInt(row['sponsorship_status'])),
-      sponsorshipType: drift.Value(_asInt(row['sponsorship_type'] ?? row['person_type_of_guarantee'])),
-      sponsorName: drift.Value(row['sponsor_name']?.toString()),
-      sponsorshipStartDate: drift.Value(_parseDateTimeLoose(row['sponsorship_start_date'])),
-      notes: drift.Value(row['notes']?.toString()),
-      attachments: drift.Value(row['attachments']?.toString()),
-      createdAt: drift.Value(_parseDateTimeLoose(row['created_at'])),
-      updatedAt: drift.Value(_parseDateTimeLoose(row['updated_at']) ?? now),
-      syncState: const drift.Value('synced'),
-      serverId: drift.Value(serverId),
-      lastSyncedAt: drift.Value(now),
-    );
-
-    if (serverId != null) {
-      final existingRows = await (_db.select(_db.familyMembersTable)
-            ..where((t) => t.serverId.equals(serverId) & t.beneficiaryId.equals(localBeneficiaryId)))
-          .get();
-      final existing = existingRows.isEmpty ? null : existingRows.first;
-      if (existing != null) {
-        await (_db.update(_db.familyMembersTable)..where((t) => t.id.equals(existing.id))).write(companion);
-        await _cleanupDuplicateFamilyMembersRows(existingRows, keepId: existing.id);
-        return _WriteOutcome.updated;
-      }
-    }
-
-    await _db.into(_db.familyMembersTable).insert(companion);
-    return _WriteOutcome.inserted;
-  }
-
-  Future<void> _cleanupDuplicateFamilyMembersRows(
-    List<FamilyMember> rows, {
-    required int keepId,
-  }) async {
-    if (rows.length <= 1) return;
-
-    final duplicateIds = rows.where((row) => row.id != keepId).map((row) => row.id).toList(growable: false);
-    if (duplicateIds.isEmpty) return;
-
-    _logger.w('Detected duplicate family member rows, cleaning up: keep=$keepId, remove=${duplicateIds.length}');
-    await (_db.delete(_db.familyMembersTable)..where((t) => t.id.isIn(duplicateIds))).go();
-  }
-
-  Future<_WriteOutcome> _upsertFamilyDeceased(
-    Map<String, dynamic> row, {
-    required int localBeneficiaryId,
-    int? forcedType,
-  }) async {
-    final now = DateTime.now();
-    final baseServerId = _asInt(row['id'] ?? row['server_id'] ?? row['deceased_id']);
-    final hasFather = _hasDeceasedBranchData(row, _deceasedFatherType);
-    final hasMother = _hasDeceasedBranchData(row, _deceasedMotherType);
-
-    if (forcedType == null && hasFather && hasMother) {
-      final fatherOutcome = await _upsertFamilyDeceased(
-        row,
-        localBeneficiaryId: localBeneficiaryId,
-        forcedType: _deceasedFatherType,
-      );
-      final motherOutcome = await _upsertFamilyDeceased(
-        row,
-        localBeneficiaryId: localBeneficiaryId,
-        forcedType: _deceasedMotherType,
-      );
-
-      if (fatherOutcome == _WriteOutcome.inserted || motherOutcome == _WriteOutcome.inserted) {
+  _WriteOutcome _mapRelatedWriteOutcome(SyncRelatedWriteOutcome outcome) {
+    switch (outcome) {
+      case SyncRelatedWriteOutcome.inserted:
         return _WriteOutcome.inserted;
-      }
-      if (fatherOutcome == _WriteOutcome.updated || motherOutcome == _WriteOutcome.updated) {
+      case SyncRelatedWriteOutcome.updated:
         return _WriteOutcome.updated;
-      }
-      return _WriteOutcome.skipped;
+      case SyncRelatedWriteOutcome.skipped:
+        return _WriteOutcome.skipped;
     }
-
-    final type = forcedType ??
-        _parseDeceasedType(
-          row['deceased_type'] ?? row['type'] ?? (hasFather ? 'father' : (hasMother ? 'mother' : null)),
-        );
-
-    final resolvedServerId = _resolveDeceasedServerId(
-      baseServerId: baseServerId,
-      type: type,
-      splitPayload: hasFather && hasMother,
-    );
-
-    final selectedFirstName = type == 1
-        ? (row['father_first_name'] ?? row['first_name'] ?? row['name'])
-        : (row['mother_first_name'] ?? row['first_name'] ?? row['name']);
-    final selectedSecondName = type == 1
-        ? (row['father_second_name'] ?? row['second_name'])
-        : (row['mother_second_name'] ?? row['second_name']);
-    final selectedThirdName = row['third_name'];
-    final selectedFamilyName = type == 1
-        ? (row['father_last_name'] ?? row['family_name'] ?? row['last_name'] ?? 'غير محدد')
-        : (row['mother_last_name'] ?? row['family_name'] ?? row['last_name'] ?? 'غير محدد');
-    final selectedNationalId = type == 1
-        ? (row['father_id'] ?? row['national_id'] ?? row['id_number'])
-        : (row['mother_id'] ?? row['national_id'] ?? row['id_number']);
-    final selectedDeathDate =
-        type == 1 ? (row['father_death_date'] ?? row['death_date']) : (row['mother_death_date'] ?? row['death_date']);
-    final selectedDeathCause = type == 1
-        ? (row['father_death_reason'] ?? row['death_cause'])
-        : (row['mother_death_reason'] ?? row['death_cause']);
-
-    final companion = FamilyDeceasedTableCompanion(
-      beneficiaryId: drift.Value(localBeneficiaryId),
-      deceasedType: drift.Value(type),
-      firstName: drift.Value((selectedFirstName ?? '').toString().isEmpty ? 'غير محدد' : selectedFirstName.toString()),
-      secondName: drift.Value(selectedSecondName?.toString()),
-      thirdName: drift.Value(selectedThirdName?.toString()),
-      familyName: drift.Value(selectedFamilyName.toString()),
-      nationalId: drift.Value(_asInt(selectedNationalId) ?? 0),
-      deathDate: drift.Value(_parseDateTimeLoose(selectedDeathDate) ?? now),
-      deathCause: drift.Value(_parseDeathCause(selectedDeathCause)),
-      documentType: drift.Value(_asInt(row['document_type'])),
-      documentPath: drift.Value(row['document_path']?.toString()),
-      notes: drift.Value(row['notes']?.toString()),
-      createdAt: drift.Value(_parseDateTimeLoose(row['created_at'])),
-      updatedAt: drift.Value(_parseDateTimeLoose(row['updated_at']) ?? now),
-      syncState: const drift.Value('synced'),
-      serverId: drift.Value(resolvedServerId),
-      lastSyncedAt: drift.Value(now),
-    );
-
-    if (resolvedServerId != null) {
-      final existingRows = await (_db.select(_db.familyDeceasedTable)
-            ..where((t) => t.serverId.equals(resolvedServerId) & t.beneficiaryId.equals(localBeneficiaryId)))
-          .get();
-      final existing = existingRows.isEmpty ? null : existingRows.first;
-      if (existing != null) {
-        await (_db.update(_db.familyDeceasedTable)..where((t) => t.id.equals(existing.id))).write(companion);
-        await _cleanupDuplicateFamilyDeceasedRows(existingRows, keepId: existing.id);
-        return _WriteOutcome.updated;
-      }
-    } else {
-      final selectedNationalIdInt = _asInt(selectedNationalId) ?? 0;
-      final existingByTypeRows = await (_db.select(_db.familyDeceasedTable)
-            ..where((t) => t.beneficiaryId.equals(localBeneficiaryId) & t.deceasedType.equals(type)))
-          .get();
-      final existingByType = existingByTypeRows.isEmpty ? null : existingByTypeRows.first;
-      if (existingByType != null) {
-        await (_db.update(_db.familyDeceasedTable)..where((t) => t.id.equals(existingByType.id))).write(companion);
-        await _cleanupDuplicateFamilyDeceasedRows(existingByTypeRows, keepId: existingByType.id);
-        return _WriteOutcome.updated;
-      }
-
-      if (selectedNationalIdInt > 0) {
-        final existingByNationalIdRows = await (_db.select(_db.familyDeceasedTable)
-              ..where((t) => t.beneficiaryId.equals(localBeneficiaryId) & t.nationalId.equals(selectedNationalIdInt)))
-            .get();
-        final existingByNationalId = existingByNationalIdRows.isEmpty ? null : existingByNationalIdRows.first;
-        if (existingByNationalId != null) {
-          await (_db.update(_db.familyDeceasedTable)..where((t) => t.id.equals(existingByNationalId.id)))
-              .write(companion);
-          await _cleanupDuplicateFamilyDeceasedRows(existingByNationalIdRows, keepId: existingByNationalId.id);
-          return _WriteOutcome.updated;
-        }
-      }
-    }
-
-    await _db.into(_db.familyDeceasedTable).insert(companion);
-    return _WriteOutcome.inserted;
-  }
-
-  Future<void> _cleanupDuplicateFamilyDeceasedRows(
-    List<FamilyDeceased> rows, {
-    required int keepId,
-  }) async {
-    if (rows.length <= 1) return;
-
-    final duplicateIds = rows.where((row) => row.id != keepId).map((row) => row.id).toList(growable: false);
-    if (duplicateIds.isEmpty) return;
-
-    _logger.w('Detected duplicate family deceased rows, cleaning up: keep=$keepId, remove=${duplicateIds.length}');
-    await (_db.delete(_db.familyDeceasedTable)..where((t) => t.id.isIn(duplicateIds))).go();
-  }
-
-  bool _hasDeceasedBranchData(Map<String, dynamic> row, int type) {
-    if (type == _deceasedFatherType) {
-      return _hasMeaningfulValue(row['father_first_name']) ||
-          _hasMeaningfulValue(row['father_second_name']) ||
-          _hasMeaningfulValue(row['father_last_name']) ||
-          _hasMeaningfulValue(row['father_id']) ||
-          _hasMeaningfulValue(row['father_death_date']) ||
-          _hasMeaningfulValue(row['father_death_reason']);
-    }
-
-    return _hasMeaningfulValue(row['mother_first_name']) ||
-        _hasMeaningfulValue(row['mother_second_name']) ||
-        _hasMeaningfulValue(row['mother_last_name']) ||
-        _hasMeaningfulValue(row['mother_id']) ||
-        _hasMeaningfulValue(row['mother_death_date']) ||
-        _hasMeaningfulValue(row['mother_death_reason']);
-  }
-
-  int? _resolveDeceasedServerId({
-    required int? baseServerId,
-    required int type,
-    required bool splitPayload,
-  }) {
-    if (baseServerId == null) {
-      return null;
-    }
-
-    if (!splitPayload) {
-      return baseServerId;
-    }
-
-    return (baseServerId * 10) + type;
   }
 
   bool _hasMeaningfulValue(dynamic value) {
@@ -2087,96 +1221,6 @@ class MobileSyncService {
     if (raw.isEmpty) return false;
     if (raw == 'null' || raw == '0' || raw == 'false') return false;
     return true;
-  }
-
-  DateTime? _parseDateTimeLoose(dynamic value) {
-    if (value == null) return null;
-    if (value is DateTime) return value;
-    return DateTime.tryParse(value.toString());
-  }
-
-  String _resolveAttachmentType(String fileName, String? hintedType) {
-    if (hintedType != null && hintedType.trim().isNotEmpty) {
-      final hint = hintedType.toLowerCase().trim();
-      if (hint.contains('image') || hint == 'jpg' || hint == 'jpeg' || hint == 'png' || hint == 'webp') {
-        return 'image';
-      }
-      if (hint.contains('pdf')) {
-        return 'pdf';
-      }
-      if (hint == 'other') {
-        return 'other';
-      }
-    }
-
-    final name = fileName.toLowerCase();
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.webp')) {
-      return 'image';
-    }
-    if (name.endsWith('.pdf')) return 'pdf';
-    return 'other';
-  }
-
-  String _buildSyntheticAttachmentId({
-    required int localBeneficiaryId,
-    required String? serverUrl,
-    required String fileName,
-    required String? personId,
-    required String? documentType,
-    required int sequence,
-  }) {
-    String normalize(String value) {
-      final lowered = value.toLowerCase().trim();
-      return lowered.replaceAll(RegExp(r'[^a-z0-9._-]+'), '_');
-    }
-
-    final ref = serverUrl?.trim();
-    if (ref != null && ref.isNotEmpty) {
-      final token = normalize('${localBeneficiaryId}_$ref');
-      final bounded = token.length > 140 ? token.substring(0, 140) : token;
-      return 'srv_att_ref_$bounded';
-    }
-
-    final token = normalize(
-      '${localBeneficiaryId}_${fileName}_${personId ?? ''}_${documentType ?? ''}_$sequence',
-    );
-    final bounded = token.length > 140 ? token.substring(0, 140) : token;
-    return 'srv_att_local_$bounded';
-  }
-
-  int _parseGender(dynamic value) {
-    final raw = value?.toString().toLowerCase().trim();
-    if (raw == '1' || raw == 'male' || raw == 'ذكر') return 1;
-    if (raw == '2' || raw == 'female' || raw == 'أنثى') return 2;
-    return 1;
-  }
-
-  int _parseHealthStatus(dynamic value) {
-    final raw = value?.toString().toLowerCase().trim();
-    if (raw == '1' || raw == 'healthy' || raw == 'سليم') return 1;
-    if (raw == '2' || raw == 'sick' || raw == 'مريض') return 2;
-    if (raw == '3' || raw == 'chronic' || raw == 'مريض مزمن') return 3;
-    if (raw == '4' || raw == 'disabled' || raw == 'معاق') return 4;
-    return 5;
-  }
-
-  int _parseDeceasedType(dynamic value) {
-    final raw = value?.toString().toLowerCase().trim();
-    if (raw == '1' || raw == 'father' || raw == 'أب') return 1;
-    if (raw == '2' || raw == 'mother' || raw == 'أم') return 2;
-    return 1;
-  }
-
-  int _parseDeathCause(dynamic value) {
-    final raw = value?.toString().toLowerCase().trim();
-    if (raw == '1' || raw == 'طبيعية' || raw == 'natural') return 1;
-    if (raw == '2' || raw == 'مرض' || raw == 'disease') return 2;
-    if (raw == '3' || raw == 'فجأة' || raw == 'sudden') return 3;
-    if (raw == '4' || raw == 'حادث' || raw == 'accident') return 4;
-    if (raw == '5' || raw == 'أخرى' || raw == 'other') return 5;
-    if (raw == '6' || raw == 'انتحار' || raw == 'suicide') return 6;
-    if (raw == '7' || raw == 'مغدور' || raw == 'murdered') return 7;
-    return 8;
   }
 
   // ========================================================================
@@ -2239,6 +1283,10 @@ class MobileSyncService {
           failed: result.recordsFailed,
         );
       },
+      syncUsedFileIds: () async {
+        if (_fileIdService == null) return;
+        await _fileIdService.syncUsage();
+      },
       onProgress: ({
         required String operation,
         required double progress,
@@ -2261,74 +1309,111 @@ class MobileSyncService {
     );
     final baseResult = _fromFlowResult(flowResult);
 
-    if (_syncAssociationsModuleUseCase == null) {
+    if (_syncAssociationsModuleUseCase == null && _syncSponsorshipsModuleUseCase == null) {
       return baseResult;
     }
 
-    try {
-      _updateStatus(
-        _currentStatus.copyWith(
-          isSyncing: true,
-          currentOperation: 'جاري رفع مزامنة الجمعيات والموظفين... ',
-          progress: 0.92,
-        ),
-      );
+    var result = baseResult;
 
-      final counters = await _syncAssociationsModuleUseCase.syncUp();
-
-      final mergedPayload = Map<String, int>.from(baseResult.payloadCounters)
-        ..update(
-          'associations_up',
-          (value) => value + counters.uploaded,
-          ifAbsent: () => counters.uploaded,
+    if (_syncAssociationsModuleUseCase != null) {
+      try {
+        _updateStatus(
+          _currentStatus.copyWith(
+            isSyncing: true,
+            currentOperation: 'جاري رفع مزامنة الجمعيات والموظفين... ',
+            progress: 0.92,
+          ),
         );
 
-      final result = MobileSyncResult(
-        success: baseResult.success && counters.failed == 0,
-        recordsSynced: baseResult.recordsSynced + counters.uploaded,
-        recordsFailed: baseResult.recordsFailed + counters.failed,
-        payloadCounters: mergedPayload,
-        writeCounters: baseResult.writeCounters,
-        error: counters.failed > 0 ? 'associations_sync_up_partial_failure' : baseResult.error,
-        errorCategory: counters.failed > 0 ? 'partial_failure' : baseResult.errorCategory,
-        errorContext: baseResult.errorContext,
-      );
+        final counters = await _syncAssociationsModuleUseCase.syncUp();
 
-      _updateStatus(
-        _currentStatus.copyWith(
-          isSyncing: false,
-          currentOperation:
-              result.success ? 'اكتمل رفع مزامنة الجمعيات والموظفين' : 'اكتمل رفع مزامنة الجمعيات والموظفين مع مشاكل',
-          progress: 1.0,
-          lastSyncAt: DateTime.now(),
-        ),
-      );
+        final mergedPayload = Map<String, int>.from(result.payloadCounters)
+          ..update(
+            'associations_up',
+            (value) => value + counters.uploaded,
+            ifAbsent: () => counters.uploaded,
+          );
 
-      return result;
-    } catch (e) {
-      _logger.w('Associations module sync-up step failed: $e');
-      final failedResult = MobileSyncResult(
-        success: false,
-        recordsSynced: baseResult.recordsSynced,
-        recordsFailed: baseResult.recordsFailed + 1,
-        payloadCounters: baseResult.payloadCounters,
-        writeCounters: baseResult.writeCounters,
-        error: 'associations_sync_up_failed: $e',
-        errorCategory: _classifyError(e),
-        errorContext: _extractErrorContext(e),
-      );
-
-      _updateStatus(
-        _currentStatus.copyWith(
-          isSyncing: false,
-          currentOperation: 'فشل رفع مزامنة الجمعيات والموظفين',
-          progress: 1.0,
-          lastError: failedResult.error,
-        ),
-      );
-
-      return failedResult;
+        result = MobileSyncResult(
+          success: result.success && counters.failed == 0,
+          recordsSynced: result.recordsSynced + counters.uploaded,
+          recordsFailed: result.recordsFailed + counters.failed,
+          payloadCounters: mergedPayload,
+          writeCounters: result.writeCounters,
+          error: counters.failed > 0 ? 'associations_sync_up_partial_failure' : result.error,
+          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+          errorContext: result.errorContext,
+        );
+      } catch (e) {
+        _logger.w('Associations module sync-up step failed: $e');
+        result = MobileSyncResult(
+          success: false,
+          recordsSynced: result.recordsSynced,
+          recordsFailed: result.recordsFailed + 1,
+          payloadCounters: result.payloadCounters,
+          writeCounters: result.writeCounters,
+          error: 'associations_sync_up_failed: $e',
+          errorCategory: _classifyError(e),
+          errorContext: _extractErrorContext(e),
+        );
+      }
     }
+
+    if (_syncSponsorshipsModuleUseCase != null) {
+      try {
+        _updateStatus(
+          _currentStatus.copyWith(
+            isSyncing: true,
+            currentOperation: 'جاري رفع مزامنة الكفالات... ',
+            progress: 0.96,
+          ),
+        );
+
+        final counters = await _syncSponsorshipsModuleUseCase.syncUp();
+
+        final mergedPayload = Map<String, int>.from(result.payloadCounters)
+          ..update(
+            'sponsorships_up',
+            (value) => value + counters.uploaded,
+            ifAbsent: () => counters.uploaded,
+          );
+
+        result = MobileSyncResult(
+          success: result.success && counters.failed == 0,
+          recordsSynced: result.recordsSynced + counters.uploaded,
+          recordsFailed: result.recordsFailed + counters.failed,
+          payloadCounters: mergedPayload,
+          writeCounters: result.writeCounters,
+          error: counters.failed > 0 ? 'sponsorships_sync_up_partial_failure' : result.error,
+          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+          errorContext: result.errorContext,
+        );
+      } catch (e) {
+        _logger.w('Sponsorships module sync-up step failed: $e');
+        result = MobileSyncResult(
+          success: false,
+          recordsSynced: result.recordsSynced,
+          recordsFailed: result.recordsFailed + 1,
+          payloadCounters: result.payloadCounters,
+          writeCounters: result.writeCounters,
+          error: 'sponsorships_sync_up_failed: $e',
+          errorCategory: _classifyError(e),
+          errorContext: _extractErrorContext(e),
+        );
+      }
+    }
+
+    _updateStatus(
+      _currentStatus.copyWith(
+        isSyncing: false,
+        currentOperation: result.success ? 'اكتمل رفع المزامنة النهائية' : 'اكتمل رفع المزامنة مع مشاكل',
+        progress: 1.0,
+        lastSyncAt: DateTime.now(),
+        lastError: result.success ? null : result.error,
+      ),
+    );
+
+    return result;
   }
 
   Future<void> _syncTaxonomiesNonCritical() async {
@@ -2390,16 +1475,61 @@ class MobileSyncService {
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          final ids = batch.map((b) => b.id).toList();
-          await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
-            BeneficiariesCompanion(
-              syncState: const drift.Value('synced'),
-              lastSyncedAt: drift.Value(DateTime.now()),
-            ),
+          final responseMap = _toStringDynamicMap(response.data) ?? const <String, dynamic>{};
+          final responseDataNode = _toStringDynamicMap(responseMap['data']) ?? const <String, dynamic>{};
+
+          final created = _extractIntList(
+            responseDataNode['created'] ?? responseMap['created'],
+          );
+          final updated = _extractIntList(
+            responseDataNode['updated'] ?? responseMap['updated'],
+          );
+          final successfulFileIds = <int>{...created, ...updated};
+
+          final failedExplicit = _asInt(
+            responseDataNode['failed_count'] ?? responseMap['failed_count'],
           );
 
-          uploaded += batch.length;
-          _logger.i('✅ Synced batch of ${batch.length} records');
+          final localIdByFileId = <int, int>{};
+          for (final row in batch) {
+            final fileId = int.tryParse((row.fileIdNumber ?? '').trim());
+            if (fileId != null) {
+              localIdByFileId[fileId] = row.id;
+            }
+          }
+
+          if (successfulFileIds.isNotEmpty) {
+            final successLocalIds =
+                successfulFileIds.map((fileId) => localIdByFileId[fileId]).whereType<int>().toList(growable: false);
+
+            if (successLocalIds.isNotEmpty) {
+              await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(successLocalIds))).write(
+                BeneficiariesCompanion(
+                  syncState: const drift.Value('synced'),
+                  lastSyncedAt: drift.Value(DateTime.now()),
+                ),
+              );
+            }
+
+            uploaded += successLocalIds.length;
+            failed += failedExplicit ?? (batch.length - successLocalIds.length).clamp(0, batch.length);
+            _logger.i(
+                '✅ Synced beneficiaries batch: success=${successLocalIds.length}, failed=${failedExplicit ?? (batch.length - successLocalIds.length)}');
+          } else if ((failedExplicit ?? 0) == 0) {
+            final ids = batch.map((b) => b.id).toList(growable: false);
+            await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
+              BeneficiariesCompanion(
+                syncState: const drift.Value('synced'),
+                lastSyncedAt: drift.Value(DateTime.now()),
+              ),
+            );
+
+            uploaded += batch.length;
+            _logger.i('✅ Synced batch of ${batch.length} records');
+          } else {
+            failed += failedExplicit!;
+            _logger.w('❌ Sync batch partially failed: failed_count=$failedExplicit');
+          }
         } else {
           failed += batch.length;
           _logger.w('❌ Sync batch failed: ${response.data}');
@@ -2632,6 +1762,11 @@ class MobileSyncService {
       endpoint: endpoint,
       baseUrl: _dio.options.baseUrl,
     );
+  }
+
+  List<int> _extractIntList(dynamic value) {
+    if (value is! List) return const <int>[];
+    return value.map((e) => _asInt(e)).whereType<int>().toList(growable: false);
   }
 }
 

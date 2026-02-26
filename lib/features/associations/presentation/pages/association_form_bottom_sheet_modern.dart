@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../../../taxonomies/presentation/widgets/taxonomy_bridge_widgets.dart';
 import '../../domain/entities/association.dart';
 import '../../domain/repositories/association_repository.dart';
 import '../providers/associations_provider.dart';
@@ -25,6 +31,15 @@ class AssociationFormBottomSheetModern extends ConsumerStatefulWidget {
 
 class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFormBottomSheetModern> {
   final _formKey = GlobalKey<FormState>();
+  static const String _draftStorageKey = 'associations_form_draft_v1';
+  bool _didAttemptSubmit = false;
+  bool _allowRepresentativeChange = false;
+
+  String? _normalizeNullableId(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
 
   // Controllers
   late final TextEditingController _nameController;
@@ -39,6 +54,8 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
   // ValueNotifiers
   late final ValueNotifier<String?> _selectedRepresentativeNotifier;
   late final ValueNotifier<String> _selectedCurrencyNotifier;
+  late final ValueNotifier<String?> _selectedBankNameNotifier;
+  late final ValueNotifier<String?> _selectedAssociationTypeNotifier;
   late final ValueNotifier<bool> _isActiveNotifier;
   late final ValueNotifier<bool> _isLoadingNotifier;
 
@@ -53,6 +70,72 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
   late final FocusNode _bankPhoneFocus;
 
   bool get isEditing => widget.association != null;
+
+  bool get _hasRepresentativeError => _didAttemptSubmit && !isEditing && _selectedRepresentativeNotifier.value == null;
+
+  List<DropdownMenuItem<String>> _buildCurrencyItems() {
+    final taxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.currency),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const [],
+        );
+
+    if (taxonomies.isEmpty) {
+      return const [
+        DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
+        DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
+        DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
+      ];
+    }
+
+    final seen = <String>{};
+    final items = <DropdownMenuItem<String>>[];
+    for (final taxonomy in taxonomies) {
+      final code = taxonomy.code.trim().toUpperCase();
+      if (code.isEmpty || seen.contains(code)) continue;
+      seen.add(code);
+      items.add(
+        DropdownMenuItem(
+          value: code,
+          child: Text('${taxonomy.label} ($code)'),
+        ),
+      );
+    }
+    return items;
+  }
+
+  List<DropdownMenuItem<String>> _buildBankNameItems() {
+    final taxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.bankName),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const [],
+        );
+
+    final values = <String>{
+      for (final taxonomy in taxonomies)
+        if (taxonomy.label.trim().isNotEmpty) taxonomy.label.trim(),
+    };
+
+    final existing = _bankNameController.text.trim();
+    if (existing.isNotEmpty) {
+      values.add(existing);
+    }
+
+    return values
+        .map(
+          (label) => DropdownMenuItem(
+            value: label,
+            child: Text(label),
+          ),
+        )
+        .toList(growable: false);
+  }
 
   @override
   void initState() {
@@ -70,8 +153,10 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     _bankPhoneController = TextEditingController(text: assoc?.bankPhone);
 
     // Initialize ValueNotifiers
-    _selectedRepresentativeNotifier = ValueNotifier(assoc?.representativeId);
+    _selectedRepresentativeNotifier = ValueNotifier(_normalizeNullableId(assoc?.representativeId));
     _selectedCurrencyNotifier = ValueNotifier(assoc?.accountCurrency ?? 'IQD');
+    _selectedBankNameNotifier = ValueNotifier(assoc?.bankName);
+    _selectedAssociationTypeNotifier = ValueNotifier(_normalizeNullableId(assoc?.associationTypeCode));
     _isActiveNotifier = ValueNotifier(assoc?.isActive ?? true);
     _isLoadingNotifier = ValueNotifier(false);
 
@@ -89,6 +174,118 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(associationsProvider.notifier).loadRepresentatives();
     });
+
+    _attachDraftListeners();
+    Future.microtask(_restoreDraftIfNeeded);
+  }
+
+  void _attachDraftListeners() {
+    if (isEditing) return;
+
+    for (final controller in [
+      _nameController,
+      _shortNameController,
+      _phoneController,
+      _emailController,
+      _bankNameController,
+      _accountNumberController,
+      _swiftCodeController,
+      _bankPhoneController,
+    ]) {
+      controller.addListener(_persistDraftIfNeeded);
+    }
+
+    _selectedRepresentativeNotifier.addListener(_persistDraftIfNeeded);
+    _selectedCurrencyNotifier.addListener(_persistDraftIfNeeded);
+    _selectedBankNameNotifier.addListener(_persistDraftIfNeeded);
+    _selectedAssociationTypeNotifier.addListener(_persistDraftIfNeeded);
+    _isActiveNotifier.addListener(_persistDraftIfNeeded);
+  }
+
+  Future<void> _restoreDraftIfNeeded() async {
+    if (isEditing) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_draftStorageKey);
+    if (raw == null || raw.isEmpty || !mounted) return;
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) return;
+
+      setState(() {
+        _nameController.text = (decoded['name'] as String?) ?? _nameController.text;
+        _shortNameController.text = (decoded['shortName'] as String?) ?? _shortNameController.text;
+        _phoneController.text = (decoded['phone'] as String?) ?? _phoneController.text;
+        _emailController.text = (decoded['email'] as String?) ?? _emailController.text;
+        _bankNameController.text = (decoded['bankName'] as String?) ?? _bankNameController.text;
+        final bankName = (decoded['bankName'] as String?)?.trim();
+        if (bankName != null && bankName.isNotEmpty) {
+          _selectedBankNameNotifier.value = bankName;
+        }
+        _accountNumberController.text = (decoded['accountNumber'] as String?) ?? _accountNumberController.text;
+        _swiftCodeController.text = (decoded['swiftCode'] as String?) ?? _swiftCodeController.text;
+        _bankPhoneController.text = (decoded['bankPhone'] as String?) ?? _bankPhoneController.text;
+
+        final representativeId = _normalizeNullableId(decoded['representativeId'] as String?);
+        if (representativeId != null) {
+          _selectedRepresentativeNotifier.value = representativeId;
+        }
+
+        final currency = (decoded['currency'] as String?)?.trim();
+        if (currency != null && currency.isNotEmpty) {
+          _selectedCurrencyNotifier.value = currency;
+        }
+
+        final associationTypeCode = _normalizeNullableId(decoded['associationTypeCode'] as String?);
+        _selectedAssociationTypeNotifier.value = associationTypeCode;
+
+        final isActive = decoded['isActive'] as bool?;
+        if (isActive != null) {
+          _isActiveNotifier.value = isActive;
+        }
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _persistDraftIfNeeded() async {
+    if (isEditing) return;
+
+    final payload = {
+      'name': _nameController.text,
+      'shortName': _shortNameController.text,
+      'phone': _phoneController.text,
+      'email': _emailController.text,
+      'bankName': _selectedBankNameNotifier.value,
+      'accountNumber': _accountNumberController.text,
+      'swiftCode': _swiftCodeController.text,
+      'bankPhone': _bankPhoneController.text,
+      'representativeId': _selectedRepresentativeNotifier.value,
+      'currency': _selectedCurrencyNotifier.value,
+      'associationTypeCode': _selectedAssociationTypeNotifier.value,
+      'isActive': _isActiveNotifier.value,
+    };
+
+    final hasAnyContent = payload.entries.any((entry) {
+      final value = entry.value;
+      if (value is String) return value.trim().isNotEmpty;
+      if (value is bool) return value != true;
+      return value != null;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    if (!hasAnyContent) {
+      await prefs.remove(_draftStorageKey);
+      return;
+    }
+
+    await prefs.setString(_draftStorageKey, jsonEncode(payload));
+  }
+
+  Future<void> _clearDraftIfNeeded() async {
+    if (isEditing) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_draftStorageKey);
   }
 
   @override
@@ -106,6 +303,8 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     // Dispose ValueNotifiers
     _selectedRepresentativeNotifier.dispose();
     _selectedCurrencyNotifier.dispose();
+    _selectedBankNameNotifier.dispose();
+    _selectedAssociationTypeNotifier.dispose();
     _isActiveNotifier.dispose();
     _isLoadingNotifier.dispose();
 
@@ -155,6 +354,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
       builder: (scrollController) {
         return Form(
           key: _formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           child: ListView(
             controller: scrollController,
             padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
@@ -172,6 +372,11 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
 
               // 💰 العملة
               _buildCurrencySection(),
+
+              SizedBox(height: ResponsiveUtils.largeSpace),
+
+              // 🏷️ نوع الجمعية
+              _buildAssociationTypeSection(),
 
               SizedBox(height: ResponsiveUtils.largeSpace),
 
@@ -269,7 +474,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
               icon: Icons.email,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              onFieldSubmitted: () => _bankNameFocus.requestFocus(),
+              onFieldSubmitted: () => _accountNumberFocus.requestFocus(),
             ),
           ],
         ),
@@ -292,20 +497,31 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
         ResponsiveFormRow(
           children: [
             // اسم البنك
-            ModernFormField(
-              controller: _bankNameController,
-              focusNode: _bankNameFocus,
-              labelText: 'اسم البنك',
-              hintText: 'أدخل اسم البنك',
-              icon: Icons.account_balance,
-              required: true,
-              textInputAction: TextInputAction.next,
-              onFieldSubmitted: () => _accountNumberFocus.requestFocus(),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'الرجاء إدخال اسم البنك';
-                }
-                return null;
+            ValueListenableBuilder<String?>(
+              valueListenable: _selectedBankNameNotifier,
+              builder: (context, selectedBank, _) {
+                final items = _buildBankNameItems();
+                final hasSelectedBank = items.any((item) => item.value == selectedBank);
+                final safeValue = hasSelectedBank ? selectedBank : null;
+
+                return ModernDropdown<String>(
+                  labelText: 'اسم البنك',
+                  hintText: 'اختر اسم البنك',
+                  icon: Icons.account_balance,
+                  required: true,
+                  value: safeValue,
+                  items: items,
+                  onChanged: (newValue) {
+                    _selectedBankNameNotifier.value = newValue;
+                    _bankNameController.text = newValue ?? '';
+                  },
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'الرجاء اختيار اسم البنك';
+                    }
+                    return null;
+                  },
+                );
               },
             ),
             // رقم الحساب
@@ -359,20 +575,28 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
 
   /// 💰 قسم العملة
   Widget _buildCurrencySection() {
+    final currencyItems = _buildCurrencyItems();
     return ValueListenableBuilder<String>(
       valueListenable: _selectedCurrencyNotifier,
       builder: (context, value, _) {
+        final hasSelectedCurrency = currencyItems.any((item) => item.value == value);
+        final safeValue = hasSelectedCurrency ? value : (currencyItems.isNotEmpty ? currencyItems.first.value! : 'IQD');
+
+        if (safeValue != value) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _selectedCurrencyNotifier.value = safeValue;
+            }
+          });
+        }
+
         return ModernDropdown<String>(
           labelText: 'العملة',
           hintText: 'اختر العملة',
           icon: Icons.monetization_on,
           required: true,
-          value: value,
-          items: const [
-            DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
-            DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
-            DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
-          ],
+          value: safeValue,
+          items: currencyItems,
           onChanged: (newValue) {
             if (newValue != null) {
               _selectedCurrencyNotifier.value = newValue;
@@ -387,9 +611,32 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
     );
   }
 
+  Widget _buildAssociationTypeSection() {
+    return ValueListenableBuilder<String?>(
+      valueListenable: _selectedAssociationTypeNotifier,
+      builder: (context, selectedCode, _) {
+        return TaxonomyBridgeDropdown(
+          group: TaxonomyGroup.associationType,
+          selectedCode: selectedCode,
+          onCodeChanged: (code) {
+            _selectedAssociationTypeNotifier.value = _normalizeNullableId(code);
+          },
+          labelText: 'نوع الجمعية',
+          hintText: 'اختر نوع الجمعية',
+          prefixIcon: Icons.account_tree_outlined,
+          isRequired: false,
+          showSyncAction: true,
+        );
+      },
+    );
+  }
+
   /// 👤 قسم المندوب
   Widget _buildRepresentativeSection() {
     final representatives = ref.watch(associationsProvider).representatives;
+    final selectedRep = representatives.where((rep) => rep.id == _selectedRepresentativeNotifier.value).firstOrNull;
+    final currentRepName = selectedRep?.name ?? 'غير محدد';
+    final showReadOnlyRepresentative = isEditing && !_allowRepresentativeChange;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -401,27 +648,81 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
           color: Colors.deepPurple,
         ),
         SizedBox(height: ResponsiveUtils.mediumSpace),
-        ValueListenableBuilder<String?>(
-          valueListenable: _selectedRepresentativeNotifier,
-          builder: (context, value, _) {
-            return RepresentativeDropdownV2(
-              selectedId: value,
-              representatives: representatives,
-              onChanged: (newValue) {
-                _selectedRepresentativeNotifier.value = newValue;
-              },
-              onAddNew: () async {
-                // عرض ورقة إضافة مندوب جديد
-                final newRepId = await _showAddRepresentativeSheet(
-                  context,
-                  representatives,
-                );
-                if (newRepId != null) {
-                  _selectedRepresentativeNotifier.value = newRepId;
-                }
-              },
-            );
-          },
+        if (showReadOnlyRepresentative)
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveUtils.mediumSpace,
+              vertical: ResponsiveUtils.mediumSpace,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+              border: Border.all(color: Theme.of(context).colorScheme.outline),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.person_outline, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: ResponsiveUtils.smallSpace),
+                Expanded(
+                  child: Text(
+                    currentRepName,
+                    textAlign: TextAlign.right,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _allowRepresentativeChange = true),
+                  child: const Text('تغيير'),
+                ),
+              ],
+            ),
+          )
+        else
+          ValueListenableBuilder<String?>(
+            valueListenable: _selectedRepresentativeNotifier,
+            builder: (context, value, _) {
+              return RepresentativeDropdownV2(
+                selectedId: value,
+                representatives: representatives,
+                onChanged: (newValue) {
+                  _selectedRepresentativeNotifier.value = newValue;
+                  if (_didAttemptSubmit && mounted) {
+                    setState(() {});
+                  }
+                },
+                onAddNew: () async {
+                  // عرض ورقة إضافة مندوب جديد
+                  final newRepId = await _showAddRepresentativeSheet(
+                    context,
+                    representatives,
+                  );
+                  if (newRepId != null) {
+                    _selectedRepresentativeNotifier.value = newRepId;
+                    if (_didAttemptSubmit && mounted) {
+                      setState(() {});
+                    }
+                  }
+                },
+              );
+            },
+          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: _hasRepresentativeError
+              ? Padding(
+                  key: const ValueKey('rep_error'),
+                  padding: EdgeInsets.only(top: ResponsiveUtils.smallSpace),
+                  child: Text(
+                    'الرجاء اختيار المندوب',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: ResponsiveUtils.smallFont,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('rep_ok')),
         ),
       ],
     );
@@ -489,13 +790,13 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
 
   /// 💾 حفظ البيانات
   Future<void> _submit() async {
+    if (!_didAttemptSubmit) {
+      setState(() => _didAttemptSubmit = true);
+    }
+
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedRepresentativeNotifier.value == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء اختيار المندوب')),
-      );
+    if (!isEditing && _selectedRepresentativeNotifier.value == null) {
       return;
     }
 
@@ -521,12 +822,13 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
       shortName: _shortNameController.text.trim().isNotEmpty ? _shortNameController.text.trim() : null,
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
-      bankName: _bankNameController.text.trim(),
+      bankName: (_selectedBankNameNotifier.value ?? '').trim(),
       accountNumber: _accountNumberController.text.trim(),
       swiftCode: _swiftCodeController.text.trim().isNotEmpty ? _swiftCodeController.text.trim() : null,
       bankPhone: _bankPhoneController.text.trim().isNotEmpty ? _bankPhoneController.text.trim() : null,
       accountCurrency: _selectedCurrencyNotifier.value,
-      representativeId: _selectedRepresentativeNotifier.value!,
+      associationTypeCode: _selectedAssociationTypeNotifier.value,
+      representativeId: _selectedRepresentativeNotifier.value,
       isActive: _isActiveNotifier.value,
     );
 
@@ -551,11 +853,12 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
       shortName: _shortNameController.text.trim().isNotEmpty ? _shortNameController.text.trim() : null,
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
-      bankName: _bankNameController.text.trim(),
+      bankName: (_selectedBankNameNotifier.value ?? '').trim(),
       accountNumber: _accountNumberController.text.trim(),
       swiftCode: _swiftCodeController.text.trim().isNotEmpty ? _swiftCodeController.text.trim() : null,
       bankPhone: _bankPhoneController.text.trim().isNotEmpty ? _bankPhoneController.text.trim() : null,
       accountCurrency: _selectedCurrencyNotifier.value,
+      associationTypeCode: _selectedAssociationTypeNotifier.value,
       representativeId: _selectedRepresentativeNotifier.value!,
       isActive: _isActiveNotifier.value,
     );
@@ -566,6 +869,7 @@ class _AssociationFormBottomSheetModernState extends ConsumerState<AssociationFo
 
     if (success) {
       HapticFeedback.mediumImpact();
+      await _clearDraftIfNeeded();
       Navigator.pop(context, true);
       _showSuccessSnackbar('تم إضافة الجمعية بنجاح');
     } else {

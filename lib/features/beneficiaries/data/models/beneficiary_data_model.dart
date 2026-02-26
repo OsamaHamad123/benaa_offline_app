@@ -57,6 +57,12 @@ class BeneficiaryDataModel {
   final int? housingStatus; // data_housing_status
   final int? currentHousingType; // data_current_housing_type
 
+  // Extended taxonomy codes
+  final String? assistanceTypeCode;
+  final String? disabilityTypeCode;
+  final String? incomeSourceCode;
+  final String? guaranteeTypeCode;
+
   // Needs & Notes
   final String? descriptionNeeds; // data_description_needs
 
@@ -97,6 +103,10 @@ class BeneficiaryDataModel {
     this.numberOfPeopleWithSpecialNeeds,
     this.housingStatus,
     this.currentHousingType,
+    this.assistanceTypeCode,
+    this.disabilityTypeCode,
+    this.incomeSourceCode,
+    this.guaranteeTypeCode,
     this.descriptionNeeds,
     this.userInsertData,
     this.createdAt,
@@ -137,6 +147,10 @@ class BeneficiaryDataModel {
       numberOfPeopleWithSpecialNeeds: json['data_number_of_people_with_special_needs'] as int?,
       housingStatus: json['data_housing_status'] as int?,
       currentHousingType: json['data_current_housing_type'] as int?,
+      assistanceTypeCode: json['assistance_type_code'] as String? ?? json['data_assistance_type'] as String?,
+      disabilityTypeCode: json['disability_type_code'] as String? ?? json['data_disability_type'] as String?,
+      incomeSourceCode: json['income_source_code'] as String? ?? json['data_income_source'] as String?,
+      guaranteeTypeCode: json['guarantee_type_code'] as String? ?? json['data_guarantee_type'] as String?,
       descriptionNeeds: json['data_description_needs'] as String?,
       userInsertData: json['data_user_insert_data'] as String?,
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : null,
@@ -179,6 +193,10 @@ class BeneficiaryDataModel {
       'data_employment_status_breadwinner': employmentStatusBreadwinner,
       'data_housing_status': housingStatus,
       'data_current_housing_type': currentHousingType,
+      'assistance_type_code': assistanceTypeCode,
+      'disability_type_code': disabilityTypeCode,
+      'income_source_code': incomeSourceCode,
+      'guarantee_type_code': guaranteeTypeCode,
       'data_user_insert_data': userInsertData,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -189,7 +207,7 @@ class BeneficiaryDataModel {
   factory BeneficiaryDataModel.fromEntity(entity.Beneficiary beneficiary) {
     return BeneficiaryDataModel(
       id: int.tryParse(beneficiary.id),
-      fileIdNumber: beneficiary.fileNo,
+      fileIdNumber: beneficiary.fileIdNumber ?? beneficiary.fileNo,
       sectionId: beneficiary.sectionId ?? beneficiary.category.code,
       requestStatus: beneficiary.requestStatus?.code ?? 1,
       idNumber: int.tryParse(beneficiary.nationalId),
@@ -222,6 +240,10 @@ class BeneficiaryDataModel {
       numberOfPeopleWithSpecialNeeds: beneficiary.specialNeedsCount,
       housingStatus: beneficiary.housingStatus?.code,
       currentHousingType: beneficiary.housingType?.code,
+      assistanceTypeCode: beneficiary.assistanceTypeCode,
+      disabilityTypeCode: beneficiary.disabilityTypeCode,
+      incomeSourceCode: beneficiary.incomeSourceCode,
+      guaranteeTypeCode: beneficiary.guaranteeTypeCode,
       descriptionNeeds: beneficiary.notes,
       createdAt: beneficiary.createdAt,
       updatedAt: beneficiary.updatedAt,
@@ -249,6 +271,7 @@ class BeneficiaryDataModel {
       currentAddress: currentAddress,
       addressBeforeDisplacement: addressBeforeDisplacement,
       fileNo: fileIdNumber,
+      fileIdNumber: fileIdNumber,
       maritalStatus: _codeToMaritalStatus(maritalStatus),
       educationLevel: _codeToEducationLevel(academicQualification),
       healthStatus: _codeToHealthStatus(healthStatus),
@@ -267,6 +290,10 @@ class BeneficiaryDataModel {
       housingStatus: entity.HousingStatus.fromCode(housingStatus),
       housingType: entity.HousingType.fromCode(currentHousingType),
       requestStatus: entity.RequestStatus.fromCode(requestStatus),
+      assistanceTypeCode: assistanceTypeCode,
+      disabilityTypeCode: disabilityTypeCode,
+      incomeSourceCode: incomeSourceCode,
+      guaranteeTypeCode: guaranteeTypeCode,
       notes: descriptionNeeds,
       createdAt: createdAt ?? DateTime.now(),
       updatedAt: updatedAt ?? DateTime.now(),
@@ -443,6 +470,10 @@ class BeneficiaryDataModel {
       numberOfPeopleWithSpecialNeeds: drift.numberOfPeopleWithSpecialNeeds,
       housingStatus: drift.housingStatus,
       currentHousingType: drift.currentHousingType,
+      assistanceTypeCode: drift.assistanceTypeCode,
+      disabilityTypeCode: drift.disabilityTypeCode,
+      incomeSourceCode: drift.incomeSourceCode,
+      guaranteeTypeCode: drift.guaranteeTypeCode,
       descriptionNeeds: drift.descriptionNeeds,
       userInsertData: drift.userInsertData,
       createdAt: drift.createdAt,
@@ -487,6 +518,10 @@ class BeneficiaryDataModel {
       ),
       housingStatus: drift.Value(housingStatus),
       currentHousingType: drift.Value(currentHousingType),
+      assistanceTypeCode: drift.Value(assistanceTypeCode),
+      disabilityTypeCode: drift.Value(disabilityTypeCode),
+      incomeSourceCode: drift.Value(incomeSourceCode),
+      guaranteeTypeCode: drift.Value(guaranteeTypeCode),
       descriptionNeeds: drift.Value(descriptionNeeds),
       userInsertData: drift.Value(userInsertData),
       createdAt: drift.Value(createdAt),

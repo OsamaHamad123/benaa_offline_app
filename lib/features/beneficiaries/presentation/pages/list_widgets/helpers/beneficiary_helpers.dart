@@ -13,7 +13,17 @@ class BeneficiaryHelpers {
   }
 
   /// الحصول على لون الفئة
-  static Color getCategoryColor(int? sectionId) {
+  static Color getCategoryColor(
+    int? sectionId, {
+    Map<int, Color> categoryColorsById = const <int, Color>{},
+  }) {
+    if (sectionId != null) {
+      final resolved = categoryColorsById[sectionId];
+      if (resolved != null) {
+        return resolved;
+      }
+    }
+
     switch (sectionId) {
       case 1:
         return Colors.blue; // يتيم
@@ -29,7 +39,17 @@ class BeneficiaryHelpers {
   }
 
   /// الحصول على تسمية الفئة
-  static String getCategoryLabel(int? sectionId) {
+  static String getCategoryLabel(
+    int? sectionId, {
+    Map<int, String> categoryLabelsById = const <int, String>{},
+  }) {
+    if (sectionId != null) {
+      final resolved = categoryLabelsById[sectionId];
+      if (resolved != null && resolved.trim().isNotEmpty) {
+        return resolved;
+      }
+    }
+
     switch (sectionId) {
       case 1:
         return 'يتيم';
@@ -46,8 +66,16 @@ class BeneficiaryHelpers {
 
   /// الحصول على اسم المحافظة
   /// TODO: يمكن تحسينها من خلال جلب البيانات من قاعدة البيانات
-  static String getProvinceName(int? provinceId) {
+  static String getProvinceName(
+    int? provinceId, {
+    Map<int, String> governorateLabelsById = const <int, String>{},
+  }) {
     if (provinceId == null) return 'غير محدد';
+
+    final resolved = governorateLabelsById[provinceId];
+    if (resolved != null && resolved.trim().isNotEmpty) {
+      return resolved;
+    }
 
     // يمكن استبدالها بـ lookup من قاعدة البيانات
     final provinceNames = {
@@ -114,8 +142,7 @@ class BeneficiaryHelpers {
     final now = DateTime.now();
     int age = now.year - birthDate.year;
 
-    if (now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)) {
+    if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
       age--;
     }
 

@@ -112,7 +112,7 @@ class AttachmentsSectionClean extends ConsumerWidget {
         final attachment = attachments[index];
         return _AttachmentCard(
           attachment: attachment,
-          onTap: () => _openAttachment(context, attachment),
+          onTap: () => _openAttachment(context, ref, attachment),
           onDelete: readOnly ? null : () => _deleteAttachment(context, ref, attachment),
         );
       },
@@ -289,16 +289,22 @@ class AttachmentsSectionClean extends ConsumerWidget {
 
   Future<void> _openAttachment(
     BuildContext context,
+    WidgetRef ref,
     Attachment attachment,
   ) async {
-    final file = File(attachment.filePath);
-    if (await file.exists()) {
-      await OpenFile.open(attachment.filePath);
+    final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
+    final file = await notifier.resolveAttachmentFile(
+      attachment,
+      allowRemoteFetch: true,
+    );
+
+    if (file != null && await file.exists()) {
+      await OpenFile.open(file.path);
     } else if (context.mounted) {
       final colorScheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('الملف غير موجود'),
+          content: const Text('تعذر فتح المرفق (قد يتطلب إعادة مزامنة أو تسجيل دخول)'),
           backgroundColor: colorScheme.error,
         ),
       );

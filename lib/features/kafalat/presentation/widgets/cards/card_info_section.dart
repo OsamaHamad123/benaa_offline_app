@@ -228,7 +228,7 @@ class _TypeBadge extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10.r),
               ),
               child: Text(
-                'Legacy',
+                'قيمة قديمة',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,

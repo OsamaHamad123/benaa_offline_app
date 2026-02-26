@@ -15,7 +15,9 @@ import '../../../../core/utils/file_write.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/gradient_app_bar.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as tax_domain;
 import '../../../../features/taxonomies/taxonomies.dart';
+import '../../data/services/kafalat_excel_import_parser.dart';
 import '../providers/kafalat_providers.dart';
 
 class KafalatImportPage extends ConsumerStatefulWidget {
@@ -26,6 +28,8 @@ class KafalatImportPage extends ConsumerStatefulWidget {
 }
 
 class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
+  final KafalatExcelImportParser _parser = const KafalatExcelImportParser();
+
   Uint8List? _fileBytes;
   String? _fileName;
   bool _busy = false;
@@ -44,7 +48,8 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
   int _importSkipped = 0;
   int? _lastImportBatchId;
 
-  List<_ExcelBeneficiaryRow> _rows = const [];
+  List<KafalatExcelSponsorshipRow> _rows = const [];
+  List<String> _parseWarnings = const [];
 
   String? _selectedAssociationId;
   String? _selectedSponsorshipType = 'monthly';
@@ -136,13 +141,25 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                       SizedBox(height: 10.h),
                       Text(
                         'يجب أن يحتوي ملف Excel على الأعمدة التالية بالترتيب (يمكن اختلاف الأسماء طالما تشير لنفس المعنى):\n'
-                        '1) رقم الهوية (مطلوب)\n'
-                        '2) الهاتف\n'
-                        '3) هاتف بديل\n'
-                        '4) الاسم\n'
-                        '5) اسم الأب\n'
-                        '6) اسم الجد\n'
-                        '7) اللقب',
+                        '1) الإسم\n'
+                        '2) رقم الهوية (مطلوب)\n'
+                        '3) إسم المعيل\n'
+                        '4) رقم هوية المعيل\n'
+                        '5) إسم المؤسسة الكافلة\n'
+                        '6) إسم الكافل\n'
+                        '7) رقم الملف الداخلي\n'
+                        '8) رقم الملف الخارجي\n'
+                        '9) مدة الكفالة\n'
+                        '10) فترة الكفالة\n'
+                        '11) نوع الكفالة\n'
+                        '12) المدينة\n'
+                        '13) العنوان\n'
+                        '14) إسم البنك\n'
+                        '15) إسم صاحب الحساب\n'
+                        '16) رقم هوية صاحب الحساب\n'
+                        '17) رقم الجوال المربوط بالحساب\n'
+                        '18) المتبقي\n'
+                        '19) تاريخ الإضافة',
                         style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         textAlign: TextAlign.right,
                       ),
@@ -160,8 +177,8 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                             SizedBox(width: 10.w),
                             Expanded(
                               child: Text(
-                                'مهم: سيتم تحديث/إضافة المستفيدين حسب رقم الهوية، ثم إنشاء كفالات حسب الإعدادات.\n'
-                                'لن يتم إنشاء كفالة "نشطة" إذا كان لدى المستفيد كفالة نشطة مسبقاً.',
+                                'مهم: سيتم التعرّف على المستفيد حسب رقم الهوية مع إنشاء/تحديث الكفالة بذكاء.\n'
+                                'الأعمدة غير المتوفرة سيتم تعويضها تلقائياً من الإعدادات أو القيم الافتراضية.',
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onTertiaryContainer,
                                   fontWeight: FontWeight.w600,
@@ -288,6 +305,14 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                   style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   textAlign: TextAlign.right,
                 ),
+                if (_parseWarnings.isNotEmpty) ...[
+                  SizedBox(height: 6.h),
+                  Text(
+                    'تنبيهات الفحص: ${_parseWarnings.length}',
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                    textAlign: TextAlign.right,
+                  ),
+                ],
               ],
 
               if (_busy) ...[
@@ -452,7 +477,9 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                       child: ListTile(
                         leading: CircleAvatar(child: Text('${index + 1}')),
                         title: Text(r.fullNameOrFallback),
-                        subtitle: Text('الرقم الوطني: ${r.idNumber}'),
+                        subtitle: Text(
+                          'الرقم الوطني: ${r.idNumber} • المؤسسة: ${r.associationName.isEmpty ? 'غير محددة' : r.associationName}',
+                        ),
                       ),
                     );
                   },
@@ -473,13 +500,25 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
       final sheet = excel.sheets.values.first;
       sheet.appendRow(
         [
+          TextCellValue('الإسم'),
           TextCellValue('رقم الهوية'),
-          TextCellValue('الهاتف'),
-          TextCellValue('هاتف بديل'),
-          TextCellValue('الاسم'),
-          TextCellValue('اسم الأب'),
-          TextCellValue('اسم الجد'),
-          TextCellValue('اللقب'),
+          TextCellValue('إسم المعيل'),
+          TextCellValue('رقم هوية المعيل'),
+          TextCellValue('إسم المؤسسة الكافلة'),
+          TextCellValue('إسم الكافل'),
+          TextCellValue('رقم الملف الداخلي'),
+          TextCellValue('رقم الملف الخارجي'),
+          TextCellValue('مدة الكفالة'),
+          TextCellValue('فترة الكفالة'),
+          TextCellValue('نوع الكفالة'),
+          TextCellValue('المدينة'),
+          TextCellValue('العنوان'),
+          TextCellValue('إسم البنك'),
+          TextCellValue('إسم صاحب الحساب'),
+          TextCellValue('رقم هوية صاحب الحساب'),
+          TextCellValue('رقم الجوال المربوط بالحساب'),
+          TextCellValue('المتبقي'),
+          TextCellValue('تاريخ الإضافة'),
         ],
       );
 
@@ -542,6 +581,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
         _importUpdated = 0;
         _importSkipped = 0;
         _lastImportBatchId = null;
+        _parseWarnings = const [];
       });
     } catch (e) {
       if (!context.mounted) return;
@@ -557,74 +597,22 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
       _busyLabel = 'جاري قراءة الملف وتحليل الأعمدة...';
     });
     try {
-      final excel = Excel.decodeBytes(_fileBytes!);
-      if (excel.tables.isEmpty) {
-        throw Exception('لا توجد أوراق داخل الملف');
-      }
+      final result = _parser.parse(_fileBytes!);
 
-      final sheet = excel.tables.values.first;
-      final rows = sheet.rows;
-      if (rows.isEmpty) {
-        throw Exception('لا توجد بيانات');
-      }
-
-      final headers = rows.first.map((c) => _normalizeHeader(_cellToString(c))).toList(growable: false);
-
-      final parsed = <_ExcelBeneficiaryRow>[];
-
-      final seenIds = <int>{};
-      int total = 0;
-      int invalid = 0;
-      int duplicates = 0;
-
-      for (var i = 1; i < rows.length; i++) {
-        total++;
-        final row = rows[i];
-        final map = <String, String>{};
-        for (var j = 0; j < headers.length && j < row.length; j++) {
-          final key = headers[j];
-          if (key.isEmpty) continue;
-          map[key] = _cellToString(row[j]).trim();
-        }
-
-        final idNumber = _parseNationalId(map);
-        if (idNumber == null) {
-          invalid++;
-          continue;
-        }
-
-        if (seenIds.contains(idNumber)) {
-          duplicates++;
-          continue;
-        }
-        seenIds.add(idNumber);
-
-        parsed.add(
-          _ExcelBeneficiaryRow(
-            idNumber: idNumber,
-            phoneNumber: _parseInt(map[_h('phone')]) ?? 0,
-            altPhoneNumber: _parseInt(map[_h('alt_phone')]) ?? 0,
-            firstName: map[_h('first_name')] ?? map[_h('name')] ?? '',
-            fatherName: map[_h('father_name')] ?? '',
-            grandFatherName: map[_h('grand_father_name')] ?? '',
-            familyName: map[_h('family_name')] ?? '',
-          ),
-        );
-      }
-
-      setState(() => _rows = parsed);
       setState(() {
-        _parseTotalRows = total;
-        _parseInvalidRows = invalid;
-        _parseDuplicateRows = duplicates;
-        _parseValidRows = parsed.length;
+        _rows = result.rows;
+        _parseTotalRows = result.totalRows;
+        _parseInvalidRows = result.invalidRows;
+        _parseDuplicateRows = result.duplicateRows;
+        _parseValidRows = result.validRows;
+        _parseWarnings = result.warnings;
       });
 
       if (!context.mounted) return;
       unawaited(HapticPatterns.success());
       EnhancedSnackbar.showSuccess(
         context,
-        message: 'تمت قراءة ${parsed.length} صف صالحة (عرض أول 30 صف فقط).',
+        message: 'تمت قراءة ${result.rows.length} صف صالحة (عرض أول 30 صف فقط).',
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -638,19 +626,6 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
   Future<void> _importRows(BuildContext context) async {
     if (_rows.isEmpty) return;
 
-    if (_selectedAssociationId == null || _selectedAssociationId!.isEmpty) {
-      EnhancedSnackbar.showError(context, message: 'يرجى اختيار المؤسسة الكافلة');
-      return;
-    }
-    if (_selectedSponsorshipType == null || _selectedSponsorshipType!.isEmpty) {
-      EnhancedSnackbar.showError(context, message: 'يرجى اختيار نوع الكفالة');
-      return;
-    }
-    if (_selectedSponsorshipStatus == null || _selectedSponsorshipStatus!.isEmpty) {
-      EnhancedSnackbar.showError(context, message: 'يرجى اختيار حالة الكفالة');
-      return;
-    }
-
     setState(() {
       _busy = true;
       _busyLabel = 'جاري تجهيز الاستيراد...';
@@ -662,18 +637,38 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
       _importSkipped = 0;
       _lastImportBatchId = null;
     });
+
     try {
       final db = ref.read(databaseProvider);
       final now = DateTime.now();
+      final associations = await ref.read(kafalatActiveAssociationsProvider.future);
+      final hasAnyAssociationFallback = _selectedAssociationId != null && _selectedAssociationId!.trim().isNotEmpty;
+      final hasAnyAssociationInRows = _rows.any((row) => row.associationName.trim().isNotEmpty);
 
-      final associationId = _selectedAssociationId!;
-      final sponsorshipType = _selectedSponsorshipType!;
-      final sponsorshipStatus = _selectedSponsorshipStatus!;
+      if (!hasAnyAssociationFallback && !hasAnyAssociationInRows) {
+        if (!context.mounted) return;
+        EnhancedSnackbar.showError(context,
+            message: 'يرجى اختيار المؤسسة الكافلة أو توفير عمود "إسم المؤسسة الكافلة" في الملف');
+        return;
+      }
 
       final idNumbers = _rows.map((e) => e.idNumber).toList(growable: false);
       final existing = await _prefetchExistingNationalIds(db, idNumbers);
+      final associationByName = <String, String>{
+        for (final association in associations) _normalizeLooseText(association.name): association.id,
+      };
+      final taxonomyIndex = await ref.read(bridgeTaxonomiesIndexOnceProvider.future);
+      final sponsorshipTypeLookup = _buildCanonicalCodeLookup(
+        taxonomyIndex[TaxonomyGroup.sponsorshipType] ?? const <tax_domain.Taxonomy>[],
+      );
+      final guaranteeTypeLookup = _buildCanonicalCodeLookup(
+        taxonomyIndex[TaxonomyGroup.guaranteeType] ?? const <tax_domain.Taxonomy>[],
+      );
+      final bankNameLookup = _buildCanonicalLabelLookup(
+        taxonomyIndex[TaxonomyGroup.bankName] ?? const <tax_domain.Taxonomy>[],
+      );
 
-      final batchId = await db.transaction(() async {
+      final result = await db.transaction(() async {
         await db.customStatement(
           '''
           INSERT INTO import_batches (
@@ -691,10 +686,7 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
             _parseValidRows,
             _parseInvalidRows,
             _parseDuplicateRows,
-            'Beneficiaries + Sponsorships import by nationalId'
-                ' | association=$associationId'
-                ' | type=$sponsorshipType'
-                ' | status=$sponsorshipStatus',
+            'Smart sponsorship import from real Excel schema',
           ],
         );
 
@@ -705,7 +697,9 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
         int updated = 0;
         int skipped = 0;
         int sponsorshipsInserted = 0;
+        int sponsorshipsUpdated = 0;
         int sponsorshipsSkipped = 0;
+        int unresolvedAssociations = 0;
         int processed = 0;
 
         for (final r in _rows) {
@@ -716,10 +710,10 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
                 idNumber: r.idNumber,
                 phoneNumber: r.phoneNumber,
                 altPhoneNumber: r.altPhoneNumber,
-                firstName: drift.Value(r.firstNameSafe),
-                fatherName: drift.Value(r.fatherNameSafe),
-                grandFatherName: drift.Value(r.grandFatherNameSafe),
-                familyName: drift.Value(r.familyNameSafe),
+                firstName: drift.Value(r.firstName),
+                fatherName: drift.Value(r.fatherName),
+                grandFatherName: drift.Value(r.grandFatherName),
+                familyName: drift.Value(r.familyName),
                 createdAt: drift.Value(now),
                 updatedAt: drift.Value(now),
               ),
@@ -749,12 +743,17 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
 
         // Build a mapping nationalId -> beneficiaryId after upsert.
         final beneficiaryIdByNationalId = await _fetchBeneficiaryIdMap(db, idNumbers);
+        final existingSponsorshipBySignature = await _prefetchExistingSponsorshipSignatures(
+          db,
+          beneficiaryIdByNationalId.values.toList(growable: false),
+        );
 
         // Idempotency for active sponsorships: don't create a new active sponsorship
         // if the beneficiary already has any active sponsorship.
-        final hasActiveSponsorship = sponsorshipStatus == 'active'
-            ? await _prefetchBeneficiariesWithActiveSponsorship(db, beneficiaryIdByNationalId.values.toList())
-            : <int>{};
+        final hasActiveSponsorship = await _prefetchBeneficiariesWithActiveSponsorship(
+          db,
+          beneficiaryIdByNationalId.values.toList(growable: false),
+        );
 
         for (final r in _rows) {
           final beneficiaryId = beneficiaryIdByNationalId[r.idNumber];
@@ -763,26 +762,101 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
             continue;
           }
 
-          if (sponsorshipStatus == 'active' && hasActiveSponsorship.contains(beneficiaryId)) {
+          final associationId = _resolveAssociationId(
+            rowAssociationName: r.associationName,
+            fallbackAssociationId: _selectedAssociationId,
+            associations: associations,
+            exactLookup: associationByName,
+          );
+
+          if (associationId == null) {
+            unresolvedAssociations++;
+            sponsorshipsSkipped++;
+            continue;
+          }
+
+          final sponsorshipType = _resolveCanonicalTaxonomyCode(
+            rawCode: r.sponsorshipTypeCode,
+            fallbackCode: _selectedSponsorshipType,
+            lookup: sponsorshipTypeLookup,
+            defaultCode: 'monthly',
+          );
+          final guaranteeType = _resolveCanonicalTaxonomyCodeOrNull(
+            rawCode: r.sponsorshipTypeCode,
+            fallbackCode: _selectedSponsorshipType,
+            lookup: guaranteeTypeLookup,
+          );
+          final canonicalBankName = _resolveCanonicalTaxonomyLabel(
+            rawLabel: r.bankName,
+            lookup: bankNameLookup,
+          );
+          final status = _resolveSponsorshipStatus(
+            fallbackStatus: _selectedSponsorshipStatus,
+            inferredEndDate: r.inferredPeriodEnd,
+            now: now,
+          );
+
+          final startDate = r.inferredPeriodStart ?? r.addedAt ?? now;
+          final endDate = status == 'ended' ? (r.inferredPeriodEnd ?? now) : r.inferredPeriodEnd;
+
+          final notes = [
+            if (r.sponsorshipPeriodText.trim().isNotEmpty) 'فترة الكفالة: ${r.sponsorshipPeriodText.trim()}',
+            if (r.remainingAmount != null) 'المتبقي: ${r.remainingAmount}',
+          ].join(' | ');
+
+          final signature = _buildSponsorshipSignature(
+            beneficiaryId: beneficiaryId,
+            associationId: associationId,
+            internalFileNo: r.internalFileNo,
+            externalFileNo: r.externalFileNo,
+            sponsorName: r.sponsorName,
+          );
+
+          final existingFileNo = existingSponsorshipBySignature[signature];
+
+          if (existingFileNo == null && status == 'active' && hasActiveSponsorship.contains(beneficiaryId)) {
             sponsorshipsSkipped++;
             continue;
           }
 
           try {
-            await db.sponsorshipsDao.createSponsorship(
-              SponsorshipsCompanion.insert(
-                beneficiaryId: beneficiaryId,
-                associationId: associationId,
-                startDate: drift.Value(now),
-                endDate: sponsorshipStatus == 'ended' ? drift.Value(now) : const drift.Value.absent(),
-                status: drift.Value(sponsorshipStatus),
-                sponsorshipType: drift.Value(sponsorshipType),
-                importBatchId: drift.Value(newBatchId),
-                updatedAt: drift.Value(now),
-              ),
+            final companion = SponsorshipsCompanion(
+              beneficiaryId: drift.Value(beneficiaryId),
+              associationId: drift.Value(associationId),
+              sponsorName: drift.Value(r.sponsorName.isEmpty ? null : r.sponsorName),
+              internalFileNo: drift.Value(r.internalFileNo.isEmpty ? null : r.internalFileNo),
+              externalFileNo: drift.Value(r.externalFileNo.isEmpty ? null : r.externalFileNo),
+              guardianName: drift.Value(r.guardianName.isEmpty ? null : r.guardianName),
+              guardianIdNumber: drift.Value(r.guardianIdNumber),
+              guardianPhone: drift.Value(r.accountLinkedMobile.isEmpty ? null : r.accountLinkedMobile),
+              durationMonths: drift.Value(r.durationMonths),
+              startDate: drift.Value(startDate),
+              endDate: drift.Value(endDate),
+              status: drift.Value(status),
+              sponsorshipType: drift.Value(sponsorshipType),
+              guaranteeType: drift.Value(guaranteeType),
+              bankName: drift.Value(canonicalBankName),
+              accountHolderName: drift.Value(r.accountHolderName.isEmpty ? null : r.accountHolderName),
+              accountHolderIdNumber: drift.Value(r.accountHolderIdNumber),
+              city: drift.Value(r.city.isEmpty ? null : r.city),
+              address: drift.Value(r.address.isEmpty ? null : r.address),
+              importBatchId: drift.Value(newBatchId),
+              notes: drift.Value(notes.isEmpty ? null : notes),
+              updatedAt: drift.Value(now),
             );
-            sponsorshipsInserted++;
-            if (sponsorshipStatus == 'active') {
+
+            if (existingFileNo != null) {
+              await db.sponsorshipsDao.updateSponsorship(
+                fileNo: existingFileNo,
+                companion: companion,
+              );
+              sponsorshipsUpdated++;
+            } else {
+              await db.sponsorshipsDao.createSponsorship(companion);
+              sponsorshipsInserted++;
+            }
+
+            if (status == 'active') {
               hasActiveSponsorship.add(beneficiaryId);
             }
           } catch (_) {
@@ -810,12 +884,25 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
           [inserted, updated, skipped, sponsorshipsInserted, sponsorshipsSkipped, newBatchId],
         );
 
-        return newBatchId;
+        return (
+          batchId: newBatchId,
+          inserted: inserted,
+          updated: updated,
+          skipped: skipped,
+          sponsorshipsInserted: sponsorshipsInserted,
+          sponsorshipsUpdated: sponsorshipsUpdated,
+          sponsorshipsSkipped: sponsorshipsSkipped,
+          unresolvedAssociations: unresolvedAssociations,
+        );
       });
 
       if (mounted) {
         setState(() {
-          _lastImportBatchId = batchId;
+          _lastImportBatchId = result.batchId;
+          _importInserted = result.inserted;
+          _importUpdated = result.updated;
+          _importSkipped = result.skipped;
+          _busyLabel = null;
         });
       }
 
@@ -823,7 +910,10 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
       unawaited(HapticPatterns.success());
       EnhancedSnackbar.showSuccess(
         context,
-        message: 'تم الاستيراد. مستفيدون: إضافة $_importInserted • تحديث $_importUpdated • تخطي $_importSkipped',
+        message:
+            'تم الاستيراد. مستفيدون: إضافة ${result.inserted} • تحديث ${result.updated} • تخطي ${result.skipped} | '
+            'كفالات: إضافة ${result.sponsorshipsInserted} • تحديث ${result.sponsorshipsUpdated} • تخطي ${result.sponsorshipsSkipped}'
+            '${result.unresolvedAssociations > 0 ? ' • جمعيات غير مطابقة: ${result.unresolvedAssociations}' : ''}',
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -911,109 +1001,191 @@ class _KafalatImportPageState extends ConsumerState<KafalatImportPage> {
     return result;
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
+  Future<Map<String, int>> _prefetchExistingSponsorshipSignatures(AppDatabase db, List<int> beneficiaryIds) async {
+    if (beneficiaryIds.isEmpty) return const {};
 
-  static String _normalizeHeader(String s) {
-    final trimmed = s.trim();
-    if (trimmed.isEmpty) return '';
+    final map = <String, int>{};
+    const chunkSize = 900;
 
-    final norm = ArabicNormalizer.normalize(trimmed)
-        .toLowerCase()
-        .replaceAll(RegExp(r'\s+'), '')
-        .replaceAll('-', '')
-        .replaceAll('_', '')
-        .replaceAll('/', '');
+    for (var i = 0; i < beneficiaryIds.length; i += chunkSize) {
+      final chunk = beneficiaryIds.skip(i).take(chunkSize).toList(growable: false);
+      final placeholders = List.filled(chunk.length, '?').join(',');
+      final rows = await db.customSelect(
+        '''
+        SELECT
+          file_no AS fileNo,
+          beneficiary_id AS beneficiaryId,
+          association_id AS associationId,
+          internal_file_no AS internalFileNo,
+          external_file_no AS externalFileNo,
+          sponsor_name AS sponsorName
+        FROM sponsorships
+        WHERE beneficiary_id IN ($placeholders)
+        ''',
+        variables: [for (final id in chunk) drift.Variable.withInt(id)],
+        readsFrom: {db.sponsorships},
+      ).get();
 
-    return norm;
-  }
+      for (final row in rows) {
+        final signature = _buildSponsorshipSignature(
+          beneficiaryId: row.read<int>('beneficiaryId'),
+          associationId: row.read<String>('associationId'),
+          internalFileNo: row.read<String?>('internalFileNo') ?? '',
+          externalFileNo: row.read<String?>('externalFileNo') ?? '',
+          sponsorName: row.read<String?>('sponsorName') ?? '',
+        );
 
-  static String _h(String key) => _normalizeHeader(key);
-
-  static String _cellToString(Data? cell) {
-    final v = cell?.value;
-    if (v == null) return '';
-    return v.toString();
-  }
-
-  static int? _parseInt(String? raw) {
-    if (raw == null) return null;
-    final s = raw.trim();
-    if (s.isEmpty) return null;
-
-    final digits = s.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) return null;
-
-    return int.tryParse(digits);
-  }
-
-  static int? _parseNationalId(Map<String, String> map) {
-    // Common aliases
-    const candidates = [
-      'idnumber',
-      'nationalid',
-      'nationalidnumber',
-      'id',
-      'رقمالوطني',
-      'الرقمالوطني',
-      'رقمالهوية',
-      'هوية',
-    ];
-
-    for (final c in candidates) {
-      final v = map[_normalizeHeader(c)];
-      final parsed = _parseInt(v);
-      if (parsed != null) return parsed;
+        map[signature] = row.read<int>('fileNo');
+      }
     }
 
-    // Fallback: try any header that contains "id" or "وطني"
-    for (final e in map.entries) {
-      final k = e.key;
-      if (k.contains('id') || k.contains('وطني') || k.contains('هوية')) {
-        final parsed = _parseInt(e.value);
-        if (parsed != null) return parsed;
+    return map;
+  }
+
+  String _buildSponsorshipSignature({
+    required int beneficiaryId,
+    required String associationId,
+    required String internalFileNo,
+    required String externalFileNo,
+    required String sponsorName,
+  }) {
+    return [
+      beneficiaryId.toString(),
+      _normalizeLooseText(associationId),
+      _normalizeLooseText(internalFileNo),
+      _normalizeLooseText(externalFileNo),
+      _normalizeLooseText(sponsorName),
+    ].join('|');
+  }
+
+  String _normalizeLooseText(String raw) {
+    return ArabicNormalizer.normalize(raw).trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  Map<String, String> _buildCanonicalCodeLookup(List<tax_domain.Taxonomy> taxonomies) {
+    final lookup = <String, String>{};
+    for (final taxonomy in taxonomies) {
+      final code = taxonomy.code.trim();
+      final label = taxonomy.label.trim();
+      if (code.isEmpty) continue;
+
+      lookup[_normalizeLooseText(code)] = code;
+      if (label.isNotEmpty) {
+        lookup[_normalizeLooseText(label)] = code;
+      }
+    }
+    return lookup;
+  }
+
+  Map<String, String> _buildCanonicalLabelLookup(List<tax_domain.Taxonomy> taxonomies) {
+    final lookup = <String, String>{};
+    for (final taxonomy in taxonomies) {
+      final label = taxonomy.label.trim();
+      final code = taxonomy.code.trim();
+      if (label.isEmpty) continue;
+
+      lookup[_normalizeLooseText(label)] = label;
+      if (code.isNotEmpty) {
+        lookup[_normalizeLooseText(code)] = label;
+      }
+    }
+    return lookup;
+  }
+
+  String _resolveCanonicalTaxonomyCode({
+    required String? rawCode,
+    required String? fallbackCode,
+    required Map<String, String> lookup,
+    required String defaultCode,
+  }) {
+    final candidates = <String?>[rawCode, fallbackCode];
+
+    for (final candidate in candidates) {
+      final normalized = _normalizeLooseText(candidate ?? '');
+      if (normalized.isEmpty) continue;
+
+      final canonical = lookup[normalized];
+      if (canonical != null && canonical.isNotEmpty) {
+        return canonical;
+      }
+    }
+
+    return defaultCode;
+  }
+
+  String? _resolveCanonicalTaxonomyCodeOrNull({
+    required String? rawCode,
+    required String? fallbackCode,
+    required Map<String, String> lookup,
+  }) {
+    final candidates = <String?>[rawCode, fallbackCode];
+
+    for (final candidate in candidates) {
+      final normalized = _normalizeLooseText(candidate ?? '');
+      if (normalized.isEmpty) continue;
+
+      final canonical = lookup[normalized];
+      if (canonical != null && canonical.isNotEmpty) {
+        return canonical;
       }
     }
 
     return null;
   }
-}
 
-class _ExcelBeneficiaryRow {
-  final int idNumber;
-  final int phoneNumber;
-  final int altPhoneNumber;
-  final String firstName;
-  final String fatherName;
-  final String grandFatherName;
-  final String familyName;
+  String? _resolveCanonicalTaxonomyLabel({
+    required String rawLabel,
+    required Map<String, String> lookup,
+  }) {
+    final normalized = _normalizeLooseText(rawLabel);
+    if (normalized.isEmpty) return null;
 
-  const _ExcelBeneficiaryRow({
-    required this.idNumber,
-    required this.phoneNumber,
-    required this.altPhoneNumber,
-    required this.firstName,
-    required this.fatherName,
-    required this.grandFatherName,
-    required this.familyName,
-  });
+    return lookup[normalized] ?? rawLabel.trim();
+  }
 
-  String get firstNameSafe => firstName.trim().isEmpty ? '' : firstName.trim();
-  String get fatherNameSafe => fatherName.trim().isEmpty ? '' : fatherName.trim();
-  String get grandFatherNameSafe => grandFatherName.trim().isEmpty ? '' : grandFatherName.trim();
-  String get familyNameSafe => familyName.trim().isEmpty ? '' : familyName.trim();
+  String? _resolveAssociationId({
+    required String rowAssociationName,
+    required String? fallbackAssociationId,
+    required List<Association> associations,
+    required Map<String, String> exactLookup,
+  }) {
+    final normalizedRowName = _normalizeLooseText(rowAssociationName);
+    if (normalizedRowName.isNotEmpty) {
+      final exact = exactLookup[normalizedRowName];
+      if (exact != null) return exact;
 
-  String get fullNameOrFallback {
-    final parts = [
-      firstNameSafe,
-      fatherNameSafe,
-      grandFatherNameSafe,
-      familyNameSafe,
-    ].where((p) => p.isNotEmpty).toList();
+      for (final association in associations) {
+        final normalizedAssociationName = _normalizeLooseText(association.name);
+        if (normalizedAssociationName.contains(normalizedRowName) ||
+            normalizedRowName.contains(normalizedAssociationName)) {
+          return association.id;
+        }
+      }
+    }
 
-    if (parts.isEmpty) return 'مستفيد ($idNumber)';
-    return parts.join(' ');
+    final fallback = fallbackAssociationId?.trim();
+    if (fallback != null && fallback.isNotEmpty) {
+      return fallback;
+    }
+
+    return null;
+  }
+
+  String _resolveSponsorshipStatus({
+    required String? fallbackStatus,
+    required DateTime? inferredEndDate,
+    required DateTime now,
+  }) {
+    if (inferredEndDate != null && inferredEndDate.isBefore(now)) {
+      return 'ended';
+    }
+
+    final normalized = fallbackStatus?.trim().toLowerCase();
+    if (normalized == 'paused' || normalized == 'ended' || normalized == 'active') {
+      return normalized!;
+    }
+
+    return 'active';
   }
 }
 

@@ -44,11 +44,8 @@ class BeneficiaryListState {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategory: clearCategoryFilter
-          ? null
-          : (selectedCategory ?? this.selectedCategory),
-      selectedGender:
-          clearGenderFilter ? null : (selectedGender ?? this.selectedGender),
+      selectedCategory: clearCategoryFilter ? null : (selectedCategory ?? this.selectedCategory),
+      selectedGender: clearGenderFilter ? null : (selectedGender ?? this.selectedGender),
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
     );
@@ -176,8 +173,8 @@ class BeneficiaryListNotifier extends StateNotifier<BeneficiaryListState> {
         case 'date':
           comparison = a.createdAt.compareTo(b.createdAt);
         case 'fileNo':
-          final aFileNo = a.fileNo ?? '';
-          final bFileNo = b.fileNo ?? '';
+          final aFileNo = (a.fileIdNumber ?? a.fileNo ?? '').trim();
+          final bFileNo = (b.fileIdNumber ?? b.fileNo ?? '').trim();
           comparison = aFileNo.compareTo(bFileNo);
         default:
           comparison = 0;
@@ -190,8 +187,7 @@ class BeneficiaryListNotifier extends StateNotifier<BeneficiaryListState> {
 }
 
 /// Provider for beneficiary list
-final beneficiaryListProvider =
-    StateNotifierProvider<BeneficiaryListNotifier, BeneficiaryListState>((ref) {
+final beneficiaryListProvider = StateNotifierProvider<BeneficiaryListNotifier, BeneficiaryListState>((ref) {
   final dependencies = ref.watch(beneficiaryDependenciesProvider);
 
   return BeneficiaryListNotifier(
@@ -201,8 +197,7 @@ final beneficiaryListProvider =
 });
 
 /// Provider for statistics
-final beneficiaryStatisticsProvider =
-    FutureProvider<Map<String, int>>((ref) async {
+final beneficiaryStatisticsProvider = FutureProvider<Map<String, int>>((ref) async {
   final dependencies = ref.watch(beneficiaryDependenciesProvider);
   final result = await dependencies.statsUseCase.execute();
 

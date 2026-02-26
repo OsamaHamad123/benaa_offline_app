@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'dart:io';
+import 'package:printing/printing.dart';
 import '../analytics_service.dart';
+import '../../services/export/export_models.dart';
+import '../../services/export/export_providers.dart';
 import 'beneficiary_chart.dart';
 import 'pie_chart_widget.dart';
 import 'bar_chart_widget.dart';
@@ -19,6 +23,8 @@ class AnalyticsDashboardPage extends ConsumerStatefulWidget {
 class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage> {
   int _selectedYear = DateTime.now().year;
   bool _isLoading = false;
+  String? _lastExportedFilePath;
+  ExportType? _lastExportedType;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +36,11 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
             icon: const Icon(Icons.download),
             onPressed: _exportReport,
             tooltip: 'تصدير التقرير',
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _lastExportedFilePath == null ? null : _shareLastExport,
+            tooltip: 'مشاركة آخر تقرير مُصدّر',
           ),
           IconButton(
             icon: const Icon(Icons.print),
@@ -371,16 +382,242 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
   }
 
   Future<void> _exportReport() async {
-    // TODO: Implement export to PDF/Excel
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('سيتم تصدير التقرير قريباً')),
+    final exportType = await showModalBottomSheet<ExportType>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf_rounded),
+                title: const Text('تصدير PDF'),
+                onTap: () => Navigator.of(sheetContext).pop(ExportType.pdf),
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_view_rounded),
+                title: const Text('تصدير Excel'),
+                onTap: () => Navigator.of(sheetContext).pop(ExportType.excel),
+              ),
+            ],
+          ),
+        );
+      },
     );
+
+    if (exportType == null) return;
+
+    try {
+      setState(() => _isLoading = true);
+
+      final reportData = await _buildReportExportData();
+      if (exportType == ExportType.pdf) {
+        final service = ref.read(pdfExportServiceProvider);
+        final result = await service.exportToPdf(reportData);
+
+        if (!mounted) return;
+        if (result.success && result.filePath != null) {
+          setState(() {
+            _lastExportedFilePath = result.filePath;
+            _lastExportedType = ExportType.pdf;
+          });
+          await service.openFile(result.filePath!);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم تصدير التقرير: ${result.fileName}'),
+              action: SnackBarAction(
+                label: 'مشاركة',
+                onPressed: _shareLastExport,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فشل التصدير: ${result.errorMessage ?? 'خطأ غير معروف'}')),
+          );
+        }
+      } else {
+        final service = ref.read(excelExportServiceProvider);
+        final result = await service.exportToExcel(reportData);
+
+        if (!mounted) return;
+        if (result.success && result.filePath != null) {
+          setState(() {
+            _lastExportedFilePath = result.filePath;
+            _lastExportedType = ExportType.excel;
+          });
+          await service.openFile(result.filePath!);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('تم تصدير التقرير: ${result.fileName}'),
+              action: SnackBarAction(
+                label: 'مشاركة',
+                onPressed: _shareLastExport,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فشل التصدير: ${result.errorMessage ?? 'خطأ غير معروف'}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('حدث خطأ أثناء التصدير: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _printReport() async {
-    // TODO: Implement print
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('سيتم طباعة التقرير قريباً')),
+    try {
+      setState(() => _isLoading = true);
+
+      final reportData = await _buildReportExportData();
+      final service = ref.read(pdfExportServiceProvider);
+      final result = await service.exportToPdf(reportData);
+
+      if (!mounted) return;
+
+      if (!result.success || result.filePath == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل إنشاء ملف الطباعة: ${result.errorMessage ?? 'خطأ غير معروف'}')),
+        );
+        return;
+      }
+
+      final bytes = await File(result.filePath!).readAsBytes();
+      await Printing.layoutPdf(
+        onLayout: (_) async => bytes,
+        name: 'analytics_${_selectedYear}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل الطباعة: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _shareLastExport() async {
+    final filePath = _lastExportedFilePath;
+    final exportType = _lastExportedType;
+    if (filePath == null || exportType == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لا يوجد ملف مُصدّر للمشاركة بعد')),
+      );
+      return;
+    }
+
+    try {
+      if (!File(filePath).existsSync()) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('الملف غير موجود. صدّر التقرير مرة أخرى.')),
+        );
+        return;
+      }
+
+      if (exportType == ExportType.pdf) {
+        final service = ref.read(pdfExportServiceProvider);
+        await service.shareFile(filePath);
+      } else if (exportType == ExportType.excel) {
+        final service = ref.read(excelExportServiceProvider);
+        await service.shareFile(filePath);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشلت المشاركة: $e')),
+      );
+    }
+  }
+
+  Future<ReportExportData> _buildReportExportData() async {
+    final analyticsService = ref.read(analyticsServiceProvider);
+    final generalStats = await analyticsService.getGeneralStats();
+    final monthlyStats = await analyticsService.getMonthlyStats(_selectedYear);
+    final genderStats = await analyticsService.getGenderStats();
+    final maritalStats = await analyticsService.getMaritalStatusStats();
+    final ageStats = await analyticsService.getAgeGroupStats();
+    final comparison = await analyticsService.compareYears(
+      _selectedYear - 1,
+      _selectedYear,
+    );
+
+    final growth = comparison['growth'] as Map<String, dynamic>? ??
+        <String, dynamic>{'beneficiaries': 0.0, 'visits': 0.0, 'sponsorships': 0.0};
+
+    return ReportExportData(
+      title: 'لوحة التحكم التحليلية - $_selectedYear',
+      subtitle: 'تقرير شامل للإحصائيات العامة والتحليلية',
+      statistics: [
+        ExportStatistic(label: 'إجمالي المستفيدين', value: '${generalStats['totalBeneficiaries'] ?? 0}'),
+        ExportStatistic(label: 'إجمالي العائلات', value: '${generalStats['totalFamilies'] ?? 0}'),
+        ExportStatistic(label: 'إجمالي الزيارات', value: '${generalStats['totalVisits'] ?? 0}'),
+        ExportStatistic(label: 'الكفالات النشطة', value: '${generalStats['totalSponsorships'] ?? 0}'),
+      ],
+      tables: [
+        ExportTable(
+          title: 'الإحصائيات العامة',
+          headers: const ['المؤشر', 'القيمة'],
+          rows: [
+            ['إجمالي المستفيدين', '${generalStats['totalBeneficiaries'] ?? 0}'],
+            ['إجمالي العائلات', '${generalStats['totalFamilies'] ?? 0}'],
+            ['إجمالي الزيارات', '${generalStats['totalVisits'] ?? 0}'],
+            ['الكفالات النشطة', '${generalStats['totalSponsorships'] ?? 0}'],
+          ],
+        ),
+        ExportTable(
+          title: 'الإحصائيات الشهرية ($_selectedYear)',
+          headers: const ['الشهر', 'المستفيدون', 'الزيارات', 'الكفالات'],
+          rows: monthlyStats
+              .map(
+                (row) => [
+                  '${row['month'] ?? '-'}',
+                  '${row['beneficiaries'] ?? 0}',
+                  '${row['visits'] ?? 0}',
+                  '${row['sponsorships'] ?? 0}',
+                ],
+              )
+              .toList(),
+        ),
+        ExportTable(
+          title: 'توزيع حسب الجنس',
+          headers: const ['الفئة', 'العدد'],
+          rows: genderStats.entries.map((entry) => [entry.key, entry.value.toString()]).toList(),
+        ),
+        ExportTable(
+          title: 'توزيع حسب الحالة الاجتماعية',
+          headers: const ['الفئة', 'العدد'],
+          rows: maritalStats.entries.map((entry) => [entry.key, entry.value.toString()]).toList(),
+        ),
+        ExportTable(
+          title: 'توزيع حسب الفئة العمرية',
+          headers: const ['الفئة', 'العدد'],
+          rows: ageStats.entries.map((entry) => [entry.key, entry.value.toString()]).toList(),
+        ),
+        ExportTable(
+          title: 'مقارنة السنوات',
+          headers: const ['المؤشر', 'النمو %'],
+          rows: [
+            ['المستفيدون', '${(growth['beneficiaries'] as num?)?.toStringAsFixed(1) ?? '0.0'}'],
+            ['الزيارات', '${(growth['visits'] as num?)?.toStringAsFixed(1) ?? '0.0'}'],
+            ['الكفالات', '${(growth['sponsorships'] as num?)?.toStringAsFixed(1) ?? '0.0'}'],
+          ],
+        ),
+      ],
     );
   }
 }

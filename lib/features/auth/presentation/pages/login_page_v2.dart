@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:benaa_offline_app/core/design_system/app_animations.dart';
 import 'package:benaa_offline_app/core/error_handling/error_handler.dart';
+import 'package:benaa_offline_app/core/monitoring/app_monitoring.dart';
 import 'package:benaa_offline_app/core/security/session_manager.dart';
 import 'package:benaa_offline_app/core/storage/secure_storage.dart';
 import 'package:benaa_offline_app/features/auth/presentation/providers/auth_providers.dart';
@@ -24,14 +27,56 @@ class LoginPageV2 extends ConsumerStatefulWidget {
   ConsumerState<LoginPageV2> createState() => _LoginPageV2State();
 }
 
-class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProviderStateMixin {
+class _LoginPageV2State extends ConsumerState<LoginPageV2> with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = true;
+  bool _isNavigatingAfterAuth = false;
+  bool _pendingPostLoginKpi = false;
+  bool _showRouteTransition = false;
   late AnimationController _animationController;
+  late AnimationController _ambientController;
   late Animation<double> _fadeAnimation;
+  late Animation<Offset> _formSlideAnimation;
+  ProviderSubscription<AuthState>? _authSubscription;
+
+  void _logAuthEvent(String event, {Map<String, dynamic>? parameters}) {
+    if (!mounted) return;
+    ref.read(appMonitoringProvider).logEvent(event, parameters: parameters);
+  }
+
+  void _attachAuthListener() {
+    _authSubscription?.close();
+    _authSubscription = ref.listenManual<AuthState>(authNotifierProvider, (previous, next) {
+      if (!mounted) return;
+
+      next.maybeWhen(
+        authenticated: (session, isOffline, tokenRefreshed) {
+          _navigateAfterAuth();
+        },
+        error: (message, errorCode, canRetry) {
+          GlobalErrorHandler.handleError(
+            context,
+            AppError(
+              type: ErrorType.authentication,
+              message: message,
+            ),
+          );
+        },
+        sessionExpired: (lastUser, message) {
+          if (lastUser != null) {
+            EnhancedSnackbar.showWarning(
+              context,
+              message: message,
+            );
+          }
+        },
+        orElse: () {},
+      );
+    });
+  }
 
   @override
   void initState() {
@@ -40,16 +85,32 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
+    _ambientController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 9),
+    )..repeat(reverse: true);
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+    _formSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
     _animationController.forward();
+    _attachAuthListener();
 
     // التحقق من حالة المصادقة وتحميل البيانات المحفوظة
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkInitialAuthState();
-      _loadSavedCredentials();
+      if (!mounted) return;
+      ref.read(appMonitoringProvider).logScreenView('Login');
+      unawaited(_checkInitialAuthState());
+      unawaited(_loadSavedCredentials());
     });
   }
 
@@ -70,9 +131,6 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
           if (credentials.email != null) {
             _emailController.text = credentials.email!;
           }
-          if (credentials.password != null) {
-            _passwordController.text = credentials.password!;
-          }
         });
       }
     } catch (e) {
@@ -83,7 +141,9 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
   /// 🚀 الانتقال بعد المصادقة - التحقق من database أولاً
   Future<void> _navigateAfterAuth() async {
-    if (!mounted) return;
+    if (!mounted || _isNavigatingAfterAuth) return;
+    _isNavigatingAfterAuth = true;
+
     final dbNotifier = ref.read(databaseDownloadProvider.notifier);
     await dbNotifier.checkDatabase();
     if (!mounted) return;
@@ -91,10 +151,30 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
     final dbState = ref.read(databaseDownloadProvider);
     if (!mounted || !context.mounted) return;
 
+    setState(() {
+      _showRouteTransition = true;
+    });
+    await Future.delayed(const Duration(milliseconds: 240));
+    if (!mounted || !context.mounted) return;
+
     if (dbState.canProceed) {
+      if (_pendingPostLoginKpi) {
+        _logAuthEvent(
+          'auth_post_login_destination',
+          parameters: {'destination': 'dashboard'},
+        );
+        _pendingPostLoginKpi = false;
+      }
       // قاعدة البيانات موجودة أو تم تخطيها
       context.go('/dashboard');
     } else {
+      if (_pendingPostLoginKpi) {
+        _logAuthEvent(
+          'auth_post_login_destination',
+          parameters: {'destination': 'database_download'},
+        );
+        _pendingPostLoginKpi = false;
+      }
       // يجب تنزيل قاعدة البيانات
       context.go('/database-download');
     }
@@ -102,7 +182,12 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
   @override
   void dispose() {
+    try {
+      ref.read(appMonitoringProvider).logScreenExit('Login');
+    } catch (_) {}
+    _authSubscription?.close();
     _animationController.dispose();
+    _ambientController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -118,6 +203,15 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final loginStopwatch = Stopwatch()..start();
+
+    _logAuthEvent(
+      'auth_login_attempt',
+      parameters: {
+        'remember_me': _rememberMe,
+        'has_prefilled_email': _emailController.text.trim().isNotEmpty,
+      },
+    );
 
     final success = await authNotifier.login(
       email: email,
@@ -130,7 +224,6 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
       if (_rememberMe) {
         await secureStorage.saveLoginCredentials(
           email: email,
-          password: password,
         );
       } else {
         await secureStorage.clearSavedCredentials();
@@ -138,7 +231,11 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
 
       // بدء الجلسة
       await SessionManager().initialize(
-        onSessionExpired: () => context.go('/login'),
+        onSessionExpired: () {
+          if (mounted && context.mounted) {
+            context.go('/login');
+          }
+        },
       );
       await SessionManager().startNewSession();
       if (!mounted) return;
@@ -150,28 +247,24 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
         message: 'مرحباً ${user?.name ?? 'بك'}!',
       );
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (!mounted) return;
-
-      // التحقق من قاعدة البيانات
-      if (mounted) {
-        final dbNotifier = ref.read(databaseDownloadProvider.notifier);
-        await dbNotifier.checkDatabase();
-        if (!mounted) return;
-
-        final dbState = ref.read(databaseDownloadProvider);
-        if (!mounted || !context.mounted) return;
-
-        // 🆕 استخدام canProceed بدلاً من isAvailable فقط
-        if (!dbState.canProceed) {
-          // قاعدة البيانات غير موجودة ولم يتم تخطيها - الذهاب لصفحة التنزيل
-          context.go('/database-download');
-        } else {
-          // قاعدة البيانات موجودة أو تم تخطيها - الانتقال للوحة التحكم
-          context.go('/dashboard');
-        }
-      }
+      _logAuthEvent(
+        'auth_login_success',
+        parameters: {
+          'duration_ms': loginStopwatch.elapsedMilliseconds,
+          'remember_me': _rememberMe,
+        },
+      );
+      _pendingPostLoginKpi = true;
+    } else {
+      _logAuthEvent(
+        'auth_login_failed',
+        parameters: {
+          'duration_ms': loginStopwatch.elapsedMilliseconds,
+        },
+      );
     }
+
+    loginStopwatch.stop();
   }
 
   @override
@@ -179,99 +272,113 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
     final authState = ref.watch(authNotifierProvider);
     final isLoading = ref.watch(isAuthLoadingProvider);
 
-    // الاستماع لتغييرات حالة المصادقة
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      next.maybeWhen(
-        authenticated: (session, isOffline, tokenRefreshed) {
-          // تم المصادقة - التحقق من حالة قاعدة البيانات أولاً
-          if (mounted) {
-            _navigateAfterAuth();
-          }
-        },
-        error: (message, errorCode, canRetry) {
-          // عرض رسالة الخطأ
-          if (mounted) {
-            GlobalErrorHandler.handleError(
-              context,
-              AppError(
-                type: ErrorType.authentication,
-                message: message,
-              ),
-            );
-          }
-        },
-        sessionExpired: (lastUser, message) {
-          // عرض رسالة انتهاء الجلسة
-          if (mounted && lastUser != null) {
-            EnhancedSnackbar.showWarning(
-              context,
-              message: message,
-            );
-          }
-        },
-        orElse: () {},
-      );
-    });
-
     return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.white.withValues(alpha: 0.90),
+        foregroundColor: AppColors.primary,
+        title: const Text('تسجيل الدخول'),
+      ),
       body: Stack(
         children: [
           GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [AppColors.primary.withOpacity(0.05), Colors.white],
-                ),
-              ),
-              child: SafeArea(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
+            child: AnimatedBuilder(
+              animation: _ambientController,
+              builder: (context, child) {
+                final t = _ambientController.value;
+                final primary = Theme.of(context).colorScheme.primary;
+                final primaryContainer = Theme.of(context).colorScheme.primaryContainer;
+                return Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        primary.withValues(alpha: 0.08),
+                        primaryContainer.withValues(alpha: 0.18),
+                        Colors.white,
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: -95 + t * 36,
+                        right: -70 + t * 28,
+                        child: _buildAmbientBlob(
+                          size: 220,
+                          color: primary.withValues(alpha: 0.10),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: -120 + (1 - t) * 44,
+                        left: -60 + t * 18,
+                        child: _buildAmbientBlob(
+                          size: 260,
+                          color: primaryContainer.withValues(alpha: 0.18),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _formSlideAnimation,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
                       child: Form(
                         key: _formKey,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Logo
                             _buildLogo(),
-                            const SizedBox(height: 32),
-
-                            // App Title
+                            const SizedBox(height: 24),
                             _buildTitle(),
-                            const SizedBox(height: 48),
-
-                            // Error Message
-                            _buildErrorMessage(authState),
-
-                            // Session Expired Message
-                            _buildSessionExpiredMessage(authState),
-
-                            // Offline Indicator
-                            _buildOfflineIndicator(authState),
-
-                            // Email Field
-                            _buildEmailField(isLoading),
+                            const SizedBox(height: 28),
+                            Container(
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.10),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.05),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildPrimaryStatusBanner(authState),
+                                  _buildEmailField(isLoading),
+                                  const SizedBox(height: 14),
+                                  _buildPasswordField(isLoading),
+                                  const SizedBox(height: 14),
+                                  _buildRememberMe(isLoading),
+                                  const SizedBox(height: 20),
+                                  _buildLoginButton(isLoading),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: 16),
-
-                            // Password Field
-                            _buildPasswordField(isLoading),
-                            const SizedBox(height: 16),
-
-                            // Remember Me
-                            _buildRememberMe(isLoading),
-                            const SizedBox(height: 24),
-
-                            // Login Button
-                            _buildLoginButton(isLoading),
-                            const SizedBox(height: 24),
-
-                            // Token Status (for debugging - remove in production)
                             if (authState is AuthTokenExpiring) _buildTokenExpiringWarning(authState),
                           ],
                         ),
@@ -282,9 +389,46 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
               ),
             ),
           ),
+          if (_showRouteTransition)
+            Container(
+              color: AppColors.primary.withValues(alpha: 0.16),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2.2),
+                      ),
+                      SizedBox(width: 10),
+                      Text('جاري تجهيز الوجهة...'),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           // Loading Overlay
           if (isLoading) const LoadingOverlay(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAmbientBlob({required double size, required Color color}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }
@@ -301,14 +445,14 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
+                color: AppColors.primary.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
           child: const Icon(
-            Icons.apartment_rounded,
+            Icons.account_balance,
             size: 50,
             color: Colors.white,
           ),
@@ -332,7 +476,7 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
           ),
           const SizedBox(height: 8),
           Text(
-            'نظام إدارة المستفيدين',
+            'نظام إدارة المستفيدين - دخول آمن',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.textSecondary,
@@ -347,73 +491,87 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
     final errorMessage = authState.errorMessage;
     if (errorMessage == null) return const SizedBox.shrink();
 
+    return _buildStatusCard(
+      icon: Icons.error_outline,
+      color: AppColors.error,
+      message: errorMessage,
+      trailing: IconButton(
+        icon: const Icon(Icons.close, size: 18),
+        onPressed: () {
+          ref.read(authNotifierProvider.notifier).clearError();
+        },
+        color: AppColors.error,
+      ),
+    );
+  }
+
+  Widget _buildStatusCard({
+    required IconData icon,
+    required Color color,
+    required String message,
+    Widget? trailing,
+    String? subtitle,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.1),
+        color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.error, size: 20),
+          Icon(icon, color: color, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              errorMessage,
-              style: const TextStyle(color: AppColors.error, fontSize: 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message,
+                  style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 18),
-            onPressed: () {
-              ref.read(authNotifierProvider.notifier).clearError();
-            },
-            color: AppColors.error,
-          ),
+          if (trailing != null) trailing,
         ],
       ),
     );
   }
 
+  Widget _buildPrimaryStatusBanner(AuthState authState) {
+    return authState.maybeWhen(
+      error: (message, _, __) => _buildErrorMessage(authState),
+      sessionExpired: (_, __) => _buildSessionExpiredMessage(authState),
+      orElse: () {
+        if (authState.isOffline) {
+          return _buildOfflineIndicator(authState);
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   Widget _buildSessionExpiredMessage(AuthState authState) {
     return authState.maybeWhen(
-      sessionExpired: (lastUser, message) => Container(
-        padding: const EdgeInsets.all(12),
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.warning.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.timer_off, color: AppColors.warning, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    message,
-                    style: const TextStyle(color: AppColors.warning, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            if (lastUser != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'آخر مستخدم: ${lastUser.name}',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ],
-        ),
+      sessionExpired: (lastUser, message) => _buildStatusCard(
+        icon: Icons.timer_off,
+        color: AppColors.warning,
+        message: message,
+        subtitle: lastUser != null ? 'آخر مستخدم: ${lastUser.name}' : null,
       ),
       orElse: () => const SizedBox.shrink(),
     );
@@ -422,26 +580,10 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
   Widget _buildOfflineIndicator(AuthState authState) {
     if (!authState.isOffline) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withOpacity(0.3)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.wifi_off, color: Colors.grey, size: 20),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'لا يوجد اتصال بالإنترنت',
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ),
-        ],
-      ),
+    return _buildStatusCard(
+      icon: Icons.wifi_off,
+      color: Colors.grey,
+      message: 'لا يوجد اتصال بالإنترنت',
     );
   }
 
@@ -511,25 +653,34 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
   }
 
   Widget _buildRememberMe(bool isLoading) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Checkbox(
-          value: _rememberMe,
-          onChanged: isLoading ? null : (v) => setState(() => _rememberMe = v ?? true),
-          activeColor: AppColors.primary,
+        Row(
+          children: [
+            Checkbox(
+              value: _rememberMe,
+              onChanged: isLoading ? null : (v) => setState(() => _rememberMe = v ?? true),
+              activeColor: AppColors.primary,
+            ),
+            GestureDetector(
+              onTap: isLoading ? null : () => setState(() => _rememberMe = !_rememberMe),
+              child: const Text('تذكرني'),
+            ),
+            const Spacer(),
+          ],
         ),
-        GestureDetector(
-          onTap: isLoading ? null : () => setState(() => _rememberMe = !_rememberMe),
-          child: const Text('تذكرني'),
-        ),
-        const Spacer(),
-        TextButton(
-          onPressed: isLoading ? null : () => context.go('/forgot-password'),
-          child: const Text(
-            'نسيت كلمة المرور؟',
-            style: TextStyle(color: AppColors.primary),
+        if (_rememberMe)
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 6),
+            child: Text(
+              'سيتم حفظ البريد الإلكتروني فقط على هذا الجهاز',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+            ),
           ),
-        ),
       ],
     );
   }
@@ -577,9 +728,9 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with SingleTickerProv
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
-        color: AppColors.info.withOpacity(0.1),
+        color: AppColors.info.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.info.withOpacity(0.3)),
+        border: Border.all(color: AppColors.info.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -610,7 +761,7 @@ class LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.3),
+      color: Colors.black.withValues(alpha: 0.3),
       child: const Center(
         child: Card(
           child: Padding(

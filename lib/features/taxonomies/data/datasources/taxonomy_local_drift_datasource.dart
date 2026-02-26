@@ -27,12 +27,16 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
 
   @override
   Future<void> deleteTaxonomy(String id) async {
-    await _taxonomiesDao.setActiveStatus(id, false);
+    final item = await _taxonomiesDao.getById(id) ?? await _taxonomiesDao.getByRemoteId(id);
+    if (item == null) {
+      return;
+    }
+    await _taxonomiesDao.setActiveStatus(item.id, false);
   }
 
   @override
   Future<bool> exists(String id) async {
-    final item = await _taxonomiesDao.getById(id);
+    final item = await _taxonomiesDao.getById(id) ?? await _taxonomiesDao.getByRemoteId(id);
     return item != null;
   }
 
@@ -117,18 +121,32 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
   Future<bool> isCodeUnique(TaxonomyGroup group, String code, {String? excludeId}) async {
     final item = await _taxonomiesDao.getByCode(group.value, code);
     if (item == null) return true;
-    if (excludeId != null && item.id == excludeId) return true;
+    if (excludeId != null) {
+      final excludedRemote = TaxonomyDTO.extractRemoteId(excludeId);
+      final itemRemote = TaxonomyDTO.extractRemoteId(item.id);
+      if (item.id == excludeId || itemRemote == excludedRemote) {
+        return true;
+      }
+    }
     return false;
   }
 
   @override
   Future<void> permanentlyDeleteTaxonomy(String id) async {
-    await _taxonomiesDao.deleteTaxonomy(id);
+    final item = await _taxonomiesDao.getById(id) ?? await _taxonomiesDao.getByRemoteId(id);
+    if (item == null) {
+      return;
+    }
+    await _taxonomiesDao.deleteTaxonomy(item.id);
   }
 
   @override
   Future<void> restoreTaxonomy(String id) async {
-    await _taxonomiesDao.setActiveStatus(id, true);
+    final item = await _taxonomiesDao.getById(id) ?? await _taxonomiesDao.getByRemoteId(id);
+    if (item == null) {
+      return;
+    }
+    await _taxonomiesDao.setActiveStatus(item.id, true);
   }
 
   @override

@@ -46,6 +46,32 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase> with _$SponsorshipsD
     return await (delete(sponsorships)..where((s) => s.fileNo.equals(fileNo))).go();
   }
 
+  Future<Sponsorship?> getSponsorshipByServerId(int serverId) async {
+    return await (select(sponsorships)..where((s) => s.serverId.equals(serverId))).getSingleOrNull();
+  }
+
+  Future<List<Sponsorship>> getSponsorshipsNeedingSync() async {
+    return await (select(sponsorships)
+          ..where((s) => s.syncState.equals('pending') | s.syncState.equals('modified'))
+          ..orderBy([(s) => OrderingTerm.desc(s.updatedAt)]))
+        .get();
+  }
+
+  Future<int> updateSponsorshipSyncState({
+    required int fileNo,
+    required String syncState,
+    int? serverId,
+  }) async {
+    return await (update(sponsorships)..where((s) => s.fileNo.equals(fileNo))).write(
+      SponsorshipsCompanion(
+        syncState: Value(syncState),
+        serverId: serverId != null ? Value(serverId) : const Value.absent(),
+        lastSyncedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // Queries
   // ---------------------------------------------------------------------------

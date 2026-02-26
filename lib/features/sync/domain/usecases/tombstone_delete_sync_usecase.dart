@@ -111,7 +111,7 @@ class TombstoneDeleteSyncUseCase {
     }
 
     if (normalized == 'dead-people') {
-      throw StateError('Delete endpoint not documented for dead-people yet');
+      return;
     }
 
     if (normalized == 'associations_sponsors' || normalized == 'sponsors') {

@@ -4,18 +4,18 @@ import 'package:intl/intl.dart';
 import '../../../../core/widgets/loading_state.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../../../core/providers/providers.dart';
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../../services/beneficiaries_export_service.dart';
 
 class BeneficiariesReportPage extends ConsumerStatefulWidget {
   const BeneficiariesReportPage({super.key});
 
   @override
-  ConsumerState<BeneficiariesReportPage> createState() =>
-      _BeneficiariesReportPageState();
+  ConsumerState<BeneficiariesReportPage> createState() => _BeneficiariesReportPageState();
 }
 
-class _BeneficiariesReportPageState
-    extends ConsumerState<BeneficiariesReportPage> {
+class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPage> {
   String _searchQuery = '';
   String? _selectedGovernorate;
   String? _selectedCategory;
@@ -25,10 +25,31 @@ class _BeneficiariesReportPageState
   @override
   Widget build(BuildContext context) {
     final database = ref.watch(databaseProvider);
-
-    // 🔍 DEBUG: Print database instance
-    debugPrint('🔍 [DEBUG] Database Provider: $database');
-    debugPrint('🔍 [DEBUG] BeneficiariesDao: ${database.beneficiariesDao}');
+    final governoratesAsync = ref.watch(bridgeGovernoratesProvider);
+    final categoriesAsync = ref.watch(
+      bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.category),
+    );
+    final governorateCodeToLabel = governoratesAsync.maybeWhen(
+      data: (items) => {
+        for (final item in items)
+          if (int.tryParse(item.code.trim()) != null) int.parse(item.code.trim()): item.label,
+      },
+      orElse: () => const <int, String>{},
+    );
+    final governorateOptions = governoratesAsync.maybeWhen(
+      data: (items) => items.map((item) => item.label).toSet().toList()..sort(),
+      orElse: () => const <String>[],
+    );
+    final categoryCodeToLabel = categoriesAsync.maybeWhen(
+      data: (items) => {
+        for (final item in items)
+          if (item.code.trim().isNotEmpty && item.label.trim().isNotEmpty) item.code.trim(): item.label.trim(),
+      },
+      orElse: () => const <String, String>{},
+    );
+    final categoryOptions = categoryCodeToLabel.entries
+        .map((entry) => DropdownMenuItem<String>(value: entry.key, child: Text(entry.value)))
+        .toList(growable: false);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -58,95 +79,13 @@ class _BeneficiariesReportPageState
             },
             tooltip: 'إعادة تعيين',
           ),
-          // 🔍 DEBUG BUTTON
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () async {
-              final db = ref.read(databaseProvider);
-              final beneficiaries =
-                  await db.beneficiariesDao.getAllBeneficiaries();
-              if (!mounted) return;
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('🔍 Debug Info'),
-                  content: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Database: ${db.runtimeType}'),
-                        const SizedBox(height: 8),
-                        Text('Beneficiaries Count: ${beneficiaries.length}'),
-                        const SizedBox(height: 8),
-                        Text('DAO: ${db.beneficiariesDao.runtimeType}'),
-                        if (beneficiaries.isNotEmpty) ...[
-                          const Divider(),
-                          const Text(
-                            'First Beneficiary:',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          Text('Name: ${beneficiaries.first.fullName}'),
-                          Text('ID: ${beneficiaries.first.idNumber}'),
-                          Text('Sync: ${beneficiaries.first.syncState}'),
-                        ],
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('إغلاق'),
-                    ),
-                  ],
-                ),
-              );
-            },
-            tooltip: 'Debug Info',
-          ),
         ],
       ),
       body: FutureBuilder<List<Beneficiary>>(
-        future: () async {
-          debugPrint('🔍 [DEBUG] Starting to fetch beneficiaries...');
-          try {
-            final result =
-                await database.beneficiariesDao.getAllBeneficiaries();
-            debugPrint('🔍 [DEBUG] ✅ Fetch successful!');
-            debugPrint('🔍 [DEBUG] Number of beneficiaries: ${result.length}');
-            if (result.isNotEmpty) {
-              debugPrint(
-                '🔍 [DEBUG] First beneficiary: ${result.first.fullName} (ID: ${result.first.idNumber})',
-              );
-              debugPrint(
-                '🔍 [DEBUG] Sync states: ${result.map((b) => b.syncState).toSet()}',
-              );
-            }
-            return result;
-          } catch (e, stackTrace) {
-            debugPrint('🔍 [DEBUG] ❌ Error fetching beneficiaries: $e');
-            debugPrint('🔍 [DEBUG] StackTrace: $stackTrace');
-            rethrow;
-          }
-        }(),
+        future: database.beneficiariesDao.getAllBeneficiaries(),
         builder: (context, snapshot) {
-          // 🔍 DEBUG: Print snapshot state
-          debugPrint(
-            '🔍 [DEBUG] Snapshot ConnectionState: ${snapshot.connectionState}',
-          );
-          debugPrint('🔍 [DEBUG] Snapshot hasData: ${snapshot.hasData}');
-          debugPrint('🔍 [DEBUG] Snapshot hasError: ${snapshot.hasError}');
-          if (snapshot.hasData) {
-            debugPrint(
-                '🔍 [DEBUG] Snapshot data length: ${snapshot.data?.length}');
-          }
-          if (snapshot.hasError) {
-            debugPrint('🔍 [DEBUG] Snapshot error: ${snapshot.error}');
-          }
-
           // Loading State
           if (snapshot.connectionState == ConnectionState.waiting) {
-            debugPrint('🔍 [DEBUG] Showing loading state...');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -164,7 +103,6 @@ class _BeneficiariesReportPageState
 
           // Error State
           if (snapshot.hasError) {
-            debugPrint('🔍 [DEBUG] Showing error state: ${snapshot.error}');
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -209,58 +147,43 @@ class _BeneficiariesReportPageState
           }
 
           final allBeneficiaries = snapshot.data ?? [];
-
-          // 🔍 DEBUG: Print beneficiaries data
-          debugPrint(
-            '🔍 [DEBUG] All beneficiaries count: ${allBeneficiaries.length}',
-          );
-          debugPrint('🔍 [DEBUG] Is empty: ${allBeneficiaries.isEmpty}');
+          final normalizedQuery = _searchQuery.trim().toLowerCase();
 
           // Apply Filters
           final filteredBeneficiaries = allBeneficiaries.where((b) {
             // Search filter
-            if (_searchQuery.isNotEmpty) {
-              final query = _searchQuery.toLowerCase();
-              if (!b.fullName.toLowerCase().contains(query) &&
-                  !b.idNumber.toString().contains(query)) {
+            if (normalizedQuery.isNotEmpty) {
+              if (!b.fullName.toLowerCase().contains(normalizedQuery) &&
+                  !b.idNumber.toString().contains(normalizedQuery)) {
                 return false;
               }
             }
 
             // Governorate filter
-            if (_selectedGovernorate != null &&
-                b.province.toString() != _selectedGovernorate) {
-              return false;
+            if (_selectedGovernorate != null) {
+              final provinceCode = b.province;
+              final provinceLabel =
+                  provinceCode == null ? 'غير محدد' : governorateCodeToLabel[provinceCode] ?? 'منطقة $provinceCode';
+              if (provinceLabel != _selectedGovernorate) {
+                return false;
+              }
             }
 
             // Category filter
-            if (_selectedCategory != null &&
-                b.sectionId.toString() != _selectedCategory) {
+            if (_selectedCategory != null && b.sectionId.toString() != _selectedCategory) {
               return false;
             }
 
             // Sync state filter
-            if (_selectedSyncState != null &&
-                b.syncState != _selectedSyncState) {
+            if (_selectedSyncState != null && b.syncState != _selectedSyncState) {
               return false;
             }
 
             return true;
           }).toList();
 
-          // 🔍 DEBUG: Print filtered results
-          debugPrint(
-            '🔍 [DEBUG] Filtered beneficiaries count: ${filteredBeneficiaries.length}',
-          );
-          debugPrint(
-            '🔍 [DEBUG] Active filters: searchQuery=$_searchQuery, syncState=$_selectedSyncState',
-          );
-
           // Empty State
           if (allBeneficiaries.isEmpty) {
-            debugPrint(
-              '🔍 [DEBUG] ⚠️ Showing EMPTY state - no beneficiaries in database',
-            );
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -306,9 +229,6 @@ class _BeneficiariesReportPageState
           // Statistics
           final stats = _calculateStatistics(allBeneficiaries);
 
-          // 🔍 DEBUG: Print statistics
-          print('🔍 [DEBUG] Statistics: $stats');
-
           return Column(
             children: [
               // Filters Panel
@@ -347,6 +267,34 @@ class _BeneficiariesReportPageState
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               decoration: InputDecoration(
+                                labelText: 'المنطقة',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[50],
+                              ),
+                              initialValue: _selectedGovernorate,
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  child: Text('الكل'),
+                                ),
+                                ...governorateOptions.map(
+                                  (region) => DropdownMenuItem<String>(
+                                    value: region,
+                                    child: Text(region),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() => _selectedGovernorate = value);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
                                 labelText: 'حالة المزامنة',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -379,7 +327,39 @@ class _BeneficiariesReportPageState
                           ),
                         ],
                       ),
-                      if (_searchQuery.isNotEmpty || _selectedSyncState != null)
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        decoration: InputDecoration(
+                          labelText: 'الفئة',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        initialValue: _selectedCategory,
+                        items: [
+                          const DropdownMenuItem<String>(
+                            child: Text('الكل'),
+                          ),
+                          ...categoryOptions,
+                        ],
+                        onChanged: (value) {
+                          setState(() => _selectedCategory = value);
+                        },
+                      ),
+                      if (_selectedCategory != null && !categoryCodeToLabel.containsKey(_selectedCategory))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            'الفئة المختارة غير متاحة في taxonomy الحالي',
+                            style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+                          ),
+                        ),
+                      if (_searchQuery.isNotEmpty ||
+                          _selectedSyncState != null ||
+                          _selectedGovernorate != null ||
+                          _selectedCategory != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
@@ -528,8 +508,7 @@ class _BeneficiariesReportPageState
                               child: ListView.separated(
                                 padding: const EdgeInsets.all(8),
                                 itemCount: filteredBeneficiaries.length,
-                                separatorBuilder: (context, index) =>
-                                    const Divider(height: 1),
+                                separatorBuilder: (context, index) => const Divider(height: 1),
                                 itemBuilder: (context, index) {
                                   final b = filteredBeneficiaries[index];
                                   return _BeneficiaryListTile(beneficiary: b);

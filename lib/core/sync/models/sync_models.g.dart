@@ -95,8 +95,8 @@ Map<String, dynamic> _$ServerVersionToJson(ServerVersion instance) =>
     };
 
 SyncError _$SyncErrorFromJson(Map<String, dynamic> json) => SyncError(
-      clientId: json['client_id'] as String?,
       error: json['error'] as String,
+      clientId: json['client_id'] as String?,
       message: json['message'] as String?,
     );
 

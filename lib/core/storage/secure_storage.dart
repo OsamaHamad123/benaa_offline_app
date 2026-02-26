@@ -584,20 +584,28 @@ class SecureStorage {
   // ===========================
 
   /// 💾 حفظ بيانات تسجيل الدخول (Remember Me)
-  /// يتم تشفير كلمة المرور باستخدام flutter_secure_storage
+  /// افتراضيًا: حفظ البريد الإلكتروني فقط لأمان أعلى.
+  /// يمكن تفعيل حفظ كلمة المرور صراحة عبر [savePassword].
   Future<void> saveLoginCredentials({
     required String email,
-    required String password,
+    String? password,
+    bool savePassword = false,
   }) async {
     try {
-      // تشفير بسيط للكلمة المرور (flutter_secure_storage يشفر تلقائياً)
-      final encodedPassword = base64Encode(utf8.encode(password));
-
-      await Future.wait([
+      final writes = <Future<void>>[
         _storage.write(key: _rememberMeKey, value: 'true'),
         _storage.write(key: _savedEmailKey, value: email),
-        _storage.write(key: _savedPasswordKey, value: encodedPassword),
-      ]);
+      ];
+
+      if (savePassword && password != null && password.isNotEmpty) {
+        final encodedPassword = base64Encode(utf8.encode(password));
+        writes.add(_storage.write(key: _savedPasswordKey, value: encodedPassword));
+      } else {
+        // تنظيف أي كلمة مرور قديمة كانت محفوظة من إصدارات سابقة
+        writes.add(_storage.delete(key: _savedPasswordKey));
+      }
+
+      await Future.wait(writes);
 
       UnifiedLogger.success('✅ Login credentials saved securely');
     } catch (e) {

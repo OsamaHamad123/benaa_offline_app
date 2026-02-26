@@ -115,7 +115,10 @@ class RecentActivitiesList extends ConsumerWidget {
   final VoidCallback? onLoadMore;
 
   const RecentActivitiesList({
-    required this.activities, required this.isLoading, required this.hasMore, super.key,
+    required this.activities,
+    required this.isLoading,
+    required this.hasMore,
+    super.key,
     this.onLoadMore,
   });
 
@@ -152,15 +155,11 @@ class RecentActivitiesList extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      key: const PageStorageKey('activities_list'),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: activities.length + (hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == activities.length) {
-          // Load more button
-          return Padding(
+    return Column(
+      children: [
+        for (final activity in activities) ActivityItem(activity: activity),
+        if (hasMore)
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 16.h),
             child: Center(
               child: isLoading
@@ -170,11 +169,8 @@ class RecentActivitiesList extends ConsumerWidget {
                       child: const Text('تحميل المزيد'),
                     ),
             ),
-          );
-        }
-
-        return ActivityItem(activity: activities[index]);
-      },
+          ),
+      ],
     );
   }
 }

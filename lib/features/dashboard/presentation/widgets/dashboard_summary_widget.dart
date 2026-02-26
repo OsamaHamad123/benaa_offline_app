@@ -6,11 +6,19 @@ import '../providers/dashboard_providers.dart';
 /// Dashboard Summary Widget - عرض ملخص سريع لأهم الإحصائيات
 /// Enhanced version with real-time data from database
 class DashboardSummaryWidget extends ConsumerWidget {
-  const DashboardSummaryWidget({super.key});
+  final String contextLabel;
+  final VoidCallback? onSyncNow;
+
+  const DashboardSummaryWidget({
+    required this.contextLabel,
+    this.onSyncNow,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(dashboardSummaryProvider);
+    final isCompact = MediaQuery.sizeOf(context).width < 380;
 
     return summaryAsync.when(
       data: (stats) => Card(
@@ -28,17 +36,30 @@ class DashboardSummaryWidget extends ConsumerWidget {
                   Icon(
                     Icons.dashboard,
                     color: Theme.of(context).primaryColor,
-                    size: 24.sp,
+                    size: isCompact ? 21.sp : 24.sp,
                   ),
                   SizedBox(width: 8.w),
                   Text(
                     'لوحة المعلومات',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          fontSize: isCompact ? 17.sp : null,
                         ),
                   ),
                   const Spacer(),
-                  Icon(Icons.assessment, size: 20.sp, color: Colors.grey),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      contextLabel,
+                      style: TextStyle(fontSize: isCompact ? 9.sp : 10.sp, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Icon(Icons.assessment, size: isCompact ? 18.sp : 20.sp, color: Colors.grey),
                 ],
               ),
               SizedBox(height: 16.h),
@@ -47,27 +68,33 @@ class DashboardSummaryWidget extends ConsumerWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
-                mainAxisSpacing: 12.h,
-                crossAxisSpacing: 12.w,
-                childAspectRatio: 2.5,
+                mainAxisSpacing: isCompact ? 10.h : 12.h,
+                crossAxisSpacing: isCompact ? 10.w : 12.w,
+                childAspectRatio: isCompact ? 2.35 : 2.5,
                 children: [
                   _QuickStatCard(
                     icon: Icons.people,
                     label: 'إجمالي المستفيدين',
                     value: '${stats.total}',
                     color: Colors.blue,
+                    deltaLabel: stats.total > 0 ? '+${(stats.syncPercentage / 10).toStringAsFixed(1)}%' : '0%',
+                    isCompact: isCompact,
                   ),
                   _QuickStatCard(
                     icon: Icons.child_care,
                     label: 'أيتام',
                     value: '${stats.orphans}',
                     color: Colors.orange,
+                    deltaLabel: stats.total > 0 ? '${((stats.orphans / stats.total) * 100).toStringAsFixed(1)}%' : '0%',
+                    isCompact: isCompact,
                   ),
                   _QuickStatCard(
                     icon: Icons.attach_money,
                     label: 'فقراء',
                     value: '${stats.poor}',
                     color: Colors.green,
+                    deltaLabel: stats.total > 0 ? '${((stats.poor / stats.total) * 100).toStringAsFixed(1)}%' : '0%',
+                    isCompact: isCompact,
                   ),
                   _QuickStatCard(
                     icon: Icons.pending,
@@ -75,6 +102,8 @@ class DashboardSummaryWidget extends ConsumerWidget {
                     value: '${stats.pending}',
                     color: stats.pending > 0 ? Colors.red : Colors.grey,
                     urgent: stats.pending > 0,
+                    deltaLabel: stats.pending == 0 ? 'ممتاز' : '${stats.pending} عنصر',
+                    isCompact: isCompact,
                   ),
                 ],
               ),
@@ -84,6 +113,8 @@ class DashboardSummaryWidget extends ConsumerWidget {
                 synced: stats.synced,
                 total: stats.total,
                 percentage: stats.syncPercentage,
+                onSyncNow: onSyncNow,
+                isCompact: isCompact,
               ),
             ],
           ),
@@ -96,7 +127,40 @@ class DashboardSummaryWidget extends ConsumerWidget {
         ),
         child: SizedBox(
           height: 200.h,
-          child: const Center(child: CircularProgressIndicator()),
+          child: Padding(
+            padding: EdgeInsets.all(16.r),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(width: 24.w, height: 24.w, color: Colors.grey.shade300),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Container(height: 14.h, color: Colors.grey.shade300),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                Expanded(
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12.h,
+                    crossAxisSpacing: 12.w,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: List.generate(
+                      4,
+                      (_) => Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
       error: (error, stack) => Card(
@@ -120,6 +184,8 @@ class _QuickStatCard extends StatelessWidget {
   final String value;
   final Color color;
   final bool urgent;
+  final String? deltaLabel;
+  final bool isCompact;
 
   const _QuickStatCard({
     required this.icon,
@@ -127,6 +193,8 @@ class _QuickStatCard extends StatelessWidget {
     required this.value,
     required this.color,
     this.urgent = false,
+    this.deltaLabel,
+    this.isCompact = false,
   });
 
   @override
@@ -135,25 +203,23 @@ class _QuickStatCard extends StatelessWidget {
     final isTablet = 1.sw > 600;
 
     return Container(
-      padding: EdgeInsets.all(isTablet ? 12.r : 10.r),
+      padding: EdgeInsets.all(isTablet ? 12.r : (isCompact ? 8.r : 10.r)),
       decoration: BoxDecoration(
         color: urgent ? color.withOpacity(0.1) : color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12.r),
-        border: urgent
-            ? Border.all(color: color, width: 2)
-            : Border.all(color: color.withOpacity(0.2)),
+        border: urgent ? Border.all(color: color, width: 2) : Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         children: [
           Container(
-            padding: EdgeInsets.all(8.r),
+            padding: EdgeInsets.all(isCompact ? 7.r : 8.r),
             decoration: BoxDecoration(
               color: color.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8.r),
             ),
-            child: Icon(icon, color: color, size: isTablet ? 22.sp : 20.sp),
+            child: Icon(icon, color: color, size: isTablet ? 22.sp : (isCompact ? 18.sp : 20.sp)),
           ),
-          SizedBox(width: 10.w),
+          SizedBox(width: isCompact ? 8.w : 10.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +232,7 @@ class _QuickStatCard extends StatelessWidget {
                     child: Text(
                       label,
                       style: TextStyle(
-                        fontSize: isTablet ? 10.sp : 9.sp,
+                        fontSize: isTablet ? 10.sp : (isCompact ? 8.sp : 9.sp),
                         color: Colors.grey[700],
                       ),
                       maxLines: 1,
@@ -183,7 +249,7 @@ class _QuickStatCard extends StatelessWidget {
                         child: Text(
                           value,
                           style: TextStyle(
-                            fontSize: isTablet ? 20.sp : 18.sp,
+                            fontSize: isTablet ? 20.sp : (isCompact ? 16.sp : 18.sp),
                             fontWeight: FontWeight.bold,
                             color: color,
                           ),
@@ -191,6 +257,24 @@ class _QuickStatCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (deltaLabel != null) ...[
+                      SizedBox(width: 6.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          deltaLabel!,
+                          style: TextStyle(
+                            fontSize: isCompact ? 7.sp : 8.sp,
+                            fontWeight: FontWeight.w700,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -207,11 +291,15 @@ class _SyncProgressBar extends StatelessWidget {
   final int synced;
   final int total;
   final double percentage;
+  final VoidCallback? onSyncNow;
+  final bool isCompact;
 
   const _SyncProgressBar({
     required this.synced,
     required this.total,
     required this.percentage,
+    this.onSyncNow,
+    this.isCompact = false,
   });
 
   @override
@@ -237,7 +325,7 @@ class _SyncProgressBar extends StatelessWidget {
                   Text(
                     'حالة المزامنة',
                     style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: isCompact ? 11.sp : 12.sp,
                       fontWeight: FontWeight.bold,
                       color: Colors.teal[700],
                     ),
@@ -247,7 +335,7 @@ class _SyncProgressBar extends StatelessWidget {
               Text(
                 '$synced / $total',
                 style: TextStyle(
-                  fontSize: 12.sp,
+                  fontSize: isCompact ? 11.sp : 12.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.teal,
                 ),
@@ -273,8 +361,31 @@ class _SyncProgressBar extends StatelessWidget {
           SizedBox(height: 4.h),
           Text(
             '${percentage.toStringAsFixed(1)}% مكتمل',
-            style: TextStyle(fontSize: 10.sp, color: Colors.grey[600]),
+            style: TextStyle(fontSize: isCompact ? 9.sp : 10.sp, color: Colors.grey[600]),
           ),
+          if (onSyncNow != null && percentage < 100) ...[
+            SizedBox(height: 8.h),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: onSyncNow,
+                style: TextButton.styleFrom(
+                  minimumSize: Size(44.w, 34.h),
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                  foregroundColor: Colors.teal,
+                  backgroundColor: Colors.teal.withOpacity(0.10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                ),
+                icon: Icon(Icons.sync_rounded, size: isCompact ? 16.sp : 18.sp),
+                label: Text(
+                  'مزامنة الآن',
+                  style: TextStyle(fontSize: isCompact ? 11.sp : 12.sp, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

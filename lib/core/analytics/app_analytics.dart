@@ -7,6 +7,7 @@ class AppAnalytics {
   static final Map<String, Duration> _screenDurations = {};
   static final Map<String, DateTime> _screenStartTimes = {};
   static final List<PerformanceMetric> _performanceMetrics = [];
+  static final List<AnalyticsEvent> _events = [];
 
   /// تسجيل زيارة شاشة
   static void logScreenView(String screenName) {
@@ -25,8 +26,7 @@ class AppAnalytics {
     final startTime = _screenStartTimes[screenName];
     if (startTime != null) {
       final duration = DateTime.now().difference(startTime);
-      _screenDurations[screenName] =
-          (_screenDurations[screenName] ?? Duration.zero) + duration;
+      _screenDurations[screenName] = (_screenDurations[screenName] ?? Duration.zero) + duration;
       _screenStartTimes.remove(screenName);
 
       if (kDebugMode) {
@@ -39,6 +39,18 @@ class AppAnalytics {
 
   /// تسجيل إجراء مستخدم
   static void logEvent(String eventName, {Map<String, dynamic>? parameters}) {
+    _events.add(
+      AnalyticsEvent(
+        name: eventName,
+        timestamp: DateTime.now(),
+        parameters: parameters,
+      ),
+    );
+
+    if (_events.length > 500) {
+      _events.removeAt(0);
+    }
+
     if (kDebugMode) {
       debugPrint(
         '📊 Event: $eventName ${parameters != null ? parameters.toString() : ''}',
@@ -105,8 +117,7 @@ class AppAnalytics {
           totalDuration: _screenDurations[screen] ?? Duration.zero,
           averageDuration: visits > 0
               ? Duration(
-                  milliseconds:
-                      (_screenDurations[screen]?.inMilliseconds ?? 0) ~/ visits,
+                  milliseconds: (_screenDurations[screen]?.inMilliseconds ?? 0) ~/ visits,
                 )
               : Duration.zero,
         ),
@@ -132,6 +143,62 @@ class AppAnalytics {
     return metrics;
   }
 
+  /// الحصول على أحداث مسجلة (اختياريًا حسب الاسم)
+  static List<AnalyticsEvent> getEvents({String? eventName}) {
+    if (eventName == null) return List.unmodifiable(_events);
+    return List.unmodifiable(_events.where((event) => event.name == eventName));
+  }
+
+  /// KPI خاص بتدفق تسجيل الدخول
+  ///
+  /// [window]:
+  /// - null => كل البيانات المتاحة
+  /// - Duration(...) => آخر فترة زمنية فقط (مثال: 24 ساعة أو 7 أيام)
+  static LoginKpiStats getLoginKpiStats({Duration? window}) {
+    final cutoff = window == null ? null : DateTime.now().subtract(window);
+
+    List<AnalyticsEvent> filterByWindow(List<AnalyticsEvent> source) {
+      if (cutoff == null) return source;
+      return source.where((event) => event.timestamp.isAfter(cutoff)).toList();
+    }
+
+    final attempts = filterByWindow(getEvents(eventName: 'auth_login_attempt'));
+    final success = filterByWindow(getEvents(eventName: 'auth_login_success'));
+    final failed = filterByWindow(getEvents(eventName: 'auth_login_failed'));
+    final destinations = filterByWindow(getEvents(eventName: 'auth_post_login_destination'));
+
+    final dashboardConversions = destinations.where((event) => event.parameters?['destination'] == 'dashboard').length;
+    final databaseDownloadBounces =
+        destinations.where((event) => event.parameters?['destination'] == 'database_download').length;
+
+    final successfulDurations = success
+        .map((event) => event.parameters?['duration_ms'])
+        .whereType<num>()
+        .map((value) => value.toInt())
+        .toList();
+
+    final avgSuccessDurationMs =
+        successfulDurations.isEmpty ? 0 : successfulDurations.reduce((a, b) => a + b) ~/ successfulDurations.length;
+
+    final successRate = attempts.isEmpty ? 0.0 : (success.length / attempts.length) * 100.0;
+    final failureRate = attempts.isEmpty ? 0.0 : (failed.length / attempts.length) * 100.0;
+    final dashboardConversionRate = success.isEmpty ? 0.0 : (dashboardConversions / success.length) * 100.0;
+    final databaseDownloadBounceRate = success.isEmpty ? 0.0 : (databaseDownloadBounces / success.length) * 100.0;
+
+    return LoginKpiStats(
+      attempts: attempts.length,
+      success: success.length,
+      failed: failed.length,
+      avgSuccessDurationMs: avgSuccessDurationMs,
+      successRate: successRate,
+      failureRate: failureRate,
+      dashboardConversions: dashboardConversions,
+      dashboardConversionRate: dashboardConversionRate,
+      databaseDownloadBounces: databaseDownloadBounces,
+      databaseDownloadBounceRate: databaseDownloadBounceRate,
+    );
+  }
+
   /// الحصول على متوسط أداء عملية
   static Duration? getAveragePerformance(String operation) {
     final metrics = getPerformanceMetrics(operation: operation);
@@ -151,6 +218,7 @@ class AppAnalytics {
     _screenDurations.clear();
     _screenStartTimes.clear();
     _performanceMetrics.clear();
+    _events.clear();
   }
 
   /// تصدير التقرير
@@ -179,8 +247,32 @@ class AppAnalytics {
       buffer.writeln('$operation: avg ${avg?.inMilliseconds}ms');
     }
 
+    final loginKpi = getLoginKpiStats();
+    buffer.writeln('\n--- Login KPIs ---');
+    buffer.writeln('Attempts: ${loginKpi.attempts}');
+    buffer.writeln('Success: ${loginKpi.success} (${loginKpi.successRate.toStringAsFixed(1)}%)');
+    buffer.writeln('Failed: ${loginKpi.failed} (${loginKpi.failureRate.toStringAsFixed(1)}%)');
+    buffer.writeln(
+        'Dashboard Conversion: ${loginKpi.dashboardConversions} (${loginKpi.dashboardConversionRate.toStringAsFixed(1)}%)');
+    buffer.writeln(
+        'Database Download Bounce: ${loginKpi.databaseDownloadBounces} (${loginKpi.databaseDownloadBounceRate.toStringAsFixed(1)}%)');
+    buffer.writeln('Avg Success Duration: ${loginKpi.avgSuccessDurationMs}ms');
+
     return buffer.toString();
   }
+}
+
+/// حدث Analytics
+class AnalyticsEvent {
+  final String name;
+  final DateTime timestamp;
+  final Map<String, dynamic>? parameters;
+
+  const AnalyticsEvent({
+    required this.name,
+    required this.timestamp,
+    this.parameters,
+  });
 }
 
 /// إحصائيات شاشة
@@ -208,6 +300,33 @@ class PerformanceMetric {
     required this.duration,
     required this.timestamp,
     this.metadata,
+  });
+}
+
+/// مؤشرات KPI لتسجيل الدخول
+class LoginKpiStats {
+  final int attempts;
+  final int success;
+  final int failed;
+  final int avgSuccessDurationMs;
+  final double successRate;
+  final double failureRate;
+  final int dashboardConversions;
+  final double dashboardConversionRate;
+  final int databaseDownloadBounces;
+  final double databaseDownloadBounceRate;
+
+  const LoginKpiStats({
+    required this.attempts,
+    required this.success,
+    required this.failed,
+    required this.avgSuccessDurationMs,
+    required this.successRate,
+    required this.failureRate,
+    required this.dashboardConversions,
+    required this.dashboardConversionRate,
+    required this.databaseDownloadBounces,
+    required this.databaseDownloadBounceRate,
   });
 }
 

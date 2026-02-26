@@ -207,6 +207,15 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     }
   }
 
+  String? _selectedGuaranteeType;
+  String? get selectedGuaranteeType => _selectedGuaranteeType;
+  set selectedGuaranteeType(String? value) {
+    if (_selectedGuaranteeType != value) {
+      _selectedGuaranteeType = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
   // ⚠️ DEPRECATED: hasDisability replaced by specialNeedsCountController
   // Kept for backward compatibility during migration
   @Deprecated('Use specialNeedsCountController instead')
@@ -235,6 +244,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   /// Add pending attachment with metadata
   void addPendingAttachment(PendingAttachment attachment) {
     _pendingAttachments.add(attachment);
+    _pendingAttachmentFiles.add(attachment.file);
     pendingAttachmentsNotifier.value = List.unmodifiable(_pendingAttachments);
     _notifyAndScheduleAutoSave();
   }
@@ -242,6 +252,15 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   /// Remove pending attachment
   void removePendingAttachment(PendingAttachment attachment) {
     _pendingAttachments.remove(attachment);
+    _pendingAttachmentFiles.remove(attachment.file);
+    pendingAttachmentsNotifier.value = List.unmodifiable(_pendingAttachments);
+    _notifyAndScheduleAutoSave();
+  }
+
+  /// Clear all pending attachments (metadata + legacy files)
+  void clearPendingAttachments() {
+    _pendingAttachments.clear();
+    _pendingAttachmentFiles.clear();
     pendingAttachmentsNotifier.value = List.unmodifiable(_pendingAttachments);
     _notifyAndScheduleAutoSave();
   }
@@ -323,7 +342,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   /// Update deceased family members
   void updateDeceasedMembers(List<Map<String, dynamic>> members) {
     _deceasedMembers.clear();
-    _deceasedMembers.addAll(members);
+    _deceasedMembers.addAll(members.map(_normalizeDeceasedMember));
     deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
     _notifyAndScheduleAutoSave();
   }
@@ -337,7 +356,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
 
   /// Add a deceased family member
   void addDeceasedMember(Map<String, dynamic> member) {
-    _deceasedMembers.add(member);
+    _deceasedMembers.add(_normalizeDeceasedMember(member));
     deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
     _notifyAndScheduleAutoSave();
   }
@@ -362,10 +381,60 @@ class BeneficiaryFormControllers extends ChangeNotifier {
 
   void updateDeceasedMember(int index, Map<String, dynamic> member) {
     if (index >= 0 && index < _deceasedMembers.length) {
-      _deceasedMembers[index] = member;
+      _deceasedMembers[index] = _normalizeDeceasedMember(member);
       deceasedMembersNotifier.value = List.unmodifiable(_deceasedMembers);
       _notifyAndScheduleAutoSave();
     }
+  }
+
+  Map<String, dynamic> _normalizeDeceasedMember(Map<String, dynamic> source) {
+    final normalized = Map<String, dynamic>.from(source);
+
+    final parsedType = _parseDeceasedType(
+      normalized['deceasedType'] ?? normalized['deceased_type'] ?? normalized['type'],
+    );
+    if (parsedType != null) {
+      normalized['deceasedType'] = parsedType;
+    }
+
+    final firstName = _readString(normalized, const ['firstName', 'first_name', 'name']);
+    if (firstName != null) {
+      normalized['firstName'] = firstName;
+    }
+
+    final familyName = _readString(normalized, const ['familyName', 'family_name', 'lastName', 'last_name']);
+    if (familyName != null) {
+      normalized['familyName'] = familyName;
+    }
+
+    final nationalId = normalized['nationalId'] ?? normalized['national_id'] ?? normalized['id_number'];
+    if (nationalId != null) {
+      normalized['nationalId'] = nationalId;
+    }
+
+    return normalized;
+  }
+
+  String? _readString(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty) {
+        return text;
+      }
+    }
+    return null;
+  }
+
+  int? _parseDeceasedType(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    final raw = value.toString().trim().toLowerCase();
+    if (raw.isEmpty) return null;
+    if (raw == '1' || raw == 'father' || raw == 'أب') return 1;
+    if (raw == '2' || raw == 'mother' || raw == 'أم') return 2;
+    return int.tryParse(raw);
   }
 
   void updateLivingMember(int index, Map<String, dynamic> member) {
@@ -446,6 +515,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'selectedIncomeSource': _selectedIncomeSource,
       'selectedRequestStatus': _selectedRequestStatus, // 🆕 NEW
       'selectedAssistanceType': _selectedAssistanceType,
+      'selectedGuaranteeType': _selectedGuaranteeType,
       'selectedRelationship': _selectedRelationship,
       'hasDisability': _hasDisability,
     };
@@ -489,6 +559,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _selectedIncomeSource = map['selectedIncomeSource'];
     _selectedRequestStatus = map['selectedRequestStatus']; // 🆕 NEW
     _selectedAssistanceType = map['selectedAssistanceType'];
+    _selectedGuaranteeType = map['selectedGuaranteeType'];
     _selectedRelationship = map['selectedRelationship'];
     _hasDisability = map['hasDisability'] ?? false;
 
@@ -529,6 +600,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
 
     livingMembersNotifier.dispose();
     deceasedMembersNotifier.dispose();
+    pendingAttachmentsNotifier.dispose();
 
     super.dispose(); // ✅ Call super
   }

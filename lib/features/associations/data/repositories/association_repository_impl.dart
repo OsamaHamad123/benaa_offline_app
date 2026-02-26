@@ -20,9 +20,9 @@ class AssociationRepositoryImpl implements AssociationRepository {
   @override
   Future<Result<List<domain.Association>>> getAllActiveAssociations() async {
     try {
-      final associations =
-          await database.associationsDao.getAllActiveAssociations();
-      return Success(associations.map(_mapToDomain).toList());
+      final associations = await database.associationsDao.getAllActiveAssociations();
+      final mapped = await Future.wait(associations.map(_mapToDomainWithProfile));
+      return Success(mapped);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل جلب الجمعيات', stackTrace));
     }
@@ -32,7 +32,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
   Future<Result<List<domain.Association>>> getAllAssociations() async {
     try {
       final associations = await database.associationsDao.getAllAssociations();
-      return Success(associations.map(_mapToDomain).toList());
+      final mapped = await Future.wait(associations.map(_mapToDomainWithProfile));
+      return Success(mapped);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل جلب الجمعيات', stackTrace));
     }
@@ -47,19 +48,18 @@ class AssociationRepositoryImpl implements AssociationRepository {
         return const Failure(NotFoundFailure('الجمعية غير موجودة'));
       }
 
-      return Success(_mapToDomain(association));
+      return Success(await _mapToDomainWithProfile(association));
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل جلب الجمعية', stackTrace));
     }
   }
 
   @override
-  Future<Result<List<domain.Association>>> searchAssociations(
-      String query) async {
+  Future<Result<List<domain.Association>>> searchAssociations(String query) async {
     try {
-      final associations =
-          await database.associationsDao.searchAssociations(query);
-      return Success(associations.map(_mapToDomain).toList());
+      final associations = await database.associationsDao.searchAssociations(query);
+      final mapped = await Future.wait(associations.map(_mapToDomainWithProfile));
+      return Success(mapped);
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل البحث عن الجمعيات', stackTrace));
     }
@@ -92,6 +92,10 @@ class AssociationRepositoryImpl implements AssociationRepository {
       );
 
       await database.associationsDao.addAssociation(companion);
+      await database.associationsDao.upsertSponsorProfile(
+        associationId: id,
+        associationTypeCode: params.associationTypeCode,
+      );
 
       // Get the created association
       final result = await database.associationsDao.getAssociationById(id);
@@ -99,7 +103,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
         return const Failure(DatabaseFailure('فشل إنشاء الجمعية'));
       }
 
-      return Success(_mapToDomain(result));
+      return Success(await _mapToDomainWithProfile(result));
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل إضافة الجمعية: $e', stackTrace));
     }
@@ -128,14 +132,22 @@ class AssociationRepositoryImpl implements AssociationRepository {
         syncState: const drift.Value('pending'),
       );
 
-      final success =
-          await database.associationsDao.updateAssociation(companion);
+      final success = await database.associationsDao.updateAssociation(companion);
+      await database.associationsDao.upsertSponsorProfile(
+        associationId: association.id,
+        associationTypeCode: association.associationTypeCode,
+      );
 
       if (!success) {
         return const Failure(DatabaseFailure('فشل تحديث الجمعية'));
       }
 
-      return Success(association.copyWith(updatedAt: DateTime.now()));
+      return Success(
+        association.copyWith(
+          associationTypeCode: association.associationTypeCode,
+          updatedAt: DateTime.now(),
+        ),
+      );
     } catch (e, stackTrace) {
       return Failure(DatabaseFailure('فشل تحديث الجمعية: $e', stackTrace));
     }
@@ -213,8 +225,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
   }
 
   @override
-  Future<Result<domain.Representative>> createRepresentative(
-      String name) async {
+  Future<Result<domain.Representative>> createRepresentative(String name) async {
     try {
       final id = _uuid.v4();
       final now = DateTime.now();
@@ -253,8 +264,7 @@ class AssociationRepositoryImpl implements AssociationRepository {
         syncState: const drift.Value('pending'),
       );
 
-      final success =
-          await database.associationsDao.updateRepresentative(companion);
+      final success = await database.associationsDao.updateRepresentative(companion);
 
       if (!success) {
         return const Failure(DatabaseFailure('فشل تحديث المندوب'));
@@ -280,7 +290,10 @@ class AssociationRepositoryImpl implements AssociationRepository {
   // MAPPERS
   // ============================================================================
 
-  domain.Association _mapToDomain(Association db) {
+  Future<domain.Association> _mapToDomainWithProfile(Association db) async {
+    final representativeId = db.representativeId?.trim();
+    final profile = await database.associationsDao.getSponsorProfileByAssociationId(db.id);
+    final associationTypeCode = profile?['association_type_code']?.toString().trim();
     return domain.Association(
       id: db.id,
       name: db.name,
@@ -292,7 +305,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
       swiftCode: db.swiftCode,
       bankPhone: db.bankPhone,
       accountCurrency: db.accountCurrency ?? 'IQD',
-      representativeId: db.representativeId ?? '',
+      associationTypeCode: (associationTypeCode == null || associationTypeCode.isEmpty) ? null : associationTypeCode,
+      representativeId: (representativeId == null || representativeId.isEmpty) ? null : representativeId,
       isActive: db.isActive,
       createdAt: db.createdAt,
       updatedAt: db.updatedAt,

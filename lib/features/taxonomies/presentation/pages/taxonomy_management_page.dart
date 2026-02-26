@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/error_handling/result.dart';
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
+import '../../domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../providers/taxonomy_providers.dart';
 import '../widgets/taxonomy_widgets.dart';
 
@@ -55,6 +56,24 @@ class _TaxonomyManagementPageState extends ConsumerState<TaxonomyManagementPage>
             },
             tooltip: 'مزامنة',
           ),
+          if (_selectedGroup.isEditable)
+            IconButton(
+              icon: const Icon(Icons.playlist_add),
+              onPressed: () => _showBatchCreateDialog(context),
+              tooltip: 'إضافة دفعة',
+            ),
+          if (_selectedGroup.isEditable)
+            IconButton(
+              icon: const Icon(Icons.playlist_add_check),
+              onPressed: () => _showBatchUpdateDialog(context),
+              tooltip: 'تحديث دفعة',
+            ),
+          if (_selectedGroup.isEditable)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              onPressed: () => _showBatchDeleteDialog(context),
+              tooltip: 'حذف دفعة',
+            ),
           IconButton(
             icon: const Icon(Icons.bar_chart),
             onPressed: () => _showStatistics(context),
@@ -110,6 +129,27 @@ class _TaxonomyManagementPageState extends ConsumerState<TaxonomyManagementPage>
     showModalBottomSheet(
       context: context,
       builder: (context) => const _StatisticsSheet(),
+    );
+  }
+
+  void _showBatchCreateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _BatchCreateDialog(group: _selectedGroup),
+    );
+  }
+
+  void _showBatchUpdateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _BatchUpdateDialog(group: _selectedGroup),
+    );
+  }
+
+  void _showBatchDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _BatchDeleteDialog(group: _selectedGroup),
     );
   }
 }
@@ -224,10 +264,8 @@ class _TaxonomyGroupList extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              final useCase = ref.read(deleteTaxonomyUseCaseProvider);
-              final result = await useCase.call(taxonomy.id);
+              final result = await ref.read(taxonomyCrudNotifierProvider.notifier).delete(taxonomy.id);
               if (result.isSuccess) {
-                ref.invalidate(taxonomiesByGroupProvider(group));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('تم الحذف بنجاح')),
@@ -284,6 +322,49 @@ class _StatisticsSheet extends ConsumerWidget {
                 ...stats.countByGroup.entries.map((entry) {
                   return _StatRow(entry.key.arabicName, entry.value.toString());
                 }),
+                const Divider(),
+                const SizedBox(height: 8),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: Text(
+                    'تشخيص سياسة mapping',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  subtitle: Text(
+                    '${backendDocumentedSlugCanonicalGroup.length} slug موثقة',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  children: [
+                    const SizedBox(height: 4),
+                    ...backendDocumentedCategorySlugs.map((slug) {
+                      final canonical = resolveBackendDocumentedCategoryCanonicalGroup(slug);
+                      final group = TaxonomyGroup.fromString(canonical);
+                      final groupLabel = group?.arabicName ?? canonical ?? 'غير معروف';
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                slug,
+                                style: Theme.of(context).textTheme.bodySmall,
+                                textAlign: TextAlign.left,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '← $groupLabel',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ],
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -326,7 +407,8 @@ class TaxonomyFormDialog extends ConsumerStatefulWidget {
   final VoidCallback? onSaved;
 
   const TaxonomyFormDialog({
-    required this.group, super.key,
+    required this.group,
+    super.key,
     this.taxonomy,
     this.onSaved,
   });
@@ -473,8 +555,8 @@ class _TaxonomyFormDialogState extends ConsumerState<TaxonomyFormDialog> {
       );
 
       final result = _isEditing
-          ? await ref.read(updateTaxonomyUseCaseProvider).call(taxonomy)
-          : await ref.read(createTaxonomyUseCaseProvider).call(taxonomy);
+          ? await ref.read(taxonomyCrudNotifierProvider.notifier).update(taxonomy)
+          : await ref.read(taxonomyCrudNotifierProvider.notifier).create(taxonomy);
 
       if (result.isSuccess) {
         widget.onSaved?.call();
@@ -504,12 +586,326 @@ class _TaxonomyFormDialogState extends ConsumerState<TaxonomyFormDialog> {
   }
 }
 
+class _BatchCreateDialog extends ConsumerStatefulWidget {
+  final TaxonomyGroup group;
+
+  const _BatchCreateDialog({required this.group});
+
+  @override
+  ConsumerState<_BatchCreateDialog> createState() => _BatchCreateDialogState();
+}
+
+class _BatchCreateDialogState extends ConsumerState<_BatchCreateDialog> {
+  final TextEditingController _itemsController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _itemsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('إضافة تصنيفات دفعة واحدة'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'أدخل اسمًا في كل سطر (أو افصل بفاصلة).',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _itemsController,
+            minLines: 5,
+            maxLines: 8,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'غزة\nخان يونس\nرفح',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('تنفيذ'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final raw = _itemsController.text;
+    final names =
+        raw.split(RegExp(r'[,\n]')).map((item) => item.trim()).where((item) => item.isNotEmpty).toList(growable: false);
+
+    if (names.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أدخل عنصرًا واحدًا على الأقل')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(taxonomyCrudNotifierProvider.notifier).createBatch(widget.group, names);
+      if (result.isSuccess) {
+        final createdCount = (result as Success<List<Taxonomy>>).value.length;
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تمت إضافة $createdCount عنصر بنجاح')),
+          );
+        }
+      } else {
+        final error = (result as Failure).error;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فشل: ${error.message}'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _BatchUpdateDialog extends ConsumerStatefulWidget {
+  final TaxonomyGroup group;
+
+  const _BatchUpdateDialog({required this.group});
+
+  @override
+  ConsumerState<_BatchUpdateDialog> createState() => _BatchUpdateDialogState();
+}
+
+class _BatchUpdateDialogState extends ConsumerState<_BatchUpdateDialog> {
+  final TextEditingController _itemsController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _itemsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('تحديث تصنيفات دفعة واحدة'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'أدخل كل عنصر كسطر بالشكل: id,name',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _itemsController,
+            minLines: 5,
+            maxLines: 8,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: '12,قطاع غزة\n15,محافظة خان يونس',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('تنفيذ'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final updates = <String, String>{};
+    final lines = _itemsController.text.split('\n');
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      final parts = trimmed.split(',');
+      if (parts.length < 2) continue;
+      final id = parts.first.trim();
+      final name = parts.sublist(1).join(',').trim();
+      if (id.isNotEmpty && name.isNotEmpty) {
+        updates[id] = name;
+      }
+    }
+
+    if (updates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أدخل عناصر صالحة بصيغة id,name')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(taxonomyCrudNotifierProvider.notifier).updateBatch(widget.group, updates);
+      if (result.isSuccess) {
+        final updatedCount = (result as Success<List<Taxonomy>>).value.length;
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم تحديث $updatedCount عنصر بنجاح')),
+          );
+        }
+      } else {
+        final error = (result as Failure).error;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فشل: ${error.message}'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _BatchDeleteDialog extends ConsumerStatefulWidget {
+  final TaxonomyGroup group;
+
+  const _BatchDeleteDialog({required this.group});
+
+  @override
+  ConsumerState<_BatchDeleteDialog> createState() => _BatchDeleteDialogState();
+}
+
+class _BatchDeleteDialogState extends ConsumerState<_BatchDeleteDialog> {
+  final TextEditingController _idsController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _idsController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('حذف تصنيفات دفعة واحدة'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'أدخل المعرفات مفصولة بسطر جديد أو فاصلة.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _idsController,
+            minLines: 5,
+            maxLines: 8,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: '12\n15\n18',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('حذف', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _submit() async {
+    final ids = _idsController.text
+        .split(RegExp(r'[,\n]'))
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+
+    if (ids.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('أدخل معرفًا واحدًا على الأقل')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final result = await ref.read(taxonomyCrudNotifierProvider.notifier).deleteBatch(widget.group, ids);
+      if (result.isSuccess) {
+        final deletedCount = (result as Success<List<String>>).value.length;
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم حذف $deletedCount عنصر بنجاح')),
+          );
+        }
+      } else {
+        final error = (result as Failure).error;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('فشل: ${error.message}'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
 /// 📄 Taxonomy Details Dialog
 class TaxonomyDetailsDialog extends StatelessWidget {
   final Taxonomy taxonomy;
 
   const TaxonomyDetailsDialog({
-    required this.taxonomy, super.key,
+    required this.taxonomy,
+    super.key,
   });
 
   @override

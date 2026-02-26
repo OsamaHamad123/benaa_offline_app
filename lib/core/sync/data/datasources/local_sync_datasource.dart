@@ -2,9 +2,9 @@ import '../../../../data/db/daos/taxonomies_dao.dart';
 import '../../../../data/db/daos/beneficiaries_dao.dart';
 import '../../../../data/db/daos/sync_metadata_dao.dart';
 import '../../../../data/db/daos/sync_dao.dart';
-import '../../../../data/models/taxonomy_dto.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../../../features/beneficiaries/data/models/beneficiary_data_model.dart';
+import '../../../../features/taxonomies/data/models/taxonomy_dto.dart';
 import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
 import 'dart:convert' show jsonEncode;
 
@@ -59,9 +59,11 @@ class LocalSyncDataSource {
   Future<void> saveTaxonomies(List<TaxonomyDTO> taxonomies) async {
     final companions = taxonomies
         .map(
-          (dto) => dto.toCompanion(
-            normalizedGroup: _normalizeGroup(dto.group),
-          ),
+          (dto) => dto
+              .copyWith(
+                groupValue: _normalizeGroup(dto.groupValue),
+              )
+              .toDbCompanion(),
         )
         .toList();
     await _taxonomiesDao.upsertBatch(companions);
@@ -75,9 +77,11 @@ class LocalSyncDataSource {
     final normalizedGroup = _normalizeGroup(group);
     final companions = taxonomies
         .map(
-          (dto) => dto.toCompanion(
-            normalizedGroup: _normalizeGroup(dto.group),
-          ),
+          (dto) => dto
+              .copyWith(
+                groupValue: _normalizeGroup(dto.groupValue),
+              )
+              .toDbCompanion(),
         )
         .toList();
     await _taxonomiesDao.syncReplaceGroup(normalizedGroup, companions);
@@ -86,7 +90,20 @@ class LocalSyncDataSource {
   /// الحصول على التصنيفات المحلية
   Future<List<TaxonomyDTO>> getLocalTaxonomies(String group) async {
     final entities = await _taxonomiesDao.getByGroup(_normalizeGroup(group));
-    return entities.map((e) => TaxonomyDTO.fromEntity(e)).toList();
+    return entities
+        .map(
+          (e) => TaxonomyDTO(
+            id: TaxonomyDTO.extractRemoteId(e.id),
+            groupValue: _normalizeGroup(e.group),
+            code: e.code,
+            label: e.label,
+            parentId: e.parentId,
+            sortOrder: e.sortOrder,
+            isActive: e.isActive,
+            updatedAt: e.updatedAt,
+          ),
+        )
+        .toList();
   }
 
   /// آخر تحديث للتصنيفات

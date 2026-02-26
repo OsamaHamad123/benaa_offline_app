@@ -10,6 +10,7 @@ class SponsorDto {
   final String? sponsorBankName;
   final String? sponsorAccountBankNumber;
   final String? sponsorBankSwiftCode;
+  final int? sponsorCategoryId;
   final String? countryCode;
   final String? countryName;
   final DateTime? createdAt;
@@ -27,6 +28,7 @@ class SponsorDto {
     this.sponsorBankName,
     this.sponsorAccountBankNumber,
     this.sponsorBankSwiftCode,
+    this.sponsorCategoryId,
     this.countryCode,
     this.countryName,
     this.createdAt,
@@ -46,6 +48,7 @@ class SponsorDto {
       sponsorBankName: json['sponsor_bank_name']?.toString(),
       sponsorAccountBankNumber: json['sponsor_account_bank_number']?.toString(),
       sponsorBankSwiftCode: json['sponsor_bank_swift_code']?.toString(),
+      sponsorCategoryId: _asInt(json['sponsor_category_id'] ?? json['association_type_id'] ?? json['category_id']),
       countryCode: json['country_code']?.toString(),
       countryName: json['country_name']?.toString(),
       createdAt: _asDateTime(json['created_at']),
@@ -62,6 +65,7 @@ class SponsorDto {
       if (sponsorEmail != null && sponsorEmail!.trim().isNotEmpty) 'sponsor_email': sponsorEmail,
       if (sponsorAddress != null && sponsorAddress!.trim().isNotEmpty) 'sponsor_address': sponsorAddress,
       if (sponsorBankNameId != null) 'sponsor_bank_name_id': sponsorBankNameId,
+      if (sponsorCategoryId != null) 'sponsor_category_id': sponsorCategoryId,
       if (sponsorAccountBankNumber != null && sponsorAccountBankNumber!.trim().isNotEmpty)
         'sponsor_account_bank_number': sponsorAccountBankNumber,
       if (countryCode != null && countryCode!.trim().isNotEmpty) 'country_code': countryCode,

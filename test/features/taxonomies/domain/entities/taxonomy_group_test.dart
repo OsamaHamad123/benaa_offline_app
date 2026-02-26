@@ -3,8 +3,8 @@ import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy_g
 
 void main() {
   group('TaxonomyGroup Enum', () {
-    test('should have 23 taxonomy groups', () {
-      expect(TaxonomyGroup.values.length, 23);
+    test('should have 25 taxonomy groups', () {
+      expect(TaxonomyGroup.values.length, 25);
     });
 
     test('governorate should have correct values', () {
@@ -51,9 +51,10 @@ void main() {
 
     test('should map backend-documented category slugs', () {
       expect(TaxonomyGroup.fromString('provinces'), TaxonomyGroup.governorate);
+      expect(TaxonomyGroup.fromString('cities'), TaxonomyGroup.city);
       expect(TaxonomyGroup.fromString('relations'), TaxonomyGroup.relationship);
       expect(TaxonomyGroup.fromString('accommodation-types'), TaxonomyGroup.housingType);
-      expect(TaxonomyGroup.fromString('guarantee-types'), TaxonomyGroup.sponsorshipType);
+      expect(TaxonomyGroup.fromString('guarantee-types'), TaxonomyGroup.guaranteeType);
       expect(TaxonomyGroup.fromString('document-types'), TaxonomyGroup.documentType);
       expect(TaxonomyGroup.fromString('bank-names'), TaxonomyGroup.bankName);
       expect(TaxonomyGroup.fromString('currencies'), TaxonomyGroup.currency);
@@ -120,6 +121,7 @@ void main() {
     test('should include all expected groups', () {
       final expectedGroups = [
         'governorate',
+        'city',
         'category',
         'marital_status',
         'displacement_status',
@@ -132,6 +134,7 @@ void main() {
         'income_source',
         'association_type',
         'sponsorship_type',
+        'guarantee_type',
         'document_type',
         'bank_name',
         'currency',

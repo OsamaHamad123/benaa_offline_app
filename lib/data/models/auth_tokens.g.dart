@@ -9,9 +9,9 @@ part of 'auth_tokens.dart';
 AuthTokens _$AuthTokensFromJson(Map<String, dynamic> json) => AuthTokens(
       accessToken: json['accessToken'] as String,
       refreshToken: json['refreshToken'] as String,
+      expiresAt: DateTime.parse(json['expiresAt'] as String),
       userId: json['userId'] as String?,
       username: json['username'] as String?,
-      expiresAt: DateTime.parse(json['expiresAt'] as String),
     );
 
 Map<String, dynamic> _$AuthTokensToJson(AuthTokens instance) =>

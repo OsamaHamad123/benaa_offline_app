@@ -144,7 +144,7 @@ class CardGradientHeader extends StatelessWidget {
                       borderRadius: BorderRadius.circular(10.r),
                     ),
                     child: Text(
-                      'Legacy',
+                      'قيمة قديمة',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: statusColor,
                         fontWeight: FontWeight.w700,

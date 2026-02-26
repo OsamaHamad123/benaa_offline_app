@@ -122,7 +122,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
               children: [
                 _buildReportCheckbox('summary', 'ملخص الإحصائيات'),
                 _buildReportCheckbox('gender', 'تقرير الجنس'),
-                _buildReportCheckbox('governorate', 'تقرير المحافظات'),
+                _buildReportCheckbox('governorate', 'تقرير المناطق'),
                 _buildReportCheckbox('category', 'تقرير الفئات'),
                 _buildReportCheckbox('age', 'تقرير الأعمار'),
                 _buildReportCheckbox('sync', 'تقرير المزامنة'),
@@ -199,9 +199,7 @@ class _CustomReportsPageState extends ConsumerState<CustomReportsPage> {
             height: 50.h,
             child: ElevatedButton.icon(
               onPressed: _isGenerating ? null : _generateReport,
-              icon: _isGenerating
-                  ? const SmallLoadingIndicator(color: Colors.white)
-                  : const Icon(Icons.download),
+              icon: _isGenerating ? const SmallLoadingIndicator(color: Colors.white) : const Icon(Icons.download),
               label: Text(
                 _isGenerating ? 'جاري الإنشاء...' : 'إنشاء وتصدير التقرير',
                 style: TextStyle(fontSize: 16.sp),

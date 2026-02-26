@@ -12,7 +12,7 @@ import 'export_buttons.dart';
 import 'report_search_field.dart';
 import 'detail_list_item.dart';
 
-/// Governorate Report Widget - تقرير حسب المحافظة
+/// Governorate Report Widget - تقرير حسب المنطقة
 class GovernorateReportSheet extends ConsumerStatefulWidget {
   const GovernorateReportSheet({super.key});
 
@@ -30,10 +30,10 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
       final pdfService = ref.read(pdfExportServiceProvider);
 
       final exportData = ReportExportData(
-        title: 'تقرير حسب المحافظة',
+        title: 'تقرير حسب المنطقة',
         tables: [
           ExportTable(
-            headers: ['المحافظة', 'العدد', 'النسبة المئوية'],
+            headers: ['المنطقة', 'العدد', 'النسبة المئوية'],
             rows: data.map((item) {
               final percentage = total == 0 ? 0.0 : (item.count / total) * 100;
               return [
@@ -81,10 +81,10 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
       final excelService = ref.read(excelExportServiceProvider);
 
       final exportData = ReportExportData(
-        title: 'تقرير حسب المحافظة',
+        title: 'تقرير حسب المنطقة',
         tables: [
           ExportTable(
-            headers: ['المحافظة', 'العدد', 'النسبة المئوية'],
+            headers: ['المنطقة', 'العدد', 'النسبة المئوية'],
             rows: data.map((item) {
               final percentage = total == 0 ? 0.0 : (item.count / total) * 100;
               return [
@@ -132,7 +132,7 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
     final total = ref.watch(summaryStatisticsProvider).value?.total ?? 0;
 
     return ResponsiveBottomSheet(
-      title: 'تقرير حسب المحافظة',
+      title: 'تقرير حسب المنطقة',
       icon: Icons.location_city,
       builder: (scrollController) {
         return reportAsync.when(
@@ -156,14 +156,14 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
               padding: const EdgeInsets.all(16),
               children: [
                 ReportSearchField(
-                  hint: 'ابحث عن محافظة...',
+                  hint: 'ابحث عن منطقة...',
                   onSearch: (query) {
                     setState(() => _searchQuery = query);
                   },
                 ),
                 const SizedBox(height: 16),
                 ChartSection(
-                  title: 'التوزيع حسب المحافظة',
+                  title: 'التوزيع حسب المنطقة',
                   chart: GovernorateBarChart(
                     data: sortedCounts.take(10).toList(),
                   ),
@@ -181,10 +181,7 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
                   children: [
                     Text(
                       'التفاصيل',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     if (_searchQuery.isNotEmpty)
                       Text(

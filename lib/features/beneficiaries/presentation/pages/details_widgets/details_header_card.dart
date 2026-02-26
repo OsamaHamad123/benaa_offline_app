@@ -8,16 +8,24 @@ import '../../../../../core/widgets/cached_avatar.dart';
 /// Details Page: Header Card with Avatar and Basic Info
 class DetailsHeaderCard extends StatelessWidget {
   final BeneficiaryModel beneficiary;
+  final ColorInfo? categoryColorInfo;
+  final String? categoryLabel;
 
-  const DetailsHeaderCard({required this.beneficiary, super.key});
+  const DetailsHeaderCard({
+    required this.beneficiary,
+    this.categoryColorInfo,
+    this.categoryLabel,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final colorInfo = BeneficiaryDomainHelpers.getCategoryColorInfo(
-      beneficiary.category,
-    );
+    final colorInfo = categoryColorInfo ??
+        BeneficiaryDomainHelpers.getCategoryColorInfo(
+          beneficiary.category,
+        );
     final categoryColor = Color(colorInfo.primary);
     final lightColor = Color(colorInfo.light);
 
@@ -96,9 +104,10 @@ class DetailsHeaderCard extends StatelessWidget {
                   ),
                   SizedBox(width: 10.w),
                   Text(
-                    BeneficiaryDomainHelpers.getCategoryLabel(
-                      beneficiary.category,
-                    ),
+                    categoryLabel ??
+                        BeneficiaryDomainHelpers.getCategoryLabel(
+                          beneficiary.category,
+                        ),
                     style: TextStyle(
                       color: categoryColor,
                       fontWeight: FontWeight.bold,

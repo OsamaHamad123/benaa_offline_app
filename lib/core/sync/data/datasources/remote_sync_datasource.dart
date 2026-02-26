@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../models/sync_models.dart';
-import '../../../../data/models/taxonomy_dto.dart';
+import '../../../../features/taxonomies/data/models/taxonomy_dto.dart';
 import '../../../../features/beneficiaries/data/models/beneficiary_data_model.dart';
 import '../../../../features/taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';

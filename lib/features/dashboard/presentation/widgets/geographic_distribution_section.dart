@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
 import '../providers/dashboard_providers.dart';
 import '../providers.dart'; // ✅ Import topGovernoratesProvider
@@ -12,33 +13,20 @@ final geographicDistributionMapProvider = FutureProvider<Map<String, int>>((
   ref,
 ) async {
   final rawData = await ref.watch(geographicDistributionProvider.future);
-  // Convert Map<int, int> to Map<String, int> with province names
-  return rawData.map((key, value) => MapEntry(_getProvinceName(key), value));
-});
+  final governorates = await ref.watch(bridgeGovernoratesProvider.future);
 
-String _getProvinceName(int provinceId) {
-  const provinceNames = {
-    1: 'بغداد',
-    2: 'نينوى',
-    3: 'البصرة',
-    4: 'ذي قار',
-    5: 'ميسان',
-    6: 'واسط',
-    7: 'القادسية',
-    8: 'المثنى',
-    9: 'بابل',
-    10: 'كربلاء',
-    11: 'النجف',
-    12: 'الأنبار',
-    13: 'ديالى',
-    14: 'صلاح الدين',
-    15: 'كركوك',
-    16: 'أربيل',
-    17: 'السليمانية',
-    18: 'دهوك',
-  };
-  return provinceNames[provinceId] ?? 'غير محدد';
-}
+  final codeToLabel = <int, String>{};
+  for (final taxonomy in governorates) {
+    final parsedCode = int.tryParse(taxonomy.code.trim());
+    if (parsedCode != null) {
+      codeToLabel[parsedCode] = taxonomy.label;
+    }
+  }
+
+  return rawData.map(
+    (code, value) => MapEntry(codeToLabel[code] ?? 'منطقة $code', value),
+  );
+});
 
 /// Geographic Distribution Section - توزيع المستفيدين حسب المحافظة
 class GeographicDistributionSection extends ConsumerWidget {
@@ -109,7 +97,7 @@ class GeographicDistributionSection extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            '${data.length} محافظة',
+                            '${data.length} منطقة',
                             style: TextStyle(
                               fontSize: 12.sp,
                               color: AppColors.textSecondary,
@@ -151,7 +139,7 @@ class GeographicDistributionSection extends ConsumerWidget {
                   SizedBox(height: 8.h),
                   Center(
                     child: Text(
-                      'و ${data.length - 5} محافظات أخرى',
+                      'و ${data.length - 5} مناطق أخرى',
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: AppColors.textSecondary,
@@ -240,7 +228,7 @@ class GeographicDistributionSection extends ConsumerWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ResponsiveBottomSheet(
-        title: 'جميع المحافظات (عدد ${entries.length})',
+        title: 'جميع المناطق (عدد ${entries.length})',
         icon: Icons.location_city,
         maxChildSize: 0.9,
         builder: (scrollController) {

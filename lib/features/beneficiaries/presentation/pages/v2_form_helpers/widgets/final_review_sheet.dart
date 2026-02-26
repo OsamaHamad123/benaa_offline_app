@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../form_controllers.dart';
+import '../form_constants.dart';
 
 /// 📋 Final Review Sheet
 ///
@@ -91,6 +92,10 @@ class FinalReviewSheet extends StatelessWidget {
             padding: EdgeInsets.all(16.w),
             cacheExtent: 500, // Performance: cache ahead
             children: [
+              _buildReadinessSummary(context),
+
+              SizedBox(height: 16.h),
+
               // Personal Info Section
               _buildSection(context, 'معلومات شخصية', Icons.person_rounded, [
                 _buildItem('الاسم الكامل', _getFullName()),
@@ -233,6 +238,60 @@ class FinalReviewSheet extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildReadinessSummary(BuildContext context) {
+    final theme = Theme.of(context);
+    final missingRequiredCount = _missingRequiredFieldsCount();
+    final pendingAttachmentsCount = formControllers.pendingAttachments.length;
+    final isReadyToSave = missingRequiredCount == 0;
+
+    return Container(
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: isReadyToSave ? theme.colorScheme.primaryContainer : theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isReadyToSave ? Icons.task_alt_rounded : Icons.error_outline_rounded,
+            color: isReadyToSave ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onErrorContainer,
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              isReadyToSave
+                  ? 'النموذج جاهز للحفظ النهائي • مرفقات جديدة بانتظار الحفظ: $pendingAttachmentsCount'
+                  : 'حقول إلزامية ناقصة: $missingRequiredCount • مرفقات جديدة بانتظار الحفظ: $pendingAttachmentsCount',
+              style: TextStyle(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: isReadyToSave ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  int _missingRequiredFieldsCount() {
+    int missingCount = 0;
+
+    if (formControllers.firstNameController.text.trim().isEmpty) missingCount++;
+    if (formControllers.fatherNameController.text.trim().isEmpty) missingCount++;
+    if (formControllers.lastNameController.text.trim().isEmpty) missingCount++;
+
+    final nationalId = formControllers.nationalIdController.text.trim();
+    if (nationalId.isEmpty || nationalId.length != FormConstants.nationalIdLength) {
+      missingCount++;
+    }
+
+    if (formControllers.selectedGender == null) missingCount++;
+    if (formControllers.phoneController.text.trim().isEmpty) missingCount++;
+
+    return missingCount;
   }
 
   Widget _buildSection(

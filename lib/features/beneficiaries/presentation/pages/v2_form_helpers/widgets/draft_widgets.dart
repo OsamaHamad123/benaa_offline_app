@@ -85,7 +85,10 @@ class ResumeDraftDialog extends StatelessWidget {
   final Function(String draftId) onDelete;
 
   const ResumeDraftDialog({
-    required this.drafts, required this.onResume, required this.onDelete, super.key,
+    required this.drafts,
+    required this.onResume,
+    required this.onDelete,
+    super.key,
   });
 
   @override
@@ -108,8 +111,12 @@ class ResumeDraftDialog extends StatelessWidget {
           separatorBuilder: (context, index) => Divider(height: 16.h),
           itemBuilder: (context, index) {
             final draft = drafts[index];
-            final savedAt = DateTime.parse(draft['savedAt'] as String);
-            final name = draft['firstName'] ?? 'بدون اسم';
+            final savedAt = DateTime.tryParse((draft['savedAt'] ?? '').toString());
+            final name = (draft['firstName']?.toString().trim().isNotEmpty ?? false)
+                ? draft['firstName'].toString().trim()
+                : 'بدون اسم';
+            final draftId = (draft['draftId'] ?? '').toString().trim();
+            final savedAtLabel = savedAt != null ? _formatDateTime(savedAt) : 'غير معروف';
 
             return ListTile(
               leading: CircleAvatar(
@@ -125,7 +132,7 @@ class ResumeDraftDialog extends StatelessWidget {
                 style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
               ),
               subtitle: Text(
-                _formatDateTime(savedAt),
+                savedAtLabel,
                 style: TextStyle(
                   fontSize: 12.sp,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -137,14 +144,15 @@ class ResumeDraftDialog extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.delete_outline),
                     color: theme.colorScheme.error,
-                    onPressed: () => onDelete(draft['draftId'] as String),
+                    onPressed: draftId.isEmpty ? null : () => onDelete(draftId),
                   ),
                   Icon(Icons.chevron_right, color: theme.colorScheme.primary),
                 ],
               ),
               onTap: () {
+                if (draftId.isEmpty) return;
                 Navigator.of(context).pop();
-                onResume(draft['draftId'] as String);
+                onResume(draftId);
               },
             );
           },

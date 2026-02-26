@@ -305,6 +305,32 @@ void main() {
     });
   });
 
+  group('TaxonomyResponseDTO', () {
+    test('fromJson should parse nested data.item payload', () {
+      final json = {
+        'success': true,
+        'message': 'Item retrieved successfully',
+        'data': {
+          'category': {
+            'slug': 'provinces',
+          },
+          'item': {
+            'id': 1,
+            'name': 'غزة',
+            'code': '1',
+          },
+        },
+      };
+
+      final response = TaxonomyResponseDTO.fromJson(json);
+
+      expect(response.success, true);
+      expect(response.data.id, '1');
+      expect(response.data.label, 'غزة');
+      expect(response.data.groupValue, 'governorate');
+    });
+  });
+
   group('TaxonomiesResponseDTO.fromSyncAllJson', () {
     test('parses nested categories map format', () {
       final json = {
@@ -372,6 +398,11 @@ void main() {
                 {'id': 2, 'name': 'غزة'},
               ],
             },
+            'cities': {
+              'items': [
+                {'id': 12, 'name': 'غزة المدينة'},
+              ],
+            },
             'accommodation-types': {
               'items': [
                 {'id': 3, 'name': 'شقة'},
@@ -410,8 +441,9 @@ void main() {
 
       expect(dto.data.where((item) => item.groupValue == 'relationship').length, 1);
       expect(dto.data.where((item) => item.groupValue == 'governorate').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'city').length, 1);
       expect(dto.data.where((item) => item.groupValue == 'housing_type').length, 1);
-      expect(dto.data.where((item) => item.groupValue == 'sponsorship_type').length, 1);
+      expect(dto.data.where((item) => item.groupValue == 'guarantee_type').length, 1);
       expect(dto.data.where((item) => item.groupValue == 'document_type').length, 1);
       expect(dto.data.where((item) => item.groupValue == 'bank_name').length, 1);
       expect(dto.data.where((item) => item.groupValue == 'currency').length, 1);

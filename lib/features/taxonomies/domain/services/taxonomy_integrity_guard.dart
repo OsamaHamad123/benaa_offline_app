@@ -27,8 +27,10 @@ class TaxonomyIntegrityGuard {
   const TaxonomyIntegrityGuard();
 
   static const criticalFallbackGroups = <TaxonomyGroup>{
+    TaxonomyGroup.category,
     TaxonomyGroup.gender,
     TaxonomyGroup.section,
+    TaxonomyGroup.assistanceType,
     TaxonomyGroup.beneficiaryStatus,
     TaxonomyGroup.documentType,
     TaxonomyGroup.deathReason,
@@ -37,12 +39,18 @@ class TaxonomyIntegrityGuard {
   };
 
   static const _fallbackOptions = <TaxonomyGroup, List<({String code, String label})>>{
+    TaxonomyGroup.category: [
+      (code: 'general', label: 'فئة عامة'),
+    ],
     TaxonomyGroup.gender: [
       (code: 'male', label: 'ذكر'),
       (code: 'female', label: 'أنثى'),
     ],
     TaxonomyGroup.section: [
       (code: 'general', label: 'عام'),
+    ],
+    TaxonomyGroup.assistanceType: [
+      (code: 'general_assistance', label: 'مساعدة عامة'),
     ],
     TaxonomyGroup.beneficiaryStatus: [
       (code: 'pending', label: 'قيد الدراسة'),

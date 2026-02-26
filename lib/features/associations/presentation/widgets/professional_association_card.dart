@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'card_gradient_header.dart';
 import 'card_info_section.dart';
 import 'card_action_buttons.dart';
-import 'card_status_indicator.dart';
 
 /// 🎨 بطاقة احترافية جديدة للجمعيات
 ///
@@ -23,6 +22,7 @@ class ProfessionalAssociationCard extends StatelessWidget {
   final String bankName;
   final String? accountNumber;
   final String currency;
+  final String? associationTypeLabel;
   final String? representativeName;
   final bool isActive;
   final DateTime? createdAt;
@@ -32,11 +32,18 @@ class ProfessionalAssociationCard extends StatelessWidget {
   final VoidCallback? onDelete;
 
   const ProfessionalAssociationCard({
-    required this.id, required this.name, required this.phone, required this.bankName, required this.currency, required this.isActive, super.key,
+    required this.id,
+    required this.name,
+    required this.phone,
+    required this.bankName,
+    required this.currency,
+    required this.isActive,
+    super.key,
     this.shortName,
     this.email,
     this.accountNumber,
     this.representativeName,
+    this.associationTypeLabel,
     this.createdAt,
     this.updatedAt,
     this.onTap,
@@ -50,24 +57,24 @@ class ProfessionalAssociationCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.3) : Colors.grey.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: isDark ? Colors.black.withOpacity(0.22) : Colors.grey.withOpacity(0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
+          borderRadius: BorderRadius.circular(16.r),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20.r),
+          borderRadius: BorderRadius.circular(16.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -82,8 +89,8 @@ class ProfessionalAssociationCard extends StatelessWidget {
               // معلومات الجمعية
               Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: 14.w,
-                  vertical: 10.h,
+                  horizontal: 12.w,
+                  vertical: 8.h,
                 ),
                 child: CardInfoSection(
                   phone: phone,
@@ -91,6 +98,7 @@ class ProfessionalAssociationCard extends StatelessWidget {
                   bankName: bankName,
                   accountNumber: accountNumber,
                   currency: currency,
+                  associationTypeLabel: associationTypeLabel,
                   representativeName: representativeName,
                 ),
               ),
@@ -98,19 +106,14 @@ class ProfessionalAssociationCard extends StatelessWidget {
               // Status Indicator & Action Buttons
               Padding(
                 padding: EdgeInsets.only(
-                  left: 14.w,
-                  right: 14.w,
-                  bottom: 10.h,
+                  left: 12.w,
+                  right: 12.w,
+                  bottom: 8.h,
                 ),
                 child: Row(
                   children: [
-                    // Status indicator
-                    CardStatusIndicator(
-                      createdAt: createdAt,
-                      updatedAt: updatedAt,
-                    ),
-                    const Spacer(),
                     // Action buttons
+                    const Spacer(),
                     CardActionButtons(
                       onEdit: onEdit,
                       onDelete: onDelete,

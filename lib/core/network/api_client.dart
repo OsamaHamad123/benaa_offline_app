@@ -1,11 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
+import '../config/api_config.dart';
 import '../config/app_config.dart';
+import '../security/auth_session_events.dart';
 import '../storage/secure_store.dart';
 import '../storage/secure_storage.dart';
 import '../errors/failure.dart';
 
 class ApiClient {
+  static const String _retriedKey = 'x-auth-retried';
+
   late final Dio _dio;
   final AppConfig config;
   final Logger _logger = Logger();
@@ -39,6 +43,30 @@ class ApiClient {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    if (!_isAuthEndpoint(options.path)) {
+      final storage = SecureStorage();
+      final isExpired = await storage.isTokenExpired();
+      if (isExpired) {
+        await _clearSessionOnUnauthorized();
+        handler.reject(
+          DioException(
+            requestOptions: options,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: options,
+              statusCode: 401,
+              data: {
+                'error': 'token_expired',
+                'message': 'Token expired locally',
+              },
+            ),
+            error: 'Token expired locally',
+          ),
+        );
+        return;
+      }
+    }
+
     // Add auth token if available
     final token = await SecureStore.getAccessToken() ?? await SecureStorage().getAuthToken();
     if (token != null) {
@@ -66,17 +94,25 @@ class ApiClient {
       stackTrace: err.stackTrace,
     );
 
+    final requestOptions = err.requestOptions;
+    final isAlreadyRetried = requestOptions.extra[_retriedKey] == true;
+    final shouldHandle401 =
+        err.response?.statusCode == 401 && !_isAuthEndpoint(requestOptions.path) && !isAlreadyRetried;
+
     // Handle 401 unauthorized - try to refresh token
-    if (err.response?.statusCode == 401) {
+    if (shouldHandle401) {
       final refreshed = await _refreshToken();
       if (refreshed) {
         // Retry the failed request
         try {
-          final response = await _dio.fetch(err.requestOptions);
+          requestOptions.extra[_retriedKey] = true;
+          final response = await _dio.fetch(requestOptions);
           return handler.resolve(response);
         } catch (e) {
           // If retry fails, continue with error
         }
+      } else {
+        await _clearSessionOnUnauthorized();
       }
     }
 
@@ -85,21 +121,47 @@ class ApiClient {
 
   Future<bool> _refreshToken() async {
     try {
-      final refreshToken = await SecureStore.getRefreshToken();
-      if (refreshToken == null) return false;
+      final storage = SecureStorage();
+      final accessToken = await storage.getAuthToken();
+      if (accessToken == null || accessToken.isEmpty) return false;
+
+      final deviceId = await storage.getDeviceId();
 
       final response = await _dio.post(
-        '/auth/refresh',
-        data: {'refresh_token': refreshToken},
+        ApiConfig.refreshTokenEndpoint,
+        data: {'device_id': deviceId},
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        await SecureStore.storeTokens(
-          accessToken: data['access_token'],
-          refreshToken: data['refresh_token'] ?? refreshToken,
-        );
-        return true;
+        final data = response.data as Map<String, dynamic>;
+        final payload = data['data'];
+        if (payload is Map<String, dynamic>) {
+          final tokenObj = payload['token'];
+          if (tokenObj is Map<String, dynamic>) {
+            final newAccessToken = tokenObj['access_token']?.toString();
+            final expiresAtRaw = tokenObj['expires_at']?.toString();
+
+            if (newAccessToken != null && newAccessToken.isNotEmpty) {
+              if (expiresAtRaw != null && expiresAtRaw.isNotEmpty) {
+                final expiresAt = DateTime.tryParse(expiresAtRaw);
+                if (expiresAt != null) {
+                  await storage.updateToken(accessToken: newAccessToken, expiresAt: expiresAt);
+                  return true;
+                }
+              }
+
+              await storage.updateAuthToken(newAccessToken);
+              return true;
+            }
+          }
+        }
       }
     } catch (e) {
       _logger.e('Token refresh failed', error: e);
@@ -107,12 +169,36 @@ class ApiClient {
     return false;
   }
 
+  bool _isAuthEndpoint(String path) {
+    return path == ApiConfig.loginEndpoint ||
+        path == ApiConfig.logoutEndpoint ||
+        path == ApiConfig.refreshTokenEndpoint ||
+        path == ApiConfig.validateTokenEndpoint ||
+        path == ApiConfig.profileEndpoint ||
+        path == ApiConfig.devicesEndpoint;
+  }
+
+  Future<void> _clearSessionOnUnauthorized() async {
+    try {
+      await SecureStorage().clearAuthSession();
+    } catch (_) {}
+    try {
+      await SecureStore.clearAuth();
+    } catch (_) {}
+    AuthSessionEvents.instance.notifySessionExpired();
+  }
+
   // Auth endpoints
   Future<Map<String, dynamic>> login(String username, String password) async {
     try {
+      final deviceId = await SecureStorage().getDeviceId();
       final response = await _dio.post(
-        '/auth/login',
-        data: {'username': username, 'password': password},
+        ApiConfig.loginEndpoint,
+        data: {
+          'email': username,
+          'password': password,
+          'device_id': deviceId,
+        },
       );
       return response.data;
     } on DioException catch (e) {
@@ -122,11 +208,18 @@ class ApiClient {
 
   Future<void> logout() async {
     try {
-      await _dio.post('/auth/logout');
+      final deviceId = await SecureStorage().getDeviceId();
+      await _dio.post(
+        ApiConfig.logoutEndpoint,
+        data: {'device_id': deviceId},
+      );
     } catch (e) {
       _logger.e('Logout error', error: e);
     } finally {
       await SecureStore.clearAuth();
+      try {
+        await SecureStorage().clearAuthSession();
+      } catch (_) {}
     }
   }
 

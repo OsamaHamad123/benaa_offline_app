@@ -37,12 +37,12 @@ class DashboardNavigationService {
 
   static void navigateToKafalat(BuildContext context) {
     DashboardHaptics.onNavigation();
-    context.push('/kafalat');
+    context.push('/kafalat?tab=sponsored&sponsored_status=active');
   }
 
   static void navigateToAddKafalat(BuildContext context) {
     DashboardHaptics.onQuickAction();
-    context.push('/kafalat/add');
+    context.push('/kafalat?tab=unsponsored');
   }
 
   // === Sync ===

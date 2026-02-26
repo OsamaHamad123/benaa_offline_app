@@ -407,7 +407,11 @@ class V2ReviewTab extends ConsumerWidget {
             ),
             ReviewDataRow(
               label: 'المدينة',
-              value: formControllers.selectedCity,
+              value: _resolveTaxonomyLabel(
+                index: taxonomyIndex,
+                group: TaxonomyGroup.city,
+                code: formControllers.selectedCity,
+              ),
               icon: Icons.location_city_rounded,
             ),
           ],
@@ -748,6 +752,7 @@ class V2ReviewTab extends ConsumerWidget {
       (TaxonomyGroup.category, formControllers.selectedCategory),
       (TaxonomyGroup.beneficiaryStatus, formControllers.selectedRequestStatus),
       (TaxonomyGroup.governorate, formControllers.selectedProvince),
+      (TaxonomyGroup.city, formControllers.selectedCity),
       (TaxonomyGroup.educationLevel, formControllers.selectedEducationLevel),
       (TaxonomyGroup.employmentStatus, formControllers.selectedEmploymentStatus),
       (TaxonomyGroup.healthStatus, formControllers.selectedHealthStatus),

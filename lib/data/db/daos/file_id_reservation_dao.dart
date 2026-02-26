@@ -258,6 +258,21 @@ class FileIdReservationDao extends DatabaseAccessor<AppDatabase> with _$FileIdRe
     return rows.first.read<int>('reservation_id');
   }
 
+  Future<int?> getActiveReservationUsedCount() async {
+    final rows = await customSelect(
+      '''
+      SELECT used_count
+      FROM file_id_reservation_batches
+      WHERE status = 'active'
+      ORDER BY updated_at DESC, reservation_id DESC
+      LIMIT 1
+      ''',
+    ).get();
+
+    if (rows.isEmpty) return null;
+    return rows.first.read<int?>('used_count');
+  }
+
   Future<void> markBatchUsedCountSynced(int reservationId) async {
     final now = DateTime.now().toIso8601String();
     await customStatement(

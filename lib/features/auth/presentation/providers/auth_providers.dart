@@ -1,6 +1,7 @@
 import 'package:benaa_offline_app/core/config/api_config.dart';
 import 'package:benaa_offline_app/core/storage/secure_storage.dart';
 import 'package:benaa_offline_app/features/auth/data/interceptors/auth_interceptor.dart';
+import 'package:benaa_offline_app/core/security/auth_session_events.dart';
 import 'package:benaa_offline_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:benaa_offline_app/features/auth/domain/entities/auth_session.dart';
 import 'package:benaa_offline_app/features/auth/domain/entities/auth_user.dart';
@@ -9,8 +10,6 @@ import 'package:benaa_offline_app/features/auth/presentation/state/auth_notifier
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_state.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-
 
 // ===========================
 // 📦 INFRASTRUCTURE PROVIDERS
@@ -77,6 +76,18 @@ final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref
   return AuthNotifier(
     authRepository: ref.watch(authRepositoryProvider),
   );
+});
+
+/// 🚀 Auth Bootstrap Provider
+/// يفحص الجلسة عند تشغيل التطبيق مرة واحدة لكل دورة حياة المزود.
+final authBootstrapProvider = FutureProvider<void>((ref) async {
+  await Future<void>.microtask(() {});
+  await ref.read(authNotifierProvider.notifier).checkAuthStatus();
+});
+
+/// 📡 Global session events provider
+final authSessionEventProvider = StreamProvider<AuthSessionEvent>((ref) {
+  return AuthSessionEvents.instance.stream;
 });
 
 /// ✅ Is Authenticated Provider

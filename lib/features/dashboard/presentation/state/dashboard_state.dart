@@ -4,6 +4,8 @@ import '../../domain/entities/activity.dart';
 
 /// Dashboard State - Immutable state with Equatable
 class DashboardState extends Equatable {
+  static const Object _unset = Object();
+
   final DashboardStatistics? statistics;
   final TodayStats? todayStats;
   final List<Activity> activities;
@@ -41,7 +43,7 @@ class DashboardState extends Equatable {
     bool? isLoadingStats,
     bool? isLoadingActivities,
     bool? hasMoreActivities,
-    String? errorMessage,
+    Object? errorMessage = _unset,
     DateTime? lastRefreshTime,
   }) {
     return DashboardState(
@@ -51,7 +53,7 @@ class DashboardState extends Equatable {
       isLoadingStats: isLoadingStats ?? this.isLoadingStats,
       isLoadingActivities: isLoadingActivities ?? this.isLoadingActivities,
       hasMoreActivities: hasMoreActivities ?? this.hasMoreActivities,
-      errorMessage: errorMessage,
+      errorMessage: identical(errorMessage, _unset) ? this.errorMessage : errorMessage as String?,
       lastRefreshTime: lastRefreshTime ?? this.lastRefreshTime,
     );
   }

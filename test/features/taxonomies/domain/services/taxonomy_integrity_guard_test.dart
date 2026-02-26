@@ -48,10 +48,26 @@ void main() {
 
       final fallbackGroups = fallbacks.map((item) => item.group).toSet();
 
+      expect(fallbackGroups.contains(TaxonomyGroup.category), isFalse);
       expect(fallbackGroups.contains(TaxonomyGroup.gender), isTrue);
       expect(fallbackGroups.contains(TaxonomyGroup.section), isTrue);
+      expect(fallbackGroups.contains(TaxonomyGroup.assistanceType), isTrue);
       expect(fallbackGroups.contains(TaxonomyGroup.documentType), isTrue);
       expect(fallbacks.every((item) => item.metadata?['is_fallback'] == true), isTrue);
+    });
+
+    test('buildFallbackTaxonomies seeds category when it is missing', () {
+      final stats = buildStats({
+        TaxonomyGroup.gender: 2,
+      });
+
+      final fallbacks = guard.buildFallbackTaxonomies(
+        stats: stats,
+        existingByGroup: const {},
+      );
+
+      final fallbackGroups = fallbacks.map((item) => item.group).toSet();
+      expect(fallbackGroups.contains(TaxonomyGroup.category), isTrue);
     });
 
     test('buildFallbackTaxonomies does not override existing group data', () {

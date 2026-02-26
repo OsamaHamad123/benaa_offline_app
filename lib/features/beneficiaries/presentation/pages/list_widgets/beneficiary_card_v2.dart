@@ -25,6 +25,7 @@ import 'widgets/sync_status_badge.dart';
 class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
   final Map<int, String> categoryLabelsById;
+  final Map<int, Color> categoryColorsById;
   final Map<int, String> governorateLabelsById;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
@@ -35,6 +36,7 @@ class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   const BeneficiaryCardV2({
     required this.beneficiary,
     this.categoryLabelsById = const <int, String>{},
+    this.categoryColorsById = const <int, Color>{},
     this.governorateLabelsById = const <int, String>{},
     super.key,
     this.onTap,
@@ -59,7 +61,10 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final rv = ResponsiveUtils.getValues(context);
-    final categoryColor = BeneficiaryHelpers.getCategoryColor(widget.beneficiary.sectionId);
+    final categoryColor = BeneficiaryHelpers.getCategoryColor(
+      widget.beneficiary.sectionId,
+      categoryColorsById: widget.categoryColorsById,
+    );
 
     return Semantics(
       label: 'بطاقة مستفيد: ${widget.beneficiary.fullName}',
@@ -130,7 +135,10 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
     if (dynamicLabel != null && dynamicLabel.trim().isNotEmpty) {
       return dynamicLabel;
     }
-    return BeneficiaryHelpers.getProvinceName(province);
+    return BeneficiaryHelpers.getProvinceName(
+      province,
+      governorateLabelsById: widget.governorateLabelsById,
+    );
   }
 
   String? _primaryPhone() {

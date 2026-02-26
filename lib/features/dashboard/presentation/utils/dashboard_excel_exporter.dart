@@ -7,11 +7,15 @@ import '../../domain/entities/dashboard_statistics.dart'; // ✅ Use existing mo
 /// Dashboard Excel Exporter
 class DashboardExcelExporter {
   /// تصدير الداشبورد إلى Excel
-  static Future<File?> exportToExcel(DashboardStatistics dashboard, {String? filename}) async {
+  static Future<File?> exportToExcel(
+    DashboardStatistics dashboard, {
+    String? filename,
+    List<MapEntry<String, int>>? categoryRows,
+  }) async {
     final excel = Excel.createExcel();
 
     // Create Statistics Sheet
-    _createStatisticsSheet(excel, dashboard);
+    _createStatisticsSheet(excel, dashboard, categoryRows: categoryRows);
 
     // Remove default sheet
     excel.delete('Sheet1');
@@ -27,8 +31,11 @@ class DashboardExcelExporter {
   }
 
   /// مشاركة Excel
-  static Future<void> shareExcel(DashboardStatistics dashboard) async {
-    final file = await exportToExcel(dashboard);
+  static Future<void> shareExcel(
+    DashboardStatistics dashboard, {
+    List<MapEntry<String, int>>? categoryRows,
+  }) async {
+    final file = await exportToExcel(dashboard, categoryRows: categoryRows);
     if (file != null) {
       await Share.shareXFiles(
         [XFile(file.path)],
@@ -40,8 +47,13 @@ class DashboardExcelExporter {
 
   // Private Helper Methods
 
-  static void _createStatisticsSheet(Excel excel, DashboardStatistics dashboard) {
+  static void _createStatisticsSheet(
+    Excel excel,
+    DashboardStatistics dashboard, {
+    List<MapEntry<String, int>>? categoryRows,
+  }) {
     final sheet = excel['الإحصائيات'];
+    final rows = categoryRows != null && categoryRows.isNotEmpty ? categoryRows : _fallbackCategoryRows(dashboard);
 
     // Header
     sheet.appendRow([
@@ -57,22 +69,12 @@ class DashboardExcelExporter {
       TextCellValue('إجمالي المستفيدين'),
       IntCellValue(dashboard.totalBeneficiaries),
     ]);
-    sheet.appendRow([
-      TextCellValue('الأيتام'),
-      IntCellValue(dashboard.categoryCounts['يتيم'] ?? 0),
-    ]);
-    sheet.appendRow([
-      TextCellValue('الأرامل'),
-      IntCellValue(dashboard.categoryCounts['أرملة'] ?? 0),
-    ]);
-    sheet.appendRow([
-      TextCellValue('الفقراء'),
-      IntCellValue(dashboard.categoryCounts['فقير'] ?? 0),
-    ]);
-    sheet.appendRow([
-      TextCellValue('ذوي الإعاقة'),
-      IntCellValue(dashboard.categoryCounts['معاق'] ?? 0),
-    ]);
+    for (final row in rows) {
+      sheet.appendRow([
+        TextCellValue(row.key),
+        IntCellValue(row.value),
+      ]);
+    }
 
     // Set column widths
     sheet.setColumnWidth(0, 30);
@@ -100,5 +102,16 @@ class DashboardExcelExporter {
   static Future<File> _getOutputFile(String filename) async {
     final directory = await getApplicationDocumentsDirectory();
     return File('${directory.path}/$filename');
+  }
+
+  static List<MapEntry<String, int>> _fallbackCategoryRows(
+    DashboardStatistics dashboard,
+  ) {
+    return [
+      MapEntry('الأيتام', dashboard.categoryCounts['يتيم'] ?? 0),
+      MapEntry('الأرامل', dashboard.categoryCounts['أرملة'] ?? 0),
+      MapEntry('الفقراء', dashboard.categoryCounts['فقير'] ?? 0),
+      MapEntry('ذوي الإعاقة', dashboard.categoryCounts['معاق'] ?? 0),
+    ];
   }
 }

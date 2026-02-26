@@ -19,7 +19,11 @@ class RepresentativeDropdownV2 extends StatefulWidget {
   final VoidCallback onAddNew;
 
   const RepresentativeDropdownV2({
-    required this.selectedId, required this.onChanged, required this.representatives, required this.onAddNew, super.key,
+    required this.selectedId,
+    required this.onChanged,
+    required this.representatives,
+    required this.onAddNew,
+    super.key,
   });
 
   @override
@@ -28,6 +32,12 @@ class RepresentativeDropdownV2 extends StatefulWidget {
 
 class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
   late List<DropdownMenuItem<String?>> _items;
+
+  String? _normalizeId(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
 
   @override
   void initState() {
@@ -46,10 +56,18 @@ class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
   }
 
   void _rebuildItems() {
+    final seenIds = <String>{};
     _items = widget.representatives
+        .where((rep) {
+          final id = _normalizeId(rep.id);
+          if (id == null) return false;
+          if (seenIds.contains(id)) return false;
+          seenIds.add(id);
+          return true;
+        })
         .map(
           (rep) => DropdownMenuItem<String?>(
-            value: rep.id,
+            value: _normalizeId(rep.id),
             child: Text(rep.name, textAlign: TextAlign.right),
           ),
         )
@@ -59,13 +77,16 @@ class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final selectedId = _normalizeId(widget.selectedId);
+    final hasSelectedInItems = selectedId != null && _items.any((item) => item.value == selectedId);
+    final safeSelectedId = hasSelectedInItems ? selectedId : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Dropdown
         DropdownButtonFormField<String?>(
-          initialValue: widget.selectedId,
+          initialValue: safeSelectedId,
           decoration: InputDecoration(
             labelText: 'المندوب *',
             prefixIcon: Icon(Icons.person, size: 20.r),
@@ -82,7 +103,7 @@ class _RepresentativeDropdownV2State extends State<RepresentativeDropdownV2> {
             // 🚀 Unfocus لتحسين الأداء عند فتح dropdown
             FocusScope.of(context).unfocus();
           },
-          onChanged: widget.onChanged,
+          onChanged: (value) => widget.onChanged(_normalizeId(value)),
           validator: (value) {
             if (value == null) {
               return 'الرجاء اختيار المندوب';
@@ -154,7 +175,7 @@ class _AddRepresentativeBottomSheetState extends State<AddRepresentativeBottomSh
       if (!mounted) return;
 
       if (rep != null) {
-        Navigator.pop(context);
+        Navigator.pop(context, rep);
         widget.onAdded(rep);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم إضافة المندوب بنجاح')),

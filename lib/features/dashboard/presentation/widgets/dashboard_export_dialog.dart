@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../domain/entities/dashboard_statistics.dart'; // ✅ Use existing model
+import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../utils/dashboard_colors.dart';
 import '../utils/dashboard_text_styles.dart';
 import '../utils/dashboard_spacing.dart';
@@ -8,15 +12,17 @@ import '../utils/dashboard_pdf_exporter.dart';
 import '../utils/dashboard_excel_exporter.dart';
 
 /// Dashboard Export Dialog
-class DashboardExportDialog extends StatelessWidget {
+class DashboardExportDialog extends ConsumerWidget {
   final DashboardStatistics dashboard;
 
   const DashboardExportDialog({
-    required this.dashboard, super.key,
+    required this.dashboard,
+    super.key,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final categoryRows = _buildCategoryRows(ref, dashboard.categoryCounts);
     return Dialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(DashboardSpacing.radiusLarge),
@@ -52,7 +58,7 @@ class DashboardExportDialog extends StatelessWidget {
               title: 'تصدير PDF',
               subtitle: 'حفظ التقرير كملف PDF',
               color: Colors.red,
-              onTap: () => _exportPdf(context),
+              onTap: () => _exportPdf(context, categoryRows),
             ),
 
             SizedBox(height: DashboardSpacing.small),
@@ -63,7 +69,7 @@ class DashboardExportDialog extends StatelessWidget {
               title: 'تصدير Excel',
               subtitle: 'حفظ التقرير كملف Excel',
               color: Colors.green,
-              onTap: () => _exportExcel(context),
+              onTap: () => _exportExcel(context, categoryRows),
             ),
 
             SizedBox(height: DashboardSpacing.small),
@@ -74,7 +80,7 @@ class DashboardExportDialog extends StatelessWidget {
               title: 'طباعة',
               subtitle: 'طباعة التقرير مباشرة',
               color: Colors.blue,
-              onTap: () => _printDashboard(context),
+              onTap: () => _printDashboard(context, categoryRows),
             ),
 
             SizedBox(height: DashboardSpacing.small),
@@ -85,7 +91,7 @@ class DashboardExportDialog extends StatelessWidget {
               title: 'مشاركة',
               subtitle: 'مشاركة التقرير عبر التطبيقات',
               color: Colors.orange,
-              onTap: () => _shareDashboard(context),
+              onTap: () => _shareDashboard(context, categoryRows),
             ),
 
             SizedBox(height: DashboardSpacing.medium),
@@ -151,7 +157,10 @@ class DashboardExportDialog extends StatelessWidget {
     );
   }
 
-  Future<void> _exportPdf(BuildContext context) async {
+  Future<void> _exportPdf(
+    BuildContext context,
+    List<MapEntry<String, int>> categoryRows,
+  ) async {
     Navigator.pop(context);
 
     // Show loading
@@ -162,7 +171,10 @@ class DashboardExportDialog extends StatelessWidget {
     );
 
     try {
-      final file = await DashboardPdfExporter.exportToPdf(dashboard);
+      final file = await DashboardPdfExporter.exportToPdf(
+        dashboard,
+        categoryRows: categoryRows,
+      );
 
       if (context.mounted) {
         Navigator.pop(context); // Close loading
@@ -189,7 +201,10 @@ class DashboardExportDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _exportExcel(BuildContext context) async {
+  Future<void> _exportExcel(
+    BuildContext context,
+    List<MapEntry<String, int>> categoryRows,
+  ) async {
     Navigator.pop(context);
 
     showDialog(
@@ -199,7 +214,10 @@ class DashboardExportDialog extends StatelessWidget {
     );
 
     try {
-      final file = await DashboardExcelExporter.exportToExcel(dashboard);
+      final file = await DashboardExcelExporter.exportToExcel(
+        dashboard,
+        categoryRows: categoryRows,
+      );
 
       if (context.mounted) {
         Navigator.pop(context);
@@ -226,11 +244,17 @@ class DashboardExportDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _printDashboard(BuildContext context) async {
+  Future<void> _printDashboard(
+    BuildContext context,
+    List<MapEntry<String, int>> categoryRows,
+  ) async {
     Navigator.pop(context);
 
     try {
-      await DashboardPdfExporter.printDashboard(dashboard);
+      await DashboardPdfExporter.printDashboard(
+        dashboard,
+        categoryRows: categoryRows,
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -243,7 +267,10 @@ class DashboardExportDialog extends StatelessWidget {
     }
   }
 
-  Future<void> _shareDashboard(BuildContext context) async {
+  Future<void> _shareDashboard(
+    BuildContext context,
+    List<MapEntry<String, int>> categoryRows,
+  ) async {
     Navigator.pop(context);
 
     // Show format selection
@@ -259,7 +286,10 @@ class DashboardExportDialog extends StatelessWidget {
               title: const Text('PDF'),
               onTap: () async {
                 Navigator.pop(context);
-                await DashboardPdfExporter.sharePdf(dashboard);
+                await DashboardPdfExporter.sharePdf(
+                  dashboard,
+                  categoryRows: categoryRows,
+                );
               },
             ),
             ListTile(
@@ -267,12 +297,182 @@ class DashboardExportDialog extends StatelessWidget {
               title: const Text('Excel'),
               onTap: () async {
                 Navigator.pop(context);
-                await DashboardExcelExporter.shareExcel(dashboard);
+                await DashboardExcelExporter.shareExcel(
+                  dashboard,
+                  categoryRows: categoryRows,
+                );
               },
             ),
           ],
         ),
       ),
     );
+  }
+
+  List<MapEntry<String, int>> _buildCategoryRows(
+    WidgetRef ref,
+    Map<String, int> rawCounts,
+  ) {
+    final taxonomies = _mergeCategoryTaxonomies(ref);
+    final normalizedCounts = _normalizeCategoryCounts(rawCounts);
+    final labelByKey = _buildCategoryLabelMap(taxonomies);
+    final orderedKeys = _orderedCategoryKeys(normalizedCounts.keys.toList());
+
+    return orderedKeys.map((key) {
+      final label = labelByKey[key] ?? _fallbackLabelForKey(key) ?? key;
+      final count = normalizedCounts[key] ?? 0;
+      return MapEntry(label, count);
+    }).toList(growable: false);
+  }
+
+  List<taxonomy_domain.Taxonomy> _mergeCategoryTaxonomies(WidgetRef ref) {
+    final sectionAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section),
+    );
+    final categoryAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category),
+    );
+
+    final sectionItems = sectionAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final categoryItems = categoryAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+
+    final merged = <String, taxonomy_domain.Taxonomy>{
+      for (final item in sectionItems) item.id: item,
+      for (final item in categoryItems) item.id: item,
+    };
+
+    return merged.values.toList(growable: false);
+  }
+
+  Map<String, int> _normalizeCategoryCounts(Map<String, int> rawCounts) {
+    final normalized = <String, int>{};
+    rawCounts.forEach((key, value) {
+      final canonical = _canonicalizeCategoryKey(key);
+      if (canonical == null) {
+        normalized[key] = (normalized[key] ?? 0) + value;
+        return;
+      }
+      normalized[canonical] = (normalized[canonical] ?? 0) + value;
+    });
+    return normalized;
+  }
+
+  List<String> _orderedCategoryKeys(List<String> keys) {
+    final order = ['orphan', 'widow', 'poor', 'disabled'];
+    final ordered = <String>[];
+    for (final key in order) {
+      if (keys.contains(key)) {
+        ordered.add(key);
+      }
+    }
+    for (final key in keys) {
+      if (!ordered.contains(key)) {
+        ordered.add(key);
+      }
+    }
+    return ordered;
+  }
+
+  Map<String, String> _buildCategoryLabelMap(
+    List<taxonomy_domain.Taxonomy> items,
+  ) {
+    final labelByKey = <String, String>{};
+    for (final item in items) {
+      final candidates = <String?>[
+        _canonicalizeCategoryKey(item.code),
+        _canonicalizeCategoryKey(item.label),
+        _canonicalizeCategoryKey(_parseTaxonomyNumericKey(item)?.toString()),
+      ];
+      for (final candidate in candidates) {
+        if (candidate == null || labelByKey.containsKey(candidate)) {
+          continue;
+        }
+        final label = item.label.trim();
+        if (label.isNotEmpty) {
+          labelByKey[candidate] = label;
+        }
+      }
+    }
+    return labelByKey;
+  }
+
+  String? _canonicalizeCategoryKey(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+
+    final normalized = raw.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    switch (normalized) {
+      case '1':
+        return 'orphan';
+      case '2':
+        return 'poor';
+      case '3':
+        return 'widow';
+      case '4':
+        return 'disabled';
+      case 'orphan':
+      case 'orphans':
+      case 'يتيم':
+      case 'أيتام':
+        return 'orphan';
+      case 'widow':
+      case 'widows':
+      case 'أرملة':
+      case 'أرامل':
+        return 'widow';
+      case 'poor':
+      case 'فقير':
+      case 'فقراء':
+        return 'poor';
+      case 'disabled':
+      case 'معاق':
+      case 'ذوي الإعاقة':
+      case 'ذوي إعاقة':
+        return 'disabled';
+    }
+
+    return null;
+  }
+
+  String? _fallbackLabelForKey(String key) {
+    switch (key) {
+      case 'orphan':
+        return 'أيتام';
+      case 'widow':
+        return 'أرامل';
+      case 'poor':
+        return 'فقراء';
+      case 'disabled':
+        return 'ذوي الإعاقة';
+      default:
+        return null;
+    }
+  }
+
+  int? _parseTaxonomyNumericKey(taxonomy_domain.Taxonomy taxonomy) {
+    final code = int.tryParse(taxonomy.code.trim());
+    if (code != null) {
+      return code;
+    }
+
+    final rawId = taxonomy.id.trim();
+    if (rawId.isEmpty) {
+      return null;
+    }
+
+    final separatorIndex = rawId.indexOf('::');
+    final suffix = separatorIndex >= 0 ? rawId.substring(separatorIndex + 2) : rawId;
+    return int.tryParse(suffix.trim());
   }
 }

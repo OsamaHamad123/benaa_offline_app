@@ -40,6 +40,7 @@ class _RebuildLoggerState extends State<RebuildLogger> {
 
 // Debug-only global counters (used by tests to assert rebuild counts).
 final Map<String, int> _debugRebuildCounts = {};
+final Map<String, Map<String, dynamic>> _familyDialogDraftCache = <String, Map<String, dynamic>>{};
 void debugRebuildCountsReset() {
   if (kDebugMode) {
     _debugRebuildCounts.clear();
@@ -59,6 +60,7 @@ class ZeroLagFamilyDialog extends ConsumerStatefulWidget {
   final Map<String, dynamic>? existingMember;
   final bool isDeceased;
   final int? presetDeceasedType;
+  final bool fullScreen;
   final Function(Map<String, dynamic>) onSave;
 
   const ZeroLagFamilyDialog({
@@ -67,6 +69,7 @@ class ZeroLagFamilyDialog extends ConsumerStatefulWidget {
     this.existingMember,
     this.isDeceased = false,
     this.presetDeceasedType,
+    this.fullScreen = false,
   });
 
   @override
@@ -92,6 +95,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   late final ValueNotifier<bool> _isFetchingCivil;
   late final ValueNotifier<String?> _civilStatus;
   late final ValueNotifier<bool> _hideSearchButton;
+  late final ValueNotifier<String?> _nameValidationError;
+  late final ValueNotifier<String?> _nationalIdValidationError;
   // FocusNodes for fields - reuse to avoid reallocation and reduce focus churn
   late final FocusNode _firstNameFocus;
   late final FocusNode _secondNameFocus;
@@ -114,7 +119,90 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   late final Stopwatch _syncInitTimer;
   late final Stopwatch _initTimer;
   bool _didLogFirstFrame = false;
+  bool _didSave = false;
+  bool _restoredDraft = false;
+  late Map<String, dynamic> _initialSnapshot;
+  late final ValueNotifier<bool> _hasUnsavedChangesNotifier;
+  Timer? _autoDraftSaveTimer;
   Timer? _delayedDocumentTimer;
+
+  String get _draftKey =>
+      'family_dialog:${widget.isDeceased ? 'deceased' : 'orphan'}:${widget.presetDeceasedType ?? 0}';
+
+  bool get _isDraftEligible => widget.existingMember == null;
+
+  Map<String, dynamic> _currentSnapshot() {
+    return <String, dynamic>{
+      'firstName': _firstNameCtrl.text.trim(),
+      'secondName': _secondNameCtrl.text.trim(),
+      'thirdName': _thirdNameCtrl.text.trim(),
+      'familyName': _familyNameCtrl.text.trim(),
+      'nationalId': _nationalIdCtrl.text.trim(),
+      'notes': _notesCtrl.text.trim(),
+      'gender': _gender.value,
+      'date': _date.value,
+      'healthStatus': _healthStatus.value,
+      'deathCause': _deathCause.value,
+      'docType': _docType.value,
+      'documentFilePath': _selectedFile.value?.path,
+    };
+  }
+
+  bool get _hasUnsavedChanges {
+    if (_didSave) return false;
+    return !mapEquals(_initialSnapshot, _currentSnapshot());
+  }
+
+  void _updateUnsavedChangesFlag() {
+    final isDirty = _hasUnsavedChanges;
+    if (_hasUnsavedChangesNotifier.value != isDirty) {
+      _hasUnsavedChangesNotifier.value = isDirty;
+    }
+  }
+
+  void _onDraftRelevantFieldChanged() {
+    _updateUnsavedChangesFlag();
+  }
+
+  void _registerDraftRelevantListeners() {
+    _firstNameCtrl.addListener(_onDraftRelevantFieldChanged);
+    _secondNameCtrl.addListener(_onDraftRelevantFieldChanged);
+    _thirdNameCtrl.addListener(_onDraftRelevantFieldChanged);
+    _familyNameCtrl.addListener(_onDraftRelevantFieldChanged);
+    _nationalIdCtrl.addListener(_onDraftRelevantFieldChanged);
+    _notesCtrl.addListener(_onDraftRelevantFieldChanged);
+    _gender.addListener(_onDraftRelevantFieldChanged);
+    _date.addListener(_onDraftRelevantFieldChanged);
+    _healthStatus.addListener(_onDraftRelevantFieldChanged);
+    _deathCause.addListener(_onDraftRelevantFieldChanged);
+    _docType.addListener(_onDraftRelevantFieldChanged);
+    _selectedFile.addListener(_onDraftRelevantFieldChanged);
+  }
+
+  void _unregisterDraftRelevantListeners() {
+    _firstNameCtrl.removeListener(_onDraftRelevantFieldChanged);
+    _secondNameCtrl.removeListener(_onDraftRelevantFieldChanged);
+    _thirdNameCtrl.removeListener(_onDraftRelevantFieldChanged);
+    _familyNameCtrl.removeListener(_onDraftRelevantFieldChanged);
+    _nationalIdCtrl.removeListener(_onDraftRelevantFieldChanged);
+    _notesCtrl.removeListener(_onDraftRelevantFieldChanged);
+    _gender.removeListener(_onDraftRelevantFieldChanged);
+    _date.removeListener(_onDraftRelevantFieldChanged);
+    _healthStatus.removeListener(_onDraftRelevantFieldChanged);
+    _deathCause.removeListener(_onDraftRelevantFieldChanged);
+    _docType.removeListener(_onDraftRelevantFieldChanged);
+    _selectedFile.removeListener(_onDraftRelevantFieldChanged);
+  }
+
+  void _startPeriodicAutoDraftSave() {
+    _autoDraftSaveTimer?.cancel();
+    _autoDraftSaveTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (!mounted || !_isDraftEligible || _didSave) return;
+      if (_hasUnsavedChanges) {
+        _cacheDraftIfNeeded();
+      }
+    });
+  }
 
   Map<int, String> _taxonomyOptions(TaxonomyGroup group) {
     try {
@@ -220,6 +308,8 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _isFetchingCivil = ValueNotifier<bool>(false);
     _civilStatus = ValueNotifier<String?>(null);
     _hideSearchButton = ValueNotifier<bool>(false);
+    _nameValidationError = ValueNotifier<String?>(null);
+    _nationalIdValidationError = ValueNotifier<String?>(null);
     // Initialize focus nodes
     _firstNameFocus = FocusNode();
     _secondNameFocus = FocusNode();
@@ -240,6 +330,14 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
       _familyNameFocus: _familyNameKey,
       _nationalIdFocus: _nationalIdKey,
     };
+    _firstNameCtrl.addListener(_clearNameValidationOnEdit);
+    _familyNameCtrl.addListener(_clearNameValidationOnEdit);
+    _restoreDraftIfAvailable();
+    _initialSnapshot = _currentSnapshot();
+    _hasUnsavedChangesNotifier = ValueNotifier<bool>(false);
+    _registerDraftRelevantListeners();
+    _updateUnsavedChangesFlag();
+    _startPeriodicAutoDraftSave();
     // Ensure focused field is visible when keyboard opens
     // Listener registration is deferred until after first frame to avoid
     // firing ensureVisible during initial focus and causing input lag.
@@ -278,16 +376,37 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _hasUnsavedChangesNotifier,
+                        builder: (context, isDirty, _) => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (isDirty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  '• توجد تغييرات غير محفوظة',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _attemptClose,
                       icon: const Icon(Icons.close),
                     ),
                   ],
@@ -403,7 +522,12 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
 
   @override
   void dispose() {
+    _autoDraftSaveTimer?.cancel();
+    _cacheDraftIfNeeded();
+    _unregisterDraftRelevantListeners();
     _delayedDocumentTimer?.cancel();
+    _firstNameCtrl.removeListener(_clearNameValidationOnEdit);
+    _familyNameCtrl.removeListener(_clearNameValidationOnEdit);
     _firstNameCtrl.dispose();
     _secondNameCtrl.dispose();
     _thirdNameCtrl.dispose();
@@ -419,6 +543,9 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     _isFetchingCivil.dispose();
     _civilStatus.dispose();
     _hideSearchButton.dispose();
+    _nameValidationError.dispose();
+    _nationalIdValidationError.dispose();
+    _hasUnsavedChangesNotifier.dispose();
     _firstNameFocus.dispose();
     _secondNameFocus.dispose();
     _thirdNameFocus.dispose();
@@ -490,6 +617,10 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   }
 
   void _handleNationalIdChanged(String value) {
+    if (_nationalIdValidationError.value != null) {
+      _nationalIdValidationError.value = null;
+    }
+
     // Reset button visibility when ID changes
     if (value.length != 9) {
       _hideSearchButton.value = false;
@@ -499,6 +630,151 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     if (value.length == 9 && !_isFetchingCivil.value) {
       _fetchFromCivilRegistry();
     }
+  }
+
+  void _clearNameValidationOnEdit() {
+    if (_nameValidationError.value != null) {
+      _nameValidationError.value = null;
+    }
+  }
+
+  void _restoreDraftIfAvailable() {
+    if (!_isDraftEligible) return;
+    final draft = _familyDialogDraftCache[_draftKey];
+    if (draft == null || draft.isEmpty) return;
+
+    _firstNameCtrl.text = (draft['firstName'] as String?) ?? _firstNameCtrl.text;
+    _secondNameCtrl.text = (draft['secondName'] as String?) ?? _secondNameCtrl.text;
+    _thirdNameCtrl.text = (draft['thirdName'] as String?) ?? _thirdNameCtrl.text;
+    _familyNameCtrl.text = (draft['familyName'] as String?) ?? _familyNameCtrl.text;
+    _nationalIdCtrl.text = (draft['nationalId'] as String?) ?? _nationalIdCtrl.text;
+    _notesCtrl.text = (draft['notes'] as String?) ?? _notesCtrl.text;
+
+    final gender = draft['gender'] as int?;
+    if (gender != null) _gender.value = gender;
+    final date = draft['date'] as DateTime?;
+    if (date != null) _date.value = date;
+    _healthStatus.value = draft['healthStatus'] as int?;
+    _deathCause.value = draft['deathCause'] as int?;
+    _docType.value = draft['docType'] as int?;
+    _restoredDraft = true;
+  }
+
+  void _discardRestoredDraft() {
+    if (!_isDraftEligible) return;
+
+    _familyDialogDraftCache.remove(_draftKey);
+    _firstNameCtrl.clear();
+    _secondNameCtrl.clear();
+    _thirdNameCtrl.clear();
+    _familyNameCtrl.clear();
+    _nationalIdCtrl.clear();
+    _notesCtrl.clear();
+    _gender.value = 1;
+    _date.value = null;
+    _healthStatus.value = null;
+    _deathCause.value = null;
+    _docType.value = null;
+    _selectedFile.value = null;
+    _civilStatus.value = null;
+    _hideSearchButton.value = false;
+    _nameValidationError.value = null;
+    _nationalIdValidationError.value = null;
+    _initialSnapshot = _currentSnapshot();
+    _updateUnsavedChangesFlag();
+
+    if (mounted) {
+      setState(() {
+        _restoredDraft = false;
+      });
+    }
+  }
+
+  void _cacheDraftIfNeeded() {
+    if (!_isDraftEligible || _didSave) {
+      if (_isDraftEligible) {
+        _familyDialogDraftCache.remove(_draftKey);
+      }
+      return;
+    }
+
+    final hasMeaningfulInput = _firstNameCtrl.text.trim().isNotEmpty ||
+        _familyNameCtrl.text.trim().isNotEmpty ||
+        _nationalIdCtrl.text.trim().isNotEmpty ||
+        _notesCtrl.text.trim().isNotEmpty;
+
+    if (!hasMeaningfulInput) {
+      _familyDialogDraftCache.remove(_draftKey);
+      return;
+    }
+
+    _familyDialogDraftCache[_draftKey] = <String, dynamic>{
+      'firstName': _firstNameCtrl.text,
+      'secondName': _secondNameCtrl.text,
+      'thirdName': _thirdNameCtrl.text,
+      'familyName': _familyNameCtrl.text,
+      'nationalId': _nationalIdCtrl.text,
+      'notes': _notesCtrl.text,
+      'gender': _gender.value,
+      'date': _date.value,
+      'healthStatus': _healthStatus.value,
+      'deathCause': _deathCause.value,
+      'docType': _docType.value,
+    };
+
+    _updateUnsavedChangesFlag();
+  }
+
+  void _saveDraftExplicit() {
+    _cacheDraftIfNeeded();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('💾 تم حفظ المسودة'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<bool> _confirmCloseIfNeeded() async {
+    if (!_hasUnsavedChanges) {
+      return true;
+    }
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('تغييرات غير محفوظة'),
+        content: const Text('لديك تغييرات غير محفوظة. ماذا تريد أن تفعل؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'continue'),
+            child: const Text('متابعة التحرير'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'discard'),
+            child: const Text('خروج بدون حفظ'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, 'draft'),
+            child: const Text('حفظ مسودة ثم خروج'),
+          ),
+        ],
+      ),
+    );
+
+    if (action == 'draft') {
+      _cacheDraftIfNeeded();
+      return true;
+    }
+
+    return action == 'discard';
+  }
+
+  Future<void> _attemptClose() async {
+    final shouldClose = await _confirmCloseIfNeeded();
+    if (!mounted || !shouldClose) return;
+    Navigator.of(context).pop();
   }
 
   /// Pick document file
@@ -524,27 +800,20 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
   }
 
   void _save() async {
+    _nameValidationError.value = null;
+    _nationalIdValidationError.value = null;
+
     // Validation محسّن
     if (_firstNameCtrl.text.trim().isEmpty) {
       HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ يرجى إدخال الاسم الأول'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _nameValidationError.value = 'يرجى إدخال الاسم الأول';
       _firstNameFocus.requestFocus();
       return;
     }
 
     if (_familyNameCtrl.text.trim().isEmpty) {
       HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ يرجى إدخال اسم العائلة'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _nameValidationError.value = 'يرجى إدخال اسم العائلة';
       _familyNameFocus.requestFocus();
       return;
     }
@@ -553,12 +822,7 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     final nationalId = _nationalIdCtrl.text.trim();
     if (nationalId.isNotEmpty && nationalId.length != 9) {
       HapticFeedback.heavyImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ الرقم الوطني يجب أن يكون 9 أرقام'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      _nationalIdValidationError.value = 'الرقم الوطني يجب أن يكون 9 أرقام';
       _nationalIdFocus.requestFocus();
       return;
     }
@@ -637,6 +901,11 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
 
     // تأكيد النجاح
     HapticFeedback.mediumImpact();
+    _didSave = true;
+    if (_isDraftEligible) {
+      _familyDialogDraftCache.remove(_draftKey);
+    }
+    _updateUnsavedChangesFlag();
     widget.onSave(data);
     Navigator.pop(context);
 
@@ -668,197 +937,291 @@ class _ZeroLagFamilyDialogState extends ConsumerState<ZeroLagFamilyDialog> {
     }
 
     final size = MediaQuery.of(context).size;
+    final dialogBody = MediaQuery.removeViewInsets(
+      context: context,
+      removeBottom: true,
+      child: Container(
+        width: widget.fullScreen ? double.infinity : (size.width > 600 ? 500 : size.width - 32),
+        constraints: widget.fullScreen ? const BoxConstraints.expand() : BoxConstraints(maxHeight: size.height * 0.85),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header (hoisted)
+            _hoistedHeader,
 
-    return Dialog(
-      insetPadding: const EdgeInsets.all(16),
-      // Prevent the dialog from resizing when the keyboard appears.
-      child: MediaQuery.removeViewInsets(
-        context: context,
-        removeBottom: true,
-        child: Container(
-          width: size.width > 600 ? 500 : size.width - 32,
-          constraints: BoxConstraints(maxHeight: size.height * 0.85),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header (hoisted)
-              _hoistedHeader,
-
-              // Content
-              Expanded(
-                // Use a single-child scroll view + Column to minimize
-                // expensive ListView rebuilding when the keyboard appears.
-                child: SingleChildScrollView(
-                  controller: _scrollCtrl,
-                  padding: const EdgeInsets.all(12),
-                  child: RebuildLogger(
-                    name: 'dialog_content',
-                    child: Column(
-                      children: [
-                        // Name Fields - استخدام الـ widget الجديد
-                        NameFieldsSection(
-                          firstNameController: _firstNameCtrl,
-                          secondNameController: _secondNameCtrl,
-                          thirdNameController: _thirdNameCtrl,
-                          familyNameController: _familyNameCtrl,
-                          firstNameFocus: _firstNameFocus,
-                          secondNameFocus: _secondNameFocus,
-                          thirdNameFocus: _thirdNameFocus,
-                          familyNameFocus: _familyNameFocus,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // National ID - استخدام الـ widget الجديد مع civil registry
-                        ValueListenableBuilder3<bool, String?, bool>(
-                          first: _isFetchingCivil,
-                          second: _civilStatus,
-                          third: _hideSearchButton,
-                          builder: (context, isFetching, status, hideButton, _) {
-                            return NationalIdWithCivilRegistry(
-                              nationalIdController: _nationalIdCtrl,
-                              isFetching: isFetching,
-                              statusMessage: status,
-                              hideButtonAfterFetch: hideButton,
-                              onFetch: _fetchFromCivilRegistry,
-                              onChanged: _handleNationalIdChanged,
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Gender - استخدام الـ widget الجديد
-                        RebuildLogger(
-                          name: 'gender_section',
-                          child: ValueListenableBuilder<int>(
-                            valueListenable: _gender,
-                            builder: (_, gender, __) => GenderSelector(
-                              selectedGender: gender,
-                              onChanged: (value) => _gender.value = value,
+            // Content
+            Expanded(
+              // Use a single-child scroll view + Column to minimize
+              // expensive ListView rebuilding when the keyboard appears.
+              child: SingleChildScrollView(
+                controller: _scrollCtrl,
+                padding: const EdgeInsets.all(12),
+                child: RebuildLogger(
+                  name: 'dialog_content',
+                  child: Column(
+                    children: [
+                      // Name Fields - استخدام الـ widget الجديد
+                      NameFieldsSection(
+                        firstNameController: _firstNameCtrl,
+                        secondNameController: _secondNameCtrl,
+                        thirdNameController: _thirdNameCtrl,
+                        familyNameController: _familyNameCtrl,
+                        firstNameFocus: _firstNameFocus,
+                        secondNameFocus: _secondNameFocus,
+                        thirdNameFocus: _thirdNameFocus,
+                        familyNameFocus: _familyNameFocus,
+                      ),
+                      ValueListenableBuilder<String?>(
+                        valueListenable: _nameValidationError,
+                        builder: (context, error, _) {
+                          if (error == null || error.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                error,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
 
-                        // Date
-                        ValueListenableBuilder<DateTime?>(
-                          valueListenable: _date,
-                          builder: (context, date, _) => InkWell(
-                            onTap: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: date ?? DateTime.now(),
-                                firstDate: DateTime(1900),
-                                lastDate: DateTime.now(),
-                              );
-                              if (picked != null) _date.value = picked;
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade300),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.calendar_today),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      date != null
-                                          ? '${date.day}/${date.month}/${date.year}'
-                                          : (widget.isDeceased
-                                              ? 'تاريخ الوفاة - اضغط للاختيار'
-                                              : 'تاريخ الميلاد - اضغط للاختيار'),
+                      if (_restoredDraft)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'تم استعادة مسودة غير محفوظة',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ],
+                                ),
+                                TextButton(
+                                  onPressed: _discardRestoredDraft,
+                                  child: const Text('تجاهل'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // National ID - استخدام الـ widget الجديد مع civil registry
+                      ValueListenableBuilder3<bool, String?, bool>(
+                        first: _isFetchingCivil,
+                        second: _civilStatus,
+                        third: _hideSearchButton,
+                        builder: (context, isFetching, status, hideButton, _) {
+                          return NationalIdWithCivilRegistry(
+                            nationalIdController: _nationalIdCtrl,
+                            isFetching: isFetching,
+                            statusMessage: status,
+                            hideButtonAfterFetch: hideButton,
+                            onFetch: _fetchFromCivilRegistry,
+                            onChanged: _handleNationalIdChanged,
+                          );
+                        },
+                      ),
+                      ValueListenableBuilder<String?>(
+                        valueListenable: _nationalIdValidationError,
+                        builder: (context, error, _) {
+                          if (error == null || error.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                error,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Gender - استخدام الـ widget الجديد
+                      RebuildLogger(
+                        name: 'gender_section',
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _gender,
+                          builder: (_, gender, __) => GenderSelector(
+                            selectedGender: gender,
+                            onChanged: (value) => _gender.value = value,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Date
+                      ValueListenableBuilder<DateTime?>(
+                        valueListenable: _date,
+                        builder: (context, date, _) => InkWell(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: date ?? DateTime.now(),
+                              firstDate: DateTime(1900),
+                              lastDate: DateTime.now(),
+                            );
+                            if (picked != null) _date.value = picked;
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    date != null
+                                        ? '${date.day}/${date.month}/${date.year}'
+                                        : (widget.isDeceased
+                                            ? 'تاريخ الوفاة - اضغط للاختيار'
+                                            : 'تاريخ الميلاد - اضغط للاختيار'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Conditional Fields
+                      if (widget.isDeceased) ...[
+                        ValueListenableBuilder<int?>(
+                          valueListenable: _deathCause,
+                          builder: (_, cause, __) => _ChipSelector(
+                            label: 'سبب الوفاة',
+                            options: _taxonomyOptions(TaxonomyGroup.deathReason),
+                            selected: cause,
+                            onSelect: (v) => _deathCause.value = v,
                           ),
                         ),
                         const SizedBox(height: 16),
-
-                        // Conditional Fields
-                        if (widget.isDeceased) ...[
-                          ValueListenableBuilder<int?>(
-                            valueListenable: _deathCause,
-                            builder: (_, cause, __) => _ChipSelector(
-                              label: 'سبب الوفاة',
-                              options: _taxonomyOptions(TaxonomyGroup.deathReason),
-                              selected: cause,
-                              onSelect: (v) => _deathCause.value = v,
-                            ),
+                        ValueListenableBuilder<int?>(
+                          valueListenable: _docType,
+                          builder: (_, type, __) => _ChipSelector(
+                            label: 'نوع الوثيقة',
+                            options: _taxonomyOptions(TaxonomyGroup.documentType),
+                            selected: type,
+                            onSelect: (v) => _docType.value = v,
                           ),
-                          const SizedBox(height: 16),
-                          ValueListenableBuilder<int?>(
-                            valueListenable: _docType,
-                            builder: (_, type, __) => _ChipSelector(
-                              label: 'نوع الوثيقة',
-                              options: _taxonomyOptions(TaxonomyGroup.documentType),
-                              selected: type,
-                              onSelect: (v) => _docType.value = v,
-                            ),
+                        ),
+                      ] else ...[
+                        ValueListenableBuilder<int?>(
+                          valueListenable: _healthStatus,
+                          builder: (_, status, __) => _ChipSelector(
+                            label: 'الحالة الصحية',
+                            options: _taxonomyOptions(TaxonomyGroup.healthStatus),
+                            selected: status,
+                            onSelect: (v) => _healthStatus.value = v,
                           ),
-                        ] else ...[
-                          ValueListenableBuilder<int?>(
-                            valueListenable: _healthStatus,
-                            builder: (_, status, __) => _ChipSelector(
-                              label: 'الحالة الصحية',
-                              options: _taxonomyOptions(TaxonomyGroup.healthStatus),
-                              selected: status,
-                              onSelect: (v) => _healthStatus.value = v,
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-
-                        // Document Upload Section (hoisted)
-                        if (widget.isDeceased) ...[_hoistedDocumentSection],
-                        const SizedBox(height: 16),
-
-                        // Notes
-                        TextField(
-                          controller: _notesCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'ملاحظات',
-                            border: OutlineInputBorder(),
-                          ),
-                          maxLines: 2,
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 16),
+
+                      // Document Upload Section (hoisted)
+                      if (widget.isDeceased) ...[_hoistedDocumentSection],
+                      const SizedBox(height: 16),
+
+                      // Notes
+                      TextField(
+                        controller: _notesCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'ملاحظات',
+                          border: OutlineInputBorder(),
+                        ),
+                        maxLines: 2,
+                      ),
+                    ],
                   ),
                 ),
               ),
-              // Actions
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('إلغاء'),
-                      ),
+            ),
+            // Actions
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _attemptClose,
+                      child: const Text('إلغاء'),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: FilledButton(
-                        onPressed: _save,
-                        child: const Text('حفظ'),
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextButton(
+                      onPressed: _saveDraftExplicit,
+                      child: const Text('حفظ مسودة'),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton(
+                      onPressed: _save,
+                      child: const Text('حفظ'),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+
+    final guardedDialogBody = WillPopScope(
+      onWillPop: _confirmCloseIfNeeded,
+      child: dialogBody,
+    );
+
+    if (widget.fullScreen) {
+      return Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: SafeArea(child: guardedDialogBody),
+      );
+    }
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      child: guardedDialogBody,
     );
   }
 

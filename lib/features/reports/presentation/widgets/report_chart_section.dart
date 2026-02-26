@@ -1,19 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// 📊 Report Chart Section with interactive charts
-class ReportChartSection extends StatefulWidget {
+class ReportChartSection extends ConsumerStatefulWidget {
   const ReportChartSection({super.key});
 
   @override
-  State<ReportChartSection> createState() => _ReportChartSectionState();
+  ConsumerState<ReportChartSection> createState() => _ReportChartSectionState();
 }
 
-class _ReportChartSectionState extends State<ReportChartSection> {
+class _ReportChartSectionState extends ConsumerState<ReportChartSection> {
   int _selectedCategoryIndex = -1;
 
   @override
   Widget build(BuildContext context) {
+    final governoratesAsync = ref.watch(bridgeGovernoratesProvider);
+    final governorateLabels = governoratesAsync.maybeWhen(
+      data: (items) => items.map((item) => item.label).toList(growable: false),
+      orElse: () => const <String>[],
+    );
+    final categoryTaxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section),
+    );
+    final categoryTaxonomies = categoryTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final chartCategories = _buildCategoryItems(categoryTaxonomies);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -37,13 +55,12 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                       PieChartData(
                         sectionsSpace: 2,
                         centerSpaceRadius: 40,
-                        sections: _buildPieChartSections(),
+                        sections: _buildPieChartSections(chartCategories),
                         pieTouchData: PieTouchData(
                           touchCallback: (event, response) {
                             setState(() {
                               if (response?.touchedSection != null) {
-                                _selectedCategoryIndex = response!
-                                    .touchedSection!.touchedSectionIndex;
+                                _selectedCategoryIndex = response!.touchedSection!.touchedSectionIndex;
                               }
                             });
                           },
@@ -52,7 +69,7 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                     ),
                   ),
                   const SizedBox(width: 24),
-                  Expanded(child: _buildLegend()),
+                  Expanded(child: _buildLegend(chartCategories)),
                 ],
               ),
             ),
@@ -83,12 +100,10 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                       sideTitles: SideTitles(
                         showTitles: true,
                         getTitlesWidget: (value, meta) {
-                          const governorates = [
-                            'دمشق',
-                            'حلب',
-                            'حمص',
-                            'اللاذقية',
-                          ];
+                          final governorates = governorateLabels.isEmpty
+                              ? const ['منطقة 1', 'منطقة 2', 'منطقة 3', 'منطقة 4']
+                              : governorateLabels.take(4).toList(growable: false);
+
                           if (value.toInt() < governorates.length) {
                             return Padding(
                               padding: const EdgeInsets.only(top: 8),
@@ -108,12 +123,8 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                         reservedSize: 40,
                       ),
                     ),
-                    topTitles: const AxisTitles(
-                      
-                    ),
-                    rightTitles: const AxisTitles(
-                      
-                    ),
+                    topTitles: const AxisTitles(),
+                    rightTitles: const AxisTitles(),
                   ),
                 ),
               ),
@@ -124,22 +135,15 @@ class _ReportChartSectionState extends State<ReportChartSection> {
     );
   }
 
-  List<PieChartSectionData> _buildPieChartSections() {
-    final categories = [
-      ('عائلات', 450, Colors.blue),
-      ('أطفال', 320, Colors.green),
-      ('مسنين', 180, Colors.orange),
-      ('ذوي احتياجات', 284, Colors.purple),
-    ];
-
+  List<PieChartSectionData> _buildPieChartSections(List<_CategoryChartItem> categories) {
     return List.generate(categories.length, (index) {
       final isSelected = index == _selectedCategoryIndex;
       final category = categories[index];
 
       return PieChartSectionData(
-        value: category.$2.toDouble(),
-        title: '${category.$2}',
-        color: category.$3,
+        value: category.count.toDouble(),
+        title: '${category.count}',
+        color: category.color,
         radius: isSelected ? 70 : 60,
         titleStyle: TextStyle(
           fontSize: isSelected ? 14 : 12,
@@ -150,14 +154,7 @@ class _ReportChartSectionState extends State<ReportChartSection> {
     });
   }
 
-  Widget _buildLegend() {
-    final categories = [
-      ('عائلات', Colors.blue),
-      ('أطفال', Colors.green),
-      ('مسنين', Colors.orange),
-      ('ذوي احتياجات', Colors.purple),
-    ];
-
+  Widget _buildLegend(List<_CategoryChartItem> categories) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,12 +168,12 @@ class _ReportChartSectionState extends State<ReportChartSection> {
                     width: 16,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: cat.$2,
+                      color: cat.color,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(cat.$1, style: const TextStyle(fontSize: 12)),
+                  Text(cat.label, style: const TextStyle(fontSize: 12)),
                 ],
               ),
             ),
@@ -203,4 +200,66 @@ class _ReportChartSectionState extends State<ReportChartSection> {
       ),
     );
   }
+
+  List<_CategoryChartItem> _buildCategoryItems(
+    List<taxonomy_domain.Taxonomy> taxonomies,
+  ) {
+    final fallback = <_CategoryChartItem>[
+      _CategoryChartItem(label: 'عائلات', count: 450, color: Colors.blue),
+      _CategoryChartItem(label: 'أطفال', count: 320, color: Colors.green),
+      _CategoryChartItem(label: 'مسنين', count: 180, color: Colors.orange),
+      _CategoryChartItem(label: 'ذوي احتياجات', count: 284, color: Colors.purple),
+    ];
+
+    if (taxonomies.isEmpty) {
+      return fallback;
+    }
+
+    final fallbackCounts = fallback.map((item) => item.count).toList(growable: false);
+    final fallbackColors = fallback.map((item) => item.color).toList(growable: false);
+    final items = <_CategoryChartItem>[];
+    final length = taxonomies.length < fallbackCounts.length ? taxonomies.length : fallbackCounts.length;
+
+    for (var i = 0; i < length; i++) {
+      final taxonomy = taxonomies[i];
+      final label = taxonomy.label.trim().isNotEmpty ? taxonomy.label : fallback[i].label;
+      final color = _parseTaxonomyColor(taxonomy.color) ?? fallbackColors[i];
+      items.add(_CategoryChartItem(label: label, count: fallbackCounts[i], color: color));
+    }
+
+    return items;
+  }
+
+  Color? _parseTaxonomyColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+}
+
+class _CategoryChartItem {
+  final String label;
+  final int count;
+  final Color color;
+
+  const _CategoryChartItem({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
 }

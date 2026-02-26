@@ -9,6 +9,27 @@ import 'zero_lag_family_dialog.dart'; // ⚡ Optimized version
 import '../../../pages/v2_form_helpers/widgets/empty_state_widget.dart'
     as BeneficiaryEmpty; // ✅ Avoid conflict with Reports widget
 
+Future<void> _showAdaptiveFamilyDialog(
+  BuildContext context, {
+  required void Function(Map<String, dynamic>) onSave,
+  Map<String, dynamic>? existingMember,
+  bool isDeceased = false,
+  int? presetDeceasedType,
+}) {
+  final isMobile = MediaQuery.of(context).size.width < 600;
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => ZeroLagFamilyDialog(
+      onSave: onSave,
+      existingMember: existingMember,
+      isDeceased: isDeceased,
+      presetDeceasedType: presetDeceasedType,
+      fullScreen: isMobile,
+    ),
+  );
+}
+
 /// 👥 تبويب أفراد العائلة - تصميم محسّن بدون AppBar
 ///
 /// التصميم الجديد:
@@ -21,16 +42,15 @@ class V2FamilyMembersTabRedesigned extends ConsumerStatefulWidget {
   final BeneficiaryFormControllers formControllers;
 
   const V2FamilyMembersTabRedesigned({
-    required this.formControllers, super.key,
+    required this.formControllers,
+    super.key,
   });
 
   @override
-  ConsumerState<V2FamilyMembersTabRedesigned> createState() =>
-      _V2FamilyMembersTabRedesignedState();
+  ConsumerState<V2FamilyMembersTabRedesigned> createState() => _V2FamilyMembersTabRedesignedState();
 }
 
-class _V2FamilyMembersTabRedesignedState
-    extends ConsumerState<V2FamilyMembersTabRedesigned>
+class _V2FamilyMembersTabRedesignedState extends ConsumerState<V2FamilyMembersTabRedesigned>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -68,8 +88,7 @@ class _DeceasedParentsSection extends StatefulWidget {
   const _DeceasedParentsSection({required this.formControllers, super.key});
 
   @override
-  State<_DeceasedParentsSection> createState() =>
-      _DeceasedParentsSectionState();
+  State<_DeceasedParentsSection> createState() => _DeceasedParentsSectionState();
 }
 
 class _DeceasedParentsSectionState extends State<_DeceasedParentsSection> {
@@ -78,10 +97,12 @@ class _DeceasedParentsSectionState extends State<_DeceasedParentsSection> {
     return ValueListenableBuilder<List<Map<String, dynamic>>>(
       valueListenable: widget.formControllers.deceasedMembersNotifier,
       builder: (context, deceasedMembers, _) {
-        final father =
-            deceasedMembers.where((d) => d['deceasedType'] == 1).firstOrNull;
-        final mother =
-            deceasedMembers.where((d) => d['deceasedType'] == 2).firstOrNull;
+        final father = deceasedMembers
+            .where((d) => _parseDeceasedType(d['deceasedType'] ?? d['deceased_type'] ?? d['type']) == 1)
+            .firstOrNull;
+        final mother = deceasedMembers
+            .where((d) => _parseDeceasedType(d['deceasedType'] ?? d['deceased_type'] ?? d['type']) == 2)
+            .firstOrNull;
 
         return Card(
           elevation: 2,
@@ -144,6 +165,16 @@ class _DeceasedParentsSectionState extends State<_DeceasedParentsSection> {
     if (mother != null) return 'الأم متوفية';
     return 'لم يتم التسجيل';
   }
+
+  int? _parseDeceasedType(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    final raw = value.toString().trim().toLowerCase();
+    if (raw.isEmpty) return null;
+    if (raw == '1' || raw == 'father' || raw == 'أب') return 1;
+    if (raw == '2' || raw == 'mother' || raw == 'أم') return 2;
+    return int.tryParse(raw);
+  }
 }
 
 /// كارت الوالد/الوالدة
@@ -201,7 +232,7 @@ class _ParentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${data!['firstName'] ?? ''} ${data!['familyName'] ?? ''}',
+                  _displayName(data!),
                   style: TextStyle(
                     fontSize: ResponsiveUtils.bodyFont,
                     fontWeight: FontWeight.bold,
@@ -209,7 +240,7 @@ class _ParentCard extends StatelessWidget {
                 ),
                 SizedBox(height: ResponsiveUtils.xSmallSpace),
                 Text(
-                  'هوية: ${data!['nationalId'] ?? 'غير محدد'}',
+                  'هوية: ${_displayNationalId(data!)}',
                   style: TextStyle(
                     fontSize: ResponsiveUtils.smallFont,
                     color: Colors.grey.shade600,
@@ -236,42 +267,38 @@ class _ParentCard extends StatelessWidget {
   void _showAddDialog(BuildContext context) {
     final deceasedType = type == 'أب' ? 1 : 2;
 
-    showDialog(
-      context: context,
-      builder: (context) => ZeroLagFamilyDialog(
-        isDeceased: true,
-        presetDeceasedType: deceasedType,
-        onSave: (memberData) {
-          formControllers.addDeceasedMember(memberData);
-          ToastHelper.showSuccess('تم الحفظ بنجاح');
-          // parent sections listen to controller notifiers and will rebuild
-        },
-      ),
+    _showAdaptiveFamilyDialog(
+      context,
+      isDeceased: true,
+      presetDeceasedType: deceasedType,
+      onSave: (memberData) {
+        formControllers.addDeceasedMember(memberData);
+        ToastHelper.showSuccess('تم الحفظ بنجاح');
+        // parent sections listen to controller notifiers and will rebuild
+      },
     );
   }
 
   void _showEditDialog(BuildContext context) {
     final deceasedType = type == 'أب' ? 1 : 2;
     final existingData = formControllers.deceasedMembers
-        .where((d) => d['deceasedType'] == deceasedType)
+        .where((d) => _parseDeceasedType(d['deceasedType'] ?? d['deceased_type'] ?? d['type']) == deceasedType)
         .firstOrNull;
 
-    showDialog(
-      context: context,
-      builder: (context) => ZeroLagFamilyDialog(
-        isDeceased: true,
-        presetDeceasedType: deceasedType,
-        existingMember: existingData,
-        onSave: (memberData) {
-          final index = formControllers.deceasedMembers.indexWhere(
-            (d) => d['deceasedType'] == deceasedType,
-          );
-          if (index != -1) {
-            formControllers.updateDeceasedMember(index, memberData);
-          }
-          ToastHelper.showSuccess('تم التحديث بنجاح');
-        },
-      ),
+    _showAdaptiveFamilyDialog(
+      context,
+      isDeceased: true,
+      presetDeceasedType: deceasedType,
+      existingMember: existingData,
+      onSave: (memberData) {
+        final index = formControllers.deceasedMembers.indexWhere(
+          (d) => _parseDeceasedType(d['deceasedType'] ?? d['deceased_type'] ?? d['type']) == deceasedType,
+        );
+        if (index != -1) {
+          formControllers.updateDeceasedMember(index, memberData);
+        }
+        ToastHelper.showSuccess('تم التحديث بنجاح');
+      },
     );
   }
 
@@ -302,6 +329,41 @@ class _ParentCard extends StatelessWidget {
       ),
     );
   }
+
+  int? _parseDeceasedType(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    final raw = value.toString().trim().toLowerCase();
+    if (raw.isEmpty) return null;
+    if (raw == '1' || raw == 'father' || raw == 'أب') return 1;
+    if (raw == '2' || raw == 'mother' || raw == 'أم') return 2;
+    return int.tryParse(raw);
+  }
+
+  String _displayName(Map<String, dynamic> data) {
+    final first = _firstNonEmpty(data, const ['firstName', 'first_name', 'name']) ?? '';
+    final family = _firstNonEmpty(data, const ['familyName', 'family_name', 'lastName', 'last_name']) ?? '';
+    final fullName = '$first $family'.trim();
+    return fullName.isEmpty ? 'غير محدد' : fullName;
+  }
+
+  String _displayNationalId(Map<String, dynamic> data) {
+    final id = _firstNonEmpty(data, const ['nationalId', 'national_id', 'id_number']);
+    if (id == null || id.isEmpty || id == '0') {
+      return 'غير محدد';
+    }
+    return id;
+  }
+
+  String? _firstNonEmpty(Map<String, dynamic> data, List<String> keys) {
+    for (final key in keys) {
+      final value = data[key];
+      if (value == null) continue;
+      final text = value.toString().trim();
+      if (text.isNotEmpty) return text;
+    }
+    return null;
+  }
 }
 
 /// 👶 قسم الأيتام
@@ -315,6 +377,38 @@ class _OrphansSection extends StatefulWidget {
 }
 
 class _OrphansSectionState extends State<_OrphansSection> {
+  Future<void> _showCopyFromLastOptions(BuildContext context) async {
+    if (widget.formControllers.livingMembers.isEmpty) {
+      _showAddOrphanDialog(context);
+      return;
+    }
+
+    final copyMode = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('نسخ من آخر يتيم'),
+        content: const Text('اختر نوع النسخ:'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'familyOnly'),
+            child: const Text('نسخ اسم العائلة فقط'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'full'),
+            child: const Text('نسخ كامل البيانات'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إلغاء'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || copyMode == null) return;
+    _showAddOrphanDialog(context, copyMode: copyMode);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<List<Map<String, dynamic>>>(
@@ -346,6 +440,7 @@ class _OrphansSectionState extends State<_OrphansSection> {
                 padding: EdgeInsets.all(ResponsiveUtils.mediumSpace),
                 child: orphansCount == 0
                     ? BeneficiaryEmpty.EmptyStateWidget.noFamilyMembers(
+                        compact: true,
                         onAdd: () => _showAddOrphanDialog(context),
                       )
                     : Column(
@@ -362,6 +457,17 @@ class _OrphansSectionState extends State<_OrphansSection> {
                                 color: Colors.green.shade700,
                                 width: 1.5,
                               ),
+                            ),
+                          ),
+
+                          SizedBox(height: ResponsiveUtils.smallSpace),
+
+                          OutlinedButton.icon(
+                            onPressed: () => _showCopyFromLastOptions(context),
+                            icon: const Icon(Icons.copy_rounded),
+                            label: const Text('نسخ من آخر يتيم'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: Size(double.infinity, 44.h),
                             ),
                           ),
 
@@ -401,15 +507,29 @@ class _OrphansSectionState extends State<_OrphansSection> {
     );
   }
 
-  void _showAddOrphanDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => ZeroLagFamilyDialog(
-        onSave: (memberData) {
-          widget.formControllers.addLivingMember(memberData);
-          ToastHelper.showSuccess('تمت الإضافة بنجاح');
-        },
-      ),
+  void _showAddOrphanDialog(BuildContext context, {String copyMode = 'none'}) {
+    Map<String, dynamic>? template;
+    if (copyMode != 'none' && widget.formControllers.livingMembers.isNotEmpty) {
+      final last = widget.formControllers.livingMembers.last;
+      if (copyMode == 'familyOnly') {
+        template = <String, dynamic>{
+          'familyName': last['familyName'] ?? '',
+        };
+      } else {
+        template = <String, dynamic>{
+          ...last,
+          'orphanNationalId': null,
+        };
+      }
+    }
+
+    _showAdaptiveFamilyDialog(
+      context,
+      existingMember: template,
+      onSave: (memberData) {
+        widget.formControllers.addLivingMember(memberData);
+        ToastHelper.showSuccess('تمت الإضافة بنجاح');
+      },
     );
   }
 }
@@ -422,7 +542,10 @@ class _OrphanCard extends StatelessWidget {
   // Notifier-based: onUpdate removed
 
   const _OrphanCard({
-    required this.data, required this.index, required this.formControllers, super.key,
+    required this.data,
+    required this.index,
+    required this.formControllers,
+    super.key,
     // no onUpdate
   });
 
@@ -505,15 +628,13 @@ class _OrphanCard extends StatelessWidget {
   }
 
   void _showEditDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => ZeroLagFamilyDialog(
-        existingMember: data,
-        onSave: (memberData) {
-          formControllers.updateLivingMember(index, memberData);
-          ToastHelper.showSuccess('تم التحديث بنجاح');
-        },
-      ),
+    _showAdaptiveFamilyDialog(
+      context,
+      existingMember: data,
+      onSave: (memberData) {
+        formControllers.updateLivingMember(index, memberData);
+        ToastHelper.showSuccess('تم التحديث بنجاح');
+      },
     );
   }
 

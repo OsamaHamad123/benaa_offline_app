@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/notifications/notifications_service.dart';
 import '../../data/datasources/database_download_service.dart';
 import '../../domain/entities/download_progress.dart';
 import '../pages/config/download_config.dart';
@@ -72,6 +73,7 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
   final DatabaseDownloadService _downloadService;
   SharedPreferences? _prefs;
   bool _isInitialized = false;
+  int _lastNotifiedProgress = -1;
 
   DatabaseDownloadNotifier(this._downloadService) : super(DatabaseDownloadState.initial()) {
     _init();
@@ -139,6 +141,9 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     await _init();
     // عند بدء التحميل، نلغي حالة التخطي
     await clearSkipStatus();
+    _lastNotifiedProgress = -1;
+
+    await NotificationsService.requestPermissions();
 
     try {
       await _downloadService.downloadDatabase(
@@ -147,11 +152,15 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
           if (!mounted) return;
           state = state.copyWith(progress: progress);
 
+          _handleCivilDbProgressNotification(progress);
+
           if (progress.isComplete) {
             _checkDatabase();
           }
         },
       );
+
+      await NotificationsService.showCivilDbDownloadCompleted();
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(
@@ -163,22 +172,27 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
           errorMessage: e.toString(),
         ),
       );
+
+      await NotificationsService.showCivilDbDownloadFailed(_extractErrorMessage(e));
     }
   }
 
   /// إلغاء التحميل
   void cancelDownload() {
     _downloadService.cancelDownload();
+    final current = state.progress;
 
     if (!mounted) return;
     state = state.copyWith(
       progress: DownloadProgress(
-        downloadedBytes: 0,
-        totalBytes: 0,
-        percentage: 0,
+        downloadedBytes: current.downloadedBytes,
+        totalBytes: current.totalBytes,
+        percentage: current.percentage,
         status: DownloadStatus.cancelled,
       ),
     );
+
+    NotificationsService.showCivilDbDownloadCancelled();
   }
 
   /// حذف وإعادة التحميل
@@ -190,6 +204,57 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     state = state.copyWith(isAvailable: false);
 
     await downloadDatabase(url);
+  }
+
+  void _handleCivilDbProgressNotification(DownloadProgress progress) {
+    if (progress.status == DownloadStatus.downloading) {
+      final roundedProgress = progress.percentage.round();
+      if (_lastNotifiedProgress == roundedProgress) {
+        return;
+      }
+
+      _lastNotifiedProgress = roundedProgress;
+      NotificationsService.showCivilDbDownloadProgress(
+        percentage: progress.percentage,
+        subtitle: '${progress.downloadedSize} / ${progress.totalSize}',
+      );
+      return;
+    }
+
+    if (progress.status == DownloadStatus.extracting) {
+      NotificationsService.showCivilDbDownloadProgress(
+        percentage: progress.percentage,
+        subtitle: 'جاري فك ضغط الملف...',
+      );
+      return;
+    }
+
+    if (progress.status == DownloadStatus.verifying) {
+      NotificationsService.showCivilDbDownloadProgress(
+        percentage: progress.percentage,
+        subtitle: 'جاري التحقق من سلامة قاعدة البيانات...',
+      );
+      return;
+    }
+
+    if (progress.status == DownloadStatus.cancelled) {
+      NotificationsService.showCivilDbDownloadCancelled();
+      return;
+    }
+
+    if (progress.status == DownloadStatus.failed) {
+      NotificationsService.showCivilDbDownloadFailed(
+        progress.errorMessage ?? 'حدث خطأ أثناء تنزيل السجل المدني.',
+      );
+    }
+  }
+
+  String _extractErrorMessage(Object error) {
+    final text = error.toString().trim();
+    if (text.isEmpty) {
+      return 'حدث خطأ أثناء تنزيل السجل المدني.';
+    }
+    return text;
   }
 }
 

@@ -197,6 +197,24 @@ class BeneficiaryFormDataHandler {
     );
   }
 
+  static int? _parseFlexibleTaxonomyInt(String? value) {
+    if (value == null) return null;
+    final normalized = value.trim();
+    if (normalized.isEmpty) return null;
+
+    final direct = int.tryParse(normalized);
+    if (direct != null) return direct;
+
+    if (normalized.contains('::')) {
+      final tail = normalized.split('::').last.trim();
+      final parsedTail = int.tryParse(tail);
+      if (parsedTail != null) return parsedTail;
+    }
+
+    final suffix = RegExp(r'(\d+)$').firstMatch(normalized)?.group(1);
+    return suffix == null ? null : int.tryParse(suffix);
+  }
+
   /// Populate controllers from existing beneficiary
   static void populateControllers(
     BeneficiaryFormControllers controllers,
@@ -213,6 +231,7 @@ class BeneficiaryFormDataHandler {
     controllers.motherNameController.text = beneficiary.motherName ?? '';
     controllers.nationalIdController.text = beneficiary.nationalId;
     controllers.birthDateController.text = beneficiary.birthDate?.toString().split(' ')[0] ?? '';
+    controllers.fileNumberController.text = (beneficiary.fileIdNumber ?? beneficiary.fileNo ?? '').trim();
 
     // Contact
     controllers.phoneController.text = beneficiary.phoneNumber ?? '';
@@ -229,6 +248,7 @@ class BeneficiaryFormDataHandler {
 
     // Notes
     controllers.notesController.text = beneficiary.notes ?? '';
+    final metadataPayload = _extractMetadataPayload(beneficiary.notes ?? '');
 
     setState(() {
       controllers.selectedGender = beneficiary.gender == Gender.unknown ? null : beneficiary.gender.englishValue;
@@ -241,6 +261,10 @@ class BeneficiaryFormDataHandler {
       controllers.selectedHousingStatus = beneficiary.housingStatus?.name;
       controllers.selectedHousingType = beneficiary.housingType?.name;
       controllers.selectedRequestStatus = beneficiary.requestStatus?.name;
+      controllers.selectedAssistanceType = beneficiary.assistanceTypeCode ?? metadataPayload['assistanceType'];
+      controllers.selectedDisabilityType = beneficiary.disabilityTypeCode ?? metadataPayload['disabilityType'];
+      controllers.selectedIncomeSource = beneficiary.incomeSourceCode ?? metadataPayload['incomeSource'];
+      controllers.selectedGuaranteeType = beneficiary.guaranteeTypeCode ?? metadataPayload['guaranteeType'];
       controllers.selectedRelationship = beneficiary.relationship?.toString();
       controllers.selectedSection = beneficiary.sectionId?.toString();
       controllers.hasDisability = beneficiary.hasDisability;
@@ -276,8 +300,8 @@ class BeneficiaryFormDataHandler {
     final housingType = _parseHousingType(controllers.selectedHousingType);
     final healthStatus = _parseHealthStatus(controllers.selectedHealthStatus);
     final requestStatus = _parseRequestStatus(controllers.selectedRequestStatus);
-    final relationshipCode = int.tryParse(controllers.selectedRelationship ?? '');
-    final sectionCode = int.tryParse(controllers.selectedSection ?? '');
+    final relationshipCode = _parseFlexibleTaxonomyInt(controllers.selectedRelationship);
+    final sectionCode = _parseFlexibleTaxonomyInt(controllers.selectedSection);
     final parsedSpecialNeedsCount = controllers.specialNeedsCountController.text.trim().isEmpty
         ? null
         : int.tryParse(controllers.specialNeedsCountController.text.trim());
@@ -287,6 +311,7 @@ class BeneficiaryFormDataHandler {
       assistanceType: controllers.selectedAssistanceType,
       disabilityType: controllers.selectedDisabilityType,
       incomeSource: controllers.selectedIncomeSource,
+      guaranteeType: controllers.selectedGuaranteeType,
     );
 
     return Beneficiary(
@@ -294,6 +319,7 @@ class BeneficiaryFormDataHandler {
       fullName: fullName,
       nationalId: controllers.nationalIdController.text.trim(),
       fileNo: fileNo,
+      fileIdNumber: fileNo.trim().isEmpty ? null : fileNo.trim(),
       gender: gender,
       category: category,
       birthDate: controllers.birthDateController.text.isNotEmpty
@@ -329,6 +355,16 @@ class BeneficiaryFormDataHandler {
       requestStatus: requestStatus,
       housingStatus: housingStatus,
       housingType: housingType,
+      assistanceTypeCode: controllers.selectedAssistanceType?.trim().isEmpty == true
+          ? null
+          : controllers.selectedAssistanceType?.trim(),
+      disabilityTypeCode: controllers.selectedDisabilityType?.trim().isEmpty == true
+          ? null
+          : controllers.selectedDisabilityType?.trim(),
+      incomeSourceCode:
+          controllers.selectedIncomeSource?.trim().isEmpty == true ? null : controllers.selectedIncomeSource?.trim(),
+      guaranteeTypeCode:
+          controllers.selectedGuaranteeType?.trim().isEmpty == true ? null : controllers.selectedGuaranteeType?.trim(),
       hasDisability: hasDisability,
       chronicDiseasesCount: controllers.chronicDiseasesController.text.trim().isEmpty
           ? null
@@ -357,6 +393,7 @@ class BeneficiaryFormDataHandler {
     required String? assistanceType,
     required String? disabilityType,
     required String? incomeSource,
+    required String? guaranteeType,
   }) {
     final notes = baseNotes?.trim() ?? '';
     final existingPayload = _extractMetadataPayload(notes);
@@ -366,6 +403,7 @@ class BeneficiaryFormDataHandler {
       if (assistanceType?.trim().isNotEmpty == true) 'assistanceType': assistanceType!.trim(),
       if (disabilityType?.trim().isNotEmpty == true) 'disabilityType': disabilityType!.trim(),
       if (incomeSource?.trim().isNotEmpty == true) 'incomeSource': incomeSource!.trim(),
+      if (guaranteeType?.trim().isNotEmpty == true) 'guaranteeType': guaranteeType!.trim(),
     };
 
     if (payload.isEmpty) {

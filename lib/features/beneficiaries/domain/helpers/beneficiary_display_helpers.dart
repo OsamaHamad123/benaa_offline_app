@@ -1,7 +1,17 @@
 /// Beneficiary Helpers - عمليات مساعدة للمستفيدين
 class BeneficiaryHelpers {
   /// Get category color based on section ID
-  static ColorInfo getCategoryColorInfo(int? sectionId) {
+  static ColorInfo getCategoryColorInfo(
+    int? sectionId, {
+    Map<int, ColorInfo> categoryColorsById = const <int, ColorInfo>{},
+  }) {
+    if (sectionId != null) {
+      final resolved = categoryColorsById[sectionId];
+      if (resolved != null) {
+        return resolved;
+      }
+    }
+
     switch (sectionId) {
       case 1:
         return ColorInfo(primary: 0xFF2196F3, light: 0xFFE3F2FD); // Blue - يتيم
@@ -23,7 +33,17 @@ class BeneficiaryHelpers {
   }
 
   /// Get category label
-  static String getCategoryLabel(int? sectionId) {
+  static String getCategoryLabel(
+    int? sectionId, {
+    Map<int, String> categoryLabelsById = const <int, String>{},
+  }) {
+    if (sectionId != null) {
+      final resolved = categoryLabelsById[sectionId];
+      if (resolved != null && resolved.trim().isNotEmpty) {
+        return resolved;
+      }
+    }
+
     switch (sectionId) {
       case 1:
         return 'يتيم';
@@ -208,8 +228,7 @@ class BeneficiaryHelpers {
     if (birthDate == null) return 0;
     final now = DateTime.now();
     int age = now.year - birthDate.year;
-    if (now.month < birthDate.month ||
-        (now.month == birthDate.month && now.day < birthDate.day)) {
+    if (now.month < birthDate.month || (now.month == birthDate.month && now.day < birthDate.day)) {
       age--;
     }
     return age;
@@ -248,8 +267,7 @@ class BeneficiaryHelpers {
     if (parts.length == 1) {
       return parts[0].substring(0, 1).toUpperCase();
     }
-    return parts[0].substring(0, 1).toUpperCase() +
-        parts[1].substring(0, 1).toUpperCase();
+    return parts[0].substring(0, 1).toUpperCase() + parts[1].substring(0, 1).toUpperCase();
   }
 }
 

@@ -129,115 +129,84 @@ class QuickFiltersBar extends ConsumerWidget {
             ],
           ),
           SizedBox(height: 12.h),
-
-          // Filters Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                // Status Filters
-                _buildChip(
-                  context,
-                  label: 'الكل',
-                  isSelected: selectedStatus == 'all',
-                  onTap: () => onStatusChanged('all'),
-                  icon: Icons.apps,
-                ),
-                SizedBox(width: 8.w),
-                _buildChip(
-                  context,
-                  label: activeStatusLabel,
-                  isSelected: selectedStatus == 'active',
-                  onTap: () => onStatusChanged('active'),
-                  icon: Icons.check_circle,
-                  color: Colors.green,
-                ),
-                SizedBox(width: 8.w),
-                _buildChip(
-                  context,
-                  label: pausedStatusLabel,
-                  isSelected: selectedStatus == 'paused',
-                  onTap: () => onStatusChanged('paused'),
-                  icon: Icons.pause_circle,
-                  color: Colors.orange,
-                ),
-                SizedBox(width: 8.w),
-                _buildChip(
-                  context,
-                  label: endedStatusLabel,
-                  isSelected: selectedStatus == 'ended',
-                  onTap: () => onStatusChanged('ended'),
-                  icon: Icons.cancel,
-                  color: theme.colorScheme.error,
-                ),
-
-                // Divider
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: 8.w),
-                  width: 1,
-                  height: 32.h,
-                  color: theme.colorScheme.outlineVariant,
-                ),
-
-                // Type Filters
-                _buildChip(
-                  context,
-                  label: 'كل الأنواع',
-                  isSelected: selectedType == 'all',
-                  onTap: () => onTypeChanged('all'),
-                  icon: Icons.category,
-                ),
-                SizedBox(width: 8.w),
-                _buildChip(
-                  context,
-                  label: monthlyTypeLabel,
-                  isSelected: selectedType == 'monthly',
-                  onTap: () => onTypeChanged('monthly'),
-                  icon: Icons.calendar_month,
-                  color: Colors.blue,
-                ),
-                SizedBox(width: 8.w),
-                _buildChip(
-                  context,
-                  label: oneTimeTypeLabel,
-                  isSelected: selectedType == 'one_time',
-                  onTap: () => onTypeChanged('one_time'),
-                  icon: Icons.bolt,
-                  color: Colors.purple,
-                ),
-
-                // Association Filters (if available)
-                if (associations.isNotEmpty) ...[
-                  Container(
-                    margin: EdgeInsets.symmetric(horizontal: 8.w),
-                    width: 1,
-                    height: 32.h,
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                  _buildChip(
-                    context,
-                    label: 'كل الجمعيات',
-                    isSelected: selectedAssociationId == null,
-                    onTap: () => onAssociationChanged(null),
-                    icon: Icons.business,
-                  ),
-                  ...associations.take(3).map(
-                        (assoc) => Padding(
-                          padding: EdgeInsets.only(right: 8.w),
-                          child: _buildChip(
-                            context,
-                            label: assoc.name,
-                            isSelected: selectedAssociationId == assoc.id,
-                            onTap: () => onAssociationChanged(assoc.id),
-                            icon: Icons.account_balance,
-                            color: theme.colorScheme.secondary,
-                          ),
-                        ),
-                      ),
-                ],
-              ],
-            ),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              _buildChip(
+                context,
+                label: 'الكل',
+                isSelected: selectedStatus == 'all',
+                onTap: () => onStatusChanged('all'),
+                icon: Icons.apps,
+              ),
+              _buildChip(
+                context,
+                label: activeStatusLabel,
+                isSelected: selectedStatus == 'active',
+                onTap: () => onStatusChanged('active'),
+                icon: Icons.check_circle,
+              ),
+              _buildChip(
+                context,
+                label: pausedStatusLabel,
+                isSelected: selectedStatus == 'paused',
+                onTap: () => onStatusChanged('paused'),
+                icon: Icons.pause_circle,
+              ),
+              _buildChip(
+                context,
+                label: endedStatusLabel,
+                isSelected: selectedStatus == 'ended',
+                onTap: () => onStatusChanged('ended'),
+                icon: Icons.cancel,
+              ),
+              _buildChip(
+                context,
+                label: 'كل الأنواع',
+                isSelected: selectedType == 'all',
+                onTap: () => onTypeChanged('all'),
+                icon: Icons.category,
+              ),
+              _buildChip(
+                context,
+                label: monthlyTypeLabel,
+                isSelected: selectedType == 'monthly',
+                onTap: () => onTypeChanged('monthly'),
+                icon: Icons.calendar_month,
+              ),
+              _buildChip(
+                context,
+                label: oneTimeTypeLabel,
+                isSelected: selectedType == 'one_time',
+                onTap: () => onTypeChanged('one_time'),
+                icon: Icons.bolt,
+              ),
+            ],
           ),
+          if (associations.isNotEmpty) ...[
+            SizedBox(height: 10.h),
+            DropdownButtonFormField<String?>(
+              initialValue: selectedAssociationId,
+              decoration: const InputDecoration(
+                labelText: 'الجمعية',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                const DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text('كل الجمعيات'),
+                ),
+                ...associations.map(
+                  (assoc) => DropdownMenuItem<String?>(
+                    value: assoc.id,
+                    child: Text(assoc.name),
+                  ),
+                ),
+              ],
+              onChanged: onAssociationChanged,
+            ),
+          ],
         ],
       ),
     );

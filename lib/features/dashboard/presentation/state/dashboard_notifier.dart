@@ -157,6 +157,6 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   // ============================================================================
 
   void clearError() {
-    state = state.copyWith();
+    state = state.copyWith(errorMessage: null);
   }
 }

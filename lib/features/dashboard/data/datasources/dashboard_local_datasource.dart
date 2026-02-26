@@ -204,7 +204,7 @@ class DashboardLocalDataSource {
   Future<Map<String, int>> _getCategoryCounts() async {
     // Category codes: 1=orphan, 2=poor, 3=widow, 4=disabled
     final categoryCodes = [1, 2, 3, 4];
-    final categoryNames = ['orphan', 'widow', 'poor', 'disabled'];
+    final categoryNames = ['orphan', 'poor', 'widow', 'disabled'];
     final counts = await Future.wait(
       categoryCodes.map(
         (code) => database.beneficiariesDao.countBeneficiariesByCategory(code),

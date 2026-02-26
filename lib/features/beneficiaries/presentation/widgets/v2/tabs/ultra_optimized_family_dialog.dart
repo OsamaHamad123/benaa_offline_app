@@ -18,6 +18,7 @@ import 'family_dialog_widgets.dart';
 /// 4. No Form validation on type - only on save
 /// 5. RepaintBoundary for each text field
 class UltraOptimizedFamilyDialog extends ConsumerStatefulWidget {
+  @Deprecated('Use ZeroLagFamilyDialog via adaptive launcher in v2_family_members_tab_redesigned.dart')
   final Map<String, dynamic>? existingMember;
   final bool isDeceased;
   final int? presetDeceasedType;

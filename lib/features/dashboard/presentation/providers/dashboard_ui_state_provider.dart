@@ -1,7 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+enum DashboardTimeContext { today, week, month }
+
 /// Dashboard UI State - حالة واجهة المستخدم
 class DashboardUIState {
+  static const Object _unset = Object();
+
+  final int selectedTabIndex;
+  final DashboardTimeContext selectedTimeContext;
   final bool showWelcomeBanner;
   final String selectedFilter;
   final bool isOnline;
@@ -10,6 +16,8 @@ class DashboardUIState {
   final bool? syncedOnly;
 
   const DashboardUIState({
+    this.selectedTabIndex = 0,
+    this.selectedTimeContext = DashboardTimeContext.week,
     this.showWelcomeBanner = false,
     this.selectedFilter = 'all',
     this.isOnline = true,
@@ -19,20 +27,25 @@ class DashboardUIState {
   });
 
   DashboardUIState copyWith({
+    int? selectedTabIndex,
+    DashboardTimeContext? selectedTimeContext,
     bool? showWelcomeBanner,
     String? selectedFilter,
     bool? isOnline,
-    String? selectedCategory,
-    String? selectedGovernorate,
-    bool? syncedOnly,
+    Object? selectedCategory = _unset,
+    Object? selectedGovernorate = _unset,
+    Object? syncedOnly = _unset,
   }) {
     return DashboardUIState(
+      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
+      selectedTimeContext: selectedTimeContext ?? this.selectedTimeContext,
       showWelcomeBanner: showWelcomeBanner ?? this.showWelcomeBanner,
       selectedFilter: selectedFilter ?? this.selectedFilter,
       isOnline: isOnline ?? this.isOnline,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
-      selectedGovernorate: selectedGovernorate ?? this.selectedGovernorate,
-      syncedOnly: syncedOnly ?? this.syncedOnly,
+      selectedCategory: identical(selectedCategory, _unset) ? this.selectedCategory : selectedCategory as String?,
+      selectedGovernorate:
+          identical(selectedGovernorate, _unset) ? this.selectedGovernorate : selectedGovernorate as String?,
+      syncedOnly: identical(syncedOnly, _unset) ? this.syncedOnly : syncedOnly as bool?,
     );
   }
 }
@@ -40,6 +53,14 @@ class DashboardUIState {
 /// Dashboard UI State Notifier
 class DashboardUIStateNotifier extends StateNotifier<DashboardUIState> {
   DashboardUIStateNotifier() : super(const DashboardUIState());
+
+  void setSelectedTab(int index) {
+    state = state.copyWith(selectedTabIndex: index);
+  }
+
+  void setTimeContext(DashboardTimeContext context) {
+    state = state.copyWith(selectedTimeContext: context);
+  }
 
   // === Welcome Banner ===
 
@@ -83,7 +104,9 @@ class DashboardUIStateNotifier extends StateNotifier<DashboardUIState> {
 
   void clearAdvancedFilters() {
     state = state.copyWith(
-      
+      selectedCategory: null,
+      selectedGovernorate: null,
+      syncedOnly: null,
     );
   }
 

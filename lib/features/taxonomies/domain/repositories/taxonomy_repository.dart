@@ -55,6 +55,24 @@ abstract class TaxonomyRepository {
   /// إنشاء أو تحديث مجموعة تصنيفات
   Future<Result<int>> upsertTaxonomies(List<Taxonomy> taxonomies);
 
+  /// إنشاء عدة تصنيفات دفعة واحدة
+  Future<Result<List<Taxonomy>>> createTaxonomiesBatch(
+    TaxonomyGroup group,
+    List<String> names,
+  );
+
+  /// تحديث عدة تصنيفات دفعة واحدة (id -> name)
+  Future<Result<List<Taxonomy>>> updateTaxonomiesBatch(
+    TaxonomyGroup group,
+    Map<String, String> updates,
+  );
+
+  /// حذف عدة تصنيفات دفعة واحدة
+  Future<Result<List<String>>> deleteTaxonomiesBatch(
+    TaxonomyGroup group,
+    List<String> ids,
+  );
+
   // ===========================
   // 🔄 SYNC OPERATIONS
   // ===========================

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'dart:async';
 
 /// 📱 Mobile Quick Actions - Floating Action Button Menu
 ///
@@ -31,8 +32,7 @@ class MobileQuickActions extends StatefulWidget {
   State<MobileQuickActions> createState() => _MobileQuickActionsState();
 }
 
-class _MobileQuickActionsState extends State<MobileQuickActions>
-    with SingleTickerProviderStateMixin {
+class _MobileQuickActionsState extends State<MobileQuickActions> with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _animationController;
   late Animation<double> _expandAnimation;
@@ -143,9 +143,7 @@ class _MobileQuickActionsState extends State<MobileQuickActions>
           left: 16.w,
           child: FloatingActionButton(
             onPressed: widget.enabled ? _toggleMenu : null,
-            backgroundColor: widget.enabled
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey,
+            backgroundColor: widget.enabled ? Theme.of(context).colorScheme.primary : Colors.grey,
             child: RotationTransition(
               turns: _rotationAnimation,
               child: Icon(
@@ -260,32 +258,42 @@ class CopyFromBeneficiaryDialog extends StatefulWidget {
   final Function(String beneficiaryId) onSelect;
 
   const CopyFromBeneficiaryDialog({
-    required this.beneficiaries, required this.onSelect, super.key,
+    required this.beneficiaries,
+    required this.onSelect,
+    super.key,
   });
 
   @override
-  State<CopyFromBeneficiaryDialog> createState() =>
-      _CopyFromBeneficiaryDialogState();
+  State<CopyFromBeneficiaryDialog> createState() => _CopyFromBeneficiaryDialogState();
 }
 
 class _CopyFromBeneficiaryDialogState extends State<CopyFromBeneficiaryDialog> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounceTimer;
 
   List<BeneficiaryPreview> get _filteredBeneficiaries {
     if (_searchQuery.isEmpty) return widget.beneficiaries;
 
     final query = _searchQuery.toLowerCase();
     return widget.beneficiaries.where((b) {
-      return b.name.toLowerCase().contains(query) ||
-          b.nationalId.contains(query);
+      return b.name.toLowerCase().contains(query) || b.nationalId.contains(query);
     }).toList();
   }
 
   @override
   void dispose() {
+    _searchDebounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounceTimer?.cancel();
+    _searchDebounceTimer = Timer(const Duration(milliseconds: 120), () {
+      if (!mounted || _searchQuery == value) return;
+      setState(() => _searchQuery = value);
+    });
   }
 
   @override
@@ -341,7 +349,7 @@ class _CopyFromBeneficiaryDialogState extends State<CopyFromBeneficiaryDialog> {
                 ),
               ),
               onChanged: (value) {
-                setState(() => _searchQuery = value);
+                _onSearchChanged(value);
               },
             ),
             SizedBox(height: 16.h),
@@ -360,9 +368,7 @@ class _CopyFromBeneficiaryDialogState extends State<CopyFromBeneficiaryDialog> {
                           ),
                           SizedBox(height: 16.h),
                           Text(
-                            _searchQuery.isEmpty
-                                ? 'لا يوجد مستفيدون'
-                                : 'لم يتم العثور على نتائج',
+                            _searchQuery.isEmpty ? 'لا يوجد مستفيدون' : 'لم يتم العثور على نتائج',
                             style: TextStyle(
                               fontSize: 16.sp,
                               color: Colors.grey,
@@ -421,8 +427,7 @@ class _BeneficiaryTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('الرقم الوطني: ${beneficiary.nationalId}'),
-            if (beneficiary.phoneNumber != null)
-              Text('الهاتف: ${beneficiary.phoneNumber}'),
+            if (beneficiary.phoneNumber != null) Text('الهاتف: ${beneficiary.phoneNumber}'),
           ],
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -459,7 +464,8 @@ class SwipeableFieldCard extends StatelessWidget {
   final bool enableSwipe;
 
   const SwipeableFieldCard({
-    required this.child, super.key,
+    required this.child,
+    super.key,
     this.onClear,
     this.onCopy,
     this.enableSwipe = true,

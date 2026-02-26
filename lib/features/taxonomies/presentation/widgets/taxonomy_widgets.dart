@@ -118,6 +118,8 @@ class TaxonomyDropdown extends ConsumerWidget {
     switch (group) {
       case TaxonomyGroup.governorate:
         return Icons.location_city;
+      case TaxonomyGroup.city:
+        return Icons.location_on;
       case TaxonomyGroup.category:
         return Icons.category;
       case TaxonomyGroup.maritalStatus:
@@ -142,6 +144,8 @@ class TaxonomyDropdown extends ConsumerWidget {
         return Icons.business;
       case TaxonomyGroup.sponsorshipType:
         return Icons.volunteer_activism;
+      case TaxonomyGroup.guaranteeType:
+        return Icons.verified;
       case TaxonomyGroup.documentType:
         return Icons.description;
       case TaxonomyGroup.bankName:

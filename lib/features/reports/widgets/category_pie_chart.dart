@@ -11,8 +11,14 @@ import '../../../core/constants/category_colors.dart';
 class CategoryPieChart extends StatefulWidget {
   final List<CategoryCount> data;
   final int total;
+  final Map<String, Color> colorByLabel;
 
-  const CategoryPieChart({required this.data, required this.total, super.key});
+  const CategoryPieChart({
+    required this.data,
+    required this.total,
+    this.colorByLabel = const <String, Color>{},
+    super.key,
+  });
 
   @override
   State<CategoryPieChart> createState() => _CategoryPieChartState();
@@ -45,8 +51,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                         touchedIndex = -1;
                         return;
                       }
-                      touchedIndex =
-                          pieTouchResponse.touchedSection!.touchedSectionIndex;
+                      touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
                     });
                   },
                 ),
@@ -109,18 +114,11 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       final isTouched = index == touchedIndex;
 
       // Responsive sizes based on device type
-      final fontSize = isTouched
-          ? (isTablet ? 16.0.sp : 11.0.sp)
-          : (isTablet ? 12.0.sp : 9.0.sp);
-      final radius = isTouched
-          ? (isTablet ? 90.0.r : 65.0.r)
-          : (isTablet ? 80.0.r : 60.0.r);
-      final widgetSize = isTouched
-          ? (isTablet ? 45.0.r : 32.0.r)
-          : (isTablet ? 35.0.r : 26.0.r);
+      final fontSize = isTouched ? (isTablet ? 16.0.sp : 11.0.sp) : (isTablet ? 12.0.sp : 9.0.sp);
+      final radius = isTouched ? (isTablet ? 90.0.r : 65.0.r) : (isTablet ? 80.0.r : 60.0.r);
+      final widgetSize = isTouched ? (isTablet ? 45.0.r : 32.0.r) : (isTablet ? 35.0.r : 26.0.r);
 
-      final percentage =
-          widget.total == 0 ? 0.0 : (item.count / widget.total) * 100;
+      final percentage = widget.total == 0 ? 0.0 : (item.count / widget.total) * 100;
 
       return PieChartSectionData(
         color: _getColor(item.category),
@@ -144,7 +142,7 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
   }
 
   Color _getColor(String category) {
-    return CategoryColors.getColorByName(category);
+    return widget.colorByLabel[category] ?? CategoryColors.getColorByName(category);
   }
 }
 

@@ -10,6 +10,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
 import '../../core/widgets/modern_sliver_app_bar.dart';
+import 'presentation/widgets/sync_section_card.dart';
+import 'presentation/widgets/sync_status_banner.dart';
+import 'presentation/widgets/sync_ui_tokens.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
 import '../../core/error_handling/error_handler.dart';
 import '../taxonomies/presentation/providers/taxonomy_providers.dart';
@@ -18,7 +21,6 @@ import '../taxonomies/domain/entities/taxonomy.dart';
 import '../taxonomies/domain/entities/taxonomy_group.dart';
 import '../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../taxonomies/domain/services/taxonomy_integrity_guard.dart';
-import '../taxonomies/presentation/pages/taxonomy_binding_test_page.dart';
 import 'presentation/providers/file_id_providers.dart';
 import 'presentation/providers/mobile_sync_operations_providers.dart';
 import 'domain/repositories/file_id_reservation_repository.dart';
@@ -70,6 +72,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     final repPending = representatives.where((r) => r.syncState == 'pending').length;
     final repModified = representatives.where((r) => r.syncState == 'modified').length;
     final repNeedsSync = repPending + repModified;
+    final sponsorships = await db.select(db.sponsorships).get();
+    final sponsorshipsTotal = sponsorships.length;
+    final sponsorshipsPending = sponsorships.where((s) => s.syncState == 'pending').length;
+    final sponsorshipsModified = sponsorships.where((s) => s.syncState == 'modified').length;
+    final sponsorshipsSynced = sponsorships.where((s) => s.syncState == 'synced').length;
+    final sponsorshipsNeedsSync = sponsorshipsPending + sponsorshipsModified;
     final attachmentsTotal = await db.select(db.attachments).get().then((rows) => rows.length);
     final familyMembersTotal = await db.select(db.familyMembersTable).get().then((rows) => rows.length);
     final deadPeopleTotal = await db.select(db.familyDeceasedTable).get().then((rows) => rows.length);
@@ -101,14 +109,21 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           'rep_modified': repModified,
           'rep_needsSync': repNeedsSync,
 
+          // Sponsorships
+          'sponsorship_total': sponsorshipsTotal,
+          'sponsorship_synced': sponsorshipsSynced,
+          'sponsorship_pending': sponsorshipsPending,
+          'sponsorship_modified': sponsorshipsModified,
+          'sponsorship_needsSync': sponsorshipsNeedsSync,
+
           // Related entities
           'attachments_total': attachmentsTotal,
           'family_members_total': familyMembersTotal,
           'dead_people_total': deadPeopleTotal,
 
           // Combined totals
-          'total': beneficiaries.length + assocTotal + repTotal,
-          'needsSync': benPending + benModified + assocNeedsSync + repNeedsSync,
+          'total': beneficiaries.length + assocTotal + repTotal + sponsorshipsTotal,
+          'needsSync': benPending + benModified + assocNeedsSync + repNeedsSync + sponsorshipsNeedsSync,
         };
       });
     }
@@ -197,7 +212,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         if (!mounted) return;
         EnhancedSnackbar.showSuccess(
           context,
-          message: '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين وجمعيات) بنجاح',
+          message: '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين/جمعيات/موظفين/كفالات) بنجاح',
         );
       } else {
         if (!mounted) return;
@@ -640,6 +655,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           if ((_lastResult?.errorCategory ?? '').isNotEmpty) 'review_error_context',
           if ((_lastResult?.writeCounters['beneficiaries_skipped'] ?? 0) > 0) 'verify_identity_mapping',
           if ((_stats?['assoc_needsSync'] ?? 0) > 0 || (_stats?['rep_needsSync'] ?? 0) > 0) 'run_associations_sync_up',
+          if ((_stats?['sponsorship_needsSync'] ?? 0) > 0) 'run_sponsorships_sync_up',
         ],
       };
 
@@ -768,42 +784,15 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Widget _buildWarningCard() {
-    return Card(
-      color: Colors.orange[50],
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Icon(Icons.warning, color: Colors.orange, size: 24.sp),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    '⚠️ مزامنة مؤقتة - قيود مهمة',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange[900],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              '• لا يوجد authentication (مؤقت)\n'
-              '• المرفقات تتزامن الآن (Multipart)\n'
-              '• في حالة التعارض، بيانات السيرفر تفوز\n'
-              '• السجلات المحذوفة لا تتزامن',
-              style: TextStyle(
-                fontSize: 13.sp,
-                color: Colors.orange[800],
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
+    return const SyncSectionCard(
+      title: '⚠️ مزامنة مؤقتة - قيود مهمة',
+      icon: Icons.warning_amber_rounded,
+      tone: SyncTone.warning,
+      child: Text(
+        '• لا يوجد authentication (مؤقت)\n'
+        '• المرفقات تتزامن الآن (Multipart)\n'
+        '• في حالة التعارض، بيانات السيرفر تفوز\n'
+        '• السجلات المحذوفة لا تتزامن',
       ),
     );
   }
@@ -813,128 +802,89 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
     return Column(
       children: [
-        // 📊 Beneficiaries Stats Card
-        Card(
-          color: Colors.blue[50],
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.people, color: Colors.blue, size: 20.sp),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'إحصائيات المستفيدين',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                _buildStatRow(
-                  'إجمالي المستفيدين',
-                  '${_stats!['ben_total']}',
-                  Colors.blue,
-                ),
-                _buildStatRow('متزامن', '${_stats!['ben_synced']}', Colors.green),
-                _buildStatRow(
-                  'بانتظار الرفع',
-                  '${_stats!['ben_pending']}',
-                  Colors.orange,
-                ),
-                _buildStatRow(
-                  'محدّث (غير مزامن)',
-                  '${_stats!['ben_modified']}',
-                  Colors.orange,
-                ),
-                Divider(height: 20.h),
-                _buildStatRow(
-                  'يحتاج مزامنة',
-                  '${_stats!['ben_needsSync']}',
-                  _stats!['ben_needsSync']! > 0 ? Colors.red : Colors.green,
-                  bold: true,
-                ),
-              ],
-            ),
+        SyncSectionCard(
+          title: 'إحصائيات المستفيدين',
+          icon: Icons.people,
+          tone: SyncTone.primary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatRow('إجمالي المستفيدين', '${_stats!['ben_total']}', Colors.blue),
+              _buildStatRow('متزامن', '${_stats!['ben_synced']}', Colors.green),
+              _buildStatRow('بانتظار الرفع', '${_stats!['ben_pending']}', Colors.orange),
+              _buildStatRow('محدّث (غير مزامن)', '${_stats!['ben_modified']}', Colors.orange),
+              Divider(height: 20.h),
+              _buildStatRow(
+                'يحتاج مزامنة',
+                '${_stats!['ben_needsSync']}',
+                _stats!['ben_needsSync']! > 0 ? Colors.red : Colors.green,
+                bold: true,
+              ),
+            ],
           ),
         ),
-
         SizedBox(height: 12.h),
-
-        // 🏢 Associations Stats Card
-        Card(
-          color: Colors.purple[50],
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.business, color: Colors.purple, size: 20.sp),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'إحصائيات الجمعيات',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                _buildStatRow(
-                  'إجمالي الجمعيات',
-                  '${_stats!['assoc_total']}',
-                  Colors.purple,
-                ),
-                _buildStatRow(
-                  'جمعيات نشطة',
-                  '${_stats!['assoc_active']}',
-                  Colors.green,
-                ),
-                _buildStatRow(
-                  'جمعيات غير نشطة',
-                  '${_stats!['assoc_total']! - _stats!['assoc_active']!}',
-                  Colors.grey,
-                ),
-              ],
-            ),
+        SyncSectionCard(
+          title: 'إحصائيات الجمعيات',
+          icon: Icons.business,
+          tone: SyncTone.secondary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatRow('إجمالي الجمعيات', '${_stats!['assoc_total']}', Colors.purple),
+              _buildStatRow('جمعيات نشطة', '${_stats!['assoc_active']}', Colors.green),
+              _buildStatRow(
+                'جمعيات غير نشطة',
+                '${_stats!['assoc_total']! - _stats!['assoc_active']!}',
+                Colors.grey,
+              ),
+              Divider(height: 20.h),
+              _buildStatRow('إجمالي الموظفين/المندوبين', '${_stats!['rep_total']}', Colors.purple),
+              _buildStatRow('موظفون بانتظار الرفع', '${_stats!['rep_pending']}', Colors.orange),
+              _buildStatRow('موظفون محدّثون', '${_stats!['rep_modified']}', Colors.orange),
+              _buildStatRow(
+                'موظفون يحتاجون مزامنة',
+                '${_stats!['rep_needsSync']}',
+                _stats!['rep_needsSync']! > 0 ? Colors.red : Colors.green,
+                bold: true,
+              ),
+            ],
           ),
         ),
-
         SizedBox(height: 12.h),
-
-        Card(
-          color: Colors.teal[50],
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.dataset_linked, color: Colors.teal, size: 20.sp),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'إحصائيات البيانات المرتبطة',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                _buildStatRow('المرفقات (محلي)', '${_stats!['attachments_total']}', Colors.teal),
-                _buildStatRow('أفراد العائلة (محلي)', '${_stats!['family_members_total']}', Colors.teal),
-                _buildStatRow('الأموات (محلي)', '${_stats!['dead_people_total']}', Colors.teal),
-              ],
-            ),
+        SyncSectionCard(
+          title: 'إحصائيات الكفالات',
+          icon: Icons.handshake,
+          tone: SyncTone.tertiary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatRow('إجمالي الكفالات', '${_stats!['sponsorship_total']}', Colors.orange),
+              _buildStatRow('متزامن', '${_stats!['sponsorship_synced']}', Colors.green),
+              _buildStatRow('بانتظار الرفع', '${_stats!['sponsorship_pending']}', Colors.orange),
+              _buildStatRow('محدّث (غير مزامن)', '${_stats!['sponsorship_modified']}', Colors.orange),
+              Divider(height: 20.h),
+              _buildStatRow(
+                'يحتاج مزامنة',
+                '${_stats!['sponsorship_needsSync']}',
+                _stats!['sponsorship_needsSync']! > 0 ? Colors.red : Colors.green,
+                bold: true,
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12.h),
+        SyncSectionCard(
+          title: 'إحصائيات البيانات المرتبطة',
+          icon: Icons.dataset_linked,
+          tone: SyncTone.surface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatRow('المرفقات (محلي)', '${_stats!['attachments_total']}', Colors.teal),
+              _buildStatRow('أفراد العائلة (محلي)', '${_stats!['family_members_total']}', Colors.teal),
+              _buildStatRow('الأموات (محلي)', '${_stats!['dead_people_total']}', Colors.teal),
+            ],
           ),
         ),
       ],
@@ -981,96 +931,57 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Widget _buildStatusCard(MobileSyncStatus status) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    final theme = Theme.of(context);
+
+    return SyncSectionCard(
+      title: 'حالة المزامنة',
+      icon: status.isSyncing ? Icons.sync : Icons.check_circle,
+      tone: status.isSyncing ? SyncTone.primary : SyncTone.success,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SyncStatusBanner(
+            message: status.currentOperation,
+            tone: status.isSyncing ? SyncTone.primary : SyncTone.success,
+            icon: status.isSyncing ? Icons.sync_rounded : Icons.check_circle,
+          ),
+          if (status.isSyncing) ...[
+            SizedBox(height: 12.h),
+            LinearProgressIndicator(
+              value: status.progress,
+              minHeight: 8.h,
+              borderRadius: BorderRadius.circular(4.r),
+            ),
+            SizedBox(height: 4.h),
             Text(
-              'حالة المزامنة',
-              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              '${(status.progress * 100).toStringAsFixed(0)}%',
+              style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurfaceVariant),
             ),
-            SizedBox(height: 12.h),
-
-            // Current operation
-            Row(
-              children: [
-                Icon(
-                  status.isSyncing ? Icons.sync : Icons.check_circle,
-                  color: status.isSyncing ? Colors.blue : Colors.green,
-                  size: 20.sp,
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    status.currentOperation,
-                    style: TextStyle(fontSize: 14.sp),
-                  ),
-                ),
-              ],
-            ),
-
-            // Progress bar
-            if (status.isSyncing) ...[
-              SizedBox(height: 12.h),
-              LinearProgressIndicator(
-                value: status.progress,
-                minHeight: 8.h,
-                borderRadius: BorderRadius.circular(4.r),
-              ),
-              SizedBox(height: 4.h),
-              Text(
-                '${(status.progress * 100).toStringAsFixed(0)}%',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-              ),
-            ],
-
-            SizedBox(height: 12.h),
-            _buildSyncProgressStepper(status),
-
-            // Last sync time
-            if (status.lastSyncAt != null) ...[
-              SizedBox(height: 12.h),
-              Text(
-                'آخر مزامنة: ${_formatDateTime(status.lastSyncAt!)}',
-                style: TextStyle(fontSize: 12.sp, color: Colors.grey),
-              ),
-            ],
-
-            // Last error
-            if (status.lastError != null) ...[
-              SizedBox(height: 12.h),
-              Container(
-                padding: EdgeInsets.all(8.w),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error, color: Colors.red, size: 16.sp),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        status.lastError!,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.red[900],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
-        ),
+          SizedBox(height: 12.h),
+          _buildSyncProgressStepper(status),
+          if (status.lastSyncAt != null) ...[
+            SizedBox(height: 12.h),
+            Text(
+              'آخر مزامنة: ${_formatDateTime(status.lastSyncAt!)}',
+              style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+          if (status.lastError != null) ...[
+            SizedBox(height: 12.h),
+            SyncStatusBanner(
+              message: status.lastError!,
+              tone: SyncTone.error,
+              icon: Icons.error,
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildSyncButtons(MobileSyncStatus status) {
+    final theme = Theme.of(context);
     final isSyncing = status.isSyncing;
 
     return Column(
@@ -1082,9 +993,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           label: const Text('مزامنة الآن (شاملة)'),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: Colors.grey,
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
           ),
         ),
 
@@ -1097,9 +1007,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           label: const Text('تنزيل البيانات من السيرفر'),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: Colors.grey,
+            backgroundColor: theme.colorScheme.secondary,
+            foregroundColor: theme.colorScheme.onSecondary,
           ),
         ),
 
@@ -1112,9 +1021,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           label: const Text('رفع التغييرات للسيرفر'),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: Colors.grey,
+            backgroundColor: theme.colorScheme.tertiary,
+            foregroundColor: theme.colorScheme.onTertiary,
           ),
         ),
       ],
@@ -1128,504 +1036,412 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     required AsyncValue<DateTime?> lastSyncAsync,
     required bool isSyncing,
   }) {
-    Color statusColor;
     String statusLabel;
 
     switch (syncStatus) {
       case TaxonomySyncStatus.syncing:
-        statusColor = Colors.blue;
         statusLabel = 'جاري المزامنة';
         break;
       case TaxonomySyncStatus.success:
-        statusColor = Colors.green;
         statusLabel = 'متزامنة';
         break;
       case TaxonomySyncStatus.error:
-        statusColor = Colors.red;
         statusLabel = 'فشل';
         break;
       case TaxonomySyncStatus.idle:
-        statusColor = Colors.grey;
         statusLabel = 'غير متحقق';
         break;
     }
 
-    return Card(
-      color: Colors.teal[50],
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.category_rounded, color: Colors.teal, size: 20.sp),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    'تشخيص التصنيفات',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
+    return SyncSectionCard(
+      title: 'تشخيص التصنيفات',
+      icon: Icons.category_rounded,
+      tone: SyncTone.tertiary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SyncStatusBanner(
+            message: statusLabel,
+            tone: syncStatus == TaxonomySyncStatus.error
+                ? SyncTone.error
+                : (syncStatus == TaxonomySyncStatus.success ? SyncTone.success : SyncTone.primary),
+            icon: syncStatus == TaxonomySyncStatus.error
+                ? Icons.error_outline
+                : (syncStatus == TaxonomySyncStatus.success ? Icons.check_circle_outline : Icons.sync_rounded),
+          ),
+          SizedBox(height: 12.h),
+          statsAsync.when(
+            data: (stats) {
+              final requiredCoverage = _requiredCoverageFromStats(stats);
+              final essentialCoverage = _essentialCoverageFromStats(stats);
+              final criticalMissing = _criticalMissingEssentialGroups(essentialCoverage.missing);
+              final diagnosis = _diagnoseTaxonomyGapSource(stats);
+              final nonEmptyGroups = stats.countByGroup.entries.where((entry) => entry.value > 0).length;
+              final missingGroups = requiredCoverage.missing.map((entry) => entry.arabicName).toList();
+              final missingEssentialGroups = essentialCoverage.missing.map((entry) => entry.arabicName).toList();
+              final missingCriticalGroups = criticalMissing.map((entry) => entry.arabicName).toList();
+              final missingDocumentedGroups =
+                  diagnosis.missingDocumentedGroups.map((entry) => entry.arabicName).toList();
+              final diagnosisColor = _diagnosisColor(diagnosis.likelySource);
+              final diagnosisLabel = _diagnosisLabel(diagnosis.likelySource);
+              final localMappingGapCount = diagnosis.localMappingSlugs.length;
+              final backendPayloadGapCount = diagnosis.missingDocumentedGroups.length;
+              final isLocalMappingIssue = diagnosis.likelySource == 'local_mapping';
+              final isBackendPayloadIssue = diagnosis.likelySource == 'backend_payload';
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: EdgeInsets.only(bottom: 8.h),
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                    decoration: BoxDecoration(
+                      color: diagnosisColor.withValues(alpha: 0.12),
+                      border: Border.all(color: diagnosisColor.withValues(alpha: 0.5)),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Text(
+                      'المصدر المرجّح: $diagnosisLabel',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: diagnosisColor,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(color: statusColor),
-                  ),
-                  child: Text(
-                    statusLabel,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
-                      color: statusColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            statsAsync.when(
-              data: (stats) {
-                final requiredCoverage = _requiredCoverageFromStats(stats);
-                final essentialCoverage = _essentialCoverageFromStats(stats);
-                final criticalMissing = _criticalMissingEssentialGroups(essentialCoverage.missing);
-                final diagnosis = _diagnoseTaxonomyGapSource(stats);
-                final nonEmptyGroups = stats.countByGroup.entries.where((entry) => entry.value > 0).length;
-                final missingGroups = requiredCoverage.missing.map((entry) => entry.arabicName).toList();
-                final missingEssentialGroups = essentialCoverage.missing.map((entry) => entry.arabicName).toList();
-                final missingCriticalGroups = criticalMissing.map((entry) => entry.arabicName).toList();
-                final missingDocumentedGroups =
-                    diagnosis.missingDocumentedGroups.map((entry) => entry.arabicName).toList();
-                final diagnosisColor = _diagnosisColor(diagnosis.likelySource);
-                final diagnosisLabel = _diagnosisLabel(diagnosis.likelySource);
-                final localMappingGapCount = diagnosis.localMappingSlugs.length;
-                final backendPayloadGapCount = diagnosis.missingDocumentedGroups.length;
-                final isLocalMappingIssue = diagnosis.likelySource == 'local_mapping';
-                final isBackendPayloadIssue = diagnosis.likelySource == 'backend_payload';
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  if (isLocalMappingIssue) ...[
                     Container(
                       margin: EdgeInsets.only(bottom: 8.h),
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                      padding: EdgeInsets.all(10.w),
                       decoration: BoxDecoration(
-                        color: diagnosisColor.withValues(alpha: 0.12),
-                        border: Border.all(color: diagnosisColor.withValues(alpha: 0.5)),
+                        color: Colors.orange.withValues(alpha: 0.10),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                         borderRadius: BorderRadius.circular(10.r),
                       ),
                       child: Text(
-                        'المصدر المرجّح: $diagnosisLabel',
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: diagnosisColor,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        '⚠️ مشكلة ربط محلي: بعض slugs الموثقة غير محلولة محليًا. الإجراء: افتح اختبار الربط ثم صدّر التشخيص.',
+                        style: TextStyle(fontSize: 11.sp, color: Colors.orange[900], fontWeight: FontWeight.w600),
                       ),
                     ),
-                    if (isLocalMappingIssue) ...[
-                      Container(
-                        margin: EdgeInsets.only(bottom: 8.h),
-                        padding: EdgeInsets.all(10.w),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withValues(alpha: 0.10),
-                          border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Text(
-                          '⚠️ مشكلة ربط محلي: بعض slugs الموثقة غير محلولة محليًا. الإجراء: افتح اختبار الربط ثم صدّر التشخيص.',
-                          style: TextStyle(fontSize: 11.sp, color: Colors.orange[900], fontWeight: FontWeight.w600),
-                        ),
+                  ],
+                  if (isBackendPayloadIssue) ...[
+                    Container(
+                      margin: EdgeInsets.only(bottom: 8.h),
+                      padding: EdgeInsets.all(10.w),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
+                        borderRadius: BorderRadius.circular(10.r),
                       ),
-                    ],
-                    if (isBackendPayloadIssue) ...[
-                      Container(
-                        margin: EdgeInsets.only(bottom: 8.h),
-                        padding: EdgeInsets.all(10.w),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.08),
-                          border: Border.all(color: Colors.red.withValues(alpha: 0.4)),
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Text(
-                          '⛔ نقص من السيرفر: مجموعات موثقة مفقودة في payload. الإجراء: أعد مزامنة التصنيفات ثم صدّر تقرير التشخيص وراجعه مع الـ backend.',
-                          style: TextStyle(fontSize: 11.sp, color: Colors.red[900], fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ],
-                    _buildInfoRow('إجمالي التصنيفات', '${stats.totalCount}'),
-                    _buildInfoRow('النشطة', '${stats.activeCount}'),
-                    _buildInfoRow(
-                      'تغطية مجموعات المستفيد (أساسي)',
-                      '${requiredCoverage.filled}/${requiredCoverage.total}',
-                    ),
-                    _buildInfoRow(
-                      'تغطية فورم المستفيد (Essential)',
-                      '${essentialCoverage.filled}/${essentialCoverage.total}',
-                    ),
-                    _buildInfoRow('المجموعات المعبأة (كل النظام)', '$nonEmptyGroups/${stats.countByGroup.length}'),
-                    _buildInfoRow('عدد فجوات الربط المحلي', '$localMappingGapCount'),
-                    _buildInfoRow('عدد فجوات Payload من السيرفر', '$backendPayloadGapCount'),
-                    if (missingGroups.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Text(
-                        'المجموعات الناقصة (أساسي): ${missingGroups.join('، ')}',
-                        style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
-                      ),
-                    ],
-                    if (missingEssentialGroups.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Text(
-                        'المجموعات الناقصة (Essential): ${missingEssentialGroups.join('، ')}',
-                        style: TextStyle(fontSize: 12.sp, color: Colors.red[900]),
-                      ),
-                    ],
-                    if (missingCriticalGroups.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Text(
-                        'نقص حرج للفورم: ${missingCriticalGroups.join('، ')}',
-                        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.red[900]),
-                      ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        'نفّذ مزامنة التصنيفات الآن، وإذا استمر النقص فالمشكلة من بيانات السيرفر.',
-                        style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
-                      ),
-                    ],
-                    if (missingDocumentedGroups.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Text(
-                        'مجموعات موثقة من السيرفر لكنها فارغة محليًا: ${missingDocumentedGroups.join('، ')}',
-                        style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
-                      ),
-                    ],
-                    if (diagnosis.likelySource == 'local_mapping' && diagnosis.localMappingSlugs.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Text(
-                        'سبب مرجح: خلل ربط محلي (slugs غير محلولة): ${diagnosis.localMappingSlugs.join('، ')}',
-                        style: TextStyle(fontSize: 11.sp, color: Colors.orange[900]),
-                      ),
-                    ] else if (diagnosis.likelySource == 'backend_payload') ...[
-                      SizedBox(height: 6.h),
-                      Text(
-                        'سبب مرجح: نقص Payload من السيرفر لبعض المجموعات الموثقة.',
+                      child: Text(
+                        '⛔ نقص من السيرفر: مجموعات موثقة مفقودة في payload. الإجراء: أعد مزامنة التصنيفات ثم صدّر تقرير التشخيص وراجعه مع الـ backend.',
                         style: TextStyle(fontSize: 11.sp, color: Colors.red[900], fontWeight: FontWeight.w600),
                       ),
-                    ],
-                    if (isLocalMappingIssue || isBackendPayloadIssue) ...[
-                      SizedBox(height: 10.h),
-                      Wrap(
-                        spacing: 8.w,
-                        runSpacing: 8.h,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: _syncTaxonomies,
-                            icon: const Icon(Icons.sync_rounded),
-                            label: const Text('إعادة مزامنة التصنيفات'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: _exportSyncDiagnostics,
-                            icon: const Icon(Icons.ios_share_rounded),
-                            label: const Text('تصدير التشخيص'),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ],
-                );
-              },
-              loading: () => const LinearProgressIndicator(minHeight: 2),
-              error: (e, _) => Text(
-                'تعذر تحميل إحصائيات التصنيفات: $e',
-                style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
-              ),
-            ),
-            SizedBox(height: 8.h),
-            lastSyncAsync.when(
-              data: (time) => _buildInfoRow(
-                'آخر مزامنة للتصنيفات',
-                time != null ? _formatDateTime(time) : 'لا يوجد',
-              ),
-              loading: () => _buildInfoRow('آخر مزامنة للتصنيفات', '...'),
-              error: (_, __) => _buildInfoRow('آخر مزامنة للتصنيفات', 'غير متاحة'),
-            ),
-            if (errorMessage != null && errorMessage.isNotEmpty) ...[
-              SizedBox(height: 8.h),
-              Text(
-                'الخطأ الأخير: $errorMessage',
-                style: TextStyle(fontSize: 12.sp, color: Colors.red[900]),
-              ),
-            ],
-            SizedBox(height: 12.h),
-            ElevatedButton.icon(
-              onPressed: isSyncing ? null : _syncTaxonomies,
-              icon: const Icon(Icons.sync_rounded),
-              label: Text(isSyncing ? 'جاري مزامنة التصنيفات...' : 'مزامنة التصنيفات الآن'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey,
-                padding: EdgeInsets.symmetric(vertical: 12.h),
-              ),
-            ),
-            SizedBox(height: 8.h),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const TaxonomyBindingTestPage(),
+                  _buildInfoRow('إجمالي التصنيفات', '${stats.totalCount}'),
+                  _buildInfoRow('النشطة', '${stats.activeCount}'),
+                  _buildInfoRow(
+                    'تغطية مجموعات المستفيد (أساسي)',
+                    '${requiredCoverage.filled}/${requiredCoverage.total}',
                   ),
-                );
-              },
-              icon: const Icon(Icons.science_rounded),
-              label: const Text('فتح صفحة اختبار الربط'),
+                  _buildInfoRow(
+                    'تغطية فورم المستفيد (Essential)',
+                    '${essentialCoverage.filled}/${essentialCoverage.total}',
+                  ),
+                  _buildInfoRow('المجموعات المعبأة (كل النظام)', '$nonEmptyGroups/${stats.countByGroup.length}'),
+                  _buildInfoRow('عدد فجوات الربط المحلي', '$localMappingGapCount'),
+                  _buildInfoRow('عدد فجوات Payload من السيرفر', '$backendPayloadGapCount'),
+                  if (missingGroups.isNotEmpty) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      'المجموعات الناقصة (أساسي): ${missingGroups.join('، ')}',
+                      style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
+                    ),
+                  ],
+                  if (missingEssentialGroups.isNotEmpty) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      'المجموعات الناقصة (Essential): ${missingEssentialGroups.join('، ')}',
+                      style: TextStyle(fontSize: 12.sp, color: Colors.red[900]),
+                    ),
+                  ],
+                  if (missingCriticalGroups.isNotEmpty) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      'نقص حرج للفورم: ${missingCriticalGroups.join('، ')}',
+                      style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.red[900]),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'نفّذ مزامنة التصنيفات الآن، وإذا استمر النقص فالمشكلة من بيانات السيرفر.',
+                      style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
+                    ),
+                  ],
+                  if (missingDocumentedGroups.isNotEmpty) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      'مجموعات موثقة من السيرفر لكنها فارغة محليًا: ${missingDocumentedGroups.join('، ')}',
+                      style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
+                    ),
+                  ],
+                  if (diagnosis.likelySource == 'local_mapping' && diagnosis.localMappingSlugs.isNotEmpty) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      'سبب مرجح: خلل ربط محلي (slugs غير محلولة): ${diagnosis.localMappingSlugs.join('، ')}',
+                      style: TextStyle(fontSize: 11.sp, color: Colors.orange[900]),
+                    ),
+                  ] else if (diagnosis.likelySource == 'backend_payload') ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      'سبب مرجح: نقص Payload من السيرفر لبعض المجموعات الموثقة.',
+                      style: TextStyle(fontSize: 11.sp, color: Colors.red[900], fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                  if (isLocalMappingIssue || isBackendPayloadIssue) ...[
+                    SizedBox(height: 10.h),
+                    Wrap(
+                      spacing: 8.w,
+                      runSpacing: 8.h,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _syncTaxonomies,
+                          icon: const Icon(Icons.sync_rounded),
+                          label: const Text('إعادة مزامنة التصنيفات'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _exportSyncDiagnostics,
+                          icon: const Icon(Icons.ios_share_rounded),
+                          label: const Text('تصدير التشخيص'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              );
+            },
+            loading: () => const LinearProgressIndicator(minHeight: 2),
+            error: (e, _) => Text(
+              'تعذر تحميل إحصائيات التصنيفات: $e',
+              style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          lastSyncAsync.when(
+            data: (time) => _buildInfoRow(
+              'آخر مزامنة للتصنيفات',
+              time != null ? _formatDateTime(time) : 'لا يوجد',
+            ),
+            loading: () => _buildInfoRow('آخر مزامنة للتصنيفات', '...'),
+            error: (_, __) => _buildInfoRow('آخر مزامنة للتصنيفات', 'غير متاحة'),
+          ),
+          if (errorMessage != null && errorMessage.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Text(
+              'الخطأ الأخير: $errorMessage',
+              style: TextStyle(fontSize: 12.sp, color: Colors.red[900]),
             ),
           ],
-        ),
+          SizedBox(height: 12.h),
+          ElevatedButton.icon(
+            onPressed: isSyncing ? null : _syncTaxonomies,
+            icon: const Icon(Icons.sync_rounded),
+            label: Text(isSyncing ? 'جاري مزامنة التصنيفات...' : 'مزامنة التصنيفات الآن'),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildResultCard(MobileSyncResult result) {
+    final theme = Theme.of(context);
     final health = _buildSyncHealthScore(result);
     final relatedConsistency = _buildRelatedConsistencyHint(result);
 
-    return Card(
-      color: result.success ? Colors.green[50] : Colors.red[50],
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return SyncSectionCard(
+      title: 'نتيجة آخر مزامنة',
+      icon: result.success ? Icons.check_circle : Icons.error,
+      tone: result.success ? SyncTone.success : SyncTone.error,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Text(
+                '• صحة المزامنة: ${health.score}/100 (${health.level})',
+                style: TextStyle(fontSize: 13.sp, color: health.color, fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          Text(
+            '  ${health.hint}',
+            style: TextStyle(fontSize: 12.sp, color: health.color),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            relatedConsistency.message,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: relatedConsistency.color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (health.score < 65 || result.errorCategory != null) ...[
+            SizedBox(height: 8.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
               children: [
-                Icon(
-                  result.success ? Icons.check_circle : Icons.error,
-                  color: result.success ? Colors.green : Colors.red,
-                  size: 20.sp,
+                OutlinedButton.icon(
+                  onPressed: _exportSyncDiagnostics,
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: const Text('تصدير التشخيص'),
                 ),
-                SizedBox(width: 8.w),
-                Text(
-                  'نتيجة آخر مزامنة',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
+                OutlinedButton.icon(
+                  onPressed: _syncTaxonomies,
+                  icon: const Icon(Icons.sync_rounded),
+                  label: const Text('مزامنة التصنيفات'),
                 ),
               ],
             ),
-            SizedBox(height: 8.h),
-            Row(
-              children: [
-                Text(
-                  '• صحة المزامنة: ${health.score}/100 (${health.level})',
-                  style: TextStyle(fontSize: 13.sp, color: health.color, fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-            Text(
-              '  ${health.hint}',
-              style: TextStyle(fontSize: 12.sp, color: health.color),
-            ),
+          ],
+          SizedBox(height: 8.h),
+          Text(
+            '• عدد السجلات: ${result.recordsSynced}',
+            style: TextStyle(fontSize: 14.sp),
+          ),
+          if (result.payloadCounters.isNotEmpty) ...[
             SizedBox(height: 8.h),
             Text(
-              relatedConsistency.message,
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: relatedConsistency.color,
-                fontWeight: FontWeight.w600,
-              ),
+              '• عداد payload:',
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
             ),
-            if (health.score < 65 || result.errorCategory != null) ...[
-              SizedBox(height: 8.h),
-              Wrap(
-                spacing: 8.w,
-                runSpacing: 8.h,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _exportSyncDiagnostics,
-                    icon: const Icon(Icons.ios_share_rounded),
-                    label: const Text('تصدير التشخيص'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _syncTaxonomies,
-                    icon: const Icon(Icons.sync_rounded),
-                    label: const Text('مزامنة التصنيفات'),
-                  ),
-                ],
-              ),
-            ],
+            Text(
+              '  - beneficiaries: ${result.payloadCounters['beneficiaries'] ?? 0}',
+              style: TextStyle(fontSize: 13.sp),
+            ),
+            Text(
+              '  - attachments: ${result.payloadCounters['attachments'] ?? 0}',
+              style: TextStyle(fontSize: 13.sp),
+            ),
+            Text(
+              '  - family_members: ${result.payloadCounters['family_members'] ?? 0}',
+              style: TextStyle(fontSize: 13.sp),
+            ),
+            Text(
+              '  - dead_people: ${result.payloadCounters['dead_people'] ?? 0}',
+              style: TextStyle(fontSize: 13.sp),
+            ),
+          ],
+          if (result.recordsFailed > 0)
+            Text(
+              '• فشل: ${result.recordsFailed}',
+              style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.error),
+            ),
+          if (result.writeCounters.isNotEmpty) ...[
             SizedBox(height: 8.h),
             Text(
-              '• عدد السجلات: ${result.recordsSynced}',
-              style: TextStyle(fontSize: 14.sp),
+              '• عداد الكتابة (inserted/updated/skipped):',
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
             ),
-            if (result.payloadCounters.isNotEmpty) ...[
-              SizedBox(height: 8.h),
+            for (final entry in result.writeCounters.entries)
               Text(
-                '• عداد payload:',
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
-              ),
-              Text(
-                '  - beneficiaries: ${result.payloadCounters['beneficiaries'] ?? 0}',
-                style: TextStyle(fontSize: 13.sp),
-              ),
-              Text(
-                '  - attachments: ${result.payloadCounters['attachments'] ?? 0}',
-                style: TextStyle(fontSize: 13.sp),
-              ),
-              Text(
-                '  - family_members: ${result.payloadCounters['family_members'] ?? 0}',
-                style: TextStyle(fontSize: 13.sp),
-              ),
-              Text(
-                '  - dead_people: ${result.payloadCounters['dead_people'] ?? 0}',
-                style: TextStyle(fontSize: 13.sp),
-              ),
-            ],
-            if (result.recordsFailed > 0)
-              Text(
-                '• فشل: ${result.recordsFailed}',
-                style: TextStyle(fontSize: 14.sp, color: Colors.red),
-              ),
-            if (result.writeCounters.isNotEmpty) ...[
-              SizedBox(height: 8.h),
-              Text(
-                '• عداد الكتابة (inserted/updated/skipped):',
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
-              ),
-              for (final entry in result.writeCounters.entries)
-                Text(
-                  '  - ${entry.key}: ${entry.value}',
-                  style: TextStyle(fontSize: 12.sp),
-                ),
-            ],
-            if (result.error != null)
-              Text(
-                '• خطأ: ${result.error}',
-                style: TextStyle(fontSize: 13.sp, color: Colors.red[800]),
-              ),
-            if (result.errorCategory != null)
-              Text(
-                '• التصنيف: ${result.errorCategory}',
-                style: TextStyle(fontSize: 12.sp, color: Colors.red[700]),
-              ),
-            if (result.errorContext != null)
-              Text(
-                '• السياق: ${result.errorContext}',
-                style: TextStyle(fontSize: 12.sp, color: Colors.red[700]),
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
+                '  - ${entry.key}: ${entry.value}',
+                style: TextStyle(fontSize: 12.sp),
               ),
           ],
-        ),
+          if (result.error != null)
+            Text(
+              '• خطأ: ${result.error}',
+              style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.error),
+            ),
+          if (result.errorCategory != null)
+            Text(
+              '• التصنيف: ${result.errorCategory}',
+              style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.error),
+            ),
+          if (result.errorContext != null)
+            Text(
+              '• السياق: ${result.errorContext}',
+              style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.error),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildFileIdDiagnosticsCard(FileIdDiagnostics diagnostics) {
-    return Card(
-      color: Colors.indigo[50],
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.confirmation_num_outlined, color: Colors.indigo, size: 20.sp),
-                SizedBox(width: 8.w),
-                Text(
-                  'تشخيص أرقام الملفات',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 8.h),
-            _buildInfoRow('المتوفر محليًا', diagnostics.availableCount.toString()),
-            _buildInfoRow('المستخدم غير المرفوع', diagnostics.usedUnsyncedCount.toString()),
-            _buildInfoRow(
-              'رقم الحجز النشط',
-              diagnostics.activeReservationId?.toString() ?? 'غير متاح',
-            ),
-            _buildInfoRow(
-              'المتبقي في الحجز',
-              diagnostics.activeReservationRemaining?.toString() ?? 'غير متاح',
-            ),
-            _buildInfoRow(
-              'آخر حجز',
-              diagnostics.lastReservedAt != null ? _formatDateTime(diagnostics.lastReservedAt!) : 'لا يوجد',
-            ),
-            _buildInfoRow(
-              'آخر مزامنة استخدام',
-              diagnostics.lastSyncedAt != null ? _formatDateTime(diagnostics.lastSyncedAt!) : 'لا يوجد',
-            ),
-          ],
-        ),
+    return SyncSectionCard(
+      title: 'تشخيص أرقام الملفات',
+      icon: Icons.confirmation_num_outlined,
+      tone: SyncTone.secondary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow('المتوفر محليًا', diagnostics.availableCount.toString()),
+          _buildInfoRow('المستخدم غير المرفوع', diagnostics.usedUnsyncedCount.toString()),
+          _buildInfoRow(
+            'رقم الحجز النشط',
+            diagnostics.activeReservationId?.toString() ?? 'غير متاح',
+          ),
+          _buildInfoRow(
+            'المتبقي في الحجز',
+            diagnostics.activeReservationRemaining?.toString() ?? 'غير متاح',
+          ),
+          _buildInfoRow(
+            'آخر حجز',
+            diagnostics.lastReservedAt != null ? _formatDateTime(diagnostics.lastReservedAt!) : 'لا يوجد',
+          ),
+          _buildInfoRow(
+            'آخر مزامنة استخدام',
+            diagnostics.lastSyncedAt != null ? _formatDateTime(diagnostics.lastSyncedAt!) : 'لا يوجد',
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildInfoCard() {
-    return Card(
-      color: Colors.blue[50],
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.info, color: Colors.blue, size: 20.sp),
-                SizedBox(width: 8.w),
-                Text(
-                  'معلومات الاتصال',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 12.h),
-            _buildInfoRow('السيرفر', 'palestine.benaadev.org'),
-            _buildInfoRow('قاعدة البيانات', 'u983550065_sy_test'),
-            _buildInfoRow('الجدول', 'sy_benaa_application'),
-            _buildInfoRow('التشفير', 'HTTPS'),
-          ],
-        ),
+    return SyncSectionCard(
+      title: 'معلومات الاتصال',
+      icon: Icons.info,
+      tone: SyncTone.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow('السيرفر', 'palestine.benaadev.org'),
+          _buildInfoRow('قاعدة البيانات', 'u983550065_sy_test'),
+          _buildInfoRow('الجدول', 'sy_benaa_application'),
+          _buildInfoRow('التشفير', 'HTTPS'),
+        ],
       ),
     );
   }
 
   Widget _buildSyncHubSummaryCard(MobileSyncStatus status) {
+    final theme = Theme.of(context);
     final hasResult = _lastResult != null;
     final health = hasResult ? _buildSyncHealthScore(_lastResult!) : null;
-    final statusColor = status.isSyncing
-        ? Colors.blue
-        : (hasResult ? (_lastResult!.success ? Colors.green : Colors.orange) : Colors.grey);
 
     final statusText = status.isSyncing
         ? 'جارية الآن'
         : (hasResult ? (_lastResult!.success ? 'مكتملة بنجاح' : 'مكتملة مع مشاكل') : 'غير متحقق');
 
     return Card(
-      color: Colors.indigo[50],
+      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
       child: Padding(
-        padding: EdgeInsets.all(16.w),
+        padding: EdgeInsets.all(SyncUiTokens.contentPadding.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(Icons.hub_rounded, color: Colors.indigo, size: 22.sp),
+                Icon(Icons.hub_rounded, color: theme.colorScheme.primary, size: 22.sp),
                 SizedBox(width: 8.w),
                 Text(
                   'Sync Hub',
@@ -1638,17 +1454,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
             _buildInfoRow('آخر مزامنة', status.lastSyncAt != null ? _formatDateTime(status.lastSyncAt!) : 'لا يوجد'),
             if (health != null) _buildInfoRow('صحة المزامنة', '${health.score}/100 (${health.level})'),
             SizedBox(height: 10.h),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: statusColor),
-              ),
-              child: Text(
-                status.currentOperation,
-                style: TextStyle(fontSize: 12.sp, color: statusColor, fontWeight: FontWeight.w700),
-              ),
+            SyncStatusBanner(
+              message: status.currentOperation,
+              tone: status.isSyncing
+                  ? SyncTone.primary
+                  : (_lastResult?.success == true ? SyncTone.success : SyncTone.warning),
+              icon: status.isSyncing ? Icons.sync_rounded : Icons.info_outline,
             ),
             SizedBox(height: 12.h),
             SizedBox(
@@ -1658,9 +1469,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 icon: const Icon(Icons.sync),
                 label: const Text('مزامنة الآن (الإجراء الرئيسي)'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                   padding: EdgeInsets.symmetric(vertical: 14.h),
                 ),
               ),

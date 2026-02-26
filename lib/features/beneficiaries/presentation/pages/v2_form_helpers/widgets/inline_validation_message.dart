@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../beneficiary_form_colors.dart';
+import '../form_constants.dart';
 
 /// 🎯 Inline Validation Message
 ///
@@ -9,7 +10,7 @@ import '../beneficiary_form_colors.dart';
 /// Usage:
 /// ```dart
 /// InlineValidationMessage(
-///   message: 'الرقم الوطني يجب أن يكون 18 رقم',
+///   message: 'الرقم الوطني يجب أن يكون ${FormConstants.nationalIdLength} أرقام',
 ///   level: ValidationLevel.error,
 /// )
 /// ```
@@ -28,18 +29,18 @@ class InlineValidationMessage extends StatefulWidget {
   final Duration animationDuration;
 
   const InlineValidationMessage({
-    required this.message, required this.level, super.key,
+    required this.message,
+    required this.level,
+    super.key,
     this.show = true,
     this.animationDuration = const Duration(milliseconds: 300),
   });
 
   @override
-  State<InlineValidationMessage> createState() =>
-      _InlineValidationMessageState();
+  State<InlineValidationMessage> createState() => _InlineValidationMessageState();
 }
 
-class _InlineValidationMessageState extends State<InlineValidationMessage>
-    with SingleTickerProviderStateMixin {
+class _InlineValidationMessageState extends State<InlineValidationMessage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -194,8 +195,8 @@ class ValidationMessages {
 
   // National ID validations
   static InlineValidationMessage nationalIdLength() {
-    return const InlineValidationMessage(
-      message: 'الرقم الوطني يجب أن يكون 18 رقماً',
+    return InlineValidationMessage(
+      message: 'الرقم الوطني يجب أن يكون ${FormConstants.nationalIdLength} أرقام',
       level: ValidationLevel.error,
     );
   }
@@ -224,7 +225,7 @@ class ValidationMessages {
 
   static InlineValidationMessage phoneInvalid() {
     return const InlineValidationMessage(
-      message: 'رقم الهاتف يجب أن يكون 11 رقماً (07XXXXXXXXX)',
+      message: 'رقم الهاتف غير صحيح. استخدم 10 أرقام بصيغة 059XXXXXXX أو 056XXXXXXX',
       level: ValidationLevel.error,
     );
   }

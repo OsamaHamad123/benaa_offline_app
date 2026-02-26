@@ -80,6 +80,8 @@ class DraftLoadCoordinator {
         _safeTaxonomyValue(formDataRaw['selectedRequestStatus'] ?? formDataRaw['requestStatus']);
     controllers.selectedAssistanceType =
         _safeTaxonomyValue(formDataRaw['selectedAssistanceType'] ?? formDataRaw['assistanceType']);
+    controllers.selectedGuaranteeType =
+        _safeTaxonomyValue(formDataRaw['selectedGuaranteeType'] ?? formDataRaw['guaranteeType']);
     controllers.specialNeedsCountController.text = (formDataRaw['specialNeedsCount'] ?? '').toString();
 
     final rawTab = draft['currentTab'];

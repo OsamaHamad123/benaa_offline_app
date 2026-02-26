@@ -37,6 +37,9 @@ class FamilyMembersTable extends Table {
   IntColumn get sponsorshipType => integer().nullable()();
   // 1=كفالة كاملة، 2=كفالة جزئية، 3=كفالة موسمية
 
+  // نوع الضمان (taxonomy id from guarantee-types)
+  IntColumn get guaranteeType => integer().nullable()();
+
   TextColumn get sponsorName => text().nullable()(); // اسم الكفيل
   DateTimeColumn get sponsorshipStartDate => dateTime().nullable()(); // تاريخ بدء الكفالة
 

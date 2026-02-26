@@ -8,20 +8,17 @@ class Beneficiaries extends Table {
 
   // File Information
   TextColumn get fileIdNumber => text().nullable()(); // file_id_number
-  TextColumn get originalFileIdFromExcel =>
-      text().nullable()(); // original_file_id_from_excel
+  TextColumn get originalFileIdFromExcel => text().nullable()(); // original_file_id_from_excel
 
   // Classification & Status
   IntColumn get sectionId => integer().nullable()(); // data_section_id
-  IntColumn get requestStatus =>
-      integer().withDefault(const Constant(1))(); // data_request_status
+  IntColumn get requestStatus => integer().withDefault(const Constant(1))(); // data_request_status
 
   // Personal Information
   IntColumn get idNumber => integer()(); // data_id_number (الرقم الوطني)
   TextColumn get firstName => text().nullable()(); // data_first_name
   TextColumn get fatherName => text().nullable()(); // data_father_name
-  TextColumn get grandFatherName =>
-      text().nullable()(); // data_grand_father_name
+  TextColumn get grandFatherName => text().nullable()(); // data_grand_father_name
   TextColumn get familyName => text().nullable()(); // data_family_name
   IntColumn get relationship => integer().nullable()(); // data_relationship
   DateTimeColumn get birthDate => dateTime().nullable()(); // data_birth_date
@@ -32,42 +29,40 @@ class Beneficiaries extends Table {
   IntColumn get altPhoneNumber => integer()(); // data_alt_phone_number
 
   // Family Information
-  IntColumn get numberOfIndividuals =>
-      integer().nullable()(); // data_number_of_individuals
+  IntColumn get numberOfIndividuals => integer().nullable()(); // data_number_of_individuals
   IntColumn get maritalStatus => integer().nullable()(); // data_marital_status
   IntColumn get numberOfMales => integer().nullable()(); // data_number_mail
   IntColumn get numberOfFemales => integer().nullable()(); // data_number_female
 
   // Education & Employment
-  IntColumn get academicQualification =>
-      integer().nullable()(); // data_academic_qualification
-  IntColumn get employmentStatusBreadwinner =>
-      integer().nullable()(); // data_employment_status_breadwinner
+  IntColumn get academicQualification => integer().nullable()(); // data_academic_qualification
+  IntColumn get employmentStatusBreadwinner => integer().nullable()(); // data_employment_status_breadwinner
 
   // Displacement & Location
-  IntColumn get displacementStatus =>
-      integer().nullable()(); // data_displacement_status
-  TextColumn get addressBeforeDisplacement =>
-      text().nullable()(); // data_address_before_displacement
+  IntColumn get displacementStatus => integer().nullable()(); // data_displacement_status
+  TextColumn get addressBeforeDisplacement => text().nullable()(); // data_address_before_displacement
   TextColumn get currentAddress => text().nullable()(); // data_current_address
   IntColumn get city => integer().nullable()(); // data_city
   IntColumn get province => integer().nullable()(); // data_province
 
   // Health & Special Needs
   IntColumn get healthStatus => integer().nullable()(); // data_health_status
-  IntColumn get numberOfIndividualsWithChronicDiseases => integer()
-      .nullable()(); // data_number_of_individuals_with_chronic_diseases
-  IntColumn get numberOfPeopleWithSpecialNeeds =>
-      integer().nullable()(); // data_number_of_people_with_special_needs
+  IntColumn get numberOfIndividualsWithChronicDiseases =>
+      integer().nullable()(); // data_number_of_individuals_with_chronic_diseases
+  IntColumn get numberOfPeopleWithSpecialNeeds => integer().nullable()(); // data_number_of_people_with_special_needs
 
   // Housing
   IntColumn get housingStatus => integer().nullable()(); // data_housing_status
-  IntColumn get currentHousingType =>
-      integer().nullable()(); // data_current_housing_type
+  IntColumn get currentHousingType => integer().nullable()(); // data_current_housing_type
+
+  // Extended taxonomy fields (stored as canonical taxonomy code)
+  TextColumn get assistanceTypeCode => text().nullable()();
+  TextColumn get disabilityTypeCode => text().nullable()();
+  TextColumn get incomeSourceCode => text().nullable()();
+  TextColumn get guaranteeTypeCode => text().nullable()();
 
   // Needs & Notes
-  TextColumn get descriptionNeeds =>
-      text().nullable()(); // data_description_needs
+  TextColumn get descriptionNeeds => text().nullable()(); // data_description_needs
 
   // System Fields
   TextColumn get userInsertData => text().nullable()(); // data_user_insert_data
@@ -93,8 +88,7 @@ class Beneficiaries extends Table {
         stored: true,
       )(); // حقل محسوب تلقائياً
 
-  TextColumn get fullNameNorm =>
-      text().nullable()(); // للبحث (يتم تحديثه عبر trigger)
+  TextColumn get fullNameNorm => text().nullable()(); // للبحث (يتم تحديثه عبر trigger)
 
   @override
   List<Set<Column>> get uniqueKeys => [

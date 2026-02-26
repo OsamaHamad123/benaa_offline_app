@@ -25,6 +25,7 @@ import '../../../taxonomies/presentation/providers/taxonomy_providers.dart';
 
 // Civil DB Download
 import '../../../civil_db_download/presentation/providers/database_download_provider.dart';
+import '../../../civil_db_download/domain/entities/download_progress.dart';
 
 // Dashboard
 import '../providers.dart';
@@ -604,7 +605,7 @@ class _DashboardHome extends ConsumerWidget {
             child: FadeSlideTransition(
               duration: AppDurations.fast,
               delay: Duration(), // ✅ Stagger: أول widget
-              child: DashboardSummaryWidget(),
+              child: DashboardSummaryWidget(contextLabel: 'اليوم'),
             ),
           ),
 
@@ -839,31 +840,58 @@ class _CivilRegistryBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dbState = ref.watch(databaseDownloadProvider);
+    final status = dbState.progress.status;
+    final isProcessing = status == DownloadStatus.downloading ||
+        status == DownloadStatus.extracting ||
+        status == DownloadStatus.verifying ||
+        status == DownloadStatus.checking;
+    final downloadedAt = dbState.downloadDate;
+    final dateText = downloadedAt == null
+        ? 'غير متوفر'
+        : '${downloadedAt.year}/${downloadedAt.month.toString().padLeft(2, '0')}/${downloadedAt.day.toString().padLeft(2, '0')} '
+            '${downloadedAt.hour.toString().padLeft(2, '0')}:${downloadedAt.minute.toString().padLeft(2, '0')}';
 
-    // لا تعرض البانر إذا كان السجل المدني محملاً
-    if (dbState.isAvailable) {
-      return const SizedBox.shrink();
-    }
+    final isReady = dbState.isAvailable;
+
+    final accentColor = isReady
+        ? Colors.green
+        : isProcessing
+            ? Colors.blue
+            : Colors.orange;
+    final title = isReady
+        ? 'السجل المدني جاهز'
+        : isProcessing
+            ? 'تحميل السجل المدني قيد التنفيذ'
+            : 'السجل المدني غير محمّل';
+    final subtitle = isReady
+        ? 'آخر تحديث: $dateText • ${dbState.fileSizeFormatted}'
+        : isProcessing
+            ? 'التقدم الحالي: ${dbState.progress.displayPercentage}'
+            : 'بعض الميزات لن تعمل بدون تحميل السجل المدني';
 
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: accentColor.shade50,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: accentColor.shade200),
       ),
       child: Row(
         children: [
           Container(
             padding: EdgeInsets.all(8.r),
             decoration: BoxDecoration(
-              color: Colors.orange.shade100,
+              color: accentColor.shade100,
               borderRadius: BorderRadius.circular(8.r),
             ),
             child: Icon(
-              Icons.info_outline_rounded,
-              color: Colors.orange.shade700,
+              isReady
+                  ? Icons.verified_rounded
+                  : isProcessing
+                      ? Icons.downloading_rounded
+                      : Icons.info_outline_rounded,
+              color: accentColor.shade700,
               size: 24.sp,
             ),
           ),
@@ -873,21 +901,31 @@ class _CivilRegistryBanner extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'السجل المدني غير محمّل',
+                  title,
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade800,
+                    color: accentColor.shade800,
                   ),
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'بعض الميزات لن تعمل بدون تحميل السجل المدني',
+                  subtitle,
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: Colors.orange.shade700,
+                    color: accentColor.shade700,
                   ),
                 ),
+                if (isProcessing) ...[
+                  SizedBox(height: 6.h),
+                  LinearProgressIndicator(
+                    value: dbState.progress.percentage / 100,
+                    minHeight: 5.h,
+                    borderRadius: BorderRadius.circular(8.r),
+                    backgroundColor: accentColor.shade100,
+                    valueColor: AlwaysStoppedAnimation<Color>(accentColor.shade700),
+                  ),
+                ],
               ],
             ),
           ),
@@ -897,11 +935,15 @@ class _CivilRegistryBanner extends ConsumerWidget {
               context.push('/database-download');
             },
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange.shade100,
-              foregroundColor: Colors.orange.shade800,
+              backgroundColor: accentColor.shade100,
+              foregroundColor: accentColor.shade800,
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
             ),
-            child: const Text('تحميل'),
+            child: Text(isReady
+                ? 'إدارة'
+                : isProcessing
+                    ? 'متابعة'
+                    : 'تحميل'),
           ),
         ],
       ),

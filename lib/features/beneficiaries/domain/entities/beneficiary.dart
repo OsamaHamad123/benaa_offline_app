@@ -51,6 +51,10 @@ class Beneficiary {
   final HousingStatus? housingStatus;
   final HousingType? housingType;
   final RequestStatus? requestStatus;
+  final String? assistanceTypeCode;
+  final String? disabilityTypeCode;
+  final String? incomeSourceCode;
+  final String? guaranteeTypeCode;
 
   final String? notes;
 
@@ -67,7 +71,9 @@ class Beneficiary {
     required this.nationalId,
     required this.gender,
     required this.category,
-    required this.createdAt, required this.updatedAt, this.birthDate,
+    required this.createdAt,
+    required this.updatedAt,
+    this.birthDate,
     this.motherName,
     this.fatherName,
     this.grandFatherName,
@@ -98,6 +104,10 @@ class Beneficiary {
     this.housingStatus,
     this.housingType,
     this.requestStatus,
+    this.assistanceTypeCode,
+    this.disabilityTypeCode,
+    this.incomeSourceCode,
+    this.guaranteeTypeCode,
     this.notes,
     this.createdByUser,
     this.needsSync = false,
@@ -203,6 +213,10 @@ class Beneficiary {
     HousingStatus? housingStatus,
     HousingType? housingType,
     RequestStatus? requestStatus,
+    String? assistanceTypeCode,
+    String? disabilityTypeCode,
+    String? incomeSourceCode,
+    String? guaranteeTypeCode,
     String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -243,6 +257,10 @@ class Beneficiary {
       housingStatus: housingStatus ?? this.housingStatus,
       housingType: housingType ?? this.housingType,
       requestStatus: requestStatus ?? this.requestStatus,
+      assistanceTypeCode: assistanceTypeCode ?? this.assistanceTypeCode,
+      disabilityTypeCode: disabilityTypeCode ?? this.disabilityTypeCode,
+      incomeSourceCode: incomeSourceCode ?? this.incomeSourceCode,
+      guaranteeTypeCode: guaranteeTypeCode ?? this.guaranteeTypeCode,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

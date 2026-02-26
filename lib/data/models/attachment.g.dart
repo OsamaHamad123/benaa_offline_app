@@ -9,13 +9,13 @@ part of 'attachment.dart';
 Attachment _$AttachmentFromJson(Map<String, dynamic> json) => Attachment(
       id: json['id'] as String,
       beneficiaryId: json['beneficiaryId'] as String,
-      visitId: json['visitId'] as String?,
       type: json['type'] as String,
       path: json['path'] as String,
       hash: json['hash'] as String,
       size: (json['size'] as num).toInt(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      visitId: json['visitId'] as String?,
       syncState: json['syncState'] as String? ?? 'pending',
     );
 

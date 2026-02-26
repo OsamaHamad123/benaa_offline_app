@@ -14,6 +14,7 @@ class Association extends Equatable {
   final String? swiftCode;
   final String? bankPhone;
   final String? accountCurrency; // IQD, USD, EUR
+  final String? associationTypeCode;
   final String? representativeId;
   final bool isActive;
   final DateTime createdAt;
@@ -22,11 +23,17 @@ class Association extends Equatable {
   const Association({
     required this.id,
     required this.name,
-    required this.phone, required this.bankName, required this.accountNumber, required this.createdAt, required this.updatedAt, this.shortName,
+    required this.phone,
+    required this.bankName,
+    required this.accountNumber,
+    required this.createdAt,
+    required this.updatedAt,
+    this.shortName,
     this.email,
     this.swiftCode,
     this.bankPhone,
     this.accountCurrency,
+    this.associationTypeCode,
     this.representativeId,
     this.isActive = true,
   });
@@ -35,11 +42,7 @@ class Association extends Equatable {
   String get displayName => shortName?.isNotEmpty == true ? shortName! : name;
 
   /// Is valid for operations
-  bool get isValid =>
-      name.isNotEmpty &&
-      phone.isNotEmpty &&
-      bankName.isNotEmpty &&
-      accountNumber.isNotEmpty;
+  bool get isValid => name.isNotEmpty && phone.isNotEmpty && bankName.isNotEmpty && accountNumber.isNotEmpty;
 
   @override
   List<Object?> get props => [
@@ -53,6 +56,7 @@ class Association extends Equatable {
         swiftCode,
         bankPhone,
         accountCurrency,
+        associationTypeCode,
         representativeId,
         isActive,
         createdAt,
@@ -70,6 +74,7 @@ class Association extends Equatable {
     String? swiftCode,
     String? bankPhone,
     String? accountCurrency,
+    String? associationTypeCode,
     String? representativeId,
     bool? isActive,
     DateTime? createdAt,
@@ -86,6 +91,7 @@ class Association extends Equatable {
       swiftCode: swiftCode ?? this.swiftCode,
       bankPhone: bankPhone ?? this.bankPhone,
       accountCurrency: accountCurrency ?? this.accountCurrency,
+      associationTypeCode: associationTypeCode ?? this.associationTypeCode,
       representativeId: representativeId ?? this.representativeId,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,

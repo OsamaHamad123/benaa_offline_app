@@ -74,6 +74,10 @@ final taxonomyStatisticsUseCaseProvider = Provider<GetTaxonomyStatisticsUseCase>
   return GetTaxonomyStatisticsUseCase(ref.watch(taxonomyRepositoryProvider));
 });
 
+final batchTaxonomyMutationUseCaseProvider = Provider<BatchTaxonomyMutationUseCase>((ref) {
+  return BatchTaxonomyMutationUseCase(ref.watch(taxonomyRepositoryProvider));
+});
+
 // ═══════════════════════════════════════════════════════════════
 // 📊 State Providers
 // ═══════════════════════════════════════════════════════════════
@@ -332,6 +336,89 @@ final taxonomySyncNotifierProvider =
     ref.watch(syncTaxonomiesUseCaseProvider),
     ref,
   );
+});
+
+/// تنفيذ عمليات CRUD/Batch على التصنيفات
+class TaxonomyCrudNotifier extends StateNotifier<AsyncValue<void>> {
+  final Ref _ref;
+
+  TaxonomyCrudNotifier(this._ref) : super(const AsyncData(null));
+
+  Future<Result<Taxonomy>> create(Taxonomy taxonomy) async {
+    state = const AsyncLoading();
+    final useCase = _ref.read(createTaxonomyUseCaseProvider);
+    final result = await useCase.call(taxonomy);
+    _handleMutationResult(result);
+    return result;
+  }
+
+  Future<Result<Taxonomy>> update(Taxonomy taxonomy) async {
+    state = const AsyncLoading();
+    final useCase = _ref.read(updateTaxonomyUseCaseProvider);
+    final result = await useCase.call(taxonomy);
+    _handleMutationResult(result);
+    return result;
+  }
+
+  Future<Result<void>> delete(String id) async {
+    state = const AsyncLoading();
+    final useCase = _ref.read(deleteTaxonomyUseCaseProvider);
+    final result = await useCase.call(id);
+    _handleMutationResult(result);
+    return result;
+  }
+
+  Future<Result<List<Taxonomy>>> createBatch(
+    TaxonomyGroup group,
+    List<String> names,
+  ) async {
+    state = const AsyncLoading();
+    final useCase = _ref.read(batchTaxonomyMutationUseCaseProvider);
+    final result = await useCase.create(group, names);
+    _handleMutationResult(result);
+    return result;
+  }
+
+  Future<Result<List<Taxonomy>>> updateBatch(
+    TaxonomyGroup group,
+    Map<String, String> updates,
+  ) async {
+    state = const AsyncLoading();
+    final useCase = _ref.read(batchTaxonomyMutationUseCaseProvider);
+    final result = await useCase.update(group, updates);
+    _handleMutationResult(result);
+    return result;
+  }
+
+  Future<Result<List<String>>> deleteBatch(
+    TaxonomyGroup group,
+    List<String> ids,
+  ) async {
+    state = const AsyncLoading();
+    final useCase = _ref.read(batchTaxonomyMutationUseCaseProvider);
+    final result = await useCase.delete(group, ids);
+    _handleMutationResult(result);
+    return result;
+  }
+
+  void _handleMutationResult<T>(Result<T> result) {
+    if (result.isSuccess) {
+      _ref.invalidate(allTaxonomiesProvider);
+      _ref.invalidate(taxonomyStatisticsProvider);
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider);
+      state = const AsyncData(null);
+      return;
+    }
+
+    final error = (result as Failure).error;
+    _ref.read(taxonomyErrorMessageProvider.notifier).state = error.message;
+    state = AsyncError(error, StackTrace.current);
+  }
+}
+
+final taxonomyCrudNotifierProvider = StateNotifierProvider<TaxonomyCrudNotifier, AsyncValue<void>>((ref) {
+  return TaxonomyCrudNotifier(ref);
 });
 
 // ═══════════════════════════════════════════════════════════════

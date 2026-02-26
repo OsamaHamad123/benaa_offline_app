@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'app_analytics.dart';
 import '../analytics/ux_analytics.dart';
 import 'analytics_exporter.dart';
 
@@ -48,7 +49,9 @@ class MonitoredAnimation extends StatefulWidget {
   final VoidCallback? onComplete;
 
   const MonitoredAnimation({
-    required this.child, required this.duration, super.key,
+    required this.child,
+    required this.duration,
+    super.key,
     this.curve = Curves.easeInOut,
     this.onComplete,
   });
@@ -57,8 +60,7 @@ class MonitoredAnimation extends StatefulWidget {
   State<MonitoredAnimation> createState() => _MonitoredAnimationState();
 }
 
-class _MonitoredAnimationState extends State<MonitoredAnimation>
-    with SingleTickerProviderStateMixin {
+class _MonitoredAnimationState extends State<MonitoredAnimation> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final Stopwatch _stopwatch = Stopwatch();
 
@@ -120,8 +122,26 @@ class _MonitoredAnimationState extends State<MonitoredAnimation>
 /// 📊 Analytics Dashboard Widget
 ///
 /// Shows UX analytics data for debugging/testing
-class UxAnalyticsDashboard extends StatelessWidget {
+class UxAnalyticsDashboard extends StatefulWidget {
   const UxAnalyticsDashboard({super.key});
+
+  @override
+  State<UxAnalyticsDashboard> createState() => _UxAnalyticsDashboardState();
+}
+
+class _UxAnalyticsDashboardState extends State<UxAnalyticsDashboard> {
+  _LoginKpiRange _selectedLoginRange = _LoginKpiRange.day;
+
+  Duration? get _loginRangeDuration {
+    switch (_selectedLoginRange) {
+      case _LoginKpiRange.day:
+        return const Duration(hours: 24);
+      case _LoginKpiRange.week:
+        return const Duration(days: 7);
+      case _LoginKpiRange.all:
+        return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,8 +166,7 @@ class UxAnalyticsDashboard extends StatelessWidget {
                   await UxAnalytics.resetAnalytics();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('تم إعادة تعيين الإحصائيات')),
+                      const SnackBar(content: Text('تم إعادة تعيين الإحصائيات')),
                     );
                   }
                   break;
@@ -212,6 +231,7 @@ class UxAnalyticsDashboard extends StatelessWidget {
           final animations = data['animations'] as Map<String, dynamic>;
           final accessibility = data['accessibility'] as Map<String, dynamic>;
           final sessions = data['sessions'] as Map<String, dynamic>;
+          final loginKpi = AppAnalytics.getLoginKpiStats(window: _loginRangeDuration);
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -220,8 +240,7 @@ class UxAnalyticsDashboard extends StatelessWidget {
               FutureBuilder<List<String>>(
                 future: AnalyticsExporter.generateInsights(),
                 builder: (context, insightsSnapshot) {
-                  if (insightsSnapshot.hasData &&
-                      insightsSnapshot.data!.isNotEmpty) {
+                  if (insightsSnapshot.hasData && insightsSnapshot.data!.isNotEmpty) {
                     return Column(
                       children: [
                         _buildSection(
@@ -230,16 +249,13 @@ class UxAnalyticsDashboard extends StatelessWidget {
                               .map((insight) => Padding(
                                     padding: const EdgeInsets.only(bottom: 8),
                                     child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('• ',
-                                            style: TextStyle(fontSize: 16)),
+                                        const Text('• ', style: TextStyle(fontSize: 16)),
                                         Expanded(
                                           child: Text(
                                             insight,
-                                            style:
-                                                const TextStyle(fontSize: 14),
+                                            style: const TextStyle(fontSize: 14),
                                           ),
                                         ),
                                       ],
@@ -267,8 +283,7 @@ class UxAnalyticsDashboard extends StatelessWidget {
               _buildSection(
                 '🌙 Dark Mode',
                 [
-                  _buildMetric(
-                      'الحالة', darkMode['enabled'] ? 'مفعّل' : 'معطّل'),
+                  _buildMetric('الحالة', darkMode['enabled'] ? 'مفعّل' : 'معطّل'),
                   _buildMetric('مرات التبديل', '${darkMode['toggleCount']}'),
                   _buildMetric('أول تفعيل', darkMode['firstEnabled'] ?? 'N/A'),
                 ],
@@ -278,27 +293,77 @@ class UxAnalyticsDashboard extends StatelessWidget {
                 '🎨 Animations',
                 [
                   _buildMetric('Frame Drops', '${animations['frameDrops']}'),
-                  _buildMetric(
-                      'Avg Duration', '${animations['avgDuration']}ms'),
+                  _buildMetric('Avg Duration', '${animations['avgDuration']}ms'),
                 ],
               ),
               const SizedBox(height: 16),
               _buildSection(
                 '♿ Accessibility',
                 [
-                  _buildMetric('Screen Reader',
-                      accessibility['screenReaderUsed'] ? 'نعم' : 'لا'),
-                  _buildMetric('Semantics Interactions',
-                      '${accessibility['semanticsInteractions']}'),
+                  _buildMetric('Screen Reader', accessibility['screenReaderUsed'] ? 'نعم' : 'لا'),
+                  _buildMetric('Semantics Interactions', '${accessibility['semanticsInteractions']}'),
                 ],
               ),
               const SizedBox(height: 16),
               _buildSection(
+                '🔐 Login Funnel KPI',
+                [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('24 ساعة'),
+                          selected: _selectedLoginRange == _LoginKpiRange.day,
+                          onSelected: (_) {
+                            setState(() => _selectedLoginRange = _LoginKpiRange.day);
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('7 أيام'),
+                          selected: _selectedLoginRange == _LoginKpiRange.week,
+                          onSelected: (_) {
+                            setState(() => _selectedLoginRange = _LoginKpiRange.week);
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('الكل'),
+                          selected: _selectedLoginRange == _LoginKpiRange.all,
+                          onSelected: (_) {
+                            setState(() => _selectedLoginRange = _LoginKpiRange.all);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildMetric('محاولات الدخول', '${loginKpi.attempts}'),
+                  _buildMetric(
+                    'نجاح الدخول',
+                    '${loginKpi.success} (${loginKpi.successRate.toStringAsFixed(1)}%)',
+                  ),
+                  _buildMetric(
+                    'فشل الدخول',
+                    '${loginKpi.failed} (${loginKpi.failureRate.toStringAsFixed(1)}%)',
+                  ),
+                  _buildMetric(
+                    'التحويل للداشبورد بعد النجاح',
+                    '${loginKpi.dashboardConversions} (${loginKpi.dashboardConversionRate.toStringAsFixed(1)}%)',
+                  ),
+                  _buildMetric(
+                    'Bounce إلى تنزيل قاعدة البيانات',
+                    '${loginKpi.databaseDownloadBounces} (${loginKpi.databaseDownloadBounceRate.toStringAsFixed(1)}%)',
+                  ),
+                  _buildMetric('متوسط زمن نجاح الدخول', '${loginKpi.avgSuccessDurationMs}ms'),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              _buildSection(
                 '📈 Sessions',
                 [
                   _buildMetric('إجمالي الجلسات', '${sessions['total']}'),
-                  _buildMetric('بداية الجلسة الحالية',
-                      sessions['currentStart'] ?? 'N/A'),
+                  _buildMetric('بداية الجلسة الحالية', sessions['currentStart'] ?? 'N/A'),
                 ],
               ),
             ],
@@ -348,4 +413,10 @@ class UxAnalyticsDashboard extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _LoginKpiRange {
+  day,
+  week,
+  all,
 }

@@ -84,6 +84,56 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     return labels;
   }
 
+  Map<int, Color> _buildTaxonomyColorMap(List<taxonomy_domain.Taxonomy> options) {
+    final colors = <int, Color>{};
+    for (final taxonomy in options) {
+      final value = TaxonomyValueResolver.resolveToInt(code: taxonomy.code, id: taxonomy.id);
+      if (value == null) continue;
+      final parsed = _parseTaxonomyColor(taxonomy.color);
+      if (parsed != null) {
+        colors.putIfAbsent(value, () => parsed);
+      }
+    }
+    return colors;
+  }
+
+  Color? _parseTaxonomyColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+
+  ColorInfo _resolveCategoryColorInfo(
+    dynamic beneficiary,
+    Map<int, Color> categoryColorsById,
+  ) {
+    final sectionId = beneficiary?.sectionId;
+    final resolvedColor = sectionId == null ? null : categoryColorsById[sectionId];
+    if (resolvedColor == null) {
+      return BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary?.category);
+    }
+
+    return ColorInfo(
+      primary: resolvedColor.value,
+      light: resolvedColor.withOpacity(0.15).value,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -132,10 +182,17 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       data: (index) {
         final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
         final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
-        final source = sectionOptions.isNotEmpty ? sectionOptions : categoryOptions;
-        return _buildTaxonomyLabelMap(source);
+        return _buildTaxonomyLabelMap([...categoryOptions, ...sectionOptions]);
       },
       orElse: () => const <String, String>{},
+    );
+    final categoryColorsById = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
+        final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
+        return _buildTaxonomyColorMap([...categoryOptions, ...sectionOptions]);
+      },
+      orElse: () => const <int, Color>{},
     );
     final genderLabelsByCode = taxonomyIndexAsync.maybeWhen(
       data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.gender] ?? const <taxonomy_domain.Taxonomy>[]),
@@ -146,7 +203,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       orElse: () => const <String, String>{},
     );
     final cityLabelsByCode = taxonomyIndexAsync.maybeWhen(
-      data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.governorate] ?? const <taxonomy_domain.Taxonomy>[]),
+      data: (index) => _buildTaxonomyLabelMap(index[TaxonomyGroup.city] ?? const <taxonomy_domain.Taxonomy>[]),
       orElse: () => const <String, String>{},
     );
     final assistanceTypeLabelsByCode = taxonomyIndexAsync.maybeWhen(
@@ -179,12 +236,17 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     }
 
     return Scaffold(
-      appBar: _buildAppBar(context, beneficiary),
+      appBar: _buildAppBar(
+        context,
+        beneficiary,
+        categoryColorInfo: _resolveCategoryColorInfo(beneficiary, categoryColorsById),
+      ),
       body: _buildBody(
         context,
         beneficiary: beneficiary,
         isLoading: isLoading,
         errorMessage: errorMessage,
+        categoryColorsById: categoryColorsById,
         categoryLabelsByCode: categoryLabelsByCode,
         genderLabelsByCode: genderLabelsByCode,
         governorateLabelsByCode: governorateLabelsByCode,
@@ -201,9 +263,15 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
   // 🎨 UI Building Methods
   // ============================================================================
 
-  AppBar _buildAppBar(BuildContext context, beneficiary) {
+  AppBar _buildAppBar(
+    BuildContext context,
+    beneficiary, {
+    ColorInfo? categoryColorInfo,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final colorInfo = beneficiary != null ? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category) : null;
+    final colorInfo = beneficiary != null
+        ? (categoryColorInfo ?? BeneficiaryDomainHelpers.getCategoryColorInfo(beneficiary.category))
+        : null;
     final backgroundColor = colorInfo != null ? Color(colorInfo.light) : colorScheme.surface;
     final foregroundColor = _foregroundFor(backgroundColor, colorScheme);
 
@@ -278,6 +346,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     required beneficiary,
     required bool isLoading,
     required String? errorMessage,
+    required Map<int, Color> categoryColorsById,
     required Map<String, String> categoryLabelsByCode,
     required Map<String, String> genderLabelsByCode,
     required Map<String, String> governorateLabelsByCode,
@@ -292,6 +361,15 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     if (isLoading) return _buildShimmerSkeleton(context);
     if (errorMessage != null) return _buildErrorState(context, errorMessage);
     if (beneficiary == null) return _buildEmptyState(context);
+
+    final categoryRaw =
+        _cleanText(beneficiary.sectionId?.toString()) ?? _cleanText(beneficiary.category?.code?.toString());
+    final categoryLabel = TaxonomyValueResolver.displayLabel(
+      rawValue: categoryRaw,
+      resolvedLabel: _resolveTaxonomyLabel(categoryRaw, categoryLabelsByCode) ??
+          BeneficiaryDomainHelpers.getCategoryLabel(beneficiary.category),
+    );
+    final categoryColorInfo = _resolveCategoryColorInfo(beneficiary, categoryColorsById);
 
     return Screenshot(
       controller: _screenshotController,
@@ -309,7 +387,11 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
               children: [
                 if (kDebugMode) _buildIdentityDebugBanner(),
                 if (kDebugMode) SizedBox(height: 12.h),
-                DetailsHeaderCard(beneficiary: beneficiary),
+                DetailsHeaderCard(
+                  beneficiary: beneficiary,
+                  categoryLabel: categoryLabel,
+                  categoryColorInfo: categoryColorInfo,
+                ),
                 sectionGap,
                 _buildQuickStats(beneficiary),
                 sectionGap,
@@ -747,6 +829,24 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
   // ============================================================================
   // 🛠️ Utility Methods
   // ============================================================================
+
+  String? _cleanText(String? value) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String? _resolveTaxonomyLabel(String? rawValue, Map<String, String> labelsByCode) {
+    if (rawValue == null) return null;
+    final trimmed = rawValue.trim();
+    if (trimmed.isEmpty) return null;
+
+    final direct = labelsByCode[trimmed];
+    if (direct != null) return direct;
+
+    final lower = trimmed.toLowerCase();
+    return labelsByCode[lower];
+  }
 
   String _formatDateShort(DateTime dateTime) {
     return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';

@@ -17,7 +17,9 @@ class ModernSliverAppBar extends StatelessWidget {
   final bool isTablet;
 
   const ModernSliverAppBar({
-    required this.title, required this.icon, super.key,
+    required this.title,
+    required this.icon,
+    super.key,
     this.actions,
     this.expandedHeight,
     this.isTablet = false,
@@ -26,14 +28,16 @@ class ModernSliverAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final effectiveExpandedHeight =
-        expandedHeight ?? (isTablet ? 120.h : 100.h);
+    final effectiveExpandedHeight = expandedHeight ?? (isTablet ? 120.h : 100.h);
 
     return SliverAppBar(
       expandedHeight: effectiveExpandedHeight,
       pinned: true,
       elevation: 0,
+      scrolledUnderElevation: 0,
+      surfaceTintColor: Colors.transparent,
       backgroundColor: colorScheme.primary,
+      foregroundColor: Colors.white,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: EdgeInsets.only(
@@ -49,7 +53,7 @@ class ModernSliverAppBar extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(8.r),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10.r),
               ),
               child: Icon(icon, color: Colors.white, size: 20.sp),
@@ -79,7 +83,7 @@ class ModernSliverAppBar extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   colorScheme.primary,
-                  colorScheme.primary.withOpacity(0.8),
+                  colorScheme.primary.withValues(alpha: 0.8),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -109,7 +113,9 @@ class ModernActionButton extends StatelessWidget {
   final int? badge;
 
   const ModernActionButton({
-    required this.icon, required this.tooltip, super.key,
+    required this.icon,
+    required this.tooltip,
+    super.key,
     this.onPressed,
     this.iconSize = 24,
     this.badge,
@@ -117,11 +123,32 @@ class ModernActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget iconButton = IconButton(
-      icon: Icon(icon, size: iconSize.sp),
-      tooltip: tooltip,
-      padding: EdgeInsets.symmetric(horizontal: 12.w),
-      onPressed: onPressed,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Widget iconButton = Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12.r),
+          onTap: onPressed,
+          child: Ink(
+            width: 44.w,
+            height: 44.h,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: iconSize.sp,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
 
     // إضافة badge إذا كان موجود

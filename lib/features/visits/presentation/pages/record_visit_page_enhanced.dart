@@ -11,7 +11,9 @@ import '../providers/visit_providers.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
-import '../../../../features/taxonomies/taxonomies.dart';
+import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// Record Visit Page - Enhanced Version 🔥
 class RecordVisitPageEnhanced extends ConsumerStatefulWidget {
@@ -30,24 +32,24 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
   DateTime _selectedDateTime = DateTime.now();
 
   // 🎯 Visit Types
-  String? _selectedVisitType;
-  static const List<String> _fallbackVisitTypes = [
-    'زيارة منزلية',
-    'زيارة متابعة',
-    'زيارة استشارية',
-    'زيارة طارئة',
-    'أخرى',
-  ];
+  String? _selectedVisitTypeCode;
+  static const Map<String, String> _fallbackVisitTypes = {
+    'home_visit': 'زيارة منزلية',
+    'follow_up': 'زيارة متابعة',
+    'consultation': 'زيارة استشارية',
+    'emergency': 'زيارة طارئة',
+    'other': 'أخرى',
+  };
 
   // 📋 Visit Categories
-  final List<String> _selectedCategories = [];
-  static const List<String> _fallbackCategories = [
-    'صحية',
-    'تعليمية',
-    'اقتصادية',
-    'نفسية',
-    'اجتماعية',
-  ];
+  final List<String> _selectedCategoryCodes = [];
+  static const Map<String, String> _fallbackCategories = {
+    'health': 'صحية',
+    'education': 'تعليمية',
+    'economic': 'اقتصادية',
+    'psychological': 'نفسية',
+    'social': 'اجتماعية',
+  };
 
   @override
   void initState() {
@@ -150,11 +152,15 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
 
       // Build notes with categories and type
       String fullNotes = _notesController.text.trim();
-      if (_selectedVisitType != null) {
-        fullNotes = 'نوع الزيارة: $_selectedVisitType\n\n$fullNotes';
+      if (_selectedVisitTypeCode != null) {
+        final visitTypeLabel = _resolveVisitTypeLabel(_selectedVisitTypeCode!, _fallbackVisitTypes);
+        fullNotes = 'نوع الزيارة: $visitTypeLabel\n\n$fullNotes';
       }
-      if (_selectedCategories.isNotEmpty) {
-        fullNotes = '$fullNotes\n\nالفئات: ${_selectedCategories.join(', ')}';
+      if (_selectedCategoryCodes.isNotEmpty) {
+        final selectedLabels = _selectedCategoryCodes
+            .map((code) => _resolveCategoryLabel(code, _fallbackCategories))
+            .toList(growable: false);
+        fullNotes = '$fullNotes\n\nالفئات: ${selectedLabels.join(', ')}';
       }
 
       // 🔥 Generate secure unique ID using UUID
@@ -270,25 +276,28 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
 
   @override
   Widget build(BuildContext context) {
-    final visitTypeOptionsAsync = ref.watch(
-      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.visitType),
-    );
-    final assistanceTypeOptionsAsync = ref.watch(
-      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.assistanceType),
+    final visitTypeOptionsAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.visitType));
+    final categoryOptionsAsync = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category));
+
+    final taxonomyVisitTypes = visitTypeOptionsAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
     );
 
-    final visitTypeOptions = visitTypeOptionsAsync.maybeWhen(
-      data: (items) => items.map((item) => item.label.trim()).where((label) => label.isNotEmpty).toSet().toList(),
-      orElse: () => const <String>[],
+    final taxonomyCategories = categoryOptionsAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
     );
 
-    final assistanceTypeOptions = assistanceTypeOptionsAsync.maybeWhen(
-      data: (items) => items.map((item) => item.label.trim()).where((label) => label.isNotEmpty).toSet().toList(),
-      orElse: () => const <String>[],
-    );
+    final resolvedVisitTypes =
+        taxonomyVisitTypes.isNotEmpty ? _toCodeLabelMap(taxonomyVisitTypes) : _fallbackVisitTypes;
+    final resolvedCategories =
+        taxonomyCategories.isNotEmpty ? _toCodeLabelMap(taxonomyCategories) : _fallbackCategories;
 
-    final resolvedVisitTypes = visitTypeOptions.isNotEmpty ? visitTypeOptions : _fallbackVisitTypes;
-    final resolvedCategories = assistanceTypeOptions.isNotEmpty ? assistanceTypeOptions : _fallbackCategories;
+    if (_selectedVisitTypeCode != null && !resolvedVisitTypes.containsKey(_selectedVisitTypeCode)) {
+      _selectedVisitTypeCode = null;
+    }
+    _selectedCategoryCodes.removeWhere((code) => !resolvedCategories.containsKey(code));
 
     return Scaffold(
       appBar: AppBar(
@@ -545,18 +554,39 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
     );
   }
 
-  Widget _buildVisitTypeSelector(List<String> visitTypes) {
+  Map<String, String> _toCodeLabelMap(List<taxonomy_domain.Taxonomy> items) {
+    final map = <String, String>{};
+    for (final item in items) {
+      final code = item.code.trim();
+      final label = item.label.trim();
+      if (code.isEmpty || label.isEmpty) continue;
+      map.putIfAbsent(code, () => label);
+    }
+    return map;
+  }
+
+  String _resolveVisitTypeLabel(String code, Map<String, String> options) {
+    return options[code] ?? code;
+  }
+
+  String _resolveCategoryLabel(String code, Map<String, String> options) {
+    return options[code] ?? code;
+  }
+
+  Widget _buildVisitTypeSelector(Map<String, String> visitTypes) {
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
-      children: visitTypes.map((type) {
-        final isSelected = _selectedVisitType == type;
+      children: visitTypes.entries.map((entry) {
+        final code = entry.key;
+        final label = entry.value;
+        final isSelected = _selectedVisitTypeCode == code;
         return ChoiceChip(
-          label: Text(type),
+          label: Text(label),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
-              _selectedVisitType = selected ? type : null;
+              _selectedVisitTypeCode = selected ? code : null;
             });
           },
           selectedColor: Colors.blue[100],
@@ -565,25 +595,29 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         );
-      }).toList(),
+      }).toList(growable: false),
     );
   }
 
-  Widget _buildCategoriesSelector(List<String> categories) {
+  Widget _buildCategoriesSelector(Map<String, String> categories) {
     return Wrap(
       spacing: 8.w,
       runSpacing: 8.h,
-      children: categories.map((category) {
-        final isSelected = _selectedCategories.contains(category);
+      children: categories.entries.map((entry) {
+        final code = entry.key;
+        final label = entry.value;
+        final isSelected = _selectedCategoryCodes.contains(code);
         return FilterChip(
-          label: Text(category),
+          label: Text(label),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
               if (selected) {
-                _selectedCategories.add(category);
+                if (!_selectedCategoryCodes.contains(code)) {
+                  _selectedCategoryCodes.add(code);
+                }
               } else {
-                _selectedCategories.remove(category);
+                _selectedCategoryCodes.remove(code);
               }
             });
           },
@@ -594,7 +628,7 @@ class _RecordVisitPageEnhancedState extends ConsumerState<RecordVisitPageEnhance
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         );
-      }).toList(),
+      }).toList(growable: false),
     );
   }
 

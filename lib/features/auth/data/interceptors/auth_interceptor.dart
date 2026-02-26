@@ -1,4 +1,6 @@
 import 'package:benaa_offline_app/core/error_handling/result.dart';
+import 'package:benaa_offline_app/core/config/api_config.dart';
+import 'package:benaa_offline_app/core/security/auth_session_events.dart';
 import 'package:benaa_offline_app/core/storage/secure_storage.dart';
 import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'package:benaa_offline_app/features/auth/domain/repositories/auth_repository.dart';
@@ -11,6 +13,8 @@ import 'package:dio/dio.dart';
 /// - تجديد الـ Token عند انتهاء الصلاحية (401)
 /// - إعادة محاولة الطلب الفاشل بعد التجديد
 class AuthInterceptor extends QueuedInterceptor {
+  static const String _retriedKey = 'x-auth-retried';
+
   final SecureStorage _secureStorage;
   final AuthRepository _authRepository;
   final Dio _dio;
@@ -33,6 +37,29 @@ class AuthInterceptor extends QueuedInterceptor {
     RequestInterceptorHandler handler,
   ) async {
     try {
+      if (!_isAuthEndpoint(options.path)) {
+        final isExpired = await _secureStorage.isTokenExpired();
+        if (isExpired) {
+          await _clearSessionOnUnauthorized();
+          handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.badResponse,
+              response: Response(
+                requestOptions: options,
+                statusCode: 401,
+                data: {
+                  'error': 'token_expired',
+                  'message': 'Token expired locally',
+                },
+              ),
+              error: 'Token expired locally',
+            ),
+          );
+          return;
+        }
+      }
+
       // الحصول على الـ Token
       final token = await _secureStorage.getAuthToken();
 
@@ -58,8 +85,13 @@ class AuthInterceptor extends QueuedInterceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    final requestOptions = err.requestOptions;
+    final isAlreadyRetried = requestOptions.extra[_retriedKey] == true;
+    final shouldHandle401 =
+        err.response?.statusCode == 401 && !_isAuthEndpoint(requestOptions.path) && !isAlreadyRetried;
+
     // التحقق من خطأ 401 (Unauthorized)
-    if (err.response?.statusCode == 401) {
+    if (shouldHandle401) {
       UnifiedLogger.warning('⚠️ Received 401 - Attempting token refresh');
 
       try {
@@ -68,12 +100,15 @@ class AuthInterceptor extends QueuedInterceptor {
 
         if (refreshSuccess) {
           // إعادة محاولة الطلب الأصلي
-          final retryResponse = await _retryRequest(err.requestOptions);
+          final retryResponse = await _retryRequest(requestOptions);
           handler.resolve(retryResponse);
           return;
         }
+
+        await _clearSessionOnUnauthorized();
       } catch (e, stackTrace) {
         UnifiedLogger.error('❌ Token refresh failed', error: e, stackTrace: stackTrace);
+        await _clearSessionOnUnauthorized();
       }
     }
 
@@ -116,9 +151,12 @@ class AuthInterceptor extends QueuedInterceptor {
     // إعادة الطلب
     UnifiedLogger.info('🔄 Retrying request: ${requestOptions.path}');
 
+    requestOptions.extra[_retriedKey] = true;
+
     final options = Options(
       method: requestOptions.method,
       headers: requestOptions.headers,
+      extra: requestOptions.extra,
     );
 
     return _dio.request(
@@ -127,6 +165,22 @@ class AuthInterceptor extends QueuedInterceptor {
       queryParameters: requestOptions.queryParameters,
       options: options,
     );
+  }
+
+  bool _isAuthEndpoint(String path) {
+    return path == ApiConfig.loginEndpoint ||
+        path == ApiConfig.logoutEndpoint ||
+        path == ApiConfig.refreshTokenEndpoint ||
+        path == ApiConfig.validateTokenEndpoint ||
+        path == ApiConfig.profileEndpoint ||
+        path == ApiConfig.devicesEndpoint;
+  }
+
+  Future<void> _clearSessionOnUnauthorized() async {
+    try {
+      await _authRepository.clearSession();
+    } catch (_) {}
+    AuthSessionEvents.instance.notifySessionExpired();
   }
 
   // ===========================

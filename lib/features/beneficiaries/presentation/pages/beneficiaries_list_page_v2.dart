@@ -150,14 +150,48 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
     unawaited(ref.read(beneficiariesListProvider.notifier).refresh(showLoading: false));
   }
 
-  Map<int, String> _buildTaxonomyLabelMap(List<taxonomy_domain.Taxonomy> options) {
+  Map<int, String> _buildTaxonomyLabelMap(Iterable<taxonomy_domain.Taxonomy> options) {
     final labels = <int, String>{};
     for (final taxonomy in options) {
       final value = TaxonomyValueResolver.resolveToInt(code: taxonomy.code, id: taxonomy.id);
       if (value == null) continue;
-      labels[value] = taxonomy.label;
+      labels.putIfAbsent(value, () => taxonomy.label);
     }
     return labels;
+  }
+
+  Map<int, Color> _buildTaxonomyColorMap(Iterable<taxonomy_domain.Taxonomy> options) {
+    final colors = <int, Color>{};
+    for (final taxonomy in options) {
+      final value = TaxonomyValueResolver.resolveToInt(code: taxonomy.code, id: taxonomy.id);
+      if (value == null) continue;
+      final parsed = _parseTaxonomyColor(taxonomy.color);
+      if (parsed != null) {
+        colors.putIfAbsent(value, () => parsed);
+      }
+    }
+    return colors;
+  }
+
+  Color? _parseTaxonomyColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
   }
 
   /// 🗑️ Optimistic Delete with rollback
@@ -197,10 +231,18 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
       data: (index) {
         final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
         final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
-        final source = sectionOptions.isNotEmpty ? sectionOptions : categoryOptions;
-        return _buildTaxonomyLabelMap(source);
+        return _buildTaxonomyLabelMap([...categoryOptions, ...sectionOptions]);
       },
       orElse: () => const <int, String>{},
+    );
+
+    final categoryColorsById = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
+        final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
+        return _buildTaxonomyColorMap([...categoryOptions, ...sectionOptions]);
+      },
+      orElse: () => const <int, Color>{},
     );
 
     final governorateLabelsById = taxonomyIndexAsync.maybeWhen(
@@ -269,6 +311,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
               selection,
               rv,
               categoryLabelsById: categoryLabelsById,
+              categoryColorsById: categoryColorsById,
               governorateLabelsById: governorateLabelsById,
             ),
           ),
@@ -382,6 +425,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
     selection,
     ResponsiveValues rv, {
     required Map<int, String> categoryLabelsById,
+    required Map<int, Color> categoryColorsById,
     required Map<int, String> governorateLabelsById,
   }) {
     if (state.isLoading) {
@@ -441,6 +485,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
               selection,
               rv,
               categoryLabelsById: categoryLabelsById,
+              categoryColorsById: categoryColorsById,
               governorateLabelsById: governorateLabelsById,
             )
           : _buildListView(
@@ -448,6 +493,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
               selection,
               rv,
               categoryLabelsById: categoryLabelsById,
+              categoryColorsById: categoryColorsById,
               governorateLabelsById: governorateLabelsById,
             ),
     );
@@ -459,6 +505,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
     SelectionState selection,
     ResponsiveValues rv, {
     required Map<int, String> categoryLabelsById,
+    required Map<int, Color> categoryColorsById,
     required Map<int, String> governorateLabelsById,
   }) {
     return ListView.builder(
@@ -502,6 +549,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
                 isSelectionMode: selection.isSelectionMode,
                 isSelected: isSelected,
                 categoryLabelsById: categoryLabelsById,
+                categoryColorsById: categoryColorsById,
                 governorateLabelsById: governorateLabelsById,
                 onDelete: () => _handleDelete(beneficiary.id),
               ),
@@ -518,6 +566,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
     SelectionState selection,
     ResponsiveValues rv, {
     required Map<int, String> categoryLabelsById,
+    required Map<int, Color> categoryColorsById,
     required Map<int, String> governorateLabelsById,
   }) {
     return GridView.builder(
@@ -559,6 +608,7 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
               isSelectionMode: selection.isSelectionMode,
               isSelected: isSelected,
               categoryLabelsById: categoryLabelsById,
+              categoryColorsById: categoryColorsById,
               governorateLabelsById: governorateLabelsById,
               onDelete: () => _handleDelete(beneficiary.id),
             ),

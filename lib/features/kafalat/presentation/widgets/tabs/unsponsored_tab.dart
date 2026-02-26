@@ -10,6 +10,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/providers/providers.dart';
 import '../../../../../core/utils/haptic_patterns.dart';
 import '../../../../../core/widgets/shimmer_loaders.dart';
+import '../../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../filters/enhanced_search_bar.dart';
 
 /// 📋 Tab "غير مكفول" - قائمة المستفيدين غير المكفولين
@@ -23,6 +26,7 @@ class UnsponsoredTab extends ConsumerStatefulWidget {
 class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  bool _showTools = false;
   bool _selectionMode = false;
   final Set<int> _selectedBeneficiaryIds = <int>{};
 
@@ -81,8 +85,18 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
 
   Future<void> _openBulkSponsorshipSheet() async {
     List<Association> associations;
+    List<taxonomy_domain.Taxonomy> sponsorshipTypeTaxonomies;
+    List<taxonomy_domain.Taxonomy> guaranteeTypeTaxonomies;
+    List<taxonomy_domain.Taxonomy> sponsorshipStatusTaxonomies;
+    List<taxonomy_domain.Taxonomy> currencyTaxonomies;
     try {
       associations = await ref.read(kafalatActiveAssociationsProvider.future);
+      sponsorshipTypeTaxonomies =
+          await ref.read(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType).future);
+      guaranteeTypeTaxonomies = await ref.read(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.guaranteeType).future);
+      sponsorshipStatusTaxonomies =
+          await ref.read(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.beneficiaryStatus).future);
+      currencyTaxonomies = await ref.read(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.currency).future);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,8 +114,54 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
     }
 
     String? selectedAssociationId = associations.first.id;
-    String sponsorshipType = 'monthly';
-    String status = 'active';
+    final typeEntries = {
+      for (final taxonomy in sponsorshipTypeTaxonomies)
+        if (taxonomy.code.trim().isNotEmpty && taxonomy.label.trim().isNotEmpty)
+          taxonomy.code.trim(): taxonomy.label.trim(),
+    };
+    final statusEntries = {
+      for (final taxonomy in sponsorshipStatusTaxonomies)
+        if (taxonomy.code.trim().isNotEmpty && taxonomy.label.trim().isNotEmpty)
+          taxonomy.code.trim(): taxonomy.label.trim(),
+    };
+    final guaranteeTypeEntries = {
+      for (final taxonomy in guaranteeTypeTaxonomies)
+        if (taxonomy.code.trim().isNotEmpty && taxonomy.label.trim().isNotEmpty)
+          taxonomy.code.trim(): taxonomy.label.trim(),
+    };
+    final currencyEntries = {
+      for (final taxonomy in currencyTaxonomies)
+        if (taxonomy.code.trim().isNotEmpty) taxonomy.code.trim().toUpperCase(): taxonomy.label.trim(),
+    };
+
+    final mergedTypeEntries = {
+      'monthly': 'شهرية',
+      'one_time': 'مرة واحدة',
+      'other': 'أخرى',
+      ...typeEntries,
+    };
+    final mergedGuaranteeTypeEntries = {
+      'monthly': 'شهرية',
+      'one_time': 'مرة واحدة',
+      'other': 'أخرى',
+      ...guaranteeTypeEntries,
+    };
+    final mergedStatusEntries = {
+      'active': 'نشطة',
+      'paused': 'موقوفة',
+      'ended': 'منتهية',
+      ...statusEntries,
+    };
+    final mergedCurrencyEntries = {
+      'IQD': currencyEntries['IQD'] ?? 'IQD',
+      'USD': currencyEntries['USD'] ?? 'USD',
+      'EUR': currencyEntries['EUR'] ?? 'EUR',
+      ...currencyEntries,
+    };
+
+    String sponsorshipType = mergedTypeEntries.keys.first;
+    String? guaranteeType;
+    String status = mergedStatusEntries.keys.first;
     String? currency;
     final amountController = TextEditingController();
 
@@ -151,12 +211,22 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
                         labelText: 'نوع الكفالة',
                         border: OutlineInputBorder(),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'monthly', child: Text('شهرية')),
-                        DropdownMenuItem(value: 'one_time', child: Text('مرة واحدة')),
-                        DropdownMenuItem(value: 'other', child: Text('أخرى')),
-                      ],
-                      onChanged: (value) => setSheetState(() => sponsorshipType = value ?? 'monthly'),
+                      items: mergedTypeEntries.entries
+                          .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value)))
+                          .toList(growable: false),
+                      onChanged: (value) => setSheetState(() => sponsorshipType = value ?? sponsorshipType),
+                    ),
+                    SizedBox(height: 12.h),
+                    DropdownButtonFormField<String>(
+                      initialValue: guaranteeType,
+                      decoration: const InputDecoration(
+                        labelText: 'نوع الضمان',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: mergedGuaranteeTypeEntries.entries
+                          .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value)))
+                          .toList(growable: false),
+                      onChanged: (value) => setSheetState(() => guaranteeType = value),
                     ),
                     SizedBox(height: 12.h),
                     DropdownButtonFormField<String>(
@@ -165,12 +235,10 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
                         labelText: 'الحالة',
                         border: OutlineInputBorder(),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'active', child: Text('نشطة')),
-                        DropdownMenuItem(value: 'paused', child: Text('موقوفة')),
-                        DropdownMenuItem(value: 'ended', child: Text('منتهية')),
-                      ],
-                      onChanged: (value) => setSheetState(() => status = value ?? 'active'),
+                      items: mergedStatusEntries.entries
+                          .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value)))
+                          .toList(growable: false),
+                      onChanged: (value) => setSheetState(() => status = value ?? status),
                     ),
                     SizedBox(height: 12.h),
                     TextFormField(
@@ -188,11 +256,14 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
                         labelText: 'العملة (اختياري)',
                         border: OutlineInputBorder(),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'IQD', child: Text('IQD')),
-                        DropdownMenuItem(value: 'USD', child: Text('USD')),
-                        DropdownMenuItem(value: 'EUR', child: Text('EUR')),
-                      ],
+                      items: mergedCurrencyEntries.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text('${entry.value} (${entry.key})'),
+                            ),
+                          )
+                          .toList(growable: false),
                       onChanged: (value) => setSheetState(() => currency = value),
                     ),
                     SizedBox(height: 16.h),
@@ -239,6 +310,7 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
             beneficiaryId: beneficiaryId,
             associationId: selectedAssociationId!,
             sponsorshipType: drift.Value(sponsorshipType),
+            guaranteeType: drift.Value(guaranteeType),
             status: drift.Value(status),
             startDate: drift.Value(DateTime.now()),
             amount: drift.Value(amount),
@@ -275,6 +347,8 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
     final state = ref.watch(kafalatUnsponsoredBeneficiariesByQueryProvider(_query));
     final theme = Theme.of(context);
     final hasQuery = _query.isNotEmpty;
+    final totalUnsponsored = state.valueOrNull?.length ?? 0;
+    final hasToolState = _selectionMode || _selectedBeneficiaryIds.isNotEmpty;
 
     Widget buildList(List<Beneficiary> items) {
       final sortedItems = _sortedByPriority(items);
@@ -406,67 +480,104 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
 
     return Column(
       children: [
-        Container(
-          margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(10.r),
-          ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
           child: Row(
             children: [
-              Icon(Icons.insights_outlined, size: 18.sp, color: theme.colorScheme.primary),
-              SizedBox(width: 8.w),
               Expanded(
-                child: Text(
-                  'عرض حسب الأولوية: حجم الأسرة + ذوي الاحتياجات + مدة الانتظار',
-                  style: theme.textTheme.bodySmall,
+                child: EnhancedSearchBar(
+                  controller: _searchController,
+                  onSearch: _onSearchChanged,
+                  hintText: 'ابحث في غير المكفولين بالاسم أو رقم الهوية...',
                 ),
               ),
-              TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _selectionMode = !_selectionMode;
-                    if (!_selectionMode) _selectedBeneficiaryIds.clear();
-                  });
-                },
-                icon: Icon(_selectionMode ? Icons.close : Icons.checklist),
-                label: Text(_selectionMode ? 'إلغاء' : 'تحديد'),
+              SizedBox(width: 6.w),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    onPressed: () => setState(() => _showTools = !_showTools),
+                    tooltip: _showTools ? 'إخفاء الأدوات' : 'إظهار الأدوات',
+                    icon: Icon(
+                      _showTools ? Icons.tune_rounded : Icons.tune_outlined,
+                      color: _showTools ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (hasToolState)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
         ),
-        if (_selectionMode)
-          Container(
-            margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 180),
+          crossFadeState: _showTools ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+          firstChild: Container(
+            margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
             decoration: BoxDecoration(
-              color: theme.colorScheme.secondaryContainer.withOpacity(0.35),
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: BorderRadius.circular(10.r),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: Text(
-                    'تم تحديد ${_selectedBeneficiaryIds.length} مستفيد',
-                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                Row(
+                  children: [
+                    Icon(Icons.insights_outlined, size: 18.sp, color: theme.colorScheme.primary),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'غير مكفولين حالياً: $totalUnsponsored',
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _selectionMode = !_selectionMode;
+                          if (!_selectionMode) _selectedBeneficiaryIds.clear();
+                        });
+                      },
+                      icon: Icon(_selectionMode ? Icons.close : Icons.checklist_rtl),
+                      label: Text(_selectionMode ? 'إلغاء التحديد' : 'تحديد متعدد'),
+                    ),
+                  ],
+                ),
+                if (_selectionMode)
+                  Padding(
+                    padding: EdgeInsets.only(top: 8.h),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'تم تحديد ${_selectedBeneficiaryIds.length} مستفيد',
+                            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _selectedBeneficiaryIds.isEmpty ? null : _openBulkSponsorshipSheet,
+                          icon: const Icon(Icons.handshake_outlined),
+                          label: const Text('تنفيذ جماعي'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                FilledButton.icon(
-                  onPressed: _selectedBeneficiaryIds.isEmpty ? null : _openBulkSponsorshipSheet,
-                  icon: const Icon(Icons.handshake_outlined),
-                  label: const Text('تنفيذ جماعي'),
-                ),
               ],
             ),
           ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
-          child: EnhancedSearchBar(
-            controller: _searchController,
-            onSearch: _onSearchChanged,
-            hintText: 'ابحث في غير المكفولين بالاسم أو رقم الهوية...',
-          ),
+          secondChild: const SizedBox.shrink(),
         ),
         Expanded(
           child: Stack(

@@ -7,7 +7,7 @@ import '../datasources/local_sync_datasource.dart';
 import '../datasources/remote_sync_datasource.dart';
 import '../../../error_handling/error_logger.dart';
 import '../../../../data/db/drift_database.dart';
-import '../../../../data/models/taxonomy_dto.dart';
+import '../../../../features/taxonomies/data/models/taxonomy_dto.dart';
 import '../../../../features/taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 
 /// 🔄 Sync Repository Implementation
@@ -148,7 +148,7 @@ class SyncRepositoryImpl implements ISyncRepository {
       final grouped = <String, List<TaxonomyDTO>>{};
 
       for (final item in response.data) {
-        grouped.putIfAbsent(item.group, () => []).add(item);
+        grouped.putIfAbsent(item.groupValue, () => []).add(item);
       }
 
       final missingGroups = missingRequiredTaxonomyGroupsFromValues(grouped.keys);
@@ -160,7 +160,7 @@ class SyncRepositoryImpl implements ISyncRepository {
           }
 
           for (final item in fallback.data) {
-            grouped.putIfAbsent(item.group, () => []).add(item);
+            grouped.putIfAbsent(item.groupValue, () => []).add(item);
           }
         } catch (_) {
           continue;
@@ -198,9 +198,11 @@ class SyncRepositoryImpl implements ISyncRepository {
 
     final map = <String, TaxonomyDTO>{};
     for (final item in items) {
-      final key = item.id.trim().isEmpty ? '${item.group}:${item.code}' : item.id;
+      final key = item.id.trim().isEmpty ? '${item.groupValue}:${item.code}' : item.id;
       final previous = map[key];
-      if (previous == null || item.updatedAt.isAfter(previous.updatedAt)) {
+      final itemUpdatedAt = item.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final previousUpdatedAt = previous?.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      if (previous == null || itemUpdatedAt.isAfter(previousUpdatedAt)) {
         map[key] = item;
       }
     }

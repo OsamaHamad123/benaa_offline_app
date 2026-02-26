@@ -15,12 +15,19 @@ class AssociationsSearchBar extends StatelessWidget {
   final bool showOnlyActive;
   final String? selectedRepresentativeId;
   final String? selectedCurrency;
+  final String? selectedAssociationTypeCode;
   final VoidCallback onClearAll;
 
   const AssociationsSearchBar({
-    required this.controller, required this.onChanged, required this.searchQuery, required this.showOnlyActive, required this.onClearAll, super.key,
+    required this.controller,
+    required this.onChanged,
+    required this.searchQuery,
+    required this.showOnlyActive,
+    required this.onClearAll,
+    super.key,
     this.selectedRepresentativeId,
     this.selectedCurrency,
+    this.selectedAssociationTypeCode,
   });
 
   @override
@@ -75,7 +82,11 @@ class AssociationsSearchBar extends StatelessWidget {
               ),
             ),
           ),
-          if (searchQuery.isNotEmpty || !showOnlyActive || selectedRepresentativeId != null || selectedCurrency != null)
+          if (searchQuery.isNotEmpty ||
+              !showOnlyActive ||
+              selectedRepresentativeId != null ||
+              selectedCurrency != null ||
+              selectedAssociationTypeCode != null)
             Padding(
               padding: EdgeInsets.only(right: ResponsiveUtils.smallSpace),
               child: IconButton(

@@ -63,6 +63,24 @@ void main() {
       expect(model.requestStatus, entity.RequestStatus.approved.code);
       expect(model.relationship, 4);
     });
+
+    test('prioritizes fileIdNumber over legacy fileNo when mapping to model', () {
+      final now = DateTime(2026, 2, 23);
+      final beneficiary = entity.Beneficiary(
+        id: '126',
+        fullName: 'آدم ياسر',
+        nationalId: '400000005',
+        gender: entity.Gender.male,
+        category: entity.BeneficiaryCategory.poor,
+        fileNo: 'LEGACY-123',
+        fileIdNumber: '7777',
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      final model = BeneficiaryDataModel.fromEntity(beneficiary);
+      expect(model.fileIdNumber, '7777');
+    });
   });
 
   group('BeneficiaryDataModel.toEntity', () {

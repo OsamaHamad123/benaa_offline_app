@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/design_system/app_animations.dart';
 import '../core/analytics/analytics_widgets.dart';
 import '../core/analytics/realtime_performance_monitor.dart';
 import '../core/debug/sentry_test_page.dart';
 import '../features/auth/presentation/pages/login_page_v2.dart';
-import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/initialization/initialization_page.dart';
 import '../features/initialization/presentation/pages/app_initialization_page.dart';
 import '../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -19,7 +19,6 @@ import '../features/civil_registry/civil_registry_test_page.dart';
 import '../features/civil_db_download/presentation/pages/welcome_page.dart';
 import '../features/civil_db_download/presentation/pages/download_civil_db_page.dart';
 import '../features/civil_db_download/presentation/pages/database_download_page.dart';
-import '../features/sync/sync_page.dart';
 import '../features/sync/import_test_data_page.dart';
 import '../features/sync/mobile_sync_page.dart';
 import '../features/sync/test_mobile_api_page.dart';
@@ -37,8 +36,11 @@ import '../features/kafalat/presentation/pages/smart_notifications_page.dart';
 import '../features/kafalat/presentation/pages/theme_settings_page.dart';
 import '../features/kafalat/presentation/pages/additional_features_pages.dart';
 import '../features/dashboard/presentation/pages/all_activities_page_m3.dart';
+import '../features/dashboard/presentation/pages/dashboard_settings_page.dart';
 import '../core/settings/clean_settings_page.dart';
 import '../core/storage/secure_storage.dart';
+import '../features/civil_db_download/data/datasources/database_download_service.dart';
+import '../features/civil_db_download/presentation/pages/config/download_config.dart';
 import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
 import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
 import '../features/taxonomies/presentation/pages/taxonomy_management_page.dart';
@@ -91,6 +93,14 @@ enum PageTransitionType { fade, slideFromBottom, slideFromRight, scale }
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final secureStorage = SecureStorage();
+  final dbDownloadService = DatabaseDownloadService();
+
+  Future<String> resolvePostAuthDestination() async {
+    final isDbAvailable = await dbDownloadService.isDatabaseAvailable();
+    final prefs = await SharedPreferences.getInstance();
+    final wasSkipped = prefs.getBool(DownloadConfig.skipPreferenceKey) ?? false;
+    return (isDbAvailable || wasSkipped) ? '/dashboard' : '/database-download';
+  }
 
   void updateSyncGuards(String routePath) {
     Future.microtask(() {
@@ -111,20 +121,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isGoingToWelcome = state.matchedLocation == '/welcome';
       final isGoingToDownload = state.matchedLocation == '/download-civil-db';
       final isGoingToDbDownload = state.matchedLocation == '/database-download';
-      // استخدام SecureStorage للتحقق من المصادقة (نفس الـ storage المستخدم في auth)
-      final token = await secureStorage.getAuthToken();
-      final isAuth = token != null && token.isNotEmpty;
+      // استخدام Session صالحة بدل التحقق من وجود token فقط
+      final isAuth = await secureStorage.hasValidSession();
       final isGoingToLogin = state.matchedLocation == '/login';
 
-      final isGoingToForgotPassword = state.matchedLocation == '/forgot-password';
+      if (isAuth && isGoingToAppInit) {
+        return await resolvePostAuthDestination();
+      }
 
       // السماح بالذهاب لصفحات التهيئة والتحميل ونسيت كلمة المرور
-      if (isGoingToAppInit ||
-          isGoingToInit ||
-          isGoingToWelcome ||
-          isGoingToDownload ||
-          isGoingToDbDownload ||
-          isGoingToForgotPassword) {
+      if (isGoingToAppInit || isGoingToInit || isGoingToWelcome || isGoingToDownload || isGoingToDbDownload) {
         return null;
       }
 
@@ -132,12 +138,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
 
-      // 🆕 إذا كان المستخدم مصادق ويذهب للـ Login، نسمح له بالذهاب
-      // وصفحة Login ستتعامل مع الموضوع وتتحقق من database
-      // هذا يمنع الـ Loop
+      // إذا كان المستخدم مصادق ويحاول فتح صفحة Login نعيد توجيهه فورًا
       if (isAuth && isGoingToLogin) {
-        // السماح بالذهاب لصفحة Login - ستتحقق هي من database وتقرر
-        return null;
+        return await resolvePostAuthDestination();
       }
 
       return null;
@@ -167,14 +170,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const DownloadCivilDbPage(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginPageV2()),
-      GoRoute(
-        path: '/forgot-password',
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const ForgotPasswordPage(),
-          state: state,
-          type: PageTransitionType.slideFromRight,
-        ),
-      ),
       GoRoute(
         path: '/dashboard',
         pageBuilder: (context, state) => _buildPageWithTransition(
@@ -257,6 +252,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CleanSettingsPage(),
       ),
       GoRoute(
+        path: '/settings/dashboard',
+        builder: (context, state) => const DashboardSettingsPage(),
+      ),
+      GoRoute(
         path: '/analytics',
         builder: (context, state) => const UxAnalyticsDashboard(),
       ),
@@ -282,11 +281,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/kafalat',
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const KafalatPage(),
-          state: state,
-          type: PageTransitionType.slideFromRight,
-        ),
+        pageBuilder: (context, state) {
+          final tab = state.uri.queryParameters['tab'];
+          final initialTabIndex = tab == 'sponsored' ? 1 : 0;
+          final sponsoredStatus = state.uri.queryParameters['sponsored_status'] ?? 'all';
+          final sponsoredType = state.uri.queryParameters['sponsored_type'] ?? 'all';
+          final sponsoredQuery = state.uri.queryParameters['sponsored_query'] ?? '';
+          final sponsoredShowFilters = state.uri.queryParameters['sponsored_show_filters'] == '1';
+          return _buildPageWithTransition(
+            child: KafalatPage(
+              initialTabIndex: initialTabIndex,
+              initialSponsoredStatus: sponsoredStatus,
+              initialSponsoredType: sponsoredType,
+              initialSponsoredQuery: sponsoredQuery,
+              initialSponsoredShowFilters: sponsoredShowFilters,
+            ),
+            state: state,
+            type: PageTransitionType.slideFromRight,
+          );
+        },
       ),
 
       // 🚀 Kafalat Advanced Features Routes

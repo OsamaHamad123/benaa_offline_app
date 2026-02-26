@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/civil_db_download/presentation/providers/database_download_provider.dart';
@@ -726,77 +727,115 @@ class CleanSettingsPage extends ConsumerWidget {
 
   /// عرض معلومات السجل المدني
   void _showCivilDbInfoDialog(BuildContext context, WidgetRef ref) {
-    final dbState = ref.read(databaseDownloadProvider);
-
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.green, size: 28.sp),
-            SizedBox(width: 12.w),
-            const Text('السجل المدني'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoRow(
-              icon: Icons.storage_rounded,
-              label: 'الحجم',
-              value: dbState.fileSizeFormatted,
+      builder: (context) => Consumer(
+        builder: (context, dialogRef, _) {
+          final dbState = dialogRef.watch(databaseDownloadProvider);
+          final downloadedAt = dbState.downloadDate;
+          final successDateText = downloadedAt != null
+              ? '${downloadedAt.year}/${downloadedAt.month.toString().padLeft(2, '0')}/${downloadedAt.day.toString().padLeft(2, '0')} '
+                  '${downloadedAt.hour.toString().padLeft(2, '0')}:${downloadedAt.minute.toString().padLeft(2, '0')}'
+              : 'غير معروف';
+
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.green, size: 28.sp),
+                SizedBox(width: 12.w),
+                const Text('السجل المدني'),
+              ],
             ),
-            SizedBox(height: 12.h),
-            _buildInfoRow(
-              icon: Icons.calendar_today_rounded,
-              label: 'تاريخ التحميل',
-              value: dbState.downloadDate != null
-                  ? '${dbState.downloadDate!.day}/${dbState.downloadDate!.month}/${dbState.downloadDate!.year}'
-                  : 'غير معروف',
-            ),
-            SizedBox(height: 16.h),
-            Container(
-              padding: EdgeInsets.all(12.r),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_rounded, color: Colors.green, size: 20.sp),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Text(
-                      'السجل المدني محمّل ويعمل بشكل صحيح',
-                      style: TextStyle(
-                        color: Colors.green[700],
-                        fontSize: 14.sp,
-                      ),
-                    ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow(
+                  icon: Icons.storage_rounded,
+                  label: 'الحجم',
+                  value: dbState.fileSizeFormatted,
+                ),
+                SizedBox(height: 12.h),
+                _buildInfoRow(
+                  icon: Icons.calendar_today_rounded,
+                  label: 'آخر نجاح تحميل',
+                  value: successDateText,
+                ),
+                SizedBox(height: 16.h),
+                Container(
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
-                ],
-              ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_rounded, color: Colors.green, size: 20.sp),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          'السجل المدني محمّل ويعمل بشكل صحيح',
+                          style: TextStyle(
+                            color: Colors.green[700],
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.r),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              context.push('/database-download');
-            },
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('إعادة التحميل'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('حسناً'),
-          ),
-        ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () async {
+                  final report = [
+                    'تقرير حالة السجل المدني',
+                    'الحالة: ${dbState.isAvailable ? 'جاهز' : 'غير جاهز'}',
+                    'الحجم: ${dbState.fileSizeFormatted}',
+                    'آخر نجاح تحميل: $successDateText',
+                  ].join('\n');
+
+                  await Clipboard.setData(ClipboardData(text: report));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم نسخ تقرير الحالة')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.copy_all_rounded),
+                label: const Text('نسخ التقرير'),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  await dialogRef.read(databaseDownloadProvider.notifier).checkDatabase();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم تحديث حالة السجل المدني')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.sync_rounded),
+                label: const Text('تحديث الحالة الآن'),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.push('/database-download');
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('إعادة التحميل'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('حسناً'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/providers/providers.dart';
 import '../../domain/entities/attachment.dart';
 import '../../domain/usecases/get_beneficiary_attachments_usecase.dart';
@@ -24,7 +25,11 @@ final attachmentDataSourceProvider = Provider<AttachmentDataSource>((ref) {
 });
 
 final compressedAttachmentResolverProvider = Provider<CompressedAttachmentResolver>((ref) {
-  return CompressedAttachmentResolver();
+  final storage = SecureStorage();
+  return CompressedAttachmentResolver(
+    allowRemoteFetch: false,
+    authTokenProvider: storage.getAuthToken,
+  );
 });
 
 /// Attachment Repository Provider
@@ -160,7 +165,10 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     return state.attachmentErrors[attachmentId];
   }
 
-  Future<File?> resolveAttachmentFile(Attachment attachment) async {
+  Future<File?> resolveAttachmentFile(
+    Attachment attachment, {
+    bool allowRemoteFetch = false,
+  }) async {
     final resolvedPaths = state.resolvedAttachmentPaths ?? const <String, String>{};
     final cachedPath = resolvedPaths[attachment.id];
     if (cachedPath != null) {
@@ -179,10 +187,13 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     );
 
     try {
-      final resolvedFile = await _compressedResolver.resolve(attachment);
+      final resolvedFile = await _compressedResolver.resolve(
+        attachment,
+        allowRemoteFetch: allowRemoteFetch,
+      );
       if (resolvedFile == null) {
         final nextErrors = <String, String>{...state.attachmentErrors};
-        nextErrors[id] = 'الملف غير متوفر محلياً أو من السيرفر';
+        nextErrors[id] = allowRemoteFetch ? 'الملف غير متوفر محلياً أو من السيرفر' : 'الملف غير متوفر محلياً';
         state = state.copyWith(attachmentErrors: nextErrors);
         return null;
       }
@@ -227,7 +238,7 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
     state = state.copyWith(previewRequestedIds: marked);
 
     for (final attachment in toResolve) {
-      await resolveAttachmentFile(attachment);
+      await resolveAttachmentFile(attachment, allowRemoteFetch: false);
     }
   }
 

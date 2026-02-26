@@ -87,11 +87,12 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   Future<Result<void>> syncUsedIds() async {
     try {
       final reservationId = await localDao.getActiveReservationBatchId();
+      final usedCount = await localDao.getActiveReservationUsedCount();
       final unsyncedUsedCount = await localDao.getUnsyncedUsedCountFromBatch();
-      if (reservationId != null && unsyncedUsedCount > 0) {
+      if (reservationId != null && usedCount != null && usedCount > 0 && unsyncedUsedCount > 0) {
         await remoteDataSource.syncUsedCount(
           reservationId: reservationId,
-          usedCount: unsyncedUsedCount,
+          usedCount: usedCount,
         );
         await localDao.markBatchUsedCountSynced(reservationId);
         return const Success(null);

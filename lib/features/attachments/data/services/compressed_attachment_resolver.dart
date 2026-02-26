@@ -25,18 +25,41 @@ class CompressedAttachmentResolver {
   static const int _maxExtractedFiles = 200;
   static const Duration _maxExtractedAge = Duration(days: 7);
 
-  Future<File?> resolve(Attachment attachment) async {
+  final bool _allowRemoteFetch;
+  final Future<String?> Function()? _authTokenProvider;
+
+  CompressedAttachmentResolver({
+    bool allowRemoteFetch = false,
+    Future<String?> Function()? authTokenProvider,
+  })  : _allowRemoteFetch = allowRemoteFetch,
+        _authTokenProvider = authTokenProvider;
+
+  Future<File?> resolve(
+    Attachment attachment, {
+    bool? allowRemoteFetch,
+  }) async {
+    final shouldAllowRemoteFetch = allowRemoteFetch ?? _allowRemoteFetch;
+
     final localFile = File(attachment.filePath);
     if (localFile.existsSync()) {
       return localFile;
     }
 
+    if (!shouldAllowRemoteFetch) {
+      return null;
+    }
+
     final remoteDirectUrl = _resolveDirectRemoteUrl(attachment);
     if (remoteDirectUrl != null) {
+      final remoteHeaders = await _buildRemoteHeaders();
       final remoteFile = await DefaultCacheManager().getSingleFile(
         remoteDirectUrl,
         key: 'attachment-file:${attachment.id}:$remoteDirectUrl',
+        headers: remoteHeaders,
       );
+      if (_looksLikeHtmlDocument(remoteFile)) {
+        throw Exception('الرابط يتطلب تسجيل دخول أو لم يرجع ملفًا صالحًا');
+      }
       if (remoteFile.existsSync()) {
         return remoteFile;
       }
@@ -67,10 +90,15 @@ class CompressedAttachmentResolver {
       return extractedFile;
     }
 
+    final archiveHeaders = await _buildRemoteHeaders();
     final archiveFile = await DefaultCacheManager().getSingleFile(
       reference.archiveUrl,
       key: 'compressed-attachment:${attachment.id}:${reference.archiveUrl}',
+      headers: archiveHeaders,
     );
+    if (_looksLikeHtmlDocument(archiveFile)) {
+      throw Exception('تعذر تنزيل الأرشيف: الرابط يتطلب تسجيل دخول');
+    }
 
     final archiveLength = archiveFile.lengthSync();
     if (archiveLength > _maxArchiveBytes) {
@@ -137,10 +165,15 @@ class CompressedAttachmentResolver {
       return extractedFile;
     }
 
+    final archiveHeaders = await _buildRemoteHeaders();
     final archiveFile = await DefaultCacheManager().getSingleFile(
       archiveUrl,
       key: 'compressed-attachment:${attachment.id}:$archiveUrl',
+      headers: archiveHeaders,
     );
+    if (_looksLikeHtmlDocument(archiveFile)) {
+      throw Exception('تعذر تنزيل الأرشيف: الرابط يتطلب تسجيل دخول');
+    }
 
     final archiveLength = archiveFile.lengthSync();
     if (archiveLength > _maxArchiveBytes) {
@@ -403,6 +436,42 @@ class CompressedAttachmentResolver {
 
   String _hash(String value) {
     return sha1.convert(utf8.encode(value)).toString();
+  }
+
+  Future<Map<String, String>> _buildRemoteHeaders() async {
+    final headers = <String, String>{
+      'Accept': '*/*',
+    };
+
+    try {
+      final token = await _authTokenProvider?.call();
+      if (token != null && token.trim().isNotEmpty) {
+        headers['Authorization'] = 'Bearer ${token.trim()}';
+      }
+    } catch (_) {}
+
+    return headers;
+  }
+
+  bool _looksLikeHtmlDocument(File file) {
+    try {
+      if (!file.existsSync()) return false;
+      final length = file.lengthSync();
+      if (length <= 0) return false;
+
+      final sampleLength = length < 512 ? length : 512;
+      final bytes = file.openSync(mode: FileMode.read)..setPositionSync(0);
+      final sample = bytes.readSync(sampleLength);
+      bytes.closeSync();
+
+      final snippet = utf8.decode(sample, allowMalformed: true).toLowerCase();
+      return snippet.contains('<!doctype html') ||
+          snippet.contains('<html') ||
+          snippet.contains('name="csrf-token"') ||
+          snippet.contains('<title>benaa</title>');
+    } catch (_) {
+      return false;
+    }
   }
 
   static String? _normalizeArchiveUrl(String? raw) {

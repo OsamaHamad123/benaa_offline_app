@@ -8,15 +8,15 @@ part of 'sync_dto.dart';
 
 SyncRequestDto _$SyncRequestDtoFromJson(Map<String, dynamic> json) =>
     SyncRequestDto(
-      lastSyncTime: json['lastSyncTime'] == null
-          ? null
-          : DateTime.parse(json['lastSyncTime'] as String),
       pendingChanges: (json['pendingChanges'] as List<dynamic>)
           .map((e) => PendingChangeDto.fromJson(e as Map<String, dynamic>))
           .toList(),
       deviceInfo:
           DeviceInfoDto.fromJson(json['deviceInfo'] as Map<String, dynamic>),
       userId: json['userId'] as String,
+      lastSyncTime: json['lastSyncTime'] == null
+          ? null
+          : DateTime.parse(json['lastSyncTime'] as String),
     );
 
 Map<String, dynamic> _$SyncRequestDtoToJson(SyncRequestDto instance) =>
@@ -70,7 +70,6 @@ Map<String, dynamic> _$DeviceInfoDtoToJson(DeviceInfoDto instance) =>
 SyncResponseDto _$SyncResponseDtoFromJson(Map<String, dynamic> json) =>
     SyncResponseDto(
       success: json['success'] as bool,
-      message: json['message'] as String?,
       updatedData: (json['updatedData'] as List<dynamic>)
           .map((e) => ServerEntityDto.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -78,6 +77,7 @@ SyncResponseDto _$SyncResponseDtoFromJson(Map<String, dynamic> json) =>
           .map((e) => e as String)
           .toList(),
       serverTimestamp: DateTime.parse(json['serverTimestamp'] as String),
+      message: json['message'] as String?,
       failedChanges: (json['failedChanges'] as List<dynamic>?)
           ?.map((e) => FailedChangeDto.fromJson(e as Map<String, dynamic>))
           .toList(),

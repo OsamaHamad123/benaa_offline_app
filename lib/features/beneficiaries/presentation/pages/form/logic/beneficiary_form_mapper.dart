@@ -16,9 +16,7 @@ class BeneficiaryFormMapper {
       controllers.createdByUserController.text = creator!;
     }
 
-    final fileNo = controllers.fileNumberController.text.trim().isNotEmpty
-        ? controllers.fileNumberController.text.trim()
-        : 'F-${DateTime.now().millisecondsSinceEpoch}';
+    final fileNo = controllers.fileNumberController.text.trim();
 
     return BeneficiaryFormDataHandler.buildBeneficiary(
       controllers: controllers,
@@ -67,13 +65,17 @@ class BeneficiaryFormMapper {
     controllers.selectedHousingStatus = beneficiary.housingStatus?.arabicLabel;
     controllers.selectedHousingType = beneficiary.housingType?.arabicLabel;
     controllers.selectedRequestStatus = beneficiary.requestStatus?.arabicLabel; // 🆕 NEW
+    controllers.selectedAssistanceType = beneficiary.assistanceTypeCode;
+    controllers.selectedDisabilityType = beneficiary.disabilityTypeCode;
+    controllers.selectedIncomeSource = beneficiary.incomeSourceCode;
+    controllers.selectedGuaranteeType = beneficiary.guaranteeTypeCode;
     controllers.specialNeedsCountController.text = beneficiary.specialNeedsCount?.toString() ?? ''; // 🆕 NEW
 
     // Convert relationship int to string representation
     controllers.selectedRelationship = beneficiary.relationship?.toString();
     controllers.selectedSection = beneficiary.sectionId?.toString();
     controllers.createdByUserController.text = beneficiary.createdByUser ?? ''; // 🆕 Created by user
-    controllers.fileNumberController.text = beneficiary.fileNo ?? ''; // 🆕 NEW
+    controllers.fileNumberController.text = (beneficiary.fileIdNumber ?? beneficiary.fileNo ?? '').trim();
 
     // Convert location codes to strings
     controllers.selectedProvince = beneficiary.governorate;
@@ -122,6 +124,7 @@ class BeneficiaryFormMapper {
       'healthStatus': controllers.selectedHealthStatus,
       'housingStatus': controllers.selectedHousingStatus,
       'housingType': controllers.selectedHousingType,
+      'guaranteeType': controllers.selectedGuaranteeType,
       'specialNeedsCount': controllers.specialNeedsCountController.text,
       'relationship': controllers.selectedRelationship,
       'section': controllers.selectedSection,
@@ -165,6 +168,7 @@ class BeneficiaryFormMapper {
     controllers.selectedHealthStatus = formData['healthStatus'];
     controllers.selectedHousingStatus = formData['housingStatus'];
     controllers.selectedHousingType = formData['housingType'];
+    controllers.selectedGuaranteeType = formData['guaranteeType'];
     final specialNeedsCountRaw = formData['specialNeedsCount']?.toString();
     if (specialNeedsCountRaw != null && specialNeedsCountRaw.trim().isNotEmpty) {
       controllers.specialNeedsCountController.text = specialNeedsCountRaw;

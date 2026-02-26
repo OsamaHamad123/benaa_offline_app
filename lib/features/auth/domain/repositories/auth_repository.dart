@@ -1,5 +1,7 @@
 import '../../../../core/error_handling/result.dart';
+import '../entities/auth_device.dart';
 import '../entities/auth_session.dart';
+import '../entities/auth_user.dart';
 import '../entities/auth_token.dart';
 
 /// 📦 Auth Repository Interface - Domain Layer
@@ -36,6 +38,12 @@ abstract class AuthRepository {
     String? deviceId,
     bool logoutAllDevices = false,
   });
+
+  /// 👤 جلب الملف الشخصي من الخادم
+  Future<Result<AuthUser>> getProfile();
+
+  /// 📱 جلب الأجهزة النشطة للمستخدم
+  Future<Result<List<AuthDevice>>> getActiveDevices();
 
   // ===========================
   // 🔄 TOKEN MANAGEMENT

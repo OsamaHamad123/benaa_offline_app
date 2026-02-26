@@ -1,264 +1,167 @@
-4. Associations Synchronization (sponsors, employees)
-   PLANNED (ANALYZED) ▼
+تقييمي الصريح
 
-## 1) Executive Status (الوضع الحالي الحقيقي)
+كصفحة إضافة مستفيد: الفكرة قوية وتغطي سيناريوهات واقعية كثيرة.
+كتجربة مستخدم: فيها قوة وظيفية، لكن فيها حمل ذهني عالي، وعدم وضوح في الأولويات، وتفاوت بالأداء (خصوصًا في المرفقات).
+كتصميم: جيد كبداية منتج داخلي، لكنه يحتاج توحيد بصري أدق (مسافات، هرمية نصوص، حالات تفاعل، ألوان حالة).
+نقاط القوة الحالية
 
-### جاهزية حالية
+تقسيم العملية إلى تبويبات يقلل طول النموذج دفعة واحدة.
+دعم حفظ تدريجي ومراجعة نهائية مهم جدًا.
+دعم المرفقات + بيانات الأسرة + وضع أوفلاين يعكس فهم حقيقي للاستخدام الميداني.
+وجود رسائل وحالات تحميل أفضل من نماذج كثيرة مشابهة.
+المشاكل الجوهرية (UX + UI)
 
-- ✅ يوجد Feature محلي للجمعيات (`associations`) وفق Clean-ish layering (Domain/Data/Presentation).
-- ✅ يوجد جداول محلية ودعم `sync_state` و `server_id` للجمعيات والمندوبين.
-- ✅ توجد بنية مزامنة مركزية قوية (`MobileSyncService` + use cases + progress + counters).
+كثرة القرارات في كل تبويب بدون توجيه واضح للمستخدم (ماذا أفعل الآن؟).
+عدم اتساق سلوك التحميل بين عناصر الصفحة (بعضها فوري، بعضه يتأخر بدون تفسير).
+التحقق من الحقول يبدو متأخرًا أحيانًا؛ الأفضل يكون فوريًا على مستوى الحقل.
+المرفقات حساسة جدًا للأداء وتؤثر على الثقة بالنظام.
+التباين البصري بين العناصر والبطاقات يحتاج ضبط (بعض المناطق تبدو متشابهة رغم اختلاف الأهمية).
+أزرار الإجراءات الأساسية ليست دائمًا في مكان ثابت متوقع.
+تدفق الأخطاء والاسترداد ليس موحدًا (مرة Snackbar، مرة شاشة خطأ، مرة صمت).
+تقييم التصميم البصري
 
-### فجوات حرجة (تمنع ربط Associations API الحالي)
+الألوان: الهوية واضحة، لكن يجب تحديد ألوان دلالية ثابتة للحالات (نجاح/تحذير/خطأ/معلومة) عبر كل الصفحة.
+الطباعة: العناوين والحقول بحاجة هرمية أوضح (Title, Section, Field).
+المسافات: بعض الكتل متقاربة بصريًا فتزيد الإرباك.
+الأيقونات: جيدة، لكن يلزم توحيد مستوى التفاصيل والحجم.
+التبويب الحالي مناسب، لكن الأفضل دعمه بمؤشر تقدم واضح (كم تبويب مكتمل؟).
+خطة تطوير شاملة (منظّمة وقابلة للتنفيذ)
 
-- ✅ تم إضافة endpoints الرسمية في `ApiConfig` لـ sponsors/employees (+ employees batch).
-- ✅ تم دمج stage فعلي داخل `MobileSyncService` لمزامنة sponsors/employees (down + up).
-- ✅ تم إضافة DTO/Mapper خاصين بعقد sponsors/employees.
-- ✅ تم تفعيل Sync Metadata مستقل للـ associations/employees عبر `sync_metadata`.
-- ✅ حذف associations/representatives أصبح يُسجّل tombstones مع دعم DELETE فعلي في sync-up.
-- ✅ تم تغطية حقول sponsor الناقصة (`address`, `country_code`, `country_name`, `bank_name_id`) عبر جدول supplemental غير كاسر مع ربطه بـ down/up sync.
+1. مرحلة سريعة (1-2 أسبوع)
 
-> الاستنتاج المحدث: البند **IMPLEMENTED فعليًا** على مستوى الربط الأساسي مع Backend API (down/up + metadata + tombstones + الحقول الناقصة)، مع بقاء تحسينات اختيارية لاحقة (UI polishing واختبارات أوسع).
+تثبيت الأداء:
+منع أي تحميل ثقيل عند فتح التبويب.
+Lazy loading لأي قسم غير ظاهر.
+تحسين الوضوح:
+شريط تقدم أعلى الصفحة (نسبة إكمال + عدد أخطاء).
+رسالة توجيه قصيرة أعلى كل تبويب.
+توحيد التحقق:
+Validation فوري للحقل بعد أول تفاعل.
+رسالة خطأ تحت الحقل مباشرة، لا تعتمد فقط على Snackbar.
+المرفقات:
+إبقاء نموذج الإضافة قابل للطي افتراضيًا.
+إظهار حالات واضحة: اختيار ملف، فحص الملف، نجاح إضافة. 2) مرحلة تحسين تجربة (3-5 أسابيع)
 
----
+إعادة هندسة تدفق الإدخال:
+ترتيب الحقول حسب الأهمية والاعتماد (من الأعلى للأدنى).
+إخفاء الحقول المشروطة حتى الحاجة (Progressive disclosure).
+إجراءات ثابتة:
+شريط سفلي ثابت: حفظ مسودة، التالي، السابق، حفظ نهائي.
+الاستمرارية:
+Auto-save مرئي مع حالة آخر حفظ.
+استعادة ذكية بعد الإغلاق/الانقطاع.
+المرفقات المتقدمة:
+Queue واضحة للرفع.
+Retry لكل ملف عند الفشل بدل فشل جماعي.
+فحص النوع/الحجم قبل الإضافة مباشرة. 3) مرحلة نضج المنتج (6-10 أسابيع)
 
-## 2) Backend Contract (مصدر الحقيقة)
+Design system داخل الصفحة:
+توحيد spacings, radius, elevations, state colors.
+توحيد نمط الـcards والحقول والأزرار.
+إمكانية وصول:
+تباين ألوان أعلى.
+أحجام لمس أكبر.
+ترتيب تنقل واضح للوحة المفاتيح/قارئ الشاشة.
+ذكاء إدخال:
+اقتراحات تلقائية من البيانات السابقة.
+Prefill سياقي حسب المنطقة/الحالة.
+مراقبة أداء:
+مؤشرات زمن فتح التبويب وزمن الحفظ وزمن فتح المرفقات.
+مؤشرات نجاح واضحة (KPIs)
 
-### Sponsors API
+زمن فتح تبويب المرفقات أقل من 300-500ms.
+انخفاض أخطاء الحفظ/المرفقات بنسبة 60%+.
+انخفاض معدل ترك النموذج قبل الإكمال.
+تقليل زمن إدخال مستفيد كامل بنسبة 25-35%.
+انخفاض بلاغات “التطبيق لا يستجيب” بشكل ملحوظ.
+أولويات التنفيذ (الأهم أولًا)
 
-- GET `/api/mobile/associations/sponsors` (pagination + `updated_after` + `ids`)
-- GET `/api/mobile/associations/sponsors/{id}`
-- POST `/api/mobile/associations/sponsors`
-- PUT `/api/mobile/associations/sponsors/{id}`
-- DELETE `/api/mobile/associations/sponsors/{id}`
-
-### Employees API
-
-- GET `/api/mobile/associations/employees` (`sponsor_id`, `updated_after`)
-- POST `/api/mobile/associations/employees`
-- PUT `/api/mobile/associations/employees/{id}`
-- DELETE `/api/mobile/associations/employees/{id}`
-- POST `/api/mobile/associations/employees/batch`
-
----
-
-## 3) Gap Matrix (Contract vs App)
-
-### Data Model
-
-- الحالي: `Associations` + `AssociationRepresentatives`.
-- المطلوب: محاذاة `sponsors` + `employees` مع حقول backend القياسية.
-
-### Sync Down
-
-- الحالي: تنزيل beneficiaries + related entities فقط.
-- المطلوب: stages منفصلة لتنزيل sponsors ثم employees مع `updated_after` + pagination.
-
-### Sync Up
-
-- الحالي: رفع beneficiaries/visits/attachments/family entities.
-- المطلوب: رفع sponsors (CRUD) + employees (CRUD + batch) مع mapping ثابت للحالات.
-
-### Delete Propagation
-
-- الحالي: tombstones مفعلة لعدد من الكيانات (وليس associations/representatives).
-- المطلوب: توحيد delete tracking للجمعيات والموظفين.
-
-### UI/State
-
-- الحالي: واجهة الجمعيات تعتمد local cache.
-- المطلوب: counters/status واضحين لـ sponsors/employees داخل Sync Hub.
-
----
-
-## 4) Clean Architecture Target Design
-
-### Domain Layer
-
-1. إضافة كيانات صريحة:
-   - `Sponsor`
-   - `AssociationEmployee`
-2. إضافة عقود Repositories:
-   - `SponsorSyncRepository`
-   - `AssociationEmployeeSyncRepository`
-3. إضافة Use Cases:
-   - `SyncSponsorsDownUseCase`
-   - `SyncSponsorsUpUseCase`
-   - `SyncEmployeesDownUseCase`
-   - `SyncEmployeesUpUseCase`
-   - `SyncAssociationsModuleUseCase` (Facade)
-
-### Data Layer
-
-1. DTOs:
-   - `SponsorDto`, `EmployeeDto`, `SponsorListResponseDto`, `EmployeeListResponseDto`
-2. Mappers:
-   - `SponsorMapper` (API ⇄ DB)
-   - `EmployeeMapper` (API ⇄ DB)
-3. Remote Data Sources:
-   - sponsors endpoints client
-   - employees endpoints client
-4. Local Data Sources/DAOs:
-   - upsert by `server_id`
-   - pending rows queries
-   - markSynced/markFailed
-
-### Infrastructure / Sync Orchestration
-
-1. دمج module جديد في `MobileSyncService`:
-   - Stage Down: Sponsors → Employees
-   - Stage Up: Sponsors → Employees (employees batch first when applicable)
-2. إضافة metrics:
-   - `sponsors_downloaded`, `employees_downloaded`
-   - `sponsors_uploaded`, `employees_uploaded`
-   - `sponsors_failed`, `employees_failed`
-3. إضافة metadata keys:
-   - `sponsors:last_sync_timestamp`
-   - `employees:last_sync_timestamp`
-
-### Presentation Layer
-
-1. تحديث `mobile_sync_page` لإظهار قسم فرعي واضح للـ Associations Sync.
-2. توفير refresh provider invalidation بعد نجاح sync.
-3. حالات فشل واضحة برسائل عملية (auth/network/validation/conflict).
+استقرار الأداء.
+وضوح التدفق والتحقق.
+توحيد الواجهة.
+تحسينات ذكية إضافية.
+إذا تريد، أحول هذا الآن إلى خطة تنفيذ تقنية دقيقة جدًا على ملفات المشروع نفسها (Task-by-task) ونبدأ مباشرة بالـSprint الأول.
 
 ---
 
-## 5) Database Migration Plan
+## حالة التنفيذ الفعلية (محدّثة)
 
-## المرحلة 1 (غير كاسرة)
+### المنجز ✅
 
-- إضافة أعمدة مفقودة في `associations` لملاءمة العقد:
-  - `address`
-  - `country_code`
-  - `country_name`
-  - `bank_name_id`
-- إضافة جدول `association_employees` (أو إعادة تسمية `AssociationRepresentatives` منطقيًا مع compatibility).
+- [x] إصلاح مشكلة الإقلاع (Riverpod mutation during init).
+- [x] إعادة بناء تبويب المرفقات من الصفر (MVP) وإزالة المسار القديم.
+- [x] إزالة التحميلات الجانبية الثقيلة من مسار فتح المرفقات.
+- [x] تقوية اختيار الملف (guards + validation + رسائل أوضح).
+- [x] إضافة شريط تقدم أعلى النموذج + توجيه مختصر لكل تبويب.
+- [x] جعل شريط التبويبات aware بحالة الإكمال.
+- [x] إضافة التحقق inline في Composer المرفقات.
+- [x] توحيد الشريط السفلي وإضافة زر حفظ مسودة فعّال.
+- [x] إضافة ملخص جاهزية في شاشة المراجعة النهائية قبل الحفظ.
+- [x] تحسين رسائل فشل الحفظ لتكون أدق حسب السبب.
+- [x] إضافة مؤشر مرئي داخل الصفحة: "آخر حفظ تلقائي".
 
-## المرحلة 2 (توحيد الأسماء)
+### قيد التنفيذ ⏳
 
-- اعتماد naming واضح:
-  - Internal: associations/employees
-  - API: sponsors/employees
-- إضافة indexes:
-  - `server_id`
-  - `(sync_state, updated_at)`
-  - `sponsor_id` في employees
+- [x] استعادة ذكية بعد الإغلاق/الانقطاع (سيناريوهات أكمل من الوضع الحالي).
+- [x] Queue/Retry للمرفقات عند الفشل بشكل منفصل لكل ملف.
 
-## المرحلة 3 (تتبع الحذف)
+### القادم ▶️
 
-- تفعيل tombstone recording للجمعيات والموظفين.
+- [x] توحيد Design System داخل الصفحة (spacings/radius/state colors) بشكل شامل.
+- [x] تحسينات الوصول (تباين، أحجام لمس، ترتيب تنقّل).
+- [x] قياسات أداء/KPIs داخل التطبيق لفتح التبويبات والحفظ والمرفقات.
 
----
+### ميزات ذكية إضافية ✨
 
-## 6) Sync Flows (تفصيلي)
-
-### A) Down Sync (Incremental)
-
-1. قراءة `last_sync_timestamp` لكل module.
-2. GET sponsors بـ `updated_after` + pagination.
-3. Upsert sponsors محليًا (idempotent).
-4. GET employees بـ `updated_after` + pagination.
-5. Upsert employees محليًا مع ربط sponsor.
-6. حفظ `sync_timestamp` بعد نجاح المرحلة كاملة.
-
-### B) Up Sync (Pending)
-
-1. رفع sponsors pending/modified (POST/PUT).
-2. رفع employees pending/modified:
-   - استخدام `/batch` إذا العدد أكبر من threshold.
-3. تطبيق mapping للـ server IDs محليًا.
-4. مزامنة deletes عبر tombstones (DELETE endpoints).
-5. تحديث `sync_state` و `last_synced_at`.
-
-### C) Conflict Policy
-
-- القاعدة الافتراضية: **Server wins** في down-sync، مع local retry في pending-up.
-- في `409`: حفظ payload الفاشل + reason في diagnostics وإبقاء السجل `failed`.
+- [x] Confidence Score ديناميكي لجودة السجل داخل النموذج.
+- [x] Smart Next Action مع تنقّل مباشر إلى الخطوة الأهم.
+- [x] Attachment Intelligence (اقتراح نوع المستند + تنبيه المستندات الأساسية الناقصة).
+- [x] Timeline واضح للحفظ/الانتظار/المزامنة داخل الصفحة.
+- [x] تحسينات Responsive للشاشات الصغيرة والكبيرة في عناصر النموذج والمرفقات.
+- [x] إضافة أزرار "إظهار/إخفاء" على الجوال لتقليل العناصر الثانوية افتراضيًا.
+- [x] تفعيل Focus Mode على الجوال أثناء الكتابة (إخفاء تفاصيل أعلى الصفحة عند ظهور الكيبورد).
+- [x] تطبيق نفس نمط "إظهار/إخفاء" داخل تبويب المرفقات (الاقتراحات + الأقسام الثانوية).
 
 ---
 
-## 7) Implementation Roadmap (من الألف للياء)
+## تحليل ازدحام شاشة الجوال 📱
 
-### Sprint 0 — Contract Freeze
+### أسباب الازدحام الحالية (Root Causes)
 
-- تثبيت contract النهائي مع backend (خصوصًا employee payload shape و batch response shape).
-- توثيق response parsers المعتمدة (records/data/meta/pagination).
+- تكدّس طبقات علوية كثيرة قبل بداية الحقول (Error banner + auto-save + timeline + taxonomy + KPI + progress card).
+- بطاقة التقدم نفسها أصبحت غنية جدًا على الجوال (chips متعددة + smart next action + نص توجيه).
+- شريط الأزرار السفلي من صفّين دائمًا، فيحجز ارتفاع كبير على الشاشات القصيرة.
+- تكرار مؤشرات مشابهة في أكثر من مكان (KPI أعلى الصفحة + KPI داخل المحتوى + timeline).
+- رسائل taxonomy/coverage مفصلة تظهر دائمًا بدل أن تكون collapsible على الشاشات الضيقة.
 
-### Sprint 1 — Data Foundations
+## خطة إزالة الازدحام (Mobile-first)
 
-- Migration + DAO + DTO + Mapper.
-- Unit tests للـ mapping والتحويلات.
+### Phase M1 (سريع جدًا - أولوية قصوى)
 
-### Sprint 2 — Down Sync Integration
+- [x] دمج مؤشرات أعلى الصفحة في شريط واحد قابل للطي (compact status strip) بدل عدة بطاقات.
+- [x] إخفاء KPI التفصيلي تلقائيًا تحت عرض أقل من 380px والاكتفاء بـ 1-2 مؤشرات أساسية.
+- [x] تحويل شريط الأزرار السفلي إلى نمط ذكي على الجوال:
+  - سطر واحد افتراضي (التالي/حفظ + السابق)
+  - زر "حفظ مسودة" داخل قائمة overflow أو FAB صغير.
 
-- تنفيذ Sync Down للسponsors/employees.
-- حفظ metadata timestamps + counters.
-- ربط providers بعملية refresh بعد sync.
+### Phase M2 (تحسين تدفّق القراءة)
 
-### Sprint 3 — Up Sync Integration
+- [x] جعل بطاقة Smart Next Action inline صغيرة (سطر واحد + action icon) بدل زر كبير.
+- [x] نقل رسالة التوجيه الطويلة إلى tooltip/expandable hint.
+- [x] جعل بطاقة taxonomy collapsible افتراضيًا على الجوال مع عدّاد بسيط (missing groups count).
 
-- تنفيذ رفع sponsors/employees + batch + delete tombstones.
-- تنفيذ retry/backoff + classification للأخطاء.
+### Phase M3 (نضج responsive)
 
-### Sprint 4 — UI, Diagnostics, Hardening
+- [x] اعتماد breakpoints موحدة داخل صفحة النموذج:
+  - compact: أقل من 360px
+  - phone: 360-599px
+  - tablet+: 600px+
+- [x] تطبيق density tokens موحدة (padding / gap / chip size / button height) حسب breakpoint.
+- [x] إضافة اختبارات golden/responsive لثلاثة مقاسات شاشة لمنع رجوع الازدحام.
 
-- إضافة بطاقات حالة associations داخل Sync Hub.
-- تصدير diagnostics يتضمن module associations.
-- تحسين رسائل الخطأ وتجربة الاسترجاع.
+## معايير نجاح قابلة للقياس
 
-### Sprint 5 — Verification & Rollout
-
-- Integration tests + smoke tests.
-- تجريب بيانات حقيقية staging.
-- إطلاق تدريجي مع مراقبة metrics.
-
----
-
-## 8) Test Strategy
-
-### Unit
-
-- DTO parsing لكل أشكال payload المعروفة.
-- Mapper correctness (nullability + type conversion).
-
-### Integration
-
-- Down sync paginated sponsors/employees.
-- Up sync CRUD + batch + delete.
-- إعادة المحاولة عند timeout/5xx.
-
-### End-to-End
-
-- إنشاء Sponsor وEmployee أوفلاين ثم Sync Up.
-- تنزيل تحديث من السيرفر ثم ظهور فوري في UI.
-- حذف Sponsor مع موظفيه والتحقق من consistency.
-
----
-
-## 9) Definition of Done (DoD)
-
-- لا يوجد hardcoded associations data في الواجهات.
-- كل dropdown/lookup يعتمد cache محلي متزامن.
-- Sync Hub يعرض counters دقيقة لـ sponsors/employees.
-- جميع عمليات CRUD (create/update/delete) متزامنة ثنائيًا (down/up).
-- فشل الشبكة لا يؤدي لفقدان البيانات، وتوجد إعادة محاولة آمنة.
-
----
-
-## 10) Immediate Next Execution Tasks (Ready to Start)
-
-1. ✅ تحديث `ApiConfig` بإندبوينتس associations الرسمية.
-2. ✅ إنشاء migration غير كاسرة + تغطية حقول sponsor الناقصة (supplemental profile).
-3. ✅ بناء DTO/Mapper/RemoteDataSource للـ sponsors/employees.
-4. ✅ إضافة stages في `MobileSyncService` (down ثم up).
-5. ✅ ربط counters + sync metadata + diagnostics.
-6. ✅ إضافة اختبارات integration مخصصة للموديول.
-
----
-
-## 11) قرار إداري للحالة
-
-- الحالة السابقة: `IMPLEMENTED`
-- الحالة المصححة: `IMPLEMENTED (CORE INTEGRATION COMPLETE)`
-- السبب: تم تنفيذ الربط الفعلي end-to-end للمزامنة الأساسية (sponsors/employees) مع إغلاق الفجوات الحرجة.
+- [ ] تقليل ارتفاع المنطقة العلوية قبل أول حقل بنسبة 35%+ على شاشة 360x800.
+- [ ] بقاء أول حقل + أول زر إجراء ظاهرين بدون scroll عند فتح الصفحة.
+- [ ] عدم وجود أكثر من بطاقتين معلوماتيتين مرئيتين فوق التبويبات في وضع compact.
+- [x] ثبات نجاح اختبارات beneficiaries الحالية + إضافة اختبار responsive جديد.

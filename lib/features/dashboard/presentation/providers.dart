@@ -107,20 +107,26 @@ final notificationsCountProvider = Provider<int>((ref) {
 
 /// Chart data provider - يحسب فقط عند تغيير totalBeneficiaries
 final trendChartDataProvider = Provider<List<double>>((ref) {
-  final state = ref.watch(dashboardProvider);
-  final totalBeneficiaries = state.statistics?.totalBeneficiaries ?? 0;
+  final growthData = ref.watch(
+    dashboardProvider.select((state) => state.statistics?.growthData ?? const []),
+  );
 
-  if (totalBeneficiaries == 0) return [0, 0, 0, 0, 0, 0];
+  if (growthData.isEmpty) return const [0, 0, 0, 0, 0, 0, 0];
 
-  // ✅ Memoization: يحسب مرة واحدة ويخزن النتيجة
-  return [
-    totalBeneficiaries * 0.5,
-    totalBeneficiaries * 0.65,
-    totalBeneficiaries * 0.75,
-    totalBeneficiaries * 0.85,
-    totalBeneficiaries * 0.92,
-    totalBeneficiaries.toDouble(),
-  ];
+  return growthData.map((point) => point.count.toDouble()).toList(growable: false);
+});
+
+/// Chart labels provider - مشتقة من تواريخ growthData الفعلية
+final trendChartLabelsProvider = Provider<List<String>>((ref) {
+  final growthData = ref.watch(
+    dashboardProvider.select((state) => state.statistics?.growthData ?? const []),
+  );
+
+  if (growthData.isEmpty) {
+    return const ['-', '-', '-', '-', '-', '-', '-'];
+  }
+
+  return growthData.map((point) => '${point.date.day}/${point.date.month}').toList(growable: false);
 });
 
 // ============================================================================

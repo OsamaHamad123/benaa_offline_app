@@ -135,4 +135,13 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase> with _$FamilyDecea
       ),
     );
   }
+
+  Future<void> markAsSyncedWithoutServerId(int id) {
+    return (update(familyDeceasedTable)..where((t) => t.id.equals(id))).write(
+      FamilyDeceasedTableCompanion(
+        syncState: const Value('synced'),
+        lastSyncedAt: Value(DateTime.now()),
+      ),
+    );
+  }
 }

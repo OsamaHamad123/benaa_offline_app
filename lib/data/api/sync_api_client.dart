@@ -230,12 +230,37 @@ class SyncApiClient {
 
       final response = await _dio.post(
         ApiConfig.loginEndpoint,
-        data: request.toJson(),
+        data: {
+          'email': request.email,
+          'password': request.password,
+          if (request.deviceId != null && request.deviceId!.trim().isNotEmpty) 'device_id': request.deviceId!.trim(),
+        },
       );
 
       if (response.statusCode == 200) {
         DebugLogger.success('✅ Login successful');
-        return LoginResponseDto.fromJson(response.data);
+
+        final body = _asMap(response.data) ?? const <String, dynamic>{};
+        final data = _asMap(body['data']) ?? const <String, dynamic>{};
+        final tokenData = _asMap(data['token']) ?? const <String, dynamic>{};
+        final userData = _asMap(data['user']);
+
+        return LoginResponseDto(
+          success: body['success'] == true,
+          token: tokenData['access_token']?.toString() ?? body['token']?.toString(),
+          refreshToken: body['refresh_token']?.toString(),
+          user: userData == null
+              ? null
+              : UserDto(
+                  id: (userData['id'] ?? '').toString(),
+                  email: userData['email']?.toString() ?? '',
+                  name: userData['name']?.toString(),
+                  role: userData['role']?.toString(),
+                  permissions: _asMap(userData['permissions']),
+                ),
+          message: body['message']?.toString(),
+          errorCode: body['error']?.toString(),
+        );
       } else if (response.statusCode == 401) {
         return LoginResponseDto(
           success: false,
@@ -271,15 +296,18 @@ class SyncApiClient {
   }
 
   /// 🔄 تحديث Token
-  Future<String?> refreshToken(String refreshToken) async {
+  Future<String?> refreshToken({required String deviceId}) async {
     try {
       final response = await _dio.post(
         ApiConfig.refreshTokenEndpoint,
-        data: {'refreshToken': refreshToken},
+        data: {'device_id': deviceId},
       );
 
       if (response.statusCode == 200) {
-        return response.data['token'];
+        final body = _asMap(response.data);
+        final data = _asMap(body?['data']);
+        final tokenData = _asMap(data?['token']);
+        return tokenData?['access_token']?.toString();
       }
       return null;
     } catch (e) {
@@ -341,6 +369,14 @@ class SyncApiClient {
   void clearAuthToken() {
     _dio.options.headers.remove('Authorization');
     DebugLogger.info('🗑️ Auth token cleared from API client');
+  }
+
+  Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, val) => MapEntry(key.toString(), val));
+    }
+    return null;
   }
 }
 

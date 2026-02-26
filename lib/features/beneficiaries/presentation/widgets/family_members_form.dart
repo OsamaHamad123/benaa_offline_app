@@ -7,7 +7,7 @@ import '../../../../data/db/drift_database.dart';
 import '../providers/beneficiary_dependencies.dart';
 import '../../../../core/utils/family_enums.dart';
 import '../../../../core/utils/ux_helpers.dart';
-import '../../../../core/enums/sponsorship_enums.dart';
+import '../../../../features/taxonomies/taxonomies.dart';
 
 class FamilyMembersForm extends ConsumerStatefulWidget {
   final int beneficiaryId;
@@ -15,7 +15,9 @@ class FamilyMembersForm extends ConsumerStatefulWidget {
   final VoidCallback onSaved;
 
   const FamilyMembersForm({
-    required this.beneficiaryId, required this.onSaved, super.key,
+    required this.beneficiaryId,
+    required this.onSaved,
+    super.key,
     this.existingMember,
   });
 
@@ -38,8 +40,9 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
   int? _calculatedAge;
 
   // Sponsorship fields
-  int? _selectedSponsorshipStatus;
-  int? _selectedSponsorshipType;
+  String? _selectedSponsorshipStatus;
+  String? _selectedSponsorshipType;
+  String? _selectedGuaranteeType;
   late TextEditingController _sponsorNameController;
   DateTime? _sponsorshipStartDate;
 
@@ -74,8 +77,9 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     }
 
     // Sponsorship values
-    _selectedSponsorshipStatus = member?.sponsorshipStatus;
-    _selectedSponsorshipType = member?.sponsorshipType;
+    _selectedSponsorshipStatus = member?.sponsorshipStatus?.toString();
+    _selectedSponsorshipType = member?.sponsorshipType?.toString();
+    _selectedGuaranteeType = member?.guaranteeType?.toString();
     _sponsorshipStartDate = member?.sponsorshipStartDate;
 
     // Parse existing attachments
@@ -187,6 +191,35 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     return attachments.join(',');
   }
 
+  Future<int?> _resolveTaxonomyStorageId({
+    required TaxonomyGroup group,
+    required String? rawValue,
+  }) async {
+    final raw = rawValue?.trim();
+    if (raw == null || raw.isEmpty) return null;
+
+    final directInt = int.tryParse(raw);
+
+    final options = await ref.read(bridgeTaxonomiesByGroupResolvedOnceProvider(group).future);
+    if (options.isEmpty) {
+      return directInt;
+    }
+
+    final normalizedRaw = raw.toLowerCase().replaceAll(RegExp(r'\s+'), '');
+
+    for (final taxonomy in options) {
+      final codeNorm = taxonomy.code.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+      final idNorm = taxonomy.id.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+      final labelNorm = taxonomy.label.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+
+      if (normalizedRaw == codeNorm || normalizedRaw == idNorm || normalizedRaw == labelNorm) {
+        return int.tryParse(taxonomy.code) ?? int.tryParse(taxonomy.id) ?? directInt;
+      }
+    }
+
+    return directInt;
+  }
+
   Future<void> _saveMember() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -214,6 +247,18 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
     final orphanNationalIdInt = int.parse(
       _orphanNationalIdController.text.trim(),
     );
+    final sponsorshipStatusCode = await _resolveTaxonomyStorageId(
+      group: TaxonomyGroup.beneficiaryStatus,
+      rawValue: _selectedSponsorshipStatus,
+    );
+    final sponsorshipTypeCode = await _resolveTaxonomyStorageId(
+      group: TaxonomyGroup.sponsorshipType,
+      rawValue: _selectedSponsorshipType,
+    );
+    final guaranteeTypeCode = await _resolveTaxonomyStorageId(
+      group: TaxonomyGroup.guaranteeType,
+      rawValue: _selectedGuaranteeType,
+    );
 
     final companion = FamilyMembersTableCompanion(
       id: widget.existingMember != null ? drift.Value(widget.existingMember!.id) : const drift.Value.absent(),
@@ -234,10 +279,9 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
       attachments: drift.Value(_buildAttachmentsString()),
       notes: drift.Value(_notesController.text.trim()),
       // Sponsorship fields
-      sponsorshipStatus:
-          _selectedSponsorshipStatus != null ? drift.Value(_selectedSponsorshipStatus) : const drift.Value(null),
-      sponsorshipType:
-          _selectedSponsorshipType != null ? drift.Value(_selectedSponsorshipType) : const drift.Value(null),
+      sponsorshipStatus: sponsorshipStatusCode != null ? drift.Value(sponsorshipStatusCode) : const drift.Value(null),
+      sponsorshipType: sponsorshipTypeCode != null ? drift.Value(sponsorshipTypeCode) : const drift.Value(null),
+      guaranteeType: guaranteeTypeCode != null ? drift.Value(guaranteeTypeCode) : const drift.Value(null),
       sponsorName: _sponsorNameController.text.trim().isEmpty
           ? const drift.Value(null)
           : drift.Value(_sponsorNameController.text.trim()),
@@ -274,9 +318,9 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
           notes: drift.Value(_notesController.text.trim()),
           // Sponsorship fields
           sponsorshipStatus:
-              _selectedSponsorshipStatus != null ? drift.Value(_selectedSponsorshipStatus) : const drift.Value(null),
-          sponsorshipType:
-              _selectedSponsorshipType != null ? drift.Value(_selectedSponsorshipType) : const drift.Value(null),
+              sponsorshipStatusCode != null ? drift.Value(sponsorshipStatusCode) : const drift.Value(null),
+          sponsorshipType: sponsorshipTypeCode != null ? drift.Value(sponsorshipTypeCode) : const drift.Value(null),
+          guaranteeType: guaranteeTypeCode != null ? drift.Value(guaranteeTypeCode) : const drift.Value(null),
           sponsorName: _sponsorNameController.text.trim().isEmpty
               ? const drift.Value(null)
               : drift.Value(_sponsorNameController.text.trim()),
@@ -559,40 +603,35 @@ class _FamilyMembersFormState extends ConsumerState<FamilyMembersForm> {
             const SizedBox(height: 8),
 
             // حالة الكفالة
-            DropdownButtonFormField<int>(
-              initialValue: _selectedSponsorshipStatus,
-              decoration: const InputDecoration(
-                labelText: 'حالة الكفالة',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.verified_user),
-                hintText: 'اختياري',
-              ),
-              items: SponsorshipStatus.allValues.map((status) {
-                return DropdownMenuItem(
-                  value: status.id,
-                  child: Text(status.arabicName),
-                );
-              }).toList(),
-              onChanged: (value) => setState(() => _selectedSponsorshipStatus = value),
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.beneficiaryStatus,
+              selectedCode: _selectedSponsorshipStatus,
+              labelText: 'حالة الكفالة',
+              hintText: 'اختياري',
+              prefixIcon: Icons.verified_user,
+              onCodeChanged: (value) => setState(() => _selectedSponsorshipStatus = value),
             ),
             const SizedBox(height: 16),
 
             // نوع الكفالة
-            DropdownButtonFormField<int>(
-              initialValue: _selectedSponsorshipType,
-              decoration: const InputDecoration(
-                labelText: 'نوع الكفالة',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.category),
-                hintText: 'اختياري',
-              ),
-              items: SponsorshipType.allValues.map((type) {
-                return DropdownMenuItem(
-                  value: type.id,
-                  child: Text(type.arabicName),
-                );
-              }).toList(),
-              onChanged: (value) => setState(() => _selectedSponsorshipType = value),
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.sponsorshipType,
+              selectedCode: _selectedSponsorshipType,
+              labelText: 'نوع الكفالة',
+              hintText: 'اختياري',
+              prefixIcon: Icons.category,
+              onCodeChanged: (value) => setState(() => _selectedSponsorshipType = value),
+            ),
+            const SizedBox(height: 16),
+
+            // نوع الضمان
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.guaranteeType,
+              selectedCode: _selectedGuaranteeType,
+              labelText: 'نوع الضمان',
+              hintText: 'اختياري',
+              prefixIcon: Icons.verified,
+              onCodeChanged: (value) => setState(() => _selectedGuaranteeType = value),
             ),
             const SizedBox(height: 16),
 

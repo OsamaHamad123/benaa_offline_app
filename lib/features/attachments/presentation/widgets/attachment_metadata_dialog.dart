@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../../../../core/enums/attachment_enums.dart';
 
 /// 🆕 Add Attachment Metadata Dialog
 ///
 /// Dialog لإدخال معلومات إضافية عند رفع مرفق
-class AttachmentMetadataDialog extends StatefulWidget {
+class AttachmentMetadataDialog extends ConsumerStatefulWidget {
   final String? initialDocumentType;
   final String? initialPersonType;
   final String? initialNotes;
@@ -18,10 +21,10 @@ class AttachmentMetadataDialog extends StatefulWidget {
   });
 
   @override
-  State<AttachmentMetadataDialog> createState() => _AttachmentMetadataDialogState();
+  ConsumerState<AttachmentMetadataDialog> createState() => _AttachmentMetadataDialogState();
 }
 
-class _AttachmentMetadataDialogState extends State<AttachmentMetadataDialog> {
+class _AttachmentMetadataDialogState extends ConsumerState<AttachmentMetadataDialog> {
   String? _selectedDocumentType;
   String? _selectedPersonType;
   final _notesController = TextEditingController();
@@ -42,6 +45,20 @@ class _AttachmentMetadataDialogState extends State<AttachmentMetadataDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final documentTypesAsync = ref.watch(
+      bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.documentType),
+    );
+    final taxonomyDocumentTypes = documentTypesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const [],
+    );
+
+    final availableCodes = taxonomyDocumentTypes.map((item) => item.code).toSet();
+
+    if (_selectedDocumentType != null && !availableCodes.contains(_selectedDocumentType)) {
+      _selectedDocumentType = null;
+    }
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
       child: SingleChildScrollView(
@@ -85,24 +102,50 @@ class _AttachmentMetadataDialogState extends State<AttachmentMetadataDialog> {
             SizedBox(height: 8.h),
             DropdownButtonFormField<String>(
               initialValue: _selectedDocumentType,
+              isExpanded: true,
+              onChanged: taxonomyDocumentTypes.isEmpty
+                  ? null
+                  : (value) {
+                      setState(() => _selectedDocumentType = value);
+                    },
               decoration: InputDecoration(
-                hintText: 'اختر نوع الوثيقة',
+                hintText: taxonomyDocumentTypes.isEmpty ? 'لا توجد تصنيفات متاحة حالياً' : 'اختر نوع الوثيقة',
                 prefixIcon: Icon(Icons.file_copy_outlined, size: 20.sp),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.r),
                 ),
                 contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
               ),
-              items: DocumentType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type.code,
-                  child: Text(type.arabicName, style: TextStyle(fontSize: 14.sp)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedDocumentType = value);
-              },
+              items: taxonomyDocumentTypes
+                  .map(
+                    (type) => DropdownMenuItem<String>(
+                      value: type.code,
+                      child: Text(type.label, style: TextStyle(fontSize: 14.sp)),
+                    ),
+                  )
+                  .toList(),
             ),
+            if (documentTypesAsync.isLoading)
+              Padding(
+                padding: EdgeInsets.only(top: 6.h),
+                child: const LinearProgressIndicator(minHeight: 2),
+              ),
+            if (documentTypesAsync.hasError)
+              Padding(
+                padding: EdgeInsets.only(top: 6.h),
+                child: Text(
+                  'تعذر تحميل تصنيفات نوع الوثيقة. يرجى إجراء مزامنة التصنيفات ثم المحاولة مجددًا.',
+                  style: TextStyle(fontSize: 12.sp, color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            if (!documentTypesAsync.isLoading && taxonomyDocumentTypes.isEmpty && !documentTypesAsync.hasError)
+              Padding(
+                padding: EdgeInsets.only(top: 6.h),
+                child: Text(
+                  'لا توجد عناصر ضمن تصنيف أنواع الوثائق حالياً.',
+                  style: TextStyle(fontSize: 12.sp, color: Colors.orange[800]),
+                ),
+              ),
 
             SizedBox(height: 16.h),
 

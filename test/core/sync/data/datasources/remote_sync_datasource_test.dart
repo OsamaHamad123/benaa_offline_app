@@ -92,7 +92,7 @@ void main() {
       final result = await dataSource.pullTaxonomies(group: 'education_level');
 
       expect(result.data, isNotEmpty);
-      expect(result.data.first.group, 'education_level');
+      expect(result.data.first.groupValue, 'education_level');
       expect(adapter.capturedRequests.length, 1);
       expect(adapter.capturedRequests.first.path, '/api/mobile/categories/academic-degrees');
     });
@@ -131,7 +131,7 @@ void main() {
       final result = await dataSource.pullTaxonomies(group: 'category');
 
       expect(result.data, isNotEmpty);
-      expect(result.data.first.group, 'category');
+      expect(result.data.first.groupValue, 'category');
       expect(adapter.capturedRequests.length, 2);
       expect(adapter.capturedRequests.first.path, '/api/mobile/categories/categories');
       expect(adapter.capturedRequests[1].path, '/api/mobile/categories/beneficiary-categories');

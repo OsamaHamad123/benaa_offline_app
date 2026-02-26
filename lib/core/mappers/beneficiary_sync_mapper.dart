@@ -63,9 +63,26 @@ class BeneficiaryMapper {
       nested: nestedData,
     );
 
+    final originalFileIdFromExcel = _pickString(
+      json,
+      const ['original_file_id_from_excel'],
+      nested: nestedData,
+    );
+
+    final sectionId = _pickIntLoose(
+      json,
+      const ['data_section_id', 'section_id'],
+      nested: nestedData,
+    );
+
     final province = _pickIntLoose(
       json,
       const ['data_governorate', 'data_province', 'province', 'governorate'],
+      nested: nestedData,
+    );
+    final city = _pickIntLoose(
+      json,
+      const ['data_city', 'city'],
       nested: nestedData,
     );
     final gender = _pickIntLoose(
@@ -84,6 +101,124 @@ class BeneficiaryMapper {
           nested: nestedData,
         ) ??
         1;
+
+    final birthDate = _parseDateTime(
+      _pickString(
+        json,
+        const ['data_birth_date', 'birth_date', 'date_of_birth'],
+        nested: nestedData,
+      ),
+    );
+
+    final numberOfIndividuals = _pickIntLoose(
+      json,
+      const ['data_number_of_individuals', 'number_of_individuals'],
+      nested: nestedData,
+    );
+    final maritalStatus = _pickIntLoose(
+      json,
+      const ['data_marital_status', 'marital_status'],
+      nested: nestedData,
+    );
+    final numberOfMales = _pickIntLoose(
+      json,
+      const ['data_number_mail', 'data_number_male', 'number_of_males'],
+      nested: nestedData,
+    );
+    final numberOfFemales = _pickIntLoose(
+      json,
+      const ['data_number_female', 'number_of_females'],
+      nested: nestedData,
+    );
+
+    final academicQualification = _pickIntLoose(
+      json,
+      const ['data_academic_qualification', 'academic_qualification'],
+      nested: nestedData,
+    );
+    final employmentStatusBreadwinner = _pickIntLoose(
+      json,
+      const ['data_employment_status_breadwinner', 'employment_status_breadwinner'],
+      nested: nestedData,
+    );
+
+    final displacementStatus = _pickIntLoose(
+      json,
+      const ['data_displacement_status', 'displacement_status'],
+      nested: nestedData,
+    );
+    final addressBeforeDisplacement = _pickString(
+      json,
+      const ['data_address_before_displacement', 'address_before_displacement'],
+      nested: nestedData,
+    );
+    final currentAddress = _pickString(
+      json,
+      const ['data_current_address', 'current_address', 'address'],
+      nested: nestedData,
+    );
+
+    final healthStatus = _pickIntLoose(
+      json,
+      const ['data_health_status', 'health_status'],
+      nested: nestedData,
+    );
+    final numberOfIndividualsWithChronicDiseases = _pickIntLoose(
+      json,
+      const [
+        'data_number_of_individuals_with_chronic_diseases',
+        'number_of_individuals_with_chronic_diseases',
+      ],
+      nested: nestedData,
+    );
+    final numberOfPeopleWithSpecialNeeds = _pickIntLoose(
+      json,
+      const ['data_number_of_people_with_special_needs', 'number_of_people_with_special_needs'],
+      nested: nestedData,
+    );
+
+    final housingStatus = _pickIntLoose(
+      json,
+      const ['data_housing_status', 'housing_status'],
+      nested: nestedData,
+    );
+    final currentHousingType = _pickIntLoose(
+      json,
+      const ['data_current_housing_type', 'current_housing_type'],
+      nested: nestedData,
+    );
+
+    final assistanceTypeCode = _pickString(
+      json,
+      const ['assistance_type_code', 'assistance_type', 'data_assistance_type'],
+      nested: nestedData,
+    );
+    final disabilityTypeCode = _pickString(
+      json,
+      const ['disability_type_code', 'disability_type', 'data_disability_type'],
+      nested: nestedData,
+    );
+    final incomeSourceCode = _pickString(
+      json,
+      const ['income_source_code', 'income_source', 'data_income_source'],
+      nested: nestedData,
+    );
+    final guaranteeTypeCode = _pickString(
+      json,
+      const ['guarantee_type_code', 'guarantee_type', 'data_guarantee_type'],
+      nested: nestedData,
+    );
+
+    final descriptionNeeds = _pickString(
+      json,
+      const ['data_description_needs', 'description_needs', 'notes'],
+      nested: nestedData,
+    );
+    final userInsertData = _pickString(
+      json,
+      const ['data_user_insert_data', 'user_insert_data'],
+      nested: nestedData,
+    );
 
     final serverId = _pickIntLoose(
       json,
@@ -109,10 +244,34 @@ class BeneficiaryMapper {
 
       // Optional fields
       fileIdNumber: drift.Value(fileId),
+      originalFileIdFromExcel: drift.Value(originalFileIdFromExcel),
+      sectionId: drift.Value(sectionId),
       fullNameNorm: drift.Value(_normalizeArabic(fullName)),
       province: drift.Value(province),
+      city: drift.Value(city),
       gender: drift.Value(gender),
       relationship: drift.Value(relationship),
+      birthDate: drift.Value(birthDate),
+      numberOfIndividuals: drift.Value(numberOfIndividuals),
+      maritalStatus: drift.Value(maritalStatus),
+      numberOfMales: drift.Value(numberOfMales),
+      numberOfFemales: drift.Value(numberOfFemales),
+      academicQualification: drift.Value(academicQualification),
+      employmentStatusBreadwinner: drift.Value(employmentStatusBreadwinner),
+      displacementStatus: drift.Value(displacementStatus),
+      addressBeforeDisplacement: drift.Value(addressBeforeDisplacement),
+      currentAddress: drift.Value(currentAddress),
+      healthStatus: drift.Value(healthStatus),
+      numberOfIndividualsWithChronicDiseases: drift.Value(numberOfIndividualsWithChronicDiseases),
+      numberOfPeopleWithSpecialNeeds: drift.Value(numberOfPeopleWithSpecialNeeds),
+      housingStatus: drift.Value(housingStatus),
+      currentHousingType: drift.Value(currentHousingType),
+      assistanceTypeCode: drift.Value(assistanceTypeCode),
+      disabilityTypeCode: drift.Value(disabilityTypeCode),
+      incomeSourceCode: drift.Value(incomeSourceCode),
+      guaranteeTypeCode: drift.Value(guaranteeTypeCode),
+      descriptionNeeds: drift.Value(descriptionNeeds),
+      userInsertData: drift.Value(userInsertData),
 
       // Metadata
       serverId: drift.Value(serverId),
@@ -184,6 +343,12 @@ class BeneficiaryMapper {
       // Housing
       'data_housing_status': beneficiary.housingStatus,
       'data_current_housing_type': beneficiary.currentHousingType,
+
+      // Extended taxonomy fields
+      'assistance_type_code': beneficiary.assistanceTypeCode,
+      'disability_type_code': beneficiary.disabilityTypeCode,
+      'income_source_code': beneficiary.incomeSourceCode,
+      'guarantee_type_code': beneficiary.guaranteeTypeCode,
 
       // Notes/system fields
       'data_description_needs': beneficiary.descriptionNeeds,

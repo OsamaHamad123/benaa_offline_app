@@ -10,7 +10,8 @@ final dashboardSummaryProvider = FutureProvider.autoDispose<DashboardSummary>((
 ) async {
   // Keep alive for 30 seconds
   final link = ref.keepAlive();
-  Timer(const Duration(seconds: 30), link.close);
+  final timer = Timer(const Duration(seconds: 30), link.close);
+  ref.onDispose(timer.cancel);
 
   final db = ref.watch(databaseProvider);
 
@@ -49,8 +50,7 @@ final dailyPerformanceProvider = FutureProvider<DailyPerformance>((ref) async {
   final visitsToday = await db.visitsDao.countVisitsToday();
 
   // Count new beneficiaries today
-  final newBeneficiariesToday =
-      await db.beneficiariesDao.countNewBeneficiariesToday();
+  final newBeneficiariesToday = await db.beneficiariesDao.countNewBeneficiariesToday();
 
   // Simplified: use today's count as average for now
   final avgVisitsPerDay = visitsToday.toDouble();
@@ -67,16 +67,13 @@ final urgentCasesProvider = FutureProvider<UrgentCases>((ref) async {
   final db = ref.watch(databaseProvider);
 
   // Count beneficiaries with no visits in last 30 days
-  final noVisitsCount =
-      await db.beneficiariesDao.countBeneficiariesWithNoRecentVisits(30);
+  final noVisitsCount = await db.beneficiariesDao.countBeneficiariesWithNoRecentVisits(30);
 
   // Count beneficiaries with poor health
-  final poorHealthCount =
-      await db.beneficiariesDao.countBeneficiariesWithPoorHealth();
+  final poorHealthCount = await db.beneficiariesDao.countBeneficiariesWithPoorHealth();
 
   // Count beneficiaries with disabilities
-  final disabilitiesCount =
-      await db.beneficiariesDao.countBeneficiariesWithDisabilities();
+  final disabilitiesCount = await db.beneficiariesDao.countBeneficiariesWithDisabilities();
 
   return UrgentCases(
     noVisitsCount: noVisitsCount,

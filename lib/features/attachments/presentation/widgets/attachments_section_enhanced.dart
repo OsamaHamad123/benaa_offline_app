@@ -24,6 +24,10 @@ enum _AttachmentTypeFilter {
 final _attachmentsTypeFilterProvider =
     StateProvider.family<_AttachmentTypeFilter, String>((ref, beneficiaryId) => _AttachmentTypeFilter.all);
 
+final _attachmentsRenderLimitProvider = StateProvider.family<int, String>((ref, beneficiaryId) => 80);
+
+const int _attachmentsRenderStep = 80;
+
 /// 📎 Enhanced Attachments Section Widget - Clean Architecture V2
 class AttachmentsSectionEnhanced extends ConsumerWidget {
   final String beneficiaryId;
@@ -345,8 +349,15 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     final attachments = state.attachments;
     final selectedFilter = ref.watch(_attachmentsTypeFilterProvider(beneficiaryId));
     final filteredAttachments = _filterAttachmentsByType(attachments, selectedFilter);
+    final currentRenderLimit = ref.watch(_attachmentsRenderLimitProvider(beneficiaryId));
+    final limitedAttachments = filteredAttachments.length > currentRenderLimit
+        ? filteredAttachments.take(currentRenderLimit).toList(growable: false)
+        : filteredAttachments;
     final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
-    final groupedAttachments = _groupAttachmentsForDisplay(filteredAttachments);
+    final groupedAttachments = _groupAttachmentsForDisplay(limitedAttachments);
+    final hasMoreToRender = filteredAttachments.length > limitedAttachments.length;
+
+    final allCount = attachments.length;
 
     return Column(
       children: [
@@ -372,12 +383,38 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            'المعروض: ${filteredAttachments.length}/${attachments.length} • المجموعات: ${groupedAttachments.length}',
+            'المعروض: ${limitedAttachments.length}/${filteredAttachments.length} • الإجمالي: $allCount • المجموعات: ${groupedAttachments.length}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ),
         ),
+        if (hasMoreToRender) ...[
+          SizedBox(height: 8.h),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                final notifierLimit = ref.read(_attachmentsRenderLimitProvider(beneficiaryId).notifier);
+                notifierLimit.state = currentRenderLimit + _attachmentsRenderStep;
+              },
+              icon: const Icon(Icons.expand_more),
+              label: Text('عرض المزيد (+$_attachmentsRenderStep)'),
+            ),
+          ),
+        ],
+        if (currentRenderLimit > _attachmentsRenderStep && limitedAttachments.isNotEmpty) ...[
+          SizedBox(height: 6.h),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                ref.read(_attachmentsRenderLimitProvider(beneficiaryId).notifier).state = _attachmentsRenderStep;
+              },
+              child: const Text('إعادة طي القائمة'),
+            ),
+          ),
+        ],
         SizedBox(height: 8.h),
         ...groupedAttachments.asMap().entries.map((groupEntry) {
           final group = groupEntry.value;
@@ -873,7 +910,10 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
     final notifier = ref.read(attachmentsProvider(beneficiaryId).notifier);
     notifier.clearAttachmentError(attachment.id);
 
-    final file = await notifier.resolveAttachmentFile(attachment);
+    final file = await notifier.resolveAttachmentFile(
+      attachment,
+      allowRemoteFetch: true,
+    );
     if (!_isRefUsable(ref)) return null;
     if (file != null && file.existsSync()) {
       return file;
@@ -883,7 +923,7 @@ class AttachmentsSectionEnhanced extends ConsumerWidget {
       final state = ref.read(attachmentsProvider(beneficiaryId));
       final message = state.attachmentErrors[attachment.id] ??
           ((attachment.serverUrl != null && attachment.serverUrl!.trim().isNotEmpty)
-              ? 'تعذر تنزيل المرفق من الرابط البعيد'
+              ? 'تعذر تنزيل المرفق عند الطلب. تأكد من الإنترنت أو أعد المزامنة.'
               : 'الملف غير متوفر محلياً');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1098,58 +1138,38 @@ class _EnhancedAttachmentCard extends StatelessWidget {
       final preferredPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
       final preferredFile = File(preferredPath);
 
-      if (preferredFile.existsSync()) {
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: colorScheme.surfaceContainer,
-          child: Image.file(
-            preferredFile,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (_, __, ___) => _buildIcon(context, Icons.broken_image, colorScheme.error),
-          ),
-        );
-      }
-
-      final remoteUrl = _toRemoteUrl(attachment.serverUrl) ?? _toRemoteUrl(attachment.filePath);
-      if (remoteUrl != null && !_looksLikeZipReference(remoteUrl)) {
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: colorScheme.surfaceContainer,
-          child: Image.network(
-            remoteUrl,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-            errorBuilder: (_, __, ___) => _buildIcon(context, Icons.broken_image, colorScheme.error),
-          ),
-        );
-      }
-
-      if (isResolving) {
-        return Container(
-          color: colorScheme.surfaceContainer,
-          child: Center(
-            child: SizedBox(
-              width: 18.sp,
-              height: 18.sp,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colorScheme.primary,
-              ),
-            ),
-          ),
-        );
-      }
-
       return Container(
         width: double.infinity,
         height: double.infinity,
         color: colorScheme.surfaceContainer,
-        child: _buildIcon(context, Icons.image_not_supported_outlined, colorScheme.onSurfaceVariant),
+        child: Image.file(
+          preferredFile,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (_, __, ___) {
+            final remoteUrl = _toRemoteUrl(attachment.serverUrl) ?? _toRemoteUrl(attachment.filePath);
+            if (remoteUrl != null && !_looksLikeZipReference(remoteUrl)) {
+              return _buildIcon(context, Icons.cloud_off_outlined, colorScheme.onSurfaceVariant);
+            }
+            if (isResolving) {
+              return Container(
+                color: colorScheme.surfaceContainer,
+                child: Center(
+                  child: SizedBox(
+                    width: 18.sp,
+                    height: 18.sp,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return _buildIcon(context, Icons.image_not_supported_outlined, colorScheme.onSurfaceVariant);
+          },
+        ),
       );
     } else if (attachment.isPdf) {
       return _buildIcon(context, Icons.picture_as_pdf, colorScheme.error);
@@ -1257,8 +1277,14 @@ class _EnhancedAttachmentCard extends StatelessWidget {
 
   (IconData, String, Color, Color) _fileSourceStatus(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final localPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
-    if (File(localPath).existsSync()) {
+    final localPath = (resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath).trim();
+    final looksLocal = localPath.isNotEmpty &&
+        !localPath.startsWith('http://') &&
+        !localPath.startsWith('https://') &&
+        !localPath.startsWith('/api/') &&
+        !localPath.startsWith('api/');
+
+    if (looksLocal) {
       return (
         Icons.check_circle_outline,
         'محلي',
@@ -1286,8 +1312,13 @@ class _EnhancedAttachmentCard extends StatelessWidget {
   }
 
   IconData _primaryActionIcon() {
-    final localPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
-    if (File(localPath).existsSync()) {
+    final localPath = (resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath).trim();
+    final looksLocal = localPath.isNotEmpty &&
+        !localPath.startsWith('http://') &&
+        !localPath.startsWith('https://') &&
+        !localPath.startsWith('/api/') &&
+        !localPath.startsWith('api/');
+    if (looksLocal) {
       return Icons.open_in_new;
     }
 
@@ -1300,8 +1331,13 @@ class _EnhancedAttachmentCard extends StatelessWidget {
   }
 
   String _primaryActionLabel() {
-    final localPath = resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath;
-    if (File(localPath).existsSync()) {
+    final localPath = (resolvedPath ?? attachment.thumbnailPath ?? attachment.filePath).trim();
+    final looksLocal = localPath.isNotEmpty &&
+        !localPath.startsWith('http://') &&
+        !localPath.startsWith('https://') &&
+        !localPath.startsWith('/api/') &&
+        !localPath.startsWith('api/');
+    if (looksLocal) {
       return 'فتح';
     }
 

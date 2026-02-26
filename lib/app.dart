@@ -10,6 +10,9 @@ import 'core/settings/settings_provider.dart';
 import 'core/error_handling/error_handler.dart';
 import 'core/design_system/app_animations.dart';
 import 'core/analytics/ux_analytics.dart';
+import 'features/auth/presentation/providers/auth_providers.dart';
+import 'features/auth/services/token_manager.dart';
+import 'core/security/auth_session_events.dart';
 import 'l10n/app_localizations.dart';
 import 'features/taxonomies/presentation/widgets/taxonomy_auto_sync_manager.dart';
 
@@ -21,6 +24,14 @@ class BenaaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    ref.watch(authBootstrapProvider);
+    ref.watch(tokenManagerProvider);
+    ref.listen<AsyncValue<AuthSessionEvent>>(authSessionEventProvider, (previous, next) {
+      final event = next.valueOrNull;
+      if (event?.type == AuthSessionEventType.sessionExpired) {
+        router.go('/login');
+      }
+    });
 
     // 📊 Start analytics session once per app process
     if (!_analyticsSessionStarted) {
@@ -91,7 +102,7 @@ class BenaaApp extends ConsumerWidget {
                     child: _DebouncedKeyboardInsets(child: child),
                   );
                 },
-                localizationsDelegates:const [
+                localizationsDelegates: const [
                   AppLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,
                   GlobalWidgetsLocalizations.delegate,

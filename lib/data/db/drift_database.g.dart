@@ -200,6 +200,30 @@ class $BeneficiariesTable extends Beneficiaries
   late final GeneratedColumn<int> currentHousingType = GeneratedColumn<int>(
       'current_housing_type', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _assistanceTypeCodeMeta =
+      const VerificationMeta('assistanceTypeCode');
+  @override
+  late final GeneratedColumn<String> assistanceTypeCode =
+      GeneratedColumn<String>('assistance_type_code', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _disabilityTypeCodeMeta =
+      const VerificationMeta('disabilityTypeCode');
+  @override
+  late final GeneratedColumn<String> disabilityTypeCode =
+      GeneratedColumn<String>('disability_type_code', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _incomeSourceCodeMeta =
+      const VerificationMeta('incomeSourceCode');
+  @override
+  late final GeneratedColumn<String> incomeSourceCode = GeneratedColumn<String>(
+      'income_source_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _guaranteeTypeCodeMeta =
+      const VerificationMeta('guaranteeTypeCode');
+  @override
+  late final GeneratedColumn<String> guaranteeTypeCode =
+      GeneratedColumn<String>('guarantee_type_code', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _descriptionNeedsMeta =
       const VerificationMeta('descriptionNeeds');
   @override
@@ -299,6 +323,10 @@ class $BeneficiariesTable extends Beneficiaries
         numberOfPeopleWithSpecialNeeds,
         housingStatus,
         currentHousingType,
+        assistanceTypeCode,
+        disabilityTypeCode,
+        incomeSourceCode,
+        guaranteeTypeCode,
         descriptionNeeds,
         userInsertData,
         createdAt,
@@ -499,6 +527,30 @@ class $BeneficiariesTable extends Beneficiaries
           currentHousingType.isAcceptableOrUnknown(
               data['current_housing_type']!, _currentHousingTypeMeta));
     }
+    if (data.containsKey('assistance_type_code')) {
+      context.handle(
+          _assistanceTypeCodeMeta,
+          assistanceTypeCode.isAcceptableOrUnknown(
+              data['assistance_type_code']!, _assistanceTypeCodeMeta));
+    }
+    if (data.containsKey('disability_type_code')) {
+      context.handle(
+          _disabilityTypeCodeMeta,
+          disabilityTypeCode.isAcceptableOrUnknown(
+              data['disability_type_code']!, _disabilityTypeCodeMeta));
+    }
+    if (data.containsKey('income_source_code')) {
+      context.handle(
+          _incomeSourceCodeMeta,
+          incomeSourceCode.isAcceptableOrUnknown(
+              data['income_source_code']!, _incomeSourceCodeMeta));
+    }
+    if (data.containsKey('guarantee_type_code')) {
+      context.handle(
+          _guaranteeTypeCodeMeta,
+          guaranteeTypeCode.isAcceptableOrUnknown(
+              data['guarantee_type_code']!, _guaranteeTypeCodeMeta));
+    }
     if (data.containsKey('description_needs')) {
       context.handle(
           _descriptionNeedsMeta,
@@ -624,6 +676,14 @@ class $BeneficiariesTable extends Beneficiaries
           .read(DriftSqlType.int, data['${effectivePrefix}housing_status']),
       currentHousingType: attachedDatabase.typeMapping.read(
           DriftSqlType.int, data['${effectivePrefix}current_housing_type']),
+      assistanceTypeCode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}assistance_type_code']),
+      disabilityTypeCode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}disability_type_code']),
+      incomeSourceCode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}income_source_code']),
+      guaranteeTypeCode: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}guarantee_type_code']),
       descriptionNeeds: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}description_needs']),
       userInsertData: attachedDatabase.typeMapping.read(
@@ -683,6 +743,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
   final int? numberOfPeopleWithSpecialNeeds;
   final int? housingStatus;
   final int? currentHousingType;
+  final String? assistanceTypeCode;
+  final String? disabilityTypeCode;
+  final String? incomeSourceCode;
+  final String? guaranteeTypeCode;
   final String? descriptionNeeds;
   final String? userInsertData;
   final DateTime? createdAt;
@@ -724,6 +788,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
       this.numberOfPeopleWithSpecialNeeds,
       this.housingStatus,
       this.currentHousingType,
+      this.assistanceTypeCode,
+      this.disabilityTypeCode,
+      this.incomeSourceCode,
+      this.guaranteeTypeCode,
       this.descriptionNeeds,
       this.userInsertData,
       this.createdAt,
@@ -823,6 +891,18 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
     }
     if (!nullToAbsent || currentHousingType != null) {
       map['current_housing_type'] = Variable<int>(currentHousingType);
+    }
+    if (!nullToAbsent || assistanceTypeCode != null) {
+      map['assistance_type_code'] = Variable<String>(assistanceTypeCode);
+    }
+    if (!nullToAbsent || disabilityTypeCode != null) {
+      map['disability_type_code'] = Variable<String>(disabilityTypeCode);
+    }
+    if (!nullToAbsent || incomeSourceCode != null) {
+      map['income_source_code'] = Variable<String>(incomeSourceCode);
+    }
+    if (!nullToAbsent || guaranteeTypeCode != null) {
+      map['guarantee_type_code'] = Variable<String>(guaranteeTypeCode);
     }
     if (!nullToAbsent || descriptionNeeds != null) {
       map['description_needs'] = Variable<String>(descriptionNeeds);
@@ -935,6 +1015,18 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
       currentHousingType: currentHousingType == null && nullToAbsent
           ? const Value.absent()
           : Value(currentHousingType),
+      assistanceTypeCode: assistanceTypeCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assistanceTypeCode),
+      disabilityTypeCode: disabilityTypeCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(disabilityTypeCode),
+      incomeSourceCode: incomeSourceCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(incomeSourceCode),
+      guaranteeTypeCode: guaranteeTypeCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guaranteeTypeCode),
       descriptionNeeds: descriptionNeeds == null && nullToAbsent
           ? const Value.absent()
           : Value(descriptionNeeds),
@@ -1002,6 +1094,13 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
           serializer.fromJson<int?>(json['numberOfPeopleWithSpecialNeeds']),
       housingStatus: serializer.fromJson<int?>(json['housingStatus']),
       currentHousingType: serializer.fromJson<int?>(json['currentHousingType']),
+      assistanceTypeCode:
+          serializer.fromJson<String?>(json['assistanceTypeCode']),
+      disabilityTypeCode:
+          serializer.fromJson<String?>(json['disabilityTypeCode']),
+      incomeSourceCode: serializer.fromJson<String?>(json['incomeSourceCode']),
+      guaranteeTypeCode:
+          serializer.fromJson<String?>(json['guaranteeTypeCode']),
       descriptionNeeds: serializer.fromJson<String?>(json['descriptionNeeds']),
       userInsertData: serializer.fromJson<String?>(json['userInsertData']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
@@ -1053,6 +1152,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
           serializer.toJson<int?>(numberOfPeopleWithSpecialNeeds),
       'housingStatus': serializer.toJson<int?>(housingStatus),
       'currentHousingType': serializer.toJson<int?>(currentHousingType),
+      'assistanceTypeCode': serializer.toJson<String?>(assistanceTypeCode),
+      'disabilityTypeCode': serializer.toJson<String?>(disabilityTypeCode),
+      'incomeSourceCode': serializer.toJson<String?>(incomeSourceCode),
+      'guaranteeTypeCode': serializer.toJson<String?>(guaranteeTypeCode),
       'descriptionNeeds': serializer.toJson<String?>(descriptionNeeds),
       'userInsertData': serializer.toJson<String?>(userInsertData),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
@@ -1098,6 +1201,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
           Value<int?> numberOfPeopleWithSpecialNeeds = const Value.absent(),
           Value<int?> housingStatus = const Value.absent(),
           Value<int?> currentHousingType = const Value.absent(),
+          Value<String?> assistanceTypeCode = const Value.absent(),
+          Value<String?> disabilityTypeCode = const Value.absent(),
+          Value<String?> incomeSourceCode = const Value.absent(),
+          Value<String?> guaranteeTypeCode = const Value.absent(),
           Value<String?> descriptionNeeds = const Value.absent(),
           Value<String?> userInsertData = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
@@ -1169,6 +1276,18 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
         currentHousingType: currentHousingType.present
             ? currentHousingType.value
             : this.currentHousingType,
+        assistanceTypeCode: assistanceTypeCode.present
+            ? assistanceTypeCode.value
+            : this.assistanceTypeCode,
+        disabilityTypeCode: disabilityTypeCode.present
+            ? disabilityTypeCode.value
+            : this.disabilityTypeCode,
+        incomeSourceCode: incomeSourceCode.present
+            ? incomeSourceCode.value
+            : this.incomeSourceCode,
+        guaranteeTypeCode: guaranteeTypeCode.present
+            ? guaranteeTypeCode.value
+            : this.guaranteeTypeCode,
         descriptionNeeds: descriptionNeeds.present
             ? descriptionNeeds.value
             : this.descriptionNeeds,
@@ -1220,6 +1339,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
               'numberOfPeopleWithSpecialNeeds: $numberOfPeopleWithSpecialNeeds, ')
           ..write('housingStatus: $housingStatus, ')
           ..write('currentHousingType: $currentHousingType, ')
+          ..write('assistanceTypeCode: $assistanceTypeCode, ')
+          ..write('disabilityTypeCode: $disabilityTypeCode, ')
+          ..write('incomeSourceCode: $incomeSourceCode, ')
+          ..write('guaranteeTypeCode: $guaranteeTypeCode, ')
           ..write('descriptionNeeds: $descriptionNeeds, ')
           ..write('userInsertData: $userInsertData, ')
           ..write('createdAt: $createdAt, ')
@@ -1266,6 +1389,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
         numberOfPeopleWithSpecialNeeds,
         housingStatus,
         currentHousingType,
+        assistanceTypeCode,
+        disabilityTypeCode,
+        incomeSourceCode,
+        guaranteeTypeCode,
         descriptionNeeds,
         userInsertData,
         createdAt,
@@ -1314,6 +1441,10 @@ class Beneficiary extends DataClass implements Insertable<Beneficiary> {
               this.numberOfPeopleWithSpecialNeeds &&
           other.housingStatus == this.housingStatus &&
           other.currentHousingType == this.currentHousingType &&
+          other.assistanceTypeCode == this.assistanceTypeCode &&
+          other.disabilityTypeCode == this.disabilityTypeCode &&
+          other.incomeSourceCode == this.incomeSourceCode &&
+          other.guaranteeTypeCode == this.guaranteeTypeCode &&
           other.descriptionNeeds == this.descriptionNeeds &&
           other.userInsertData == this.userInsertData &&
           other.createdAt == this.createdAt &&
@@ -1357,6 +1488,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
   final Value<int?> numberOfPeopleWithSpecialNeeds;
   final Value<int?> housingStatus;
   final Value<int?> currentHousingType;
+  final Value<String?> assistanceTypeCode;
+  final Value<String?> disabilityTypeCode;
+  final Value<String?> incomeSourceCode;
+  final Value<String?> guaranteeTypeCode;
   final Value<String?> descriptionNeeds;
   final Value<String?> userInsertData;
   final Value<DateTime?> createdAt;
@@ -1397,6 +1532,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
     this.numberOfPeopleWithSpecialNeeds = const Value.absent(),
     this.housingStatus = const Value.absent(),
     this.currentHousingType = const Value.absent(),
+    this.assistanceTypeCode = const Value.absent(),
+    this.disabilityTypeCode = const Value.absent(),
+    this.incomeSourceCode = const Value.absent(),
+    this.guaranteeTypeCode = const Value.absent(),
     this.descriptionNeeds = const Value.absent(),
     this.userInsertData = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1438,6 +1577,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
     this.numberOfPeopleWithSpecialNeeds = const Value.absent(),
     this.housingStatus = const Value.absent(),
     this.currentHousingType = const Value.absent(),
+    this.assistanceTypeCode = const Value.absent(),
+    this.disabilityTypeCode = const Value.absent(),
+    this.incomeSourceCode = const Value.absent(),
+    this.guaranteeTypeCode = const Value.absent(),
     this.descriptionNeeds = const Value.absent(),
     this.userInsertData = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -1481,6 +1624,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
     Expression<int>? numberOfPeopleWithSpecialNeeds,
     Expression<int>? housingStatus,
     Expression<int>? currentHousingType,
+    Expression<String>? assistanceTypeCode,
+    Expression<String>? disabilityTypeCode,
+    Expression<String>? incomeSourceCode,
+    Expression<String>? guaranteeTypeCode,
     Expression<String>? descriptionNeeds,
     Expression<String>? userInsertData,
     Expression<DateTime>? createdAt,
@@ -1531,6 +1678,12 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
       if (housingStatus != null) 'housing_status': housingStatus,
       if (currentHousingType != null)
         'current_housing_type': currentHousingType,
+      if (assistanceTypeCode != null)
+        'assistance_type_code': assistanceTypeCode,
+      if (disabilityTypeCode != null)
+        'disability_type_code': disabilityTypeCode,
+      if (incomeSourceCode != null) 'income_source_code': incomeSourceCode,
+      if (guaranteeTypeCode != null) 'guarantee_type_code': guaranteeTypeCode,
       if (descriptionNeeds != null) 'description_needs': descriptionNeeds,
       if (userInsertData != null) 'user_insert_data': userInsertData,
       if (createdAt != null) 'created_at': createdAt,
@@ -1574,6 +1727,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
       Value<int?>? numberOfPeopleWithSpecialNeeds,
       Value<int?>? housingStatus,
       Value<int?>? currentHousingType,
+      Value<String?>? assistanceTypeCode,
+      Value<String?>? disabilityTypeCode,
+      Value<String?>? incomeSourceCode,
+      Value<String?>? guaranteeTypeCode,
       Value<String?>? descriptionNeeds,
       Value<String?>? userInsertData,
       Value<DateTime?>? createdAt,
@@ -1621,6 +1778,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
           numberOfPeopleWithSpecialNeeds ?? this.numberOfPeopleWithSpecialNeeds,
       housingStatus: housingStatus ?? this.housingStatus,
       currentHousingType: currentHousingType ?? this.currentHousingType,
+      assistanceTypeCode: assistanceTypeCode ?? this.assistanceTypeCode,
+      disabilityTypeCode: disabilityTypeCode ?? this.disabilityTypeCode,
+      incomeSourceCode: incomeSourceCode ?? this.incomeSourceCode,
+      guaranteeTypeCode: guaranteeTypeCode ?? this.guaranteeTypeCode,
       descriptionNeeds: descriptionNeeds ?? this.descriptionNeeds,
       userInsertData: userInsertData ?? this.userInsertData,
       createdAt: createdAt ?? this.createdAt,
@@ -1734,6 +1895,18 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
     if (currentHousingType.present) {
       map['current_housing_type'] = Variable<int>(currentHousingType.value);
     }
+    if (assistanceTypeCode.present) {
+      map['assistance_type_code'] = Variable<String>(assistanceTypeCode.value);
+    }
+    if (disabilityTypeCode.present) {
+      map['disability_type_code'] = Variable<String>(disabilityTypeCode.value);
+    }
+    if (incomeSourceCode.present) {
+      map['income_source_code'] = Variable<String>(incomeSourceCode.value);
+    }
+    if (guaranteeTypeCode.present) {
+      map['guarantee_type_code'] = Variable<String>(guaranteeTypeCode.value);
+    }
     if (descriptionNeeds.present) {
       map['description_needs'] = Variable<String>(descriptionNeeds.value);
     }
@@ -1797,6 +1970,10 @@ class BeneficiariesCompanion extends UpdateCompanion<Beneficiary> {
               'numberOfPeopleWithSpecialNeeds: $numberOfPeopleWithSpecialNeeds, ')
           ..write('housingStatus: $housingStatus, ')
           ..write('currentHousingType: $currentHousingType, ')
+          ..write('assistanceTypeCode: $assistanceTypeCode, ')
+          ..write('disabilityTypeCode: $disabilityTypeCode, ')
+          ..write('incomeSourceCode: $incomeSourceCode, ')
+          ..write('guaranteeTypeCode: $guaranteeTypeCode, ')
           ..write('descriptionNeeds: $descriptionNeeds, ')
           ..write('userInsertData: $userInsertData, ')
           ..write('createdAt: $createdAt, ')
@@ -5874,6 +6051,12 @@ class $FamilyMembersTableTable extends FamilyMembersTable
   late final GeneratedColumn<int> sponsorshipType = GeneratedColumn<int>(
       'sponsorship_type', aliasedName, true,
       type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _guaranteeTypeMeta =
+      const VerificationMeta('guaranteeType');
+  @override
+  late final GeneratedColumn<int> guaranteeType = GeneratedColumn<int>(
+      'guarantee_type', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _sponsorNameMeta =
       const VerificationMeta('sponsorName');
   @override
@@ -5944,6 +6127,7 @@ class $FamilyMembersTableTable extends FamilyMembersTable
         healthStatus,
         sponsorshipStatus,
         sponsorshipType,
+        guaranteeType,
         sponsorName,
         sponsorshipStartDate,
         notes,
@@ -6043,6 +6227,12 @@ class $FamilyMembersTableTable extends FamilyMembersTable
           sponsorshipType.isAcceptableOrUnknown(
               data['sponsorship_type']!, _sponsorshipTypeMeta));
     }
+    if (data.containsKey('guarantee_type')) {
+      context.handle(
+          _guaranteeTypeMeta,
+          guaranteeType.isAcceptableOrUnknown(
+              data['guarantee_type']!, _guaranteeTypeMeta));
+    }
     if (data.containsKey('sponsor_name')) {
       context.handle(
           _sponsorNameMeta,
@@ -6122,6 +6312,8 @@ class $FamilyMembersTableTable extends FamilyMembersTable
           .read(DriftSqlType.int, data['${effectivePrefix}sponsorship_status']),
       sponsorshipType: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}sponsorship_type']),
+      guaranteeType: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}guarantee_type']),
       sponsorName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}sponsor_name']),
       sponsorshipStartDate: attachedDatabase.typeMapping.read(
@@ -6164,6 +6356,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
   final int healthStatus;
   final int? sponsorshipStatus;
   final int? sponsorshipType;
+  final int? guaranteeType;
   final String? sponsorName;
   final DateTime? sponsorshipStartDate;
   final String? notes;
@@ -6187,6 +6380,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       required this.healthStatus,
       this.sponsorshipStatus,
       this.sponsorshipType,
+      this.guaranteeType,
       this.sponsorName,
       this.sponsorshipStartDate,
       this.notes,
@@ -6221,6 +6415,9 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
     }
     if (!nullToAbsent || sponsorshipType != null) {
       map['sponsorship_type'] = Variable<int>(sponsorshipType);
+    }
+    if (!nullToAbsent || guaranteeType != null) {
+      map['guarantee_type'] = Variable<int>(guaranteeType);
     }
     if (!nullToAbsent || sponsorName != null) {
       map['sponsor_name'] = Variable<String>(sponsorName);
@@ -6273,6 +6470,9 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       sponsorshipType: sponsorshipType == null && nullToAbsent
           ? const Value.absent()
           : Value(sponsorshipType),
+      guaranteeType: guaranteeType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guaranteeType),
       sponsorName: sponsorName == null && nullToAbsent
           ? const Value.absent()
           : Value(sponsorName),
@@ -6317,6 +6517,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       healthStatus: serializer.fromJson<int>(json['healthStatus']),
       sponsorshipStatus: serializer.fromJson<int?>(json['sponsorshipStatus']),
       sponsorshipType: serializer.fromJson<int?>(json['sponsorshipType']),
+      guaranteeType: serializer.fromJson<int?>(json['guaranteeType']),
       sponsorName: serializer.fromJson<String?>(json['sponsorName']),
       sponsorshipStartDate:
           serializer.fromJson<DateTime?>(json['sponsorshipStartDate']),
@@ -6346,6 +6547,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       'healthStatus': serializer.toJson<int>(healthStatus),
       'sponsorshipStatus': serializer.toJson<int?>(sponsorshipStatus),
       'sponsorshipType': serializer.toJson<int?>(sponsorshipType),
+      'guaranteeType': serializer.toJson<int?>(guaranteeType),
       'sponsorName': serializer.toJson<String?>(sponsorName),
       'sponsorshipStartDate':
           serializer.toJson<DateTime?>(sponsorshipStartDate),
@@ -6373,6 +6575,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
           int? healthStatus,
           Value<int?> sponsorshipStatus = const Value.absent(),
           Value<int?> sponsorshipType = const Value.absent(),
+          Value<int?> guaranteeType = const Value.absent(),
           Value<String?> sponsorName = const Value.absent(),
           Value<DateTime?> sponsorshipStartDate = const Value.absent(),
           Value<String?> notes = const Value.absent(),
@@ -6400,6 +6603,8 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
         sponsorshipType: sponsorshipType.present
             ? sponsorshipType.value
             : this.sponsorshipType,
+        guaranteeType:
+            guaranteeType.present ? guaranteeType.value : this.guaranteeType,
         sponsorName: sponsorName.present ? sponsorName.value : this.sponsorName,
         sponsorshipStartDate: sponsorshipStartDate.present
             ? sponsorshipStartDate.value
@@ -6440,6 +6645,9 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
       sponsorshipType: data.sponsorshipType.present
           ? data.sponsorshipType.value
           : this.sponsorshipType,
+      guaranteeType: data.guaranteeType.present
+          ? data.guaranteeType.value
+          : this.guaranteeType,
       sponsorName:
           data.sponsorName.present ? data.sponsorName.value : this.sponsorName,
       sponsorshipStartDate: data.sponsorshipStartDate.present
@@ -6474,6 +6682,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
           ..write('healthStatus: $healthStatus, ')
           ..write('sponsorshipStatus: $sponsorshipStatus, ')
           ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('guaranteeType: $guaranteeType, ')
           ..write('sponsorName: $sponsorName, ')
           ..write('sponsorshipStartDate: $sponsorshipStartDate, ')
           ..write('notes: $notes, ')
@@ -6502,6 +6711,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
         healthStatus,
         sponsorshipStatus,
         sponsorshipType,
+        guaranteeType,
         sponsorName,
         sponsorshipStartDate,
         notes,
@@ -6529,6 +6739,7 @@ class FamilyMember extends DataClass implements Insertable<FamilyMember> {
           other.healthStatus == this.healthStatus &&
           other.sponsorshipStatus == this.sponsorshipStatus &&
           other.sponsorshipType == this.sponsorshipType &&
+          other.guaranteeType == this.guaranteeType &&
           other.sponsorName == this.sponsorName &&
           other.sponsorshipStartDate == this.sponsorshipStartDate &&
           other.notes == this.notes &&
@@ -6554,6 +6765,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
   final Value<int> healthStatus;
   final Value<int?> sponsorshipStatus;
   final Value<int?> sponsorshipType;
+  final Value<int?> guaranteeType;
   final Value<String?> sponsorName;
   final Value<DateTime?> sponsorshipStartDate;
   final Value<String?> notes;
@@ -6577,6 +6789,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     this.healthStatus = const Value.absent(),
     this.sponsorshipStatus = const Value.absent(),
     this.sponsorshipType = const Value.absent(),
+    this.guaranteeType = const Value.absent(),
     this.sponsorName = const Value.absent(),
     this.sponsorshipStartDate = const Value.absent(),
     this.notes = const Value.absent(),
@@ -6601,6 +6814,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     required int healthStatus,
     this.sponsorshipStatus = const Value.absent(),
     this.sponsorshipType = const Value.absent(),
+    this.guaranteeType = const Value.absent(),
     this.sponsorName = const Value.absent(),
     this.sponsorshipStartDate = const Value.absent(),
     this.notes = const Value.absent(),
@@ -6631,6 +6845,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     Expression<int>? healthStatus,
     Expression<int>? sponsorshipStatus,
     Expression<int>? sponsorshipType,
+    Expression<int>? guaranteeType,
     Expression<String>? sponsorName,
     Expression<DateTime>? sponsorshipStartDate,
     Expression<String>? notes,
@@ -6655,6 +6870,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
       if (healthStatus != null) 'health_status': healthStatus,
       if (sponsorshipStatus != null) 'sponsorship_status': sponsorshipStatus,
       if (sponsorshipType != null) 'sponsorship_type': sponsorshipType,
+      if (guaranteeType != null) 'guarantee_type': guaranteeType,
       if (sponsorName != null) 'sponsor_name': sponsorName,
       if (sponsorshipStartDate != null)
         'sponsorship_start_date': sponsorshipStartDate,
@@ -6682,6 +6898,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
       Value<int>? healthStatus,
       Value<int?>? sponsorshipStatus,
       Value<int?>? sponsorshipType,
+      Value<int?>? guaranteeType,
       Value<String?>? sponsorName,
       Value<DateTime?>? sponsorshipStartDate,
       Value<String?>? notes,
@@ -6705,6 +6922,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
       healthStatus: healthStatus ?? this.healthStatus,
       sponsorshipStatus: sponsorshipStatus ?? this.sponsorshipStatus,
       sponsorshipType: sponsorshipType ?? this.sponsorshipType,
+      guaranteeType: guaranteeType ?? this.guaranteeType,
       sponsorName: sponsorName ?? this.sponsorName,
       sponsorshipStartDate: sponsorshipStartDate ?? this.sponsorshipStartDate,
       notes: notes ?? this.notes,
@@ -6759,6 +6977,9 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
     if (sponsorshipType.present) {
       map['sponsorship_type'] = Variable<int>(sponsorshipType.value);
     }
+    if (guaranteeType.present) {
+      map['guarantee_type'] = Variable<int>(guaranteeType.value);
+    }
     if (sponsorName.present) {
       map['sponsor_name'] = Variable<String>(sponsorName.value);
     }
@@ -6806,6 +7027,7 @@ class FamilyMembersTableCompanion extends UpdateCompanion<FamilyMember> {
           ..write('healthStatus: $healthStatus, ')
           ..write('sponsorshipStatus: $sponsorshipStatus, ')
           ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('guaranteeType: $guaranteeType, ')
           ..write('sponsorName: $sponsorName, ')
           ..write('sponsorshipStartDate: $sponsorshipStartDate, ')
           ..write('notes: $notes, ')
@@ -8101,6 +8323,12 @@ class $SponsorshipsTable extends Sponsorships
       type: DriftSqlType.string,
       requiredDuringInsert: false,
       defaultValue: const Constant('monthly'));
+  static const VerificationMeta _guaranteeTypeMeta =
+      const VerificationMeta('guaranteeType');
+  @override
+  late final GeneratedColumn<String> guaranteeType = GeneratedColumn<String>(
+      'guarantee_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _bankNameMeta =
       const VerificationMeta('bankName');
   @override
@@ -8212,6 +8440,7 @@ class $SponsorshipsTable extends Sponsorships
         currency,
         status,
         sponsorshipType,
+        guaranteeType,
         bankName,
         accountHolderName,
         accountHolderIdNumber,
@@ -8332,6 +8561,12 @@ class $SponsorshipsTable extends Sponsorships
           sponsorshipType.isAcceptableOrUnknown(
               data['sponsorship_type']!, _sponsorshipTypeMeta));
     }
+    if (data.containsKey('guarantee_type')) {
+      context.handle(
+          _guaranteeTypeMeta,
+          guaranteeType.isAcceptableOrUnknown(
+              data['guarantee_type']!, _guaranteeTypeMeta));
+    }
     if (data.containsKey('bank_name')) {
       context.handle(_bankNameMeta,
           bankName.isAcceptableOrUnknown(data['bank_name']!, _bankNameMeta));
@@ -8447,6 +8682,8 @@ class $SponsorshipsTable extends Sponsorships
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       sponsorshipType: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}sponsorship_type'])!,
+      guaranteeType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}guarantee_type']),
       bankName: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}bank_name']),
       accountHolderName: attachedDatabase.typeMapping.read(
@@ -8530,6 +8767,9 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
   /// monthly | one_time | other
   final String sponsorshipType;
 
+  /// نوع الكفالة (taxonomy code from guarantee-types)
+  final String? guaranteeType;
+
   /// اسم البنك (Bank Name)
   final String? bankName;
 
@@ -8584,6 +8824,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       this.currency,
       required this.status,
       required this.sponsorshipType,
+      this.guaranteeType,
       this.bankName,
       this.accountHolderName,
       this.accountHolderIdNumber,
@@ -8643,6 +8884,9 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
     }
     map['status'] = Variable<String>(status);
     map['sponsorship_type'] = Variable<String>(sponsorshipType);
+    if (!nullToAbsent || guaranteeType != null) {
+      map['guarantee_type'] = Variable<String>(guaranteeType);
+    }
     if (!nullToAbsent || bankName != null) {
       map['bank_name'] = Variable<String>(bankName);
     }
@@ -8729,6 +8973,9 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           : Value(currency),
       status: Value(status),
       sponsorshipType: Value(sponsorshipType),
+      guaranteeType: guaranteeType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guaranteeType),
       bankName: bankName == null && nullToAbsent
           ? const Value.absent()
           : Value(bankName),
@@ -8791,6 +9038,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       currency: serializer.fromJson<String?>(json['currency']),
       status: serializer.fromJson<String>(json['status']),
       sponsorshipType: serializer.fromJson<String>(json['sponsorshipType']),
+      guaranteeType: serializer.fromJson<String?>(json['guaranteeType']),
       bankName: serializer.fromJson<String?>(json['bankName']),
       accountHolderName:
           serializer.fromJson<String?>(json['accountHolderName']),
@@ -8831,6 +9079,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       'currency': serializer.toJson<String?>(currency),
       'status': serializer.toJson<String>(status),
       'sponsorshipType': serializer.toJson<String>(sponsorshipType),
+      'guaranteeType': serializer.toJson<String?>(guaranteeType),
       'bankName': serializer.toJson<String?>(bankName),
       'accountHolderName': serializer.toJson<String?>(accountHolderName),
       'accountHolderIdNumber': serializer.toJson<int?>(accountHolderIdNumber),
@@ -8867,6 +9116,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           Value<String?> currency = const Value.absent(),
           String? status,
           String? sponsorshipType,
+          Value<String?> guaranteeType = const Value.absent(),
           Value<String?> bankName = const Value.absent(),
           Value<String?> accountHolderName = const Value.absent(),
           Value<int?> accountHolderIdNumber = const Value.absent(),
@@ -8909,6 +9159,8 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
         currency: currency.present ? currency.value : this.currency,
         status: status ?? this.status,
         sponsorshipType: sponsorshipType ?? this.sponsorshipType,
+        guaranteeType:
+            guaranteeType.present ? guaranteeType.value : this.guaranteeType,
         bankName: bankName.present ? bankName.value : this.bankName,
         accountHolderName: accountHolderName.present
             ? accountHolderName.value
@@ -8972,6 +9224,9 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
       sponsorshipType: data.sponsorshipType.present
           ? data.sponsorshipType.value
           : this.sponsorshipType,
+      guaranteeType: data.guaranteeType.present
+          ? data.guaranteeType.value
+          : this.guaranteeType,
       bankName: data.bankName.present ? data.bankName.value : this.bankName,
       accountHolderName: data.accountHolderName.present
           ? data.accountHolderName.value
@@ -9021,6 +9276,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           ..write('currency: $currency, ')
           ..write('status: $status, ')
           ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('guaranteeType: $guaranteeType, ')
           ..write('bankName: $bankName, ')
           ..write('accountHolderName: $accountHolderName, ')
           ..write('accountHolderIdNumber: $accountHolderIdNumber, ')
@@ -9059,6 +9315,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
         currency,
         status,
         sponsorshipType,
+        guaranteeType,
         bankName,
         accountHolderName,
         accountHolderIdNumber,
@@ -9096,6 +9353,7 @@ class Sponsorship extends DataClass implements Insertable<Sponsorship> {
           other.currency == this.currency &&
           other.status == this.status &&
           other.sponsorshipType == this.sponsorshipType &&
+          other.guaranteeType == this.guaranteeType &&
           other.bankName == this.bankName &&
           other.accountHolderName == this.accountHolderName &&
           other.accountHolderIdNumber == this.accountHolderIdNumber &&
@@ -9131,6 +9389,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
   final Value<String?> currency;
   final Value<String> status;
   final Value<String> sponsorshipType;
+  final Value<String?> guaranteeType;
   final Value<String?> bankName;
   final Value<String?> accountHolderName;
   final Value<int?> accountHolderIdNumber;
@@ -9164,6 +9423,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     this.currency = const Value.absent(),
     this.status = const Value.absent(),
     this.sponsorshipType = const Value.absent(),
+    this.guaranteeType = const Value.absent(),
     this.bankName = const Value.absent(),
     this.accountHolderName = const Value.absent(),
     this.accountHolderIdNumber = const Value.absent(),
@@ -9198,6 +9458,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     this.currency = const Value.absent(),
     this.status = const Value.absent(),
     this.sponsorshipType = const Value.absent(),
+    this.guaranteeType = const Value.absent(),
     this.bankName = const Value.absent(),
     this.accountHolderName = const Value.absent(),
     this.accountHolderIdNumber = const Value.absent(),
@@ -9233,6 +9494,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     Expression<String>? currency,
     Expression<String>? status,
     Expression<String>? sponsorshipType,
+    Expression<String>? guaranteeType,
     Expression<String>? bankName,
     Expression<String>? accountHolderName,
     Expression<int>? accountHolderIdNumber,
@@ -9267,6 +9529,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
       if (currency != null) 'currency': currency,
       if (status != null) 'status': status,
       if (sponsorshipType != null) 'sponsorship_type': sponsorshipType,
+      if (guaranteeType != null) 'guarantee_type': guaranteeType,
       if (bankName != null) 'bank_name': bankName,
       if (accountHolderName != null) 'account_holder_name': accountHolderName,
       if (accountHolderIdNumber != null)
@@ -9304,6 +9567,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
       Value<String?>? currency,
       Value<String>? status,
       Value<String>? sponsorshipType,
+      Value<String?>? guaranteeType,
       Value<String?>? bankName,
       Value<String?>? accountHolderName,
       Value<int?>? accountHolderIdNumber,
@@ -9337,6 +9601,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
       currency: currency ?? this.currency,
       status: status ?? this.status,
       sponsorshipType: sponsorshipType ?? this.sponsorshipType,
+      guaranteeType: guaranteeType ?? this.guaranteeType,
       bankName: bankName ?? this.bankName,
       accountHolderName: accountHolderName ?? this.accountHolderName,
       accountHolderIdNumber:
@@ -9410,6 +9675,9 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
     if (sponsorshipType.present) {
       map['sponsorship_type'] = Variable<String>(sponsorshipType.value);
     }
+    if (guaranteeType.present) {
+      map['guarantee_type'] = Variable<String>(guaranteeType.value);
+    }
     if (bankName.present) {
       map['bank_name'] = Variable<String>(bankName.value);
     }
@@ -9479,6 +9747,7 @@ class SponsorshipsCompanion extends UpdateCompanion<Sponsorship> {
           ..write('currency: $currency, ')
           ..write('status: $status, ')
           ..write('sponsorshipType: $sponsorshipType, ')
+          ..write('guaranteeType: $guaranteeType, ')
           ..write('bankName: $bankName, ')
           ..write('accountHolderName: $accountHolderName, ')
           ..write('accountHolderIdNumber: $accountHolderIdNumber, ')
@@ -9982,6 +10251,10 @@ typedef $$BeneficiariesTableCreateCompanionBuilder = BeneficiariesCompanion
   Value<int?> numberOfPeopleWithSpecialNeeds,
   Value<int?> housingStatus,
   Value<int?> currentHousingType,
+  Value<String?> assistanceTypeCode,
+  Value<String?> disabilityTypeCode,
+  Value<String?> incomeSourceCode,
+  Value<String?> guaranteeTypeCode,
   Value<String?> descriptionNeeds,
   Value<String?> userInsertData,
   Value<DateTime?> createdAt,
@@ -10024,6 +10297,10 @@ typedef $$BeneficiariesTableUpdateCompanionBuilder = BeneficiariesCompanion
   Value<int?> numberOfPeopleWithSpecialNeeds,
   Value<int?> housingStatus,
   Value<int?> currentHousingType,
+  Value<String?> assistanceTypeCode,
+  Value<String?> disabilityTypeCode,
+  Value<String?> incomeSourceCode,
+  Value<String?> guaranteeTypeCode,
   Value<String?> descriptionNeeds,
   Value<String?> userInsertData,
   Value<DateTime?> createdAt,
@@ -10188,6 +10465,22 @@ class $$BeneficiariesTableFilterComposer
 
   ColumnFilters<int> get currentHousingType => $composableBuilder(
       column: $table.currentHousingType,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get assistanceTypeCode => $composableBuilder(
+      column: $table.assistanceTypeCode,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get disabilityTypeCode => $composableBuilder(
+      column: $table.disabilityTypeCode,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get incomeSourceCode => $composableBuilder(
+      column: $table.incomeSourceCode,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get guaranteeTypeCode => $composableBuilder(
+      column: $table.guaranteeTypeCode,
       builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get descriptionNeeds => $composableBuilder(
@@ -10387,6 +10680,22 @@ class $$BeneficiariesTableOrderingComposer
       column: $table.currentHousingType,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get assistanceTypeCode => $composableBuilder(
+      column: $table.assistanceTypeCode,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get disabilityTypeCode => $composableBuilder(
+      column: $table.disabilityTypeCode,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get incomeSourceCode => $composableBuilder(
+      column: $table.incomeSourceCode,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get guaranteeTypeCode => $composableBuilder(
+      column: $table.guaranteeTypeCode,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get descriptionNeeds => $composableBuilder(
       column: $table.descriptionNeeds,
       builder: (column) => ColumnOrderings(column));
@@ -10524,6 +10833,18 @@ class $$BeneficiariesTableAnnotationComposer
   GeneratedColumn<int> get currentHousingType => $composableBuilder(
       column: $table.currentHousingType, builder: (column) => column);
 
+  GeneratedColumn<String> get assistanceTypeCode => $composableBuilder(
+      column: $table.assistanceTypeCode, builder: (column) => column);
+
+  GeneratedColumn<String> get disabilityTypeCode => $composableBuilder(
+      column: $table.disabilityTypeCode, builder: (column) => column);
+
+  GeneratedColumn<String> get incomeSourceCode => $composableBuilder(
+      column: $table.incomeSourceCode, builder: (column) => column);
+
+  GeneratedColumn<String> get guaranteeTypeCode => $composableBuilder(
+      column: $table.guaranteeTypeCode, builder: (column) => column);
+
   GeneratedColumn<String> get descriptionNeeds => $composableBuilder(
       column: $table.descriptionNeeds, builder: (column) => column);
 
@@ -10652,6 +10973,10 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
             Value<int?> numberOfPeopleWithSpecialNeeds = const Value.absent(),
             Value<int?> housingStatus = const Value.absent(),
             Value<int?> currentHousingType = const Value.absent(),
+            Value<String?> assistanceTypeCode = const Value.absent(),
+            Value<String?> disabilityTypeCode = const Value.absent(),
+            Value<String?> incomeSourceCode = const Value.absent(),
+            Value<String?> guaranteeTypeCode = const Value.absent(),
             Value<String?> descriptionNeeds = const Value.absent(),
             Value<String?> userInsertData = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -10694,6 +11019,10 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
             numberOfPeopleWithSpecialNeeds: numberOfPeopleWithSpecialNeeds,
             housingStatus: housingStatus,
             currentHousingType: currentHousingType,
+            assistanceTypeCode: assistanceTypeCode,
+            disabilityTypeCode: disabilityTypeCode,
+            incomeSourceCode: incomeSourceCode,
+            guaranteeTypeCode: guaranteeTypeCode,
             descriptionNeeds: descriptionNeeds,
             userInsertData: userInsertData,
             createdAt: createdAt,
@@ -10736,6 +11065,10 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
             Value<int?> numberOfPeopleWithSpecialNeeds = const Value.absent(),
             Value<int?> housingStatus = const Value.absent(),
             Value<int?> currentHousingType = const Value.absent(),
+            Value<String?> assistanceTypeCode = const Value.absent(),
+            Value<String?> disabilityTypeCode = const Value.absent(),
+            Value<String?> incomeSourceCode = const Value.absent(),
+            Value<String?> guaranteeTypeCode = const Value.absent(),
             Value<String?> descriptionNeeds = const Value.absent(),
             Value<String?> userInsertData = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
@@ -10778,6 +11111,10 @@ class $$BeneficiariesTableTableManager extends RootTableManager<
             numberOfPeopleWithSpecialNeeds: numberOfPeopleWithSpecialNeeds,
             housingStatus: housingStatus,
             currentHousingType: currentHousingType,
+            assistanceTypeCode: assistanceTypeCode,
+            disabilityTypeCode: disabilityTypeCode,
+            incomeSourceCode: incomeSourceCode,
+            guaranteeTypeCode: guaranteeTypeCode,
             descriptionNeeds: descriptionNeeds,
             userInsertData: userInsertData,
             createdAt: createdAt,
@@ -12703,6 +13040,7 @@ typedef $$FamilyMembersTableTableCreateCompanionBuilder
   required int healthStatus,
   Value<int?> sponsorshipStatus,
   Value<int?> sponsorshipType,
+  Value<int?> guaranteeType,
   Value<String?> sponsorName,
   Value<DateTime?> sponsorshipStartDate,
   Value<String?> notes,
@@ -12728,6 +13066,7 @@ typedef $$FamilyMembersTableTableUpdateCompanionBuilder
   Value<int> healthStatus,
   Value<int?> sponsorshipStatus,
   Value<int?> sponsorshipType,
+  Value<int?> guaranteeType,
   Value<String?> sponsorName,
   Value<DateTime?> sponsorshipStartDate,
   Value<String?> notes,
@@ -12789,6 +13128,9 @@ class $$FamilyMembersTableTableFilterComposer
   ColumnFilters<int> get sponsorshipType => $composableBuilder(
       column: $table.sponsorshipType,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get guaranteeType => $composableBuilder(
+      column: $table.guaranteeType, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get sponsorName => $composableBuilder(
       column: $table.sponsorName, builder: (column) => ColumnFilters(column));
@@ -12872,6 +13214,10 @@ class $$FamilyMembersTableTableOrderingComposer
       column: $table.sponsorshipType,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get guaranteeType => $composableBuilder(
+      column: $table.guaranteeType,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get sponsorName => $composableBuilder(
       column: $table.sponsorName, builder: (column) => ColumnOrderings(column));
 
@@ -12950,6 +13296,9 @@ class $$FamilyMembersTableTableAnnotationComposer
   GeneratedColumn<int> get sponsorshipType => $composableBuilder(
       column: $table.sponsorshipType, builder: (column) => column);
 
+  GeneratedColumn<int> get guaranteeType => $composableBuilder(
+      column: $table.guaranteeType, builder: (column) => column);
+
   GeneratedColumn<String> get sponsorName => $composableBuilder(
       column: $table.sponsorName, builder: (column) => column);
 
@@ -13019,6 +13368,7 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             Value<int> healthStatus = const Value.absent(),
             Value<int?> sponsorshipStatus = const Value.absent(),
             Value<int?> sponsorshipType = const Value.absent(),
+            Value<int?> guaranteeType = const Value.absent(),
             Value<String?> sponsorName = const Value.absent(),
             Value<DateTime?> sponsorshipStartDate = const Value.absent(),
             Value<String?> notes = const Value.absent(),
@@ -13043,6 +13393,7 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             healthStatus: healthStatus,
             sponsorshipStatus: sponsorshipStatus,
             sponsorshipType: sponsorshipType,
+            guaranteeType: guaranteeType,
             sponsorName: sponsorName,
             sponsorshipStartDate: sponsorshipStartDate,
             notes: notes,
@@ -13067,6 +13418,7 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             required int healthStatus,
             Value<int?> sponsorshipStatus = const Value.absent(),
             Value<int?> sponsorshipType = const Value.absent(),
+            Value<int?> guaranteeType = const Value.absent(),
             Value<String?> sponsorName = const Value.absent(),
             Value<DateTime?> sponsorshipStartDate = const Value.absent(),
             Value<String?> notes = const Value.absent(),
@@ -13091,6 +13443,7 @@ class $$FamilyMembersTableTableTableManager extends RootTableManager<
             healthStatus: healthStatus,
             sponsorshipStatus: sponsorshipStatus,
             sponsorshipType: sponsorshipType,
+            guaranteeType: guaranteeType,
             sponsorName: sponsorName,
             sponsorshipStartDate: sponsorshipStartDate,
             notes: notes,
@@ -13959,6 +14312,7 @@ typedef $$SponsorshipsTableCreateCompanionBuilder = SponsorshipsCompanion
   Value<String?> currency,
   Value<String> status,
   Value<String> sponsorshipType,
+  Value<String?> guaranteeType,
   Value<String?> bankName,
   Value<String?> accountHolderName,
   Value<int?> accountHolderIdNumber,
@@ -13994,6 +14348,7 @@ typedef $$SponsorshipsTableUpdateCompanionBuilder = SponsorshipsCompanion
   Value<String?> currency,
   Value<String> status,
   Value<String> sponsorshipType,
+  Value<String?> guaranteeType,
   Value<String?> bankName,
   Value<String?> accountHolderName,
   Value<int?> accountHolderIdNumber,
@@ -14105,6 +14460,9 @@ class $$SponsorshipsTableFilterComposer
   ColumnFilters<String> get sponsorshipType => $composableBuilder(
       column: $table.sponsorshipType,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get guaranteeType => $composableBuilder(
+      column: $table.guaranteeType, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get bankName => $composableBuilder(
       column: $table.bankName, builder: (column) => ColumnFilters(column));
@@ -14256,6 +14614,10 @@ class $$SponsorshipsTableOrderingComposer
       column: $table.sponsorshipType,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get guaranteeType => $composableBuilder(
+      column: $table.guaranteeType,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get bankName => $composableBuilder(
       column: $table.bankName, builder: (column) => ColumnOrderings(column));
 
@@ -14401,6 +14763,9 @@ class $$SponsorshipsTableAnnotationComposer
   GeneratedColumn<String> get sponsorshipType => $composableBuilder(
       column: $table.sponsorshipType, builder: (column) => column);
 
+  GeneratedColumn<String> get guaranteeType => $composableBuilder(
+      column: $table.guaranteeType, builder: (column) => column);
+
   GeneratedColumn<String> get bankName =>
       $composableBuilder(column: $table.bankName, builder: (column) => column);
 
@@ -14527,6 +14892,7 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             Value<String?> currency = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<String> sponsorshipType = const Value.absent(),
+            Value<String?> guaranteeType = const Value.absent(),
             Value<String?> bankName = const Value.absent(),
             Value<String?> accountHolderName = const Value.absent(),
             Value<int?> accountHolderIdNumber = const Value.absent(),
@@ -14561,6 +14927,7 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             currency: currency,
             status: status,
             sponsorshipType: sponsorshipType,
+            guaranteeType: guaranteeType,
             bankName: bankName,
             accountHolderName: accountHolderName,
             accountHolderIdNumber: accountHolderIdNumber,
@@ -14595,6 +14962,7 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             Value<String?> currency = const Value.absent(),
             Value<String> status = const Value.absent(),
             Value<String> sponsorshipType = const Value.absent(),
+            Value<String?> guaranteeType = const Value.absent(),
             Value<String?> bankName = const Value.absent(),
             Value<String?> accountHolderName = const Value.absent(),
             Value<int?> accountHolderIdNumber = const Value.absent(),
@@ -14629,6 +14997,7 @@ class $$SponsorshipsTableTableManager extends RootTableManager<
             currency: currency,
             status: status,
             sponsorshipType: sponsorshipType,
+            guaranteeType: guaranteeType,
             bankName: bankName,
             accountHolderName: accountHolderName,
             accountHolderIdNumber: accountHolderIdNumber,

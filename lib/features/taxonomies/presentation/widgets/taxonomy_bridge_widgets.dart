@@ -349,6 +349,8 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
     switch (group) {
       case TaxonomyGroup.governorate:
         return Icons.location_city_rounded;
+      case TaxonomyGroup.city:
+        return Icons.location_on_rounded;
       case TaxonomyGroup.category:
         return Icons.category_rounded;
       case TaxonomyGroup.maritalStatus:
@@ -373,6 +375,8 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
         return Icons.business_rounded;
       case TaxonomyGroup.sponsorshipType:
         return Icons.volunteer_activism_rounded;
+      case TaxonomyGroup.guaranteeType:
+        return Icons.verified_rounded;
       case TaxonomyGroup.documentType:
         return Icons.description_rounded;
       case TaxonomyGroup.bankName:

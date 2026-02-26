@@ -127,6 +127,14 @@ class SyncRelatedEntitiesUpUseCase {
             'person_health_status': member.healthStatus,
             if (member.sponsorshipStatus != null) 'sponsorship_status': member.sponsorshipStatus,
             if (member.sponsorshipType != null) 'person_type_of_guarantee': member.sponsorshipType,
+            if (member.guaranteeType != null) 'guarantee_type': member.guaranteeType,
+            if (member.guaranteeType != null) 'guarantee_type_id': member.guaranteeType,
+            if (_valueOrNull(member.sponsorName) != null) 'sponsor_name': _valueOrNull(member.sponsorName),
+            if (member.sponsorshipStartDate != null)
+              'sponsorship_start_date': member.sponsorshipStartDate!.toIso8601String().split('T').first,
+            if (_valueOrNull(member.notes) != null) 'notes': _valueOrNull(member.notes),
+            if (_valueOrNull(member.attachments) != null) 'attachments': _valueOrNull(member.attachments),
+            if (member.age != null) 'age': member.age,
             'device_id': deviceId,
           };
 
@@ -157,7 +165,11 @@ class SyncRelatedEntitiesUpUseCase {
               resolvedServerId ??= _asInt(responseData['id']);
             }
 
-            await _database.familyMembersDao.markAsSynced(member.id, resolvedServerId ?? (member.serverId ?? 0));
+            if (resolvedServerId != null) {
+              await _database.familyMembersDao.markAsSynced(member.id, resolvedServerId);
+            } else {
+              await _database.familyMembersDao.markAsSyncedWithoutServerId(member.id);
+            }
             uploaded++;
           } else {
             failed++;
@@ -206,24 +218,35 @@ class SyncRelatedEntitiesUpUseCase {
                   orElse: () => null,
                 );
 
+        final sharedNotes = _valueOrNull(father?.notes) ?? _valueOrNull(mother?.notes);
+
         final payload = {
           're_file_id': registrationId,
           if (father != null) ...{
             'father_first_name': father.firstName,
             'father_second_name': father.secondName,
+            if (_valueOrNull(father.thirdName) != null) 'father_third_name': _valueOrNull(father.thirdName),
             'father_last_name': father.familyName,
             'father_id': father.nationalId.toString(),
             'father_death_date': father.deathDate.toIso8601String().split('T').first,
             'father_death_reason': father.deathCause,
+            if (father.documentType != null) 'father_document_type': father.documentType,
+            if (_valueOrNull(father.documentPath) != null) 'father_document_path': _valueOrNull(father.documentPath),
+            if (_valueOrNull(father.notes) != null) 'father_notes': _valueOrNull(father.notes),
           },
           if (mother != null) ...{
             'mother_first_name': mother.firstName,
             'mother_second_name': mother.secondName,
+            if (_valueOrNull(mother.thirdName) != null) 'mother_third_name': _valueOrNull(mother.thirdName),
             'mother_last_name': mother.familyName,
             'mother_id': mother.nationalId.toString(),
             'mother_death_date': mother.deathDate.toIso8601String().split('T').first,
             'mother_death_reason': mother.deathCause,
+            if (mother.documentType != null) 'mother_document_type': mother.documentType,
+            if (_valueOrNull(mother.documentPath) != null) 'mother_document_path': _valueOrNull(mother.documentPath),
+            if (_valueOrNull(mother.notes) != null) 'mother_notes': _valueOrNull(mother.notes),
           },
+          if (sharedNotes != null) 'notes': sharedNotes,
           'device_id': deviceId,
         };
 
@@ -235,7 +258,11 @@ class SyncRelatedEntitiesUpUseCase {
 
           if (response.statusCode == 200 || response.statusCode == 201) {
             for (final item in entry.value) {
-              await _database.familyDeceasedDao.markAsSynced(item.id, item.serverId ?? 0);
+              if (item.serverId != null) {
+                await _database.familyDeceasedDao.markAsSynced(item.id, item.serverId!);
+              } else {
+                await _database.familyDeceasedDao.markAsSyncedWithoutServerId(item.id);
+              }
               uploaded++;
             }
           } else {
@@ -310,5 +337,12 @@ class SyncRelatedEntitiesUpUseCase {
     if (value is int) return value;
     if (value is num) return value.toInt();
     return int.tryParse(value.toString().trim());
+  }
+
+  String? _valueOrNull(String? value) {
+    if (value == null) return null;
+    final normalized = value.trim();
+    if (normalized.isEmpty) return null;
+    return normalized;
   }
 }

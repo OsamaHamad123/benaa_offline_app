@@ -78,8 +78,8 @@ class SyncAssociationsModuleUseCase {
           employeesResult.failed == 0 &&
           employeesSince != null;
       if (needsEmployeesBootstrap) {
-        _logger.w(
-          'Employees incremental returned 0 while local cache is empty. Retrying full sync without updated_after.',
+        _logger.i(
+          'Employees incremental returned 0 while local cache is empty. Running one full-check sync without updated_after.',
         );
         final fullEmployees = await _syncEmployeesDown(
           updatedAfter: null,
@@ -87,6 +87,9 @@ class SyncAssociationsModuleUseCase {
         );
         synced += fullEmployees.uploaded;
         failed += fullEmployees.failed;
+        if (fullEmployees.uploaded == 0 && fullEmployees.failed == 0) {
+          _logger.i('Employees full-check returned 0 rows; no employees currently available on server.');
+        }
       }
       if (localEmployeesCount == 0 && employeesResult.uploaded == 0 && employeesResult.failed > 0) {
         _logger.w(
@@ -125,6 +128,7 @@ class SyncAssociationsModuleUseCase {
             sponsorBankName: sponsor.bankName,
             sponsorAccountBankNumber: sponsor.accountNumber,
             sponsorBankSwiftCode: sponsor.swiftCode,
+            sponsorCategoryId: _resolveSponsorCategoryId(profile),
             countryCode: profile?['country_code']?.toString(),
             countryName: profile?['country_name']?.toString(),
             updatedAt: sponsor.updatedAt,
@@ -154,21 +158,31 @@ class SyncAssociationsModuleUseCase {
 
       final pendingEmployees = await _database.associationsDao.getRepresentativesNeedingSync();
 
-      if (pendingEmployees.length >= employeeBatchThreshold) {
+      final resolvedEmployees = <({Representative rep, int sponsorServerId})>[];
+      for (final rep in pendingEmployees) {
+        final sponsorServerId = await _resolveRepresentativeSponsorServerId(rep);
+        if (sponsorServerId == null) {
+          _logger.w('Representative ${rep.id} has no resolved sponsor_server_id; using fallback 0.');
+        }
+        resolvedEmployees.add((rep: rep, sponsorServerId: sponsorServerId ?? 0));
+      }
+
+      if (resolvedEmployees.length >= employeeBatchThreshold) {
         try {
-          final batch = pendingEmployees
+          final batch = resolvedEmployees
               .map(
-                (rep) => AssociationEmployeeDto(
-                  id: rep.serverId,
-                  sponsorId: 0,
-                  employeeName: rep.name,
+                (item) => AssociationEmployeeDto(
+                  id: item.rep.serverId,
+                  sponsorId: item.sponsorServerId,
+                  employeeName: item.rep.name,
                 ),
               )
               .toList(growable: false);
 
           await _remote.batchUpsertEmployees(batch);
 
-          for (final rep in pendingEmployees) {
+          for (final item in resolvedEmployees) {
+            final rep = item.rep;
             await _database.associationsDao.updateRepresentativeSyncState(
               id: rep.id,
               syncState: 'synced',
@@ -178,14 +192,15 @@ class SyncAssociationsModuleUseCase {
           }
         } catch (e) {
           _logger.w('Employees batch sync-up failed: $e');
-          failed += pendingEmployees.length;
+          failed += resolvedEmployees.length;
         }
       } else {
-        for (final rep in pendingEmployees) {
+        for (final item in resolvedEmployees) {
+          final rep = item.rep;
           try {
             final dto = AssociationEmployeeDto(
               id: rep.serverId,
-              sponsorId: 0,
+              sponsorId: item.sponsorServerId,
               employeeName: rep.name,
               updatedAt: rep.updatedAt,
               createdAt: rep.createdAt,
@@ -272,6 +287,7 @@ class SyncAssociationsModuleUseCase {
             countryCode: sponsor.countryCode,
             countryName: sponsor.countryName,
             sponsorBankNameId: sponsor.sponsorBankNameId,
+            associationTypeCode: sponsor.sponsorCategoryId?.toString(),
           );
           synced++;
         } catch (e) {
@@ -370,6 +386,17 @@ class SyncAssociationsModuleUseCase {
           );
 
           await _database.associationsDao.upsertRepresentative(companion);
+          if (employee.sponsorId > 0) {
+            await _database.associationsDao.upsertEmployeeProfile(
+              representativeId: companion.id.value,
+              sponsorServerId: employee.sponsorId,
+            );
+
+            await _database.associationsDao.linkRepresentativeToAssociationByServerId(
+              sponsorServerId: employee.sponsorId,
+              representativeId: companion.id.value,
+            );
+          }
           synced++;
         } catch (e) {
           failed++;
@@ -421,6 +448,17 @@ class SyncAssociationsModuleUseCase {
     return int.tryParse(value.toString().trim());
   }
 
+  int? _resolveSponsorCategoryId(Map<String, dynamic>? profile) {
+    if (profile == null) return null;
+
+    final direct = _asInt(profile['sponsor_category_id'] ?? profile['association_type_id']);
+    if (direct != null) return direct;
+
+    final fromCode = profile['association_type_code']?.toString();
+    if (fromCode == null) return null;
+    return int.tryParse(fromCode.trim());
+  }
+
   String _buildSponsorsPageFingerprint(List<SponsorDto> rows) {
     if (rows.isEmpty) return 'empty';
     final first = rows.first.id;
@@ -433,5 +471,28 @@ class SyncAssociationsModuleUseCase {
     final first = rows.first.id ?? -1;
     final last = rows.last.id ?? -1;
     return '${rows.length}:$first:$last';
+  }
+
+  Future<int?> _resolveRepresentativeSponsorServerId(Representative representative) async {
+    final fromProfile = await _database.associationsDao.getEmployeeSponsorServerId(representative.id);
+    if (fromProfile != null && fromProfile > 0) {
+      return fromProfile;
+    }
+
+    final linkedAssociation = await _database.associationsDao.getAssociationByRepresentativeId(representative.id);
+    final serverId = linkedAssociation?.serverId;
+    if (serverId != null && serverId > 0) {
+      return serverId;
+    }
+
+    final allAssociations = await _database.associationsDao.getAllAssociations();
+    final withServerId = allAssociations
+        .where((association) => association.serverId != null && association.serverId! > 0)
+        .toList(growable: false);
+    if (withServerId.length == 1) {
+      return withServerId.first.serverId;
+    }
+
+    return null;
   }
 }

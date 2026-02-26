@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -18,23 +20,41 @@ class DatabaseDownloadPage extends ConsumerStatefulWidget {
 class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
   // Download URL from config
   static const String _downloadUrl = DownloadConfig.downloadUrl;
+  DateTime? _processingStartedAt;
 
   @override
   void initState() {
     super.initState();
-    _checkAndStartDownload();
+    unawaited(_checkAndStartDownload());
   }
 
   Future<void> _checkAndStartDownload() async {
     // Wait a bit for UI to settle
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
 
     final state = ref.read(databaseDownloadProvider);
+    final status = state.progress.status;
+    final shouldAutoStart = !state.isAvailable &&
+        !state.wasSkipped &&
+        (status == DownloadStatus.idle || status == DownloadStatus.cancelled);
 
-    if (!state.isAvailable && state.progress.status == DownloadStatus.idle) {
+    if (shouldAutoStart) {
       // Auto-start download
-      ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl);
+      _processingStartedAt ??= DateTime.now();
+      unawaited(ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl));
     }
+  }
+
+  bool _shouldShowBackgroundContinue(DownloadStatus status) {
+    final startedAt = _processingStartedAt;
+    if (startedAt == null) return false;
+    final isBusy = status == DownloadStatus.downloading ||
+        status == DownloadStatus.extracting ||
+        status == DownloadStatus.verifying ||
+        status == DownloadStatus.checking;
+    if (!isBusy) return false;
+    return DateTime.now().difference(startedAt) >= const Duration(seconds: 4);
   }
 
   Future<void> _handleLogout(BuildContext context) async {
@@ -75,11 +95,30 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(databaseDownloadProvider);
     final progress = state.progress;
+    final status = progress.status;
+    final isProcessing = status == DownloadStatus.downloading ||
+        status == DownloadStatus.extracting ||
+        status == DownloadStatus.verifying;
+    final isReady = progress.isComplete || state.isAvailable;
+    final canStartNow = !state.isAvailable && status == DownloadStatus.idle;
+    final canRetry = progress.hasError || status == DownloadStatus.cancelled;
+
+    if (isProcessing && _processingStartedAt == null) {
+      _processingStartedAt = DateTime.now();
+    }
+    if (!isProcessing && status != DownloadStatus.checking) {
+      _processingStartedAt = null;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        centerTitle: true,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         elevation: 0,
+        title: const Text('تنزيل السجل المدني'),
         actions: [
           // 🚪 زر تسجيل الخروج
           IconButton(
@@ -104,30 +143,61 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
           child: Center(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24.w),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildIcon(progress.status),
-                  SizedBox(height: 32.h),
-                  _buildTitle(progress.status),
-                  SizedBox(height: 16.h),
-                  _buildDescription(progress.status),
-                  SizedBox(height: 48.h),
-                  if (progress.isDownloading || progress.status == DownloadStatus.extracting)
-                    _buildProgressIndicator(progress),
-                  if (progress.status == DownloadStatus.checking) _buildCheckingIndicator(),
-                  if (progress.hasError) _buildErrorMessage(progress),
-                  if (progress.isComplete) _buildCompleteButton(),
-                  if (progress.isDownloading) _buildCancelButton(),
-                  if (progress.hasError) _buildRetryButton(),
-                  // 🆕 زر التخطي - يمكن التحميل لاحقاً
-                  if (progress.status == DownloadStatus.idle ||
-                      progress.status == DownloadStatus.failed ||
-                      progress.isDownloading) ...[
-                    SizedBox(height: 24.h),
-                    _buildSkipButton(),
+              child: Container(
+                constraints: BoxConstraints(maxWidth: 620.w),
+                padding: EdgeInsets.all(22.w),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.94),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildIcon(status),
+                    SizedBox(height: 22.h),
+                    _buildTitle(status),
+                    SizedBox(height: 12.h),
+                    _buildDescription(status),
+                    if (!state.isAvailable && state.wasSkipped && status == DownloadStatus.idle) ...[
+                      SizedBox(height: 12.h),
+                      _buildSkippedInfoNotice(),
+                    ],
+                    SizedBox(height: 16.h),
+                    _buildPhaseStepper(status),
+                    if (canStartNow || canRetry || status == DownloadStatus.idle) ...[
+                      SizedBox(height: 16.h),
+                      _buildPrerequisitesCard(),
+                    ],
+                    SizedBox(height: 28.h),
+                    if (isProcessing) _buildProgressIndicator(progress),
+                    if (status == DownloadStatus.checking) _buildCheckingIndicator(),
+                    if (progress.hasError) _buildErrorMessage(progress),
+                    if (canStartNow) _buildStartButton(),
+                    if (isReady) _buildCompleteButton(),
+                    if (isReady) ...[
+                      SizedBox(height: 14.h),
+                      _buildReadySummary(state),
+                    ],
+                    if (isProcessing || status == DownloadStatus.checking) _buildCancelButton(),
+                    if (_shouldShowBackgroundContinue(status)) ...[
+                      SizedBox(height: 8.h),
+                      _buildContinueInBackgroundButton(),
+                    ],
+                    if (canRetry) _buildRetryButton(),
+                    if (!state.isAvailable &&
+                        (status == DownloadStatus.idle ||
+                            status == DownloadStatus.failed ||
+                            status == DownloadStatus.cancelled ||
+                            status == DownloadStatus.downloading ||
+                            status == DownloadStatus.extracting)) ...[
+                      SizedBox(height: 20.h),
+                      _buildSkipButton(),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -149,9 +219,14 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
         icon = Icons.error;
         color = Colors.red;
         break;
+      case DownloadStatus.cancelled:
+        icon = Icons.pause_circle_outline;
+        color = Colors.orange;
+        break;
       case DownloadStatus.downloading:
       case DownloadStatus.extracting:
       case DownloadStatus.checking:
+      case DownloadStatus.verifying:
         icon = Icons.cloud_download;
         color = Theme.of(context).colorScheme.primary;
         break;
@@ -185,6 +260,9 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
       case DownloadStatus.failed:
         title = 'فشل التحميل';
         break;
+      case DownloadStatus.cancelled:
+        title = 'تم إيقاف التحميل';
+        break;
       default:
         title = 'مرحباً بك في بناء';
     }
@@ -216,6 +294,9 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
       case DownloadStatus.failed:
         description = 'حدث خطأ أثناء التحميل أو الاستخراج\nالرجاء التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى';
         break;
+      case DownloadStatus.cancelled:
+        description = 'تم إيقاف التنزيل مؤقتاً\nيمكنك المتابعة من حيث توقفت في أي وقت';
+        break;
       default:
         description =
             'لاستخدام التطبيق، يجب تحميل قاعدة بيانات السجل المدني\nالحجم المتوقع: ~${DownloadConfig.expectedSizeMB} MB (مضغوط ~150 MB)';
@@ -229,16 +310,22 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
   }
 
   Widget _buildProgressIndicator(DownloadProgress progress) {
+    final phaseLabel = _phaseLabel(progress.status);
+    final etaText = _etaText(progress);
+
     return Column(
       children: [
         Container(
           padding: EdgeInsets.all(24.w),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -246,13 +333,35 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
           ),
           child: Column(
             children: [
+              Row(
+                children: [
+                  Icon(Icons.timelapse_rounded, size: 18.sp, color: Theme.of(context).colorScheme.primary),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'المرحلة الحالية: $phaseLabel',
+                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
+                  ),
+                  const Spacer(),
+                  if (etaText != null)
+                    Text(
+                      etaText,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: 14.h),
+
               // Progress Bar
               ClipRRect(
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(10.r),
                 child: LinearProgressIndicator(
                   value: progress.percentage / 100,
-                  minHeight: 12.h,
-                  backgroundColor: Colors.grey[200],
+                  minHeight: 14.h,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     Theme.of(context).colorScheme.primary,
                   ),
@@ -296,7 +405,7 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[800],
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -316,6 +425,58 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
           textAlign: TextAlign.center,
         ),
       ],
+    );
+  }
+
+  String _phaseLabel(DownloadStatus status) {
+    switch (status) {
+      case DownloadStatus.downloading:
+        return 'تحميل الملف';
+      case DownloadStatus.extracting:
+        return 'استخراج البيانات';
+      case DownloadStatus.verifying:
+        return 'التحقق النهائي';
+      case DownloadStatus.checking:
+        return 'فحص أولي';
+      default:
+        return 'تهيئة';
+    }
+  }
+
+  String? _etaText(DownloadProgress progress) {
+    final speed = progress.downloadSpeed;
+    if (speed == null || speed <= 0 || progress.totalBytes <= 0 || progress.status != DownloadStatus.downloading) {
+      return null;
+    }
+
+    final remainingBytes = progress.totalBytes - progress.downloadedBytes;
+    if (remainingBytes <= 0) return null;
+    final remainingMB = remainingBytes / (1024 * 1024);
+    final remainingSeconds = (remainingMB / speed).round();
+    if (remainingSeconds <= 0) return null;
+
+    final minutes = remainingSeconds ~/ 60;
+    final seconds = remainingSeconds % 60;
+    if (minutes > 0) {
+      return 'متبقي ~${minutes}د ${seconds}ث';
+    }
+    return 'متبقي ~${seconds}ث';
+  }
+
+  Widget _buildStartButton() {
+    return ElevatedButton.icon(
+      onPressed: () {
+        _processingStartedAt = DateTime.now();
+        unawaited(ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl));
+      },
+      icon: const Icon(Icons.download_rounded),
+      label: const Text('بدء التحميل'),
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 14.h),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
     );
   }
 
@@ -394,7 +555,7 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
         ref.read(databaseDownloadProvider.notifier).cancelDownload();
       },
       child: Text(
-        'إلغاء التحميل',
+        'إيقاف مؤقت',
         style: TextStyle(fontSize: 16.sp, color: Colors.red),
       ),
     );
@@ -403,16 +564,18 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
   Widget _buildRetryButton() {
     final state = ref.read(databaseDownloadProvider);
     final hasPartialDownload = state.progress.downloadedBytes > 0;
+    final isCancelled = state.progress.status == DownloadStatus.cancelled;
 
     return Column(
       children: [
         ElevatedButton.icon(
           onPressed: () {
-            ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl);
+            _processingStartedAt = DateTime.now();
+            unawaited(ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl));
           },
-          icon: Icon(hasPartialDownload ? Icons.play_arrow : Icons.refresh),
+          icon: Icon(hasPartialDownload || isCancelled ? Icons.play_arrow : Icons.refresh),
           label: Text(
-            hasPartialDownload ? 'استكمال التنزيل' : 'إعادة المحاولة',
+            hasPartialDownload || isCancelled ? 'استكمال التنزيل' : 'إعادة المحاولة',
           ),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
@@ -495,7 +658,7 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
             Container(
               padding: EdgeInsets.all(12.r),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8.r),
               ),
               child: Row(
@@ -534,12 +697,16 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
       final notifier = ref.read(databaseDownloadProvider.notifier);
       final state = ref.read(databaseDownloadProvider);
 
-      if (state.progress.isDownloading) {
+      if (state.progress.status == DownloadStatus.downloading ||
+          state.progress.status == DownloadStatus.extracting ||
+          state.progress.status == DownloadStatus.verifying ||
+          state.progress.status == DownloadStatus.checking) {
         notifier.cancelDownload();
       }
 
       // 🆕 حفظ حالة التخطي
       await notifier.skipDownload();
+      if (!mounted || !context.mounted) return;
 
       // الذهاب للـ Dashboard
       context.go('/dashboard');
@@ -559,6 +726,175 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
               style: TextStyle(fontSize: 13.sp),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPhaseStepper(DownloadStatus status) {
+    final steps = [
+      ('تحميل', DownloadStatus.downloading),
+      ('استخراج', DownloadStatus.extracting),
+      ('تحقق', DownloadStatus.verifying),
+      ('جاهز', DownloadStatus.completed),
+    ];
+
+    int activeIndex = 0;
+    switch (status) {
+      case DownloadStatus.downloading:
+        activeIndex = 0;
+        break;
+      case DownloadStatus.extracting:
+        activeIndex = 1;
+        break;
+      case DownloadStatus.verifying:
+        activeIndex = 2;
+        break;
+      case DownloadStatus.completed:
+        activeIndex = 3;
+        break;
+      default:
+        activeIndex = 0;
+    }
+
+    return Row(
+      children: [
+        for (int i = 0; i < steps.length; i++) ...[
+          Expanded(
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 13.r,
+                  backgroundColor: i <= activeIndex
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.outlineVariant,
+                  child: Icon(
+                    i < activeIndex ? Icons.check : Icons.circle,
+                    size: 12.sp,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  steps[i].$1,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: i <= activeIndex ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (i < steps.length - 1)
+            Expanded(
+              child: Divider(
+                thickness: 2,
+                color: i < activeIndex
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPrerequisitesCard() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'قبل البدء',
+            style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 6.h),
+          Text('• الحجم المتوقع: ~${DownloadConfig.expectedSizeMB} MB', style: TextStyle(fontSize: 12.sp)),
+          Text('• المساحة المقترحة: 700 MB على الأقل', style: TextStyle(fontSize: 12.sp)),
+          Text('• الزمن التقريبي: 5-15 دقيقة حسب الشبكة', style: TextStyle(fontSize: 12.sp)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkippedInfoNotice() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: 18.sp,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              'تم تخطي التنزيل سابقاً. يمكنك الآن الضغط على "بدء التحميل" للمتابعة.',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContinueInBackgroundButton() {
+    return TextButton.icon(
+      onPressed: () {
+        if (!mounted || !context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('سيستمر التنزيل في الخلفية داخل التطبيق')),
+        );
+        context.go('/dashboard');
+      },
+      icon: const Icon(Icons.minimize_rounded),
+      label: const Text('متابعة بالخلفية'),
+    );
+  }
+
+  Widget _buildReadySummary(DatabaseDownloadState state) {
+    final downloadedAt = state.downloadDate;
+    final dateText = downloadedAt == null
+        ? 'غير متوفر'
+        : '${downloadedAt.year}/${downloadedAt.month.toString().padLeft(2, '0')}/${downloadedAt.day.toString().padLeft(2, '0')} '
+            '${downloadedAt.hour.toString().padLeft(2, '0')}:${downloadedAt.minute.toString().padLeft(2, '0')}';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('ملخص السجل المدني', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+          SizedBox(height: 6.h),
+          Text('• الحجم: ${state.fileSizeFormatted}', style: TextStyle(fontSize: 12.sp)),
+          Text('• آخر تحديث: $dateText', style: TextStyle(fontSize: 12.sp)),
+          Text('• الحالة: جاهز للاستخدام', style: TextStyle(fontSize: 12.sp)),
         ],
       ),
     );

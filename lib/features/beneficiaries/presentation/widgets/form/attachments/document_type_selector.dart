@@ -25,15 +25,6 @@ class DocumentTypeSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    bool isRefUsable() {
-      try {
-        ref.read(sync_providers.syncControllerProvider);
-        return true;
-      } on StateError {
-        return false;
-      }
-    }
-
     final theme = Theme.of(context);
     final documentTypesAsync = ref.watch(
       bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.documentType),
@@ -42,7 +33,6 @@ class DocumentTypeSelector extends ConsumerWidget {
       data: (value) => value,
       orElse: () => const <Taxonomy>[],
     );
-    final autoSyncAttempted = ref.watch(bridgeGroupAutoSyncAttemptedProvider(TaxonomyGroup.documentType));
     final isLoading = documentTypesAsync.isLoading && !documentTypesAsync.hasValue;
     final hasError = documentTypesAsync.hasError;
     final hasSelectedTypeInOptions = selectedType != null && options.any((type) => type.code == selectedType);
@@ -115,23 +105,6 @@ class DocumentTypeSelector extends ConsumerWidget {
 
     if (options.isNotEmpty) return dropdown;
 
-    if (!autoSyncAttempted) {
-      Future.microtask(() async {
-        if (!isRefUsable()) {
-          return;
-        }
-
-        ref.read(bridgeGroupAutoSyncAttemptedProvider(TaxonomyGroup.documentType).notifier).state = true;
-        await ref.read(sync_providers.syncControllerProvider.notifier).deltaSync('taxonomies');
-
-        if (!isRefUsable()) {
-          return;
-        }
-
-        await retryLoad();
-      });
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -180,9 +153,21 @@ class PersonTypeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final normalizedPersons = <String>[];
+    final seenPersons = <String>{};
+
+    for (final person in availablePersons) {
+      final normalized = person.trim().replaceAll(RegExp(r'\s+'), ' ');
+      if (normalized.isEmpty) continue;
+      if (normalized == 'file_owner' || normalized == 'divider_family') continue;
+      if (seenPersons.add(normalized)) {
+        normalizedPersons.add(normalized);
+      }
+    }
+
     final validPersonValues = <String>{
       'file_owner',
-      ...availablePersons,
+      ...normalizedPersons,
     };
     final selectedPersonValue = validPersonValues.contains(selectedPerson) ? selectedPerson : null;
 
@@ -208,13 +193,13 @@ class PersonTypeSelector extends StatelessWidget {
             ],
           ),
         ),
-        if (availablePersons.isNotEmpty)
+        if (normalizedPersons.isNotEmpty)
           const DropdownMenuItem(
             value: 'divider_family',
             enabled: false,
             child: Divider(),
           ),
-        ...availablePersons.map((person) {
+        ...normalizedPersons.map((person) {
           return DropdownMenuItem(
             value: person,
             child: Row(

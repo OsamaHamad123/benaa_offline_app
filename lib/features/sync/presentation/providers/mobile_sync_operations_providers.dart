@@ -9,9 +9,11 @@ import '../../../../core/sync/mobile_sync_service.dart';
 import '../../../taxonomies/presentation/providers/taxonomy_providers.dart';
 import '../../domain/usecases/mobile_sync_operations_usecases.dart';
 import '../../domain/usecases/sync_associations_module_usecase.dart';
+import '../../domain/usecases/sync_sponsorships_module_usecase.dart';
 import '../../domain/usecases/sync_related_entities_up_usecase.dart';
 import '../../domain/usecases/tombstone_delete_sync_usecase.dart';
 import '../../../associations/data/datasources/associations_remote_sync_datasource.dart';
+import '../../../kafalat/data/datasources/sponsorships_remote_sync_datasource.dart';
 import '../../domain/utils/api_endpoint_normalizer.dart' as sync_endpoint;
 import 'file_id_providers.dart';
 
@@ -44,6 +46,21 @@ final syncAssociationsModuleUseCaseProvider = Provider<SyncAssociationsModuleUse
   );
 });
 
+final sponsorshipsRemoteSyncDataSourceProvider = Provider<SponsorshipsRemoteSyncDataSource>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return SponsorshipsRemoteSyncDataSource(apiClient.dio);
+});
+
+final syncSponsorshipsModuleUseCaseProvider = Provider<SyncSponsorshipsModuleUseCase>((ref) {
+  final database = ref.watch(databaseProvider);
+  final remote = ref.watch(sponsorshipsRemoteSyncDataSourceProvider);
+
+  return SyncSponsorshipsModuleUseCase(
+    database: database,
+    remote: remote,
+  );
+});
+
 final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
   final database = ref.watch(databaseProvider);
   final apiClient = ref.watch(apiClientProvider);
@@ -53,6 +70,7 @@ final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
   final tombstoneDeleteSyncUseCase = ref.watch(tombstoneDeleteSyncUseCaseProvider);
   final syncRelatedEntitiesUpUseCase = ref.watch(syncRelatedEntitiesUpUseCaseProvider);
   final syncAssociationsModuleUseCase = ref.watch(syncAssociationsModuleUseCaseProvider);
+  final syncSponsorshipsModuleUseCase = ref.watch(syncSponsorshipsModuleUseCaseProvider);
   final unifiedSyncRepository = SyncRepositoryImpl(
     remote: RemoteSyncDataSource(apiClient.dio),
     local: LocalSyncDataSource(
@@ -73,6 +91,7 @@ final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
     tombstoneDeleteSyncUseCase: tombstoneDeleteSyncUseCase,
     syncRelatedEntitiesUpUseCase: syncRelatedEntitiesUpUseCase,
     syncAssociationsModuleUseCase: syncAssociationsModuleUseCase,
+    syncSponsorshipsModuleUseCase: syncSponsorshipsModuleUseCase,
   );
 });
 

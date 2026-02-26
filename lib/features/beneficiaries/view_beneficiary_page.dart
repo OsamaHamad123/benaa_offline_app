@@ -117,7 +117,8 @@ class ViewBeneficiaryPage extends ConsumerWidget {
           );
         }
 
-        final categoryColor = _getCategoryColor(beneficiary.sectionId);
+        final categoryColorsById = _buildTaxonomyColorMap(sectionTaxonomies);
+        final categoryColor = categoryColorsById[beneficiary.sectionId] ?? _getCategoryColor(beneficiary.sectionId);
 
         return Scaffold(
           appBar: AppBar(
@@ -690,11 +691,65 @@ class ViewBeneficiaryPage extends ConsumerWidget {
     if (code == null || code.trim().isEmpty) return fallback;
     final normalized = code.trim();
     for (final item in options) {
-      if (item.code == normalized) {
+      if (item.code == normalized || item.id == normalized) {
+        return item.label;
+      }
+      final separatorIndex = item.id.indexOf('::');
+      if (separatorIndex >= 0 && item.id.substring(separatorIndex + 2).trim() == normalized) {
         return item.label;
       }
     }
     return fallback;
+  }
+
+  Map<int, Color> _buildTaxonomyColorMap(List<taxonomy_domain.Taxonomy> items) {
+    final colors = <int, Color>{};
+    for (final item in items) {
+      final key = _parseTaxonomyNumericKey(item);
+      final color = _parseTaxonomyColor(item.color);
+      if (key != null && color != null) {
+        colors[key] = color;
+      }
+    }
+    return colors;
+  }
+
+  int? _parseTaxonomyNumericKey(taxonomy_domain.Taxonomy taxonomy) {
+    final code = taxonomy.code.trim();
+    final codeKey = int.tryParse(code);
+    if (codeKey != null) {
+      return codeKey;
+    }
+
+    final rawId = taxonomy.id.trim();
+    if (rawId.isEmpty) {
+      return null;
+    }
+
+    final separatorIndex = rawId.indexOf('::');
+    final suffix = separatorIndex >= 0 ? rawId.substring(separatorIndex + 2) : rawId;
+    return int.tryParse(suffix.trim());
+  }
+
+  Color? _parseTaxonomyColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
   }
 
   String _taxonomyFallbackLabel(String? code) {

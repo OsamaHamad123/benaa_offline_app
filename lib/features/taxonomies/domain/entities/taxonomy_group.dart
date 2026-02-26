@@ -6,6 +6,9 @@ enum TaxonomyGroup {
   /// المحافظات
   governorate('governorate', 'المحافظات', 'gov'),
 
+  /// المدن
+  city('city', 'المدن', 'city'),
+
   /// الفئات (يتيم، فقير، أرملة، إلخ)
   category('category', 'الفئات', 'cat'),
 
@@ -41,6 +44,9 @@ enum TaxonomyGroup {
 
   /// نوع الكفالة
   sponsorshipType('sponsorship_type', 'نوع الكفالة', 'spons'),
+
+  /// نوع الضمان
+  guaranteeType('guarantee_type', 'نوع الضمان', 'guar'),
 
   /// أنواع الوثائق
   documentType('document_type', 'أنواع الوثائق', 'doc'),
@@ -108,6 +114,7 @@ enum TaxonomyGroup {
     final normalized = trimmed.toLowerCase().replaceAll(RegExp(r'\s+'), '_').replaceAll('-', '_');
 
     if (trimmed.contains('المحافظ')) return 'governorate';
+    if (trimmed.contains('المدن') || trimmed.contains('المدينة') || trimmed.contains('مدين')) return 'city';
     if (trimmed.contains('الفئ')) return 'category';
     if (trimmed.contains('الحالة الاجتماعية')) return 'marital_status';
     if (trimmed.contains('النزوح')) return 'displacement_status';
@@ -120,6 +127,7 @@ enum TaxonomyGroup {
     if (trimmed.contains('مصدر الدخل')) return 'income_source';
     if (trimmed.contains('نوع الجمعية')) return 'association_type';
     if (trimmed.contains('نوع الكفالة')) return 'sponsorship_type';
+    if (trimmed.contains('نوع الضمان')) return 'guarantee_type';
     if (trimmed.contains('الوثائ')) return 'document_type';
     if (trimmed.contains('البنوك') || trimmed.contains('البنك')) return 'bank_name';
     if (trimmed.contains('العملات') || trimmed.contains('عملة')) return 'currency';
@@ -139,7 +147,7 @@ enum TaxonomyGroup {
       'province': 'governorate',
       'provinces': 'governorate',
       'governorates': 'governorate',
-      'cities': 'governorate',
+      'cities': 'city',
       'relations': 'relationship',
       'marital_statuses': 'marital_status',
       'social_status': 'marital_status',
@@ -165,6 +173,7 @@ enum TaxonomyGroup {
       'association_types': 'association_type',
       'associations_types': 'association_type',
       'sponsorship_types': 'sponsorship_type',
+      'guarantee_types': 'guarantee_type',
       'document_types': 'document_type',
       'document_type': 'document_type',
       'bank_names': 'bank_name',
@@ -187,7 +196,6 @@ enum TaxonomyGroup {
       'departments': 'section',
       'department': 'section',
       'sections': 'section',
-      'guarantee_types': 'sponsorship_type',
       'sex': 'gender',
       'genders': 'gender',
       'sexes': 'gender',
@@ -213,6 +221,7 @@ enum TaxonomyGroup {
     if (direct.contains('disability') || direct.contains('special_needs')) return 'disability_type';
     if (direct.contains('income')) return 'income_source';
     if (direct.contains('association')) return 'association_type';
+    if (direct.contains('guarantee')) return 'guarantee_type';
     if (direct.contains('sponsorship')) return 'sponsorship_type';
     if (direct.contains('document_type') || direct.contains('document')) return 'document_type';
     if (direct.contains('bank_name') || direct.contains('bank')) return 'bank_name';
@@ -226,6 +235,7 @@ enum TaxonomyGroup {
     if (direct.contains('relationship') || direct.contains('kinship')) return 'relationship';
     if (direct.contains('section') || direct.contains('department')) return 'section';
     if (direct.contains('gender') || direct.contains('sex')) return 'gender';
+    if (direct.contains('city') || direct.contains('cities')) return 'city';
     if (direct.contains('governorate') || direct.contains('province') || direct.contains('city')) return 'governorate';
     if (direct.contains('category')) return 'category';
 
@@ -265,6 +275,8 @@ extension TaxonomyGroupExtension on TaxonomyGroup {
     switch (this) {
       case TaxonomyGroup.governorate:
         return 'location_city';
+      case TaxonomyGroup.city:
+        return 'location_on';
       case TaxonomyGroup.category:
         return 'category';
       case TaxonomyGroup.maritalStatus:
@@ -289,6 +301,8 @@ extension TaxonomyGroupExtension on TaxonomyGroup {
         return 'business';
       case TaxonomyGroup.sponsorshipType:
         return 'volunteer_activism';
+      case TaxonomyGroup.guaranteeType:
+        return 'verified';
       case TaxonomyGroup.documentType:
         return 'description';
       case TaxonomyGroup.bankName:

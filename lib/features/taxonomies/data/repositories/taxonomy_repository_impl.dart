@@ -203,6 +203,73 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     }
   }
 
+  @override
+  Future<Result<List<Taxonomy>>> createTaxonomiesBatch(
+    TaxonomyGroup group,
+    List<String> names,
+  ) async {
+    try {
+      final createdDtos = await _remoteDataSource.createTaxonomiesBatch(
+        group.value,
+        names,
+      );
+      final entities = createdDtos.map((dto) => dto.toEntity()).toList(growable: false);
+      if (entities.isNotEmpty) {
+        await _localDataSource.saveTaxonomies(entities);
+      }
+      return Success(entities);
+    } on TaxonomyApiException catch (e) {
+      return Failure(ServerFailure(e.message, e.statusCode));
+    } catch (e, st) {
+      return Failure(UnknownFailure('فشل إنشاء التصنيفات دفعة واحدة: $e', st));
+    }
+  }
+
+  @override
+  Future<Result<List<Taxonomy>>> updateTaxonomiesBatch(
+    TaxonomyGroup group,
+    Map<String, String> updates,
+  ) async {
+    try {
+      final updatedDtos = await _remoteDataSource.updateTaxonomiesBatch(
+        group.value,
+        updates,
+      );
+      final entities = updatedDtos.map((dto) => dto.toEntity()).toList(growable: false);
+      if (entities.isNotEmpty) {
+        await _localDataSource.saveTaxonomies(entities);
+      }
+      return Success(entities);
+    } on TaxonomyApiException catch (e) {
+      return Failure(ServerFailure(e.message, e.statusCode));
+    } catch (e, st) {
+      return Failure(UnknownFailure('فشل تحديث التصنيفات دفعة واحدة: $e', st));
+    }
+  }
+
+  @override
+  Future<Result<List<String>>> deleteTaxonomiesBatch(
+    TaxonomyGroup group,
+    List<String> ids,
+  ) async {
+    try {
+      final deletedIds = await _remoteDataSource.deleteTaxonomiesBatch(
+        group.value,
+        ids,
+      );
+
+      for (final id in deletedIds) {
+        await _localDataSource.deleteTaxonomy(id);
+      }
+
+      return Success(deletedIds);
+    } on TaxonomyApiException catch (e) {
+      return Failure(ServerFailure(e.message, e.statusCode));
+    } catch (e, st) {
+      return Failure(UnknownFailure('فشل حذف التصنيفات دفعة واحدة: $e', st));
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // 🔄 SYNC Operations
   // ═══════════════════════════════════════════════════════════════

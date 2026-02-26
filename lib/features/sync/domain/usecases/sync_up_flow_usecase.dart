@@ -24,6 +24,7 @@ class SyncUpFlowUseCase {
     required Future<SyncStageCounters> Function() syncFamilyMembers,
     required Future<SyncStageCounters> Function() syncDeadPeople,
     required Future<SyncStageCounters> Function() syncAttachments,
+    required Future<void> Function() syncUsedFileIds,
     required SyncUpProgressCallback onProgress,
     required String Function(Object error) classifyError,
     required String? Function(Object error) extractErrorContext,
@@ -112,6 +113,12 @@ class SyncUpFlowUseCase {
       final attachments = await syncAttachments();
       uploaded += attachments.uploaded;
       failed += attachments.failed;
+
+      onProgress(
+        operation: 'جاري مزامنة استخدام أرقام الملفات... ',
+        progress: 0.9,
+      );
+      await syncUsedFileIds();
 
       onProgress(
         operation: failed > 0 ? 'تم رفع $uploaded سجل (فشل $failed)' : 'تم رفع $uploaded سجل بنجاح ✓',

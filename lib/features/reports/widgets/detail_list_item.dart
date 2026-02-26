@@ -12,7 +12,10 @@ class DetailListItem extends StatelessWidget {
   final double? indicatorHeight;
 
   const DetailListItem({
-    required this.title, required this.subtitle, required this.progressValue, super.key,
+    required this.title,
+    required this.subtitle,
+    required this.progressValue,
+    super.key,
     this.progressColor,
     this.indicatorColor,
     this.indicatorWidth,
@@ -65,7 +68,7 @@ class DetailListItem extends StatelessWidget {
   }
 }
 
-/// Detail list item with full-width progress bar (for governorate/age reports)
+/// Detail list item with full-width progress bar (for region/age reports)
 class DetailListItemWithProgress extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -75,7 +78,10 @@ class DetailListItemWithProgress extends StatelessWidget {
   final double? indicatorSize;
 
   const DetailListItemWithProgress({
-    required this.title, required this.subtitle, required this.progressValue, super.key,
+    required this.title,
+    required this.subtitle,
+    required this.progressValue,
+    super.key,
     this.progressColor,
     this.indicatorColor,
     this.indicatorSize,

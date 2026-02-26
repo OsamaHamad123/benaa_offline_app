@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import '../form_constants.dart';
 import 'package:flutter/services.dart';
 
+class FormFieldFocusTracker {
+  FormFieldFocusTracker._();
+
+  static final ValueNotifier<String?> focusedFieldLabel = ValueNotifier<String?>(null);
+
+  static void update(String? label) {
+    focusedFieldLabel.value = label;
+  }
+}
+
 /// 🎨 Material 3 Enhanced Text Field
 class M3TextField extends StatelessWidget {
   final TextEditingController? controller;
@@ -23,6 +33,8 @@ class M3TextField extends StatelessWidget {
   final String? helperText;
   final bool obscureText;
   final String? tooltip; // 🆕 New
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const M3TextField({
     super.key,
@@ -45,11 +57,17 @@ class M3TextField extends StatelessWidget {
     this.helperText,
     this.obscureText = false,
     this.tooltip, // 🆕 New
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fieldRadius = BorderRadius.circular(FormConstants.defaultBorderRadius + 2);
+    const singleLineFieldMinHeight = 52.0;
+    final resolvedTextInputAction =
+        textInputAction ?? ((maxLines ?? 1) > 1 ? TextInputAction.newline : TextInputAction.next);
 
     final textField = TextFormField(
       controller: controller,
@@ -60,6 +78,24 @@ class M3TextField extends StatelessWidget {
       maxLength: maxLength,
       onTap: onTap,
       onChanged: onChanged,
+      textInputAction: resolvedTextInputAction,
+      onFieldSubmitted: onFieldSubmitted ??
+          (_) {
+            if (readOnly || (maxLines ?? 1) > 1) {
+              return;
+            }
+
+            final shouldUnfocus = resolvedTextInputAction == TextInputAction.done ||
+                resolvedTextInputAction == TextInputAction.go ||
+                resolvedTextInputAction == TextInputAction.search ||
+                resolvedTextInputAction == TextInputAction.send;
+
+            if (shouldUnfocus) {
+              FocusScope.of(context).unfocus();
+            } else {
+              FocusScope.of(context).nextFocus();
+            }
+          },
       inputFormatters: inputFormatters,
       focusNode: focusNode,
       enabled: enabled,
@@ -67,9 +103,7 @@ class M3TextField extends StatelessWidget {
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: enabled
-            ? theme.colorScheme.onSurface
-            : theme.colorScheme.onSurface.withOpacity(0.6),
+        color: enabled ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
       ),
       decoration: InputDecoration(
         // Label with required indicator
@@ -89,10 +123,13 @@ class M3TextField extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      Icon(
-                        Icons.star,
-                        size: 8,
-                        color: theme.colorScheme.error,
+                      Text(
+                        '*',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.error,
+                        ),
                       ),
                     ],
                   )
@@ -116,9 +153,9 @@ class M3TextField extends StatelessWidget {
           color: theme.colorScheme.onSurface.withOpacity(0.6),
         ),
         filled: true,
-        fillColor: enabled
-            ? theme.colorScheme.surfaceContainerHighest
-            : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        fillColor:
+            enabled ? theme.colorScheme.surfaceContainerLow : theme.colorScheme.surfaceContainerLow.withOpacity(0.65),
+        constraints: const BoxConstraints(minHeight: singleLineFieldMinHeight),
 
         // Prefix Icon with better styling
         prefixIcon: prefixIcon != null
@@ -126,51 +163,41 @@ class M3TextField extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(
                   prefixIcon,
-                  size: 22,
-                  color: enabled
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface.withOpacity(0.4),
+                  size: 20,
+                  color: enabled ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
               )
             : null,
+        prefixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
 
         // Suffix Icon
         suffixIcon: suffixIcon,
+        suffixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
 
         // Borders with elevation effect
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
+          borderRadius: fieldRadius,
           borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.3),
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
+          borderRadius: fieldRadius,
           borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.2),
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
-          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.5),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
-          borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 1.6),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
-          borderSide: BorderSide(color: theme.colorScheme.error, width: 2.5),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 1.8),
         ),
 
         // Counter
@@ -181,18 +208,25 @@ class M3TextField extends StatelessWidget {
 
         // Content Padding
         contentPadding: EdgeInsets.symmetric(
-          horizontal: 16.0,
-          vertical: maxLines! > 1 ? 16 : 14,
+          horizontal: 14.0,
+          vertical: maxLines! > 1 ? 15 : 14,
         ),
       ),
     );
 
-    // Add subtle elevation with Material wrapper
-    final fieldWithElevation = Material(
-      elevation: enabled ? 1 : 0,
-      borderRadius: BorderRadius.circular(FormConstants.defaultBorderRadius),
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
-      child: textField,
+    final fieldWithElevation = Focus(
+      onFocusChange: (hasFocus) {
+        if (hasFocus) {
+          FormFieldFocusTracker.update(label);
+        } else if (FormFieldFocusTracker.focusedFieldLabel.value == label) {
+          FormFieldFocusTracker.update(null);
+        }
+      },
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: fieldRadius,
+        child: textField,
+      ),
     );
 
     // 🆕 Wrap with Tooltip if provided
@@ -216,7 +250,8 @@ class M3DropdownField<T> extends StatelessWidget {
   final String? helperText;
 
   const M3DropdownField({
-    required this.items, super.key,
+    required this.items,
+    super.key,
     this.value,
     this.label,
     this.prefixIcon,
@@ -229,6 +264,8 @@ class M3DropdownField<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fieldRadius = BorderRadius.circular(FormConstants.defaultBorderRadius + 2);
+    const singleLineFieldMinHeight = 52.0;
 
     // 🔧 Fix crash: ensure value exists in items or set to null
     // This prevents "duplicate value" error
@@ -241,9 +278,9 @@ class M3DropdownField<T> extends StatelessWidget {
       validator: validator,
       decoration: InputDecoration(
         // Use labelText (String) instead of label (Widget) to let Flutter handle layout
-        labelText: label != null ? (isRequired ? '$label! *' : label!) : null,
+        labelText: label != null ? (isRequired ? '${label!} *' : label!) : null,
         labelStyle: TextStyle(
-          fontSize: 11, // Reduced from 13.sp to fit narrow test constraints
+          fontSize: 13,
           fontWeight: FontWeight.w500,
           color: isRequired ? theme.colorScheme.error : null,
         ),
@@ -253,50 +290,44 @@ class M3DropdownField<T> extends StatelessWidget {
           color: theme.colorScheme.onSurface.withOpacity(0.6),
         ),
         filled: true,
-        fillColor: theme.colorScheme.surfaceContainerHighest,
+        fillColor: theme.colorScheme.surfaceContainerLow,
+        constraints: const BoxConstraints(minHeight: singleLineFieldMinHeight),
 
         prefixIcon: prefixIcon != null
             ? Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: Icon(
                   prefixIcon,
-                  size: 22,
+                  size: 20,
                   color: theme.colorScheme.primary,
                 ),
               )
             : null,
+        prefixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
 
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
+          borderRadius: fieldRadius,
           borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.3),
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
+          borderRadius: fieldRadius,
           borderSide: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.2),
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
-          borderSide: BorderSide(color: theme.colorScheme.primary, width: 2.5),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.8),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(
-            FormConstants.defaultBorderRadius,
-          ),
-          borderSide: BorderSide(color: theme.colorScheme.error, width: 2),
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: theme.colorScheme.error, width: 1.6),
         ),
 
         // Reduced padding to fit label + icon in narrow test constraints (146.3px)
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
       style: TextStyle(
         fontSize: 14,
@@ -306,18 +337,25 @@ class M3DropdownField<T> extends StatelessWidget {
       icon: Icon(
         Icons.arrow_drop_down_rounded,
         color: theme.colorScheme.primary,
-        size: 20, // Reduced from 26.sp to save space
+        size: 20,
       ),
       dropdownColor: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(FormConstants.defaultBorderRadius),
+      borderRadius: fieldRadius,
     );
 
-    // Add subtle elevation with Material wrapper
-    return Material(
-      elevation: 1,
-      borderRadius: BorderRadius.circular(FormConstants.defaultBorderRadius),
-      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
-      child: dropdown,
+    return Focus(
+      onFocusChange: (hasFocus) {
+        if (hasFocus) {
+          FormFieldFocusTracker.update(label);
+        } else if (FormFieldFocusTracker.focusedFieldLabel.value == label) {
+          FormFieldFocusTracker.update(null);
+        }
+      },
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: fieldRadius,
+        child: dropdown,
+      ),
     );
   }
 }
@@ -331,7 +369,9 @@ class M3SectionCard extends StatelessWidget {
   final Color? headerColor;
 
   const M3SectionCard({
-    required this.title, required this.children, super.key,
+    required this.title,
+    required this.children,
+    super.key,
     this.icon,
     this.padding,
     this.headerColor,
@@ -343,7 +383,7 @@ class M3SectionCard extends StatelessWidget {
 
     return RepaintBoundary(
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
         elevation: FormConstants.sectionCardElevation,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
@@ -356,7 +396,7 @@ class M3SectionCard extends StatelessWidget {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               decoration: BoxDecoration(
                 color: headerColor ?? theme.colorScheme.primaryContainer,
                 borderRadius: const BorderRadius.vertical(
@@ -389,7 +429,7 @@ class M3SectionCard extends StatelessWidget {
 
             // Content
             Padding(
-              padding: padding ?? const EdgeInsets.all(16.0),
+              padding: padding ?? const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,

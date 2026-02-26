@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:io';
 import '../../../domain/repositories/beneficiary_repository.dart';
 import '../../../../../data/db/drift_database.dart';
 import '../../../../attachments/data/datasources/attachment_datasource.dart';
+import '../../../../attachments/domain/models/pending_attachment.dart';
 import 'file_size_validator.dart';
 import '../../../../../core/error_handling/result.dart';
 
@@ -11,6 +13,12 @@ import '../../../../../core/error_handling/result.dart';
 ///
 /// Handles duplicate check and attachment saving
 class SaveOperationsHelper {
+  static void _log(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
+
   /// Check for duplicate national ID
   static Future<bool> checkDuplicate({
     required BuildContext context,
@@ -23,10 +31,10 @@ class SaveOperationsHelper {
     final cleanedNationalId = nationalId.trim();
     if (cleanedNationalId.isEmpty) return false;
 
-    debugPrint('🔍 checkDuplicate: Starting check...');
-    debugPrint('🔍 National ID: $cleanedNationalId');
-    debugPrint('🔍 Is New: $isNewBeneficiary');
-    debugPrint('🔍 Current ID: $currentBeneficiaryId');
+    _log('🔍 checkDuplicate: Starting check...');
+    _log('🔍 National ID: $cleanedNationalId');
+    _log('🔍 Is New: $isNewBeneficiary');
+    _log('🔍 Current ID: $currentBeneficiaryId');
 
     try {
       final result = await repository.getByNationalId(cleanedNationalId);
@@ -35,27 +43,27 @@ class SaveOperationsHelper {
         final failure = result as Failure<Beneficiary>;
         // NotFoundFailure means no duplicate
         if (failure.error is NotFoundFailure) {
-          debugPrint('✅ checkDuplicate: No duplicate found');
+          _log('✅ checkDuplicate: No duplicate found');
           return false;
         }
         // Other failures - log and continue
-        debugPrint('❌ Error checking duplicate: ${failure.error}');
+        _log('❌ Error checking duplicate: ${failure.error}');
         return false;
       }
 
       final existing = (result as Success<Beneficiary>).value;
-      debugPrint(
+      _log(
         '🔍 Query result: Found (ID: ${existing.id})',
       );
 
       // إذا كان تعديل لمستفيد موجود، تجاهل نفس المستفيد
       if (!isNewBeneficiary && existing.id == currentBeneficiaryId) {
-        debugPrint('✅ checkDuplicate: Same beneficiary, no duplicate');
+        _log('✅ checkDuplicate: Same beneficiary, no duplicate');
         return false; // نفس المستفيد، لا يعتبر تكرار
       }
 
       // يوجد مستفيد آخر بنفس الرقم الوطني
-      debugPrint(
+      _log(
         '⚠️ checkDuplicate: Found duplicate - ID: ${existing.id}',
       );
       if (context.mounted) {
@@ -72,7 +80,7 @@ class SaveOperationsHelper {
       }
       return true; // Duplicate found
     } catch (e) {
-      debugPrint('❌ Error checking duplicate: $e');
+      _log('❌ Error checking duplicate: $e');
       return false; // Continue with save even if check fails
     }
   }
@@ -83,9 +91,9 @@ class SaveOperationsHelper {
     required String beneficiaryId,
     required List<File> pendingFiles,
   }) async {
-    debugPrint('💾 [SaveOperationsHelper] Starting to save attachments');
-    debugPrint('💾 [SaveOperationsHelper] Beneficiary ID: $beneficiaryId');
-    debugPrint(
+    _log('💾 [SaveOperationsHelper] Starting to save attachments');
+    _log('💾 [SaveOperationsHelper] Beneficiary ID: $beneficiaryId');
+    _log(
       '💾 [SaveOperationsHelper] Number of files: ${pendingFiles.length}',
     );
 
@@ -93,7 +101,7 @@ class SaveOperationsHelper {
     final validation = FileSizeValidator.validateFiles(pendingFiles);
 
     if (!validation.isAllValid) {
-      debugPrint('💾 [SaveOperationsHelper] ❌ Some files exceed size limit');
+      _log('💾 [SaveOperationsHelper] ❌ Some files exceed size limit');
       return AttachmentSaveResult(
         savedCount: 0,
         failedCount: pendingFiles.length,
@@ -109,32 +117,91 @@ class SaveOperationsHelper {
 
       for (final file in pendingFiles) {
         try {
-          debugPrint('💾 [SaveOperationsHelper] Saving file: ${file.path}');
+          _log('💾 [SaveOperationsHelper] Saving file: ${file.path}');
           await datasource.addAttachment(
             beneficiaryId: beneficiaryId,
             sourceFile: file,
           );
           savedCount++;
-          debugPrint(
+          _log(
             '💾 [SaveOperationsHelper] ✅ File saved successfully. Total: $savedCount',
           );
         } catch (e) {
-          debugPrint('💾 [SaveOperationsHelper] ❌ Error saving attachment: $e');
+          _log('💾 [SaveOperationsHelper] ❌ Error saving attachment: $e');
           failedCount++;
         }
       }
     } catch (e) {
-      debugPrint(
+      _log(
         '💾 [SaveOperationsHelper] ❌❌ Fatal error saving attachments: $e',
       );
     }
 
-    debugPrint(
+    _log(
       '💾 [SaveOperationsHelper] ✅ Finished. Saved: $savedCount, Failed: $failedCount',
     );
     return AttachmentSaveResult(
       savedCount: savedCount,
       failedCount: failedCount,
+    );
+  }
+
+  /// Save pending attachments (with metadata) and return count
+  static Future<AttachmentSaveResult> savePendingAttachments({
+    required AppDatabase database,
+    required String beneficiaryId,
+    required List<PendingAttachment> pendingAttachments,
+  }) async {
+    final pendingFiles = pendingAttachments.map((attachment) => attachment.file).toList(growable: false);
+
+    _log('💾 [SaveOperationsHelper] Starting to save pending attachments with metadata');
+    _log('💾 [SaveOperationsHelper] Beneficiary ID: $beneficiaryId');
+    _log('💾 [SaveOperationsHelper] Number of pending attachments: ${pendingAttachments.length}');
+
+    final validation = FileSizeValidator.validateFiles(pendingFiles);
+
+    if (!validation.isAllValid) {
+      _log('💾 [SaveOperationsHelper] ❌ Some files exceed size limit');
+      return AttachmentSaveResult(
+        savedCount: 0,
+        failedCount: pendingAttachments.length,
+        oversizedFiles: validation.invalidFiles.keys.toList(),
+      );
+    }
+
+    int savedCount = 0;
+    int failedCount = 0;
+    final failedPendingAttachments = <PendingAttachment>[];
+
+    try {
+      final datasource = AttachmentDataSource(database);
+
+      for (final pending in pendingAttachments) {
+        try {
+          await datasource.addAttachment(
+            beneficiaryId: beneficiaryId,
+            sourceFile: pending.file,
+            documentType: pending.documentType,
+            personType: pending.personType,
+            personId: pending.personId,
+            notes: pending.notes,
+          );
+          savedCount++;
+        } catch (e) {
+          _log('💾 [SaveOperationsHelper] ❌ Error saving pending attachment: $e');
+          failedCount++;
+          failedPendingAttachments.add(pending);
+        }
+      }
+    } catch (e) {
+      _log('💾 [SaveOperationsHelper] ❌❌ Fatal error saving pending attachments: $e');
+    }
+
+    _log('💾 [SaveOperationsHelper] ✅ Finished pending attachments. Saved: $savedCount, Failed: $failedCount');
+    return AttachmentSaveResult(
+      savedCount: savedCount,
+      failedCount: failedCount,
+      failedPendingAttachments: failedPendingAttachments,
     );
   }
 
@@ -209,10 +276,12 @@ class AttachmentSaveResult {
   final int savedCount;
   final int failedCount;
   final List<File>? oversizedFiles;
+  final List<PendingAttachment> failedPendingAttachments;
 
   AttachmentSaveResult({
     required this.savedCount,
     required this.failedCount,
     this.oversizedFiles,
+    this.failedPendingAttachments = const <PendingAttachment>[],
   });
 }

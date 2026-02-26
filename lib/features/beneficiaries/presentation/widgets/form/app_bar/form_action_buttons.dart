@@ -11,6 +11,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 /// - المساعدة
 class FormActionButtons extends StatelessWidget {
   final VoidCallback onSave;
+  final VoidCallback onToggleProgressCard;
+  final bool isProgressCardVisible;
   final VoidCallback? onDelete;
   final VoidCallback onShowHistory;
   final VoidCallback onShowHelp;
@@ -22,6 +24,8 @@ class FormActionButtons extends StatelessWidget {
 
   const FormActionButtons({
     required this.onSave,
+    required this.onToggleProgressCard,
+    required this.isProgressCardVisible,
     required this.onShowHistory,
     required this.onShowHelp,
     required this.canUndo,
@@ -36,6 +40,7 @@ class FormActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -47,19 +52,18 @@ class FormActionButtons extends StatelessWidget {
           onPressed: onSave,
         ),
 
-        // زر التراجع
-        IconButton(
-          icon: Icon(Icons.undo, size: 20.sp),
-          tooltip: 'تراجع (Ctrl+Z)',
-          onPressed: canUndo ? onUndo : null,
-        ),
-
-        // زر الإعادة
-        IconButton(
-          icon: Icon(Icons.redo, size: 20.sp),
-          tooltip: 'إعادة (Ctrl+Y)',
-          onPressed: canRedo ? onRedo : null,
-        ),
+        if (!isMobile) ...[
+          IconButton(
+            icon: Icon(Icons.undo, size: 20.sp),
+            tooltip: 'تراجع (Ctrl+Z)',
+            onPressed: canUndo ? onUndo : null,
+          ),
+          IconButton(
+            icon: Icon(Icons.redo, size: 20.sp),
+            tooltip: 'إعادة (Ctrl+Y)',
+            onPressed: canRedo ? onRedo : null,
+          ),
+        ],
 
         // قائمة خيارات إضافية
         PopupMenuButton<String>(
@@ -67,8 +71,17 @@ class FormActionButtons extends StatelessWidget {
           tooltip: 'خيارات',
           onSelected: (value) {
             switch (value) {
+              case 'undo':
+                onUndo();
+                break;
+              case 'redo':
+                onRedo();
+                break;
               case 'history':
                 onShowHistory();
+                break;
+              case 'toggle_progress_card':
+                onToggleProgressCard();
                 break;
               case 'delete':
                 onDelete?.call();
@@ -79,6 +92,45 @@ class FormActionButtons extends StatelessWidget {
             }
           },
           itemBuilder: (context) => [
+            if (isMobile) ...[
+              PopupMenuItem<String>(
+                value: 'undo',
+                enabled: canUndo,
+                child: Row(
+                  children: [
+                    Icon(Icons.undo, size: 20.sp),
+                    SizedBox(width: 12.w),
+                    const Text('تراجع'),
+                  ],
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'redo',
+                enabled: canRedo,
+                child: Row(
+                  children: [
+                    Icon(Icons.redo, size: 20.sp),
+                    SizedBox(width: 12.w),
+                    const Text('إعادة'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+            ],
+            PopupMenuItem<String>(
+              value: 'toggle_progress_card',
+              child: Row(
+                children: [
+                  Icon(
+                    isProgressCardVisible ? Icons.visibility_off_outlined : Icons.analytics_outlined,
+                    size: 20.sp,
+                  ),
+                  SizedBox(width: 12.w),
+                  Text(isProgressCardVisible ? 'إخفاء بطاقة التقدّم' : 'إظهار بطاقة التقدّم'),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
             PopupMenuItem<String>(
               value: 'history',
               child: Row(

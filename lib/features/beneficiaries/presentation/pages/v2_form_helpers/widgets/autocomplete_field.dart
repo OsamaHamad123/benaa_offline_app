@@ -37,7 +37,9 @@ class AutocompleteField<T extends Object> extends StatefulWidget {
   final bool caseSensitive;
 
   const AutocompleteField({
-    required this.label, required this.suggestions, super.key,
+    required this.label,
+    required this.suggestions,
+    super.key,
     this.onSelected,
     this.controller,
     this.displayStringForOption,
@@ -52,10 +54,10 @@ class AutocompleteField<T extends Object> extends StatefulWidget {
   State<AutocompleteField<T>> createState() => _AutocompleteFieldState<T>();
 }
 
-class _AutocompleteFieldState<T extends Object>
-    extends State<AutocompleteField<T>> {
+class _AutocompleteFieldState<T extends Object> extends State<AutocompleteField<T>> {
   Timer? _debounceTimer;
   bool _isSearching = false;
+  String _lastProcessedQuery = '';
 
   @override
   void dispose() {
@@ -79,8 +81,7 @@ class _AutocompleteFieldState<T extends Object>
 
     final filtered = widget.suggestions.where((suggestion) {
       final displayString = _displayStringForOption(suggestion);
-      final normalizedSuggestion =
-          widget.caseSensitive ? displayString : displayString.toLowerCase();
+      final normalizedSuggestion = widget.caseSensitive ? displayString : displayString.toLowerCase();
       return normalizedSuggestion.contains(normalizedQuery);
     });
 
@@ -88,20 +89,30 @@ class _AutocompleteFieldState<T extends Object>
   }
 
   void _onSearchChanged(String query) {
+    if (_lastProcessedQuery == query) {
+      return;
+    }
+    _lastProcessedQuery = query;
+
     _debounceTimer?.cancel();
 
     if (query.isEmpty) {
-      setState(() => _isSearching = false);
+      _setSearching(false);
       return;
     }
 
-    setState(() => _isSearching = true);
+    _setSearching(true);
 
     _debounceTimer = Timer(widget.debounceDuration, () {
       if (mounted) {
-        setState(() => _isSearching = false);
+        _setSearching(false);
       }
     });
+  }
+
+  void _setSearching(bool value) {
+    if (!mounted || _isSearching == value) return;
+    setState(() => _isSearching = value);
   }
 
   @override
@@ -130,9 +141,7 @@ class _AutocompleteFieldState<T extends Object>
           decoration: InputDecoration(
             labelText: widget.label,
             hintText: widget.hintText ?? 'ابحث...',
-            prefixIcon: widget.prefixIcon != null
-                ? Icon(widget.prefixIcon)
-                : const Icon(Icons.search),
+            prefixIcon: widget.prefixIcon != null ? Icon(widget.prefixIcon) : const Icon(Icons.search),
             suffixIcon: _isSearching
                 ? Padding(
                     padding: EdgeInsets.all(12.r),
@@ -244,7 +253,8 @@ class DistrictAutocomplete extends StatelessWidget {
   final ValueChanged<String>? onSelected;
 
   const DistrictAutocomplete({
-    required this.controller, super.key,
+    required this.controller,
+    super.key,
     this.onSelected,
   });
 
@@ -268,7 +278,8 @@ class SubDistrictAutocomplete extends StatelessWidget {
   final String? parentDistrict;
 
   const SubDistrictAutocomplete({
-    required this.controller, super.key,
+    required this.controller,
+    super.key,
     this.onSelected,
     this.parentDistrict,
   });
@@ -276,9 +287,8 @@ class SubDistrictAutocomplete extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Filter sub-districts based on parent district if provided
-    final suggestions = parentDistrict != null
-        ? IraqLocations.getSubDistricts(parentDistrict!)
-        : IraqLocations.allSubDistricts;
+    final suggestions =
+        parentDistrict != null ? IraqLocations.getSubDistricts(parentDistrict!) : IraqLocations.allSubDistricts;
 
     return AutocompleteField<String>(
       label: 'الناحية',
@@ -297,7 +307,8 @@ class OrganizationAutocomplete extends StatelessWidget {
   final ValueChanged<String>? onSelected;
 
   const OrganizationAutocomplete({
-    required this.controller, super.key,
+    required this.controller,
+    super.key,
     this.onSelected,
   });
 

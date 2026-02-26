@@ -19,6 +19,8 @@ import 'custom_reports_page.dart';
 import '../../core/services/export/export_models.dart';
 import '../../core/services/export/export_providers.dart';
 
+enum ReportsTimeContext { today, week, month }
+
 class ReportsPage extends ConsumerStatefulWidget {
   const ReportsPage({super.key});
 
@@ -26,11 +28,11 @@ class ReportsPage extends ConsumerStatefulWidget {
   ConsumerState<ReportsPage> createState() => _ReportsPageState();
 }
 
-class _ReportsPageState extends ConsumerState<ReportsPage>
-    with AutomaticKeepAliveClientMixin {
+class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAliveClientMixin {
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isExportingAll = false;
+  ReportsTimeContext _timeContext = ReportsTimeContext.week;
 
   @override
   bool get wantKeepAlive => true;
@@ -40,9 +42,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      initialDateRange: _startDate != null && _endDate != null
-          ? DateTimeRange(start: _startDate!, end: _endDate!)
-          : null,
+      initialDateRange:
+          _startDate != null && _endDate != null ? DateTimeRange(start: _startDate!, end: _endDate!) : null,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -80,6 +81,28 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
     _refreshData();
   }
 
+  void _applyTimeContext(ReportsTimeContext context) {
+    final now = DateTime.now();
+    setState(() {
+      _timeContext = context;
+      switch (context) {
+        case ReportsTimeContext.today:
+          _startDate = DateTime(now.year, now.month, now.day);
+          _endDate = now;
+          break;
+        case ReportsTimeContext.week:
+          _startDate = now.subtract(const Duration(days: 7));
+          _endDate = now;
+          break;
+        case ReportsTimeContext.month:
+          _startDate = DateTime(now.year, now.month, 1);
+          _endDate = now;
+          break;
+      }
+    });
+    _refreshData();
+  }
+
   void _refreshData() {
     ref.invalidate(summaryStatisticsProvider);
     ref.invalidate(genderReportProvider);
@@ -92,12 +115,20 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    final summaryAsync = ref.watch(summaryStatisticsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('التقارير والإحصائيات'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.space_dashboard_rounded),
+            constraints: BoxConstraints(minWidth: 44.w, minHeight: 44.h),
+            onPressed: _showCommandPalette,
+            tooltip: 'لوحة الأوامر',
+          ),
+          IconButton(
             icon: const Icon(Icons.add_chart),
+            constraints: BoxConstraints(minWidth: 44.w, minHeight: 44.h),
             onPressed: () {
               Navigator.push(
                 context,
@@ -128,6 +159,12 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
         child: ListView(
           padding: EdgeInsets.all(16.r),
           children: [
+            _buildContextSelector(),
+            SizedBox(height: 12.h),
+
+            _buildSyncConfidenceBanner(summaryAsync),
+            SizedBox(height: 16.h),
+
             // Quick Date Filters
             QuickDateFilters(
               startDate: _startDate,
@@ -139,6 +176,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
 
             // Summary Statistics
             const SummaryStatisticsWidget(),
+            SizedBox(height: 8.h),
+            _buildDeltaInfo(summaryAsync),
             SizedBox(height: 24.h),
 
             // Export All Reports Button
@@ -159,8 +198,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
             SizedBox(height: 16.h),
 
             ReportCardWidget(
-              title: 'تقرير حسب المحافظة',
-              description: 'توزيع المستفيدين على المحافظات',
+              title: 'تقرير حسب المنطقة',
+              description: 'توزيع المستفيدين على المناطق',
               icon: Icons.location_on,
               color: Colors.blue,
               gradient: ReportStyles.governorateGradient,
@@ -220,6 +259,176 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
           ],
         ),
       ), // Close RefreshIndicator
+    );
+  }
+
+  Widget _buildContextSelector() {
+    return SegmentedButton<ReportsTimeContext>(
+      segments: const [
+        ButtonSegment<ReportsTimeContext>(
+          value: ReportsTimeContext.today,
+          icon: Icon(Icons.today_rounded),
+          label: Text('اليوم'),
+        ),
+        ButtonSegment<ReportsTimeContext>(
+          value: ReportsTimeContext.week,
+          icon: Icon(Icons.date_range_rounded),
+          label: Text('الأسبوع'),
+        ),
+        ButtonSegment<ReportsTimeContext>(
+          value: ReportsTimeContext.month,
+          icon: Icon(Icons.calendar_month_rounded),
+          label: Text('الشهر'),
+        ),
+      ],
+      selected: {_timeContext},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) {
+        _applyTimeContext(selection.first);
+      },
+    );
+  }
+
+  Widget _buildSyncConfidenceBanner(AsyncValue<dynamic> summaryAsync) {
+    return summaryAsync.when(
+      data: (stats) {
+        final pending = stats.pending as int;
+        final total = stats.total as int;
+        final confidence = pending == 0
+            ? 'عالية'
+            : pending < 10
+                ? 'متوسطة'
+                : 'منخفضة';
+        final color = confidence == 'عالية'
+            ? Colors.green
+            : confidence == 'متوسطة'
+                ? Colors.orange
+                : Colors.red;
+
+        return Container(
+          padding: EdgeInsets.all(12.r),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: color.withOpacity(0.35)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.health_and_safety_rounded, color: color, size: 20.sp),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  'موثوقية التقارير: $confidence • متزامن: ${total - pending} / $total',
+                  style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/sync'),
+                child: const Text('مزامنة الآن'),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => Container(
+        height: 54.h,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildDeltaInfo(AsyncValue<dynamic> summaryAsync) {
+    return summaryAsync.when(
+      data: (stats) {
+        final total = stats.total as int;
+        final pending = stats.pending as int;
+        final syncRate = total > 0 ? ((total - pending) / total) * 100 : 0.0;
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Text(
+              'مؤشر التزامن: ${syncRate.toStringAsFixed(1)}% (${_timeContextLabel()})',
+              style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  String _timeContextLabel() {
+    switch (_timeContext) {
+      case ReportsTimeContext.today:
+        return 'اليوم';
+      case ReportsTimeContext.week:
+        return 'الأسبوع';
+      case ReportsTimeContext.month:
+        return 'الشهر';
+    }
+  }
+
+  void _showCommandPalette() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.sync_rounded),
+                title: const Text('تحديث كل البيانات'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _refreshData();
+                  context.showSuccess('تم تحديث البيانات');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf_rounded),
+                title: const Text('تصدير كل التقارير PDF'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _exportAllReports('pdf');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.table_view_rounded),
+                title: const Text('تصدير كل التقارير Excel'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _exportAllReports('excel');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.add_chart_rounded),
+                title: const Text('إنشاء تقرير مخصص'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CustomReportsPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -287,8 +496,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed:
-                        _isExportingAll ? null : () => _exportAllReports('pdf'),
+                    onPressed: _isExportingAll ? null : () => _exportAllReports('pdf'),
                     icon: _isExportingAll
                         ? SizedBox(
                             width: 16.w,
@@ -313,9 +521,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage>
                 SizedBox(width: 12.w),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: _isExportingAll
-                        ? null
-                        : () => _exportAllReports('excel'),
+                    onPressed: _isExportingAll ? null : () => _exportAllReports('excel'),
                     icon: Icon(Icons.table_view, size: 20.sp),
                     label: Text('Excel', style: TextStyle(fontSize: 14.sp)),
                     style: ElevatedButton.styleFrom(

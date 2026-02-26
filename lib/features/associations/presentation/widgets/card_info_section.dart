@@ -8,12 +8,17 @@ class CardInfoSection extends StatelessWidget {
   final String bankName;
   final String? accountNumber;
   final String currency;
+  final String? associationTypeLabel;
   final String? representativeName;
 
   const CardInfoSection({
-    required this.phone, required this.bankName, required this.currency, super.key,
+    required this.phone,
+    required this.bankName,
+    required this.currency,
+    super.key,
     this.email,
     this.accountNumber,
+    this.associationTypeLabel,
     this.representativeName,
   });
 
@@ -72,6 +77,16 @@ class CardInfoSection extends StatelessWidget {
             icon: Icons.person,
             iconColor: Colors.orange,
             text: representativeName!,
+            fontSize: 11.sp,
+          ),
+        ],
+
+        if (associationTypeLabel != null && associationTypeLabel!.trim().isNotEmpty) ...[
+          SizedBox(height: 6.h),
+          _InfoRow(
+            icon: Icons.account_tree_outlined,
+            iconColor: Colors.purple,
+            text: associationTypeLabel!,
             fontSize: 11.sp,
           ),
         ],

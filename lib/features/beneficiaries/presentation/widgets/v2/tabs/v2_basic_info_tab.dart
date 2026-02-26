@@ -167,8 +167,8 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
     final requiresGender = requiredBeneficiaryTaxonomyGroups.contains(TaxonomyGroup.gender);
     final requiresCategory = requiredBeneficiaryTaxonomyGroups.contains(TaxonomyGroup.category);
     final isPersonalInfoComplete = widget.nationalIdController.text.length == 9 &&
-      (!requiresGender || widget.selectedGender != null) &&
-      (!requiresCategory || widget.selectedCategory != null);
+        (!requiresGender || widget.selectedGender != null) &&
+        (!requiresCategory || widget.selectedCategory != null);
 
     return ListView(
       padding: EdgeInsets.symmetric(vertical: 8.h),

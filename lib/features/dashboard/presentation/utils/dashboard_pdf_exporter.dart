@@ -10,7 +10,11 @@ import '../../domain/entities/dashboard_statistics.dart'; // ✅ Use existing mo
 /// Dashboard PDF Exporter
 class DashboardPdfExporter {
   /// تصدير الداشبورد إلى PDF
-  static Future<File?> exportToPdf(DashboardStatistics dashboard, {String? filename}) async {
+  static Future<File?> exportToPdf(
+    DashboardStatistics dashboard, {
+    String? filename,
+    List<MapEntry<String, int>>? categoryRows,
+  }) async {
     final pdf = pw.Document();
 
     // Load Arabic font
@@ -34,13 +38,13 @@ class DashboardPdfExporter {
               // Total Statistics
               _buildSectionTitle('الإحصائيات الإجمالية'),
               pw.SizedBox(height: 10),
-              _buildStatisticsTable(dashboard),
+              _buildStatisticsTable(dashboard, categoryRows: categoryRows),
               pw.SizedBox(height: 20),
 
               // Beneficiary Types
               _buildSectionTitle('توزيع المستفيدين حسب النوع'),
               pw.SizedBox(height: 10),
-              _buildBeneficiaryTypesTable(dashboard),
+              _buildBeneficiaryTypesTable(dashboard, categoryRows: categoryRows),
               pw.SizedBox(height: 20),
 
               // Footer
@@ -59,7 +63,10 @@ class DashboardPdfExporter {
   }
 
   /// طباعة الداشبورد
-  static Future<void> printDashboard(DashboardStatistics dashboard) async {
+  static Future<void> printDashboard(
+    DashboardStatistics dashboard, {
+    List<MapEntry<String, int>>? categoryRows,
+  }) async {
     final arabicFont = await _loadArabicFont();
 
     await Printing.layoutPdf(
@@ -79,11 +86,11 @@ class DashboardPdfExporter {
                   pw.SizedBox(height: 20),
                   _buildSectionTitle('الإحصائيات الإجمالية'),
                   pw.SizedBox(height: 10),
-                  _buildStatisticsTable(dashboard),
+                  _buildStatisticsTable(dashboard, categoryRows: categoryRows),
                   pw.SizedBox(height: 20),
                   _buildSectionTitle('توزيع المستفيدين حسب النوع'),
                   pw.SizedBox(height: 10),
-                  _buildBeneficiaryTypesTable(dashboard),
+                  _buildBeneficiaryTypesTable(dashboard, categoryRows: categoryRows),
                 ],
               );
             },
@@ -96,8 +103,11 @@ class DashboardPdfExporter {
   }
 
   /// مشاركة PDF
-  static Future<void> sharePdf(DashboardStatistics dashboard) async {
-    final file = await exportToPdf(dashboard);
+  static Future<void> sharePdf(
+    DashboardStatistics dashboard, {
+    List<MapEntry<String, int>>? categoryRows,
+  }) async {
+    final file = await exportToPdf(dashboard, categoryRows: categoryRows);
     if (file != null) {
       await Share.shareXFiles(
         [XFile(file.path)],
@@ -159,30 +169,43 @@ class DashboardPdfExporter {
     );
   }
 
-  static pw.Widget _buildStatisticsTable(DashboardStatistics stats) {
+  static pw.Widget _buildStatisticsTable(
+    DashboardStatistics stats, {
+    List<MapEntry<String, int>>? categoryRows,
+  }) {
+    final rows = categoryRows != null && categoryRows.isNotEmpty ? categoryRows : _fallbackCategoryRows(stats);
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300),
       children: [
         _buildTableRow('إجمالي المستفيدين', '${stats.totalBeneficiaries}', isHeader: true),
-        _buildTableRow('الأيتام', '${stats.categoryCounts['يتيم'] ?? 0}'),
-        _buildTableRow('الأرامل', '${stats.categoryCounts['أرملة'] ?? 0}'),
-        _buildTableRow('الفقراء', '${stats.categoryCounts['فقير'] ?? 0}'),
-        _buildTableRow('ذوي الإعاقة', '${stats.categoryCounts['معاق'] ?? 0}'),
+        ...rows.map((row) => _buildTableRow(row.key, '${row.value}')),
       ],
     );
   }
 
-  static pw.Widget _buildBeneficiaryTypesTable(DashboardStatistics dashboard) {
+  static pw.Widget _buildBeneficiaryTypesTable(
+    DashboardStatistics dashboard, {
+    List<MapEntry<String, int>>? categoryRows,
+  }) {
+    final rows = categoryRows != null && categoryRows.isNotEmpty ? categoryRows : _fallbackCategoryRows(dashboard);
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300),
       children: [
         _buildTableRow('النوع', 'العدد', isHeader: true),
-        _buildTableRow('أيتام', '${dashboard.categoryCounts['يتيم'] ?? 0}'),
-        _buildTableRow('أرامل', '${dashboard.categoryCounts['أرملة'] ?? 0}'),
-        _buildTableRow('فقراء', '${dashboard.categoryCounts['فقير'] ?? 0}'),
-        _buildTableRow('ذوي إعاقة', '${dashboard.categoryCounts['معاق'] ?? 0}'),
+        ...rows.map((row) => _buildTableRow(row.key, '${row.value}')),
       ],
     );
+  }
+
+  static List<MapEntry<String, int>> _fallbackCategoryRows(
+    DashboardStatistics stats,
+  ) {
+    return [
+      MapEntry('الأيتام', stats.categoryCounts['يتيم'] ?? 0),
+      MapEntry('الأرامل', stats.categoryCounts['أرملة'] ?? 0),
+      MapEntry('الفقراء', stats.categoryCounts['فقير'] ?? 0),
+      MapEntry('ذوي الإعاقة', stats.categoryCounts['معاق'] ?? 0),
+    ];
   }
 
   static pw.TableRow _buildTableRow(String label, String value, {bool isHeader = false}) {

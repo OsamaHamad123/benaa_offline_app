@@ -9,6 +9,7 @@ class NotificationsService {
   static final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
 
   static bool _initialized = false;
+  static const int _civilDbDownloadNotificationId = 45001;
 
   /// تهيئة الإشعارات
   static Future<void> initialize() async {
@@ -21,9 +22,7 @@ class NotificationsService {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
 
     // iOS settings
-    const iosSettings = DarwinInitializationSettings(
-      
-    );
+    const iosSettings = DarwinInitializationSettings();
 
     const initializationSettings = InitializationSettings(
       android: androidSettings,
@@ -38,6 +37,11 @@ class NotificationsService {
     _initialized = true;
   }
 
+  static Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    await initialize();
+  }
+
   /// معالجة الضغط على الإشعار
   static void _onNotificationTap(NotificationResponse response) {
     // TODO: Handle notification tap - navigate to relevant screen
@@ -50,6 +54,8 @@ class NotificationsService {
 
   /// طلب صلاحيات الإشعارات
   static Future<bool> requestPermissions() async {
+    await _ensureInitialized();
+
     final androidPlugin =
         _notifications.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
@@ -79,6 +85,8 @@ class NotificationsService {
     required String body,
     String? payload,
   }) async {
+    await _ensureInitialized();
+
     const androidDetails = AndroidNotificationDetails(
       'general_channel',
       'إشعارات عامة',
@@ -115,6 +123,8 @@ class NotificationsService {
     required DateTime scheduledDate,
     String? payload,
   }) async {
+    await _ensureInitialized();
+
     const androidDetails = AndroidNotificationDetails(
       'scheduled_channel',
       'إشعارات مجدولة',
@@ -147,12 +157,155 @@ class NotificationsService {
 
   /// إلغاء إشعار
   static Future<void> cancelNotification(int id) async {
+    await _ensureInitialized();
     await _notifications.cancel(id);
   }
 
   /// إلغاء جميع الإشعارات
   static Future<void> cancelAllNotifications() async {
+    await _ensureInitialized();
     await _notifications.cancelAll();
+  }
+
+  static Future<void> showCivilDbDownloadProgress({
+    required double percentage,
+    required String subtitle,
+  }) async {
+    await _ensureInitialized();
+
+    final bounded = percentage.clamp(0, 100).round();
+
+    final androidDetails = AndroidNotificationDetails(
+      'civil_db_download_channel',
+      'تنزيل السجل المدني',
+      channelDescription: 'متابعة تقدم تنزيل قاعدة بيانات السجل المدني',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true,
+      onlyAlertOnce: true,
+      showProgress: true,
+      maxProgress: 100,
+      progress: bounded,
+      category: AndroidNotificationCategory.progress,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: false,
+    );
+
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      _civilDbDownloadNotificationId,
+      'جاري تنزيل السجل المدني ($bounded%)',
+      subtitle,
+      details,
+      payload: 'civil_db_download:progress',
+    );
+  }
+
+  static Future<void> showCivilDbDownloadCompleted() async {
+    await _ensureInitialized();
+
+    const androidDetails = AndroidNotificationDetails(
+      'civil_db_download_channel',
+      'تنزيل السجل المدني',
+      channelDescription: 'متابعة تقدم تنزيل قاعدة بيانات السجل المدني',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: false,
+      category: AndroidNotificationCategory.status,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      _civilDbDownloadNotificationId,
+      'اكتمل تنزيل السجل المدني',
+      'قاعدة البيانات أصبحت جاهزة للاستخدام.',
+      details,
+      payload: 'civil_db_download:completed',
+    );
+  }
+
+  static Future<void> showCivilDbDownloadFailed(String message) async {
+    await _ensureInitialized();
+
+    const androidDetails = AndroidNotificationDetails(
+      'civil_db_download_channel',
+      'تنزيل السجل المدني',
+      channelDescription: 'متابعة تقدم تنزيل قاعدة بيانات السجل المدني',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: false,
+      category: AndroidNotificationCategory.error,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      _civilDbDownloadNotificationId,
+      'فشل تنزيل السجل المدني',
+      message,
+      details,
+      payload: 'civil_db_download:failed',
+    );
+  }
+
+  static Future<void> showCivilDbDownloadCancelled() async {
+    await _ensureInitialized();
+
+    const androidDetails = AndroidNotificationDetails(
+      'civil_db_download_channel',
+      'تنزيل السجل المدني',
+      channelDescription: 'متابعة تقدم تنزيل قاعدة بيانات السجل المدني',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      ongoing: false,
+      category: AndroidNotificationCategory.status,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: false,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _notifications.show(
+      _civilDbDownloadNotificationId,
+      'تم إلغاء تنزيل السجل المدني',
+      'يمكنك استكمال التنزيل لاحقًا من نفس الصفحة.',
+      details,
+      payload: 'civil_db_download:cancelled',
+    );
   }
 
   /// --- إشعارات خاصة بالتطبيق ---

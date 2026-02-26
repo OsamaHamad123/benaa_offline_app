@@ -10,17 +10,13 @@ class BeneficiaryFormColors {
   // Tab Colors (Material 3 Adaptive)
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static Color tabActive(BuildContext context) =>
-      Theme.of(context).colorScheme.primary;
+  static Color tabActive(BuildContext context) => Theme.of(context).colorScheme.primary;
 
-  static Color tabInactive(BuildContext context) =>
-      Theme.of(context).colorScheme.onSurfaceVariant;
+  static Color tabInactive(BuildContext context) => Theme.of(context).colorScheme.onSurfaceVariant;
 
-  static Color tabBackground(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceContainerHighest;
+  static Color tabBackground(BuildContext context) => Theme.of(context).colorScheme.surfaceContainerHighest;
 
-  static Color tabIndicator(BuildContext context) =>
-      Theme.of(context).colorScheme.primary;
+  static Color tabIndicator(BuildContext context) => Theme.of(context).colorScheme.primary;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Status Colors
@@ -45,7 +41,14 @@ class BeneficiaryFormColors {
   };
 
   /// Get category color with fallback
-  static Color getCategoryColor(String category) {
+  static Color getCategoryColor(
+    String category, {
+    Map<String, Color> overrides = const <String, Color>{},
+  }) {
+    final resolved = overrides[category];
+    if (resolved != null) {
+      return resolved;
+    }
     return categoryColors[category] ?? const Color(0xFF757575);
   }
 
@@ -53,11 +56,9 @@ class BeneficiaryFormColors {
   // Progress Colors
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static Color progressEmpty(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceContainerHighest;
+  static Color progressEmpty(BuildContext context) => Theme.of(context).colorScheme.surfaceContainerHighest;
 
-  static Color progressPartial(BuildContext context) =>
-      Theme.of(context).colorScheme.primary;
+  static Color progressPartial(BuildContext context) => Theme.of(context).colorScheme.primary;
 
   static const Color progressComplete = success;
 
@@ -72,14 +73,11 @@ class BeneficiaryFormColors {
   // Field States
   // ═══════════════════════════════════════════════════════════════════════════
 
-  static Color fieldFocused(BuildContext context) =>
-      Theme.of(context).colorScheme.primary;
+  static Color fieldFocused(BuildContext context) => Theme.of(context).colorScheme.primary;
 
-  static Color fieldError(BuildContext context) =>
-      Theme.of(context).colorScheme.error;
+  static Color fieldError(BuildContext context) => Theme.of(context).colorScheme.error;
 
-  static Color fieldDisabled(BuildContext context) =>
-      Theme.of(context).colorScheme.onSurface.withOpacity(0.38);
+  static Color fieldDisabled(BuildContext context) => Theme.of(context).colorScheme.onSurface.withOpacity(0.38);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Helper Methods
@@ -122,8 +120,7 @@ class BeneficiaryFormColors {
 /// 🎨 Form Color Extensions
 extension FormColorExtensions on BuildContext {
   /// Quick access to form colors
-  BeneficiaryFormColorsHelper get formColors =>
-      BeneficiaryFormColorsHelper(this);
+  BeneficiaryFormColorsHelper get formColors => BeneficiaryFormColorsHelper(this);
 }
 
 /// Helper class for context-based colors
@@ -145,9 +142,7 @@ class BeneficiaryFormColorsHelper {
   Color get fieldError => BeneficiaryFormColors.fieldError(context);
   Color get fieldDisabled => BeneficiaryFormColors.fieldDisabled(context);
 
-  Color getCategoryColor(String category) =>
-      BeneficiaryFormColors.getCategoryColor(category);
+  Color getCategoryColor(String category) => BeneficiaryFormColors.getCategoryColor(category);
 
-  Color getProgressColor(int percentage) =>
-      BeneficiaryFormColors.getProgressColor(context, percentage);
+  Color getProgressColor(int percentage) => BeneficiaryFormColors.getProgressColor(context, percentage);
 }

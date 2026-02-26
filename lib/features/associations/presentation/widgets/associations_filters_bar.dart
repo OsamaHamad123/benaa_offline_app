@@ -6,12 +6,23 @@ import '../../../../core/utils/responsive_utils_v2.dart';
 class AssociationsFiltersBar extends StatelessWidget {
   final String? selectedStatus; // null = الكل، 'active' = نشطة، 'inactive' = معطلة
   final String? selectedBank;
+  final String? selectedAssociationTypeCode;
   final List<String> availableBanks;
+  final Map<String, String> associationTypeOptions;
   final ValueChanged<String?> onStatusChanged;
   final ValueChanged<String?> onBankChanged;
+  final ValueChanged<String?> onAssociationTypeChanged;
 
   const AssociationsFiltersBar({
-    required this.selectedStatus, required this.selectedBank, required this.availableBanks, required this.onStatusChanged, required this.onBankChanged, super.key,
+    required this.selectedStatus,
+    required this.selectedBank,
+    required this.availableBanks,
+    required this.associationTypeOptions,
+    required this.onStatusChanged,
+    required this.onBankChanged,
+    required this.onAssociationTypeChanged,
+    super.key,
+    this.selectedAssociationTypeCode,
   });
 
   @override
@@ -50,7 +61,7 @@ class AssociationsFiltersBar extends StatelessWidget {
             ),
 
             // Divider
-            if (availableBanks.isNotEmpty) ...[
+            if (availableBanks.isNotEmpty || associationTypeOptions.isNotEmpty) ...[
               SizedBox(width: 12.w),
               Container(
                 height: 24.h,
@@ -85,6 +96,42 @@ class AssociationsFiltersBar extends StatelessWidget {
                   isSelected: false,
                   icon: Icons.more_horiz,
                   onTap: () => _showAllBanksDialog(context),
+                ),
+              ),
+
+            if (associationTypeOptions.isNotEmpty) ...[
+              SizedBox(width: 12.w),
+              Container(
+                height: 24.h,
+                width: 1,
+                color: Colors.grey.withOpacity(0.3),
+              ),
+              SizedBox(width: 12.w),
+            ],
+
+            ...associationTypeOptions.entries.take(3).map((entry) {
+              return Padding(
+                padding: EdgeInsets.only(left: 8.w),
+                child: _FilterChip(
+                  label: entry.value,
+                  isSelected: selectedAssociationTypeCode == entry.key,
+                  icon: Icons.account_tree_outlined,
+                  color: Colors.purple,
+                  onTap: () => onAssociationTypeChanged(
+                    selectedAssociationTypeCode == entry.key ? null : entry.key,
+                  ),
+                ),
+              );
+            }),
+
+            if (associationTypeOptions.length > 3)
+              Padding(
+                padding: EdgeInsets.only(left: 8.w),
+                child: _FilterChip(
+                  label: 'أنواع أكثر...',
+                  isSelected: false,
+                  icon: Icons.more_horiz,
+                  onTap: () => _showAllAssociationTypesDialog(context),
                 ),
               ),
           ],
@@ -138,6 +185,55 @@ class AssociationsFiltersBar extends StatelessWidget {
       ),
     );
   }
+
+  void _showAllAssociationTypesDialog(BuildContext context) {
+    final sortedEntries = associationTypeOptions.entries.toList()..sort((a, b) => a.value.compareTo(b.value));
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('اختر نوع الجمعية'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.clear),
+                title: const Text('الكل'),
+                trailing: selectedAssociationTypeCode == null ? const Icon(Icons.check, color: Colors.green) : null,
+                onTap: () {
+                  onAssociationTypeChanged(null);
+                  Navigator.pop(context);
+                },
+              ),
+              const Divider(),
+              ...sortedEntries.map((entry) {
+                return ListTile(
+                  leading: const Icon(Icons.account_tree_outlined),
+                  title: Text(entry.value),
+                  trailing:
+                      selectedAssociationTypeCode == entry.key ? const Icon(Icons.check, color: Colors.green) : null,
+                  onTap: () {
+                    onAssociationTypeChanged(entry.key);
+                    Navigator.pop(context);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Filter Chip واحد
@@ -152,7 +248,8 @@ class _FilterChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.icon,
-    required this.onTap, this.color,
+    required this.onTap,
+    this.color,
   });
 
   @override

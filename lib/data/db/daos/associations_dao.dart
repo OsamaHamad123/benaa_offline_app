@@ -39,6 +39,38 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsD
     return await (select(associations)..where((a) => a.serverId.equals(serverId))).getSingleOrNull();
   }
 
+  Future<bool> linkRepresentativeToAssociationByServerId({
+    required int sponsorServerId,
+    required String representativeId,
+    bool overrideExisting = false,
+  }) async {
+    final normalizedRepresentativeId = representativeId.trim();
+    if (normalizedRepresentativeId.isEmpty) return false;
+
+    final target = await getAssociationByServerId(sponsorServerId);
+    if (target == null) return false;
+
+    final currentRep = target.representativeId?.trim();
+    final hasCurrent = currentRep != null && currentRep.isNotEmpty;
+
+    if (hasCurrent && !overrideExisting) {
+      return currentRep == normalizedRepresentativeId;
+    }
+
+    await (update(associations)..where((a) => a.id.equals(target.id))).write(
+      AssociationsCompanion(
+        representativeId: Value(normalizedRepresentativeId),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+
+    return true;
+  }
+
+  Future<Association?> getAssociationByRepresentativeId(String representativeId) async {
+    return await (select(associations)..where((a) => a.representativeId.equals(representativeId))).getSingleOrNull();
+  }
+
   /// البحث عن جمعيات بواسطة الاسم
   Future<List<Association>> searchAssociations(String query) async {
     final normalized = query.trim().toLowerCase();
@@ -132,6 +164,7 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsD
     String? countryCode,
     String? countryName,
     int? sponsorBankNameId,
+    String? associationTypeCode,
   }) async {
     await customStatement(
       '''
@@ -141,13 +174,15 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsD
         country_code,
         country_name,
         sponsor_bank_name_id,
+        association_type_code,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(association_id) DO UPDATE SET
         sponsor_address = excluded.sponsor_address,
         country_code = excluded.country_code,
         country_name = excluded.country_name,
         sponsor_bank_name_id = excluded.sponsor_bank_name_id,
+        association_type_code = excluded.association_type_code,
         updated_at = excluded.updated_at
       ''',
       [
@@ -156,6 +191,7 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsD
         countryCode,
         countryName,
         sponsorBankNameId,
+        associationTypeCode,
         DateTime.now().toIso8601String(),
       ],
     );
@@ -166,7 +202,7 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsD
   ) async {
     final rows = await customSelect(
       '''
-      SELECT association_id, sponsor_address, country_code, country_name, sponsor_bank_name_id, updated_at
+      SELECT association_id, sponsor_address, country_code, country_name, sponsor_bank_name_id, association_type_code, updated_at
       FROM associations_sponsor_profile
       WHERE association_id = ?
       LIMIT 1
@@ -176,6 +212,44 @@ class AssociationsDao extends DatabaseAccessor<AppDatabase> with _$AssociationsD
 
     if (rows.isEmpty) return null;
     return rows.first.data;
+  }
+
+  Future<void> upsertEmployeeProfile({
+    required String representativeId,
+    required int sponsorServerId,
+  }) async {
+    await customStatement(
+      '''
+      INSERT INTO associations_employee_profile (
+        representative_id,
+        sponsor_server_id,
+        updated_at
+      ) VALUES (?, ?, ?)
+      ON CONFLICT(representative_id) DO UPDATE SET
+        sponsor_server_id = excluded.sponsor_server_id,
+        updated_at = excluded.updated_at
+      ''',
+      [
+        representativeId,
+        sponsorServerId,
+        DateTime.now().toIso8601String(),
+      ],
+    );
+  }
+
+  Future<int?> getEmployeeSponsorServerId(String representativeId) async {
+    final rows = await customSelect(
+      '''
+      SELECT sponsor_server_id
+      FROM associations_employee_profile
+      WHERE representative_id = ?
+      LIMIT 1
+      ''',
+      variables: [Variable.withString(representativeId)],
+    ).get();
+
+    if (rows.isEmpty) return null;
+    return rows.first.read<int>('sponsor_server_id');
   }
 
   // ============================================================================

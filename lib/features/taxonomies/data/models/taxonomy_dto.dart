@@ -925,6 +925,11 @@ class TaxonomiesResponseDTO {
   }
 
   static String _resolveGroupValue(String slug, String labelAr, String? labelEn) {
+    final documentedCanonical = resolveBackendDocumentedCategoryCanonicalGroup(slug);
+    if (documentedCanonical != null && TaxonomyGroup.isValidGroup(documentedCanonical)) {
+      return documentedCanonical;
+    }
+
     final resolvedGroup = resolveTaxonomyGroupFromCandidates([
       slug,
       labelAr,
@@ -940,6 +945,14 @@ class TaxonomiesResponseDTO {
     }
 
     final normalizedSlug = slug.toLowerCase().replaceAll('_', '-').trim();
+
+    // If this is a documented slug and it wasn't resolved by the explicit policy,
+    // avoid heuristic remapping to prevent accidental semantic collapsing.
+    if (isBackendDocumentedCategorySlug(normalizedSlug)) {
+      final normalizedFromSlug = TaxonomyGroup.normalizeValue(normalizedSlug);
+      return normalizedFromSlug ?? normalizedSlug;
+    }
+
     final normalizedAr = labelAr.trim();
     final normalizedEn = (labelEn ?? '').toLowerCase().trim();
 
@@ -951,7 +964,6 @@ class TaxonomiesResponseDTO {
       'province': 'governorate',
       'governorates': 'governorate',
       'governorate': 'governorate',
-      'cities': 'governorate',
       'relations': 'relationship',
       'genders': 'gender',
       'gender': 'gender',
@@ -1002,6 +1014,8 @@ class TaxonomiesResponseDTO {
       'associations-types': 'association_type',
       'association-types': 'association_type',
       'association-type': 'association_type',
+      'cities': 'city',
+      'city': 'city',
       'sponsorship': 'sponsorship_type',
       'sponsorship-categories': 'sponsorship_type',
       'sponsorship-types': 'sponsorship_type',
@@ -1031,8 +1045,8 @@ class TaxonomiesResponseDTO {
       'kinship': 'relationship',
       'relative-relationship': 'relationship',
       'relationships': 'relationship',
-      'guarantee-types': 'sponsorship_type',
-      'guarantee-type': 'sponsorship_type',
+      'guarantee-types': 'guarantee_type',
+      'guarantee-type': 'guarantee_type',
       'department': 'section',
       'departments': 'section',
       'sections': 'section',
@@ -1053,6 +1067,8 @@ class TaxonomiesResponseDTO {
     if (normalizedSlug.contains('disability') || normalizedSlug.contains('special-needs')) return 'disability_type';
     if (normalizedSlug.contains('income')) return 'income_source';
     if (normalizedSlug.contains('association')) return 'association_type';
+    if (normalizedSlug.contains('city') || normalizedSlug.contains('cities')) return 'city';
+    if (normalizedSlug.contains('guarantee')) return 'guarantee_type';
     if (normalizedSlug.contains('sponsorship')) return 'sponsorship_type';
     if (normalizedSlug.contains('document')) return 'document_type';
     if (normalizedSlug.contains('bank')) return 'bank_name';
@@ -1147,9 +1163,34 @@ class TaxonomyResponseDTO {
   });
 
   factory TaxonomyResponseDTO.fromJson(Map<String, dynamic> json) {
+    final dataNode = json['data'];
+    Map<String, dynamic>? itemNode;
+
+    if (dataNode is Map<String, dynamic>) {
+      if (dataNode['item'] is Map<String, dynamic>) {
+        itemNode = Map<String, dynamic>.from(dataNode['item'] as Map);
+
+        final categoryNode = dataNode['category'];
+        if (categoryNode is Map<String, dynamic> && categoryNode['slug'] != null && itemNode['group'] == null) {
+          itemNode['group'] = categoryNode['slug']?.toString();
+        }
+
+        if (itemNode['label'] == null && itemNode['name'] != null) {
+          itemNode['label'] = itemNode['name'];
+        }
+        if (itemNode['label_en'] == null && itemNode['name_en'] != null) {
+          itemNode['label_en'] = itemNode['name_en'];
+        }
+      } else {
+        itemNode = Map<String, dynamic>.from(dataNode);
+      }
+    }
+
+    itemNode ??= json['item'] is Map<String, dynamic> ? Map<String, dynamic>.from(json['item'] as Map) : null;
+
     return TaxonomyResponseDTO(
       success: json['success'] == true,
-      data: TaxonomyDTO.fromJson(json['data'] as Map<String, dynamic>),
+      data: TaxonomyDTO.fromJson(itemNode ?? const <String, dynamic>{}),
       message: json['message']?.toString(),
     );
   }

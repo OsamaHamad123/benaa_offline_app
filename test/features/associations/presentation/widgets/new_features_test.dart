@@ -41,7 +41,8 @@ void main() {
       expect(find.text('نشط'), findsOneWidget);
     });
 
-    testWidgets('ProfessionalAssociationCard shows "NEW" badge for recent associations', (WidgetTester tester) async {
+    testWidgets('ProfessionalAssociationCard renders recent association without badge regressions',
+        (WidgetTester tester) async {
       // Arrange - جمعية مضافة قبل 3 أيام
       final recentDate = DateTime.now().subtract(const Duration(days: 3));
 
@@ -67,11 +68,12 @@ void main() {
       // Act
       await tester.pumpAndSettle();
 
-      // Assert - يجب أن يظهر badge "جديد"
-      expect(find.text('جديد'), findsOneWidget);
+      // Assert - البطاقة تظهر بشكل سليم (حالياً بدون badges نصية)
+      expect(find.text('جمعية جديدة'), findsOneWidget);
+      expect(find.text('جديد'), findsNothing);
     });
 
-    testWidgets('ProfessionalAssociationCard shows "UPDATED" badge for recently updated associations',
+    testWidgets('ProfessionalAssociationCard renders recently-updated association without badge regressions',
         (WidgetTester tester) async {
       // Arrange - جمعية محدثة قبل 12 ساعة
       final oldDate = DateTime.now().subtract(const Duration(days: 10));
@@ -100,8 +102,9 @@ void main() {
       // Act
       await tester.pumpAndSettle();
 
-      // Assert - يجب أن يظهر badge "محدث"
-      expect(find.text('محدث'), findsOneWidget);
+      // Assert - البطاقة تظهر بشكل سليم (حالياً بدون badges نصية)
+      expect(find.text('جمعية محدثة'), findsOneWidget);
+      expect(find.text('محدث'), findsNothing);
     });
 
     testWidgets('SwipeActionsWrapper renders child correctly', (WidgetTester tester) async {
@@ -137,9 +140,11 @@ void main() {
               body: AssociationsFiltersBar(
                 selectedStatus: null,
                 selectedBank: null,
+                associationTypeOptions: const {},
                 availableBanks: const ['البنك العربي', 'بنك القاهرة عمان'],
                 onStatusChanged: (status) {},
                 onBankChanged: (bank) {},
+                onAssociationTypeChanged: (associationType) {},
               ),
             ),
           ),
@@ -171,11 +176,13 @@ void main() {
               body: AssociationsFiltersBar(
                 selectedStatus: selectedStatus,
                 selectedBank: null,
+                associationTypeOptions: const {},
                 availableBanks: const [],
                 onStatusChanged: (status) {
                   selectedStatus = status;
                 },
                 onBankChanged: (bank) {},
+                onAssociationTypeChanged: (associationType) {},
               ),
             ),
           ),

@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:benaa_offline_app/core/extensions/context_extensions.dart';
 import '../../core/providers/providers.dart';
 import '../../data/db/drift_database.dart';
+import '../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../taxonomies/domain/entities/taxonomy_group.dart';
+import '../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// Record Visit Page - صفحة تسجيل الزيارات الميدانية
 class RecordVisitPage extends ConsumerStatefulWidget {
@@ -14,7 +17,9 @@ class RecordVisitPage extends ConsumerStatefulWidget {
   final Beneficiary beneficiary;
 
   const RecordVisitPage({
-    required this.beneficiaryId, required this.beneficiary, super.key,
+    required this.beneficiaryId,
+    required this.beneficiary,
+    super.key,
   });
 
   @override
@@ -28,6 +33,24 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
 
   DateTime _visitDate = DateTime.now();
   bool _isLoading = false;
+  String? _selectedVisitTypeCode;
+  final List<String> _selectedCategoryCodes = [];
+
+  static const Map<String, String> _fallbackVisitTypes = {
+    'home_visit': 'زيارة منزلية',
+    'follow_up': 'زيارة متابعة',
+    'consultation': 'زيارة استشارية',
+    'emergency': 'زيارة طارئة',
+    'other': 'أخرى',
+  };
+
+  static const Map<String, String> _fallbackCategories = {
+    'health': 'صحية',
+    'education': 'تعليمية',
+    'economic': 'اقتصادية',
+    'psychological': 'نفسية',
+    'social': 'اجتماعية',
+  };
 
   @override
   void dispose() {
@@ -83,16 +106,26 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
     try {
       final database = ref.read(databaseProvider);
       final now = DateTime.now();
+      final rawNotes = _notesController.text.trim();
+      var notes = rawNotes;
+
+      if (_selectedVisitTypeCode != null) {
+        final label = _fallbackVisitTypes[_selectedVisitTypeCode!] ?? _selectedVisitTypeCode!;
+        notes = 'نوع الزيارة: $label\n\n$notes';
+      }
+
+      if (_selectedCategoryCodes.isNotEmpty) {
+        final labels = _selectedCategoryCodes.map((code) => _fallbackCategories[code] ?? code).toList(growable: false);
+        notes = '$notes\n\nالفئات: ${labels.join(', ')}';
+      }
 
       await database.visitsDao.insertVisit(
         VisitsCompanion.insert(
           id: const Uuid().v4(),
           beneficiaryId: widget.beneficiaryId,
           visitDate: _visitDate,
-          staffName: _staffNameController.text.trim().isNotEmpty
-              ? _staffNameController.text.trim()
-              : 'غير محدد',
-          notes: drift.Value(_notesController.text.trim()),
+          staffName: _staffNameController.text.trim().isNotEmpty ? _staffNameController.text.trim() : 'غير محدد',
+          notes: drift.Value(notes),
           isSubmitted: const drift.Value(true),
           createdAt: now,
           updatedAt: now,
@@ -116,6 +149,23 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
 
   @override
   Widget build(BuildContext context) {
+    final visitTypeItems = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.visitType)).maybeWhen(
+          data: (items) => items,
+          orElse: () => const <taxonomy_domain.Taxonomy>[],
+        );
+    final categoryItems = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category)).maybeWhen(
+          data: (items) => items,
+          orElse: () => const <taxonomy_domain.Taxonomy>[],
+        );
+
+    final visitTypes = visitTypeItems.isNotEmpty ? _toCodeLabelMap(visitTypeItems) : _fallbackVisitTypes;
+    final categories = categoryItems.isNotEmpty ? _toCodeLabelMap(categoryItems) : _fallbackCategories;
+
+    if (_selectedVisitTypeCode != null && !visitTypes.containsKey(_selectedVisitTypeCode)) {
+      _selectedVisitTypeCode = null;
+    }
+    _selectedCategoryCodes.removeWhere((code) => !categories.containsKey(code));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('تسجيل زيارة'),
@@ -309,6 +359,79 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
 
             SizedBox(height: 24.h),
 
+            // Visit Type
+            Text(
+              'نوع الزيارة (اختياري)',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            SizedBox(height: 12.h),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedVisitTypeCode,
+              decoration: InputDecoration(
+                hintText: 'اختر نوع الزيارة',
+                prefixIcon: const Icon(Icons.category_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+              items: visitTypes.entries
+                  .map(
+                    (entry) => DropdownMenuItem<String>(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                  )
+                  .toList(growable: false),
+              onChanged: (value) {
+                setState(() => _selectedVisitTypeCode = value);
+              },
+            ),
+
+            SizedBox(height: 24.h),
+
+            // Categories
+            Text(
+              'الفئات (اختياري)',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            SizedBox(height: 12.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: categories.entries.map((entry) {
+                final code = entry.key;
+                final label = entry.value;
+                final selected = _selectedCategoryCodes.contains(code);
+                return FilterChip(
+                  label: Text(label),
+                  selected: selected,
+                  onSelected: (isSelected) {
+                    setState(() {
+                      if (isSelected) {
+                        if (!_selectedCategoryCodes.contains(code)) {
+                          _selectedCategoryCodes.add(code);
+                        }
+                      } else {
+                        _selectedCategoryCodes.remove(code);
+                      }
+                    });
+                  },
+                );
+              }).toList(growable: false),
+            ),
+
+            SizedBox(height: 24.h),
+
             // Notes
             Text(
               'ملاحظات الزيارة',
@@ -395,5 +518,16 @@ class _RecordVisitPageState extends ConsumerState<RecordVisitPage> {
     final minute = date.minute.toString().padLeft(2, '0');
 
     return '$day $month $year - $hour:$minute';
+  }
+
+  Map<String, String> _toCodeLabelMap(List<taxonomy_domain.Taxonomy> taxonomies) {
+    final map = <String, String>{};
+    for (final item in taxonomies) {
+      final code = item.code.trim();
+      final label = item.label.trim();
+      if (code.isEmpty || label.isEmpty) continue;
+      map.putIfAbsent(code, () => label);
+    }
+    return map;
   }
 }

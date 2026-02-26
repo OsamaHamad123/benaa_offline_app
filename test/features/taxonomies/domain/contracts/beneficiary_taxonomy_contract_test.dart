@@ -15,10 +15,37 @@ void main() {
       expect(TaxonomyGroup.fromString('request-statuses'), TaxonomyGroup.beneficiaryStatus);
     });
 
+    test('documented slug policy map covers all documented backend slugs', () {
+      final documented = backendDocumentedCategorySlugs.map(normalizeBackendCategorySlug).toSet();
+      final mapped = backendDocumentedSlugCanonicalGroup.keys.map(normalizeBackendCategorySlug).toSet();
+
+      expect(mapped, documented);
+    });
+
+    test('documented canonical resolver returns expected values', () {
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('provinces'), 'governorate');
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('academic-degrees'), 'education_level');
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('request-statuses'), 'beneficiary_status');
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('sponsorship-statuses'), 'beneficiary_status');
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('unknown-slug'), isNull);
+    });
+
     test('essential form groups include gender and document type', () {
       expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.gender), isTrue);
       expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.documentType), isTrue);
       expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.deathReason), isTrue);
+      expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.sponsorshipType), isTrue);
+    });
+
+    test('sponsorship type can fallback to beneficiary status when unavailable', () {
+      final available = <TaxonomyGroup>{TaxonomyGroup.beneficiaryStatus};
+
+      final missing = missingTaxonomyGroups(
+        availableGroups: available,
+        requiredGroups: const [TaxonomyGroup.sponsorshipType],
+      );
+
+      expect(missing, isEmpty);
     });
 
     test('missing essential groups analyzer reports absent groups correctly', () {

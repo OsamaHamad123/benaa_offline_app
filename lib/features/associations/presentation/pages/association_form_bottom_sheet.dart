@@ -6,6 +6,9 @@ import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
 import '../../domain/entities/association.dart';
 import '../../domain/repositories/association_repository.dart';
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import '../../../taxonomies/presentation/widgets/taxonomy_bridge_widgets.dart';
 import '../providers/associations_provider.dart';
 import '../widgets/representative_dropdown_v2.dart';
 
@@ -27,13 +30,17 @@ class AssociationFormBottomSheet extends ConsumerStatefulWidget {
   const AssociationFormBottomSheet({super.key, this.association});
 
   @override
-  ConsumerState<AssociationFormBottomSheet> createState() =>
-      _AssociationFormBottomSheetState();
+  ConsumerState<AssociationFormBottomSheet> createState() => _AssociationFormBottomSheetState();
 }
 
-class _AssociationFormBottomSheetState
-    extends ConsumerState<AssociationFormBottomSheet> {
+class _AssociationFormBottomSheetState extends ConsumerState<AssociationFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
+
+  String? _normalizeNullableId(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
 
   // Controllers
   late final TextEditingController _nameController;
@@ -48,6 +55,7 @@ class _AssociationFormBottomSheetState
   // ValueNotifiers for reactive state
   late final ValueNotifier<String?> _selectedRepresentativeNotifier;
   late final ValueNotifier<String> _selectedCurrencyNotifier;
+  late final ValueNotifier<String?> _selectedAssociationTypeNotifier;
   late final ValueNotifier<bool> _isActiveNotifier;
   late final ValueNotifier<bool> _isLoadingNotifier;
 
@@ -74,14 +82,14 @@ class _AssociationFormBottomSheetState
     _phoneController = TextEditingController(text: assoc?.phone);
     _emailController = TextEditingController(text: assoc?.email);
     _bankNameController = TextEditingController(text: assoc?.bankName);
-    _accountNumberController =
-        TextEditingController(text: assoc?.accountNumber);
+    _accountNumberController = TextEditingController(text: assoc?.accountNumber);
     _swiftCodeController = TextEditingController(text: assoc?.swiftCode);
     _bankPhoneController = TextEditingController(text: assoc?.bankPhone);
 
     // Initialize ValueNotifiers
-    _selectedRepresentativeNotifier = ValueNotifier(assoc?.representativeId);
+    _selectedRepresentativeNotifier = ValueNotifier(_normalizeNullableId(assoc?.representativeId));
     _selectedCurrencyNotifier = ValueNotifier(assoc?.accountCurrency ?? 'IQD');
+    _selectedAssociationTypeNotifier = ValueNotifier(_normalizeNullableId(assoc?.associationTypeCode));
     _isActiveNotifier = ValueNotifier(assoc?.isActive ?? true);
     _isLoadingNotifier = ValueNotifier(false);
 
@@ -116,6 +124,7 @@ class _AssociationFormBottomSheetState
     // Dispose ValueNotifiers
     _selectedRepresentativeNotifier.dispose();
     _selectedCurrencyNotifier.dispose();
+    _selectedAssociationTypeNotifier.dispose();
     _isActiveNotifier.dispose();
     _isLoadingNotifier.dispose();
 
@@ -149,29 +158,20 @@ class _AssociationFormBottomSheetState
       if (isEditing) {
         final updated = widget.association!.copyWith(
           name: _nameController.text.trim(),
-          shortName: _shortNameController.text.trim().isNotEmpty
-              ? _shortNameController.text.trim()
-              : null,
+          shortName: _shortNameController.text.trim().isNotEmpty ? _shortNameController.text.trim() : null,
           phone: _phoneController.text.trim(),
-          email: _emailController.text.trim().isNotEmpty
-              ? _emailController.text.trim()
-              : null,
+          email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
           bankName: _bankNameController.text.trim(),
           accountNumber: _accountNumberController.text.trim(),
-          swiftCode: _swiftCodeController.text.trim().isNotEmpty
-              ? _swiftCodeController.text.trim()
-              : null,
-          bankPhone: _bankPhoneController.text.trim().isNotEmpty
-              ? _bankPhoneController.text.trim()
-              : null,
+          swiftCode: _swiftCodeController.text.trim().isNotEmpty ? _swiftCodeController.text.trim() : null,
+          bankPhone: _bankPhoneController.text.trim().isNotEmpty ? _bankPhoneController.text.trim() : null,
           accountCurrency: _selectedCurrencyNotifier.value,
+          associationTypeCode: _selectedAssociationTypeNotifier.value,
           representativeId: _selectedRepresentativeNotifier.value!,
           isActive: _isActiveNotifier.value,
         );
 
-        final success = await ref
-            .read(associationsProvider.notifier)
-            .updateAssociation(updated);
+        final success = await ref.read(associationsProvider.notifier).updateAssociation(updated);
 
         if (success && mounted) {
           HapticFeedback.mediumImpact(); // ✨ اهتزاز نجاح
@@ -180,20 +180,17 @@ class _AssociationFormBottomSheetState
             SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.check_circle_outline,
-                      color: Colors.white, size: 24.r),
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 24.r),
                   SizedBox(width: 12.w),
                   const Expanded(
-                    child: Text('✅ تم تحديث الجمعية بنجاح',
-                        textAlign: TextAlign.right),
+                    child: Text('✅ تم تحديث الجمعية بنجاح', textAlign: TextAlign.right),
                   ),
                 ],
               ),
               backgroundColor: Colors.green.shade600,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               margin: EdgeInsets.all(16.r),
             ),
           );
@@ -206,15 +203,13 @@ class _AssociationFormBottomSheetState
                   Icon(Icons.error_outline, color: Colors.white, size: 24.r),
                   SizedBox(width: 12.w),
                   const Expanded(
-                    child: Text('❌ فشل في تحديث الجمعية',
-                        textAlign: TextAlign.right),
+                    child: Text('❌ فشل في تحديث الجمعية', textAlign: TextAlign.right),
                   ),
                 ],
               ),
               backgroundColor: Colors.red.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               margin: EdgeInsets.all(16.r),
             ),
           );
@@ -222,29 +217,20 @@ class _AssociationFormBottomSheetState
       } else {
         final params = AssociationParams(
           name: _nameController.text.trim(),
-          shortName: _shortNameController.text.trim().isNotEmpty
-              ? _shortNameController.text.trim()
-              : null,
+          shortName: _shortNameController.text.trim().isNotEmpty ? _shortNameController.text.trim() : null,
           phone: _phoneController.text.trim(),
-          email: _emailController.text.trim().isNotEmpty
-              ? _emailController.text.trim()
-              : null,
+          email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : null,
           bankName: _bankNameController.text.trim(),
           accountNumber: _accountNumberController.text.trim(),
-          swiftCode: _swiftCodeController.text.trim().isNotEmpty
-              ? _swiftCodeController.text.trim()
-              : null,
-          bankPhone: _bankPhoneController.text.trim().isNotEmpty
-              ? _bankPhoneController.text.trim()
-              : null,
+          swiftCode: _swiftCodeController.text.trim().isNotEmpty ? _swiftCodeController.text.trim() : null,
+          bankPhone: _bankPhoneController.text.trim().isNotEmpty ? _bankPhoneController.text.trim() : null,
           accountCurrency: _selectedCurrencyNotifier.value,
+          associationTypeCode: _selectedAssociationTypeNotifier.value,
           representativeId: _selectedRepresentativeNotifier.value!,
           isActive: _isActiveNotifier.value,
         );
 
-        final success = await ref
-            .read(associationsProvider.notifier)
-            .createAssociation(params);
+        final success = await ref.read(associationsProvider.notifier).createAssociation(params);
 
         if (success && mounted) {
           HapticFeedback.mediumImpact(); // ✨ اهتزاز نجاح
@@ -253,20 +239,17 @@ class _AssociationFormBottomSheetState
             SnackBar(
               content: Row(
                 children: [
-                  Icon(Icons.check_circle_outline,
-                      color: Colors.white, size: 24.r),
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 24.r),
                   SizedBox(width: 12.w),
                   const Expanded(
-                    child: Text('✅ تم إضافة الجمعية بنجاح',
-                        textAlign: TextAlign.right),
+                    child: Text('✅ تم إضافة الجمعية بنجاح', textAlign: TextAlign.right),
                   ),
                 ],
               ),
               backgroundColor: Colors.green.shade600,
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 2),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               margin: EdgeInsets.all(16.r),
             ),
           );
@@ -279,15 +262,13 @@ class _AssociationFormBottomSheetState
                   Icon(Icons.error_outline, color: Colors.white, size: 24.r),
                   SizedBox(width: 12.w),
                   const Expanded(
-                    child: Text('❌ فشل في إضافة الجمعية',
-                        textAlign: TextAlign.right),
+                    child: Text('❌ فشل في إضافة الجمعية', textAlign: TextAlign.right),
                   ),
                 ],
               ),
               backgroundColor: Colors.red.shade600,
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.r)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
               margin: EdgeInsets.all(16.r),
             ),
           );
@@ -363,22 +344,37 @@ class _AssociationFormBottomSheetState
                         SizedBox(height: ResponsiveUtils.mediumSpace),
 
                         // Currency Dropdown
-                        _CurrencyDropdown(
-                            currencyNotifier: _selectedCurrencyNotifier),
+                        _CurrencyDropdown(currencyNotifier: _selectedCurrencyNotifier),
+
+                        SizedBox(height: ResponsiveUtils.mediumSpace),
+
+                        ValueListenableBuilder<String?>(
+                          valueListenable: _selectedAssociationTypeNotifier,
+                          builder: (context, selectedCode, _) {
+                            return TaxonomyBridgeDropdown(
+                              group: TaxonomyGroup.associationType,
+                              selectedCode: selectedCode,
+                              onCodeChanged: (code) =>
+                                  _selectedAssociationTypeNotifier.value = _normalizeNullableId(code),
+                              labelText: 'نوع الجمعية',
+                              hintText: 'اختر نوع الجمعية',
+                              prefixIcon: Icons.account_tree_outlined,
+                              showSyncAction: true,
+                            );
+                          },
+                        ),
 
                         SizedBox(height: ResponsiveUtils.largeSpace),
 
                         // Representative Dropdown
                         _RepresentativeSection(
-                          representativeNotifier:
-                              _selectedRepresentativeNotifier,
+                          representativeNotifier: _selectedRepresentativeNotifier,
                         ),
 
                         SizedBox(height: ResponsiveUtils.mediumSpace),
 
                         // Active Status Switch
-                        _ActiveStatusSwitch(
-                            isActiveNotifier: _isActiveNotifier),
+                        _ActiveStatusSwitch(isActiveNotifier: _isActiveNotifier),
 
                         SizedBox(height: ResponsiveUtils.largeSpace),
 
@@ -432,8 +428,7 @@ class _BasicInfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isWide =
-        ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
+    final isWide = ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
 
     Widget wrapGrid(List<Widget> fields) {
       if (!isWide) {
@@ -442,8 +437,7 @@ class _BasicInfoSection extends StatelessWidget {
           children: [
             for (var i = 0; i < fields.length; i++) ...[
               fields[i],
-              if (i != fields.length - 1)
-                SizedBox(height: ResponsiveUtils.mediumSpace),
+              if (i != fields.length - 1) SizedBox(height: ResponsiveUtils.mediumSpace),
             ],
           ],
         );
@@ -481,8 +475,7 @@ class _BasicInfoSection extends StatelessWidget {
                 color: colorScheme.primary.withAlpha(26),
                 borderRadius: BorderRadius.circular(8.r),
               ),
-              child: Icon(Icons.info_outline,
-                  size: 20.r, color: colorScheme.primary),
+              child: Icon(Icons.info_outline, size: 20.r, color: colorScheme.primary),
             ),
             SizedBox(width: 12.w),
             Column(
@@ -535,8 +528,7 @@ class _BasicInfoSection extends StatelessWidget {
                         )
                       : null,
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: ResponsiveUtils.mediumSpace,
@@ -564,8 +556,7 @@ class _BasicInfoSection extends StatelessWidget {
               labelText: 'الاسم المختصر',
               prefixIcon: Icon(Icons.short_text, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
@@ -587,8 +578,7 @@ class _BasicInfoSection extends StatelessWidget {
               hintText: '07xxxxxxxxx',
               prefixIcon: Icon(Icons.phone, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
@@ -615,8 +605,7 @@ class _BasicInfoSection extends StatelessWidget {
               labelText: 'البريد الإلكتروني',
               prefixIcon: Icon(Icons.email, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
@@ -631,7 +620,7 @@ class _BasicInfoSection extends StatelessWidget {
 }
 
 /// Bank Information Section - Separated widget
-class _BankInfoSection extends StatelessWidget {
+class _BankInfoSection extends ConsumerWidget {
   final TextEditingController bankNameController;
   final TextEditingController accountNumberController;
   final TextEditingController swiftCodeController;
@@ -653,10 +642,34 @@ class _BankInfoSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isWide =
-        ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
+    final isWide = ResponsiveUtils.isTablet(context) || ResponsiveUtils.isDesktop(context);
+    final bankTaxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.bankName),
+    );
+    final bankTaxonomies = bankTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const [],
+    );
+
+    final bankValues = <String>{
+      for (final item in bankTaxonomies)
+        if (item.label.trim().isNotEmpty) item.label.trim(),
+    };
+    final existingBank = bankNameController.text.trim();
+    if (existingBank.isNotEmpty) {
+      bankValues.add(existingBank);
+    }
+    final bankItems = bankValues
+        .map(
+          (label) => DropdownMenuItem<String>(
+            value: label,
+            child: Text(label),
+          ),
+        )
+        .toList(growable: false);
+    final selectedBank = bankItems.any((item) => item.value == existingBank) ? existingBank : null;
 
     Widget wrapGrid(List<Widget> fields) {
       if (!isWide) {
@@ -665,8 +678,7 @@ class _BankInfoSection extends StatelessWidget {
           children: [
             for (var i = 0; i < fields.length; i++) ...[
               fields[i],
-              if (i != fields.length - 1)
-                SizedBox(height: ResponsiveUtils.mediumSpace),
+              if (i != fields.length - 1) SizedBox(height: ResponsiveUtils.mediumSpace),
             ],
           ],
         );
@@ -704,8 +716,7 @@ class _BankInfoSection extends StatelessWidget {
                 color: colorScheme.primary.withAlpha(26),
                 borderRadius: BorderRadius.circular(8.r),
               ),
-              child: Icon(Icons.account_balance,
-                  size: 20.r, color: colorScheme.primary),
+              child: Icon(Icons.account_balance, size: 20.r, color: colorScheme.primary),
             ),
             SizedBox(width: 12.w),
             Column(
@@ -735,27 +746,27 @@ class _BankInfoSection extends StatelessWidget {
 
         wrapGrid([
           // Bank Name
-          TextFormField(
-            controller: bankNameController,
-            focusNode: bankNameFocus,
-            textAlign: TextAlign.right,
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => accountNumberFocus.requestFocus(),
+          DropdownButtonFormField<String>(
+            initialValue: selectedBank,
             decoration: InputDecoration(
               labelText: 'اسم البنك *',
               prefixIcon: Icon(Icons.account_balance, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
                 vertical: 12.h,
               ),
             ),
+            items: bankItems,
+            onChanged: (value) {
+              bankNameController.text = value ?? '';
+              accountNumberFocus.requestFocus();
+            },
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'الرجاء إدخال اسم البنك';
+                return 'الرجاء اختيار اسم البنك';
               }
               return null;
             },
@@ -772,8 +783,7 @@ class _BankInfoSection extends StatelessWidget {
               labelText: 'رقم الحساب *',
               prefixIcon: Icon(Icons.credit_card, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
@@ -798,8 +808,7 @@ class _BankInfoSection extends StatelessWidget {
               labelText: 'Swift Code',
               prefixIcon: Icon(Icons.code, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
@@ -819,8 +828,7 @@ class _BankInfoSection extends StatelessWidget {
               labelText: 'هاتف البنك',
               prefixIcon: Icon(Icons.phone_in_talk, size: 20.r),
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
               ),
               contentPadding: EdgeInsets.symmetric(
                 horizontal: ResponsiveUtils.mediumSpace,
@@ -835,24 +843,52 @@ class _BankInfoSection extends StatelessWidget {
 }
 
 /// Currency Dropdown - Separated widget with ValueListenableBuilder
-class _CurrencyDropdown extends StatelessWidget {
+class _CurrencyDropdown extends ConsumerWidget {
   final ValueNotifier<String> currencyNotifier;
 
   const _CurrencyDropdown({required this.currencyNotifier});
 
-  static const List<DropdownMenuItem<String>> _currencyItems = [
-    DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
-    DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
-    DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final taxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.currency),
+    );
+    final taxonomies = taxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const [],
+    );
+
+    final resolvedItems = taxonomies.isNotEmpty
+        ? taxonomies
+            .where((item) => item.code.trim().isNotEmpty)
+            .map(
+              (item) => DropdownMenuItem<String>(
+                value: item.code.trim().toUpperCase(),
+                child: Text('${item.label} (${item.code.trim().toUpperCase()})'),
+              ),
+            )
+            .toList(growable: false)
+        : const [
+            DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
+            DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
+            DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
+          ];
+
     return ValueListenableBuilder<String>(
       valueListenable: currencyNotifier,
       builder: (context, selectedCurrency, _) {
+        final safeValue = resolvedItems.any((item) => item.value == selectedCurrency)
+            ? selectedCurrency
+            : (resolvedItems.isNotEmpty ? resolvedItems.first.value! : selectedCurrency);
+
+        if (safeValue != selectedCurrency) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            currencyNotifier.value = safeValue;
+          });
+        }
+
         return DropdownButtonFormField<String>(
-          initialValue: selectedCurrency,
+          initialValue: safeValue,
           decoration: InputDecoration(
             labelText: 'عملة الحساب *',
             prefixIcon: Icon(Icons.attach_money, size: 20.r),
@@ -864,7 +900,7 @@ class _CurrencyDropdown extends StatelessWidget {
               vertical: 12.h,
             ),
           ),
-          items: _currencyItems,
+          items: resolvedItems,
           onChanged: (value) {
             if (value != null) {
               currencyNotifier.value = value;
@@ -886,7 +922,7 @@ class _RepresentativeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final representatives = ref.read(associationsProvider).representatives;
+        final representatives = ref.watch(associationsProvider).representatives;
 
         return ValueListenableBuilder<String?>(
           valueListenable: representativeNotifier,
@@ -895,8 +931,7 @@ class _RepresentativeSection extends StatelessWidget {
               selectedId: selectedId,
               onChanged: (value) => representativeNotifier.value = value,
               representatives: representatives,
-              onAddNew: () =>
-                  _showAddRepSheet(context, ref, representativeNotifier),
+              onAddNew: () => _showAddRepSheet(context, ref, representativeNotifier),
             );
           },
         );
@@ -904,15 +939,13 @@ class _RepresentativeSection extends StatelessWidget {
     );
   }
 
-  void _showAddRepSheet(
-      BuildContext context, WidgetRef ref, ValueNotifier<String?> notifier) {
+  void _showAddRepSheet(BuildContext context, WidgetRef ref, ValueNotifier<String?> notifier) {
     FocusScope.of(context).unfocus();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (modalContext) =>
-          _AddRepBottomSheet(representativeNotifier: notifier),
+      builder: (modalContext) => _AddRepBottomSheet(representativeNotifier: notifier),
     );
   }
 }
@@ -984,8 +1017,7 @@ class _SubmitButton extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 padding: EdgeInsets.symmetric(vertical: 14.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                 ),
               ),
               child: Text(
@@ -1004,8 +1036,7 @@ class _SubmitButton extends StatelessWidget {
               style: FilledButton.styleFrom(
                 padding: EdgeInsets.symmetric(vertical: 14.h),
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                  borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                 ),
               ),
               child: isLoading
@@ -1091,9 +1122,7 @@ class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
     _isLoadingNotifier.value = true;
 
     try {
-      final rep = await ref
-          .read(associationsProvider.notifier)
-          .createRepresentative(_nameController.text.trim());
+      final rep = await ref.read(associationsProvider.notifier).createRepresentative(_nameController.text.trim());
 
       if (!mounted) return;
 
@@ -1147,8 +1176,7 @@ class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
                   labelText: 'اسم المندوب *',
                   prefixIcon: Icon(Icons.person, size: 20.r),
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: ResponsiveUtils.mediumSpace,
@@ -1175,8 +1203,7 @@ class _AddRepBottomSheetState extends State<_AddRepBottomSheet> {
                           style: FilledButton.styleFrom(
                             padding: EdgeInsets.symmetric(vertical: 16.h),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  ResponsiveUtils.mediumRadius),
+                              borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                             ),
                           ),
                           child: isLoading

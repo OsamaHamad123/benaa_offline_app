@@ -51,6 +51,8 @@ class DraftSaveCoordinator {
       'selectedRequestStatus': controllers.selectedRequestStatus,
       'assistanceType': controllers.selectedAssistanceType,
       'selectedAssistanceType': controllers.selectedAssistanceType,
+      'guaranteeType': controllers.selectedGuaranteeType,
+      'selectedGuaranteeType': controllers.selectedGuaranteeType,
       'hasDisability': controllers.hasDisability,
       'specialNeedsCount': controllers.specialNeedsCountController.text,
     };
@@ -99,6 +101,8 @@ class DraftSaveCoordinator {
       'selectedRequestStatus': controllers.selectedRequestStatus,
       'assistanceType': controllers.selectedAssistanceType,
       'selectedAssistanceType': controllers.selectedAssistanceType,
+      'guaranteeType': controllers.selectedGuaranteeType,
+      'selectedGuaranteeType': controllers.selectedGuaranteeType,
       'specialNeedsCount': controllers.specialNeedsCountController.text,
     };
   }

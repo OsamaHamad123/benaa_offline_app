@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// 🔍 Advanced Search Filters Widget
-class AdvancedSearchFilters extends StatefulWidget {
+class AdvancedSearchFilters extends ConsumerStatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;
   final VoidCallback? onSaveSearch;
 
   const AdvancedSearchFilters({
-    required this.onApplyFilters, super.key,
+    required this.onApplyFilters,
+    super.key,
     this.onSaveSearch,
   });
 
   @override
-  State<AdvancedSearchFilters> createState() => _AdvancedSearchFiltersState();
+  ConsumerState<AdvancedSearchFilters> createState() => _AdvancedSearchFiltersState();
 }
 
-class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
+class _AdvancedSearchFiltersState extends ConsumerState<AdvancedSearchFilters> {
   final List<String> _selectedGovernorates = [];
   final List<String> _selectedStatuses = [];
   final List<String> _selectedCategories = [];
   String? _ageRange;
   String? _gender;
 
-  final List<String> _governorates = [
+  static const List<String> _fallbackGovernorates = [
     'دمشق',
     'ريف دمشق',
     'حلب',
@@ -38,9 +43,7 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
     'إدلب',
   ];
 
-  final List<String> _statuses = ['نشط', 'معلق', 'محذوف', 'قيد المراجعة'];
-
-  final List<String> _categories = [
+  static const List<String> _fallbackCategories = [
     'عائلات',
     'أطفال',
     'مسنين',
@@ -49,8 +52,27 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
     'نازحين',
   ];
 
+  final List<String> _statuses = ['نشط', 'معلق', 'محذوف', 'قيد المراجعة'];
+
   @override
   Widget build(BuildContext context) {
+    final governoratesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.governorate),
+    );
+    final sectionTaxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section),
+    );
+    final categoryTaxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category),
+    );
+
+    final governorates = _resolveLabels(governoratesAsync, _fallbackGovernorates);
+    final categories = _resolveMergedLabels(
+      sectionTaxonomiesAsync,
+      categoryTaxonomiesAsync,
+      _fallbackCategories,
+    );
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -109,7 +131,7 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
           Wrap(
             spacing: 8,
             runSpacing: 4,
-            children: _governorates.map((gov) {
+            children: governorates.map((gov) {
               final isSelected = _selectedGovernorates.contains(gov);
               return FilterChip(
                 label: Text(gov),
@@ -168,7 +190,7 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
           Wrap(
             spacing: 8,
             runSpacing: 4,
-            children: _categories.map((category) {
+            children: categories.map((category) {
               final isSelected = _selectedCategories.contains(category);
               return FilterChip(
                 label: Text(category),
@@ -299,6 +321,33 @@ class _AdvancedSearchFiltersState extends State<AdvancedSearchFilters> {
         ],
       ),
     );
+  }
+
+  List<String> _resolveLabels(
+    AsyncValue<List<taxonomy_domain.Taxonomy>> async,
+    List<String> fallback,
+  ) {
+    final labels = async.maybeWhen(
+      data: (items) =>
+          items.map((item) => item.label.trim()).where((label) => label.isNotEmpty).toList(growable: false),
+      orElse: () => const <String>[],
+    );
+
+    return labels.isNotEmpty ? labels : fallback;
+  }
+
+  List<String> _resolveMergedLabels(
+    AsyncValue<List<taxonomy_domain.Taxonomy>> primary,
+    AsyncValue<List<taxonomy_domain.Taxonomy>> secondary,
+    List<String> fallback,
+  ) {
+    final primaryLabels = _resolveLabels(primary, const <String>[]);
+    final secondaryLabels = _resolveLabels(secondary, const <String>[]);
+    final merged = <String>{...primaryLabels, ...secondaryLabels};
+    if (merged.isNotEmpty) {
+      return merged.toList(growable: false);
+    }
+    return fallback;
   }
 
   Color _getStatusColor(String status) {

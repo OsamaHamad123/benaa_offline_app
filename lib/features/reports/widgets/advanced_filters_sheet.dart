@@ -1,63 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// Advanced Filters Sheet - فلاتر متقدمة للتقارير
-class AdvancedFiltersSheet extends StatefulWidget {
+class AdvancedFiltersSheet extends ConsumerStatefulWidget {
   final String? selectedCategory;
   final String? selectedGovernorate;
   final bool? syncedOnly;
   final Function(String?, String?, bool?) onApply;
 
   const AdvancedFiltersSheet({
-    required this.onApply, super.key,
+    required this.onApply,
+    super.key,
     this.selectedCategory,
     this.selectedGovernorate,
     this.syncedOnly,
   });
 
   @override
-  State<AdvancedFiltersSheet> createState() => _AdvancedFiltersSheetState();
+  ConsumerState<AdvancedFiltersSheet> createState() => _AdvancedFiltersSheetState();
 }
 
-class _AdvancedFiltersSheetState extends State<AdvancedFiltersSheet> {
+class _AdvancedFiltersSheetState extends ConsumerState<AdvancedFiltersSheet> {
   String? _selectedCategory;
   String? _selectedGovernorate;
   bool? _syncedOnly;
-
-  // قائمة الفئات
-  final List<String> _categories = [
-    'الكل',
-    'أيتام',
-    'فقراء',
-    'ذوي احتياجات خاصة',
-    'أسر متعففة',
-  ];
-
-  // قائمة المحافظات
-  final List<String> _governorates = [
-    'الكل',
-    'عدن',
-    'صنعاء',
-    'تعز',
-    'حضرموت',
-    'إب',
-    'الحديدة',
-    'ذمار',
-    'المحويت',
-    'البيضاء',
-    'عمران',
-    'صعدة',
-    'الجوف',
-    'مأرب',
-    'المهرة',
-    'حجة',
-    'الضالع',
-    'لحج',
-    'أبين',
-    'شبوة',
-    'ريمة',
-    'سقطرى',
-  ];
 
   @override
   void initState() {
@@ -69,6 +38,11 @@ class _AdvancedFiltersSheetState extends State<AdvancedFiltersSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final governoratesAsync = ref.watch(bridgeGovernoratesProvider);
+    final categoriesAsync = ref.watch(
+      bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.category),
+    );
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -115,54 +89,148 @@ class _AdvancedFiltersSheetState extends State<AdvancedFiltersSheet> {
           _buildFilterSection(
             title: 'الفئة',
             icon: Icons.category,
-            child: Wrap(
-              spacing: 8.w,
-              runSpacing: 8.h,
-              children: _categories.map((category) {
-                final isSelected = _selectedCategory == category ||
-                    (_selectedCategory == null && category == 'الكل');
-                return FilterChip(
-                  label: Text(category),
-                  selected: isSelected,
-                  onSelected: (selected) {
+            child: categoriesAsync.when(
+              data: (categories) {
+                final options = [
+                  const DropdownMenuItem<String>(child: Text('الكل')),
+                  ...categories.where((item) => item.code.trim().isNotEmpty && item.label.trim().isNotEmpty).map(
+                        (item) => DropdownMenuItem<String>(
+                          value: item.code,
+                          child: Text(item.label),
+                        ),
+                      ),
+                ];
+
+                final hasSelected = _selectedCategory != null && options.any((item) => item.value == _selectedCategory);
+
+                return DropdownButtonFormField<String>(
+                  initialValue: hasSelected ? _selectedCategory : null,
+                  decoration: InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                  items: options,
+                  onChanged: (value) {
                     setState(() {
-                      _selectedCategory =
-                          selected && category != 'الكل' ? category : null;
+                      _selectedCategory = value;
                     });
                   },
-                  selectedColor: Theme.of(
-                    context,
-                  ).primaryColor.withOpacity(0.2),
-                  checkmarkColor: Theme.of(context).primaryColor,
                 );
-              }).toList(),
+              },
+              loading: () => DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem<String>(
+                    child: Text('جاري تحميل الفئات...'),
+                  ),
+                ],
+                onChanged: null,
+              ),
+              error: (_, __) => DropdownButtonFormField<String>(
+                initialValue: _selectedCategory,
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(child: Text('الكل')),
+                  if (_selectedCategory != null)
+                    DropdownMenuItem<String>(value: _selectedCategory, child: Text(_selectedCategory!)),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                },
+              ),
             ),
           ),
           SizedBox(height: 16.h),
 
-          // فلتر المحافظة
+          // فلتر المنطقة
           _buildFilterSection(
-            title: 'المحافظة',
+            title: 'المنطقة',
             icon: Icons.location_on,
-            child: DropdownButtonFormField<String>(
-              initialValue: _selectedGovernorate ?? 'الكل',
-              decoration: InputDecoration(
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12.w,
-                  vertical: 8.h,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-              items: _governorates.map((gov) {
-                return DropdownMenuItem(value: gov, child: Text(gov));
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedGovernorate = value == 'الكل' ? null : value;
-                });
+            child: governoratesAsync.when(
+              data: (governorates) {
+                final options = [
+                  'الكل',
+                  ...governorates.map((item) => item.label),
+                ];
+                final hasSelected = _selectedGovernorate != null && options.contains(_selectedGovernorate);
+                final currentValue = hasSelected ? _selectedGovernorate : 'الكل';
+
+                return DropdownButtonFormField<String>(
+                  initialValue: currentValue,
+                  decoration: InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 8.h,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                  items: options.map((region) {
+                    return DropdownMenuItem(value: region, child: Text(region));
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedGovernorate = value == 'الكل' ? null : value;
+                    });
+                  },
+                );
               },
+              loading: () => DropdownButtonFormField<String>(
+                initialValue: 'الكل',
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'الكل',
+                    child: Text('جاري تحميل المناطق...'),
+                  ),
+                ],
+                onChanged: null,
+              ),
+              error: (_, __) => DropdownButtonFormField<String>(
+                initialValue: _selectedGovernorate ?? 'الكل',
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 8.h,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                ),
+                items: [
+                  const DropdownMenuItem(value: 'الكل', child: Text('الكل')),
+                  if (_selectedGovernorate != null)
+                    DropdownMenuItem(value: _selectedGovernorate, child: Text(_selectedGovernorate!)),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedGovernorate = value == 'الكل' ? null : value;
+                  });
+                },
+              ),
             ),
           ),
           SizedBox(height: 16.h),
@@ -171,28 +239,24 @@ class _AdvancedFiltersSheetState extends State<AdvancedFiltersSheet> {
           _buildFilterSection(
             title: 'حالة المزامنة',
             icon: Icons.sync,
-            child: Column(
+            child: Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
               children: [
-                RadioListTile<bool?>(
-                  title: const Text('الكل'),
-                  value: null,
-                  groupValue: _syncedOnly,
-                  onChanged: (value) => setState(() => _syncedOnly = value),
-                  contentPadding: EdgeInsets.zero,
+                ChoiceChip(
+                  label: const Text('الكل'),
+                  selected: _syncedOnly == null,
+                  onSelected: (_) => setState(() => _syncedOnly = null),
                 ),
-                RadioListTile<bool?>(
-                  title: const Text('تمت المزامنة فقط'),
-                  value: true,
-                  groupValue: _syncedOnly,
-                  onChanged: (value) => setState(() => _syncedOnly = value),
-                  contentPadding: EdgeInsets.zero,
+                ChoiceChip(
+                  label: const Text('تمت المزامنة فقط'),
+                  selected: _syncedOnly == true,
+                  onSelected: (_) => setState(() => _syncedOnly = true),
                 ),
-                RadioListTile<bool?>(
-                  title: const Text('غير متزامن فقط'),
-                  value: false,
-                  groupValue: _syncedOnly,
-                  onChanged: (value) => setState(() => _syncedOnly = value),
-                  contentPadding: EdgeInsets.zero,
+                ChoiceChip(
+                  label: const Text('غير متزامن فقط'),
+                  selected: _syncedOnly == false,
+                  onSelected: (_) => setState(() => _syncedOnly = false),
                 ),
               ],
             ),

@@ -33,6 +33,7 @@ void main() {
       expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.deathReason), isTrue);
       expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.disabilityType), isTrue);
       expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.incomeSource), isTrue);
+      expect(essentialBeneficiaryFormTaxonomyGroups.contains(TaxonomyGroup.sponsorshipType), isTrue);
     });
 
     test('has no duplicate groups', () {

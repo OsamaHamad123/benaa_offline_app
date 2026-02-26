@@ -150,6 +150,15 @@ class FamilyMembersDao extends DatabaseAccessor<AppDatabase> with _$FamilyMember
       ),
     );
   }
+
+  Future<void> markAsSyncedWithoutServerId(int id) {
+    return (update(familyMembersTable)..where((t) => t.id.equals(id))).write(
+      FamilyMembersTableCompanion(
+        syncState: const Value('synced'),
+        lastSyncedAt: Value(DateTime.now()),
+      ),
+    );
+  }
 }
 
 /// إحصائيات العائلة

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../providers/associations_provider.dart';
 
 /// 🎯 ورقة الفلاتر - Optimized Performance
@@ -15,29 +17,110 @@ class AssociationsFilterSheet extends StatefulWidget {
   final bool showOnlyActive;
   final String? selectedRepresentativeId;
   final String? selectedCurrency;
-  final Function(bool, String?, String?) onApply;
+  final String? selectedAssociationTypeCode;
+  final Function(bool, String?, String?, String?) onApply;
 
   const AssociationsFilterSheet({
-    required this.showOnlyActive, required this.selectedRepresentativeId, required this.selectedCurrency, required this.onApply, super.key,
+    required this.showOnlyActive,
+    required this.selectedRepresentativeId,
+    required this.selectedCurrency,
+    required this.selectedAssociationTypeCode,
+    required this.onApply,
+    super.key,
   });
 
   @override
-  State<AssociationsFilterSheet> createState() =>
-      _AssociationsFilterSheetState();
+  State<AssociationsFilterSheet> createState() => _AssociationsFilterSheetState();
 }
 
 class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
   late final ValueNotifier<bool> showActiveNotifier;
   late final ValueNotifier<String?> selectedRepNotifier;
   late final ValueNotifier<String?> selectedCurrencyNotifier;
+  late final ValueNotifier<String?> selectedAssociationTypeNotifier;
+
+  String? _normalizeNullableFilter(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
+  }
+
+  List<DropdownMenuItem<String?>> _buildCurrencyItems(WidgetRef ref) {
+    final taxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.currency),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const [],
+        );
+
+    if (taxonomies.isEmpty) {
+      return const [
+        DropdownMenuItem<String?>(value: null, child: Text('الكل')),
+        DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
+        DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
+        DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
+      ];
+    }
+
+    final seen = <String>{};
+    final items = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('الكل')),
+    ];
+
+    for (final taxonomy in taxonomies) {
+      final code = taxonomy.code.trim().toUpperCase();
+      if (code.isEmpty || seen.contains(code)) continue;
+      seen.add(code);
+      items.add(
+        DropdownMenuItem<String?>(
+          value: code,
+          child: Text('${taxonomy.label} ($code)'),
+        ),
+      );
+    }
+
+    return items;
+  }
+
+  List<DropdownMenuItem<String?>> _buildAssociationTypeItems(WidgetRef ref) {
+    final taxonomies = ref
+        .watch(
+          bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.associationType),
+        )
+        .maybeWhen(
+          data: (items) => items,
+          orElse: () => const [],
+        );
+
+    final items = <DropdownMenuItem<String?>>[
+      const DropdownMenuItem<String?>(value: null, child: Text('الكل')),
+    ];
+
+    for (final taxonomy in taxonomies) {
+      final code = _normalizeNullableFilter(taxonomy.code);
+      final label = taxonomy.label.trim();
+      if (code == null || label.isEmpty) continue;
+      items.add(
+        DropdownMenuItem<String?>(
+          value: code,
+          child: Text(label),
+        ),
+      );
+    }
+
+    return items;
+  }
 
   @override
   void initState() {
     super.initState();
     showActiveNotifier = ValueNotifier<bool>(widget.showOnlyActive);
-    selectedRepNotifier =
-        ValueNotifier<String?>(widget.selectedRepresentativeId);
-    selectedCurrencyNotifier = ValueNotifier<String?>(widget.selectedCurrency);
+    selectedRepNotifier = ValueNotifier<String?>(_normalizeNullableFilter(widget.selectedRepresentativeId));
+    selectedCurrencyNotifier = ValueNotifier<String?>(_normalizeNullableFilter(widget.selectedCurrency));
+    selectedAssociationTypeNotifier =
+        ValueNotifier<String?>(_normalizeNullableFilter(widget.selectedAssociationTypeCode));
   }
 
   @override
@@ -45,6 +128,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
     showActiveNotifier.dispose();
     selectedRepNotifier.dispose();
     selectedCurrencyNotifier.dispose();
+    selectedAssociationTypeNotifier.dispose();
     super.dispose();
   }
 
@@ -59,8 +143,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
           left: ResponsiveUtils.mediumSpace,
           right: ResponsiveUtils.mediumSpace,
           top: ResponsiveUtils.mediumSpace,
-          bottom: MediaQuery.of(context).viewInsets.bottom +
-              ResponsiveUtils.mediumSpace,
+          bottom: MediaQuery.of(context).viewInsets.bottom + ResponsiveUtils.mediumSpace,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -84,6 +167,11 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
 
               // فلتر العملة
               _buildCurrencyFilter(),
+
+              SizedBox(height: ResponsiveUtils.mediumSpace),
+
+              // فلتر نوع الجمعية
+              _buildAssociationTypeFilter(),
 
               SizedBox(height: ResponsiveUtils.largeSpace),
 
@@ -115,9 +203,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         Text(
           'الفلاتر',
           style: TextStyle(
-            fontSize: isTablet
-                ? ResponsiveUtils.headingFont
-                : ResponsiveUtils.titleFont,
+            fontSize: isTablet ? ResponsiveUtils.headingFont : ResponsiveUtils.titleFont,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -133,8 +219,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
       builder: (context, showActive, _) => SwitchListTile(
         value: showActive,
         onChanged: (value) => showActiveNotifier.value = value,
-        title:
-            const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
+        title: const Text('عرض الجمعيات النشطة فقط', textAlign: TextAlign.right),
         activeThumbColor: colorScheme.primary,
       ),
     );
@@ -156,19 +241,22 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         SizedBox(height: ResponsiveUtils.smallSpace),
         Consumer(
           builder: (context, ref, child) {
-            final representatives =
-                ref.watch(associationsProvider).representatives;
+            final representatives = ref.watch(associationsProvider).representatives;
+            final uniqueReps = <String, dynamic>{};
+            for (final rep in representatives) {
+              final id = _normalizeNullableFilter(rep.id);
+              if (id == null) continue;
+              uniqueReps.putIfAbsent(id, () => rep);
+            }
 
             return ValueListenableBuilder<String?>(
               valueListenable: selectedRepNotifier,
-              builder: (context, selectedRep, _) =>
-                  DropdownButtonFormField<String?>(
-                initialValue: selectedRep,
+              builder: (context, selectedRep, _) => DropdownButtonFormField<String?>(
+                initialValue: _normalizeNullableFilter(selectedRep),
                 decoration: InputDecoration(
                   hintText: 'اختر المندوب',
                   border: OutlineInputBorder(
-                    borderRadius:
-                        BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
                   ),
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: ResponsiveUtils.mediumSpace,
@@ -176,15 +264,15 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
                   ),
                 ),
                 items: [
-                  const DropdownMenuItem(child: Text('الكل')),
-                  ...representatives.map(
+                  const DropdownMenuItem<String?>(value: null, child: Text('الكل')),
+                  ...uniqueReps.values.map(
                     (rep) => DropdownMenuItem(
-                      value: rep.id,
+                      value: _normalizeNullableFilter(rep.id),
                       child: Text(rep.name, textAlign: TextAlign.right),
                     ),
                   ),
                 ],
-                onChanged: (value) => selectedRepNotifier.value = value,
+                onChanged: (value) => selectedRepNotifier.value = _normalizeNullableFilter(value),
               ),
             );
           },
@@ -207,30 +295,96 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
           textAlign: TextAlign.right,
         ),
         SizedBox(height: ResponsiveUtils.smallSpace),
-        ValueListenableBuilder<String?>(
-          valueListenable: selectedCurrencyNotifier,
-          builder: (context, selectedCurrency, _) =>
-              DropdownButtonFormField<String?>(
-            initialValue: selectedCurrency,
-            decoration: InputDecoration(
-              hintText: 'اختر العملة',
-              border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(ResponsiveUtils.mediumRadius),
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: ResponsiveUtils.mediumSpace,
-                vertical: ResponsiveUtils.smallSpace,
-              ),
-            ),
-            items: const [
-              DropdownMenuItem(child: Text('الكل')),
-              DropdownMenuItem(value: 'IQD', child: Text('دينار عراقي (IQD)')),
-              DropdownMenuItem(value: 'USD', child: Text('دولار أمريكي (USD)')),
-              DropdownMenuItem(value: 'EUR', child: Text('يورو (EUR)')),
-            ],
-            onChanged: (value) => selectedCurrencyNotifier.value = value,
+        Consumer(
+          builder: (context, ref, _) {
+            final currencyItems = _buildCurrencyItems(ref);
+            return ValueListenableBuilder<String?>(
+              valueListenable: selectedCurrencyNotifier,
+              builder: (context, selectedCurrency, _) {
+                final normalized = _normalizeNullableFilter(selectedCurrency);
+                final hasValue = normalized == null || currencyItems.any((item) => item.value == normalized);
+                final safeValue = hasValue ? normalized : null;
+
+                if (safeValue != normalized) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      selectedCurrencyNotifier.value = null;
+                    }
+                  });
+                }
+
+                return DropdownButtonFormField<String?>(
+                  initialValue: safeValue,
+                  decoration: InputDecoration(
+                    hintText: 'اختر العملة',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: ResponsiveUtils.smallSpace,
+                    ),
+                  ),
+                  items: currencyItems,
+                  onChanged: (value) => selectedCurrencyNotifier.value = _normalizeNullableFilter(value),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAssociationTypeFilter() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'تصفية حسب نوع الجمعية',
+          style: TextStyle(
+            fontSize: ResponsiveUtils.bodyFont,
+            fontWeight: FontWeight.w600,
           ),
+          textAlign: TextAlign.right,
+        ),
+        SizedBox(height: ResponsiveUtils.smallSpace),
+        Consumer(
+          builder: (context, ref, _) {
+            final typeItems = _buildAssociationTypeItems(ref);
+            return ValueListenableBuilder<String?>(
+              valueListenable: selectedAssociationTypeNotifier,
+              builder: (context, selectedType, _) {
+                final normalized = _normalizeNullableFilter(selectedType);
+                final hasValue = normalized == null || typeItems.any((item) => item.value == normalized);
+                final safeValue = hasValue ? normalized : null;
+
+                if (safeValue != normalized) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      selectedAssociationTypeNotifier.value = null;
+                    }
+                  });
+                }
+
+                return DropdownButtonFormField<String?>(
+                  initialValue: safeValue,
+                  decoration: InputDecoration(
+                    hintText: 'اختر نوع الجمعية',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(ResponsiveUtils.mediumRadius),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveUtils.mediumSpace,
+                      vertical: ResponsiveUtils.smallSpace,
+                    ),
+                  ),
+                  items: typeItems,
+                  onChanged: (value) => selectedAssociationTypeNotifier.value = _normalizeNullableFilter(value),
+                );
+              },
+            );
+          },
         ),
       ],
     );
@@ -244,6 +398,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
         showActiveNotifier.value = true;
         selectedRepNotifier.value = null;
         selectedCurrencyNotifier.value = null;
+        selectedAssociationTypeNotifier.value = null;
       },
       icon: Icon(
         Icons.clear_all,
@@ -276,6 +431,7 @@ class _AssociationsFilterSheetState extends State<AssociationsFilterSheet> {
           showActiveNotifier.value,
           selectedRepNotifier.value,
           selectedCurrencyNotifier.value,
+          selectedAssociationTypeNotifier.value,
         );
       },
       style: ElevatedButton.styleFrom(

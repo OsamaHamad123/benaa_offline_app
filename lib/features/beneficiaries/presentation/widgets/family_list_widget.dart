@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/common_dialogs.dart';
 import '../../../../core/widgets/custom_empty_state.dart';
 import '../../../../core/utils/family_enums.dart';
-import '../../../../core/enums/sponsorship_enums.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../features/taxonomies/taxonomies.dart';
 import '../providers/beneficiary_dependencies.dart';
 import '../providers/family_providers.dart';
 import 'family_deceased_form.dart';
@@ -180,8 +180,9 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget> with Single
     final genderColor = member.gender == 1 ? colorScheme.primary : colorScheme.secondary;
     final now = DateTime.now();
     final age = member.age ?? (now.difference(member.birthDate).inDays ~/ 365);
-    final sponsorshipStatus = SponsorshipStatus.fromId(member.sponsorshipStatus);
-    final sponsorshipType = SponsorshipType.fromId(member.sponsorshipType);
+    final sponsorshipStatusCode = member.sponsorshipStatus?.toString();
+    final sponsorshipTypeCode = member.sponsorshipType?.toString();
+    final guaranteeTypeCode = member.guaranteeType?.toString();
     final attachmentsCount = _attachmentsCount(member.attachments);
 
     return Card(
@@ -255,15 +256,26 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget> with Single
                   icon: Icons.attach_file,
                   label: 'المرفقات $attachmentsCount',
                 ),
-                if (sponsorshipStatus != null)
-                  _buildInfoChip(
+                if (sponsorshipStatusCode != null)
+                  _buildTaxonomyInfoChip(
                     icon: Icons.volunteer_activism_outlined,
-                    label: 'حالة الكفالة ${sponsorshipStatus.arabicName}',
+                    title: 'حالة الكفالة',
+                    group: TaxonomyGroup.beneficiaryStatus,
+                    code: sponsorshipStatusCode,
                   ),
-                if (sponsorshipType != null)
-                  _buildInfoChip(
+                if (sponsorshipTypeCode != null)
+                  _buildTaxonomyInfoChip(
                     icon: Icons.handshake_outlined,
-                    label: 'نوع الكفالة ${sponsorshipType.arabicName}',
+                    title: 'نوع الكفالة',
+                    group: TaxonomyGroup.sponsorshipType,
+                    code: sponsorshipTypeCode,
+                  ),
+                if (guaranteeTypeCode != null)
+                  _buildTaxonomyInfoChip(
+                    icon: Icons.verified_outlined,
+                    title: 'نوع الضمان',
+                    group: TaxonomyGroup.guaranteeType,
+                    code: guaranteeTypeCode,
                   ),
               ],
             ),
@@ -585,6 +597,45 @@ class _FamilyListWidgetState extends ConsumerState<FamilyListWidget> with Single
           const SizedBox(width: 5),
           Text(
             label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTaxonomyInfoChip({
+    required IconData icon,
+    required String title,
+    required TaxonomyGroup group,
+    required String code,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 5),
+          Text(
+            '$title ',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          TaxonomyLabel(
+            group: group,
+            code: code,
+            placeholder: code,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.w600,

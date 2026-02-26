@@ -71,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration {
@@ -82,6 +82,7 @@ class AppDatabase extends _$AppDatabase {
         await _createFileIdReservationBatchesTable();
         await _createSyncTombstonesTable();
         await _createAssociationsSponsorProfileTable();
+        await _createAssociationsEmployeeProfileTable();
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
@@ -190,9 +191,82 @@ class AppDatabase extends _$AppDatabase {
           await _createAssociationsSponsorProfileTable();
         }
 
+        if (from < 23) {
+          // v23: Add associations employee profile table to persist sponsor-server linkage per representative.
+          await _createAssociationsEmployeeProfileTable();
+        }
+
+        if (from < 24) {
+          // v24: Add association_type_code to sponsor profile for taxonomy-backed association type mapping.
+          await _ensureAssociationsSponsorProfileColumns();
+        }
+
+        if (from < 25) {
+          // v25: Add guarantee_type to sponsorships for separated guarantee taxonomy binding.
+          await m.addColumn(sponsorships, sponsorships.guaranteeType);
+        }
+
+        if (from < 26) {
+          // v26: fill taxonomy linkage gaps
+          // - family_members.guarantee_type
+          // - beneficiaries.(assistance_type_code, disability_type_code, income_source_code)
+          await m.addColumn(familyMembersTable, familyMembersTable.guaranteeType);
+          await m.addColumn(beneficiaries, beneficiaries.assistanceTypeCode);
+          await m.addColumn(beneficiaries, beneficiaries.disabilityTypeCode);
+          await m.addColumn(beneficiaries, beneficiaries.incomeSourceCode);
+        }
+
+        if (from < 27) {
+          // v27: store beneficiary-level guarantee taxonomy selection explicitly.
+          await m.addColumn(beneficiaries, beneficiaries.guaranteeTypeCode);
+        }
+
+        if (from < 28) {
+          // v28: normalize legacy attachment person metadata values.
+          await _normalizeLegacyAttachmentPersonMetadata();
+        }
+
         await _createPerformanceIndexes();
       },
     );
+  }
+
+  Future<void> _normalizeLegacyAttachmentPersonMetadata() async {
+    await customStatement('''
+      UPDATE attachments
+      SET
+        person_id = CASE
+          WHEN person_id IS NULL OR TRIM(person_id) = '' THEN
+            TRIM(REPLACE(COALESCE(person_type, ''), '(متوفي)', ''))
+          ELSE TRIM(person_id)
+        END,
+        person_type = CASE
+          WHEN person_type LIKE '%(متوفي)%' THEN 'deceased_member'
+          ELSE 'family_member'
+        END
+      WHERE person_type IS NOT NULL
+        AND TRIM(person_type) != ''
+        AND person_type NOT IN (
+          'file_owner',
+          'family_member',
+          'deceased_member',
+          'deceased_father',
+          'deceased_mother'
+        );
+    ''');
+
+    await customStatement('''
+      UPDATE attachments
+      SET person_id = NULL
+      WHERE person_type = 'file_owner';
+    ''');
+
+    await customStatement('''
+      UPDATE attachments
+      SET person_id = NULL
+      WHERE person_id IS NOT NULL
+        AND TRIM(person_id) = '';
+    ''');
   }
 
   Future<void> _createFileIdReservationBatchesTable() async {
@@ -278,6 +352,7 @@ class AppDatabase extends _$AppDatabase {
         country_code TEXT,
         country_name TEXT,
         sponsor_bank_name_id INTEGER,
+        association_type_code TEXT,
         updated_at TEXT,
         FOREIGN KEY(association_id) REFERENCES associations(id) ON DELETE CASCADE
       );
@@ -285,6 +360,21 @@ class AppDatabase extends _$AppDatabase {
 
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_assoc_sponsor_profile_country ON associations_sponsor_profile(country_code);',
+    );
+  }
+
+  Future<void> _createAssociationsEmployeeProfileTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS associations_employee_profile (
+        representative_id TEXT PRIMARY KEY,
+        sponsor_server_id INTEGER NOT NULL,
+        updated_at TEXT,
+        FOREIGN KEY(representative_id) REFERENCES association_representatives(id) ON DELETE CASCADE
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_assoc_employee_profile_sponsor ON associations_employee_profile(sponsor_server_id);',
     );
   }
 
@@ -302,6 +392,17 @@ class AppDatabase extends _$AppDatabase {
     if (!existing.contains('sponsorships_skipped')) {
       await customStatement(
         'ALTER TABLE import_batches ADD COLUMN sponsorships_skipped INTEGER NOT NULL DEFAULT 0;',
+      );
+    }
+  }
+
+  Future<void> _ensureAssociationsSponsorProfileColumns() async {
+    final info = await customSelect('PRAGMA table_info(associations_sponsor_profile);').get();
+    final existing = info.map((r) => r.read<String>('name')).toSet();
+
+    if (!existing.contains('association_type_code')) {
+      await customStatement(
+        'ALTER TABLE associations_sponsor_profile ADD COLUMN association_type_code TEXT;',
       );
     }
   }

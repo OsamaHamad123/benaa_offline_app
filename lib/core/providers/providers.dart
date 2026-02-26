@@ -78,13 +78,12 @@ final beneficiariesSearchProvider =
 final statisticsProvider = FutureProvider.autoDispose<Statistics>((ref) async {
   final db = ref.watch(databaseProvider);
 
-  // TODO: Update to use actual category codes from backend
-  // For now, using placeholder values (orphan=1, poor=2)
+  final categoryCodes = await _resolveLegacyCategoryCodes(db);
   final results = await Future.wait([
     db.beneficiariesDao.countBeneficiaries(),
     db.beneficiariesDao.countPendingSync(),
-    db.beneficiariesDao.countBeneficiariesByCategory(1), // orphan code
-    db.beneficiariesDao.countBeneficiariesByCategory(2), // poor code
+    db.beneficiariesDao.countBeneficiariesByCategory(categoryCodes.orphanCode),
+    db.beneficiariesDao.countBeneficiariesByCategory(categoryCodes.poorCode),
   ]);
 
   return Statistics(
@@ -180,4 +179,59 @@ class Statistics {
     required this.orphans,
     required this.poor,
   });
+}
+
+class _ResolvedCategoryCodes {
+  final int orphanCode;
+  final int poorCode;
+
+  const _ResolvedCategoryCodes({
+    required this.orphanCode,
+    required this.poorCode,
+  });
+}
+
+Future<_ResolvedCategoryCodes> _resolveLegacyCategoryCodes(AppDatabase db) async {
+  final categories = <Taxonomy>[];
+  categories.addAll(await db.taxonomiesDao.getByGroup('category'));
+  categories.addAll(await db.taxonomiesDao.getByGroup('section'));
+
+  int? orphanCode;
+  int? poorCode;
+
+  for (final taxonomy in categories) {
+    final key = _parseTaxonomyNumericKey(taxonomy);
+    if (key == null) {
+      continue;
+    }
+
+    final label = taxonomy.label.trim();
+    if (orphanCode == null && (label == 'أيتام' || label == 'يتيم')) {
+      orphanCode = key;
+    }
+    if (poorCode == null && (label == 'فقراء' || label == 'فقير')) {
+      poorCode = key;
+    }
+  }
+
+  return _ResolvedCategoryCodes(
+    orphanCode: orphanCode ?? 1,
+    poorCode: poorCode ?? 2,
+  );
+}
+
+int? _parseTaxonomyNumericKey(Taxonomy taxonomy) {
+  final code = int.tryParse(taxonomy.code.trim());
+  if (code != null) {
+    return code;
+  }
+
+  final rawId = taxonomy.id.trim();
+  if (rawId.isEmpty) {
+    return null;
+  }
+
+  final separatorIndex = rawId.indexOf('::');
+  final suffix = separatorIndex >= 0 ? rawId.substring(separatorIndex + 2) : rawId;
+  return int.tryParse(suffix.trim());
 }

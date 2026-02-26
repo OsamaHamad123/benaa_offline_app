@@ -49,7 +49,9 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
   DateTime? _endDate;
   String _status = 'active';
   String _type = 'monthly';
+  String? _guaranteeType;
   String? _currency;
+  String? _bankName;
   late final TextEditingController _amountController;
   late final TextEditingController _notesController;
 
@@ -59,7 +61,6 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
   late final TextEditingController _addressController;
 
   // معلومات بنكية
-  late final TextEditingController _bankNameController;
   late final TextEditingController _accountHolderNameController;
   late final TextEditingController _accountHolderIdController;
   late final TextEditingController _accountNumberController;
@@ -93,7 +94,9 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
     _endDate = s?.endDate;
     _status = s?.status ?? 'active';
     _type = s?.sponsorshipType ?? 'monthly';
+    _guaranteeType = s?.guaranteeType;
     _currency = s?.currency;
+    _bankName = s?.bankName;
     _amountController = TextEditingController(text: s?.amount?.toString() ?? '');
     _notesController = TextEditingController(text: s?.notes ?? '');
 
@@ -103,7 +106,6 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
     _addressController = TextEditingController(text: s?.address ?? '');
 
     // معلومات بنكية
-    _bankNameController = TextEditingController(text: s?.bankName ?? '');
     _accountHolderNameController = TextEditingController(text: s?.accountHolderName ?? '');
     _accountHolderIdController = TextEditingController(text: s?.accountHolderIdNumber?.toString() ?? '');
     _accountNumberController = TextEditingController(text: s?.accountNumber ?? '');
@@ -179,7 +181,6 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
     _governorateController.dispose();
     _cityController.dispose();
     _addressController.dispose();
-    _bankNameController.dispose();
     _accountHolderNameController.dispose();
     _accountHolderIdController.dispose();
     _accountNumberController.dispose();
@@ -191,13 +192,24 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
   Widget build(BuildContext context) {
     final associationsState = ref.watch(kafalatActiveAssociationsProvider);
     final sponsorshipTypeOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType));
+    final guaranteeTypeOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.guaranteeType));
     final sponsorshipStatusOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.beneficiaryStatus));
     final currencyOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.currency));
-    final hasTaxonomyValues =
-        sponsorshipTypeOptions.hasValue && sponsorshipStatusOptions.hasValue && currencyOptions.hasValue;
+    final bankOptions = ref.watch(bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.bankName));
+    final hasTaxonomyValues = sponsorshipTypeOptions.hasValue &&
+        guaranteeTypeOptions.hasValue &&
+        sponsorshipStatusOptions.hasValue &&
+        currencyOptions.hasValue;
     final taxonomyLoading = !hasTaxonomyValues &&
-        (sponsorshipTypeOptions.isLoading || sponsorshipStatusOptions.isLoading || currencyOptions.isLoading);
+        (sponsorshipTypeOptions.isLoading ||
+            guaranteeTypeOptions.isLoading ||
+            sponsorshipStatusOptions.isLoading ||
+            currencyOptions.isLoading);
     final typeItems = sponsorshipTypeOptions.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final guaranteeItems = guaranteeTypeOptions.maybeWhen(
       data: (items) => items,
       orElse: () => const <taxonomy_domain.Taxonomy>[],
     );
@@ -209,7 +221,16 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
       data: (items) => items,
       orElse: () => const <taxonomy_domain.Taxonomy>[],
     );
-    final hasTaxonomyGap = hasTaxonomyValues && (typeItems.isEmpty || statusItems.isEmpty || currencyItems.isEmpty);
+    final bankItems = bankOptions.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final hasTaxonomyGap = hasTaxonomyValues &&
+        (typeItems.isEmpty ||
+            guaranteeItems.isEmpty ||
+            statusItems.isEmpty ||
+            currencyItems.isEmpty ||
+            bankItems.isEmpty);
     final theme = Theme.of(context);
 
     // عرض مؤشر التحميل أثناء تحميل بيانات المستفيد
@@ -463,6 +484,23 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                       ),
                       SizedBox(height: 12.h),
                       DropdownButtonFormField<String>(
+                        initialValue: _guaranteeType,
+                        decoration: const InputDecoration(
+                          labelText: 'نوع الضمان',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _buildMergedTaxonomyItems(
+                          taxonomyItems: guaranteeItems,
+                          fallbackItems: const {
+                            'monthly': 'شهرية',
+                            'one_time': 'مرة واحدة',
+                            'other': 'أخرى',
+                          },
+                        ),
+                        onChanged: _saving ? null : (v) => setState(() => _guaranteeType = v),
+                      ),
+                      SizedBox(height: 12.h),
+                      DropdownButtonFormField<String>(
                         initialValue: _status,
                         decoration: const InputDecoration(
                           labelText: 'حالة الكفالة',
@@ -546,126 +584,125 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
 
             SizedBox(height: 14.h),
 
-            // ========== معلومات الموقع ==========
-            _SectionTitle('معلومات الموقع', theme),
-            if (!_isEditing) ...[
-              SizedBox(height: 6.h),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 16.sp,
-                      color: theme.colorScheme.primary,
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        'تم ملء البيانات تلقائياً من ملف المستفيد',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            SizedBox(height: 10.h),
+            // ========== معلومات الموقع (اختياري) ==========
             Card(
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: EdgeInsets.all(12.w),
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _governorateController,
-                      decoration: const InputDecoration(
-                        labelText: 'المحافظة',
-                        border: OutlineInputBorder(),
+              child: ExpansionTile(
+                initiallyExpanded: !_isEditing,
+                title: _SectionTitle('معلومات الموقع (اختياري)', theme),
+                childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+                children: [
+                  if (!_isEditing)
+                    Container(
+                      margin: EdgeInsets.only(bottom: 10.h),
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16.sp,
+                            color: theme.colorScheme.primary,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              'تم ملء البيانات تلقائياً من ملف المستفيد',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 12.h),
-                    TextFormField(
-                      controller: _cityController,
-                      decoration: const InputDecoration(
-                        labelText: 'المدينة',
-                        border: OutlineInputBorder(),
-                      ),
+                  TextFormField(
+                    controller: _governorateController,
+                    decoration: const InputDecoration(
+                      labelText: 'المحافظة',
+                      border: OutlineInputBorder(),
                     ),
-                    SizedBox(height: 12.h),
-                    TextFormField(
-                      controller: _addressController,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'العنوان',
-                        border: OutlineInputBorder(),
-                      ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextFormField(
+                    controller: _cityController,
+                    decoration: const InputDecoration(
+                      labelText: 'المدينة',
+                      border: OutlineInputBorder(),
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextFormField(
+                    controller: _addressController,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'العنوان',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
             ),
 
             SizedBox(height: 14.h),
 
-            // ========== المعلومات البنكية ==========
-            _SectionTitle('المعلومات البنكية', theme),
-            SizedBox(height: 10.h),
+            // ========== المعلومات البنكية (اختياري) ==========
             Card(
               clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: EdgeInsets.all(12.w),
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _bankNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'اسم البنك',
-                        border: OutlineInputBorder(),
-                      ),
+              child: ExpansionTile(
+                title: _SectionTitle('المعلومات البنكية (اختياري)', theme),
+                childrenPadding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 12.h),
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: _bankName,
+                    decoration: const InputDecoration(
+                      labelText: 'اسم البنك',
+                      border: OutlineInputBorder(),
                     ),
-                    SizedBox(height: 12.h),
-                    TextFormField(
-                      controller: _accountHolderNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'اسم صاحب الحساب',
-                        border: OutlineInputBorder(),
-                      ),
+                    items: _buildTaxonomyOrExistingItems(
+                      taxonomyItems: bankItems,
+                      existingValue: _bankName,
                     ),
-                    SizedBox(height: 12.h),
-                    TextFormField(
-                      controller: _accountHolderIdController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'رقم هوية صاحب الحساب',
-                        border: OutlineInputBorder(),
-                      ),
+                    onChanged: _saving ? null : (v) => setState(() => _bankName = v),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextFormField(
+                    controller: _accountHolderNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'اسم صاحب الحساب',
+                      border: OutlineInputBorder(),
                     ),
-                    SizedBox(height: 12.h),
-                    TextFormField(
-                      controller: _accountNumberController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'رقم الحساب البنكي',
-                        border: OutlineInputBorder(),
-                      ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextFormField(
+                    controller: _accountHolderIdController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'رقم هوية صاحب الحساب',
+                      border: OutlineInputBorder(),
                     ),
-                    SizedBox(height: 12.h),
-                    TextFormField(
-                      controller: _swiftCodeController,
-                      decoration: const InputDecoration(
-                        labelText: 'رمز Swift',
-                        border: OutlineInputBorder(),
-                      ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextFormField(
+                    controller: _accountNumberController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'رقم الحساب البنكي',
+                      border: OutlineInputBorder(),
                     ),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 12.h),
+                  TextFormField(
+                    controller: _swiftCodeController,
+                    decoration: const InputDecoration(
+                      labelText: 'رمز Swift',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
               ),
             ),
             SizedBox(height: 16.h),
@@ -716,6 +753,30 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
           ),
         )
         .toList();
+  }
+
+  List<DropdownMenuItem<String>> _buildTaxonomyOrExistingItems({
+    required List<taxonomy_domain.Taxonomy> taxonomyItems,
+    required String? existingValue,
+  }) {
+    final values = <String>{
+      for (final item in taxonomyItems)
+        if (item.label.trim().isNotEmpty) item.label.trim(),
+    };
+
+    final trimmedExisting = existingValue?.trim();
+    if (trimmedExisting != null && trimmedExisting.isNotEmpty) {
+      values.add(trimmedExisting);
+    }
+
+    return values
+        .map(
+          (value) => DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          ),
+        )
+        .toList(growable: false);
   }
 
   String? _validatePositiveInt(String? value, {required String fieldName}) {
@@ -801,13 +862,14 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
             currency: drift.Value(_currency),
             status: drift.Value(_status),
             sponsorshipType: drift.Value(_type),
+            guaranteeType: drift.Value(_guaranteeType),
             notes: drift.Value(parseText(_notesController)),
             // معلومات الموقع
             governorate: drift.Value(parseText(_governorateController)),
             city: drift.Value(parseText(_cityController)),
             address: drift.Value(parseText(_addressController)),
             // المعلومات البنكية
-            bankName: drift.Value(parseText(_bankNameController)),
+            bankName: drift.Value(_bankName?.trim().isEmpty ?? true ? null : _bankName!.trim()),
             accountHolderName: drift.Value(parseText(_accountHolderNameController)),
             accountHolderIdNumber: drift.Value(accountHolderId),
             accountNumber: drift.Value(parseText(_accountNumberController)),
@@ -847,13 +909,14 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
           currency: drift.Value(_currency),
           status: drift.Value(_status),
           sponsorshipType: drift.Value(_type),
+          guaranteeType: drift.Value(_guaranteeType),
           notes: drift.Value(parseText(_notesController)),
           // معلومات الموقع
           governorate: drift.Value(parseText(_governorateController)),
           city: drift.Value(parseText(_cityController)),
           address: drift.Value(parseText(_addressController)),
           // المعلومات البنكية
-          bankName: drift.Value(parseText(_bankNameController)),
+          bankName: drift.Value(_bankName?.trim().isEmpty ?? true ? null : _bankName!.trim()),
           accountHolderName: drift.Value(parseText(_accountHolderNameController)),
           accountHolderIdNumber: drift.Value(accountHolderId),
           accountNumber: drift.Value(parseText(_accountNumberController)),

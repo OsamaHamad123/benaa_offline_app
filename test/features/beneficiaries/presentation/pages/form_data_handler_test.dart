@@ -68,5 +68,32 @@ void main() {
       expect(entity.educationLevel, EducationLevel.bachelor);
       expect(entity.healthStatus, HealthStatus.chronicDisease);
     });
+
+    test('supports taxonomy-style ids and keeps official file id value', () {
+      final controllers = BeneficiaryFormControllers();
+      addTearDown(controllers.dispose);
+
+      controllers.firstNameController.text = 'ليان';
+      controllers.fatherNameController.text = 'عمر';
+      controllers.lastNameController.text = 'خالد';
+      controllers.nationalIdController.text = '111222333';
+
+      controllers.selectedGender = 'female';
+      controllers.selectedCategory = '2';
+      controllers.selectedRelationship = 'relationship::9';
+      controllers.selectedSection = 'section_14';
+
+      final entity = BeneficiaryFormDataHandler.buildBeneficiary(
+        controllers: controllers,
+        beneficiaryId: null,
+        fileNo: '9001',
+        createdAt: DateTime(2026, 2, 26),
+      );
+
+      expect(entity.relationship, 9);
+      expect(entity.sectionId, 14);
+      expect(entity.fileNo, '9001');
+      expect(entity.fileIdNumber, '9001');
+    });
   });
 }

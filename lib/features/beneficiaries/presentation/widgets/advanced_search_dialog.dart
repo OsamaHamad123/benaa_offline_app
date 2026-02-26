@@ -5,6 +5,7 @@ import '../providers/list/beneficiaries_list_provider.dart';
 import '../../../../core/utils/feedback_utils.dart';
 import '../utils/taxonomy_value_resolver.dart';
 import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
 import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// 🔍 Advanced Search Dialog - بحث متقدم مع فلاتر متعددة
@@ -26,7 +27,7 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
   String? _selectedMaritalStatus;
   int? _ageMin;
   int? _ageMax;
-  final List<int> _selectedSections = [];
+  int? _selectedCategoryId;
 
   @override
   void initState() {
@@ -38,12 +39,9 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
     _phoneController.text = filters.phoneQuery;
     _selectedGender = filters.gender == null ? null : filters.gender.toString();
     _selectedMaritalStatus = filters.maritalStatus == null ? null : filters.maritalStatus.toString();
+    _selectedCategoryId = filters.categoryId;
     _ageMin = filters.ageFrom;
     _ageMax = filters.ageTo;
-  }
-
-  String? _resolveTaxonomyValue(String code, String id) {
-    return TaxonomyValueResolver.resolveCanonicalToken(code: code, id: id);
   }
 
   @override
@@ -69,6 +67,7 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
         ageFrom: _ageMin,
         ageTo: _ageMax,
       );
+      filters.setCategory(_selectedCategoryId);
 
       // تحديث القائمة
       ref.read(beneficiariesListProvider.notifier).refresh();
@@ -91,7 +90,7 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
       _selectedMaritalStatus = null;
       _ageMin = null;
       _ageMax = null;
-      _selectedSections.clear();
+      _selectedCategoryId = null;
     });
 
     ref.read(filtersProvider.notifier).clearFilters();
@@ -107,6 +106,22 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
     final maritalOptions = maritalOptionsAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const [],
+    );
+
+    final genderOptionsAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.gender),
+    );
+    final genderOptions = genderOptionsAsync.maybeWhen(
+      data: (value) => value.cast<taxonomy_domain.Taxonomy>(),
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+
+    final categoryOptionsAsync = ref.watch(
+      bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.category),
+    );
+    final categoryOptions = categoryOptionsAsync.maybeWhen(
+      data: (value) => value.cast<taxonomy_domain.Taxonomy>(),
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
     );
 
     return Dialog(
@@ -179,6 +194,54 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                       ),
                       const SizedBox(height: 24),
 
+                      // الفئة
+                      const Text(
+                        'الفئة',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          FilterChip(
+                            label: const Text('الكل'),
+                            selected: _selectedCategoryId == null,
+                            onSelected: (selected) {
+                              setState(() {
+                                _selectedCategoryId = selected ? null : _selectedCategoryId;
+                              });
+                            },
+                          ),
+                          ...categoryOptions.map((taxonomy) {
+                            final value = TaxonomyValueResolver.resolveToInt(
+                              code: taxonomy.code,
+                              id: taxonomy.id,
+                              group: TaxonomyGroup.category,
+                              source: 'advanced_search_dialog',
+                            );
+                            if (value == null) return null;
+                            return FilterChip(
+                              label: Text(taxonomy.label),
+                              selected: _selectedCategoryId == value,
+                              onSelected: (selected) {
+                                setState(() {
+                                  _selectedCategoryId = selected ? value : null;
+                                });
+                              },
+                            );
+                          }).whereType<Widget>(),
+                        ],
+                      ),
+                      if (categoryOptions.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Text('لا توجد فئات ديناميكية متاحة حالياً'),
+                        ),
+                      const SizedBox(height: 24),
+
                       // الجنس
                       const Text(
                         'الجنس',
@@ -190,26 +253,7 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
-                        children: [
-                          FilterChip(
-                            label: const Text('ذكر'),
-                            selected: _selectedGender == '1',
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedGender = selected ? '1' : null;
-                              });
-                            },
-                          ),
-                          FilterChip(
-                            label: const Text('أنثى'),
-                            selected: _selectedGender == '2',
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedGender = selected ? '2' : null;
-                              });
-                            },
-                          ),
-                        ],
+                        children: _buildGenderChips(genderOptions),
                       ),
                       const SizedBox(height: 24),
 
@@ -226,20 +270,20 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
                         spacing: 8,
                         children: maritalOptions
                             .map((taxonomy) {
-                              final value = _resolveTaxonomyValue(
-                                taxonomy.code,
-                                taxonomy.id,
+                              final value = TaxonomyValueResolver.resolveToInt(
+                                code: taxonomy.code,
+                                id: taxonomy.id,
+                                group: TaxonomyGroup.maritalStatus,
+                                source: 'advanced_search_dialog',
                               );
                               if (value == null) return null;
-                              final taxonomyId = int.tryParse(taxonomy.id);
-                              if (taxonomyId == null) return null;
 
                               return FilterChip(
                                 label: Text(taxonomy.label),
-                                selected: _selectedMaritalStatus == taxonomyId.toString(),
+                                selected: _selectedMaritalStatus == value.toString(),
                                 onSelected: (selected) {
                                   setState(() {
-                                    _selectedMaritalStatus = selected ? taxonomyId.toString() : null;
+                                    _selectedMaritalStatus = selected ? value.toString() : null;
                                   });
                                 },
                               );
@@ -360,5 +404,56 @@ class _AdvancedSearchDialogState extends ConsumerState<AdvancedSearchDialog> {
         onChanged(int.tryParse(text));
       },
     );
+  }
+
+  List<Widget> _buildGenderChips(List<taxonomy_domain.Taxonomy> genderOptions) {
+    final chips = <Widget>[];
+
+    for (final taxonomy in genderOptions) {
+      final value = TaxonomyValueResolver.resolveToInt(
+        code: taxonomy.code,
+        id: taxonomy.id,
+        group: TaxonomyGroup.gender,
+        source: 'advanced_search_dialog',
+      );
+      if (value == null) continue;
+
+      chips.add(
+        FilterChip(
+          label: Text(taxonomy.label),
+          selected: _selectedGender == value.toString(),
+          onSelected: (selected) {
+            setState(() {
+              _selectedGender = selected ? value.toString() : null;
+            });
+          },
+        ),
+      );
+    }
+
+    if (chips.isNotEmpty) {
+      return chips;
+    }
+
+    return [
+      FilterChip(
+        label: const Text('ذكر'),
+        selected: _selectedGender == '1',
+        onSelected: (selected) {
+          setState(() {
+            _selectedGender = selected ? '1' : null;
+          });
+        },
+      ),
+      FilterChip(
+        label: const Text('أنثى'),
+        selected: _selectedGender == '2',
+        onSelected: (selected) {
+          setState(() {
+            _selectedGender = selected ? '2' : null;
+          });
+        },
+      ),
+    ];
   }
 }

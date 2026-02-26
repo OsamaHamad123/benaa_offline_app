@@ -2,7 +2,9 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/error_handling/result.dart';
+import '../../../../core/security/auth_session_events.dart';
 import '../../../../core/utils/unified_logger.dart';
+import '../../domain/failures/auth_failures.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
 
@@ -40,6 +42,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       switch (sessionResult) {
         case Failure(error: final failure):
+          if (failure is OfflineSessionExpiredFailure) {
+            await _authRepository.clearSession();
+          }
           // لا يوجد جلسة محفوظة
           UnifiedLogger.info('📱 No stored session found');
           state = AuthUnauthenticated(message: failure.message);
@@ -73,7 +78,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       case Failure(error: final failure):
         // Token غير صالح
         UnifiedLogger.warning('⚠️ Token validation failed: ${failure.message}');
-        state = AuthSessionExpired(lastUser: session.user);
+        _setSessionExpired(lastUser: session.user);
       case Success(value: final result):
         if (result.valid) {
           // Token صالح
@@ -89,7 +94,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             state = AuthAuthenticated(session: session);
           }
         } else {
-          state = AuthSessionExpired(lastUser: session.user);
+          _setSessionExpired(lastUser: session.user);
         }
     }
   }
@@ -109,7 +114,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       }
     } else {
-      state = AuthSessionExpired(lastUser: session.user);
+      _setSessionExpired(lastUser: session.user);
     }
   }
 
@@ -125,6 +130,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthLoading(message: 'جاري تسجيل الدخول...');
 
     try {
+      final connectivityResult = await _connectivity.checkConnectivity();
+      final isOnline = connectivityResult.first != ConnectivityResult.none;
+      if (!isOnline) {
+        state = const AuthError(
+          message: 'الاتصال بالإنترنت مطلوب لتسجيل الدخول',
+          canRetry: true,
+        );
+        return false;
+      }
+
       final deviceId = await _authRepository.getDeviceId();
       final deviceName = await _authRepository.getDeviceName();
       final devicePlatform = _authRepository.getDevicePlatform();
@@ -256,5 +271,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// ✅ هل يوجد دور معين
   bool hasRole(String role) {
     return state.user?.hasRole(role) ?? false;
+  }
+
+  void _setSessionExpired({required lastUser}) {
+    state = AuthSessionExpired(lastUser: lastUser);
+    AuthSessionEvents.instance.notifySessionExpired();
   }
 }

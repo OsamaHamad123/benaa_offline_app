@@ -6,6 +6,9 @@ import '../../../../core/providers/providers.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
 import '../../../../data/db/drift_database.dart';
+import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// Urgent Cases Section - عرض الحالات التي تحتاج متابعة عاجلة
 class UrgentCasesSection extends ConsumerWidget {
@@ -14,6 +17,24 @@ class UrgentCasesSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final database = ref.watch(databaseProvider);
+    final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
+
+    final categoryColorsById = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final sectionOptions = index[TaxonomyGroup.section] ?? const <taxonomy_domain.Taxonomy>[];
+        final categoryOptions = index[TaxonomyGroup.category] ?? const <taxonomy_domain.Taxonomy>[];
+        return _buildTaxonomyColorMap([...categoryOptions, ...sectionOptions]);
+      },
+      orElse: () => const <int, Color>{},
+    );
+
+    final governorateLabelsById = taxonomyIndexAsync.maybeWhen(
+      data: (index) {
+        final options = index[TaxonomyGroup.governorate] ?? const <taxonomy_domain.Taxonomy>[];
+        return _buildTaxonomyLabelMap(options);
+      },
+      orElse: () => const <int, String>{},
+    );
 
     return FutureBuilder<Map<String, dynamic>>(
       future: _loadUrgentCasesData(database),
@@ -36,7 +57,7 @@ class UrgentCasesSection extends ConsumerWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
-            side: BorderSide(color: Colors.red.withOpacity(0.3), width: 2),
+            side: BorderSide(color: Colors.red.withValues(alpha: 0.3), width: 2),
           ),
           child: Container(
             decoration: BoxDecoration(
@@ -45,8 +66,8 @@ class UrgentCasesSection extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.red.withOpacity(0.05),
-                  Colors.orange.withOpacity(0.05),
+                  Colors.red.withValues(alpha: 0.05),
+                  Colors.orange.withValues(alpha: 0.05),
                 ],
               ),
             ),
@@ -60,7 +81,7 @@ class UrgentCasesSection extends ConsumerWidget {
                     Container(
                       padding: EdgeInsets.all(10.w),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.15),
+                        color: Colors.red.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12.r),
                       ),
                       child: Icon(
@@ -99,6 +120,8 @@ class UrgentCasesSection extends ConsumerWidget {
                         noVisitsCount,
                         poorHealthCount,
                         disabilitiesCount,
+                        categoryColorsById: categoryColorsById,
+                        governorateLabelsById: governorateLabelsById,
                       ),
                       child: Text(
                         'عرض الكل',
@@ -124,8 +147,9 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'بدون زيارات منذ 30+ يوم',
-                      database.beneficiariesDao
-                          .getBeneficiariesWithNoRecentVisits(30),
+                      database.beneficiariesDao.getBeneficiariesWithNoRecentVisits(30),
+                      categoryColorsById: categoryColorsById,
+                      governorateLabelsById: governorateLabelsById,
                     ),
                   ),
 
@@ -140,8 +164,9 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'حالة صحية سيئة',
-                      database.beneficiariesDao
-                          .getBeneficiariesWithPoorHealth(),
+                      database.beneficiariesDao.getBeneficiariesWithPoorHealth(),
+                      categoryColorsById: categoryColorsById,
+                      governorateLabelsById: governorateLabelsById,
                     ),
                   ),
                 ],
@@ -157,8 +182,9 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'ذوو إعاقة',
-                      database.beneficiariesDao
-                          .getBeneficiariesWithDisabilities(),
+                      database.beneficiariesDao.getBeneficiariesWithDisabilities(),
+                      categoryColorsById: categoryColorsById,
+                      governorateLabelsById: governorateLabelsById,
                     ),
                   ),
                 ],
@@ -191,7 +217,7 @@ class UrgentCasesSection extends ConsumerWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.r),
-        side: BorderSide(color: Colors.green.withOpacity(0.3)),
+        side: BorderSide(color: Colors.green.withValues(alpha: 0.3)),
       ),
       child: Container(
         padding: EdgeInsets.all(24.w),
@@ -224,8 +250,10 @@ class UrgentCasesSection extends ConsumerWidget {
     AppDatabase database,
     int noVisitsCount,
     int poorHealthCount,
-    int disabilitiesCount,
-  ) {
+    int disabilitiesCount, {
+    required Map<int, Color> categoryColorsById,
+    required Map<int, String> governorateLabelsById,
+  }) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -247,8 +275,9 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'بدون زيارات منذ 30+ يوم',
-                    database.beneficiariesDao
-                        .getBeneficiariesWithNoRecentVisits(30),
+                    database.beneficiariesDao.getBeneficiariesWithNoRecentVisits(30),
+                    categoryColorsById: categoryColorsById,
+                    governorateLabelsById: governorateLabelsById,
                   );
                 },
               ),
@@ -267,6 +296,8 @@ class UrgentCasesSection extends ConsumerWidget {
                     database,
                     'حالة صحية سيئة',
                     database.beneficiariesDao.getBeneficiariesWithPoorHealth(),
+                    categoryColorsById: categoryColorsById,
+                    governorateLabelsById: governorateLabelsById,
                   );
                 },
               ),
@@ -284,8 +315,9 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'ذوو إعاقة',
-                    database.beneficiariesDao
-                        .getBeneficiariesWithDisabilities(),
+                    database.beneficiariesDao.getBeneficiariesWithDisabilities(),
+                    categoryColorsById: categoryColorsById,
+                    governorateLabelsById: governorateLabelsById,
                   );
                 },
               ),
@@ -305,8 +337,10 @@ class UrgentCasesSection extends ConsumerWidget {
     BuildContext context,
     AppDatabase database,
     String title,
-    Future<List<Beneficiary>> future,
-  ) {
+    Future<List<Beneficiary>> future, {
+    required Map<int, Color> categoryColorsById,
+    required Map<int, String> governorateLabelsById,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -336,6 +370,8 @@ class UrgentCasesSection extends ConsumerWidget {
                 final beneficiary = beneficiaries[index];
                 return _BeneficiaryCard(
                   beneficiary: beneficiary,
+                  categoryColorsById: categoryColorsById,
+                  governorateLabelsById: governorateLabelsById,
                   onTap: () {
                     Navigator.pop(context);
                     context.push('/beneficiaries/${beneficiary.id}');
@@ -351,6 +387,66 @@ class UrgentCasesSection extends ConsumerWidget {
 
   Widget _buildSkeletonLoader() {
     return SkeletonCard(height: 200.h, padding: EdgeInsets.all(16.w));
+  }
+
+  Map<int, String> _buildTaxonomyLabelMap(List<taxonomy_domain.Taxonomy> options) {
+    final labels = <int, String>{};
+    for (final taxonomy in options) {
+      final value = _parseTaxonomyKey(taxonomy);
+      if (value == null) continue;
+      labels.putIfAbsent(value, () => taxonomy.label);
+    }
+    return labels;
+  }
+
+  Map<int, Color> _buildTaxonomyColorMap(List<taxonomy_domain.Taxonomy> options) {
+    final colors = <int, Color>{};
+    for (final taxonomy in options) {
+      final value = _parseTaxonomyKey(taxonomy);
+      if (value == null) continue;
+      final parsed = _parseTaxonomyColor(taxonomy.color);
+      if (parsed != null) {
+        colors.putIfAbsent(value, () => parsed);
+      }
+    }
+    return colors;
+  }
+
+  int? _parseTaxonomyKey(taxonomy_domain.Taxonomy taxonomy) {
+    final code = int.tryParse(taxonomy.code.trim());
+    if (code != null) {
+      return code;
+    }
+
+    final rawId = taxonomy.id.trim();
+    if (rawId.isEmpty) {
+      return null;
+    }
+
+    final separatorIndex = rawId.indexOf('::');
+    final suffix = separatorIndex >= 0 ? rawId.substring(separatorIndex + 2) : rawId;
+    return int.tryParse(suffix.trim());
+  }
+
+  Color? _parseTaxonomyColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
   }
 }
 
@@ -378,9 +474,9 @@ class _UrgentCaseItem extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(12.w),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -424,8 +520,15 @@ class _UrgentCaseItem extends StatelessWidget {
 class _BeneficiaryCard extends StatelessWidget {
   final Beneficiary beneficiary;
   final VoidCallback onTap;
+  final Map<int, Color> categoryColorsById;
+  final Map<int, String> governorateLabelsById;
 
-  const _BeneficiaryCard({required this.beneficiary, required this.onTap});
+  const _BeneficiaryCard({
+    required this.beneficiary,
+    required this.onTap,
+    required this.categoryColorsById,
+    required this.governorateLabelsById,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -443,7 +546,7 @@ class _BeneficiaryCard extends StatelessWidget {
                 radius: 24.r,
                 backgroundColor: _getCategoryColor(
                   beneficiary.sectionId,
-                ).withOpacity(0.2),
+                ).withValues(alpha: 0.2),
                 child: Text(
                   beneficiary.fullName.substring(0, 1),
                   style: TextStyle(
@@ -488,7 +591,7 @@ class _BeneficiaryCard extends StatelessWidget {
                         SizedBox(width: 4.w),
                         Expanded(
                           child: Text(
-                            beneficiary.province?.toString() ?? '',
+                            _getGovernorateLabel(beneficiary.province),
                             style: TextStyle(
                               fontSize: 11.sp,
                               color: Colors.grey[600],
@@ -515,6 +618,13 @@ class _BeneficiaryCard extends StatelessWidget {
   }
 
   Color _getCategoryColor(int? sectionId) {
+    if (sectionId != null) {
+      final resolved = categoryColorsById[sectionId];
+      if (resolved != null) {
+        return resolved;
+      }
+    }
+
     switch (sectionId) {
       case 1: // orphan
         return Colors.blue;
@@ -527,5 +637,12 @@ class _BeneficiaryCard extends StatelessWidget {
       default:
         return Colors.grey;
     }
+  }
+
+  String _getGovernorateLabel(int? provinceId) {
+    if (provinceId == null) {
+      return '';
+    }
+    return governorateLabelsById[provinceId] ?? provinceId.toString();
   }
 }

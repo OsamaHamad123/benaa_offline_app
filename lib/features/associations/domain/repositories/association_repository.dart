@@ -76,16 +76,22 @@ class AssociationParams {
   final String? swiftCode;
   final String? bankPhone;
   final String? accountCurrency;
+  final String? associationTypeCode;
   final String? representativeId;
   final bool isActive;
 
   const AssociationParams({
-    required this.name, required this.phone, required this.bankName, required this.accountNumber, this.id,
+    required this.name,
+    required this.phone,
+    required this.bankName,
+    required this.accountNumber,
+    this.id,
     this.shortName,
     this.email,
     this.swiftCode,
     this.bankPhone,
     this.accountCurrency,
+    this.associationTypeCode,
     this.representativeId,
     this.isActive = true,
   });

@@ -197,3 +197,57 @@ class GetTaxonomyStatisticsUseCase {
     return await _repository.getStatistics();
   }
 }
+
+/// 📦 Batch Taxonomy Mutation Use Case
+///
+/// تنفيذ عمليات الإنشاء/التحديث/الحذف الدفعي للتصنيفات
+class BatchTaxonomyMutationUseCase {
+  final TaxonomyRepository _repository;
+
+  BatchTaxonomyMutationUseCase(this._repository);
+
+  Future<Result<List<Taxonomy>>> create(
+    TaxonomyGroup group,
+    List<String> names,
+  ) async {
+    final cleaned = names.map((name) => name.trim()).where((name) => name.isNotEmpty).toList(growable: false);
+    if (cleaned.isEmpty) {
+      return const Failure(ValidationFailure('قائمة الأسماء فارغة'));
+    }
+
+    return await _repository.createTaxonomiesBatch(group, cleaned);
+  }
+
+  Future<Result<List<Taxonomy>>> update(
+    TaxonomyGroup group,
+    Map<String, String> updates,
+  ) async {
+    final cleaned = <String, String>{};
+    for (final entry in updates.entries) {
+      final id = entry.key.trim();
+      final name = entry.value.trim();
+      if (id.isEmpty || name.isEmpty) {
+        continue;
+      }
+      cleaned[id] = name;
+    }
+
+    if (cleaned.isEmpty) {
+      return const Failure(ValidationFailure('لا توجد عناصر صالحة للتحديث'));
+    }
+
+    return await _repository.updateTaxonomiesBatch(group, cleaned);
+  }
+
+  Future<Result<List<String>>> delete(
+    TaxonomyGroup group,
+    List<String> ids,
+  ) async {
+    final cleaned = ids.map((id) => id.trim()).where((id) => id.isNotEmpty).toList(growable: false);
+    if (cleaned.isEmpty) {
+      return const Failure(ValidationFailure('لا توجد معرفات صالحة للحذف'));
+    }
+
+    return await _repository.deleteTaxonomiesBatch(group, cleaned);
+  }
+}

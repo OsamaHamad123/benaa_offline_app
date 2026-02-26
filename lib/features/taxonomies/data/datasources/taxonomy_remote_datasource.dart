@@ -18,6 +18,9 @@ abstract class TaxonomyRemoteDataSource {
   /// جلب التصنيفات حسب slug مباشر من كتالوج السيرفر
   Future<TaxonomiesResponseDTO> getTaxonomiesBySlug(String slug);
 
+  /// جلب عنصر واحد من مجموعة معينة
+  Future<TaxonomyResponseDTO> getTaxonomyById(String group, String id);
+
   /// جلب المجموعات المتاحة
   Future<TaxonomyGroupsResponseDTO> getGroups();
 
@@ -29,6 +32,15 @@ abstract class TaxonomyRemoteDataSource {
 
   /// حذف تصنيف
   Future<void> deleteTaxonomy(String id);
+
+  /// إنشاء عدة تصنيفات دفعة واحدة
+  Future<List<TaxonomyDTO>> createTaxonomiesBatch(String group, List<String> names);
+
+  /// تحديث عدة تصنيفات دفعة واحدة
+  Future<List<TaxonomyDTO>> updateTaxonomiesBatch(String group, Map<String, String> updates);
+
+  /// حذف عدة تصنيفات دفعة واحدة
+  Future<List<String>> deleteTaxonomiesBatch(String group, List<String> ids);
 
   /// مزامنة التصنيفات
   Future<TaxonomySyncResponseDTO> syncTaxonomies(TaxonomySyncRequestDTO request);
@@ -234,6 +246,57 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
     }
   }
 
+  @override
+  Future<TaxonomyResponseDTO> getTaxonomyById(String group, String id) async {
+    final remoteId = TaxonomyDTO.extractRemoteId(id);
+    DioException? lastDioError;
+
+    for (final categorySlug in _categorySlugCandidatesFromGroup(group)) {
+      try {
+        final response = await _withRetry(
+          () => _dio.get(
+            '$_basePath/$categorySlug/$remoteId',
+            options: _nonThrowing4xxOptions,
+          ),
+        );
+
+        final statusCode = response.statusCode;
+        if (statusCode == 404 || statusCode == 405) {
+          continue;
+        }
+
+        if (statusCode != null && statusCode >= 400) {
+          throw TaxonomyApiException('فشل جلب عنصر التصنيف', statusCode);
+        }
+
+        final parsed = _parseTaxonomyFromResponse(
+          response.data,
+          fallbackGroup: group,
+          fallbackId: remoteId,
+        );
+        if (parsed == null) {
+          continue;
+        }
+
+        return TaxonomyResponseDTO(
+          success: true,
+          data: parsed,
+          message: (response.data is Map<String, dynamic>) ? response.data['message']?.toString() : null,
+        );
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (_isFallbackCategoryError(e)) {
+          continue;
+        }
+        throw _handleDioError(e);
+      }
+    }
+
+    throw _handleDioError(
+      lastDioError ?? DioException(requestOptions: RequestOptions(path: '$_basePath/{category}/$remoteId')),
+    );
+  }
+
   List<String> _groupEndpointCandidates(TaxonomyGroup group) {
     final base = group.value;
     final hyphen = base.replaceAll('_', '-');
@@ -305,7 +368,20 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
             data: payload,
           ),
         );
-        return TaxonomyResponseDTO.fromJson(response.data as Map<String, dynamic>);
+        final parsed = _parseTaxonomyFromResponse(
+          response.data,
+          fallbackGroup: request.group,
+          fallbackCode: request.code,
+          fallbackLabel: request.label,
+        );
+        if (parsed == null) {
+          throw TaxonomyApiException('تعذر قراءة بيانات التصنيف المُنشأ');
+        }
+        return TaxonomyResponseDTO(
+          success: true,
+          data: parsed,
+          message: (response.data is Map<String, dynamic>) ? response.data['message']?.toString() : null,
+        );
       } on DioException catch (e) {
         lastDioError = e;
         if (_isFallbackCategoryError(e)) {
@@ -332,7 +408,21 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
             data: payload,
           ),
         );
-        return TaxonomyResponseDTO.fromJson(response.data as Map<String, dynamic>);
+        final parsed = _parseTaxonomyFromResponse(
+          response.data,
+          fallbackGroup: request.group,
+          fallbackId: remoteId,
+          fallbackCode: request.code,
+          fallbackLabel: request.label,
+        );
+        if (parsed == null) {
+          throw TaxonomyApiException('تعذر قراءة بيانات التصنيف المحدّث');
+        }
+        return TaxonomyResponseDTO(
+          success: true,
+          data: parsed,
+          message: (response.data is Map<String, dynamic>) ? response.data['message']?.toString() : null,
+        );
       } on DioException catch (e) {
         lastDioError = e;
         if (_isFallbackCategoryError(e)) {
@@ -366,6 +456,118 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
 
     throw _handleDioError(
         lastDioError ?? DioException(requestOptions: RequestOptions(path: '$_basePath/{category}/$remoteId')));
+  }
+
+  @override
+  Future<List<TaxonomyDTO>> createTaxonomiesBatch(String group, List<String> names) async {
+    DioException? lastDioError;
+    final payload = {
+      'items': names.map((name) => {'name': name}).toList(growable: false),
+    };
+
+    for (final categorySlug in _categorySlugCandidatesFromGroup(group)) {
+      try {
+        final response = await _withRetry(
+          () => _dio.post(
+            '$_basePath/$categorySlug/batch',
+            data: payload,
+          ),
+        );
+
+        return _extractBatchTaxonomies(
+          response.data,
+          key: 'created',
+          fallbackGroup: group,
+        );
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (_isFallbackCategoryError(e)) {
+          continue;
+        }
+        throw _handleDioError(e);
+      }
+    }
+
+    throw _handleDioError(
+      lastDioError ?? DioException(requestOptions: RequestOptions(path: '$_basePath/{category}/batch')),
+    );
+  }
+
+  @override
+  Future<List<TaxonomyDTO>> updateTaxonomiesBatch(String group, Map<String, String> updates) async {
+    DioException? lastDioError;
+    final payload = {
+      'items': updates.entries
+          .map((entry) => {'id': TaxonomyDTO.extractRemoteId(entry.key), 'name': entry.value})
+          .toList(growable: false),
+    };
+
+    for (final categorySlug in _categorySlugCandidatesFromGroup(group)) {
+      try {
+        final response = await _withRetry(
+          () => _dio.put(
+            '$_basePath/$categorySlug/batch',
+            data: payload,
+          ),
+        );
+
+        return _extractBatchTaxonomies(
+          response.data,
+          key: 'updated',
+          fallbackGroup: group,
+        );
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (_isFallbackCategoryError(e)) {
+          continue;
+        }
+        throw _handleDioError(e);
+      }
+    }
+
+    throw _handleDioError(
+      lastDioError ?? DioException(requestOptions: RequestOptions(path: '$_basePath/{category}/batch')),
+    );
+  }
+
+  @override
+  Future<List<String>> deleteTaxonomiesBatch(String group, List<String> ids) async {
+    DioException? lastDioError;
+    final payload = {
+      'ids': ids.map(TaxonomyDTO.extractRemoteId).toList(growable: false),
+    };
+
+    for (final categorySlug in _categorySlugCandidatesFromGroup(group)) {
+      try {
+        final response = await _withRetry(
+          () => _dio.delete(
+            '$_basePath/$categorySlug/batch',
+            data: payload,
+          ),
+        );
+
+        final rawDeleted = _extractCollectionNode(response.data, key: 'deleted');
+        return rawDeleted
+            .map((item) {
+              if (item is Map<String, dynamic>) {
+                return item['id']?.toString() ?? '';
+              }
+              return item?.toString() ?? '';
+            })
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
+      } on DioException catch (e) {
+        lastDioError = e;
+        if (_isFallbackCategoryError(e)) {
+          continue;
+        }
+        throw _handleDioError(e);
+      }
+    }
+
+    throw _handleDioError(
+      lastDioError ?? DioException(requestOptions: RequestOptions(path: '$_basePath/{category}/batch')),
+    );
   }
 
   Map<String, dynamic> _buildCategoryMutationPayload(TaxonomyRequestDTO request) {
@@ -485,16 +687,179 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
     return payload.toString();
   }
 
+  TaxonomyDTO? _parseTaxonomyFromResponse(
+    dynamic payload, {
+    required String fallbackGroup,
+    String? fallbackId,
+    String? fallbackCode,
+    String? fallbackLabel,
+  }) {
+    if (payload is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final data = payload['data'];
+    Map<String, dynamic>? item;
+    String? groupFromResponse;
+
+    if (data is Map<String, dynamic>) {
+      if (data['item'] is Map<String, dynamic>) {
+        item = Map<String, dynamic>.from(data['item'] as Map<String, dynamic>);
+      } else {
+        final likelyItem = <String>{'id', 'name', 'label', 'code', 'created_at', 'updated_at'};
+        if (likelyItem.any(data.containsKey)) {
+          item = Map<String, dynamic>.from(data);
+        }
+      }
+
+      final categoryNode = data['category'];
+      if (categoryNode is Map<String, dynamic>) {
+        groupFromResponse = (categoryNode['slug'] ?? categoryNode['name'] ?? categoryNode['group'])?.toString();
+      }
+    }
+
+    item ??= payload['item'] is Map<String, dynamic> ? Map<String, dynamic>.from(payload['item'] as Map) : null;
+    if (item == null) {
+      return null;
+    }
+
+    final resolvedGroup = TaxonomyGroup.normalizeValue(groupFromResponse ?? fallbackGroup) ?? fallbackGroup;
+    final id = (item['id'] ?? item['value'] ?? item['code'] ?? fallbackId)?.toString() ?? '';
+    final label =
+        (item['name'] ?? item['label'] ?? item['title'] ?? item['name_ar'] ?? item['label_ar'] ?? fallbackLabel)
+                ?.toString() ??
+            '';
+    if (id.isEmpty || label.isEmpty) {
+      return null;
+    }
+
+    final code = (item['code'] ?? item['slug'] ?? fallbackCode ?? id).toString();
+
+    return TaxonomyDTO(
+      id: id,
+      groupValue: resolvedGroup,
+      code: code,
+      label: label,
+      labelEn: (item['name_en'] ?? item['label_en'] ?? item['title_en'])?.toString(),
+      parentId: item['parent_id']?.toString(),
+      sortOrder: _parseInt(item['sort_order'] ?? item['sort'] ?? item['order']),
+      isActive: _parseBool(item['is_active'] ?? item['active'] ?? item['enabled'], defaultValue: true),
+      createdAt: _parseDateTime(item['created_at']),
+      updatedAt: _parseDateTime(item['updated_at']),
+      deletedAt: _parseDateTime(item['deleted_at']),
+    );
+  }
+
+  List<TaxonomyDTO> _extractBatchTaxonomies(
+    dynamic payload, {
+    required String key,
+    required String fallbackGroup,
+  }) {
+    final records = _extractCollectionNode(payload, key: key);
+    final out = <TaxonomyDTO>[];
+    final normalizedGroup = TaxonomyGroup.normalizeValue(fallbackGroup) ?? fallbackGroup;
+
+    for (final row in records) {
+      if (row is! Map) {
+        continue;
+      }
+
+      final item = Map<String, dynamic>.from(row);
+      final id = (item['id'] ?? item['value'] ?? item['code'])?.toString() ?? '';
+      final label = (item['name'] ?? item['label'] ?? item['title'])?.toString() ?? '';
+      if (id.isEmpty || label.isEmpty) {
+        continue;
+      }
+
+      out.add(TaxonomyDTO(
+        id: id,
+        groupValue: normalizedGroup,
+        code: (item['code'] ?? item['slug'] ?? id).toString(),
+        label: label,
+        labelEn: (item['name_en'] ?? item['label_en'] ?? item['title_en'])?.toString(),
+        sortOrder: _parseInt(item['sort_order'] ?? item['sort'] ?? item['order']),
+        isActive: _parseBool(item['is_active'] ?? item['active'] ?? item['enabled'], defaultValue: true),
+        createdAt: _parseDateTime(item['created_at']),
+        updatedAt: _parseDateTime(item['updated_at']),
+      ));
+    }
+
+    return out;
+  }
+
+  List<dynamic> _extractCollectionNode(dynamic payload, {required String key}) {
+    if (payload is! Map) {
+      return const [];
+    }
+
+    final map = Map<String, dynamic>.from(payload);
+    final dataNode = map['data'];
+    if (dataNode is Map<String, dynamic>) {
+      final keyed = dataNode[key];
+      if (keyed is List) {
+        return keyed;
+      }
+    }
+
+    final direct = map[key];
+    if (direct is List) {
+      return direct;
+    }
+
+    return const [];
+  }
+
+  int _parseInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? defaultValue;
+    return defaultValue;
+  }
+
+  bool _parseBool(dynamic value, {bool defaultValue = false}) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    if (value is String) {
+      final normalized = value.toLowerCase();
+      return normalized == 'true' || normalized == '1';
+    }
+    return defaultValue;
+  }
+
+  DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   @override
   Future<TaxonomySyncResponseDTO> syncTaxonomies(TaxonomySyncRequestDTO request) async {
     try {
       final response = await _withRetry(
-        () => _dio.post(
-          '$_basePath/sync',
-          data: request.toJson(),
+        () => _dio.get(
+          '$_basePath/sync-all',
+          queryParameters: request.lastSync != null
+              ? {
+                  'updated_after': request.lastSync!.toIso8601String(),
+                }
+              : null,
         ),
       );
-      return TaxonomySyncResponseDTO.fromJson(response.data);
+
+      final parsed = TaxonomiesResponseDTO.fromSyncAllJson(response.data as Map<String, dynamic>);
+      final deletedCount = parsed.data.where((item) => item.deletedAt != null).length;
+
+      return TaxonomySyncResponseDTO(
+        success: parsed.success,
+        added: parsed.data.length,
+        updated: 0,
+        deleted: deletedCount,
+        message: parsed.message,
+        syncTime: parsed.syncTimestamp ?? DateTime.now(),
+        taxonomies: parsed.data,
+      );
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

@@ -65,9 +65,9 @@ MobileUserDto _$MobileUserDtoFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       email: json['email'] as String,
+      role: json['role'] as String,
       phone: const StringConverter().fromJson(json['phone']),
       avatar: const StringConverter().fromJson(json['avatar']),
-      role: json['role'] as String,
       roles:
           (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
               const [],
@@ -92,10 +92,10 @@ Map<String, dynamic> _$MobileUserDtoToJson(MobileUserDto instance) =>
 MobileTokenDto _$MobileTokenDtoFromJson(Map<String, dynamic> json) =>
     MobileTokenDto(
       accessToken: json['access_token'] as String,
-      tokenType: json['token_type'] as String? ?? 'Bearer',
       expiresAt: json['expires_at'] as String,
       expiresInDays: (json['expires_in_days'] as num).toInt(),
       expiresInSeconds: (json['expires_in_seconds'] as num).toInt(),
+      tokenType: json['token_type'] as String? ?? 'Bearer',
     );
 
 Map<String, dynamic> _$MobileTokenDtoToJson(MobileTokenDto instance) =>

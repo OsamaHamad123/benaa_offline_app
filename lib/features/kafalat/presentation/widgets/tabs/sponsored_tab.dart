@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../../core/providers/providers.dart';
 import '../../../../../core/utils/haptic_patterns.dart';
@@ -12,7 +15,6 @@ import '../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.
 import '../../providers/kafalat_providers.dart';
 import '../sponsorship_form_sheet.dart';
 import '../cards/professional_sponsorship_card.dart';
-import '../stats/stats_dashboard_widget.dart';
 import '../filters/quick_filters_bar.dart';
 import '../filters/enhanced_search_bar.dart';
 import '../filters/advanced_filters_sheet.dart';
@@ -22,37 +24,75 @@ import '../animations/card_entrance_animation.dart';
 import '../empty_states/empty_states.dart';
 import '../loaders/sponsorship_card_shimmer.dart';
 
-class _SavedView {
+class _SavedPreset {
   final String name;
   final String status;
   final String type;
+  final String query;
   final String? associationId;
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final double? minAmount;
-  final double? maxAmount;
+  final String sortName;
+  final bool showQuickFilters;
 
-  const _SavedView({
+  const _SavedPreset({
     required this.name,
     required this.status,
     required this.type,
+    required this.query,
     required this.associationId,
-    this.startDate,
-    this.endDate,
-    this.minAmount,
-    this.maxAmount,
+    required this.sortName,
+    required this.showQuickFilters,
   });
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'status': status,
+        'type': type,
+        'query': query,
+        'associationId': associationId,
+        'sortName': sortName,
+        'showQuickFilters': showQuickFilters,
+      };
+
+  factory _SavedPreset.fromJson(Map<String, dynamic> json) => _SavedPreset(
+        name: (json['name'] as String?) ?? 'عرض محفوظ',
+        status: (json['status'] as String?) ?? 'all',
+        type: (json['type'] as String?) ?? 'all',
+        query: (json['query'] as String?) ?? '',
+        associationId: json['associationId'] as String?,
+        sortName: (json['sortName'] as String?) ?? SortOption.dateNewest.name,
+        showQuickFilters: (json['showQuickFilters'] as bool?) ?? true,
+      );
 }
 
 /// 📋 Tab "مكفول" - قائمة الكفالات
 class SponsoredTab extends ConsumerStatefulWidget {
-  const SponsoredTab({super.key});
+  final String initialStatus;
+  final String initialType;
+  final String initialQuery;
+  final bool initiallyShowQuickFilters;
+
+  const SponsoredTab({
+    super.key,
+    this.initialStatus = 'all',
+    this.initialType = 'all',
+    this.initialQuery = '',
+    this.initiallyShowQuickFilters = false,
+  });
 
   @override
   ConsumerState<SponsoredTab> createState() => _SponsoredTabState();
 }
 
 class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepAliveClientMixin {
+  static const String _prefsPrefix = 'kafalat_sponsored_';
+  static const String _prefsStatusKey = '${_prefsPrefix}status';
+  static const String _prefsTypeKey = '${_prefsPrefix}type';
+  static const String _prefsQueryKey = '${_prefsPrefix}query';
+  static const String _prefsAssociationKey = '${_prefsPrefix}association';
+  static const String _prefsSortKey = '${_prefsPrefix}sort';
+  static const String _prefsShowFiltersKey = '${_prefsPrefix}show_quick_filters';
+  static const String _prefsSavedPresetsKey = '${_prefsPrefix}saved_presets';
+
   final TextEditingController _searchController = TextEditingController();
   static const Map<String, String> _typeFallbackLabels = {
     'monthly': 'شهرية',
@@ -74,48 +114,210 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
   double? _minAmountFilter;
   double? _maxAmountFilter;
   SortOption _sortOption = SortOption.dateNewest;
-
-  // حالة إظهار الإحصائيات والفلاتر
-  bool _showStats = false;
-  bool _showFilters = false;
-  late final List<_SavedView> _savedViews;
+  bool _showQuickFilters = false;
+  List<_SavedPreset> _savedPresets = const [];
 
   @override
   void initState() {
     super.initState();
-    _savedViews = [
-      const _SavedView(
-        name: 'النشطة',
-        status: 'active',
-        type: 'all',
-        associationId: null,
+    _status = widget.initialStatus;
+    _type = widget.initialType;
+    _query = widget.initialQuery.trim();
+    _showQuickFilters = widget.initiallyShowQuickFilters || _status != 'all' || _type != 'all';
+    if (_query.isNotEmpty) {
+      _searchController.text = _query;
+      _showQuickFilters = true;
+    }
+
+    Future.microtask(_restoreUiStateIfNeeded);
+    Future.microtask(_loadSavedPresets);
+  }
+
+  bool get _hasDeepLinkOverrides =>
+      widget.initialStatus != 'all' ||
+      widget.initialType != 'all' ||
+      widget.initialQuery.trim().isNotEmpty ||
+      widget.initiallyShowQuickFilters;
+
+  Future<void> _restoreUiStateIfNeeded() async {
+    if (_hasDeepLinkOverrides || !mounted) {
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+
+    final savedStatus = prefs.getString(_prefsStatusKey);
+    final savedType = prefs.getString(_prefsTypeKey);
+    final savedQuery = prefs.getString(_prefsQueryKey);
+    final savedAssociation = prefs.getString(_prefsAssociationKey);
+    final savedSort = prefs.getString(_prefsSortKey);
+    final savedShowFilters = prefs.getBool(_prefsShowFiltersKey);
+
+    setState(() {
+      _status = savedStatus ?? _status;
+      _type = savedType ?? _type;
+      _query = savedQuery ?? _query;
+      _associationId = (savedAssociation == null || savedAssociation.isEmpty) ? null : savedAssociation;
+      _sortOption = _sortFromName(savedSort);
+      _showQuickFilters = savedShowFilters ?? _showQuickFilters;
+      _searchController.text = _query;
+    });
+  }
+
+  SortOption _sortFromName(String? name) {
+    for (final value in SortOption.values) {
+      if (value.name == name) return value;
+    }
+    return SortOption.dateNewest;
+  }
+
+  void _persistUiState() {
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString(_prefsStatusKey, _status);
+      prefs.setString(_prefsTypeKey, _type);
+      prefs.setString(_prefsQueryKey, _query);
+      prefs.setString(_prefsAssociationKey, _associationId ?? '');
+      prefs.setString(_prefsSortKey, _sortOption.name);
+      prefs.setBool(_prefsShowFiltersKey, _showQuickFilters);
+    });
+  }
+
+  Future<void> _loadSavedPresets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_prefsSavedPresetsKey);
+    if (raw == null || raw.isEmpty || !mounted) return;
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+      final items = decoded
+          .whereType<Map>()
+          .map((map) => _SavedPreset.fromJson(Map<String, dynamic>.from(map)))
+          .toList(growable: false);
+      if (!mounted) return;
+      setState(() => _savedPresets = items);
+    } catch (_) {}
+  }
+
+  Future<void> _persistSavedPresets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(_savedPresets.map((p) => p.toJson()).toList(growable: false));
+    await prefs.setString(_prefsSavedPresetsKey, encoded);
+  }
+
+  Future<void> _saveCurrentPreset() async {
+    final nameController = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('حفظ عرض مخصص', textAlign: TextAlign.right),
+          content: TextField(
+            controller: nameController,
+            autofocus: true,
+            textAlign: TextAlign.right,
+            decoration: const InputDecoration(
+              hintText: 'اسم العرض',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(nameController.text.trim()),
+              child: const Text('حفظ'),
+            ),
+          ],
+        );
+      },
+    );
+    nameController.dispose();
+
+    final normalizedName = (name ?? '').trim();
+    if (normalizedName.isEmpty) return;
+
+    final preset = _SavedPreset(
+      name: normalizedName,
+      status: _status,
+      type: _type,
+      query: _query,
+      associationId: _associationId,
+      sortName: _sortOption.name,
+      showQuickFilters: true,
+    );
+
+    setState(() {
+      _savedPresets = [
+        preset,
+        ..._savedPresets.where((p) => p.name != normalizedName),
+      ];
+    });
+    await _persistSavedPresets();
+  }
+
+  void _applySavedPreset(_SavedPreset preset) {
+    setState(() {
+      _status = preset.status;
+      _type = preset.type;
+      _query = preset.query;
+      _associationId = preset.associationId;
+      _sortOption = _sortFromName(preset.sortName);
+      _showQuickFilters = preset.showQuickFilters;
+      _searchController.text = _query;
+    });
+    _persistUiState();
+  }
+
+  Future<void> _deleteSavedPreset(String presetName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('حذف العرض المحفوظ', textAlign: TextAlign.right),
+        content: Text(
+          'هل تريد حذف العرض "$presetName"؟',
+          textAlign: TextAlign.right,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
       ),
-      const _SavedView(
-        name: 'منتهية',
-        status: 'ended',
-        type: 'all',
-        associationId: null,
-      ),
-      const _SavedView(
-        name: 'شهرية',
-        status: 'all',
-        type: 'monthly',
-        associationId: null,
-      ),
-    ];
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      _savedPresets = _savedPresets.where((preset) => preset.name != presetName).toList(growable: false);
+    });
+    await _persistSavedPresets();
+  }
+
+  void _onSavedPresetMenuSelected(String value) {
+    if (value.startsWith('apply::')) {
+      final name = value.substring('apply::'.length);
+      final preset = _savedPresets.where((p) => p.name == name).firstOrNull;
+      if (preset != null) {
+        _applySavedPreset(preset);
+      }
+      return;
+    }
+
+    if (value.startsWith('delete::')) {
+      final name = value.substring('delete::'.length);
+      _deleteSavedPreset(name);
+    }
   }
 
   bool get _hasAdvancedFilters =>
       _startDateFilter != null || _endDateFilter != null || _minAmountFilter != null || _maxAmountFilter != null;
-
-  int get _activeAdvancedFiltersCount {
-    var count = 0;
-    if (_startDateFilter != null) count++;
-    if (_endDateFilter != null) count++;
-    if (_minAmountFilter != null) count++;
-    if (_maxAmountFilter != null) count++;
-    return count;
-  }
 
   @override
   void dispose() {
@@ -125,6 +327,7 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
 
   void _onSearchChanged(String v) {
     setState(() => _query = v);
+    _persistUiState();
   }
 
   void _clearFilters() {
@@ -138,7 +341,9 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
       _minAmountFilter = null;
       _maxAmountFilter = null;
       _searchController.clear();
+      _showQuickFilters = false;
     });
+    _persistUiState();
   }
 
   bool get _hasActiveFilters =>
@@ -161,47 +366,32 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
             _endDateFilter = endDate;
             _minAmountFilter = minAmount;
             _maxAmountFilter = maxAmount;
+            _showQuickFilters = true;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تطبيق الفلاتر المتقدمة')),
-          );
+          _persistUiState();
         },
       ),
     );
   }
 
-  void _applySavedView(_SavedView view) {
-    if (!mounted) return;
+  void _applyQuickPreset(String preset) {
     setState(() {
-      _status = view.status;
-      _type = view.type;
-      _associationId = view.associationId;
-      _startDateFilter = view.startDate;
-      _endDateFilter = view.endDate;
-      _minAmountFilter = view.minAmount;
-      _maxAmountFilter = view.maxAmount;
+      switch (preset) {
+        case 'active':
+          _status = 'active';
+          break;
+        case 'paused':
+          _status = 'paused';
+          break;
+        case 'ended':
+          _status = 'ended';
+          break;
+        default:
+          _status = 'all';
+      }
+      _showQuickFilters = true;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('تم تطبيق العرض المحفوظ: ${view.name}')),
-    );
-  }
-
-  void _saveCurrentView() {
-    final timestamp = DateTime.now();
-    final view = _SavedView(
-      name: 'عرض ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
-      status: _status,
-      type: _type,
-      associationId: _associationId,
-      startDate: _startDateFilter,
-      endDate: _endDateFilter,
-      minAmount: _minAmountFilter,
-      maxAmount: _maxAmountFilter,
-    );
-    setState(() => _savedViews.add(view));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم حفظ العرض الحالي')),
-    );
+    _persistUiState();
   }
 
   Future<void> _confirmDelete(BuildContext context, int fileNo) async {
@@ -261,7 +451,7 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
     for (final taxonomy in taxonomyItems) {
       if (taxonomy.code == code) return taxonomy.label;
     }
-    return fallbackLabels[code] ?? 'قيمة قديمة/غير معروفة';
+    return fallbackLabels[code] ?? 'قيمة قديمة أو غير معروفة';
   }
 
   bool _isLegacyFallbackUsed(
@@ -331,13 +521,13 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
           sponsorshipTypeTaxonomies,
           _typeFallbackLabels,
         );
+
     final resolveStatusLabel = (String value) => _resolveTaxonomyLabel(
           value,
           beneficiaryStatusTaxonomies,
           _statusFallbackLabels,
         );
 
-    // تمرير الفلاتر للـ provider
     final sponsorshipsAsync = ref.watch(
       kafalatSponsorshipsProvider((
         associationId: _associationId,
@@ -351,196 +541,8 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
 
     return Column(
       children: [
-        if (hasTaxonomyGap)
-          Container(
-            margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10.r),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, size: 18.sp, color: theme.colorScheme.primary),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Text(
-                    'لا توجد بيانات تصنيفات مكتملة بعد، يتم عرض قيم متوافقة مؤقتاً.',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        // شريط مبسط للإحصائيات مع زر الإظهار/الإخفاء
-        sponsorshipsAsync.when(
-          data: (allRows) {
-            final total = allRows.length;
-            final active = allRows.where((r) => r.sponsorship.status == 'active').length;
-
-            return Column(
-              children: [
-                // شريط مختصر
-                Container(
-                  margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.handshake_rounded, color: theme.colorScheme.primary, size: 20.sp),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'الإجمالي: $total',
-                        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      SizedBox(width: 12.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8.r),
-                        ),
-                        child: Text(
-                          '${resolveStatusLabel('active')}: $active',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      // زر إظهار الإحصائيات الكاملة
-                      IconButton(
-                        icon: Icon(
-                          _showStats ? Icons.expand_less : Icons.expand_more,
-                          size: 20.sp,
-                        ),
-                        onPressed: () => setState(() => _showStats = !_showStats),
-                        tooltip: _showStats ? 'إخفاء التفاصيل' : 'عرض التفاصيل',
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                ),
-                // الإحصائيات الكاملة (قابلة للطي)
-                if (_showStats) SizedBox(height: 8.h),
-                if (_showStats)
-                  StatsDashboardWidget(
-                    total: total,
-                    active: active,
-                    paused: allRows.where((r) => r.sponsorship.status == 'paused').length,
-                    ended: allRows.where((r) => r.sponsorship.status == 'ended').length,
-                    totalAmount: allRows
-                        .where((r) => r.sponsorship.status == 'active' && r.sponsorship.amount != null)
-                        .fold<double>(0, (sum, r) => sum + r.sponsorship.amount!),
-                  ),
-              ],
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
-
-        // الفلاتر المدمجة (صف واحد مبسط)
-        associationsAsync.when(
-          data: (associations) {
-            return Container(
-              margin: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 0),
-              child: Row(
-                children: [
-                  // زر الفلاتر
-                  InkWell(
-                    onTap: () => setState(() => _showFilters = !_showFilters),
-                    borderRadius: BorderRadius.circular(8.r),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                      decoration: BoxDecoration(
-                        color: _showFilters || _hasActiveFilters
-                            ? theme.colorScheme.primary.withOpacity(0.15)
-                            : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(
-                          color: _hasActiveFilters ? theme.colorScheme.primary : theme.dividerColor,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.filter_list,
-                            size: 18.sp,
-                            color: _hasActiveFilters ? theme.colorScheme.primary : null,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            'فلاتر',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: _hasActiveFilters ? FontWeight.w600 : null,
-                              color: _hasActiveFilters ? theme.colorScheme.primary : null,
-                            ),
-                          ),
-                          if (_hasActiveFilters) SizedBox(width: 4.w),
-                          if (_hasActiveFilters)
-                            Container(
-                              padding: EdgeInsets.all(4.r),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                '•',
-                                style: TextStyle(color: Colors.white, fontSize: 8.sp),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (_hasActiveFilters) SizedBox(width: 8.w),
-                  if (_hasActiveFilters)
-                    TextButton.icon(
-                      onPressed: _clearFilters,
-                      icon: const Icon(Icons.clear, size: 16),
-                      label: const Text('مسح'),
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-          loading: () => const SizedBox.shrink(),
-          error: (_, __) => const SizedBox.shrink(),
-        ),
-
-        // لوحة الفلاتر الكاملة (قابلة للطي)
-        if (_showFilters)
-          associationsAsync.when(
-            data: (associations) {
-              return QuickFiltersBar(
-                selectedStatus: _status,
-                selectedType: _type,
-                selectedAssociationId: _associationId,
-                associations: associations.map((a) => (id: a.id, name: a.name)).toList(),
-                onStatusChanged: (v) => setState(() => _status = v),
-                onTypeChanged: (v) => setState(() => _type = v),
-                onAssociationChanged: (v) => setState(() => _associationId = v),
-                onClearFilters: _clearFilters,
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-
-        // Search & Sorting Row
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 8.h),
           child: Row(
             children: [
               Expanded(
@@ -550,106 +552,202 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
                   hintText: 'ابحث برقم الملف، الاسم، الهوية...',
                 ),
               ),
-              SizedBox(width: 12.w),
+              SizedBox(width: 6.w),
               Stack(
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
-                    onPressed: () => _openAdvancedFilters(context),
-                    tooltip: 'فلاتر متقدمة',
+                    onPressed: () {
+                      setState(() => _showQuickFilters = !_showQuickFilters);
+                      _persistUiState();
+                    },
+                    tooltip: _showQuickFilters ? 'إخفاء الأدوات' : 'إظهار الأدوات',
                     icon: Icon(
-                      Icons.tune_rounded,
-                      color: _hasAdvancedFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                      _showQuickFilters ? Icons.tune_rounded : Icons.tune_outlined,
+                      color: _showQuickFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  if (_activeAdvancedFiltersCount > 0)
+                  if (_hasActiveFilters)
                     Positioned(
-                      right: -2,
-                      top: -2,
+                      right: 6,
+                      top: 6,
                       child: Container(
-                        padding: EdgeInsets.all(4.r),
+                        width: 8,
+                        height: 8,
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: Text(
-                          '$_activeAdvancedFiltersCount',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                       ),
                     ),
                 ],
-              ),
-              SizedBox(width: 4.w),
-              PopupMenuButton<_SavedView?>(
-                tooltip: 'العروض المحفوظة',
-                icon: Icon(
-                  Icons.bookmark_outline,
-                  color: _savedViews.length > 3 ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                ),
-                onSelected: (view) {
-                  if (view == null) {
-                    _saveCurrentView();
-                    return;
-                  }
-                  _applySavedView(view);
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem<_SavedView?>(
-                    value: null,
-                    child: Row(
-                      children: [
-                        Icon(Icons.add_circle_outline),
-                        SizedBox(width: 8),
-                        Text('حفظ العرض الحالي'),
-                      ],
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  ..._savedViews.map(
-                    (view) => PopupMenuItem<_SavedView?>(
-                      value: view,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.bookmark_border),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(view.name)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(width: 4.w),
-              SortingMenu(
-                currentSort: _sortOption,
-                onSortChanged: (v) => setState(() => _sortOption = v),
               ),
             ],
           ),
         ),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          child: !_hasActiveFilters
-              ? const SizedBox.shrink()
-              : Container(
-                  key: ValueKey<String>('active_filters_${_status}_${_type}_${_query.isNotEmpty}'),
-                  margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-                  child: Wrap(
-                    spacing: 8.w,
-                    runSpacing: 6.h,
-                    children: [
-                      if (_status != 'all') _ActiveChip(label: 'الحالة: ${resolveStatusLabel(_status)}'),
-                      if (_type != 'all') _ActiveChip(label: 'النوع: ${resolveTypeLabel(_type)}'),
-                      if (_query.isNotEmpty) _ActiveChip(label: 'بحث: $_query'),
-                      if (_startDateFilter != null || _endDateFilter != null) const _ActiveChip(label: 'نطاق تاريخ'),
-                      if (_minAmountFilter != null || _maxAmountFilter != null) const _ActiveChip(label: 'نطاق مبلغ'),
-                    ],
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 180),
+          crossFadeState: _showQuickFilters ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+          firstChild: Container(
+            margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
+            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasTaxonomyGap)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 6.h),
+                    child: Text(
+                      'بعض التصنيفات غير مكتملة حاليًا.',
+                      style: theme.textTheme.bodySmall,
+                    ),
                   ),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 6.h,
+                  children: [
+                    ActionChip(
+                      avatar: const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text('نشطة'),
+                      onPressed: () => _applyQuickPreset('active'),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.pause_circle_outline, size: 18),
+                      label: const Text('موقوفة'),
+                      onPressed: () => _applyQuickPreset('paused'),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.cancel_outlined, size: 18),
+                      label: const Text('منتهية'),
+                      onPressed: () => _applyQuickPreset('ended'),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.layers_clear_outlined, size: 18),
+                      label: const Text('الكل'),
+                      onPressed: () => _applyQuickPreset('all'),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.bookmark_add_outlined, size: 18),
+                      label: const Text('حفظ العرض'),
+                      onPressed: _saveCurrentPreset,
+                    ),
+                    if (_savedPresets.isNotEmpty)
+                      PopupMenuButton<String>(
+                        tooltip: 'العروض المحفوظة',
+                        itemBuilder: (context) {
+                          final items = <PopupMenuEntry<String>>[];
+                          for (final preset in _savedPresets) {
+                            items.add(
+                              PopupMenuItem<String>(
+                                value: 'apply::${preset.name}',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.playlist_add_check_rounded, size: 18),
+                                    SizedBox(width: 8.w),
+                                    Expanded(child: Text('تطبيق: ${preset.name}')),
+                                  ],
+                                ),
+                              ),
+                            );
+                            items.add(
+                              PopupMenuItem<String>(
+                                value: 'delete::${preset.name}',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline_rounded,
+                                        size: 18, color: Theme.of(context).colorScheme.error),
+                                    SizedBox(width: 8.w),
+                                    Expanded(child: Text('حذف: ${preset.name}')),
+                                  ],
+                                ),
+                              ),
+                            );
+                            items.add(const PopupMenuDivider());
+                          }
+                          if (items.isNotEmpty) {
+                            items.removeLast();
+                          }
+                          return items;
+                        },
+                        onSelected: _onSavedPresetMenuSelected,
+                        child: const Chip(
+                          avatar: Icon(Icons.bookmarks_outlined, size: 18),
+                          label: Text('العروض المحفوظة'),
+                        ),
+                      ),
+                  ],
                 ),
+                SizedBox(height: 8.h),
+                associationsAsync.when(
+                  data: (associations) => QuickFiltersBar(
+                    selectedStatus: _status,
+                    selectedType: _type,
+                    selectedAssociationId: _associationId,
+                    associations: associations.map((a) => (id: a.id, name: a.name)).toList(),
+                    onStatusChanged: (v) {
+                      setState(() => _status = v);
+                      _persistUiState();
+                    },
+                    onTypeChanged: (v) {
+                      setState(() => _type = v);
+                      _persistUiState();
+                    },
+                    onAssociationChanged: (v) {
+                      setState(() => _associationId = v);
+                      _persistUiState();
+                    },
+                    onClearFilters: _clearFilters,
+                  ),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                if (_hasActiveFilters)
+                  Padding(
+                    padding: EdgeInsets.only(top: 6.h),
+                    child: Wrap(
+                      spacing: 8.w,
+                      runSpacing: 6.h,
+                      children: [
+                        if (_status != 'all') _ActiveChip(label: 'الحالة: ${resolveStatusLabel(_status)}'),
+                        if (_type != 'all') _ActiveChip(label: 'النوع: ${resolveTypeLabel(_type)}'),
+                        if (_query.isNotEmpty) _ActiveChip(label: 'بحث: $_query'),
+                        if (_startDateFilter != null || _endDateFilter != null) const _ActiveChip(label: 'نطاق تاريخ'),
+                        if (_minAmountFilter != null || _maxAmountFilter != null) const _ActiveChip(label: 'نطاق مبلغ'),
+                      ],
+                    ),
+                  ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => _openAdvancedFilters(context),
+                      tooltip: 'فلاتر متقدمة',
+                      icon: Icon(
+                        Icons.tune_rounded,
+                        color: _hasAdvancedFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SortingMenu(
+                      currentSort: _sortOption,
+                      onSortChanged: (v) {
+                        setState(() => _sortOption = v);
+                        _persistUiState();
+                      },
+                    ),
+                    if (_hasActiveFilters)
+                      TextButton(
+                        onPressed: _clearFilters,
+                        child: const Text('مسح'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          secondChild: const SizedBox.shrink(),
         ),
 
         // Content with Responsive Layout
@@ -834,7 +932,9 @@ class _ActiveChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

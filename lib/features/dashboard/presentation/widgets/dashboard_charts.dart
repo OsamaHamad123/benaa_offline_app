@@ -1,10 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../domain/entities/dashboard_statistics.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
+import '../../../taxonomies/domain/entities/taxonomy_group.dart';
+import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 
 /// Growth Chart - Clean Architecture Version
 /// Takes GrowthDataPoint list from domain entity
@@ -43,8 +47,7 @@ class GrowthChart extends StatelessWidget {
                   LineChartData(
                     lineTouchData: LineTouchData(
                       touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (touchedSpot) =>
-                            AppColors.infoDark.withOpacity(0.8),
+                        getTooltipColor: (touchedSpot) => AppColors.infoDark.withOpacity(0.8),
                         tooltipPadding: EdgeInsets.all(8.w),
                         getTooltipItems: (List<LineBarSpot> touchedSpots) {
                           return touchedSpots.map((spot) {
@@ -72,20 +75,15 @@ class GrowthChart extends StatelessWidget {
                       },
                     ),
                     titlesData: FlTitlesData(
-                      rightTitles: const AxisTitles(
-                        
-                      ),
-                      topTitles: const AxisTitles(
-                        
-                      ),
+                      rightTitles: const AxisTitles(),
+                      topTitles: const AxisTitles(),
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
                           reservedSize: 30,
                           interval: 1,
                           getTitlesWidget: (value, meta) {
-                            if (value.toInt() >= 0 &&
-                                value.toInt() < growthData.length) {
+                            if (value.toInt() >= 0 && value.toInt() < growthData.length) {
                               final date = growthData[value.toInt()].date;
                               return Padding(
                                 padding: EdgeInsets.only(top: 8.h),
@@ -167,29 +165,48 @@ class GrowthChart extends StatelessWidget {
 
   double _getMaxY() {
     if (growthData.isEmpty) return 10;
-    final maxCount =
-        growthData.map((e) => e.count).reduce((a, b) => a > b ? a : b);
+    final maxCount = growthData.map((e) => e.count).reduce((a, b) => a > b ? a : b);
     return (maxCount + 2).toDouble();
   }
 }
 
 /// Category Distribution Chart - Clean Architecture Version
 /// Takes categoryCounts map from domain entity
-class CategoryDistributionChart extends StatelessWidget {
+class CategoryDistributionChart extends ConsumerWidget {
   final Map<String, int> categoryCounts;
 
   const CategoryDistributionChart({required this.categoryCounts, super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (categoryCounts.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    final total = categoryCounts.values.fold(0, (a, b) => a + b);
+    final sectionTaxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section),
+    );
+    final categoryTaxonomiesAsync = ref.watch(
+      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category),
+    );
+    final sectionTaxonomies = sectionTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final categoryTaxonomies = categoryTaxonomiesAsync.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <taxonomy_domain.Taxonomy>[],
+    );
+    final mergedTaxonomies = <String, taxonomy_domain.Taxonomy>{
+      for (final item in sectionTaxonomies) item.id: item,
+      for (final item in categoryTaxonomies) item.id: item,
+    };
+    final normalizedCounts = _normalizeCategoryCounts(categoryCounts);
+    final total = normalizedCounts.values.fold(0, (a, b) => a + b);
     if (total == 0) {
       return const SizedBox.shrink();
     }
+    final metaByKey = _buildCategoryMetaMap(mergedTaxonomies.values.toList());
 
     return RepaintBoundary(
       child: Card(
@@ -208,10 +225,8 @@ class CategoryDistributionChart extends StatelessWidget {
                 builder: (context, constraints) {
                   final availableHeight = constraints.maxHeight;
                   final availableWidth = constraints.maxWidth;
-                  final isVertical =
-                      availableWidth < 360.w || availableHeight < 220.h;
+                  final isVertical = availableWidth < 360.w || availableHeight < 220.h;
 
-                  // compute a sensible pie radius based on available space
                   final base = math.min(
                     availableHeight,
                     availableWidth / (isVertical ? 1 : 2),
@@ -223,13 +238,14 @@ class CategoryDistributionChart extends StatelessWidget {
                     child: Center(
                       child: PieChart(
                         PieChartData(
-                          sections: _buildPieSections(total, radius: pieRadius),
                           sectionsSpace: 2,
-                          centerSpaceRadius: (pieRadius * 0.45).clamp(
-                            16.r,
-                            60.r,
+                          centerSpaceRadius: 40,
+                          sections: _buildPieSections(
+                            normalizedCounts,
+                            metaByKey,
+                            total,
+                            radius: pieRadius,
                           ),
-                          borderData: FlBorderData(show: false),
                         ),
                       ),
                     ),
@@ -239,7 +255,10 @@ class CategoryDistributionChart extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: _buildLegend(),
+                      children: _buildLegendForCounts(
+                        normalizedCounts,
+                        metaByKey,
+                      ),
                     ),
                   );
 
@@ -248,7 +267,10 @@ class CategoryDistributionChart extends StatelessWidget {
                       children: [
                         pie,
                         SizedBox(height: 12.h),
-                        ..._buildLegend(),
+                        ..._buildLegendForCounts(
+                          normalizedCounts,
+                          metaByKey,
+                        ),
                       ],
                     );
                   }
@@ -277,20 +299,19 @@ class CategoryDistributionChart extends StatelessWidget {
     );
   }
 
-  List<PieChartSectionData> _buildPieSections(int total, {double? radius}) {
-    final colors = {
-      'orphan': AppColors.orphan,
-      'widow': AppColors.widow,
-      'poor': AppColors.poor,
-      'disabled': AppColors.disabled,
-    };
-
-    return categoryCounts.entries.map((entry) {
+  List<PieChartSectionData> _buildPieSections(
+    Map<String, int> counts,
+    Map<String, _CategoryMeta> metaByKey,
+    int total, {
+    double? radius,
+  }) {
+    return counts.entries.map((entry) {
       final percentage = entry.value / total * 100;
+      final color = _resolveCategoryColor(entry.key, metaByKey);
       return PieChartSectionData(
         value: entry.value.toDouble(),
         title: '${percentage.toStringAsFixed(0)}%',
-        color: colors[entry.key] ?? AppColors.textSecondary,
+        color: color,
         radius: radius ?? 50.r,
         titleStyle: TextStyle(
           fontSize: 12.sp,
@@ -301,22 +322,13 @@ class CategoryDistributionChart extends StatelessWidget {
     }).toList();
   }
 
-  List<Widget> _buildLegend() {
-    final labels = {
-      'orphan': 'أيتام',
-      'widow': 'أرامل',
-      'poor': 'فقراء',
-      'disabled': 'ذوي إعاقة',
-    };
-
-    final colors = {
-      'orphan': AppColors.orphan,
-      'widow': AppColors.widow,
-      'poor': AppColors.poor,
-      'disabled': AppColors.disabled,
-    };
-
-    return categoryCounts.entries.map((entry) {
+  List<Widget> _buildLegendForCounts(
+    Map<String, int> counts,
+    Map<String, _CategoryMeta> metaByKey,
+  ) {
+    return counts.entries.map((entry) {
+      final label = _resolveCategoryLabel(entry.key, metaByKey);
+      final color = _resolveCategoryColor(entry.key, metaByKey);
       return Padding(
         padding: EdgeInsets.symmetric(vertical: 4.h),
         child: Row(
@@ -325,14 +337,14 @@ class CategoryDistributionChart extends StatelessWidget {
               width: 12.w,
               height: 12.h,
               decoration: BoxDecoration(
-                color: colors[entry.key] ?? AppColors.textSecondary,
+                color: color,
                 shape: BoxShape.circle,
               ),
             ),
             SizedBox(width: 8.w),
             Expanded(
               child: Text(
-                '${labels[entry.key] ?? entry.key}: ${entry.value}',
+                '$label: ${entry.value}',
                 style: TextStyle(fontSize: 12.sp, color: AppColors.textPrimary),
               ),
             ),
@@ -341,4 +353,180 @@ class CategoryDistributionChart extends StatelessWidget {
       );
     }).toList();
   }
+
+  Map<String, int> _normalizeCategoryCounts(Map<String, int> rawCounts) {
+    final normalized = <String, int>{};
+    rawCounts.forEach((key, value) {
+      final canonical = _canonicalizeCategoryKey(key);
+      if (canonical == null) {
+        normalized[key] = (normalized[key] ?? 0) + value;
+        return;
+      }
+      normalized[canonical] = (normalized[canonical] ?? 0) + value;
+    });
+    return normalized;
+  }
+
+  String? _canonicalizeCategoryKey(String? raw) {
+    if (raw == null) {
+      return null;
+    }
+
+    final normalized = raw.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    switch (normalized) {
+      case '1':
+        return 'orphan';
+      case '2':
+        return 'poor';
+      case '3':
+        return 'widow';
+      case '4':
+        return 'disabled';
+      case 'orphan':
+      case 'orphans':
+      case 'يتيم':
+      case 'أيتام':
+        return 'orphan';
+      case 'widow':
+      case 'widows':
+      case 'أرملة':
+      case 'أرامل':
+        return 'widow';
+      case 'poor':
+      case 'فقير':
+      case 'فقراء':
+        return 'poor';
+      case 'disabled':
+      case 'معاق':
+      case 'ذوي الإعاقة':
+      case 'ذوي إعاقة':
+        return 'disabled';
+    }
+
+    return null;
+  }
+
+  Map<String, _CategoryMeta> _buildCategoryMetaMap(
+    List<taxonomy_domain.Taxonomy> items,
+  ) {
+    final metaByKey = <String, _CategoryMeta>{};
+    for (final item in items) {
+      final candidates = <String?>[
+        _canonicalizeCategoryKey(item.code),
+        _canonicalizeCategoryKey(item.label),
+        _canonicalizeCategoryKey(_parseTaxonomyNumericKey(item)?.toString()),
+      ];
+      for (final candidate in candidates) {
+        if (candidate == null || metaByKey.containsKey(candidate)) {
+          continue;
+        }
+        final color = _parseTaxonomyColor(item.color) ?? _fallbackColorForKey(candidate);
+        metaByKey[candidate] = _CategoryMeta(label: item.label, color: color);
+      }
+    }
+
+    return metaByKey;
+  }
+
+  String _resolveCategoryLabel(
+    String key,
+    Map<String, _CategoryMeta> metaByKey,
+  ) {
+    final canonical = _canonicalizeCategoryKey(key) ?? key;
+    final meta = metaByKey[canonical];
+    if (meta != null && meta.label.trim().isNotEmpty) {
+      return meta.label;
+    }
+    return _fallbackLabelForKey(canonical) ?? canonical;
+  }
+
+  Color _resolveCategoryColor(
+    String key,
+    Map<String, _CategoryMeta> metaByKey,
+  ) {
+    final canonical = _canonicalizeCategoryKey(key) ?? key;
+    final meta = metaByKey[canonical];
+    return meta?.color ?? _fallbackColorForKey(canonical);
+  }
+
+  Color _fallbackColorForKey(String key) {
+    switch (key) {
+      case 'orphan':
+        return AppColors.orphan;
+      case 'widow':
+        return AppColors.widow;
+      case 'poor':
+        return AppColors.poor;
+      case 'disabled':
+        return AppColors.disabled;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  String? _fallbackLabelForKey(String key) {
+    switch (key) {
+      case 'orphan':
+        return 'أيتام';
+      case 'widow':
+        return 'أرامل';
+      case 'poor':
+        return 'فقراء';
+      case 'disabled':
+        return 'ذوي إعاقة';
+      default:
+        return null;
+    }
+  }
+
+  int? _parseTaxonomyNumericKey(taxonomy_domain.Taxonomy taxonomy) {
+    final code = int.tryParse(taxonomy.code.trim());
+    if (code != null) {
+      return code;
+    }
+
+    final rawId = taxonomy.id.trim();
+    if (rawId.isEmpty) {
+      return null;
+    }
+
+    final separatorIndex = rawId.indexOf('::');
+    final suffix = separatorIndex >= 0 ? rawId.substring(separatorIndex + 2) : rawId;
+    return int.tryParse(suffix.trim());
+  }
+
+  Color? _parseTaxonomyColor(String? colorString) {
+    if (colorString == null) {
+      return null;
+    }
+
+    final trimmed = colorString.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    try {
+      if (trimmed.startsWith('#')) {
+        return Color(int.parse('0xFF${trimmed.substring(1)}'));
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return null;
+  }
+}
+
+class _CategoryMeta {
+  final String label;
+  final Color color;
+
+  const _CategoryMeta({
+    required this.label,
+    required this.color,
+  });
 }

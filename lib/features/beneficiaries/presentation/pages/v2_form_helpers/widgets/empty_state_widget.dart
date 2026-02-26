@@ -14,18 +14,22 @@ class EmptyStateWidget extends StatefulWidget {
   final VoidCallback? onAction;
   final Color? iconColor;
   final String? emoji;
+  final bool compact;
 
   const EmptyStateWidget({
-    required this.icon, required this.title, super.key,
+    required this.icon,
+    required this.title,
+    super.key,
     this.subtitle,
     this.actionText,
     this.onAction,
     this.iconColor,
     this.emoji,
+    this.compact = false,
   });
 
   /// 👥 Empty Family Members
-  factory EmptyStateWidget.noFamilyMembers({VoidCallback? onAdd}) {
+  factory EmptyStateWidget.noFamilyMembers({VoidCallback? onAdd, bool compact = false}) {
     return EmptyStateWidget(
       icon: Icons.family_restroom_rounded,
       title: 'لا يوجد أفراد عائلة',
@@ -33,6 +37,7 @@ class EmptyStateWidget extends StatefulWidget {
       actionText: onAdd != null ? 'إضافة فرد من العائلة' : null,
       onAction: onAdd,
       emoji: '👨‍👩‍👧‍👦',
+      compact: compact,
     );
   }
 
@@ -41,8 +46,7 @@ class EmptyStateWidget extends StatefulWidget {
     return EmptyStateWidget(
       icon: Icons.cloud_upload_rounded,
       title: 'لا توجد مرفقات',
-      subtitle:
-          'أضف المستندات والصور المطلوبة\nمثل الهوية الوطنية، شهادات، صور',
+      subtitle: 'أضف المستندات والصور المطلوبة\nمثل الهوية الوطنية، شهادات، صور',
       actionText: onAdd != null ? 'إضافة مرفق' : null,
       onAction: onAdd,
       emoji: '📎',
@@ -111,8 +115,7 @@ class EmptyStateWidget extends StatefulWidget {
   State<EmptyStateWidget> createState() => _EmptyStateWidgetState();
 }
 
-class _EmptyStateWidgetState extends State<EmptyStateWidget>
-    with SingleTickerProviderStateMixin {
+class _EmptyStateWidgetState extends State<EmptyStateWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
@@ -138,8 +141,7 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
       ),
     );
 
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
@@ -158,10 +160,19 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isCompact = widget.compact;
+    final outerPadding = isCompact ? 18.w : 32.w;
+    final iconPadding = isCompact ? 18.w : 32.w;
+    final iconSize = isCompact ? 44.sp : 72.sp;
+    final emojiSize = isCompact ? 28.sp : 48.sp;
+    final titleSize = isCompact ? 18.sp : 22.sp;
+    final subtitleSize = isCompact ? 13.sp : 15.sp;
+    final gapLarge = isCompact ? 18.h : 32.h;
+    final gapMedium = isCompact ? 10.h : 16.h;
 
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(32.w),
+        padding: EdgeInsets.all(outerPadding),
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: SlideTransition(
@@ -173,21 +184,18 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
                 ScaleTransition(
                   scale: _scaleAnimation,
                   child: Container(
-                    padding: EdgeInsets.all(32.w),
+                    padding: EdgeInsets.all(iconPadding),
                     decoration: BoxDecoration(
                       gradient: RadialGradient(
                         colors: [
-                          (widget.iconColor ?? theme.colorScheme.primary)
-                              .withOpacity(0.15),
-                          (widget.iconColor ?? theme.colorScheme.primary)
-                              .withOpacity(0.05),
+                          (widget.iconColor ?? theme.colorScheme.primary).withOpacity(0.15),
+                          (widget.iconColor ?? theme.colorScheme.primary).withOpacity(0.05),
                         ],
                       ),
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: (widget.iconColor ?? theme.colorScheme.primary)
-                              .withOpacity(0.2),
+                          color: (widget.iconColor ?? theme.colorScheme.primary).withOpacity(0.2),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -195,25 +203,25 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
                     ),
                     child: Icon(
                       widget.icon,
-                      size: 72.sp,
+                      size: iconSize,
                       color: widget.iconColor ?? theme.colorScheme.primary,
                     ),
                   ),
                 ),
 
-                SizedBox(height: 32.h),
+                SizedBox(height: gapLarge),
 
                 // Emoji (if provided)
                 if (widget.emoji != null) ...[
-                  Text(widget.emoji!, style: TextStyle(fontSize: 48.sp)),
-                  SizedBox(height: 16.h),
+                  Text(widget.emoji!, style: TextStyle(fontSize: emojiSize)),
+                  SizedBox(height: gapMedium),
                 ],
 
                 // Title
                 Text(
                   widget.title,
                   style: TextStyle(
-                    fontSize: 22.sp,
+                    fontSize: titleSize,
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                     letterSpacing: 0.5,
@@ -227,7 +235,7 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
                   Text(
                     widget.subtitle!,
                     style: TextStyle(
-                      fontSize: 15.sp,
+                      fontSize: subtitleSize,
                       color: theme.colorScheme.onSurfaceVariant,
                       height: 1.5,
                     ),
@@ -237,7 +245,7 @@ class _EmptyStateWidgetState extends State<EmptyStateWidget>
 
                 // Action Button with Animation
                 if (widget.actionText != null && widget.onAction != null) ...[
-                  SizedBox(height: 32.h),
+                  SizedBox(height: gapLarge),
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: FilledButton.icon(

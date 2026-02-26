@@ -22,10 +22,10 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final filters = ref.watch(filtersProvider);
-    final sectionsAsync = ref.watch(
-      bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.section),
+    final categoriesAsync = ref.watch(
+      bridgeTaxonomiesByGroupResolvedOnceProvider(TaxonomyGroup.category),
     );
-    final sections = sectionsAsync.maybeWhen(
+    final categories = categoriesAsync.maybeWhen(
       data: (value) => value,
       orElse: () => const [],
     );
@@ -46,11 +46,11 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
     ];
 
     var resolvedSections = 0;
-    for (final section in sections) {
+    for (final section in categories) {
       final value = TaxonomyValueResolver.resolveToInt(
         code: section.code,
         id: section.id,
-        group: TaxonomyGroup.section,
+        group: TaxonomyGroup.category,
         source: 'filters_bottom_sheet',
       );
       if (value == null) continue;
@@ -71,9 +71,9 @@ class _FiltersBottomSheetState extends ConsumerState<FiltersBottomSheet> {
     }
 
     TaxonomyValueResolver.logSummary(
-      group: TaxonomyGroup.section,
+      group: TaxonomyGroup.category,
       source: 'filters_bottom_sheet',
-      total: sections.length,
+      total: categories.length,
       resolved: resolvedSections,
     );
 
