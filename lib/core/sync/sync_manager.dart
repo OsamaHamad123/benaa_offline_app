@@ -10,6 +10,7 @@ import '../providers/providers.dart';
 import '../utils/batch_operations.dart';
 import '../../features/beneficiaries/data/models/beneficiary_data_model.dart';
 import '../network/api_client.dart';
+import '../notifications/notifications_service.dart';
 
 // Provider للـ SyncManager
 final syncManagerProvider = Provider<SyncManager>((ref) {
@@ -77,6 +78,9 @@ class SyncManager {
 
   Timer? _autoSyncTimer;
   SyncStatus _currentStatus = SyncStatus();
+  bool _wasSyncingForNotification = false;
+  int _lastSyncProgressNotification = -1;
+  String _lastSyncEntityNotification = '';
 
   SyncManager(this._db, {ApiClient? apiClient}) : _apiClient = apiClient {
     _startAutoSync();
@@ -103,6 +107,48 @@ class SyncManager {
   void _updateStatus(SyncStatus status) {
     _currentStatus = status;
     _statusController.add(status);
+    _emitQueueSyncNotification(status);
+  }
+
+  void _emitQueueSyncNotification(SyncStatus status) {
+    if (status.isSyncing) {
+      final progressPercent =
+          status.totalItems > 0 ? ((status.completedItems / status.totalItems) * 100).clamp(0, 100).round() : 0;
+      final entityLabel = status.currentEntity?.trim() ?? '';
+
+      if (progressPercent != _lastSyncProgressNotification || entityLabel != _lastSyncEntityNotification) {
+        _lastSyncProgressNotification = progressPercent;
+        _lastSyncEntityNotification = entityLabel;
+        unawaited(
+          NotificationsService.showSyncOperationProgress(
+            operationLabel: entityLabel.isEmpty ? 'جاري مزامنة البيانات...' : 'جاري مزامنة: $entityLabel',
+            percentage: progressPercent.toDouble(),
+          ),
+        );
+      }
+
+      _wasSyncingForNotification = true;
+      return;
+    }
+
+    if (!_wasSyncingForNotification) {
+      return;
+    }
+
+    final error = status.lastError?.trim();
+    if (error != null && error.isNotEmpty) {
+      unawaited(NotificationsService.showSyncOperationFailed(error));
+    } else {
+      unawaited(
+        NotificationsService.showSyncOperationCompleted(
+          summary: 'تمت مزامنة ${status.completedItems} عنصر بنجاح.',
+        ),
+      );
+    }
+
+    _wasSyncingForNotification = false;
+    _lastSyncProgressNotification = -1;
+    _lastSyncEntityNotification = '';
   }
 
   // ============================================================================

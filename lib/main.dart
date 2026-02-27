@@ -8,6 +8,7 @@ import 'app.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/widgets/safe_widgets.dart';
 import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
+import 'core/sync/background_sync_worker.dart';
 import 'features/visits/presentation/providers/visit_providers.dart' as visit_providers;
 import 'features/search/presentation/providers/search_dependencies.dart' as search_providers;
 import 'features/beneficiaries/presentation/providers/beneficiary_dependencies.dart' as beneficiary_providers;
@@ -29,6 +30,9 @@ Future<void> main() async {
 
     WidgetsFlutterBinding.ensureInitialized();
     _logStartup('Widgets binding initialized', startupStopwatch);
+
+    await BackgroundSyncWorker.initialize();
+    _logStartup('Background worker initialized', startupStopwatch);
 
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);

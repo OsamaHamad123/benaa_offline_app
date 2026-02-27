@@ -48,7 +48,6 @@ class BeneficiaryFormTabs4Merged extends StatefulWidget {
 class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged> {
   final Set<int> _loadedTabs = {0};
   int _activeTabIndex = 0;
-  int _previousTabIndex = 0;
   bool _isNavigatingForward = true;
   Timer? _preloadNextTabTimer;
   late final FocusNode _familyFirstFieldFocusNode;
@@ -101,7 +100,6 @@ class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged>
     }
 
     if (_activeTabIndex != currentTab) {
-      _previousTabIndex = _activeTabIndex;
       _isNavigatingForward = currentTab >= _activeTabIndex;
       _activeTabIndex = currentTab;
       shouldRebuild = true;

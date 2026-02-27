@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
+import '../../core/sync/background_sync_worker.dart';
 import '../../core/widgets/modern_sliver_app_bar.dart';
 import 'presentation/widgets/sync_section_card.dart';
 import 'presentation/widgets/sync_status_banner.dart';
@@ -16,7 +17,6 @@ import 'presentation/widgets/sync_ui_tokens.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
 import '../../core/error_handling/error_handler.dart';
 import '../taxonomies/presentation/providers/taxonomy_providers.dart';
-import '../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../taxonomies/domain/entities/taxonomy.dart';
 import '../taxonomies/domain/entities/taxonomy_group.dart';
 import '../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
@@ -141,87 +141,39 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Future<void> _syncDown() async {
-    final syncDown = ref.read(mobileSyncDownUseCaseProvider);
-    final result = await syncDown();
+    await BackgroundSyncWorker.triggerSyncDown();
 
-    // Force taxonomy sync through notifier to guarantee provider invalidation + UI refresh.
-    await ref.read(taxonomySyncNotifierProvider.notifier).sync();
-    ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+    if (!mounted) return;
+    setState(() {
+      _status = MobileSyncStatus(
+        isSyncing: true,
+        currentOperation: 'تمت جدولة مزامنة التنزيل بالخلفية',
+        progress: 0,
+      );
+    });
 
-    final taxonomyStatus = ref.read(taxonomySyncStatusProvider);
-    final taxonomyError = ref.read(taxonomyErrorMessageProvider);
-
-    if (mounted) {
-      setState(() {
-        _lastResult = result;
-      });
-
-      // Reload stats
-      await _loadStats();
-
-      if (result.success) {
-        if (!mounted) return;
-        final skippedWarning = _buildSkippedThresholdWarning(result);
-        final relatedConsistency = _buildRelatedConsistencyHint(result);
-        if (skippedWarning != null) {
-          EnhancedSnackbar.showWarning(
-            context,
-            message: skippedWarning,
-          );
-        } else if (relatedConsistency.level == _SyncCheckLevel.warn) {
-          EnhancedSnackbar.showWarning(
-            context,
-            message: relatedConsistency.message,
-          );
-        }
-        if (taxonomyStatus == TaxonomySyncStatus.success) {
-          EnhancedSnackbar.showSuccess(
-            context,
-            message: '✅ تم تنزيل ${result.recordsSynced} سجل ومزامنة التصنيفات بنجاح',
-          );
-        } else {
-          EnhancedSnackbar.showWarning(
-            context,
-            message:
-                '⚠️ تم تنزيل ${result.recordsSynced} سجل لكن التصنيفات لم تتحدث: ${taxonomyError ?? 'تحقق من الاتصال'}',
-          );
-        }
-      } else {
-        if (!mounted) return;
-        EnhancedSnackbar.showError(
-          context,
-          message: '❌ فشل التنزيل: ${result.error}',
-        );
-      }
-    }
+    EnhancedSnackbar.showSuccess(
+      context,
+      message: '✅ تمت جدولة Sync Down بالخلفية (تستمر حتى بعد إغلاق التطبيق)',
+    );
   }
 
   Future<void> _syncUp() async {
-    final syncUp = ref.read(mobileSyncUpUseCaseProvider);
-    final result = await syncUp();
+    await BackgroundSyncWorker.triggerSyncUp();
 
-    if (mounted) {
-      setState(() {
-        _lastResult = result;
-      });
+    if (!mounted) return;
+    setState(() {
+      _status = MobileSyncStatus(
+        isSyncing: true,
+        currentOperation: 'تمت جدولة مزامنة الرفع بالخلفية',
+        progress: 0,
+      );
+    });
 
-      // Reload stats
-      await _loadStats();
-
-      if (result.success) {
-        if (!mounted) return;
-        EnhancedSnackbar.showSuccess(
-          context,
-          message: '✅ تم رفع ${result.recordsSynced} سجل (مستفيدين/جمعيات/موظفين/كفالات) بنجاح',
-        );
-      } else {
-        if (!mounted) return;
-        EnhancedSnackbar.showWarning(
-          context,
-          message: '⚠️ تم رفع ${result.recordsSynced} (فشل ${result.recordsFailed})',
-        );
-      }
-    }
+    EnhancedSnackbar.showSuccess(
+      context,
+      message: '✅ تمت جدولة Sync Up بالخلفية (تستمر حتى بعد إغلاق التطبيق)',
+    );
   }
 
   Future<void> _syncTaxonomies() async {
@@ -247,90 +199,21 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Future<void> _syncNowOfficial() async {
-    final officialSync = ref.read(mobileOfficialSyncUseCaseProvider);
-    final result = await officialSync();
-    final combinedResult = MobileSyncResult(
-      success: result.down.success && result.up.success,
-      recordsSynced: result.down.recordsSynced + result.up.recordsSynced,
-      recordsFailed: result.down.recordsFailed + result.up.recordsFailed,
-      payloadCounters: {
-        ...result.down.payloadCounters,
-        ...result.up.payloadCounters,
-      },
-      writeCounters: {
-        ...result.down.writeCounters,
-        ...result.up.writeCounters,
-      },
-      error: result.down.error ?? result.up.error,
-      errorCategory: result.down.errorCategory ?? result.up.errorCategory,
-      errorContext: result.down.errorContext ?? result.up.errorContext,
-    );
+    await BackgroundSyncWorker.triggerManualSync();
 
     if (!mounted) return;
-
     setState(() {
-      _lastResult = combinedResult;
+      _status = MobileSyncStatus(
+        isSyncing: true,
+        currentOperation: 'تمت جدولة المزامنة الشاملة بالخلفية',
+        progress: 0,
+      );
     });
 
-    await _loadStats();
-
-    if (!mounted) return;
-
-    if (combinedResult.success) {
-      EnhancedSnackbar.showSuccess(
-        context,
-        message: '✅ اكتملت المزامنة الشاملة (${combinedResult.recordsSynced} سجل)',
-      );
-      return;
-    }
-
-    EnhancedSnackbar.showWarning(
+    EnhancedSnackbar.showSuccess(
       context,
-      message: '⚠️ اكتملت المزامنة مع مشاكل (تمت ${combinedResult.recordsSynced}، فشل ${combinedResult.recordsFailed})',
+      message: '✅ تمت جدولة المزامنة الشاملة بالخلفية (تستمر حتى بعد إغلاق التطبيق)',
     );
-  }
-
-  String? _buildSkippedThresholdWarning(MobileSyncResult result) {
-    if (result.writeCounters.isEmpty) return null;
-
-    int counter(String key) => result.writeCounters[key] ?? 0;
-
-    final beneficiariesInserted = counter('beneficiaries_inserted');
-    final beneficiariesUpdated = counter('beneficiaries_updated');
-    final beneficiariesSkipped = counter('beneficiaries_skipped');
-    final beneficiariesTotal = beneficiariesInserted + beneficiariesUpdated + beneficiariesSkipped;
-
-    // Critical signal: high skip ratio on beneficiaries themselves.
-    if (beneficiariesTotal >= 50 && beneficiariesSkipped >= 20) {
-      final ratio = beneficiariesSkipped / beneficiariesTotal;
-      if (ratio >= 0.20) {
-        return '⚠️ تم تخطي $beneficiariesSkipped من أصل $beneficiariesTotal من سجلات المستفيدين (${(ratio * 100).toStringAsFixed(1)}%). افحص مطابقة المعرفات.';
-      }
-    }
-
-    final attachmentsInserted = counter('attachments_inserted');
-    final attachmentsUpdated = counter('attachments_updated');
-    final attachmentsSkipped = counter('attachments_skipped');
-
-    final familyInserted = counter('family_members_inserted');
-    final familyUpdated = counter('family_members_updated');
-    final familySkipped = counter('family_members_skipped');
-
-    final deadInserted = counter('dead_people_inserted');
-    final deadUpdated = counter('dead_people_updated');
-    final deadSkipped = counter('dead_people_skipped');
-
-    final relatedApplied =
-        attachmentsInserted + attachmentsUpdated + familyInserted + familyUpdated + deadInserted + deadUpdated;
-    final relatedSkipped = attachmentsSkipped + familySkipped + deadSkipped;
-
-    // Related rows may legitimately include records for beneficiaries outside local scope.
-    // Warn only in severe mismatch scenarios to avoid noisy false alarms.
-    if (relatedSkipped >= 500 && relatedApplied == 0 && result.recordsSynced > 0) {
-      return '⚠️ تم تخطي عدد كبير من العلاقات/المرفقات ($relatedSkipped) بدون أي كتابة مرتبطة. هذا قد يشير لخلل في ربط المستفيد (local/server).';
-    }
-
-    return null;
   }
 
   ({int score, String level, Color color, String hint}) _buildSyncHealthScore(MobileSyncResult result) {

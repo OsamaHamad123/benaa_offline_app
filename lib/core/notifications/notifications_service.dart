@@ -10,6 +10,7 @@ class NotificationsService {
 
   static bool _initialized = false;
   static const int _civilDbDownloadNotificationId = 45001;
+  static const int _syncOperationNotificationId = 45002;
 
   /// تهيئة الإشعارات
   static Future<void> initialize() async {
@@ -305,6 +306,105 @@ class NotificationsService {
       'يمكنك استكمال التنزيل لاحقًا من نفس الصفحة.',
       details,
       payload: 'civil_db_download:cancelled',
+    );
+  }
+
+  static Future<void> showSyncOperationProgress({
+    required String operationLabel,
+    required double percentage,
+  }) async {
+    await _ensureInitialized();
+
+    final bounded = percentage.clamp(0, 100).round();
+
+    final androidDetails = AndroidNotificationDetails(
+      'sync_operations_channel',
+      'عمليات المزامنة',
+      channelDescription: 'متابعة تقدم المزامنة والرفع والتنزيل',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true,
+      onlyAlertOnce: true,
+      showProgress: true,
+      maxProgress: 100,
+      progress: bounded,
+      category: AndroidNotificationCategory.progress,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: false,
+    );
+
+    final details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notifications.show(
+      _syncOperationNotificationId,
+      'جارية عملية مزامنة ($bounded%)',
+      operationLabel,
+      details,
+      payload: 'sync_operation:progress',
+    );
+  }
+
+  static Future<void> showSyncOperationCompleted({required String summary}) async {
+    await _ensureInitialized();
+
+    const androidDetails = AndroidNotificationDetails(
+      'sync_operations_channel',
+      'عمليات المزامنة',
+      channelDescription: 'متابعة تقدم المزامنة والرفع والتنزيل',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: false,
+      category: AndroidNotificationCategory.status,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notifications.show(
+      _syncOperationNotificationId,
+      'اكتملت عملية المزامنة',
+      summary,
+      details,
+      payload: 'sync_operation:completed',
+    );
+  }
+
+  static Future<void> showSyncOperationFailed(String message) async {
+    await _ensureInitialized();
+
+    const androidDetails = AndroidNotificationDetails(
+      'sync_operations_channel',
+      'عمليات المزامنة',
+      channelDescription: 'متابعة تقدم المزامنة والرفع والتنزيل',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: false,
+      category: AndroidNotificationCategory.error,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notifications.show(
+      _syncOperationNotificationId,
+      'فشلت عملية المزامنة',
+      message,
+      details,
+      payload: 'sync_operation:failed',
     );
   }
 

@@ -10,6 +10,7 @@ import '../../data/db/drift_database.dart';
 import '../mappers/beneficiary_sync_mapper.dart' as mapper;
 import '../mappers/visit_sync_mapper.dart' as visit_mapper;
 import '../storage/secure_storage.dart';
+import '../notifications/notifications_service.dart';
 import '../../features/sync/services/file_id_service.dart';
 import '../../features/sync/domain/entities/sync_flow_contract.dart';
 import '../../features/sync/domain/usecases/sync_down_flow_usecase.dart';
@@ -63,6 +64,9 @@ class MobileSyncService {
   final _operationEventsController = StreamController<SyncOperationEvent>.broadcast();
   MobileSyncStatus _currentStatus = MobileSyncStatus();
   static const int _uiYieldInterval = 20;
+  bool _wasSyncingForNotification = false;
+  int _lastSyncProgressNotification = -1;
+  String _lastSyncOperationNotification = '';
 
   MobileSyncService(
     this._db,
@@ -152,6 +156,46 @@ class MobileSyncService {
   void _updateStatus(MobileSyncStatus status) {
     _currentStatus = status;
     _statusController.add(status);
+    _emitSyncStatusNotification(status);
+  }
+
+  void _emitSyncStatusNotification(MobileSyncStatus status) {
+    if (status.isSyncing) {
+      final roundedProgress = (status.progress * 100).clamp(0, 100).round();
+      final operation = status.currentOperation.trim();
+
+      if (roundedProgress != _lastSyncProgressNotification || operation != _lastSyncOperationNotification) {
+        _lastSyncProgressNotification = roundedProgress;
+        _lastSyncOperationNotification = operation;
+        unawaited(
+          NotificationsService.showSyncOperationProgress(
+            operationLabel: operation.isEmpty ? 'جاري تنفيذ المزامنة...' : operation,
+            percentage: roundedProgress.toDouble(),
+          ),
+        );
+      }
+
+      _wasSyncingForNotification = true;
+      return;
+    }
+
+    if (!_wasSyncingForNotification) {
+      return;
+    }
+
+    final error = status.lastError?.trim();
+    if (error != null && error.isNotEmpty) {
+      unawaited(NotificationsService.showSyncOperationFailed(error));
+    } else {
+      final summary = status.currentOperation.trim().isEmpty || status.currentOperation == 'جاهز'
+          ? 'تمت المزامنة بنجاح.'
+          : status.currentOperation;
+      unawaited(NotificationsService.showSyncOperationCompleted(summary: summary));
+    }
+
+    _wasSyncingForNotification = false;
+    _lastSyncProgressNotification = -1;
+    _lastSyncOperationNotification = '';
   }
 
   Future<void> _yieldToUiIfNeeded(int processedCount) async {

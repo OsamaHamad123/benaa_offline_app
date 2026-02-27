@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import '../sync/background_sync_worker.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/civil_db_download/presentation/providers/database_download_provider.dart';
 import '../widgets/modern_sliver_app_bar.dart';
@@ -141,6 +142,14 @@ class CleanSettingsPage extends ConsumerWidget {
                           onTap: settings.autoSyncEnabled
                               ? () => _handleSyncIntervalDialog(context, ref, settings, notifier)
                               : () {},
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'اختبار مهام الخلفية',
+                          subtitle: 'تشغيل تنزيل/رفع/مزامنة بالخلفية للتحقق',
+                          icon: Icons.playlist_play_rounded,
+                          color: Colors.blueGrey,
+                          onTap: () => _showBackgroundJobsTestDialog(context),
                         ),
                       ],
                     ),
@@ -654,6 +663,73 @@ class CleanSettingsPage extends ConsumerWidget {
         }
       }
     }
+  }
+
+  Future<void> _showBackgroundJobsTestDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('اختبار مهام الخلفية'),
+        content: const Text('اختر المهمة التي تريد جدولتها بالخلفية. ستستمر حتى بعد إغلاق التطبيق عند دعم النظام.'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await BackgroundSyncWorker.triggerSyncDown();
+              if (dialogContext.mounted) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('تمت جدولة Sync Down بالخلفية')),
+                );
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Sync Down'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await BackgroundSyncWorker.triggerSyncUp();
+              if (dialogContext.mounted) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('تمت جدولة Sync Up بالخلفية')),
+                );
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Sync Up'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await BackgroundSyncWorker.triggerManualSync();
+              if (dialogContext.mounted) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('تمت جدولة Full Sync بالخلفية')),
+                );
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Full Sync'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await BackgroundSyncWorker.triggerCivilDbDownload();
+              if (dialogContext.mounted) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(content: Text('تمت جدولة تنزيل السجل المدني بالخلفية')),
+                );
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('تنزيل السجل'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('إغلاق'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _handleItemsPerPageDialog(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/sync/background_sync_worker.dart';
 import '../../domain/entities/download_progress.dart';
 import '../providers/database_download_provider.dart';
 import 'config/download_config.dart';
@@ -860,10 +861,15 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
 
   Widget _buildContinueInBackgroundButton() {
     return TextButton.icon(
-      onPressed: () {
+      onPressed: () async {
+        final notifier = ref.read(databaseDownloadProvider.notifier);
+        notifier.cancelDownload();
+        await BackgroundSyncWorker.triggerCivilDbDownload(downloadUrl: _downloadUrl);
+
+        if (!mounted || !context.mounted) return;
         if (!mounted || !context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('سيستمر التنزيل في الخلفية داخل التطبيق')),
+          const SnackBar(content: Text('تم تحويل التنزيل إلى الخلفية (حتى بعد إغلاق التطبيق)')),
         );
         context.go('/dashboard');
       },
