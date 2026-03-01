@@ -96,21 +96,21 @@ jobs:
         run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols
 
       - name: 📤 Upload Debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
 
       - name: 📤 Upload Release APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
       - name: 📤 Upload Debug Symbols
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debug-symbols
           path: build/app/outputs/symbols
