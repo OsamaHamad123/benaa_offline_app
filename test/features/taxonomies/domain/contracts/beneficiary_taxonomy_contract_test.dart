@@ -23,6 +23,8 @@ void main() {
     });
 
     test('documented canonical resolver returns expected values', () {
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('categories'), 'category');
+      expect(resolveBackendDocumentedCategoryCanonicalGroup('genders'), 'gender');
       expect(resolveBackendDocumentedCategoryCanonicalGroup('provinces'), 'governorate');
       expect(resolveBackendDocumentedCategoryCanonicalGroup('academic-degrees'), 'education_level');
       expect(resolveBackendDocumentedCategoryCanonicalGroup('request-statuses'), 'beneficiary_status');

@@ -16,9 +16,12 @@ bool _enableFormDebugPrints = false;
 class BeneficiaryFormControllers extends ChangeNotifier {
   // Auto-save callback
   final void Function()? onAutoSave;
+  final VoidCallback? onFieldEdited;
   Timer? _autoSaveDebounce;
 
-  BeneficiaryFormControllers({this.onAutoSave});
+  BeneficiaryFormControllers({this.onAutoSave, this.onFieldEdited}) {
+    _registerTextFieldListeners();
+  }
 
   // Text Controllers (don't need notifications)
   final firstNameController = TextEditingController();
@@ -41,6 +44,45 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   final createdByUserController = TextEditingController(); // 🆕 اسم المستخدم المدخل
   final fileNumberController = TextEditingController(); // 🆕 رقم الملف الرسمي
   final specialNeedsCountController = TextEditingController(); // 🆕 عدد ذوي الاحتياجات الخاصة
+  final bankNameIdController = TextEditingController();
+  final bankNameLabelController = TextEditingController();
+  final ibanUsdController = TextEditingController();
+  final ibanShekelController = TextEditingController();
+  final bankRepresentativeIdController = TextEditingController();
+  final bankGuardianNameController = TextEditingController();
+  final bankRepresentativePhoneController = TextEditingController();
+  final bankOwnerIdentityController = TextEditingController();
+
+  late final List<TextEditingController> _trackedTextControllers = [
+    firstNameController,
+    fatherNameController,
+    grandfatherNameController,
+    lastNameController,
+    motherNameController,
+    nationalIdController,
+    birthDateController,
+    phoneController,
+    altPhoneController,
+    addressController,
+    neighborhoodController,
+    numberOfDependentsController,
+    numberOfMalesController,
+    numberOfFemalesController,
+    notesController,
+    chronicDiseasesController,
+    addressBeforeDisplacementController,
+    createdByUserController,
+    fileNumberController,
+    specialNeedsCountController,
+    bankNameIdController,
+    bankNameLabelController,
+    ibanUsdController,
+    ibanShekelController,
+    bankRepresentativeIdController,
+    bankGuardianNameController,
+    bankRepresentativePhoneController,
+    bankOwnerIdentityController,
+  ];
 
   // 🔥 CRITICAL FIX: Prevent rebuild on every keystroke
   // Only notify on dropdown/switch changes, NOT on text input
@@ -212,6 +254,15 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   set selectedGuaranteeType(String? value) {
     if (_selectedGuaranteeType != value) {
       _selectedGuaranteeType = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  bool _bankCheckAccountApproved = false;
+  bool get bankCheckAccountApproved => _bankCheckAccountApproved;
+  set bankCheckAccountApproved(bool value) {
+    if (_bankCheckAccountApproved != value) {
+      _bankCheckAccountApproved = value;
       _notifyAndScheduleAutoSave();
     }
   }
@@ -450,11 +501,29 @@ class BeneficiaryFormControllers extends ChangeNotifier {
   void _notifyAndScheduleAutoSave() {
     // Schedule auto-save (timer-based, no immediate notification)
     _scheduleAutoSave();
+    onFieldEdited?.call();
 
     // Only notify on dropdown/switch changes
     if (_shouldNotifyListeners) {
       notifyListeners();
     }
+  }
+
+  void _registerTextFieldListeners() {
+    for (final controller in _trackedTextControllers) {
+      controller.addListener(_onTextFieldEdited);
+    }
+  }
+
+  void _unregisterTextFieldListeners() {
+    for (final controller in _trackedTextControllers) {
+      controller.removeListener(_onTextFieldEdited);
+    }
+  }
+
+  void _onTextFieldEdited() {
+    _scheduleAutoSave();
+    onFieldEdited?.call();
   }
 
   /// Schedule auto-save (debounced - only after 30s of inactivity)
@@ -500,6 +569,14 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'createdByUser': createdByUserController.text, // 🆕 NEW
       'fileNumber': fileNumberController.text, // 🆕 NEW
       'specialNeedsCount': specialNeedsCountController.text, // 🆕 NEW
+      'bankNameId': bankNameIdController.text,
+      'bankNameLabel': bankNameLabelController.text,
+      'ibanUsd': ibanUsdController.text,
+      'ibanShekel': ibanShekelController.text,
+      'bankRepresentativeId': bankRepresentativeIdController.text,
+      'bankGuardianName': bankGuardianNameController.text,
+      'bankRepresentativePhone': bankRepresentativePhoneController.text,
+      'bankOwnerIdentity': bankOwnerIdentityController.text,
       'selectedGender': _selectedGender,
       'selectedMaritalStatus': _selectedMaritalStatus,
       'selectedEducationLevel': _selectedEducationLevel,
@@ -518,6 +595,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'selectedGuaranteeType': _selectedGuaranteeType,
       'selectedRelationship': _selectedRelationship,
       'hasDisability': _hasDisability,
+      'bankCheckAccountApproved': _bankCheckAccountApproved,
     };
   }
 
@@ -543,6 +621,14 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     createdByUserController.text = map['createdByUser'] ?? ''; // 🆕 NEW
     fileNumberController.text = map['fileNumber'] ?? ''; // 🆕 NEW
     specialNeedsCountController.text = map['specialNeedsCount'] ?? ''; // 🆕 NEW
+    bankNameIdController.text = map['bankNameId'] ?? '';
+    bankNameLabelController.text = map['bankNameLabel'] ?? '';
+    ibanUsdController.text = map['ibanUsd'] ?? '';
+    ibanShekelController.text = map['ibanShekel'] ?? '';
+    bankRepresentativeIdController.text = map['bankRepresentativeId'] ?? '';
+    bankGuardianNameController.text = map['bankGuardianName'] ?? '';
+    bankRepresentativePhoneController.text = map['bankRepresentativePhone'] ?? '';
+    bankOwnerIdentityController.text = map['bankOwnerIdentity'] ?? '';
 
     _selectedGender = map['selectedGender'];
     _selectedMaritalStatus = map['selectedMaritalStatus'];
@@ -562,6 +648,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _selectedGuaranteeType = map['selectedGuaranteeType'];
     _selectedRelationship = map['selectedRelationship'];
     _hasDisability = map['hasDisability'] ?? false;
+    _bankCheckAccountApproved = map['bankCheckAccountApproved'] ?? false;
 
     // update notifiers too
     livingMembersNotifier.value = List.unmodifiable(_livingMembers);
@@ -575,6 +662,7 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     // ✅ Cancel auto-save timer and nullify to prevent memory leak
     _autoSaveDebounce?.cancel();
     _autoSaveDebounce = null;
+    _unregisterTextFieldListeners();
 
     // Dispose text controllers
     firstNameController.dispose();
@@ -597,6 +685,14 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     createdByUserController.dispose(); // 🆕 Dispose createdByUser controller
     fileNumberController.dispose(); // 🆕 Dispose fileNumber controller
     specialNeedsCountController.dispose(); // 🆕 Dispose specialNeedsCount controller
+    bankNameIdController.dispose();
+    bankNameLabelController.dispose();
+    ibanUsdController.dispose();
+    ibanShekelController.dispose();
+    bankRepresentativeIdController.dispose();
+    bankGuardianNameController.dispose();
+    bankRepresentativePhoneController.dispose();
+    bankOwnerIdentityController.dispose();
 
     livingMembersNotifier.dispose();
     deceasedMembersNotifier.dispose();

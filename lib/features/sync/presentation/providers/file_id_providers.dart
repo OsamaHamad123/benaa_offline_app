@@ -24,5 +24,10 @@ final fileIdReservationRepositoryProvider = Provider<FileIdReservationRepository
 /// 🆔 File ID Service Provider
 final fileIdServiceProvider = Provider<FileIdService>((ref) {
   final repository = ref.watch(fileIdReservationRepositoryProvider);
-  return FileIdService(repository);
+  final config = ref.watch(appConfigProvider).requireValue;
+  return FileIdService(
+    repository,
+    lowThreshold: config.fileIdRenewThreshold,
+    reserveBatchSize: config.fileIdReserveBatchSize,
+  );
 });

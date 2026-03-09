@@ -24,6 +24,7 @@ class SyncUpFlowUseCase {
     required Future<SyncStageCounters> Function() syncFamilyMembers,
     required Future<SyncStageCounters> Function() syncDeadPeople,
     required Future<SyncStageCounters> Function() syncAttachments,
+    Future<SyncStageCounters> Function()? syncGuardianBankAccounts,
     required Future<void> Function() syncUsedFileIds,
     required SyncUpProgressCallback onProgress,
     required String Function(Object error) classifyError,
@@ -114,11 +115,25 @@ class SyncUpFlowUseCase {
       uploaded += attachments.uploaded;
       failed += attachments.failed;
 
+      if (syncGuardianBankAccounts != null) {
+        onProgress(
+          operation: 'جاري رفع الحسابات البنكية للأوصياء... ',
+          progress: 0.86,
+        );
+        final bankAccounts = await syncGuardianBankAccounts();
+        uploaded += bankAccounts.uploaded;
+        failed += bankAccounts.failed;
+      }
+
       onProgress(
         operation: 'جاري مزامنة استخدام أرقام الملفات... ',
         progress: 0.9,
       );
       await syncUsedFileIds();
+
+      final payloadCounters = <String, int>{
+        'file_id_usage_sync_runs': 1,
+      };
 
       onProgress(
         operation: failed > 0 ? 'تم رفع $uploaded سجل (فشل $failed)' : 'تم رفع $uploaded سجل بنجاح ✓',
@@ -142,6 +157,9 @@ class SyncUpFlowUseCase {
         success: failed == 0,
         recordsSynced: uploaded,
         recordsFailed: failed,
+        payloadCounters: payloadCounters,
+        errorCategory: failed > 0 ? 'partial_failure' : null,
+        error: failed > 0 ? 'sync_up_partial_failure' : null,
       );
     } catch (error) {
       final message = error.toString();

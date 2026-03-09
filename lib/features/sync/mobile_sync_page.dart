@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,11 +11,14 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
 import '../../core/sync/background_sync_worker.dart';
+import '../../core/analytics/ux_flow_analytics.dart';
+import '../../core/analytics/ux_feature_flags.dart';
 import '../../core/widgets/modern_sliver_app_bar.dart';
 import 'presentation/widgets/sync_section_card.dart';
 import 'presentation/widgets/sync_status_banner.dart';
 import 'presentation/widgets/sync_ui_tokens.dart';
 import 'presentation/widgets/sync_history_viewer.dart';
+import 'presentation/viewmodels/mobile_sync_dashboard_loader.dart';
 import '../../core/error_handling/error_handler.dart';
 import '../taxonomies/presentation/providers/taxonomy_providers.dart';
 import '../taxonomies/domain/entities/taxonomy.dart';
@@ -36,111 +40,155 @@ class MobileSyncPage extends ConsumerStatefulWidget {
   ConsumerState<MobileSyncPage> createState() => _MobileSyncPageState();
 }
 
-class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
+class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBindingObserver {
   MobileSyncStatus? _status;
   MobileSyncResult? _lastResult;
+  DateTime? _lastResultAt;
+  String? _lastResultOperation;
+  String? _lastResultSource;
   Map<String, int>? _stats;
   FileIdDiagnostics? _fileIdDiagnostics;
+  String? _beneficiariesLastSyncError;
+  StreamSubscription<MobileSyncStatus>? _syncStatusSubscription;
+  _SyncViewMode _syncViewMode = _SyncViewMode.operational;
+  bool _showDetailedStatsInOperational = false;
+  DateTime? _syncHubOpenedAt;
+  DateTime? _syncFunnelTriggeredAt;
+  String? _syncFunnelTrigger;
+  final Map<String, int> _syncTriggerCounts = <String, int>{};
+  final Map<String, DateTime> _syncFirstTriggerAt = <String, DateTime>{};
 
   @override
   void initState() {
     super.initState();
+    _startSyncHubSession();
+    WidgetsBinding.instance.addObserver(this);
     _listenToSyncStatus();
-    _loadStats();
+    _refreshDashboardData();
   }
 
-  Future<void> _loadStats() async {
-    final db = ref.read(databaseProvider);
+  void _startSyncHubSession() {
+    _syncHubOpenedAt = DateTime.now();
+    _syncFunnelTriggeredAt = null;
+    _syncFunnelTrigger = null;
+    _syncTriggerCounts.clear();
+    _syncFirstTriggerAt.clear();
+    UxFlowAnalytics.trackSyncHubOpened(viewMode: _syncViewMode.name);
+  }
 
-    // Count beneficiaries by sync state
-    final beneficiaries = await db.select(db.beneficiaries).get();
-    final benPending = beneficiaries.where((b) => b.syncState == 'pending').length;
-    final benModified = beneficiaries.where((b) => b.syncState == 'modified').length;
-    final benSynced = beneficiaries.where((b) => b.syncState == 'synced').length;
+  void _trackSyncFunnelTrigger(String trigger) {
+    final now = DateTime.now();
+    _syncFunnelTrigger = trigger;
+    _syncFunnelTriggeredAt = now;
 
-    // Count associations (assuming they have similar sync tracking)
-    final associations = await db.select(db.associations).get();
-    final assocTotal = associations.length;
-    final assocPending = associations.where((a) => a.syncState == 'pending').length;
-    final assocModified = associations.where((a) => a.syncState == 'modified').length;
-    final assocNeedsSync = assocPending + assocModified;
-    final assocSynced = associations.where((a) => a.isActive).length;
+    final currentCount = (_syncTriggerCounts[trigger] ?? 0) + 1;
+    _syncTriggerCounts[trigger] = currentCount;
+    _syncFirstTriggerAt.putIfAbsent(trigger, () => now);
 
-    // Count association employees (represented currently by associationRepresentatives)
-    final representatives = await db.select(db.associationRepresentatives).get();
-    final repTotal = representatives.length;
-    final repPending = representatives.where((r) => r.syncState == 'pending').length;
-    final repModified = representatives.where((r) => r.syncState == 'modified').length;
-    final repNeedsSync = repPending + repModified;
-    final sponsorships = await db.select(db.sponsorships).get();
-    final sponsorshipsTotal = sponsorships.length;
-    final sponsorshipsPending = sponsorships.where((s) => s.syncState == 'pending').length;
-    final sponsorshipsModified = sponsorships.where((s) => s.syncState == 'modified').length;
-    final sponsorshipsSynced = sponsorships.where((s) => s.syncState == 'synced').length;
-    final sponsorshipsNeedsSync = sponsorshipsPending + sponsorshipsModified;
-    final attachmentsTotal = await db.select(db.attachments).get().then((rows) => rows.length);
-    final familyMembersTotal = await db.select(db.familyMembersTable).get().then((rows) => rows.length);
-    final deadPeopleTotal = await db.select(db.familyDeceasedTable).get().then((rows) => rows.length);
+    if (currentCount > 1) {
+      final firstAt = _syncFirstTriggerAt[trigger] ?? now;
+      UxFlowAnalytics.trackSyncManualRetryLoop(
+        trigger: trigger,
+        loopCount: currentCount,
+        elapsedSinceFirstTriggerMs: now.difference(firstAt).inMilliseconds,
+      );
+    }
 
-    final fileIdService = ref.read(fileIdServiceProvider);
-    final fileIdDiagnostics = await fileIdService.getDiagnostics();
+    final openedAt = _syncHubOpenedAt;
+    UxFlowAnalytics.trackSyncFunnelTriggered(
+      trigger: trigger,
+      elapsedFromOpenMs: openedAt == null ? null : now.difference(openedAt).inMilliseconds,
+    );
+  }
 
-    if (mounted) {
-      setState(() {
-        _fileIdDiagnostics = fileIdDiagnostics;
-        _stats = {
-          // Beneficiaries
-          'ben_total': beneficiaries.length,
-          'ben_pending': benPending,
-          'ben_modified': benModified,
-          'ben_synced': benSynced,
-          'ben_needsSync': benPending + benModified,
-
-          // Associations
-          'assoc_total': assocTotal,
-          'assoc_active': assocSynced,
-          'assoc_pending': assocPending,
-          'assoc_modified': assocModified,
-          'assoc_needsSync': assocNeedsSync,
-
-          // Association employees
-          'rep_total': repTotal,
-          'rep_pending': repPending,
-          'rep_modified': repModified,
-          'rep_needsSync': repNeedsSync,
-
-          // Sponsorships
-          'sponsorship_total': sponsorshipsTotal,
-          'sponsorship_synced': sponsorshipsSynced,
-          'sponsorship_pending': sponsorshipsPending,
-          'sponsorship_modified': sponsorshipsModified,
-          'sponsorship_needsSync': sponsorshipsNeedsSync,
-
-          // Related entities
-          'attachments_total': attachmentsTotal,
-          'family_members_total': familyMembersTotal,
-          'dead_people_total': deadPeopleTotal,
-
-          // Combined totals
-          'total': beneficiaries.length + assocTotal + repTotal + sponsorshipsTotal,
-          'needsSync': benPending + benModified + assocNeedsSync + repNeedsSync + sponsorshipsNeedsSync,
-        };
-      });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshDashboardData());
     }
   }
 
   void _listenToSyncStatus() {
     final service = ref.read(mobileSyncServiceProvider);
-    service.statusStream.listen((status) {
+    _syncStatusSubscription?.cancel();
+    _syncStatusSubscription = service.statusStream.listen((status) {
+      final previousStatus = _status;
       if (mounted) {
         setState(() {
           _status = status;
         });
+
+        final justFinished = (previousStatus?.isSyncing ?? false) && !status.isSyncing;
+        if (justFinished) {
+          final now = DateTime.now();
+          final openedAt = _syncHubOpenedAt;
+          final triggeredAt = _syncFunnelTriggeredAt;
+          final trigger = _syncFunnelTrigger ?? 'unknown';
+          final isSuccess = (status.lastError == null || status.lastError!.trim().isEmpty);
+
+          UxFlowAnalytics.trackSyncFunnelCompleted(
+            trigger: trigger,
+            success: isSuccess,
+            elapsedFromTriggerMs: triggeredAt == null ? null : now.difference(triggeredAt).inMilliseconds,
+            elapsedFromOpenMs: openedAt == null ? null : now.difference(openedAt).inMilliseconds,
+            errorCategory: isSuccess ? null : 'sync_error',
+          );
+
+          _syncFunnelTrigger = null;
+          _syncFunnelTriggeredAt = null;
+        }
+
+        if (!status.isSyncing) {
+          unawaited(_refreshDashboardData());
+        }
       }
     });
   }
 
+  Future<void> _refreshDashboardData() async {
+    final db = ref.read(databaseProvider);
+    final fileIdService = ref.read(fileIdServiceProvider);
+    final data = await MobileSyncDashboardLoader.load(db: db, fileIdService: fileIdService);
+    if (!mounted) return;
+
+    setState(() {
+      _lastResult = data.lastResult;
+      _lastResultAt = data.lastResultAt;
+      _lastResultOperation = data.lastResultOperation;
+      _lastResultSource = data.lastResultSource;
+      _stats = data.stats;
+      _fileIdDiagnostics = data.fileIdDiagnostics;
+      _beneficiariesLastSyncError = data.beneficiariesLastSyncError;
+    });
+  }
+
+  Future<void> _runContractParityBackfill() async {
+    try {
+      final db = ref.read(databaseProvider);
+      final result = await MobileSyncDashboardLoader.backfillContractParity(db);
+      await _refreshDashboardData();
+      if (!mounted) return;
+      EnhancedSnackbar.showSuccess(
+        context,
+        message:
+            '✅ Contract parity backfill: re_people=${result.rePeopleFilled}, dead_people=${result.deadPeopleFilled}, attachments=${result.attachmentsFilled}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      EnhancedSnackbar.showError(context, message: '❌ فشل backfill parity: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _syncStatusSubscription?.cancel();
+    _syncStatusSubscription = null;
+    super.dispose();
+  }
+
   Future<void> _syncDown() async {
+    _trackSyncFunnelTrigger('sync_down');
     await BackgroundSyncWorker.triggerSyncDown();
 
     if (!mounted) return;
@@ -159,6 +207,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Future<void> _syncUp() async {
+    _trackSyncFunnelTrigger('sync_up');
     await BackgroundSyncWorker.triggerSyncUp();
 
     if (!mounted) return;
@@ -199,6 +248,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Future<void> _syncNowOfficial() async {
+    _trackSyncFunnelTrigger('sync_now_full');
     await BackgroundSyncWorker.triggerManualSync();
 
     if (!mounted) return;
@@ -530,7 +580,22 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 'active_reservation_remaining': _fileIdDiagnostics!.activeReservationRemaining,
                 'last_reserved_at': _fileIdDiagnostics!.lastReservedAt?.toIso8601String(),
                 'last_synced_at': _fileIdDiagnostics!.lastSyncedAt?.toIso8601String(),
+                'remote_unused_count': _fileIdDiagnostics!.remoteUnusedCount,
+                'remote_can_request_more': _fileIdDiagnostics!.remoteCanRequestMore,
+                'remote_available_slots': _fileIdDiagnostics!.remoteAvailableSlots,
+                'last_login_sync_at': _fileIdDiagnostics!.lastLoginSyncAt?.toIso8601String(),
+                'last_refill_error_code': _fileIdDiagnostics!.lastRefillErrorCode,
+                'last_refill_error_message': _fileIdDiagnostics!.lastRefillErrorMessage,
               },
+        'contract_parity_diagnostics': {
+          're_people_contract_rows': _stats?['re_people_contract_rows'],
+          're_people_contract_missing': _stats?['re_people_contract_missing'],
+          'dead_people_contract_rows': _stats?['dead_people_contract_rows'],
+          'dead_people_contract_missing': _stats?['dead_people_contract_missing'],
+          'attachments_contract_rows': _stats?['attachments_contract_rows'],
+          'attachments_contract_missing': _stats?['attachments_contract_missing'],
+          'attachments_contract_download_url_count': _stats?['attachments_contract_download_url_count'],
+        },
         'recommended_actions': [
           if (missingTaxonomyGroups?.isNotEmpty ?? false) 'sync_taxonomies',
           if (taxonomyLikelyIssueSource == 'backend_payload') 'review_backend_categories_payload',
@@ -539,6 +604,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           if ((_lastResult?.writeCounters['beneficiaries_skipped'] ?? 0) > 0) 'verify_identity_mapping',
           if ((_stats?['assoc_needsSync'] ?? 0) > 0 || (_stats?['rep_needsSync'] ?? 0) > 0) 'run_associations_sync_up',
           if ((_stats?['sponsorship_needsSync'] ?? 0) > 0) 'run_sponsorships_sync_up',
+          if ((_stats?['re_people_contract_missing'] ?? 0) > 0 ||
+              (_stats?['dead_people_contract_missing'] ?? 0) > 0 ||
+              (_stats?['attachments_contract_missing'] ?? 0) > 0)
+            'run_contract_parity_backfill',
+          if ((_fileIdDiagnostics?.lastRefillErrorCode ?? '') == 'no_codes_available')
+            'create_new_codes_batch_on_server',
         ],
       };
 
@@ -552,9 +623,20 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         text: 'Sync diagnostics export',
       );
 
+      UxFlowAnalytics.trackDiagnosticsExport(
+        success: true,
+        source: 'sync_hub',
+        viewMode: _syncViewMode.name,
+      );
+
       if (!mounted) return;
       EnhancedSnackbar.showSuccess(context, message: '✅ تم تصدير تقرير التشخيص');
     } catch (e) {
+      UxFlowAnalytics.trackDiagnosticsExport(
+        success: false,
+        source: 'sync_hub',
+        viewMode: _syncViewMode.name,
+      );
       if (!mounted) return;
       EnhancedSnackbar.showError(context, message: '❌ فشل تصدير تقرير التشخيص: $e');
     }
@@ -562,6 +644,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
   @override
   Widget build(BuildContext context) {
+    final uxFlags = ref.watch(uxFeatureFlagsProvider).valueOrNull ?? const UxFeatureFlags();
+    final effectiveSyncViewMode = uxFlags.enableSyncDiagnosticMode ? _syncViewMode : _SyncViewMode.operational;
+
     final status = _status ?? MobileSyncStatus();
     final taxonomySyncStatus = ref.watch(taxonomySyncStatusProvider);
     final taxonomyErrorMessage = ref.watch(taxonomyErrorMessageProvider);
@@ -582,6 +667,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 icon: Icons.history,
                 tooltip: 'سجل المزامنة',
                 onPressed: () {
+                  UxFlowAnalytics.trackSyncFunnelTriggered(trigger: 'open_sync_history');
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -593,7 +679,10 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               ModernActionButton(
                 icon: Icons.refresh,
                 tooltip: 'تحديث الإحصائيات',
-                onPressed: _loadStats,
+                onPressed: () {
+                  UxFlowAnalytics.trackSyncFunnelTriggered(trigger: 'refresh_stats');
+                  _refreshDashboardData();
+                },
               ),
               ModernActionButton(
                 icon: Icons.ios_share_rounded,
@@ -612,51 +701,62 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 children: [
                   _buildSyncHubSummaryCard(status),
 
-                  SizedBox(height: 20.h),
+                  SizedBox(height: 12.h),
 
-                  // Warning card
-                  _buildWarningCard(),
-
-                  SizedBox(height: 20.h),
-
-                  // Stats card (if available)
-                  if (_stats != null) _buildStatsCard(),
-
-                  if (_stats != null) SizedBox(height: 20.h),
-
-                  // Status card
-                  _buildStatusCard(status),
+                  _buildViewModeSwitcher(enableDiagnosticMode: uxFlags.enableSyncDiagnosticMode),
 
                   SizedBox(height: 20.h),
 
-                  // Taxonomy diagnostics card
-                  _buildTaxonomyDiagnosticsCard(
-                    syncStatus: taxonomySyncStatus,
-                    errorMessage: taxonomyErrorMessage,
-                    statsAsync: taxonomyStatsAsync,
-                    lastSyncAsync: taxonomyLastSyncAsync,
-                    isSyncing: isTaxonomySyncing,
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  // File ID diagnostics card
-                  if (_fileIdDiagnostics != null) _buildFileIdDiagnosticsCard(_fileIdDiagnostics!),
-
-                  if (_fileIdDiagnostics != null) SizedBox(height: 20.h),
-
-                  // Sync buttons
+                  // Primary actions
                   _buildSyncButtons(status),
 
                   SizedBox(height: 20.h),
 
-                  // Last result
-                  if (_lastResult != null) _buildResultCard(_lastResult!),
+                  // Status card
+                  _buildStatusCard(status),
+
+                  SizedBox(height: 12.h),
+
+                  // Operational constraints (secondary)
+                  _buildWarningCard(),
 
                   SizedBox(height: 20.h),
 
-                  // Info card
-                  _buildInfoCard(),
+                  if (_stats != null && effectiveSyncViewMode == _SyncViewMode.operational) ...[
+                    _buildOperationalStatsSummaryCard(),
+                    if (_showDetailedStatsInOperational) ...[
+                      SizedBox(height: 12.h),
+                      _buildStatsCard(),
+                    ],
+                    SizedBox(height: 20.h),
+                  ],
+
+                  if (_stats != null && effectiveSyncViewMode == _SyncViewMode.diagnostic) ...[
+                    _buildStatsCard(),
+                    SizedBox(height: 20.h),
+                  ],
+
+                  if (effectiveSyncViewMode == _SyncViewMode.diagnostic) ...[
+                    _buildTaxonomyDiagnosticsCard(
+                      syncStatus: taxonomySyncStatus,
+                      errorMessage: taxonomyErrorMessage,
+                      statsAsync: taxonomyStatsAsync,
+                      lastSyncAsync: taxonomyLastSyncAsync,
+                      isSyncing: isTaxonomySyncing,
+                    ),
+                    SizedBox(height: 20.h),
+                    if (_fileIdDiagnostics != null) _buildFileIdDiagnosticsCard(_fileIdDiagnostics!),
+                    if (_fileIdDiagnostics != null) SizedBox(height: 20.h),
+                    if (_lastResult != null)
+                      _buildResultCard(
+                        _lastResult!,
+                        timestamp: _lastResultAt,
+                        operation: _lastResultOperation,
+                        source: _lastResultSource,
+                      ),
+                    SizedBox(height: 20.h),
+                    _buildInfoCard(),
+                  ],
                 ],
               ),
             ),
@@ -666,16 +766,132 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     );
   }
 
+  Widget _buildViewModeSwitcher({required bool enableDiagnosticMode}) {
+    return SyncSectionCard(
+      title: 'وضع الشاشة',
+      icon: Icons.tune_rounded,
+      tone: SyncTone.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              Semantics(
+                label: 'وضع المزامنة التشغيلي',
+                button: true,
+                child: ChoiceChip(
+                  label: const Text('تشغيلي'),
+                  selected: _syncViewMode == _SyncViewMode.operational,
+                  onSelected: (_) {
+                    setState(() {
+                      _syncViewMode = _SyncViewMode.operational;
+                    });
+                    UxFlowAnalytics.trackSyncModeChanged(mode: _syncViewMode.name);
+                  },
+                ),
+              ),
+              Semantics(
+                label: 'وضع المزامنة التشخيصي',
+                button: true,
+                enabled: enableDiagnosticMode,
+                child: ChoiceChip(
+                  label: const Text('تشخيصي'),
+                  selected: _syncViewMode == _SyncViewMode.diagnostic,
+                  onSelected: enableDiagnosticMode
+                      ? (_) {
+                          setState(() {
+                            _syncViewMode = _SyncViewMode.diagnostic;
+                          });
+                          UxFlowAnalytics.trackSyncModeChanged(mode: _syncViewMode.name);
+                        }
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            !enableDiagnosticMode
+                ? 'الوضع التشخيصي معطّل حاليًا عبر rollout flags.'
+                : (_syncViewMode == _SyncViewMode.operational
+                    ? 'يعرض الإجراءات والحالة الأساسية فقط.'
+                    : 'يعرض كل بطاقات التشخيص والتفاصيل التقنية.'),
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWarningCard() {
     return const SyncSectionCard(
-      title: '⚠️ مزامنة مؤقتة - قيود مهمة',
+      title: 'ملاحظات تشغيلية',
       icon: Icons.warning_amber_rounded,
       tone: SyncTone.warning,
       child: Text(
-        '• لا يوجد authentication (مؤقت)\n'
-        '• المرفقات تتزامن الآن (Multipart)\n'
-        '• في حالة التعارض، بيانات السيرفر تفوز\n'
-        '• السجلات المحذوفة لا تتزامن',
+        '• عند التعارض، بيانات السيرفر هي المرجع.\n'
+        '• السجلات المحذوفة لا تُرفع تلقائيًا.\n'
+        '• استخدم تصدير التشخيص عند تكرار الفشل.',
+      ),
+    );
+  }
+
+  Widget _buildOperationalStatsSummaryCard() {
+    final stats = _stats;
+    if (stats == null) return const SizedBox.shrink();
+
+    final benNeedsSync = stats['ben_needsSync'] ?? 0;
+    final benPending = stats['ben_pending'] ?? 0;
+    final benModified = stats['ben_modified'] ?? 0;
+    final benFailed = stats['ben_failed'] ?? 0;
+    final benReadyToUpload = benPending + benModified + benFailed;
+    final assocNeedsSync = stats['assoc_needsSync'] ?? 0;
+    final repNeedsSync = stats['rep_needsSync'] ?? 0;
+    final sponsorshipNeedsSync = stats['sponsorship_needsSync'] ?? 0;
+    final totalNeedsSync = benNeedsSync + assocNeedsSync + repNeedsSync + sponsorshipNeedsSync;
+
+    return SyncSectionCard(
+      title: 'ملخص الحالة',
+      icon: Icons.assessment_rounded,
+      tone: totalNeedsSync > 0 ? SyncTone.warning : SyncTone.success,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildInfoRow('إجمالي الكيانات', '${stats['total'] ?? 0}'),
+          _buildInfoRow(
+            'يحتاج مزامنة',
+            '$totalNeedsSync',
+          ),
+          _buildInfoRow('المستفيدون (غير متزامن)', '$benNeedsSync'),
+          Divider(height: 18.h),
+          _buildInfoRow('جاهز للرفع الآن (مستفيدون)', '$benReadyToUpload'),
+          _buildInfoRow('بانتظار الرفع', '$benPending'),
+          _buildInfoRow('محدّث (غير مزامن)', '$benModified'),
+          _buildInfoRow('فشل سابق (سيُعاد رفعه)', '$benFailed'),
+          if (benReadyToUpload == 0)
+            Padding(
+              padding: EdgeInsets.only(top: 4.h),
+              child: Text(
+                'لا توجد تغييرات مستفيدين قابلة للرفع حاليًا.',
+                style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
+              ),
+            ),
+          SizedBox(height: 8.h),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showDetailedStatsInOperational = !_showDetailedStatsInOperational;
+                });
+              },
+              icon: Icon(_showDetailedStatsInOperational ? Icons.expand_less : Icons.expand_more),
+              label: Text(_showDetailedStatsInOperational ? 'إخفاء التفاصيل' : 'عرض التفاصيل'),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -696,6 +912,18 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               _buildStatRow('متزامن', '${_stats!['ben_synced']}', Colors.green),
               _buildStatRow('بانتظار الرفع', '${_stats!['ben_pending']}', Colors.orange),
               _buildStatRow('محدّث (غير مزامن)', '${_stats!['ben_modified']}', Colors.orange),
+              _buildStatRow('معزول بسبب فشل الرفع', '${_stats!['ben_failed']}', Colors.red),
+              if ((_stats!['ben_failed'] ?? 0) > 0 && _beneficiariesLastSyncError != null) ...[
+                SizedBox(height: 8.h),
+                Text(
+                  'آخر سبب: ${_beneficiariesLastSyncError!.length > 140 ? '${_beneficiariesLastSyncError!.substring(0, 140)}…' : _beneficiariesLastSyncError!}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
               Divider(height: 20.h),
               _buildStatRow(
                 'يحتاج مزامنة',
@@ -767,6 +995,43 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               _buildStatRow('المرفقات (محلي)', '${_stats!['attachments_total']}', Colors.teal),
               _buildStatRow('أفراد العائلة (محلي)', '${_stats!['family_members_total']}', Colors.teal),
               _buildStatRow('الأموات (محلي)', '${_stats!['dead_people_total']}', Colors.teal),
+              Divider(height: 20.h),
+              _buildStatRow('Parity re_people (sidecar)', '${_stats!['re_people_contract_rows'] ?? 0}', Colors.indigo),
+              _buildStatRow(
+                  'Parity dead_people (sidecar)', '${_stats!['dead_people_contract_rows'] ?? 0}', Colors.indigo),
+              _buildStatRow(
+                  'Parity attachments (sidecar)', '${_stats!['attachments_contract_rows'] ?? 0}', Colors.indigo),
+              _buildStatRow(
+                'فجوة parity re_people',
+                '${_stats!['re_people_contract_missing'] ?? 0}',
+                (_stats!['re_people_contract_missing'] ?? 0) > 0 ? Colors.red : Colors.green,
+                bold: true,
+              ),
+              _buildStatRow(
+                'فجوة parity dead_people',
+                '${_stats!['dead_people_contract_missing'] ?? 0}',
+                (_stats!['dead_people_contract_missing'] ?? 0) > 0 ? Colors.red : Colors.green,
+                bold: true,
+              ),
+              _buildStatRow(
+                'فجوة parity attachments',
+                '${_stats!['attachments_contract_missing'] ?? 0}',
+                (_stats!['attachments_contract_missing'] ?? 0) > 0 ? Colors.red : Colors.green,
+                bold: true,
+              ),
+              if ((_stats!['re_people_contract_missing'] ?? 0) > 0 ||
+                  (_stats!['dead_people_contract_missing'] ?? 0) > 0 ||
+                  (_stats!['attachments_contract_missing'] ?? 0) > 0) ...[
+                SizedBox(height: 10.h),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    onPressed: _runContractParityBackfill,
+                    icon: const Icon(Icons.auto_fix_high_rounded),
+                    label: const Text('تشغيل backfill parity'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -816,6 +1081,17 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   Widget _buildStatusCard(MobileSyncStatus status) {
     final theme = Theme.of(context);
 
+    String _labelForSource(String value) {
+      switch (value) {
+        case 'background':
+          return 'من الخلفية';
+        case 'foreground':
+          return 'من الواجهة';
+        default:
+          return value;
+      }
+    }
+
     return SyncSectionCard(
       title: 'حالة المزامنة',
       icon: status.isSyncing ? Icons.sync : Icons.check_circle,
@@ -823,8 +1099,27 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (!status.isSyncing && _lastResultSource != null && _lastResultSource!.trim().isNotEmpty) ...[
+            Container(
+              margin: EdgeInsets.only(bottom: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.10),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.45)),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Text(
+                'آخر نتيجة: ${_labelForSource(_lastResultSource!)}',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: Colors.blue[900],
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
           SyncStatusBanner(
-            message: status.currentOperation,
+            message: status.currentOperation.trim().isEmpty ? 'لا يوجد نشاط مزامنة حاليًا' : status.currentOperation,
             tone: status.isSyncing ? SyncTone.primary : SyncTone.success,
             icon: status.isSyncing ? Icons.sync_rounded : Icons.check_circle,
           ),
@@ -853,7 +1148,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           if (status.lastError != null) ...[
             SizedBox(height: 12.h),
             SyncStatusBanner(
-              message: status.lastError!,
+              message: status.lastError!.trim().isEmpty ? 'حدث خطأ غير معروف أثناء المزامنة' : status.lastError!,
               tone: SyncTone.error,
               icon: Icons.error,
             ),
@@ -873,7 +1168,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncNowOfficial,
           icon: const Icon(Icons.sync),
-          label: const Text('مزامنة الآن (شاملة)'),
+          label: const Text(
+            'مزامنة الآن (شاملة)',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
             backgroundColor: theme.colorScheme.primary,
@@ -887,7 +1187,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncDown,
           icon: const Icon(Icons.cloud_download),
-          label: const Text('تنزيل البيانات من السيرفر'),
+          label: const Text(
+            'تنزيل البيانات من السيرفر',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
             backgroundColor: theme.colorScheme.secondary,
@@ -901,7 +1206,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncUp,
           icon: const Icon(Icons.cloud_upload),
-          label: const Text('رفع التغييرات للسيرفر'),
+          label: const Text(
+            'رفع التغييرات للسيرفر',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
             backgroundColor: theme.colorScheme.tertiary,
@@ -1138,10 +1448,60 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
     );
   }
 
-  Widget _buildResultCard(MobileSyncResult result) {
+  Widget _buildResultCard(
+    MobileSyncResult result, {
+    DateTime? timestamp,
+    String? operation,
+    String? source,
+  }) {
     final theme = Theme.of(context);
     final health = _buildSyncHealthScore(result);
     final relatedConsistency = _buildRelatedConsistencyHint(result);
+    final beneficiariesError = _beneficiariesLastSyncError?.trim();
+
+    String? displayError = result.error?.trim();
+    if (displayError != null && displayError.isEmpty) {
+      displayError = null;
+    }
+
+    if ((displayError == null || displayError == 'sync_up_partial_failure') &&
+        beneficiariesError != null &&
+        beneficiariesError.isNotEmpty) {
+      displayError = 'beneficiaries: $beneficiariesError';
+    }
+
+    if (displayError != null && displayError.contains('backend_failed_count=')) {
+      final localIdsMatch = RegExp(r'local_ids=([^,}]+(?:,[^,}]+)*)').firstMatch(displayError);
+      final fileIdsMatch = RegExp(r'file_ids=([^,}]+(?:,[^,}]+)*)').firstMatch(displayError);
+      final localIds = localIdsMatch?.group(1);
+      final fileIds = fileIdsMatch?.group(1);
+
+      displayError = [
+        'فشل جزئي من السيرفر أثناء رفع المستفيدين (تم رفض بعض السجلات).',
+        if (localIds != null && localIds.isNotEmpty) 'local_ids=$localIds',
+        if (fileIds != null && fileIds.isNotEmpty) 'file_ids=$fileIds',
+      ].join(' ');
+    }
+
+    String _labelForOperation(String value) {
+      switch (value) {
+        case 'sync_up':
+          return 'رفع';
+        case 'sync_down':
+          return 'تنزيل';
+        default:
+          return value;
+      }
+    }
+
+    String _labelForSource(String value) {
+      switch (value) {
+        case 'background':
+          return 'من الخلفية';
+        default:
+          return value;
+      }
+    }
 
     return SyncSectionCard(
       title: 'نتيجة آخر مزامنة',
@@ -1150,6 +1510,25 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (source != null && source.trim().isNotEmpty) ...[
+            Container(
+              margin: EdgeInsets.only(bottom: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.10),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.45)),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Text(
+                'المصدر: ${_labelForSource(source)}',
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: Colors.blue[900],
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
           SizedBox(height: 8.h),
           Row(
             children: [
@@ -1218,11 +1597,62 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               '  - dead_people: ${result.payloadCounters['dead_people'] ?? 0}',
               style: TextStyle(fontSize: 13.sp),
             ),
+            if ((result.payloadCounters['sponsors'] ?? 0) > 0 ||
+                (result.payloadCounters['sponsorships'] ?? 0) > 0 ||
+                (result.payloadCounters['associations_up'] ?? 0) > 0 ||
+                (result.payloadCounters['sponsorships_up'] ?? 0) > 0 ||
+                (result.payloadCounters['taxonomies_sync_runs'] ?? 0) > 0 ||
+                (result.payloadCounters['file_id_reservation_checks'] ?? 0) > 0 ||
+                (result.payloadCounters['file_id_usage_sync_runs'] ?? 0) > 0) ...[
+              SizedBox(height: 6.h),
+              Text(
+                '• وحدات إضافية:',
+                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                '  - taxonomies_sync_runs: ${result.payloadCounters['taxonomies_sync_runs'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - file_id_reservation_checks: ${result.payloadCounters['file_id_reservation_checks'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - file_id_usage_sync_runs: ${result.payloadCounters['file_id_usage_sync_runs'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - sponsors: ${result.payloadCounters['sponsors'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - sponsorships: ${result.payloadCounters['sponsorships'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - associations_up: ${result.payloadCounters['associations_up'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+              Text(
+                '  - sponsorships_up: ${result.payloadCounters['sponsorships_up'] ?? 0}',
+                style: TextStyle(fontSize: 13.sp),
+              ),
+            ],
           ],
           if (result.recordsFailed > 0)
             Text(
               '• فشل: ${result.recordsFailed}',
               style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.error),
+            ),
+          if (operation != null && operation.trim().isNotEmpty)
+            Text(
+              '• نوع العملية: ${_labelForOperation(operation)}',
+              style: TextStyle(fontSize: 13.sp),
+            ),
+          if (timestamp != null)
+            Text(
+              '• وقت النتيجة: ${_formatDateTime(timestamp)}',
+              style: TextStyle(fontSize: 13.sp),
             ),
           if (result.writeCounters.isNotEmpty) ...[
             SizedBox(height: 8.h),
@@ -1236,9 +1666,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
                 style: TextStyle(fontSize: 12.sp),
               ),
           ],
-          if (result.error != null)
+          if (displayError != null)
             Text(
-              '• خطأ: ${result.error}',
+              '• خطأ: $displayError',
               style: TextStyle(fontSize: 13.sp, color: theme.colorScheme.error),
             ),
           if (result.errorCategory != null)
@@ -1259,6 +1689,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Widget _buildFileIdDiagnosticsCard(FileIdDiagnostics diagnostics) {
+    final lastRefillIssue = diagnostics.lastRefillErrorMessage?.trim();
+
     return SyncSectionCard(
       title: 'تشخيص أرقام الملفات',
       icon: Icons.confirmation_num_outlined,
@@ -1266,8 +1698,23 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (lastRefillIssue != null && lastRefillIssue.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: 10.h),
+              child: SyncStatusBanner(
+                message: '${diagnostics.lastRefillErrorCode ?? 'refill_issue'}: $lastRefillIssue',
+                tone: SyncTone.warning,
+                icon: Icons.warning_amber_rounded,
+              ),
+            ),
           _buildInfoRow('المتوفر محليًا', diagnostics.availableCount.toString()),
           _buildInfoRow('المستخدم غير المرفوع', diagnostics.usedUnsyncedCount.toString()),
+          _buildInfoRow('المتوفر على السيرفر للجهاز', diagnostics.remoteUnusedCount?.toString() ?? 'غير متاح'),
+          _buildInfoRow(
+            'يمكن طلب المزيد من السيرفر',
+            diagnostics.remoteCanRequestMore == null ? 'غير متاح' : (diagnostics.remoteCanRequestMore! ? 'نعم' : 'لا'),
+          ),
+          _buildInfoRow('الفتحات المتاحة للطلب', diagnostics.remoteAvailableSlots?.toString() ?? 'غير متاح'),
           _buildInfoRow(
             'رقم الحجز النشط',
             diagnostics.activeReservationId?.toString() ?? 'غير متاح',
@@ -1283,6 +1730,10 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           _buildInfoRow(
             'آخر مزامنة استخدام',
             diagnostics.lastSyncedAt != null ? _formatDateTime(diagnostics.lastSyncedAt!) : 'لا يوجد',
+          ),
+          _buildInfoRow(
+            'آخر login-sync',
+            diagnostics.lastLoginSyncAt != null ? _formatDateTime(diagnostics.lastLoginSyncAt!) : 'لا يوجد',
           ),
         ],
       ),
@@ -1350,7 +1801,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
               child: ElevatedButton.icon(
                 onPressed: status.isSyncing ? null : _syncNowOfficial,
                 icon: const Icon(Icons.sync),
-                label: const Text('مزامنة الآن (الإجراء الرئيسي)'),
+                label: const Text(
+                  'مزامنة الآن (الإجراء الرئيسي)',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
                   foregroundColor: theme.colorScheme.onPrimary,
@@ -1414,6 +1870,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final normalizedValue = _normalizeMixedValue(value);
+    final valueDirection = _resolveMixedDirection(normalizedValue);
+
     return Padding(
       padding: EdgeInsets.only(bottom: 6.h),
       child: Row(
@@ -1431,7 +1890,10 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
           ),
           Expanded(
             child: Text(
-              value,
+              normalizedValue,
+              textDirection: valueDirection,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(fontSize: 13.sp, color: Colors.blue[800]),
             ),
           ),
@@ -1446,6 +1908,21 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
         '${dt.hour.toString().padLeft(2, '0')}:'
         '${dt.minute.toString().padLeft(2, '0')}';
   }
+
+  TextDirection _resolveMixedDirection(String text) {
+    final hasArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+    return hasArabic ? TextDirection.rtl : TextDirection.ltr;
+  }
+
+  String _normalizeMixedValue(String value) {
+    if (value.trim().isEmpty) {
+      return 'غير متاح';
+    }
+
+    return value.replaceAllMapped(RegExp(r'[0-9]{1,}[0-9/:.\-]*'), (match) => '\u200E${match.group(0)}\u200E').trim();
+  }
 }
 
 enum _SyncCheckLevel { ok, warn }
+
+enum _SyncViewMode { operational, diagnostic }

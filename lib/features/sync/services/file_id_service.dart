@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../../../core/config/api_config.dart';
+import '../../../../core/notifications/notifications_service.dart';
 import '../../../../core/utils/unified_logger.dart';
 import '../domain/repositories/file_id_reservation_repository.dart';
 
@@ -10,14 +12,18 @@ import '../domain/repositories/file_id_reservation_repository.dart';
 /// - Manages usage sync
 class FileIdService {
   final FileIdReservationRepository _repository;
-
-  // Threshold to trigger reservation (API contract: renew when remaining < 1000)
-  static const int _lowThreshold = 1000;
-  static const int _reserveBatchSize = 5000;
+  final int _lowThreshold;
+  final int _reserveBatchSize;
 
   bool _isReserving = false;
+  bool _noCodesAdminAlertSent = false;
 
-  FileIdService(this._repository);
+  FileIdService(
+    this._repository, {
+    int lowThreshold = ApiConfig.fileIdRenewThreshold,
+    int reserveBatchSize = ApiConfig.fileIdReserveBatchSize,
+  })  : _lowThreshold = lowThreshold < 1 ? ApiConfig.fileIdRenewThreshold : lowThreshold,
+        _reserveBatchSize = reserveBatchSize.clamp(100, 10000);
 
   /// 🆔 Get Next Available ID
   ///
@@ -44,20 +50,50 @@ class FileIdService {
   }
 
   /// ✅ Mark ID as used
-  Future<void> markAsUsed(int fileId, int beneficiaryId) async {
-    await _repository.markAsUsed(fileId, beneficiaryId);
+  Future<void> markAsUsed(
+    int fileId,
+    int beneficiaryId, {
+    String recordType = 'data',
+    int? recordId,
+  }) async {
+    await _repository.markAsUsed(
+      fileId,
+      beneficiaryId,
+      recordType: recordType,
+      recordId: recordId,
+    );
     UnifiedLogger.info('🆔 File ID $fileId marked as used for beneficiary $beneficiaryId');
   }
 
   /// 📥 Force reserve now
   Future<void> forceReserve() async {
     if (_isReserving) return;
-    await _reserveMore();
+    await _refillByCodesContract();
   }
 
   /// 🔄 Sync usage to server
   Future<void> syncUsage() async {
     await _repository.syncUsedIds();
+  }
+
+  /// ⭐ Run login sync against /codes/login-sync
+  Future<void> loginSync() async {
+    await _repository.loginSyncCodes();
+  }
+
+  Future<String> buildNoFileIdSaveMessage() async {
+    final diagnostics = await getDiagnostics();
+    final code = diagnostics?.lastRefillErrorCode?.trim();
+
+    if (code == 'no_codes_available') {
+      return 'لا توجد أكواد متاحة على السيرفر حالياً. يرجى إبلاغ الإدارة لإنشاء دفعة أكواد جديدة ثم إعادة المحاولة.';
+    }
+
+    if (code == 'limit_reached') {
+      return 'وصل الجهاز للحد الأعلى من الأكواد غير المستخدمة (5000). استخدم الأكواد الحالية أو نفّذ مزامنة ثم أعد المحاولة.';
+    }
+
+    return 'تعذر حجز رقم الملف من السيرفر. يرجى تنفيذ المزامنة ثم إعادة المحاولة.';
   }
 
   /// 🔄 Public method to trigger reservation check
@@ -78,33 +114,80 @@ class FileIdService {
   Future<void> _checkAndReserveIfNeeded() async {
     if (_isReserving) return;
 
-    final countResult = await _repository.getAvailableCount();
-    if (countResult.isSuccess) {
-      final available = countResult.getOrThrow();
-      if (available < _lowThreshold) {
-        UnifiedLogger.info('⚠️ Low File IDs available ($available). Reserving more...');
-        _reserveMore();
+    _isReserving = true;
+    try {
+      final refillResult = await _repository.refillIfNeeded(
+        lowThreshold: _lowThreshold,
+        requestCount: _reserveBatchSize,
+      );
+
+      if (refillResult.isSuccess) {
+        final added = refillResult.getOrThrow();
+        if (added > 0) {
+          UnifiedLogger.success('✅ Refilled $added codes via /codes/request-codes');
+        }
+        await _handleRefillDiagnostics();
+        return;
       }
+
+      UnifiedLogger.warning('⚠️ Codes refill failed via /codes/request-codes');
+      await _handleRefillDiagnostics();
+    } finally {
+      _isReserving = false;
     }
   }
 
-  /// 📥 Background reservation
-  Future<void> _reserveMore() async {
+  Future<void> _refillByCodesContract() async {
     _isReserving = true;
     try {
-      final reserveResult = await _repository.reserveFromRemote(_reserveBatchSize);
+      final result = await _repository.refillIfNeeded(
+        lowThreshold: _lowThreshold,
+        requestCount: _reserveBatchSize,
+      );
 
-      if (reserveResult.isSuccess) {
-        final ids = reserveResult.getOrThrow();
-        await _repository.saveLocal(ids);
-        UnifiedLogger.success('✅ Reserved and saved ${ids.length} new File IDs');
-      } else {
-        UnifiedLogger.error('❌ Failed to reserve File IDs from remote', error: reserveResult.getOrThrow().toString());
+      if (result.isSuccess) {
+        final added = result.getOrThrow();
+        if (added > 0) {
+          UnifiedLogger.success('✅ Requested and saved $added codes');
+        }
+        await _handleRefillDiagnostics();
+        return;
       }
+      UnifiedLogger.warning('⚠️ Force refill finished without new codes');
+      await _handleRefillDiagnostics();
     } catch (e) {
-      UnifiedLogger.error('❌ Error during background ID reservation', error: e);
+      UnifiedLogger.warning('⚠️ Force refill failed: $e');
     } finally {
       _isReserving = false;
+    }
+  }
+
+  Future<void> _handleRefillDiagnostics() async {
+    final diagnostics = await getDiagnostics();
+    final code = diagnostics?.lastRefillErrorCode?.trim();
+    final message = diagnostics?.lastRefillErrorMessage?.trim();
+
+    if (code == 'no_codes_available') {
+      UnifiedLogger.warning('🚨 No codes available on server. Admin needs to create a new batch.');
+      if (!_noCodesAdminAlertSent) {
+        _noCodesAdminAlertSent = true;
+        await NotificationsService.showCodesInventoryAlert(
+          title: 'تنبيه إداري: نفاد أكواد السيرفر',
+          body: 'لا توجد أكواد متاحة حالياً. يلزم إنشاء دفعة جديدة من السيرفر فوراً.',
+        );
+      }
+      return;
+    }
+
+    _noCodesAdminAlertSent = false;
+
+    if (code == 'limit_reached') {
+      UnifiedLogger.info('ℹ️ Device reached max unused codes limit (5000).');
+      return;
+    }
+
+    if (message != null && message.isNotEmpty) {
+      UnifiedLogger.warning('⚠️ Codes refill issue: $message');
     }
   }
 }

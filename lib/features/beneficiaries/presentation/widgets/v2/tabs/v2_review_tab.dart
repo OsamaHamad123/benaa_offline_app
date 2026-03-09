@@ -26,6 +26,10 @@ class V2ReviewTab extends ConsumerWidget {
     this.onEditSection,
     this.onJumpToTab,
   });
+  String _displayValue(String? raw) {
+    final value = raw?.trim() ?? '';
+    return value.isEmpty ? '---' : value;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -318,17 +322,17 @@ class V2ReviewTab extends ConsumerWidget {
             ),
             ReviewDataRow(
               label: 'الرقم الوطني',
-              value: formControllers.nationalIdController.text,
+              value: _displayValue(formControllers.nationalIdController.text),
               icon: Icons.credit_card_rounded,
             ),
             ReviewDataRow(
               label: 'رقم الملف',
-              value: formControllers.fileNumberController.text,
+              value: _displayValue(formControllers.fileNumberController.text),
               icon: Icons.folder_rounded,
             ),
             ReviewDataRow(
               label: 'تاريخ الميلاد',
-              value: formControllers.birthDateController.text,
+              value: _displayValue(formControllers.birthDateController.text),
               icon: Icons.cake_rounded,
             ),
             ReviewDataRow(
@@ -378,22 +382,22 @@ class V2ReviewTab extends ConsumerWidget {
           children: [
             ReviewDataRow(
               label: 'رقم الهاتف',
-              value: formControllers.phoneController.text,
+              value: _displayValue(formControllers.phoneController.text),
               icon: Icons.phone_rounded,
             ),
             ReviewDataRow(
               label: 'رقم هاتف بديل',
-              value: formControllers.altPhoneController.text,
+              value: _displayValue(formControllers.altPhoneController.text),
               icon: Icons.phone_android_rounded,
             ),
             ReviewDataRow(
               label: 'العنوان',
-              value: formControllers.addressController.text,
+              value: _displayValue(formControllers.addressController.text),
               icon: Icons.location_on_rounded,
             ),
             ReviewDataRow(
               label: 'الحي',
-              value: formControllers.neighborhoodController.text,
+              value: _displayValue(formControllers.neighborhoodController.text),
               icon: Icons.place_rounded,
             ),
             ReviewDataRow(
@@ -434,22 +438,22 @@ class V2ReviewTab extends ConsumerWidget {
           children: [
             ReviewDataRow(
               label: 'عدد أفراد الأسرة',
-              value: formControllers.numberOfDependentsController.text,
+              value: _displayValue(formControllers.numberOfDependentsController.text),
               icon: Icons.groups_rounded,
             ),
             ReviewDataRow(
               label: 'عدد الذكور',
-              value: formControllers.numberOfMalesController.text,
+              value: _displayValue(formControllers.numberOfMalesController.text),
               icon: Icons.man_rounded,
             ),
             ReviewDataRow(
               label: 'عدد الإناث',
-              value: formControllers.numberOfFemalesController.text,
+              value: _displayValue(formControllers.numberOfFemalesController.text),
               icon: Icons.woman_rounded,
             ),
             ReviewDataRow(
               label: 'عدد ذوي الاحتياجات الخاصة',
-              value: formControllers.specialNeedsCountController.text,
+              value: _displayValue(formControllers.specialNeedsCountController.text),
               icon: Icons.accessible_rounded,
             ),
             if (formControllers.livingMembers.isNotEmpty)
@@ -505,7 +509,7 @@ class V2ReviewTab extends ConsumerWidget {
             ),
             ReviewDataRow(
               label: 'الأمراض المزمنة',
-              value: formControllers.chronicDiseasesController.text,
+              value: _displayValue(formControllers.chronicDiseasesController.text),
               icon: Icons.medical_services_outlined,
             ),
             ReviewDataRow(

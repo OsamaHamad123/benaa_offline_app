@@ -16,7 +16,9 @@ class SectionTitle extends StatelessWidget {
   final Widget? trailing;
 
   const SectionTitle({
-    required this.title, required this.icon, super.key,
+    required this.title,
+    required this.icon,
+    super.key,
     this.color,
     this.fontSize,
     this.trailing,
@@ -30,19 +32,14 @@ class SectionTitle extends StatelessWidget {
       mainAxisSize: MainAxisSize.min, // ✅ Fix: Prevent unconstrained width
       children: [
         Container(
-          padding: EdgeInsets.all(8.w),
+          padding: EdgeInsets.all(6.w),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                effectiveColor.withOpacity(0.2),
-                effectiveColor.withOpacity(0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(8.r),
+            color: effectiveColor.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(9.r),
           ),
-          child: Icon(icon, size: 20.sp, color: effectiveColor),
+          child: Icon(icon, size: 17.sp, color: effectiveColor),
         ),
-        SizedBox(width: 12.w),
+        SizedBox(width: 10.w),
         Flexible(
           // ✅ Changed from Expanded to Flexible
           child: Text(

@@ -8,6 +8,7 @@ import 'package:benaa_offline_app/features/auth/domain/entities/auth_user.dart';
 import 'package:benaa_offline_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_notifier.dart';
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_state.dart';
+import 'package:benaa_offline_app/features/sync/presentation/providers/file_id_providers.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,8 +74,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 /// 🔐 Auth Notifier Provider - Main Auth State
 final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  final fileIdService = ref.watch(fileIdServiceProvider);
+
   return AuthNotifier(
     authRepository: ref.watch(authRepositoryProvider),
+    postLoginSync: () async {
+      await fileIdService.loginSync();
+      await fileIdService.syncUsage();
+      await fileIdService.ensureReservation();
+    },
   );
 });
 

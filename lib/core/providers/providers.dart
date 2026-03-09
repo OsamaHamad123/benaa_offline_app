@@ -5,6 +5,7 @@ import '../config/app_config.dart';
 import '../network/api_client.dart';
 import '../security/crypto_box.dart';
 import '../services/database_maintenance_service.dart';
+import '../analytics/ux_feature_flags.dart';
 
 // App Config Provider
 final appConfigProvider = FutureProvider<AppConfig>((ref) async {
@@ -36,6 +37,17 @@ final sharedPreferencesProvider = FutureProvider<SharedPreferences>((
   ref,
 ) async {
   return await SharedPreferences.getInstance();
+});
+
+final uxFeatureFlagsStoreProvider = Provider<UxFeatureFlagsStore>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider).requireValue;
+  return UxFeatureFlagsStore(prefs);
+});
+
+final uxFeatureFlagsProvider = FutureProvider<UxFeatureFlags>((ref) async {
+  final prefs = await ref.watch(sharedPreferencesProvider.future);
+  final store = UxFeatureFlagsStore(prefs);
+  return store.readFlags();
 });
 
 // Database Maintenance Service Provider

@@ -12,6 +12,24 @@ part 'beneficiaries_dao.g.dart';
 class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$BeneficiariesDaoMixin {
   BeneficiariesDao(super.db);
 
+  Future<void> _cleanupDependentRecordsForDelete(List<int> beneficiaryIds) async {
+    if (beneficiaryIds.isEmpty) return;
+
+    await (update(
+      db.fileIdReservationTable,
+    )..where((t) => t.beneficiaryId.isIn(beneficiaryIds)))
+        .write(
+      const FileIdReservationTableCompanion(
+        beneficiaryId: Value(null),
+      ),
+    );
+
+    await (delete(
+      db.sponsorships,
+    )..where((s) => s.beneficiaryId.isIn(beneficiaryIds)))
+        .go();
+  }
+
   // ============================================================================
   // STATISTICS - الإحصائيات
   // ============================================================================
@@ -209,27 +227,31 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
 
   /// Delete beneficiary
   Future<void> deleteBeneficiary(int id, {bool trackSyncDelete = true}) async {
-    if (trackSyncDelete) {
-      final existing = await getBeneficiaryById(id);
-      if (existing != null) {
-        final fileId = existing.fileIdNumber?.trim();
-        final entityId =
-            (fileId != null && fileId.isNotEmpty) ? fileId : (existing.serverId?.toString() ?? existing.id.toString());
+    await transaction(() async {
+      if (trackSyncDelete) {
+        final existing = await getBeneficiaryById(id);
+        if (existing != null) {
+          final fileId = existing.fileIdNumber?.trim();
+          final entityId = (fileId != null && fileId.isNotEmpty)
+              ? fileId
+              : (existing.serverId?.toString() ?? existing.id.toString());
 
-        await db.syncDao.addTombstone(
-          entityType: 'data',
-          entityId: entityId,
-          payload: jsonEncode({
-            'local_id': existing.id,
-            'server_id': existing.serverId,
-            'file_id_number': existing.fileIdNumber,
-            'id_number': existing.idNumber,
-          }),
-        );
+          await db.syncDao.addTombstone(
+            entityType: 'data',
+            entityId: entityId,
+            payload: jsonEncode({
+              'local_id': existing.id,
+              'server_id': existing.serverId,
+              'file_id_number': existing.fileIdNumber,
+              'id_number': existing.idNumber,
+            }),
+          );
+        }
       }
-    }
 
-    await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
+      await _cleanupDependentRecordsForDelete([id]);
+      await (delete(beneficiaries)..where((b) => b.id.equals(id))).go();
+    });
   }
 
   /// Batch delete beneficiaries (optimized with transaction)
@@ -255,6 +277,8 @@ class BeneficiariesDao extends DatabaseAccessor<AppDatabase> with _$Beneficiarie
           }),
         );
       }
+
+      await _cleanupDependentRecordsForDelete(ids);
 
       int deletedCount = 0;
 

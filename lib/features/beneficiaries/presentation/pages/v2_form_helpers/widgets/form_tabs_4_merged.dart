@@ -84,12 +84,6 @@ class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged>
 
   void _onTabChanged() {
     if (!mounted) return;
-
-    // Ignore intermediate animation ticks and rebuild only on settled index.
-    if (widget.controller.indexIsChanging) {
-      return;
-    }
-
     final currentTab = widget.controller.index;
     var shouldRebuild = false;
 
@@ -97,6 +91,15 @@ class _BeneficiaryFormTabs4MergedState extends State<BeneficiaryFormTabs4Merged>
     if (!_loadedTabs.contains(currentTab)) {
       _loadedTabs.add(currentTab);
       shouldRebuild = true;
+    }
+
+    // During animated changes, ensure target tab is loaded but defer focus/active sync until settled.
+    if (widget.controller.indexIsChanging) {
+      if (shouldRebuild && mounted) {
+        setState(() {});
+      }
+      _schedulePreloadNextTab(currentTab);
+      return;
     }
 
     if (_activeTabIndex != currentTab) {
@@ -329,7 +332,10 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final mediaQuery = MediaQuery.of(context);
+    final isMobile = mediaQuery.size.width < 600;
+    final useScrollableTabs = mediaQuery.size.width < 390;
+    final canShowMiniProgress = !isMobile && mediaQuery.size.height >= 780;
     final tabHeight = isMobile ? 56.0 : 60.0;
     final tabIconSize = isMobile ? 19.0 : 20.0;
     final activeLabelSize = isMobile ? 11.sp : 12.sp;
@@ -344,6 +350,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
       ),
       child: TabBar(
         controller: controller,
+        isScrollable: useScrollableTabs,
         onTap: (targetIndex) {
           if (targetIndex == currentIndex) return;
           final isForward = targetIndex > currentIndex;
@@ -355,6 +362,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
         unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
         indicatorColor: theme.colorScheme.primary,
         indicatorWeight: isMobile ? 4 : 3,
+        labelPadding: useScrollableTabs ? EdgeInsets.symmetric(horizontal: isMobile ? 6.w : 8.w) : EdgeInsets.zero,
         labelStyle: TextStyle(fontSize: activeLabelSize, fontWeight: FontWeight.w700),
         unselectedLabelStyle: TextStyle(
           fontSize: inactiveLabelSize,
@@ -424,6 +432,9 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
                 // Tab Title
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                   style: TextStyle(
                     fontSize: isActive ? activeLabelSize : inactiveLabelSize,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
@@ -431,7 +442,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
                   ),
                 ),
 
-                if (!isMobile && stats != null) ...[
+                if (canShowMiniProgress && stats != null) ...[
                   const SizedBox(height: 4),
 
                   // Simple Progress Bar

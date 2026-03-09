@@ -133,4 +133,15 @@ class VisitsDao extends DatabaseAccessor<AppDatabase> with _$VisitsDaoMixin {
       ),
     );
   }
+
+  /// Mark all pending/modified visits as locally synced (no server upload mode)
+  Future<int> markPendingVisitsAsLocalOnlySynced() async {
+    return await (update(visits)..where((v) => v.syncState.equals('pending') | v.syncState.equals('modified'))).write(
+      VisitsCompanion(
+        syncState: const Value('synced'),
+        lastSyncedAt: Value(DateTime.now()),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
 }

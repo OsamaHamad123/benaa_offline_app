@@ -332,6 +332,35 @@ void main() {
   });
 
   group('TaxonomiesResponseDTO.fromSyncAllJson', () {
+    test('parses documented categories and genders slugs', () {
+      final json = {
+        'success': true,
+        'data': {
+          'categories': {
+            'categories': {
+              'label_ar': 'الفئات',
+              'items': [
+                {'id': 1, 'name': 'يتيم'},
+              ],
+            },
+            'genders': {
+              'label_ar': 'الجنس',
+              'items': [
+                {'id': 1, 'name': 'ذكر'},
+              ],
+            },
+          },
+        },
+      };
+
+      final dto = TaxonomiesResponseDTO.fromSyncAllJson(json);
+
+      expect(dto.success, true);
+      expect(dto.data, hasLength(2));
+      expect(dto.data.any((item) => item.groupValue == 'category'), isTrue);
+      expect(dto.data.any((item) => item.groupValue == 'gender'), isTrue);
+    });
+
     test('parses nested categories map format', () {
       final json = {
         'success': true,

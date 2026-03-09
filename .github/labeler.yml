@@ -36,3 +36,13 @@
 
 "tests":
   - test/**/*
+
+"contract-impact":
+  - any:
+      - lib/core/sync/**/*
+      - lib/features/sync/**/*
+      - lib/features/taxonomies/**/*
+      - lib/features/beneficiaries/**/*
+      - scripts/smoke_codes_contract.ps1
+      - scripts/codes_end_to_end_diagnostics.ps1
+      - todo.md

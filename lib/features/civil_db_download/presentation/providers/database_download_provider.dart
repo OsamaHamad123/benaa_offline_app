@@ -162,6 +162,7 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
 
       await NotificationsService.showCivilDbDownloadCompleted();
     } catch (e) {
+      final mappedReason = e is CivilDbDownloadException ? e.reason : DownloadFailureReason.unknown;
       if (!mounted) return;
       state = state.copyWith(
         progress: DownloadProgress(
@@ -170,6 +171,7 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
           percentage: 0,
           status: DownloadStatus.failed,
           errorMessage: e.toString(),
+          failureReason: mappedReason,
         ),
       );
 

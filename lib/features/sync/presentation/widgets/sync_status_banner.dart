@@ -18,26 +18,33 @@ class SyncStatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = SyncUiTokens.toneForeground(context, tone);
+    final effectiveMessage = message.trim().isEmpty ? 'لا توجد رسالة متاحة' : message;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-      decoration: BoxDecoration(
-        color: SyncUiTokens.toneContainer(context, tone),
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: fg.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16.sp, color: fg),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(fontSize: 12.sp, color: fg, fontWeight: FontWeight.w600),
+    return Semantics(
+      container: true,
+      label: 'حالة المزامنة: $effectiveMessage',
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: SyncUiTokens.toneContainer(context, tone),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: fg.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 16.sp, color: fg),
+            SizedBox(width: 8.w),
+            Expanded(
+              child: Text(
+                effectiveMessage,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12.sp, color: fg, fontWeight: FontWeight.w600),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

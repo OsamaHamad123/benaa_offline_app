@@ -7,6 +7,7 @@ class SyncUiTokens {
 
   static Color toneContainer(BuildContext context, SyncTone tone) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     switch (tone) {
       case SyncTone.primary:
         return scheme.primaryContainer.withValues(alpha: 0.35);
@@ -15,7 +16,7 @@ class SyncUiTokens {
       case SyncTone.tertiary:
         return scheme.tertiaryContainer.withValues(alpha: 0.35);
       case SyncTone.success:
-        return Colors.green.withValues(alpha: 0.10);
+        return (isDark ? Colors.green.shade900 : Colors.green.shade100).withValues(alpha: isDark ? 0.25 : 0.40);
       case SyncTone.warning:
         return scheme.errorContainer.withValues(alpha: 0.35);
       case SyncTone.error:
@@ -27,6 +28,7 @@ class SyncUiTokens {
 
   static Color toneForeground(BuildContext context, SyncTone tone) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     switch (tone) {
       case SyncTone.primary:
         return scheme.onPrimaryContainer;
@@ -35,7 +37,7 @@ class SyncUiTokens {
       case SyncTone.tertiary:
         return scheme.onTertiaryContainer;
       case SyncTone.success:
-        return Colors.green.shade700;
+        return isDark ? Colors.green.shade200 : Colors.green.shade900;
       case SyncTone.warning:
         return scheme.onErrorContainer;
       case SyncTone.error:

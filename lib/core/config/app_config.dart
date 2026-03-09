@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'api_config.dart';
 
 class AppConfig {
   static const String _defaultApiBaseUrl = 'https://palestine.benaadev.org';
@@ -10,6 +11,8 @@ class AppConfig {
   final int syncBatchSize;
   final List<int> retryBackoffSeconds;
   final int attachmentChunkSize;
+  final int fileIdReserveBatchSize;
+  final int fileIdRenewThreshold;
   final int searchTimeout;
   final String civilRegistryManifestPath;
 
@@ -18,6 +21,8 @@ class AppConfig {
     this.syncBatchSize = 200,
     this.retryBackoffSeconds = const [1, 3, 10],
     this.attachmentChunkSize = 512 * 1024, // 512KB
+    this.fileIdReserveBatchSize = ApiConfig.fileIdReserveBatchSize,
+    this.fileIdRenewThreshold = ApiConfig.fileIdRenewThreshold,
     this.searchTimeout = 800,
     this.civilRegistryManifestPath = 'assets/data/civil_registry/manifest.json',
   });
@@ -62,8 +67,10 @@ class AppConfig {
 
       return AppConfig(
         apiBaseUrl: _normalizeBaseUrl(apiBaseUrl),
-        syncBatchSize: selected['SYNC_BATCH_SIZE'] ?? 200,
-        attachmentChunkSize: selected['ATTACHMENT_CHUNK_SIZE'] ?? 512 * 1024,
+        syncBatchSize: _asInt(selected['SYNC_BATCH_SIZE']) ?? 200,
+        attachmentChunkSize: _asInt(selected['ATTACHMENT_CHUNK_SIZE']) ?? 512 * 1024,
+        fileIdReserveBatchSize: _asInt(selected['FILE_ID_RESERVE_BATCH_SIZE']) ?? ApiConfig.fileIdReserveBatchSize,
+        fileIdRenewThreshold: _asInt(selected['FILE_ID_RENEW_THRESHOLD']) ?? ApiConfig.fileIdRenewThreshold,
       );
     } catch (e) {
       // Fallback to defaults
@@ -100,9 +107,17 @@ class AppConfig {
     }
   }
 
+  static int? _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value.trim());
+    return null;
+  }
+
   Map<String, dynamic> toJson() => {
         'API_BASE_URL': apiBaseUrl,
         'SYNC_BATCH_SIZE': syncBatchSize,
         'ATTACHMENT_CHUNK_SIZE': attachmentChunkSize,
+        'FILE_ID_RESERVE_BATCH_SIZE': fileIdReserveBatchSize,
+        'FILE_ID_RENEW_THRESHOLD': fileIdRenewThreshold,
       };
 }

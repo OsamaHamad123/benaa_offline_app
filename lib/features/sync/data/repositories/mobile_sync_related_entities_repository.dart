@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:logger/logger.dart';
 
@@ -93,10 +95,18 @@ class MobileSyncRelatedEntitiesRepository {
     if (existing != null) {
       final normalizedCompanion = companion.copyWith(id: drift.Value(existing.id));
       await (_db.update(_db.attachments)..where((a) => a.id.equals(existing!.id))).write(normalizedCompanion);
+      await _upsertAttachmentContractFields(
+        attachmentId: existing.id,
+        row: row,
+      );
       return SyncRelatedWriteOutcome.updated;
     }
 
     await _db.into(_db.attachments).insert(companion);
+    await _upsertAttachmentContractFields(
+      attachmentId: attachmentId,
+      row: row,
+    );
     return SyncRelatedWriteOutcome.inserted;
   }
 
@@ -106,6 +116,122 @@ class MobileSyncRelatedEntitiesRepository {
   }) async {
     final now = DateTime.now();
     final serverId = _asInt(row['id'] ?? row['server_id'] ?? row['member_id']);
+
+    String? _incomingString(List<String> keys) {
+      for (final key in keys) {
+        if (!row.containsKey(key)) continue;
+        final value = row[key];
+        if (value == null) return null;
+        return value.toString();
+      }
+      return null;
+    }
+
+    int? _incomingInt(List<String> keys) {
+      for (final key in keys) {
+        if (!row.containsKey(key)) continue;
+        return _asInt(row[key]);
+      }
+      return null;
+    }
+
+    DateTime? _incomingDate(List<String> keys) {
+      for (final key in keys) {
+        if (!row.containsKey(key)) continue;
+        return _parseDateTimeLoose(row[key]);
+      }
+      return null;
+    }
+
+    FamilyMember? existing;
+
+    if (serverId != null) {
+      final existingRows = await (_db.select(_db.familyMembersTable)
+            ..where((t) => t.serverId.equals(serverId) & t.beneficiaryId.equals(localBeneficiaryId)))
+          .get();
+      existing = existingRows.isEmpty ? null : existingRows.first;
+      if (existing != null) {
+        final companion = FamilyMembersTableCompanion(
+          beneficiaryId: drift.Value(localBeneficiaryId),
+          orphanNationalId: drift.Value(
+            _incomingInt(
+                    const ['orphan_national_id', 'person_id', 'person_identity_number', 'national_id', 'id_number']) ??
+                existing.orphanNationalId,
+          ),
+          firstName: drift.Value(
+            _incomingString(const ['first_name', 'name'])?.trim().isNotEmpty == true
+                ? _incomingString(const ['first_name', 'name'])!.trim()
+                : existing.firstName,
+          ),
+          secondName: drift.Value(
+            row.containsKey('second_name') ? _incomingString(const ['second_name']) : existing.secondName,
+          ),
+          thirdName: drift.Value(
+            row.containsKey('third_name') ? _incomingString(const ['third_name']) : existing.thirdName,
+          ),
+          familyName: drift.Value(
+            _incomingString(const ['family_name', 'last_name'])?.trim().isNotEmpty == true
+                ? _incomingString(const ['family_name', 'last_name'])!.trim()
+                : existing.familyName,
+          ),
+          birthDate: drift.Value(_incomingDate(const ['birth_date', 'person_birth_date']) ?? existing.birthDate),
+          age: drift.Value(row.containsKey('age') ? _incomingInt(const ['age']) : existing.age),
+          gender: drift.Value(
+            row.containsKey('gender') || row.containsKey('person_gender')
+                ? _parseGender(row['gender'] ?? row['person_gender'])
+                : existing.gender,
+          ),
+          healthStatus: drift.Value(
+            row.containsKey('health_status') || row.containsKey('person_health_status')
+                ? _parseHealthStatus(row['health_status'] ?? row['person_health_status'])
+                : existing.healthStatus,
+          ),
+          sponsorshipStatus: drift.Value(
+            row.containsKey('sponsorship_status')
+                ? _incomingInt(const ['sponsorship_status'])
+                : existing.sponsorshipStatus,
+          ),
+          sponsorshipType: drift.Value(
+            row.containsKey('sponsorship_type') || row.containsKey('person_type_of_guarantee')
+                ? _incomingInt(const ['sponsorship_type', 'person_type_of_guarantee'])
+                : existing.sponsorshipType,
+          ),
+          guaranteeType: drift.Value(
+            row.containsKey('guarantee_type') ||
+                    row.containsKey('guarantee_type_id') ||
+                    row.containsKey('person_type_of_guarantee')
+                ? _incomingInt(const ['guarantee_type', 'guarantee_type_id', 'person_type_of_guarantee'])
+                : existing.guaranteeType,
+          ),
+          sponsorName: drift.Value(
+            row.containsKey('sponsor_name') ? _incomingString(const ['sponsor_name']) : existing.sponsorName,
+          ),
+          sponsorshipStartDate: drift.Value(
+            row.containsKey('sponsorship_start_date')
+                ? _incomingDate(const ['sponsorship_start_date'])
+                : existing.sponsorshipStartDate,
+          ),
+          notes: drift.Value(row.containsKey('notes') ? _incomingString(const ['notes']) : existing.notes),
+          attachments: drift.Value(
+            row.containsKey('attachments') ? _incomingString(const ['attachments']) : existing.attachments,
+          ),
+          createdAt:
+              drift.Value(row.containsKey('created_at') ? _incomingDate(const ['created_at']) : existing.createdAt),
+          updatedAt: drift.Value(_incomingDate(const ['updated_at']) ?? now),
+          syncState: const drift.Value('synced'),
+          serverId: drift.Value(serverId),
+          lastSyncedAt: drift.Value(now),
+        );
+        await (_db.update(_db.familyMembersTable)..where((t) => t.id.equals(existing!.id))).write(companion);
+        await _upsertFamilyMemberContractFields(
+          familyMemberId: existing.id,
+          serverId: serverId,
+          row: row,
+        );
+        await _cleanupDuplicateFamilyMembersRows(existingRows, keepId: existing.id);
+        return SyncRelatedWriteOutcome.updated;
+      }
+    }
 
     final companion = FamilyMembersTableCompanion(
       beneficiaryId: drift.Value(localBeneficiaryId),
@@ -145,19 +271,12 @@ class MobileSyncRelatedEntitiesRepository {
       lastSyncedAt: drift.Value(now),
     );
 
-    if (serverId != null) {
-      final existingRows = await (_db.select(_db.familyMembersTable)
-            ..where((t) => t.serverId.equals(serverId) & t.beneficiaryId.equals(localBeneficiaryId)))
-          .get();
-      final existing = existingRows.isEmpty ? null : existingRows.first;
-      if (existing != null) {
-        await (_db.update(_db.familyMembersTable)..where((t) => t.id.equals(existing.id))).write(companion);
-        await _cleanupDuplicateFamilyMembersRows(existingRows, keepId: existing.id);
-        return SyncRelatedWriteOutcome.updated;
-      }
-    }
-
-    await _db.into(_db.familyMembersTable).insert(companion);
+    final insertedId = await _db.into(_db.familyMembersTable).insert(companion);
+    await _upsertFamilyMemberContractFields(
+      familyMemberId: insertedId,
+      serverId: serverId,
+      row: row,
+    );
     return SyncRelatedWriteOutcome.inserted;
   }
 
@@ -308,6 +427,12 @@ class MobileSyncRelatedEntitiesRepository {
           existing: existing,
         );
         await (_db.update(_db.familyDeceasedTable)..where((t) => t.id.equals(existing!.id))).write(companion);
+        await _upsertFamilyDeceasedContractFields(
+          familyDeceasedId: existing.id,
+          serverId: resolvedServerId,
+          type: type,
+          row: normalizedRow,
+        );
         await _cleanupDuplicateFamilyDeceasedRows(duplicateRows, keepId: existing.id);
         return SyncRelatedWriteOutcome.updated;
       }
@@ -338,6 +463,12 @@ class MobileSyncRelatedEntitiesRepository {
           existing: existingByType,
         );
         await (_db.update(_db.familyDeceasedTable)..where((t) => t.id.equals(existingByType.id))).write(companion);
+        await _upsertFamilyDeceasedContractFields(
+          familyDeceasedId: existingByType.id,
+          serverId: resolvedServerId,
+          type: type,
+          row: normalizedRow,
+        );
         await _cleanupDuplicateFamilyDeceasedRows(existingByTypeRows, keepId: existingByType.id);
         return SyncRelatedWriteOutcome.updated;
       }
@@ -369,6 +500,12 @@ class MobileSyncRelatedEntitiesRepository {
           );
           await (_db.update(_db.familyDeceasedTable)..where((t) => t.id.equals(existingByNationalId.id)))
               .write(companion);
+          await _upsertFamilyDeceasedContractFields(
+            familyDeceasedId: existingByNationalId.id,
+            serverId: resolvedServerId,
+            type: type,
+            row: normalizedRow,
+          );
           await _cleanupDuplicateFamilyDeceasedRows(existingByNationalIdRows, keepId: existingByNationalId.id);
           return SyncRelatedWriteOutcome.updated;
         }
@@ -400,8 +537,148 @@ class MobileSyncRelatedEntitiesRepository {
       lastSyncedAt: drift.Value(now),
     );
 
-    await _db.into(_db.familyDeceasedTable).insert(insertCompanion);
+    final insertedId = await _db.into(_db.familyDeceasedTable).insert(insertCompanion);
+    await _upsertFamilyDeceasedContractFields(
+      familyDeceasedId: insertedId,
+      serverId: resolvedServerId,
+      type: type,
+      row: normalizedRow,
+    );
     return SyncRelatedWriteOutcome.inserted;
+  }
+
+  Future<void> _upsertFamilyMemberContractFields({
+    required int familyMemberId,
+    required int? serverId,
+    required Map<String, dynamic> row,
+  }) async {
+    await _db.customStatement(
+      '''
+      INSERT INTO re_people_contract_fields (
+        family_member_id,
+        server_id,
+        first_name_normalized,
+        second_name_normalized,
+        third_name_normalized,
+        last_name_normalized,
+        person_health_status_name,
+        sponsorship_status_name,
+        person_type_of_guarantee_name,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(family_member_id) DO UPDATE SET
+        server_id = COALESCE(excluded.server_id, server_id),
+        first_name_normalized = COALESCE(excluded.first_name_normalized, first_name_normalized),
+        second_name_normalized = COALESCE(excluded.second_name_normalized, second_name_normalized),
+        third_name_normalized = COALESCE(excluded.third_name_normalized, third_name_normalized),
+        last_name_normalized = COALESCE(excluded.last_name_normalized, last_name_normalized),
+        person_health_status_name = COALESCE(excluded.person_health_status_name, person_health_status_name),
+        sponsorship_status_name = COALESCE(excluded.sponsorship_status_name, sponsorship_status_name),
+        person_type_of_guarantee_name = COALESCE(excluded.person_type_of_guarantee_name, person_type_of_guarantee_name),
+        updated_at = excluded.updated_at
+      ''',
+      [
+        familyMemberId,
+        serverId,
+        _pickStringValue(row, const ['first_name_normalized']),
+        _pickStringValue(row, const ['second_name_normalized']),
+        _pickStringValue(row, const ['third_name_normalized']),
+        _pickStringValue(row, const ['last_name_normalized', 'family_name_normalized']),
+        _pickStringValue(row, const ['person_health_status_name']),
+        _pickStringValue(row, const ['sponsorship_status_name']),
+        _pickStringValue(row, const ['person_type_of_guarantee_name']),
+        DateTime.now().toIso8601String(),
+      ],
+    );
+  }
+
+  Future<void> _upsertFamilyDeceasedContractFields({
+    required int familyDeceasedId,
+    required int? serverId,
+    required int type,
+    required Map<String, dynamic> row,
+  }) async {
+    final reasonName = type == _deceasedFatherType
+        ? _pickStringValue(row, const ['father_death_reason_name', 'death_reason_name'])
+        : _pickStringValue(row, const ['mother_death_reason_name', 'death_reason_name']);
+    final reFileId = _pickStringValue(row, const ['re_file_id', 'registration_id', 'file_id_number']);
+    final parentPayload = type == _deceasedFatherType
+        ? _toMap(row['father']) ?? <String, dynamic>{}
+        : _toMap(row['mother']) ?? <String, dynamic>{};
+
+    await _db.customStatement(
+      '''
+      INSERT INTO dead_people_contract_fields (
+        family_deceased_id,
+        server_id,
+        re_file_id,
+        death_reason_name,
+        raw_parent_payload,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(family_deceased_id) DO UPDATE SET
+        server_id = COALESCE(excluded.server_id, server_id),
+        re_file_id = COALESCE(excluded.re_file_id, re_file_id),
+        death_reason_name = COALESCE(excluded.death_reason_name, death_reason_name),
+        raw_parent_payload = COALESCE(excluded.raw_parent_payload, raw_parent_payload),
+        updated_at = excluded.updated_at
+      ''',
+      [
+        familyDeceasedId,
+        serverId,
+        reFileId,
+        reasonName,
+        jsonEncode(parentPayload),
+        DateTime.now().toIso8601String(),
+      ],
+    );
+  }
+
+  Future<void> _upsertAttachmentContractFields({
+    required String attachmentId,
+    required Map<String, dynamic> row,
+  }) async {
+    await _db.customStatement(
+      '''
+      INSERT INTO attachments_contract_fields (
+        attachment_id,
+        server_attachment_id,
+        person_identity_number,
+        stored_file_name,
+        mime_type,
+        file_type_label,
+        download_url,
+        google_drive_file_id,
+        google_drive_path,
+        uploaded_to_drive_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(attachment_id) DO UPDATE SET
+        server_attachment_id = COALESCE(excluded.server_attachment_id, server_attachment_id),
+        person_identity_number = COALESCE(excluded.person_identity_number, person_identity_number),
+        stored_file_name = COALESCE(excluded.stored_file_name, stored_file_name),
+        mime_type = COALESCE(excluded.mime_type, mime_type),
+        file_type_label = COALESCE(excluded.file_type_label, file_type_label),
+        download_url = COALESCE(excluded.download_url, download_url),
+        google_drive_file_id = COALESCE(excluded.google_drive_file_id, google_drive_file_id),
+        google_drive_path = COALESCE(excluded.google_drive_path, google_drive_path),
+        uploaded_to_drive_at = COALESCE(excluded.uploaded_to_drive_at, uploaded_to_drive_at),
+        updated_at = excluded.updated_at
+      ''',
+      [
+        attachmentId,
+        _asInt(row['id'] ?? row['server_id'] ?? row['attachment_id']),
+        _pickStringValue(row, const ['person_identity_number', 'person_id']),
+        _pickStringValue(row, const ['stored_file_name', 'file_name', 'filename']),
+        _pickStringValue(row, const ['mime_type']),
+        _pickStringValue(row, const ['file_type', 'document_type']),
+        _pickStringValue(row, const ['download_url']),
+        _pickStringValue(row, const ['google_drive_file_id']),
+        _pickStringValue(row, const ['google_drive_path']),
+        _pickStringValue(row, const ['uploaded_to_drive_at']),
+        DateTime.now().toIso8601String(),
+      ],
+    );
   }
 
   Future<void> _pruneExplicitlyEmptyParentBranches({
@@ -453,6 +730,7 @@ class MobileSyncRelatedEntitiesRepository {
       final nationalId = source['id'] ?? source['national_id'] ?? source['person_id'] ?? source['id_number'];
       final deathDate = source['death_date'] ?? source['deceased_at'];
       final deathReason = source['death_reason'] ?? source['death_reason_id'] ?? source['death_cause'];
+      final deathReasonName = source['death_reason_name'];
       final documentType = source['document_type'];
       final documentPath = source['document_path'];
       final notes = source['notes'];
@@ -464,6 +742,7 @@ class MobileSyncRelatedEntitiesRepository {
       if (_hasMeaningfulValue(nationalId)) normalized['${prefix}_id'] = nationalId;
       if (_hasMeaningfulValue(deathDate)) normalized['${prefix}_death_date'] = deathDate;
       if (_hasMeaningfulValue(deathReason)) normalized['${prefix}_death_reason'] = deathReason;
+      if (_hasMeaningfulValue(deathReasonName)) normalized['${prefix}_death_reason_name'] = deathReasonName;
       if (_hasMeaningfulValue(documentType)) normalized['${prefix}_document_type'] = documentType;
       if (_hasMeaningfulValue(documentPath)) normalized['${prefix}_document_path'] = documentPath;
       if (_hasMeaningfulValue(notes)) normalized['${prefix}_notes'] = notes;
@@ -586,6 +865,204 @@ class MobileSyncRelatedEntitiesRepository {
     if (existing == null) return false;
     await _db.attachmentsDao.deleteAttachment(existing.id, trackSyncDelete: false);
     return true;
+  }
+
+  Future<SyncRelatedWriteOutcome> upsertGuardianBankAccount(Map<String, dynamic> row) async {
+    final serverId = _asInt(row['id'] ?? row['server_id']);
+    final guardianRegistration = _asInt(row['guardian_registration']);
+    if (guardianRegistration == null || guardianRegistration <= 0) {
+      return SyncRelatedWriteOutcome.skipped;
+    }
+
+    final bankNameId = _asInt(row['bank_name_id'] ?? row['bank_name']);
+    final bankNameLabel = _pickStringValue(row, const ['bank_name_label', 'bank_name_name', 'bank_name_text']);
+    final ibanUsd = _pickStringValue(row, const ['iban_usd']);
+    final ibanShekel = _pickStringValue(row, const ['iban_shekel']);
+    final reIdNumber = _pickStringValue(row, const ['re_id_number']);
+    final reGuardianName = _pickStringValue(row, const ['re_guardian_name']);
+    final rePhoneNumber = _pickStringValue(row, const ['re_phone_number']);
+    final personOwnerIdentityNumber = _pickStringValue(row, const ['person_owner_identity_number']);
+    final checkAccount = _asPositiveInt(row['check_account']) ?? 0;
+    final isApproved = row['is_approved'] == true || checkAccount == 1 ? 1 : 0;
+    final createdAt = _pickStringValue(row, const ['created_at']);
+    final updatedAt = _pickStringValue(row, const ['updated_at']);
+    final nowIso = DateTime.now().toIso8601String();
+
+    if (serverId != null) {
+      final existingByServer = await _db.customSelect(
+        'SELECT local_id FROM guardian_bank_accounts WHERE server_id = ? LIMIT 1',
+        variables: [drift.Variable<int>(serverId)],
+      ).getSingleOrNull();
+
+      if (existingByServer != null) {
+        final localId = existingByServer.read<int>('local_id');
+        await _db.customStatement(
+          '''
+          UPDATE guardian_bank_accounts
+          SET
+            guardian_registration = ?,
+            bank_name_id = ?,
+            bank_name_label = ?,
+            iban_usd = ?,
+            iban_shekel = ?,
+            re_id_number = ?,
+            re_guardian_name = ?,
+            re_phone_number = ?,
+            person_owner_identity_number = ?,
+            check_account = ?,
+            is_approved = ?,
+            created_at = COALESCE(?, created_at),
+            updated_at = COALESCE(?, updated_at),
+            sync_state = 'synced',
+            last_synced_at = ?
+          WHERE local_id = ?
+          ''',
+          [
+            guardianRegistration,
+            bankNameId,
+            bankNameLabel,
+            ibanUsd,
+            ibanShekel,
+            reIdNumber,
+            reGuardianName,
+            rePhoneNumber,
+            personOwnerIdentityNumber,
+            checkAccount,
+            isApproved,
+            createdAt,
+            updatedAt,
+            nowIso,
+            localId,
+          ],
+        );
+        return SyncRelatedWriteOutcome.updated;
+      }
+    }
+
+    final existingByGuardian = await _db.customSelect(
+      'SELECT local_id FROM guardian_bank_accounts WHERE guardian_registration = ? LIMIT 1',
+      variables: [drift.Variable<int>(guardianRegistration)],
+    ).getSingleOrNull();
+
+    if (existingByGuardian != null) {
+      final localId = existingByGuardian.read<int>('local_id');
+      await _db.customStatement(
+        '''
+        UPDATE guardian_bank_accounts
+        SET
+          server_id = COALESCE(?, server_id),
+          bank_name_id = ?,
+          bank_name_label = ?,
+          iban_usd = ?,
+          iban_shekel = ?,
+          re_id_number = ?,
+          re_guardian_name = ?,
+          re_phone_number = ?,
+          person_owner_identity_number = ?,
+          check_account = ?,
+          is_approved = ?,
+          created_at = COALESCE(?, created_at),
+          updated_at = COALESCE(?, updated_at),
+          sync_state = 'synced',
+          last_synced_at = ?
+        WHERE local_id = ?
+        ''',
+        [
+          serverId,
+          bankNameId,
+          bankNameLabel,
+          ibanUsd,
+          ibanShekel,
+          reIdNumber,
+          reGuardianName,
+          rePhoneNumber,
+          personOwnerIdentityNumber,
+          checkAccount,
+          isApproved,
+          createdAt,
+          updatedAt,
+          nowIso,
+          localId,
+        ],
+      );
+      return SyncRelatedWriteOutcome.updated;
+    }
+
+    await _db.customStatement(
+      '''
+      INSERT INTO guardian_bank_accounts (
+        server_id,
+        guardian_registration,
+        bank_name_id,
+        bank_name_label,
+        iban_usd,
+        iban_shekel,
+        re_id_number,
+        re_guardian_name,
+        re_phone_number,
+        person_owner_identity_number,
+        check_account,
+        is_approved,
+        created_at,
+        updated_at,
+        sync_state,
+        last_synced_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', ?)
+      ''',
+      [
+        serverId,
+        guardianRegistration,
+        bankNameId,
+        bankNameLabel,
+        ibanUsd,
+        ibanShekel,
+        reIdNumber,
+        reGuardianName,
+        rePhoneNumber,
+        personOwnerIdentityNumber,
+        checkAccount,
+        isApproved,
+        createdAt,
+        updatedAt,
+        nowIso,
+      ],
+    );
+    return SyncRelatedWriteOutcome.inserted;
+  }
+
+  Future<bool> deleteGuardianBankAccountFromServerRow(Map<String, dynamic> row) async {
+    final serverId = _asInt(row['id'] ?? row['server_id']);
+    final guardianRegistration = _asInt(row['guardian_registration']);
+
+    if (serverId != null) {
+      final existingByServer = await _db.customSelect(
+        'SELECT local_id FROM guardian_bank_accounts WHERE server_id = ? LIMIT 1',
+        variables: [drift.Variable<int>(serverId)],
+      ).getSingleOrNull();
+      if (existingByServer != null) {
+        await _db.customStatement(
+          'DELETE FROM guardian_bank_accounts WHERE server_id = ?',
+          [serverId],
+        );
+        return true;
+      }
+    }
+
+    if (guardianRegistration != null) {
+      final existingByGuardian = await _db.customSelect(
+        'SELECT local_id FROM guardian_bank_accounts WHERE guardian_registration = ? LIMIT 1',
+        variables: [drift.Variable<int>(guardianRegistration)],
+      ).getSingleOrNull();
+      if (existingByGuardian != null) {
+        await _db.customStatement(
+          'DELETE FROM guardian_bank_accounts WHERE guardian_registration = ?',
+          [guardianRegistration],
+        );
+        return true;
+      }
+    }
+
+    return false;
   }
 
   String? extractServerAttachmentId(Map<String, dynamic> row) {

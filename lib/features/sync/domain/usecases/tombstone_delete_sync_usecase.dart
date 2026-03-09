@@ -132,6 +132,15 @@ class TombstoneDeleteSyncUseCase {
       return;
     }
 
+    if (normalized == 'sponsorships') {
+      final sponsorshipId = _resolveServerEntityId(entityId, payload);
+      if (sponsorshipId == null || sponsorshipId.isEmpty) {
+        throw StateError('Missing sponsorship server id for tombstone');
+      }
+      await _dio.delete(_normalizeApiEndpoint('/api/mobile/sponsorships/$sponsorshipId'));
+      return;
+    }
+
     throw StateError('Unsupported tombstone entity type: $entityType');
   }
 

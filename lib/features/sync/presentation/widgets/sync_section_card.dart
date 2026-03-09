@@ -21,30 +21,38 @@ class SyncSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fg = SyncUiTokens.toneForeground(context, tone);
 
-    return Card(
-      color: SyncUiTokens.toneContainer(context, tone),
-      child: Padding(
-        padding: EdgeInsets.all(SyncUiTokens.contentPadding.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: fg, size: 20.sp),
-                SizedBox(width: 8.w),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: fg,
+    return Semantics(
+      container: true,
+      label: 'قسم: $title',
+      child: Card(
+        color: SyncUiTokens.toneContainer(context, tone),
+        child: Padding(
+          padding: EdgeInsets.all(SyncUiTokens.contentPadding.w),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, color: fg, size: 20.sp),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: fg,
+                      ),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 10.h),
-            child,
-          ],
+                ],
+              ),
+              SizedBox(height: 10.h),
+              child,
+            ],
+          ),
         ),
       ),
     );

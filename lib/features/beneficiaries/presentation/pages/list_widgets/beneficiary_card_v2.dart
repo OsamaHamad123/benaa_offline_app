@@ -215,6 +215,13 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
   /// Name & File Number
   Widget _buildNameSection(ThemeData theme, ResponsiveValues rv) {
     final colorScheme = theme.colorScheme;
+    final rawFileId = widget.beneficiary.fileIdNumber?.trim();
+    final hasFileId = rawFileId != null && rawFileId.isNotEmpty;
+    final fileLabel = hasFileId
+        ? rawFileId
+        : ((widget.beneficiary.syncState == 'pending' || widget.beneficiary.syncState == 'modified')
+            ? 'بانتظار التخصيص'
+            : 'لا يوجد');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +245,7 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
             ),
             const SizedBox(width: 4),
             Text(
-              widget.beneficiary.fileIdNumber ?? 'لا يوجد',
+              fileLabel,
               style: TextStyle(
                 fontSize: rv.isTablet ? 14 : 13,
                 color: colorScheme.onSurfaceVariant,

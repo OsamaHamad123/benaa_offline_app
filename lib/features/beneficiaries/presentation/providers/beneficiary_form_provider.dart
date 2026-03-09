@@ -177,7 +177,12 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
       if (state.isNew) {
         // 🆔 Allocate File ID from local pool
-        final fileId = await _fileIdService.getNextId();
+        var fileId = await _fileIdService.getNextId();
+
+        if (fileId == null) {
+          await _fileIdService.forceReserve();
+          fileId = await _fileIdService.getNextId();
+        }
 
         if (fileId == null) {
           DebugLogger.warning('File ID reservation unavailable. Blocking beneficiary save.');
@@ -188,9 +193,10 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
               level: SentryLevel.warning,
             ),
           );
+          final reasonMessage = await _fileIdService.buildNoFileIdSaveMessage();
           state = state.copyWith(
             isSaving: false,
-            errorMessage: 'تعذر حجز رقم الملف من السيرفر. يرجى تنفيذ المزامنة ثم إعادة المحاولة.',
+            errorMessage: reasonMessage,
           );
           return false;
         }

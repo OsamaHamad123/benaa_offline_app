@@ -237,10 +237,12 @@ class BeneficiaryMapper {
       syncState: const drift.Value('synced'),
 
       // Name parts (fullName is auto-computed from these)
-      firstName: drift.Value(firstName.isEmpty ? null : firstName),
-      fatherName: drift.Value(fatherName.isEmpty ? null : fatherName),
-      grandFatherName: drift.Value(grandFather.isEmpty ? null : grandFather),
-      familyName: drift.Value(familyName.isEmpty ? null : familyName),
+      // Important: keep empty string instead of null to avoid NOT NULL failure
+      // on generated full_name column when server omits one of the name parts.
+      firstName: drift.Value(firstName),
+      fatherName: drift.Value(fatherName),
+      grandFatherName: drift.Value(grandFather),
+      familyName: drift.Value(familyName),
 
       // Optional fields
       fileIdNumber: drift.Value(fileId),

@@ -104,6 +104,8 @@ const beneficiaryTaxonomyServerAliases = <TaxonomyGroup, List<String>>{
 
 /// Slugs الموثقة في API server داخل todo.md (قسم Categories).
 const backendDocumentedCategorySlugs = <String>[
+  'categories',
+  'genders',
   'academic-degrees',
   'relations',
   'aid-statuses',
@@ -129,6 +131,8 @@ const backendDocumentedCategorySlugs = <String>[
 /// الهدف: منع الاعتماد على heuristics العامة في slugs الموثقة،
 /// وتثبيت قرار التطبيع بشكل صريح وقابل للمراجعة.
 const backendDocumentedSlugCanonicalGroup = <String, String>{
+  'categories': 'category',
+  'genders': 'gender',
   'academic-degrees': 'education_level',
   'relations': 'relationship',
   'aid-statuses': 'assistance_type',

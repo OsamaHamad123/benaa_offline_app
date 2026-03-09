@@ -19,6 +19,8 @@ class FormControllerResetHelper {
     controllers.numberOfMalesController.clear();
     controllers.numberOfFemalesController.clear();
     controllers.chronicDiseasesController.clear();
+    controllers.specialNeedsCountController.clear();
+    controllers.createdByUserController.clear();
     controllers.addressBeforeDisplacementController.clear();
 
     controllers.selectedGender = null;
@@ -34,8 +36,13 @@ class FormControllerResetHelper {
     controllers.selectedHousingStatus = null;
     controllers.selectedHousingType = null;
     controllers.selectedAssistanceType = null;
+    controllers.selectedDisabilityType = null;
+    controllers.selectedIncomeSource = null;
+    controllers.selectedGuaranteeType = null;
     controllers.selectedRequestStatus = null;
+    controllers.selectedSection = null;
     controllers.hasDisability = false;
+    controllers.clearPendingAttachments();
     controllers.updatePendingFiles([]);
   }
 }

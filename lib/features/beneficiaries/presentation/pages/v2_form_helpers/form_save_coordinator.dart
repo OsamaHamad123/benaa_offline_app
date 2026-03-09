@@ -29,6 +29,7 @@ class FormSaveCoordinator {
     required Future<String?> Function() getSavedBeneficiaryId,
     required Future<int> Function(String beneficiaryId) saveAttachments,
     required Future<void> Function(String beneficiaryId) saveFamilyMembers,
+    Future<void> Function(String beneficiaryId)? saveGuardianBankAccount,
     required void Function() clearPendingAttachments,
   }) async {
     final hasDuplicate = await checkDuplicate();
@@ -49,6 +50,9 @@ class FormSaveCoordinator {
     final failedAttachmentsCount = await saveAttachments(beneficiaryId);
     clearPendingAttachments();
     await saveFamilyMembers(beneficiaryId);
+    if (saveGuardianBankAccount != null) {
+      await saveGuardianBankAccount(beneficiaryId);
+    }
 
     return FormSaveResult(
       status: FormSaveStatus.saved,

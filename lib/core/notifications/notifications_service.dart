@@ -11,6 +11,7 @@ class NotificationsService {
   static bool _initialized = false;
   static const int _civilDbDownloadNotificationId = 45001;
   static const int _syncOperationNotificationId = 45002;
+  static const int _codesInventoryAlertNotificationId = 45003;
 
   /// تهيئة الإشعارات
   static Future<void> initialize() async {
@@ -405,6 +406,39 @@ class NotificationsService {
       message,
       details,
       payload: 'sync_operation:failed',
+    );
+  }
+
+  static Future<void> showCodesInventoryAlert({
+    required String title,
+    required String body,
+  }) async {
+    await _ensureInitialized();
+
+    const androidDetails = AndroidNotificationDetails(
+      'codes_inventory_channel',
+      'تنبيهات مخزون الأكواد',
+      channelDescription: 'تنبيهات تخص نفاد الأكواد وحدود الجهاز في نظام الحجز',
+      importance: Importance.high,
+      priority: Priority.high,
+      ongoing: false,
+      category: AndroidNotificationCategory.reminder,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+    await _notifications.show(
+      _codesInventoryAlertNotificationId,
+      title,
+      body,
+      details,
+      payload: 'codes_inventory:alert',
     );
   }
 

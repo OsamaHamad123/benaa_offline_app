@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:benaa_offline_app/core/widgets/responsive_dialog.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/civil_registry_provider.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/beneficiary_activity_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,6 +60,9 @@ import 'v2_form_helpers/form_draft_save_flow_helper.dart';
 import 'v2_form_helpers/form_drafts_list_helper.dart';
 import 'v2_form_helpers/form_save_outcome_helper.dart';
 import 'v2_form_helpers/form_civil_registry_fill_helper.dart';
+import 'v2_form_helpers/personal_profile_validator.dart';
+import 'v2_form_helpers/smart_helpers.dart';
+import '../../domain/entities/guardian_bank_account.dart';
 
 // Widgets
 import 'v2_form_helpers/widgets/loading_overlay.dart' as local;
@@ -212,6 +216,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   final ValueNotifier<int> _perfOverlayVersionNotifier = ValueNotifier(0);
   final Map<String, _PerfAggregate> _perfAggregates = <String, _PerfAggregate>{};
   bool _showPerfOverlay = true;
+  bool _isTabTransitionLocked = false;
 
   @override
   void initState() {
@@ -221,7 +226,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     // ✅ Initialize Debouncer for auto-save (2 seconds)
     _autoSaveDebouncer = Debouncer(delay: const Duration(seconds: 2));
 
-    _controllers = BeneficiaryFormControllers(onAutoSave: _performAutoSave);
+    _controllers = BeneficiaryFormControllers(
+      onAutoSave: _performAutoSave,
+      onFieldEdited: _onFormChanged,
+    );
     _formHistory = FormHistory<FormStateSnapshot>();
     _tabController = TabController(
       length: FormConstants.totalTabs,
@@ -418,6 +426,29 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     return filled;
   }
 
+  Map<String, double> _calculateTabCompletions() {
+    final stats = FormCompletionCalculator.calculateTabStats(_controllers);
+    final tabCompletions = <String, double>{};
+
+    for (int index = 0; index < FormConstants.totalTabs; index++) {
+      final title = FormTabs.tabs[index].title;
+      if (index == FormConstants.totalTabs - 1) {
+        final overall = ((_calculateFilledFields() / 12) * 100).clamp(0.0, 100.0);
+        tabCompletions[title] = overall;
+        continue;
+      }
+
+      final tabStat = stats[index];
+      if (tabStat == null) {
+        tabCompletions[title] = 0;
+      } else {
+        tabCompletions[title] = (tabStat.progress * 100).clamp(0.0, 100.0);
+      }
+    }
+
+    return tabCompletions;
+  }
+
   /// 🔄 Debounced Auto-Save (2 seconds delay)
   /// ✅ Changed to save as draft instead of direct database save
   Future<void> _performAutoSave() async {
@@ -479,13 +510,11 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         onCreateNew: () => ref.read(beneficiaryFormProvider.notifier).createNew(),
         onClearControllers: _clearAllControllers,
         onScheduleCivilRegistryFill: (data) {
-          debugPrint('📋 Civil Registry Data received: $data');
+          debugPrint('📋 Civil Registry Data received (keys: ${data.keys.length})');
           Future.delayed(const Duration(milliseconds: 100), () {
             if (mounted) {
               _fillFromCivilRegistry(data);
-              setState(() {
-                _hasUnsavedChanges = true;
-              });
+              _hasUnsavedChanges = true;
             }
           });
         },
@@ -646,6 +675,29 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       (fn) => fn(),
     );
     _loadFamilyMembers(beneficiary.id);
+    unawaited(_loadGuardianBankAccount(beneficiary.id));
+  }
+
+  Future<void> _loadGuardianBankAccount(String beneficiaryId) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final useCase = ref.read(loadGuardianBankAccountUseCaseProvider);
+      final account = await useCase.execute(beneficiaryId);
+      if (account == null) return;
+
+      _controllers.bankNameIdController.text = account.bankNameId?.toString() ?? '';
+      _controllers.bankNameLabelController.text = account.bankNameLabel ?? '';
+      _controllers.ibanUsdController.text = account.ibanUsd ?? '';
+      _controllers.ibanShekelController.text = account.ibanShekel ?? '';
+      _controllers.bankRepresentativeIdController.text = account.representativeIdNumber ?? '';
+      _controllers.bankGuardianNameController.text = account.guardianName ?? '';
+      _controllers.bankRepresentativePhoneController.text = account.representativePhone ?? '';
+      _controllers.bankOwnerIdentityController.text = account.ownerIdentityNumber ?? '';
+      _controllers.bankCheckAccountApproved = account.checkAccountApproved;
+    } finally {
+      stopwatch.stop();
+      _recordPerfSample('db.loadGuardianBankAccount', stopwatch.elapsedMilliseconds);
+    }
   }
 
   Future<void> _normalizeAllTaxonomySelections() async {
@@ -737,14 +789,15 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   /// 🔗 Setup Field Dependencies (Phase 3)
   void _setupFieldDependencies() {
-    if (_dependencyController == null) {
+    final dependencyController = _dependencyController;
+    if (dependencyController == null) {
       return;
     }
 
     // Add common dependency scenarios
     final scenarios = DependencyScenarios.getAllCommonScenarios();
     for (final scenario in scenarios) {
-      _dependencyController!.addDependency(scenario);
+      dependencyController.addDependency(scenario);
     }
 
     // Listen to text field changes
@@ -872,13 +925,16 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   /// ⬅️ التالي - الانتقال للتاب التالي (يمين في RTL)
   void _handleNextTab() {
+    if (_tabController.indexIsChanging || _isTabTransitionLocked) return;
+
     final current = _tabController.index;
-    final target = _resolveSmartNextTabIndex(current);
-    if (target == current) {
+    if (current >= FormConstants.totalTabs - 1) {
       HapticFeedback.heavyImpact();
-      _scrollToFirstError();
       return;
     }
+
+    final target = current + 1;
+    _isTabTransitionLocked = true;
 
     HapticPatterns.selection();
     _tabController.animateTo(
@@ -886,33 +942,31 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
     );
+
+    Future.delayed(const Duration(milliseconds: 240), () {
+      if (!mounted) return;
+      _isTabTransitionLocked = false;
+    });
   }
 
   /// ➡️ السابق - الرجوع للتاب السابق (يسار في RTL)
   void _handlePreviousTab() {
+    if (_tabController.indexIsChanging || _isTabTransitionLocked) return;
+
     if (_tabController.index > 0) {
+      _isTabTransitionLocked = true;
       HapticPatterns.selection();
       _tabController.animateTo(
         _tabController.index - 1,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
       );
-    }
-  }
 
-  int _resolveSmartNextTabIndex(int currentTab) {
-    final firstIncomplete = _firstIncompleteTabIndex();
-    if (firstIncomplete != null) {
-      if (firstIncomplete <= currentTab) {
-        return firstIncomplete;
-      }
-      return firstIncomplete;
+      Future.delayed(const Duration(milliseconds: 240), () {
+        if (!mounted) return;
+        _isTabTransitionLocked = false;
+      });
     }
-
-    if (currentTab < FormConstants.totalTabs - 1) {
-      return currentTab + 1;
-    }
-    return currentTab;
   }
 
   int? _firstIncompleteTabIndex() {
@@ -929,12 +983,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   }
 
   bool _isPersonalTabComplete() {
-    final nationalId = _controllers.nationalIdController.text.trim();
-    return _controllers.firstNameController.text.trim().isNotEmpty &&
-        _controllers.fatherNameController.text.trim().isNotEmpty &&
-        _controllers.lastNameController.text.trim().isNotEmpty &&
-        _controllers.selectedGender != null &&
-        nationalId.length == FormConstants.nationalIdLength;
+    return PersonalProfileValidator.isComplete(_controllers);
   }
 
   bool _isContactTabComplete() {
@@ -946,9 +995,17 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   }
 
   bool _isTextInputFocused() {
-    final focusedContext = FocusManager.instance.primaryFocus?.context;
-    if (focusedContext == null) return false;
-    return focusedContext.widget is EditableText;
+    try {
+      final focusedNode = FocusManager.instance.primaryFocus;
+      if (focusedNode == null) return false;
+
+      final focusedContext = focusedNode.context;
+      if (focusedContext == null || !focusedContext.mounted) return false;
+
+      return focusedContext.widget is EditableText;
+    } catch (_) {
+      return false;
+    }
   }
 
   void _handleHorizontalTabSwipe(DragEndDetails details) {
@@ -966,6 +1023,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
   void _onTabNavigationSettled() {
     if (!mounted || _tabController.indexIsChanging) return;
+
+    _isTabTransitionLocked = false;
 
     final newIndex = _tabController.index;
     if (newIndex == _lastSettledTabIndex) return;
@@ -1041,7 +1100,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         HapticFeedback.mediumImpact();
         showDialog(
           context: context,
-          barrierColor: Colors.black54,
+          barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.54),
           builder: (context) => Material(
             color: Colors.transparent,
             child: Center(
@@ -1050,9 +1109,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                 decoration: BoxDecoration(
                   color: Theme.of(context).scaffoldBackgroundColor,
                   borderRadius: BorderRadius.circular(20.r),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: Colors.black26,
+                      color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.22),
                       blurRadius: 20,
                       offset: Offset(0, 10),
                     ),
@@ -1130,7 +1189,8 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   separatorBuilder: (_, __) => SizedBox(height: 8.h),
                   itemBuilder: (context, index) {
                     final draftItem = draftItems[index];
-                    final savedAtLabel = draftItem.savedAt != null ? _formatDateTime(draftItem.savedAt!) : 'غير معروف';
+                    final savedAt = draftItem.savedAt;
+                    final savedAtLabel = savedAt == null ? 'غير معروف' : _formatDateTime(savedAt);
 
                     return Card(
                       child: ListTile(
@@ -1158,14 +1218,14 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                           children: [
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
-                              color: Colors.red,
+                              color: Theme.of(context).colorScheme.error,
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (context) => ResponsiveDialog(
                                     title: 'حذف المسودة',
                                     icon: Icons.delete_outline,
-                                    iconColor: Colors.red,
+                                    iconColor: Theme.of(context).colorScheme.error,
                                     content: const Text(
                                       'هل تريد حذف هذه المسودة؟',
                                     ),
@@ -1392,7 +1452,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _tourShowTimer?.cancel();
     _statisticsRefreshTimer?.cancel();
     _tabController.removeListener(_onTabNavigationSettled);
-    _controllers.removeListener(_onFormChanged);
     _controllers.dispose();
     _tabController.dispose();
     _firstFieldFocusNode.dispose();
@@ -1475,6 +1534,27 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       beneficiaryId: beneficiaryId,
       livingMembers: _controllers.livingMembers,
       deceasedMembers: _controllers.deceasedMembers,
+    );
+  }
+
+  Future<void> _saveGuardianBankAccount(String beneficiaryId) async {
+    final useCase = ref.read(saveGuardianBankAccountUseCaseProvider);
+    final draft = GuardianBankAccount(
+      guardianRegistration: 0,
+      bankNameId: int.tryParse(_controllers.bankNameIdController.text.trim()),
+      bankNameLabel: _controllers.bankNameLabelController.text.trim(),
+      ibanUsd: _controllers.ibanUsdController.text.trim(),
+      ibanShekel: _controllers.ibanShekelController.text.trim(),
+      representativeIdNumber: _controllers.bankRepresentativeIdController.text.trim(),
+      guardianName: _controllers.bankGuardianNameController.text.trim(),
+      representativePhone: _controllers.bankRepresentativePhoneController.text.trim(),
+      ownerIdentityNumber: _controllers.bankOwnerIdentityController.text.trim(),
+      checkAccountApproved: _controllers.bankCheckAccountApproved,
+    );
+
+    await useCase.execute(
+      beneficiaryId: beneficiaryId,
+      draft: draft,
     );
   }
 
@@ -1576,9 +1656,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           );
           attachmentsStopwatch.stop();
           _recordPerfSample('flow.attachmentsSave', attachmentsStopwatch.elapsedMilliseconds);
-          return attachmentSaveResult!.failedCount;
+          return attachmentSaveResult?.failedCount ?? _controllers.pendingAttachments.length;
         },
         saveFamilyMembers: _saveFamilyMembers,
+        saveGuardianBankAccount: _saveGuardianBankAccount,
         clearPendingAttachments: _controllers.clearPendingAttachments,
       );
       trace.endStep('orchestration');
@@ -1594,17 +1675,27 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _feedbackCoordinator.showWarning(context, 'بعض الملفات فشل حفظها (${result.failedAttachmentsCount})');
       }
 
-      if (attachmentSaveResult != null && attachmentSaveResult!.failedPendingAttachments.isNotEmpty) {
-        _controllers.updatePendingAttachments(attachmentSaveResult!.failedPendingAttachments);
+      final failedPendingAttachments = attachmentSaveResult?.failedPendingAttachments;
+      if (failedPendingAttachments != null && failedPendingAttachments.isNotEmpty) {
+        _controllers.updatePendingAttachments(failedPendingAttachments);
       }
 
       if (outcome.markSavedState) {
+        final savedBeneficiary = ref.read(beneficiaryFormProvider).beneficiary;
+        final resolvedFileNumber = (savedBeneficiary?.fileIdNumber ?? savedBeneficiary?.fileNo ?? '').trim();
+        if (resolvedFileNumber.isNotEmpty && _controllers.fileNumberController.text.trim() != resolvedFileNumber) {
+          _controllers.fileNumberController.text = resolvedFileNumber;
+        }
+
         _lastSaved = DateTime.now();
         _hasUnsavedChanges = false;
       }
 
       if (outcome.showSaveSuccessOverlay) {
-        _feedbackCoordinator.showSaveSuccessOverlay(context, FormConstants.saveSuccessMessage);
+        final successMessage = (!isAutoSave && _controllers.fileNumberController.text.trim().isNotEmpty)
+            ? '${FormConstants.saveSuccessMessage} • رقم الملف: ${_controllers.fileNumberController.text.trim()}'
+            : FormConstants.saveSuccessMessage;
+        _feedbackCoordinator.showSaveSuccessOverlay(context, successMessage);
       }
 
       if (outcome.failureMessage != null) {
@@ -1665,12 +1756,16 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
       final trace = FormFlowTracer.start('delete');
       _isDeleting = true;
 
-      final deleteUseCase = ref.read(deleteBeneficiaryUseCaseProvider);
+      final deleteUseCase = ref.read(deleteBeneficiaryWithActivityProvider);
       trace.startStep('deleteUseCase');
       final deleteResult = await FormDeleteFlowHelper.execute(
         coordinator: _beneficiaryDeleteCoordinator,
         beneficiaryId: beneficiary.id,
-        deleteAction: deleteUseCase.execute,
+        deleteAction: (beneficiaryId) => deleteUseCase(
+          beneficiaryId: int.parse(beneficiaryId),
+          beneficiaryName: beneficiary.fullName,
+          fileNo: beneficiary.fileIdNumber,
+        ),
       );
       trace.endStep('deleteUseCase');
 
@@ -1724,6 +1819,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     final isMobile = mediaQuery.size.width < 600;
     final isCompactMobile = mediaQuery.size.width < 360;
     final isKeyboardOpen = mediaQuery.viewInsets.bottom > 0;
+    final isShortHeight = mediaQuery.size.height < 760;
 
     // ⚠️ DON'T use ref.watch here - causes rebuild on every provider change!
     // Use Consumer only where needed
@@ -1752,7 +1848,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                 Navigator.of(context).pop();
               }
             },
-            child: child!,
+            child: child ?? const SizedBox.shrink(),
           );
         },
         child: Scaffold(
@@ -1793,7 +1889,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         // 🚨 Error Banner - Separated widget
                         const FormErrorBanner(),
 
-                        if (!isMobile) ...[
+                        if (!isMobile && !isShortHeight) ...[
                           ValueListenableBuilder<DateTime?>(
                             valueListenable: _lastAutoSavedNotifier,
                             builder: (context, lastAutoSavedAt, _) {
@@ -1819,7 +1915,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                                     final totalGroups = essentialBeneficiaryFormTaxonomyGroups.length;
                                     final filledGroups = totalGroups - missingGroups.length;
 
-                                    if (isMobile && !isCoverageLoading) {
+                                    if ((isMobile || isShortHeight) && !isCoverageLoading) {
                                       return const SizedBox.shrink();
                                     }
 
@@ -1899,7 +1995,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                           },
                         ),
 
-                        if (kDebugMode)
+                        if (kDebugMode && !isShortHeight)
                           _buildIdentityDebugCard(
                             context,
                             resolvedBeneficiaryId: resolvedBeneficiaryId,
@@ -1975,12 +2071,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                               overallCompletion: completedFields / 12 * 100,
                               completedFields: completedFields,
                               totalFields: 12,
-                              tabCompletions: const {
-                                'البيانات الأساسية': 75.0,
-                                'أفراد الأسرة': 50.0,
-                                'المرفقات': 25.0,
-                                'التقييم': 90.0,
-                              },
+                              tabCompletions: _calculateTabCompletions(),
                               onTap: _toggleStatistics,
                             ),
                           );
@@ -2158,9 +2249,9 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
               padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
               constraints: BoxConstraints(maxWidth: 280.w),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.70),
+                color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.70),
                 borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: _showPerfOverlay
                   ? Column(
@@ -2170,7 +2261,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         Text(
                           'PERF DEBUG',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.onInverseSurface,
                             fontSize: 11.sp,
                             fontWeight: FontWeight.w700,
                           ),
@@ -2178,19 +2269,28 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         SizedBox(height: 4.h),
                         Text(
                           'sync=${isSyncRunning ? 'on' : 'off'} | emergency=${_uiEmergencyMode ? 'on' : 'off'} | lagBurst=$_uiLagBurstCount',
-                          style: TextStyle(color: Colors.white70, fontSize: 10.sp),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onInverseSurface.withValues(alpha: 0.75),
+                            fontSize: 10.sp,
+                          ),
                         ),
                         SizedBox(height: 4.h),
                         Text(
                           'frames=$_totalFramesObserved slowBuild=$_slowBuildFrames slowRaster=$_slowRasterFrames verySlow=$_verySlowFrames',
-                          style: TextStyle(color: Colors.white70, fontSize: 10.sp),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onInverseSurface.withValues(alpha: 0.75),
+                            fontSize: 10.sp,
+                          ),
                         ),
                         if (topEntries.isNotEmpty) ...[
                           SizedBox(height: 6.h),
                           for (final entry in topEntries)
                             Text(
                               '${entry.key}: n=${entry.value.count} avg=${entry.value.averageMs}ms max=${entry.value.maxMs}ms >50=${entry.value.over50Ms}',
-                              style: TextStyle(color: Colors.white, fontSize: 10.sp),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onInverseSurface,
+                                fontSize: 10.sp,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -2200,7 +2300,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                   : Text(
                       'PERF',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onInverseSurface,
                         fontSize: 10.sp,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2227,7 +2327,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
               ),
             ),
           ),
-          child: child!,
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );

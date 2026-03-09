@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import '../../../../core/sync/sync_history_store.dart';
 
 /// 📜 Sync History Entry - سجل عملية مزامنة
 class SyncHistoryEntry {
   final DateTime timestamp;
   final bool success;
+  final String operation;
+  final String source;
+  final String? errorCategory;
   final String? message;
   final int? uploadedCount;
   final int? downloadedCount;
@@ -15,6 +17,9 @@ class SyncHistoryEntry {
   SyncHistoryEntry({
     required this.timestamp,
     required this.success,
+    this.operation = 'unknown',
+    this.source = 'unknown',
+    this.errorCategory,
     this.message,
     this.uploadedCount,
     this.downloadedCount,
@@ -37,48 +42,50 @@ class SyncHistoryEntry {
       message: json['message'],
       uploadedCount: json['uploadedCount'],
       downloadedCount: json['downloadedCount'],
-      duration:
-          json['duration'] != null ? Duration(seconds: json['duration']) : null,
+      duration: json['duration'] != null ? Duration(seconds: json['duration']) : null,
     );
   }
 }
 
 /// 📚 Sync History Manager - مدير سجل المزامنة
 class SyncHistoryManager {
-  static const String _key = 'sync_history';
-  static const int _maxEntries = 50;
-
   static Future<List<SyncHistoryEntry>> getHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString(_key);
-    if (jsonString == null) return [];
-
-    try {
-      final List<dynamic> jsonList = json.decode(jsonString);
-      return jsonList.map((e) => SyncHistoryEntry.fromJson(e)).toList();
-    } catch (e) {
-      return [];
-    }
+    final snapshots = await SyncHistoryStore.getHistory();
+    return snapshots
+        .map(
+          (entry) => SyncHistoryEntry(
+            timestamp: entry.timestamp,
+            success: entry.success,
+            operation: entry.operation,
+            source: entry.source,
+            errorCategory: entry.errorCategory,
+            message: entry.message,
+            uploadedCount: entry.uploadedCount,
+            downloadedCount: entry.downloadedCount,
+            duration: entry.durationSeconds == null ? null : Duration(seconds: entry.durationSeconds!),
+          ),
+        )
+        .toList(growable: false);
   }
 
   static Future<void> addEntry(SyncHistoryEntry entry) async {
-    final prefs = await SharedPreferences.getInstance();
-    final history = await getHistory();
-
-    history.insert(0, entry);
-
-    // Keep only the last N entries
-    if (history.length > _maxEntries) {
-      history.removeRange(_maxEntries, history.length);
-    }
-
-    final jsonString = json.encode(history.map((e) => e.toJson()).toList());
-    await prefs.setString(_key, jsonString);
+    await SyncHistoryStore.addEntry(
+      SyncHistoryEntrySnapshot(
+        timestamp: entry.timestamp,
+        success: entry.success,
+        operation: entry.operation,
+        source: entry.source,
+        message: entry.message,
+        uploadedCount: entry.uploadedCount,
+        downloadedCount: entry.downloadedCount,
+        durationSeconds: entry.duration?.inSeconds,
+        errorCategory: entry.errorCategory,
+      ),
+    );
   }
 
   static Future<void> clearHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+    await SyncHistoryStore.clear();
   }
 
   static Future<Map<String, dynamic>> getStatistics() async {
@@ -106,10 +113,8 @@ class SyncHistoryManager {
       (sum, e) => sum + (e.downloadedCount ?? 0),
     );
     final durations = history.where((e) => e.duration != null).toList();
-    final averageDuration = durations.isEmpty
-        ? 0
-        : durations.fold(0, (sum, e) => sum + e.duration!.inSeconds) ~/
-            durations.length;
+    final averageDuration =
+        durations.isEmpty ? 0 : durations.fold(0, (sum, e) => sum + e.duration!.inSeconds) ~/ durations.length;
 
     return {
       'totalSyncs': history.length,
@@ -128,18 +133,23 @@ final syncHistoryProvider = FutureProvider<List<SyncHistoryEntry>>((ref) async {
   return SyncHistoryManager.getHistory();
 });
 
-final syncStatisticsProvider = FutureProvider<Map<String, dynamic>>((
-  ref,
-) async {
+final syncStatisticsProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   return SyncHistoryManager.getStatistics();
 });
 
 /// 📊 Sync History Viewer - عارض سجل المزامنة
-class SyncHistoryViewer extends ConsumerWidget {
+class SyncHistoryViewer extends ConsumerStatefulWidget {
   const SyncHistoryViewer({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SyncHistoryViewer> createState() => _SyncHistoryViewerState();
+}
+
+class _SyncHistoryViewerState extends ConsumerState<SyncHistoryViewer> {
+  _SyncHistoryFilter _selectedFilter = _SyncHistoryFilter.all;
+
+  @override
+  Widget build(BuildContext context) {
     final historyAsync = ref.watch(syncHistoryProvider);
     final statsAsync = ref.watch(syncStatisticsProvider);
 
@@ -190,11 +200,15 @@ class SyncHistoryViewer extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
           ),
 
+          _buildFilterBar(),
+
           // History List
           Expanded(
             child: historyAsync.when(
               data: (history) {
-                if (history.isEmpty) {
+                final filtered = _applyFilter(history);
+
+                if (filtered.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -202,7 +216,7 @@ class SyncHistoryViewer extends ConsumerWidget {
                         Icon(Icons.history, size: 64, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
-                          'لا يوجد سجل مزامنة',
+                          'لا يوجد سجل مطابق للتصفية',
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey[600],
@@ -215,10 +229,10 @@ class SyncHistoryViewer extends ConsumerWidget {
 
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
-                  itemCount: history.length,
+                  itemCount: filtered.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
-                    final entry = history[index];
+                    final entry = filtered[index];
                     return _buildHistoryCard(entry);
                   },
                 );
@@ -230,6 +244,44 @@ class SyncHistoryViewer extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildFilterBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          _buildFilterChip(_SyncHistoryFilter.all, 'الكل'),
+          const SizedBox(width: 8),
+          _buildFilterChip(_SyncHistoryFilter.up, 'رفع'),
+          const SizedBox(width: 8),
+          _buildFilterChip(_SyncHistoryFilter.down, 'تنزيل'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(_SyncHistoryFilter filter, String label) {
+    return ChoiceChip(
+      selected: _selectedFilter == filter,
+      label: Text(label),
+      onSelected: (_) {
+        setState(() {
+          _selectedFilter = filter;
+        });
+      },
+    );
+  }
+
+  List<SyncHistoryEntry> _applyFilter(List<SyncHistoryEntry> history) {
+    switch (_selectedFilter) {
+      case _SyncHistoryFilter.up:
+        return history.where((entry) => entry.operation.toLowerCase() == 'sync_up').toList(growable: false);
+      case _SyncHistoryFilter.down:
+        return history.where((entry) => entry.operation.toLowerCase() == 'sync_down').toList(growable: false);
+      case _SyncHistoryFilter.all:
+        return history;
+    }
   }
 
   Widget _buildStatisticsCard(Map<String, dynamic> stats) {
@@ -339,8 +391,10 @@ class SyncHistoryViewer extends ConsumerWidget {
     final dateTime = entry.timestamp;
     final date =
         '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
-    final time =
-        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    final time = '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+
+    final operationLabel = _operationLabel(entry.operation);
+    final sourceLabel = _sourceLabel(entry.source);
 
     return Card(
       child: ListTile(
@@ -352,7 +406,7 @@ class SyncHistoryViewer extends ConsumerWidget {
           ),
         ),
         title: Text(
-          entry.success ? 'مزامنة ناجحة' : 'فشل المزامنة',
+          entry.success ? 'مزامنة ناجحة ($operationLabel)' : 'فشل المزامنة ($operationLabel)',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
@@ -360,12 +414,21 @@ class SyncHistoryViewer extends ConsumerWidget {
           children: [
             const SizedBox(height: 4),
             Text('$date - $time'),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                _buildMetaTag(sourceLabel),
+                if (entry.errorCategory != null && entry.errorCategory!.trim().isNotEmpty) ...[
+                  const SizedBox(width: 6),
+                  _buildMetaTag('سبب: ${entry.errorCategory}'),
+                ],
+              ],
+            ),
             if (entry.message != null) ...[
               const SizedBox(height: 4),
               Text(entry.message!, style: const TextStyle(fontSize: 12)),
             ],
-            if (entry.uploadedCount != null ||
-                entry.downloadedCount != null) ...[
+            if (entry.uploadedCount != null || entry.downloadedCount != null) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
@@ -413,10 +476,52 @@ class SyncHistoryViewer extends ConsumerWidget {
     );
   }
 
+  Widget _buildMetaTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 11),
+      ),
+    );
+  }
+
+  String _operationLabel(String operation) {
+    switch (operation.trim().toLowerCase()) {
+      case 'sync_down':
+        return 'تنزيل';
+      case 'sync_up':
+        return 'رفع';
+      default:
+        return 'غير محدد';
+    }
+  }
+
+  String _sourceLabel(String source) {
+    switch (source.trim().toLowerCase()) {
+      case 'foreground':
+        return 'من الواجهة';
+      case 'background':
+        return 'من الخلفية';
+      default:
+        return 'مصدر غير محدد';
+    }
+  }
+
   String _formatDuration(Duration duration) {
     if (duration.inMinutes > 0) {
       return '${duration.inMinutes} دقيقة ${duration.inSeconds % 60} ثانية';
     }
     return '${duration.inSeconds} ثانية';
   }
+}
+
+enum _SyncHistoryFilter {
+  all,
+  up,
+  down,
 }

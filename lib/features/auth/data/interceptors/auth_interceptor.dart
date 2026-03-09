@@ -38,25 +38,11 @@ class AuthInterceptor extends QueuedInterceptor {
   ) async {
     try {
       if (!_isAuthEndpoint(options.path)) {
-        final isExpired = await _secureStorage.isTokenExpired();
-        if (isExpired) {
-          await _clearSessionOnUnauthorized();
-          handler.reject(
-            DioException(
-              requestOptions: options,
-              type: DioExceptionType.badResponse,
-              response: Response(
-                requestOptions: options,
-                statusCode: 401,
-                data: {
-                  'error': 'token_expired',
-                  'message': 'Token expired locally',
-                },
-              ),
-              error: 'Token expired locally',
-            ),
+        final expiry = await _secureStorage.getTokenExpiry();
+        if (expiry != null && DateTime.now().isAfter(expiry)) {
+          UnifiedLogger.warning(
+            '⚠️ Token appears expired locally; proceeding request and delegating to 401 refresh flow',
           );
-          return;
         }
       }
 

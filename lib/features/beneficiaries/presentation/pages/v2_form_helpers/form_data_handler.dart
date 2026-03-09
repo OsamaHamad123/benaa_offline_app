@@ -246,8 +246,9 @@ class BeneficiaryFormDataHandler {
     controllers.numberOfMalesController.text = beneficiary.numberOfMales?.toString() ?? '';
     controllers.numberOfFemalesController.text = beneficiary.numberOfFemales?.toString() ?? '';
 
-    // Notes
-    controllers.notesController.text = beneficiary.notes ?? '';
+    // Notes & special needs
+    controllers.specialNeedsCountController.text = beneficiary.specialNeedsCount?.toString() ?? '';
+    controllers.notesController.text = _removeMetadataSuffix(beneficiary.notes ?? '').trimRight();
     final metadataPayload = _extractMetadataPayload(beneficiary.notes ?? '');
 
     setState(() {
@@ -267,7 +268,7 @@ class BeneficiaryFormDataHandler {
       controllers.selectedGuaranteeType = beneficiary.guaranteeTypeCode ?? metadataPayload['guaranteeType'];
       controllers.selectedRelationship = beneficiary.relationship?.toString();
       controllers.selectedSection = beneficiary.sectionId?.toString();
-      controllers.hasDisability = beneficiary.hasDisability;
+      controllers.hasDisability = beneficiary.hasDisability || (beneficiary.specialNeedsCount ?? 0) > 0;
       // Note: city, province, relationship need enum conversion from IDs
     });
   }

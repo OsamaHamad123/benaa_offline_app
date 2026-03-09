@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../core/widgets/loading_state.dart';
 import '../../core/sync/mobile_sync_service.dart';
+import '../../core/sync/background_sync_worker.dart';
 import 'presentation/providers/mobile_sync_operations_providers.dart';
 
 final mobileSyncStatusProvider = StreamProvider<MobileSyncStatus>((ref) {
@@ -11,8 +12,7 @@ final mobileSyncStatusProvider = StreamProvider<MobileSyncStatus>((ref) {
 });
 
 Future<void> _runOfficialSync(WidgetRef ref) async {
-  final officialSync = ref.read(mobileOfficialSyncUseCaseProvider);
-  await officialSync();
+  await BackgroundSyncWorker.triggerManualSync();
 }
 
 /// شريط عرض حالة المزامنة

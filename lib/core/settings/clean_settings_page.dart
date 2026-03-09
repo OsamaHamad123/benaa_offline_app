@@ -4,20 +4,63 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../sync/background_sync_worker.dart';
+import '../analytics/ux_flow_analytics.dart';
+import '../analytics/app_analytics.dart';
+import '../analytics/ux_feature_flags.dart';
+import '../providers/providers.dart' as core_providers;
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/civil_db_download/presentation/providers/database_download_provider.dart';
+import '../../features/sync/presentation/widgets/sync_history_viewer.dart';
 import '../widgets/modern_sliver_app_bar.dart';
 import 'settings_provider.dart';
 import 'widgets/widgets.dart';
 
 /// 🎯 Clean Settings Page - صفحة الإعدادات النظيفة والمنظمة
-class CleanSettingsPage extends ConsumerWidget {
+class CleanSettingsPage extends ConsumerStatefulWidget {
   const CleanSettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CleanSettingsPage> createState() => _CleanSettingsPageState();
+}
+
+class _CleanSettingsPageState extends ConsumerState<CleanSettingsPage> {
+  final DateTime _sessionStartedAt = DateTime.now();
+  final Set<String> _interactedSections = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    UxFlowAnalytics.trackSettingsOpened();
+  }
+
+  @override
+  void dispose() {
+    UxFlowAnalytics.trackSettingsSessionEnd(
+      durationMs: DateTime.now().difference(_sessionStartedAt).inMilliseconds,
+      interactedSectionsCount: _interactedSections.length,
+      interactedSections: _interactedSections.toList(growable: false),
+    );
+    super.dispose();
+  }
+
+  void _trackSettingsInteraction(
+    String section,
+    String action, {
+    Map<String, dynamic>? extra,
+  }) {
+    _interactedSections.add(section);
+    UxFlowAnalytics.trackSettingsSectionInteraction(
+      section: section,
+      action: action,
+      extra: extra,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final beneficiaryUxStats = AppAnalytics.getBeneficiaryPersonalUxKpiStats();
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -37,10 +80,13 @@ class CleanSettingsPage extends ConsumerWidget {
                 icon: Icons.settings_rounded,
                 isTablet: isTablet,
                 actions: [
-                  IconButton(
-                    icon: const Icon(Icons.restore_rounded),
+                  ModernActionButton(
+                    icon: Icons.restore_rounded,
                     tooltip: 'استعادة الإعدادات الافتراضية',
-                    onPressed: () => _handleResetSettings(context, ref, notifier),
+                    onPressed: () {
+                      _trackSettingsInteraction('global', 'reset_defaults_tapped');
+                      _handleResetSettings(context, ref, notifier);
+                    },
                   ),
                 ],
               ),
@@ -65,9 +111,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           title: 'تفعيل الإشعارات',
                           subtitle: 'عرض إشعارات للأحداث المهمة',
                           value: settings.notificationsEnabled,
-                          onChanged: (value) => _handleToggle(
-                            () => notifier.setNotificationsEnabled(value),
-                          ),
+                          onChanged: (value) {
+                            _trackSettingsInteraction('notifications', 'toggle_notifications', extra: {'value': value});
+                            _handleToggle(() => notifier.setNotificationsEnabled(value));
+                          },
                           icon: Icons.notifications_active_rounded,
                           color: Colors.orange,
                         ),
@@ -77,9 +124,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: 'تشغيل الأصوات مع الإشعارات',
                           value: settings.soundEnabled,
                           onChanged: settings.notificationsEnabled
-                              ? (value) => _handleToggle(
-                                    () => notifier.setSoundEnabled(value),
-                                  )
+                              ? (value) {
+                                  _trackSettingsInteraction('notifications', 'toggle_sound', extra: {'value': value});
+                                  _handleToggle(() => notifier.setSoundEnabled(value));
+                                }
                               : null,
                           icon: Icons.volume_up_rounded,
                           color: Colors.deepOrange,
@@ -90,9 +138,11 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: 'اهتزاز الجهاز عند الإجراءات',
                           value: settings.vibrationEnabled,
                           onChanged: settings.notificationsEnabled
-                              ? (value) => _handleToggle(
-                                    () => notifier.setVibrationEnabled(value),
-                                  )
+                              ? (value) {
+                                  _trackSettingsInteraction('notifications', 'toggle_vibration',
+                                      extra: {'value': value});
+                                  _handleToggle(() => notifier.setVibrationEnabled(value));
+                                }
                               : null,
                           icon: Icons.vibration_rounded,
                           color: Colors.amber,
@@ -114,9 +164,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           title: 'المزامنة التلقائية',
                           subtitle: 'مزامنة البيانات في الخلفية',
                           value: settings.autoSyncEnabled,
-                          onChanged: (value) => _handleToggle(
-                            () => notifier.setAutoSyncEnabled(value),
-                          ),
+                          onChanged: (value) {
+                            _trackSettingsInteraction('sync', 'toggle_auto_sync', extra: {'value': value});
+                            _handleToggle(() => notifier.setAutoSyncEnabled(value));
+                          },
                           icon: Icons.cloud_sync_rounded,
                           color: Colors.blue,
                         ),
@@ -149,7 +200,58 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: 'تشغيل تنزيل/رفع/مزامنة بالخلفية للتحقق',
                           icon: Icons.playlist_play_rounded,
                           color: Colors.blueGrey,
-                          onTap: () => _showBackgroundJobsTestDialog(context),
+                          onTap: () {
+                            _trackSettingsInteraction('sync', 'open_background_jobs_test');
+                            _showBackgroundJobsTestDialog(context);
+                          },
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'فتح مركز المزامنة',
+                          subtitle: 'الوضع التشغيلي والتشخيصي',
+                          icon: Icons.sync_alt_rounded,
+                          color: Colors.blue,
+                          onTap: () {
+                            _trackSettingsInteraction('sync', 'open_sync_hub');
+                            context.push('/mobile-sync');
+                          },
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'سجل المزامنة',
+                          subtitle: 'عرض آخر العمليات والنتائج',
+                          icon: Icons.history_rounded,
+                          color: Colors.blueGrey,
+                          onTap: () {
+                            _trackSettingsInteraction('sync', 'open_sync_history');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SyncHistoryViewer(),
+                              ),
+                            );
+                          },
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'نسخ ملخص الجودة الأسبوعي',
+                          subtitle: 'Success rate + median duration + failures',
+                          icon: Icons.insights_rounded,
+                          color: Colors.indigo,
+                          onTap: () => _copyWeeklyQualitySnapshot(context),
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'نسخ KPI تحسينات إضافة المستفيد',
+                          subtitle: 'Auto-advance + quick-next (7 days)',
+                          icon: Icons.person_search_rounded,
+                          color: Colors.teal,
+                          onTap: () => _copyBeneficiaryPersonalUxSnapshot(context),
+                        ),
+                        const SettingsDivider(),
+                        _buildBeneficiaryPersonalUxKpiPreview(
+                          context,
+                          stats: beneficiaryUxStats,
                         ),
                       ],
                     ),
@@ -169,7 +271,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: _getThemeModeLabel(settings.themeMode),
                           icon: _getThemeModeIcon(settings.themeMode),
                           color: Colors.purple,
-                          onTap: () => _handleThemeModeDialog(context, ref, settings, notifier),
+                          onTap: () {
+                            _trackSettingsInteraction('theme', 'open_theme_mode_dialog');
+                            _handleThemeModeDialog(context, ref, settings, notifier);
+                          },
                         ),
                         const SettingsDivider(),
                         SettingsColorSchemeTile(
@@ -182,16 +287,20 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: '${settings.fontSize.toInt()} نقطة',
                           icon: Icons.text_fields_rounded,
                           color: Colors.deepPurple,
-                          onTap: () => _handleFontSizeDialog(context, settings, notifier),
+                          onTap: () {
+                            _trackSettingsInteraction('theme', 'open_font_size_dialog');
+                            _handleFontSizeDialog(context, settings, notifier);
+                          },
                         ),
                         const SettingsDivider(),
                         SettingsSwitchTile(
                           title: 'Material Design 3',
                           subtitle: 'استخدام التصميم الحديث',
                           value: settings.useMaterial3,
-                          onChanged: (value) => _handleToggle(
-                            () => notifier.setUseMaterial3(value),
-                          ),
+                          onChanged: (value) {
+                            _trackSettingsInteraction('theme', 'toggle_material3', extra: {'value': value});
+                            _handleToggle(() => notifier.setUseMaterial3(value));
+                          },
                           icon: Icons.design_services_rounded,
                           color: Colors.deepPurple,
                         ),
@@ -213,7 +322,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: '${settings.itemsPerPage} عنصر',
                           icon: Icons.list_rounded,
                           color: Colors.green,
-                          onTap: () => _handleItemsPerPageDialog(context, settings, notifier),
+                          onTap: () {
+                            _trackSettingsInteraction('display', 'open_items_per_page_dialog');
+                            _handleItemsPerPageDialog(context, settings, notifier);
+                          },
                         ),
                         const SettingsDivider(),
                         SettingsSwitchTile(
@@ -225,6 +337,17 @@ class CleanSettingsPage extends ConsumerWidget {
                           ),
                           icon: Icons.bar_chart_rounded,
                           color: Colors.teal,
+                        ),
+                        const SettingsDivider(),
+                        SettingsNavigationTile(
+                          title: 'إعدادات الداشبورد',
+                          subtitle: 'تخصيص أقسام وتجربة الصفحة الرئيسية',
+                          icon: Icons.dashboard_customize_rounded,
+                          color: Colors.green,
+                          onTap: () {
+                            _trackSettingsInteraction('display', 'open_dashboard_settings');
+                            context.push('/settings/dashboard');
+                          },
                         ),
                       ],
                     ),
@@ -251,6 +374,7 @@ class CleanSettingsPage extends ConsumerWidget {
                               icon: Icons.person_search_rounded,
                               color: dbState.isAvailable ? Colors.green : Colors.orange,
                               onTap: () {
+                                _trackSettingsInteraction('data', 'open_civil_registry');
                                 if (!dbState.isAvailable) {
                                   context.push('/database-download');
                                 } else {
@@ -266,7 +390,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           subtitle: 'المحافظات، الفئات، الحالات',
                           icon: Icons.category_rounded,
                           color: Colors.teal,
-                          onTap: () => context.push('/taxonomies'),
+                          onTap: () {
+                            _trackSettingsInteraction('data', 'open_taxonomies');
+                            context.push('/taxonomies');
+                          },
                         ),
                         const SettingsDivider(),
                         SettingsNavigationTile(
@@ -281,9 +408,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           title: 'وضع عدم الاتصال',
                           subtitle: 'العمل بدون إنترنت',
                           value: settings.offlineMode,
-                          onChanged: (value) => _handleToggle(
-                            () => notifier.setOfflineMode(value),
-                          ),
+                          onChanged: (value) {
+                            _trackSettingsInteraction('data', 'toggle_offline_mode', extra: {'value': value});
+                            _handleToggle(() => notifier.setOfflineMode(value));
+                          },
                           icon: Icons.cloud_off_rounded,
                           color: Colors.lightBlue,
                         ),
@@ -304,9 +432,10 @@ class CleanSettingsPage extends ConsumerWidget {
                           title: 'المصادقة البيومترية',
                           subtitle: 'البصمة أو التعرف على الوجه',
                           value: settings.biometricAuthEnabled,
-                          onChanged: (value) => _handleToggle(
-                            () => notifier.setBiometricAuthEnabled(value),
-                          ),
+                          onChanged: (value) {
+                            _trackSettingsInteraction('security', 'toggle_biometric_auth', extra: {'value': value});
+                            _handleToggle(() => notifier.setBiometricAuthEnabled(value));
+                          },
                           icon: Icons.fingerprint_rounded,
                           color: Colors.red,
                         ),
@@ -401,7 +530,10 @@ class CleanSettingsPage extends ConsumerWidget {
                                 color: Colors.grey[400],
                                 size: 24.sp,
                               ),
-                              onTap: () => _handleLogout(context, ref),
+                              onTap: () {
+                                _trackSettingsInteraction('account', 'logout_tapped');
+                                _handleLogout(context, ref);
+                              },
                             );
                           },
                         ),
@@ -422,13 +554,60 @@ class CleanSettingsPage extends ConsumerWidget {
                           title: 'وضع المطور',
                           subtitle: 'عرض خيارات التطوير',
                           value: settings.developerMode,
-                          onChanged: (value) => _handleToggle(
-                            () => notifier.setDeveloperMode(value),
-                          ),
+                          onChanged: (value) {
+                            _trackSettingsInteraction('advanced', 'toggle_developer_mode', extra: {'value': value});
+                            _handleToggle(() => notifier.setDeveloperMode(value));
+                          },
                           icon: Icons.developer_mode_rounded,
                           color: Colors.grey,
                         ),
                         if (settings.developerMode) ...[
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final uxFlags = ref.watch(core_providers.uxFeatureFlagsProvider).valueOrNull ??
+                                  const UxFeatureFlags();
+                              final flagsStore = ref.watch(core_providers.uxFeatureFlagsStoreProvider);
+
+                              return Column(
+                                children: [
+                                  const SettingsDivider(),
+                                  SettingsSwitchTile(
+                                    title: 'Feature Flag: Dashboard Analytical Mode',
+                                    subtitle: 'تفعيل/تعطيل الوضع التحليلي تدريجيًا',
+                                    value: uxFlags.enableDashboardAnalyticalMode,
+                                    onChanged: (value) => _handleToggle(() async {
+                                      _trackSettingsInteraction(
+                                        'advanced',
+                                        'toggle_flag_dashboard_analytical_mode',
+                                        extra: {'value': value},
+                                      );
+                                      await flagsStore.setDashboardAnalyticalMode(value);
+                                      ref.invalidate(core_providers.uxFeatureFlagsProvider);
+                                    }),
+                                    icon: Icons.analytics_rounded,
+                                    color: Colors.blueGrey,
+                                  ),
+                                  const SettingsDivider(),
+                                  SettingsSwitchTile(
+                                    title: 'Feature Flag: Sync Diagnostic Mode',
+                                    subtitle: 'تفعيل/تعطيل الوضع التشخيصي تدريجيًا',
+                                    value: uxFlags.enableSyncDiagnosticMode,
+                                    onChanged: (value) => _handleToggle(() async {
+                                      _trackSettingsInteraction(
+                                        'advanced',
+                                        'toggle_flag_sync_diagnostic_mode',
+                                        extra: {'value': value},
+                                      );
+                                      await flagsStore.setSyncDiagnosticMode(value);
+                                      ref.invalidate(core_providers.uxFeatureFlagsProvider);
+                                    }),
+                                    icon: Icons.bug_report_rounded,
+                                    color: Colors.blueGrey,
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                           const SettingsDivider(),
                           SettingsSwitchTile(
                             title: 'سجل التصحيح',
@@ -765,6 +944,94 @@ class CleanSettingsPage extends ConsumerWidget {
         }
       }
     }
+  }
+
+  Future<void> _copyWeeklyQualitySnapshot(BuildContext context) async {
+    _trackSettingsInteraction('sync', 'copy_weekly_quality_snapshot');
+    final stats = AppAnalytics.getWeeklyQualityKpiStats();
+    final report = [
+      'Weekly Quality KPI Snapshot',
+      'sync_completed: ${stats.syncCompleted}',
+      'sync_success_rate: ${stats.syncSuccessRate.toStringAsFixed(1)}%',
+      'median_sync_duration_ms: ${stats.medianSyncDurationMs}',
+      'manual_retry_loops: ${stats.manualRetryLoops}',
+      'diagnostics_export_success: ${stats.diagnosticsExportSuccess}/${stats.diagnosticsExports}',
+      'failure_categories: ${stats.failureCategories}',
+    ].join('\n');
+
+    await Clipboard.setData(ClipboardData(text: report));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم نسخ ملخص الجودة الأسبوعي'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _copyBeneficiaryPersonalUxSnapshot(BuildContext context) async {
+    _trackSettingsInteraction('sync', 'copy_beneficiary_personal_ux_snapshot');
+    final stats = AppAnalytics.getBeneficiaryPersonalUxKpiStats();
+    final report = [
+      'Beneficiary Personal UX KPI Snapshot',
+      'auto_advance_count: ${stats.autoAdvanceCount}',
+      'quick_next_count: ${stats.quickNextCount}',
+      'avg_auto_advance_input_length: ${stats.avgAutoAdvanceInputLength.toStringAsFixed(1)}',
+      'quick_next_sources: ${stats.quickNextSources}',
+    ].join('\n');
+
+    await Clipboard.setData(ClipboardData(text: report));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم نسخ KPI تحسينات إضافة المستفيد'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Widget _buildBeneficiaryPersonalUxKpiPreview(
+    BuildContext context, {
+    required BeneficiaryPersonalUxKpiStats stats,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 10.h, 20.w, 12.h),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'KPI تحسينات إضافة المستفيد (آخر 7 أيام)',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Auto-advance: ${stats.autoAdvanceCount} | Quick-next: ${stats.quickNextCount}',
+              style: theme.textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Avg input length: ${stats.avgAutoAdvanceInputLength.toStringAsFixed(1)} | Sources: ${stats.quickNextSources}',
+              style: theme.textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleCacheDurationDialog(

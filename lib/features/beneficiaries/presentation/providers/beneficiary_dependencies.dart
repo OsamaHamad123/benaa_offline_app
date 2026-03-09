@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../domain/repositories/beneficiary_repository.dart';
 import '../../domain/usecases/beneficiary_usecases.dart';
+import '../../domain/usecases/guardian_bank_account_usecases.dart';
 import '../../data/datasources/beneficiary_local_datasource.dart';
 import '../../data/repositories/beneficiary_repository_impl.dart';
+import '../../data/repositories/guardian_bank_account_repository_impl.dart';
+import '../../domain/repositories/guardian_bank_account_repository.dart';
 
 // 🆕 Civil Registry Imports
 import '../../domain/repositories/civil_registry_repository.dart';
@@ -33,6 +36,21 @@ final beneficiaryDataSourceProvider = Provider<BeneficiaryLocalDataSource>((
 final beneficiaryRepositoryProvider = Provider<BeneficiaryRepository>((ref) {
   final dataSource = ref.watch(beneficiaryDataSourceProvider);
   return BeneficiaryRepositoryImpl(dataSource);
+});
+
+final guardianBankAccountRepositoryProvider = Provider<GuardianBankAccountRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return GuardianBankAccountRepositoryImpl(db);
+});
+
+final loadGuardianBankAccountUseCaseProvider = Provider<LoadGuardianBankAccountUseCase>((ref) {
+  final repository = ref.watch(guardianBankAccountRepositoryProvider);
+  return LoadGuardianBankAccountUseCase(repository);
+});
+
+final saveGuardianBankAccountUseCaseProvider = Provider<SaveGuardianBankAccountUseCase>((ref) {
+  final repository = ref.watch(guardianBankAccountRepositoryProvider);
+  return SaveGuardianBankAccountUseCase(repository);
 });
 
 // Use Cases

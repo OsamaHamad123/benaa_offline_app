@@ -50,6 +50,8 @@ void main() {
     });
 
     test('should map backend-documented category slugs', () {
+      expect(TaxonomyGroup.fromString('categories'), TaxonomyGroup.category);
+      expect(TaxonomyGroup.fromString('genders'), TaxonomyGroup.gender);
       expect(TaxonomyGroup.fromString('provinces'), TaxonomyGroup.governorate);
       expect(TaxonomyGroup.fromString('cities'), TaxonomyGroup.city);
       expect(TaxonomyGroup.fromString('relations'), TaxonomyGroup.relationship);

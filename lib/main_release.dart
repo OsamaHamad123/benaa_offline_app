@@ -12,6 +12,7 @@ import 'features/dashboard/presentation/providers/activity_providers.dart' as da
 import 'core/config/sentry_config.dart';
 import 'core/widgets/error_boundary.dart';
 import 'core/widgets/safe_widgets.dart';
+import 'core/sync/background_sync_worker.dart';
 import 'features/taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_providers;
 
 import 'package:benaa_offline_app/core/config/app_config.dart';
@@ -24,6 +25,8 @@ import 'package:benaa_offline_app/core/config/app_config.dart';
 /// - Optimized for production use
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await BackgroundSyncWorker.initialize();
 
   // Initialize safe widgets to prevent overflow errors
   FlutterErrorHandler.initialize();

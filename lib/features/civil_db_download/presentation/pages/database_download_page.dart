@@ -499,6 +499,9 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
   }
 
   Widget _buildErrorMessage(DownloadProgress progress) {
+    final reasonLabel = _failureReasonLabel(progress.failureReason);
+    final hint = _failureHint(progress.failureReason);
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: 16.h),
       padding: EdgeInsets.all(16.w),
@@ -508,18 +511,82 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
         border: Border.all(color: Colors.red[200]!),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.error_outline, color: Colors.red, size: 24.sp),
           SizedBox(width: 12.w),
           Expanded(
-            child: Text(
-              progress.errorMessage ?? 'حدث خطأ غير متوقع',
-              style: TextStyle(fontSize: 14.sp, color: Colors.red[900]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (reasonLabel != null) ...[
+                  Text(
+                    reasonLabel,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red[900],
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                ],
+                Text(
+                  progress.errorMessage ?? 'حدث خطأ غير متوقع',
+                  style: TextStyle(fontSize: 14.sp, color: Colors.red[900]),
+                ),
+                if (hint != null) ...[
+                  SizedBox(height: 8.h),
+                  Text(
+                    hint,
+                    style: TextStyle(fontSize: 12.sp, color: Colors.red[800]),
+                  ),
+                ],
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  String? _failureReasonLabel(DownloadFailureReason? reason) {
+    switch (reason) {
+      case DownloadFailureReason.network:
+        return 'سبب الفشل: مشكلة في الشبكة';
+      case DownloadFailureReason.auth:
+        return 'سبب الفشل: صلاحية الدخول';
+      case DownloadFailureReason.integrity:
+        return 'سبب الفشل: تحقق السلامة';
+      case DownloadFailureReason.storage:
+        return 'سبب الفشل: التخزين المحلي';
+      case DownloadFailureReason.server:
+        return 'سبب الفشل: الخادم غير متاح';
+      case DownloadFailureReason.cancelled:
+        return 'سبب الفشل: تم الإلغاء';
+      case DownloadFailureReason.unknown:
+        return 'سبب الفشل: غير معروف';
+      case null:
+        return null;
+    }
+  }
+
+  String? _failureHint(DownloadFailureReason? reason) {
+    switch (reason) {
+      case DownloadFailureReason.network:
+        return 'تحقق من اتصال الإنترنت ثم اختر إعادة المحاولة.';
+      case DownloadFailureReason.auth:
+        return 'قم بتسجيل الدخول من جديد ثم أعد التنزيل.';
+      case DownloadFailureReason.integrity:
+        return 'يفضل إعادة التنزيل من البداية لضمان نسخة سليمة.';
+      case DownloadFailureReason.storage:
+        return 'حرر مساحة كافية على الجهاز ثم أعد المحاولة.';
+      case DownloadFailureReason.server:
+        return 'انتظر قليلاً ثم حاول مرة أخرى.';
+      case DownloadFailureReason.cancelled:
+      case DownloadFailureReason.unknown:
+      case null:
+        return null;
+    }
   }
 
   Widget _buildCompleteButton() {
@@ -564,6 +631,7 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
 
   Widget _buildRetryButton() {
     final state = ref.read(databaseDownloadProvider);
+    final shouldForceCleanRedownload = state.progress.failureReason == DownloadFailureReason.integrity;
     final hasPartialDownload = state.progress.downloadedBytes > 0;
     final isCancelled = state.progress.status == DownloadStatus.cancelled;
 
@@ -572,11 +640,22 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
         ElevatedButton.icon(
           onPressed: () {
             _processingStartedAt = DateTime.now();
-            unawaited(ref.read(databaseDownloadProvider.notifier).downloadDatabase(_downloadUrl));
+            final notifier = ref.read(databaseDownloadProvider.notifier);
+            if (shouldForceCleanRedownload) {
+              unawaited(notifier.deleteAndRedownload(_downloadUrl));
+            } else {
+              unawaited(notifier.downloadDatabase(_downloadUrl));
+            }
           },
-          icon: Icon(hasPartialDownload || isCancelled ? Icons.play_arrow : Icons.refresh),
+          icon: Icon(
+            shouldForceCleanRedownload
+                ? Icons.restart_alt_rounded
+                : (hasPartialDownload || isCancelled ? Icons.play_arrow : Icons.refresh),
+          ),
           label: Text(
-            hasPartialDownload || isCancelled ? 'استكمال التنزيل' : 'إعادة المحاولة',
+            shouldForceCleanRedownload
+                ? 'إعادة تنزيل نظيفة'
+                : (hasPartialDownload || isCancelled ? 'استكمال التنزيل' : 'إعادة المحاولة'),
           ),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
@@ -585,7 +664,18 @@ class _DatabaseDownloadPageState extends ConsumerState<DatabaseDownloadPage> {
             ),
           ),
         ),
-        if (hasPartialDownload) ...[
+        if (shouldForceCleanRedownload) ...[
+          SizedBox(height: 12.h),
+          Text(
+            'سيتم حذف الملف الحالي وتنزيل نسخة جديدة بالكامل لضمان السلامة',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.orange[800],
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ] else if (hasPartialDownload) ...[
           SizedBox(height: 12.h),
           Text(
             'تم تنزيل ${state.progress.downloadedSize} - سيتم الاستكمال من حيث توقفت',

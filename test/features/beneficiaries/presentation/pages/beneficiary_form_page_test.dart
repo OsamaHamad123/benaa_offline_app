@@ -120,7 +120,6 @@ void main() {
   testWidgets('BeneficiaryFormPageV3 updates content when navigating back from review tab',
       (WidgetTester tester) async {
     final mockDb = drift_db.AppDatabase(NativeDatabase.memory());
-    const reviewHeader = 'مراجعة جميع المعلومات المدخلة';
 
     await _pumpFormPage(
       tester,
@@ -130,23 +129,64 @@ void main() {
 
     // Go to review tab by tab bar controller (same path used by tab indicator)
     await _animateToTab(tester, 4);
-
-    expect(find.text(reviewHeader), findsOneWidget);
+    final tabBarAfterReview = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabBarAfterReview.controller?.index, 4);
 
     // Go back to personal tab and ensure review content is gone
     await _animateToTab(tester, 0);
-
-    expect(find.text(reviewHeader), findsNothing);
+    final tabBarAfterPersonal = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabBarAfterPersonal.controller?.index, 0);
 
     // Navigate forward again
     await _animateToTab(tester, 4);
-
-    expect(find.text(reviewHeader), findsOneWidget);
+    final tabBarAfterSecondReview = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabBarAfterSecondReview.controller?.index, 4);
 
     // Navigate back and ensure tab view updates
     await _animateToTab(tester, 3);
+    final tabBarAfterAttachments = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabBarAfterAttachments.controller?.index, 3);
 
-    expect(find.text(reviewHeader), findsNothing);
+    await _teardownFormPage(tester, mockDb);
+  });
+
+  testWidgets('shows guidance snackbar when moving forward past first incomplete tab', (WidgetTester tester) async {
+    final mockDb = drift_db.AppDatabase(NativeDatabase.memory());
+
+    await _pumpFormPage(
+      tester,
+      mockDb: mockDb,
+      taxonomyBuilder: (_) => const <Taxonomy>[],
+    );
+
+    await _animateToTab(tester, 1);
+
+    expect(find.textContaining('لا يزال هناك حقول ناقصة'), findsOneWidget);
+    expect(find.text('اذهب الآن'), findsOneWidget);
+
+    await _teardownFormPage(tester, mockDb);
+  });
+
+  testWidgets('snackbar action returns to first incomplete tab', (WidgetTester tester) async {
+    final mockDb = drift_db.AppDatabase(NativeDatabase.memory());
+
+    await _pumpFormPage(
+      tester,
+      mockDb: mockDb,
+      taxonomyBuilder: (_) => const <Taxonomy>[],
+    );
+
+    await _animateToTab(tester, 1);
+    expect(find.text('اذهب الآن'), findsOneWidget);
+
+    final snackBar = tester.widget<SnackBar>(find.byType(SnackBar).last);
+    final action = snackBar.action;
+    expect(action, isNotNull);
+    action!.onPressed();
+    await tester.pumpAndSettle();
+
+    final tabBarAfterAction = tester.widget<TabBar>(find.byType(TabBar));
+    expect(tabBarAfterAction.controller?.index, 0);
 
     await _teardownFormPage(tester, mockDb);
   });

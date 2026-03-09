@@ -39,6 +39,7 @@ class _FakeAssociationsRemoteSyncDataSource extends AssociationsRemoteSyncDataSo
   @override
   Future<EmployeesListResponseDto> fetchEmployees({
     int? sponsorId,
+    List<int>? ids,
     DateTime? updatedAfter,
     int page = 1,
     int perPage = 100,
@@ -101,7 +102,7 @@ void main() {
         records: [
           SponsorDto(
             id: 101,
-            fileId: 501,
+            fileId: '501',
             sponsorName: 'جمعية الأمل',
             sponsorShortName: 'الأمل',
             sponsorPhoneNumber: '+970590000001',

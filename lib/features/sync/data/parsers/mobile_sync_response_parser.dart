@@ -100,10 +100,10 @@ class MobileSyncResponseParser {
       records = rawData;
     } else if (toMap(rawData) != null) {
       final rawDataMap = toMap(rawData)!;
-      final fromKey = rawDataMap['beneficiaries'] ??
+      final fromKey = rawDataMap['records'] ??
+          rawDataMap['beneficiaries'] ??
           rawDataMap['re_people'] ??
           rawDataMap['people'] ??
-          rawDataMap['records'] ??
           rawDataMap['items'] ??
           rawDataMap['data'];
       if (fromKey is List) {
@@ -282,9 +282,6 @@ class MobileSyncResponseParser {
     Map<String, dynamic> root, {
     required List<String> preferredKeys,
   }) {
-    final directData = _extractRowsFromValue(root['data']);
-    if (directData.isNotEmpty) return directData;
-
     final fromPreferred = _extractRowsFromMapByKeys(root, preferredKeys);
     if (fromPreferred.isNotEmpty) return fromPreferred;
 
@@ -293,6 +290,9 @@ class MobileSyncResponseParser {
       final nestedPreferred = _extractRowsFromMapByKeys(dataNode, preferredKeys);
       if (nestedPreferred.isNotEmpty) return nestedPreferred;
     }
+
+    final directData = _extractRowsFromValue(root['data']);
+    if (directData.isNotEmpty) return directData;
 
     final commonKeys = <String>['rows', 'records', 'items', 'results', 'entities'];
     final fromCommon = _extractRowsFromMapByKeys(root, commonKeys);

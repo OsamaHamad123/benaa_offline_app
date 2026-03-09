@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+TextDirection _resolveMixedDirection(String text) {
+  final hasArabic = RegExp(r'[\u0600-\u06FF]').hasMatch(text);
+  return hasArabic ? TextDirection.rtl : TextDirection.ltr;
+}
+
+String _normalizeMixedValue(String value) {
+  if (value.trim().isEmpty) {
+    return 'غير متاح';
+  }
+
+  return value.replaceAllMapped(RegExp(r'[0-9]{1,}[0-9/:.\-]*'), (match) => '\u200E${match.group(0)}\u200E').trim();
+}
+
 /// 🔘 Settings Switch Tile
 /// عنصر تبديل (switch) مخصص
 
@@ -13,46 +26,62 @@ class SettingsSwitchTile extends StatelessWidget {
   final Color color;
 
   const SettingsSwitchTile({
-    required this.title, required this.subtitle, required this.value, required this.onChanged, required this.icon, required this.color, super.key,
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+    required this.icon,
+    required this.color,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isEnabled = onChanged != null;
+    final normalizedSubtitle = _normalizeMixedValue(subtitle);
 
-    return SwitchListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-      secondary: Container(
-        padding: EdgeInsets.all(10.w),
-        decoration: BoxDecoration(
-          color: isEnabled ? color.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12.r),
+    return Semantics(
+      container: true,
+      label: '$title، ${value ? 'مفعّل' : 'غير مفعّل'}',
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+        secondary: Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: isEnabled ? color.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10.r),
+          ),
+          child: Icon(
+            icon,
+            color: isEnabled ? color : Colors.grey,
+            size: 20.sp,
+          ),
         ),
-        child: Icon(
-          icon,
-          color: isEnabled ? color : Colors.grey,
-          size: 24.sp,
+        title: Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: isEnabled ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
         ),
+        subtitle: Text(
+          normalizedSubtitle,
+          textDirection: _resolveMixedDirection(normalizedSubtitle),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: isEnabled
+                ? theme.colorScheme.onSurface.withValues(alpha: 0.7)
+                : theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          ),
+        ),
+        value: value,
+        onChanged: onChanged,
+        activeThumbColor: color,
       ),
-      title: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: isEnabled ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: isEnabled
-              ? theme.colorScheme.onSurface.withValues(alpha: 0.7)
-              : theme.colorScheme.onSurface.withValues(alpha: 0.4),
-        ),
-      ),
-      value: value,
-      onChanged: onChanged,
-      activeThumbColor: color,
     );
   }
 }
@@ -69,46 +98,62 @@ class SettingsNavigationTile extends StatelessWidget {
   final Widget? trailing;
 
   const SettingsNavigationTile({
-    required this.title, required this.subtitle, required this.icon, required this.color, required this.onTap, super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    super.key,
     this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final normalizedSubtitle = _normalizeMixedValue(subtitle);
 
-    return ListTile(
-      contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-      leading: Container(
-        padding: EdgeInsets.all(10.w),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        child: Icon(
-          icon,
-          color: color,
-          size: 24.sp,
-        ),
-      ),
-      title: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-      ),
-      trailing: trailing ??
-          Icon(
-            Icons.chevron_right_rounded,
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+    return Semantics(
+      container: true,
+      button: true,
+      label: '$title، $subtitle',
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+        leading: Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10.r),
           ),
-      onTap: onTap,
+          child: Icon(
+            icon,
+            color: color,
+            size: 20.sp,
+          ),
+        ),
+        title: Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(
+          normalizedSubtitle,
+          textDirection: _resolveMixedDirection(normalizedSubtitle),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        trailing: trailing ??
+            Icon(
+              Icons.chevron_right_rounded,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
+            ),
+        onTap: onTap,
+      ),
     );
   }
 }
@@ -121,7 +166,9 @@ class SettingsColorSchemeTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const SettingsColorSchemeTile({
-    required this.currentScheme, required this.onTap, super.key,
+    required this.currentScheme,
+    required this.onTap,
+    super.key,
   });
 
   Color _getColorFromScheme(String scheme) {
@@ -157,6 +204,7 @@ class SettingsColorSchemeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = _getColorFromScheme(currentScheme);
+    final normalizedLabel = _normalizeMixedValue(_getColorLabel(currentScheme));
 
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
@@ -187,7 +235,8 @@ class SettingsColorSchemeTile extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        _getColorLabel(currentScheme),
+        normalizedLabel,
+        textDirection: _resolveMixedDirection(normalizedLabel),
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
         ),

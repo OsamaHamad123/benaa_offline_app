@@ -212,6 +212,97 @@ class AppAnalytics {
     return Duration(milliseconds: totalMs ~/ metrics.length);
   }
 
+  /// KPI أسبوعي لجودة المزامنة وتجربة UX
+  static WeeklyQualityKpiStats getWeeklyQualityKpiStats({Duration window = const Duration(days: 7)}) {
+    final cutoff = DateTime.now().subtract(window);
+
+    final weeklyEvents = _events.where((event) => event.timestamp.isAfter(cutoff)).toList(growable: false);
+
+    final syncFunnelCompleted =
+        weeklyEvents.where((event) => event.name == 'sync_funnel_completed').toList(growable: false);
+    final syncSuccess = syncFunnelCompleted.where((event) => event.parameters?['result'] == 'success').length;
+    final syncFailure = syncFunnelCompleted.where((event) => event.parameters?['result'] == 'failure').length;
+
+    final syncDurations = syncFunnelCompleted
+        .map((event) => event.parameters?['elapsed_from_trigger_ms'])
+        .whereType<num>()
+        .map((value) => value.toInt())
+        .where((value) => value >= 0)
+        .toList();
+
+    syncDurations.sort();
+    final medianSyncDurationMs = syncDurations.isEmpty
+        ? 0
+        : (syncDurations.length.isOdd
+            ? syncDurations[syncDurations.length ~/ 2]
+            : (syncDurations[(syncDurations.length ~/ 2) - 1] + syncDurations[syncDurations.length ~/ 2]) ~/ 2);
+
+    final failureCategories = <String, int>{};
+    for (final event in syncFunnelCompleted.where((event) => event.parameters?['result'] == 'failure')) {
+      final raw = event.parameters?['error_category'];
+      final category = raw is String && raw.trim().isNotEmpty ? raw : 'unknown';
+      failureCategories[category] = (failureCategories[category] ?? 0) + 1;
+    }
+
+    final diagnosticsExports =
+        weeklyEvents.where((event) => event.name == 'sync_diagnostics_export').toList(growable: false);
+    final diagnosticsExportSuccess =
+        diagnosticsExports.where((event) => event.parameters?['result'] == 'success').length;
+
+    final retryLoopEvents = weeklyEvents.where((event) => event.name == 'sync_manual_retry_loop').length;
+
+    final successRate = syncFunnelCompleted.isEmpty ? 0.0 : (syncSuccess / syncFunnelCompleted.length) * 100.0;
+
+    return WeeklyQualityKpiStats(
+      syncCompleted: syncFunnelCompleted.length,
+      syncSuccess: syncSuccess,
+      syncFailure: syncFailure,
+      syncSuccessRate: successRate,
+      medianSyncDurationMs: medianSyncDurationMs,
+      failureCategories: failureCategories,
+      diagnosticsExports: diagnosticsExports.length,
+      diagnosticsExportSuccess: diagnosticsExportSuccess,
+      manualRetryLoops: retryLoopEvents,
+    );
+  }
+
+  /// KPI أسبوعي لتحسينات UX في تبويب البيانات الشخصية (إضافة مستفيد)
+  static BeneficiaryPersonalUxKpiStats getBeneficiaryPersonalUxKpiStats({
+    Duration window = const Duration(days: 7),
+  }) {
+    final cutoff = DateTime.now().subtract(window);
+
+    final weeklyEvents = _events.where((event) => event.timestamp.isAfter(cutoff)).toList(growable: false);
+
+    final autoAdvanceEvents =
+        weeklyEvents.where((event) => event.name == 'beneficiary_personal_auto_advance').toList(growable: false);
+    final quickNextEvents =
+        weeklyEvents.where((event) => event.name == 'beneficiary_personal_quick_next').toList(growable: false);
+
+    final avgAutoAdvanceInputLength = autoAdvanceEvents.isEmpty
+        ? 0.0
+        : autoAdvanceEvents
+                .map((event) => event.parameters?['input_length'])
+                .whereType<num>()
+                .map((value) => value.toDouble())
+                .fold<double>(0.0, (sum, value) => sum + value) /
+            autoAdvanceEvents.length;
+
+    final quickNextSources = <String, int>{};
+    for (final event in quickNextEvents) {
+      final raw = event.parameters?['source'];
+      final source = raw is String && raw.trim().isNotEmpty ? raw : 'unknown';
+      quickNextSources[source] = (quickNextSources[source] ?? 0) + 1;
+    }
+
+    return BeneficiaryPersonalUxKpiStats(
+      autoAdvanceCount: autoAdvanceEvents.length,
+      quickNextCount: quickNextEvents.length,
+      avgAutoAdvanceInputLength: avgAutoAdvanceInputLength,
+      quickNextSources: quickNextSources,
+    );
+  }
+
   /// مسح كل البيانات
   static void clear() {
     _screenVisits.clear();
@@ -257,6 +348,23 @@ class AppAnalytics {
     buffer.writeln(
         'Database Download Bounce: ${loginKpi.databaseDownloadBounces} (${loginKpi.databaseDownloadBounceRate.toStringAsFixed(1)}%)');
     buffer.writeln('Avg Success Duration: ${loginKpi.avgSuccessDurationMs}ms');
+
+    final weeklyKpi = getWeeklyQualityKpiStats();
+    buffer.writeln('\n--- Weekly Quality KPIs ---');
+    buffer.writeln('Sync Completed: ${weeklyKpi.syncCompleted}');
+    buffer.writeln(
+        'Sync Success Rate: ${weeklyKpi.syncSuccessRate.toStringAsFixed(1)}% (${weeklyKpi.syncSuccess}/${weeklyKpi.syncCompleted})');
+    buffer.writeln('Median Sync Duration: ${weeklyKpi.medianSyncDurationMs}ms');
+    buffer.writeln('Manual Retry Loops: ${weeklyKpi.manualRetryLoops}');
+    buffer.writeln('Diagnostics Export Success: ${weeklyKpi.diagnosticsExportSuccess}/${weeklyKpi.diagnosticsExports}');
+    buffer.writeln('Failure Categories: ${weeklyKpi.failureCategories}');
+
+    final beneficiaryUxKpi = getBeneficiaryPersonalUxKpiStats();
+    buffer.writeln('\n--- Beneficiary Personal UX KPIs ---');
+    buffer.writeln('Auto Advance Count: ${beneficiaryUxKpi.autoAdvanceCount}');
+    buffer.writeln('Quick Next Count: ${beneficiaryUxKpi.quickNextCount}');
+    buffer.writeln('Avg Auto Advance Input Length: ${beneficiaryUxKpi.avgAutoAdvanceInputLength.toStringAsFixed(1)}');
+    buffer.writeln('Quick Next Sources: ${beneficiaryUxKpi.quickNextSources}');
 
     return buffer.toString();
   }
@@ -327,6 +435,46 @@ class LoginKpiStats {
     required this.dashboardConversionRate,
     required this.databaseDownloadBounces,
     required this.databaseDownloadBounceRate,
+  });
+}
+
+/// مؤشرات KPI أسبوعية للجودة
+class WeeklyQualityKpiStats {
+  final int syncCompleted;
+  final int syncSuccess;
+  final int syncFailure;
+  final double syncSuccessRate;
+  final int medianSyncDurationMs;
+  final Map<String, int> failureCategories;
+  final int diagnosticsExports;
+  final int diagnosticsExportSuccess;
+  final int manualRetryLoops;
+
+  const WeeklyQualityKpiStats({
+    required this.syncCompleted,
+    required this.syncSuccess,
+    required this.syncFailure,
+    required this.syncSuccessRate,
+    required this.medianSyncDurationMs,
+    required this.failureCategories,
+    required this.diagnosticsExports,
+    required this.diagnosticsExportSuccess,
+    required this.manualRetryLoops,
+  });
+}
+
+/// مؤشرات KPI أسبوعية لتحسينات UX في تبويب البيانات الشخصية
+class BeneficiaryPersonalUxKpiStats {
+  final int autoAdvanceCount;
+  final int quickNextCount;
+  final double avgAutoAdvanceInputLength;
+  final Map<String, int> quickNextSources;
+
+  const BeneficiaryPersonalUxKpiStats({
+    required this.autoAdvanceCount,
+    required this.quickNextCount,
+    required this.avgAutoAdvanceInputLength,
+    required this.quickNextSources,
   });
 }
 

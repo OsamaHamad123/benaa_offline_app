@@ -11,6 +11,8 @@ class NeedsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayNotes = _cleanNotesForDisplay(beneficiary.notes?.toString());
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -36,12 +38,26 @@ class NeedsSection extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(16.r),
             child: Text(
-              beneficiary.notes!,
+              displayNotes,
               style: TextStyle(fontSize: 14.sp, height: 1.5),
             ),
           ),
         ),
       ],
     );
+  }
+
+  String _cleanNotesForDisplay(String? raw) {
+    final notes = (raw ?? '').trim();
+    if (notes.isEmpty) return '---';
+
+    const marker = '\n\n#meta:';
+    final markerIndex = notes.lastIndexOf(marker);
+    if (markerIndex == -1) {
+      return notes;
+    }
+
+    final clean = notes.substring(0, markerIndex).trimRight();
+    return clean.isEmpty ? '---' : clean;
   }
 }

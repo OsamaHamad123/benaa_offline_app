@@ -20,8 +20,9 @@ class ReviewDataRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final displayValue = value?.isEmpty ?? true ? 'غير محدد' : value!;
-    final isEmpty = value?.isEmpty ?? true;
+    final normalizedValue = value?.trim() ?? '';
+    final isEmpty = normalizedValue.isEmpty;
+    final displayValue = isEmpty ? '---' : normalizedValue;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 8.h),

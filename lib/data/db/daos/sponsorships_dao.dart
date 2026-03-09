@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../drift_database.dart';
@@ -42,7 +44,23 @@ class SponsorshipsDao extends DatabaseAccessor<AppDatabase> with _$SponsorshipsD
 
   Future<int> deleteSponsorship({
     required int fileNo,
+    bool trackSyncDelete = true,
   }) async {
+    if (trackSyncDelete) {
+      final existing = await (select(sponsorships)..where((s) => s.fileNo.equals(fileNo))).getSingleOrNull();
+      final serverId = existing?.serverId;
+      if (serverId != null) {
+        await db.syncDao.addTombstone(
+          entityType: 'sponsorships',
+          entityId: serverId.toString(),
+          payload: jsonEncode({
+            'server_id': serverId,
+            'local_file_no': fileNo,
+          }),
+        );
+      }
+    }
+
     return await (delete(sponsorships)..where((s) => s.fileNo.equals(fileNo))).go();
   }
 

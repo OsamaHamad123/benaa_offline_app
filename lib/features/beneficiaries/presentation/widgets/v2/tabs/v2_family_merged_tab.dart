@@ -25,6 +25,32 @@ class _V2FamilyMergedTabState extends State<V2FamilyMergedTab> with AutomaticKee
   @override
   bool get wantKeepAlive => true;
 
+  Widget _buildFamilyGuidanceCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.tips_and_updates_outlined, size: 16.sp, color: theme.colorScheme.primary),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              'ابدأ بالحالة الاجتماعية وعدد المعالين، ثم أكمل أعداد الذكور والإناث قبل الانتقال.',
+              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
@@ -36,6 +62,8 @@ class _V2FamilyMergedTabState extends State<V2FamilyMergedTab> with AutomaticKee
         physics: const ClampingScrollPhysics(), // ⚡ Smooth scroll
         cacheExtent: 100, // ⚡ Reduce repaints
         children: [
+          _buildFamilyGuidanceCard(context),
+
           // 👨‍👩‍👦 Family Information Section
           _FamilyInfoSection(
             formControllers: widget.formControllers,
@@ -46,16 +74,19 @@ class _V2FamilyMergedTabState extends State<V2FamilyMergedTab> with AutomaticKee
           SizedBox(height: 16.h),
 
           // 👥 Family Members Section
-          M3SectionCard(
-            title: 'أفراد العائلة',
-            icon: Icons.groups_rounded,
-            headerColor: FormColors.tabGradients[1]![1].withOpacity(0.2),
-            children: [
-              // Embed the family members widget
-              V2FamilyMembersTabRedesigned(
-                formControllers: widget.formControllers,
-              ),
-            ],
+          Semantics(
+            container: true,
+            label: 'قسم أفراد العائلة',
+            child: M3SectionCard(
+              title: 'أفراد العائلة',
+              icon: Icons.groups_rounded,
+              headerColor: FormColors.tabGradients[1]![1].withValues(alpha: 0.2),
+              children: [
+                V2FamilyMembersTabRedesigned(
+                  formControllers: widget.formControllers,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -104,82 +135,90 @@ class _FamilyInfoSectionState extends State<_FamilyInfoSection> {
 
   @override
   Widget build(BuildContext context) {
-    return M3SectionCard(
-      title: 'معلومات العائلة',
-      icon: Icons.family_restroom_rounded,
-      headerColor: FormColors.tabGradients[1]![0].withOpacity(0.2),
-      children: [
-        ResponsiveFormLayout(
-          children: [
-            _orderedField(
-              10,
-              TaxonomyBridgeDropdown(
-                group: TaxonomyGroup.maritalStatus,
-                selectedCode: widget.formControllers.selectedMaritalStatus,
-                onCodeChanged: (value) {
-                  setState(() {
-                    widget.formControllers.selectedMaritalStatus = value;
-                  });
-                },
-                labelText: 'الحالة الاجتماعية',
-                prefixIcon: Icons.people_alt_rounded,
-                isRequired: true,
+    return Semantics(
+      container: true,
+      label: 'قسم معلومات العائلة',
+      child: M3SectionCard(
+        title: 'معلومات العائلة',
+        icon: Icons.family_restroom_rounded,
+        headerColor: FormColors.tabGradients[1]![0].withValues(alpha: 0.2),
+        children: [
+          ResponsiveFormLayout(
+            children: [
+              _orderedField(
+                10,
+                TaxonomyBridgeDropdown(
+                  group: TaxonomyGroup.maritalStatus,
+                  selectedCode: widget.formControllers.selectedMaritalStatus,
+                  onCodeChanged: (value) {
+                    setState(() {
+                      widget.formControllers.selectedMaritalStatus = value;
+                    });
+                  },
+                  labelText: 'الحالة الاجتماعية',
+                  prefixIcon: Icons.people_alt_rounded,
+                  isRequired: true,
+                ),
               ),
-            ),
-            _orderedField(
-              20,
-              M3TextField(
-                controller: widget.formControllers.numberOfDependentsController,
-                label: 'عدد المعالين',
-                prefixIcon: Icons.people_outline_rounded,
-                keyboardType: TextInputType.number,
-                focusNode: widget.firstFieldFocusNode,
-                helperText: 'عدد الأشخاص المعتمدين على المستفيد',
+              _orderedField(
+                20,
+                M3TextField(
+                  controller: widget.formControllers.numberOfDependentsController,
+                  label: 'عدد المعالين',
+                  prefixIcon: Icons.people_outline_rounded,
+                  keyboardType: TextInputType.number,
+                  focusNode: widget.firstFieldFocusNode,
+                  textInputAction: TextInputAction.next,
+                  helperText: 'عدد الأشخاص المعتمدين على المستفيد',
+                ),
               ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12.h),
-        ResponsiveFormLayout(
-          children: [
-            _orderedField(
-              30,
-              M3TextField(
-                controller: widget.formControllers.numberOfMalesController,
-                label: 'عدد الذكور',
-                prefixIcon: Icons.man_rounded,
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            _orderedField(
-              40,
-              M3TextField(
-                controller: widget.formControllers.numberOfFemalesController,
-                label: 'عدد الإناث',
-                prefixIcon: Icons.woman_rounded,
-                keyboardType: TextInputType.number,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _showNextTabHint(),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 12.h),
-        _orderedField(
-          50,
-          TaxonomyBridgeDropdown(
-            group: TaxonomyGroup.relationship,
-            selectedCode: widget.formControllers.selectedRelationship,
-            onCodeChanged: (value) {
-              setState(() {
-                widget.formControllers.selectedRelationship = value;
-              });
-            },
-            labelText: 'صلة القرابة بالمستفيد',
-            prefixIcon: Icons.connect_without_contact_rounded,
+            ],
           ),
-        ),
-      ],
+          SizedBox(height: 12.h),
+          ResponsiveFormLayout(
+            children: [
+              _orderedField(
+                30,
+                M3TextField(
+                  controller: widget.formControllers.numberOfMalesController,
+                  label: 'عدد الذكور',
+                  prefixIcon: Icons.man_rounded,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  helperText: 'أدخل أرقامًا فقط',
+                ),
+              ),
+              _orderedField(
+                40,
+                M3TextField(
+                  controller: widget.formControllers.numberOfFemalesController,
+                  label: 'عدد الإناث',
+                  prefixIcon: Icons.woman_rounded,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  helperText: 'أدخل أرقامًا فقط',
+                  onFieldSubmitted: (_) => _showNextTabHint(),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          _orderedField(
+            50,
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.relationship,
+              selectedCode: widget.formControllers.selectedRelationship,
+              onCodeChanged: (value) {
+                setState(() {
+                  widget.formControllers.selectedRelationship = value;
+                });
+              },
+              labelText: 'صلة القرابة بالمستفيد',
+              prefixIcon: Icons.connect_without_contact_rounded,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:benaa_offline_app/data/db/drift_database.dart' as drift_db;
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/form_constants.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/form_controllers.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/widgets/form_tabs_4_merged.dart';
+import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/widgets/tab_completion_badge.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/beneficiary_dependencies.dart'
     as beneficiary_providers;
 import 'package:benaa_offline_app/features/dashboard/presentation/providers/activity_providers.dart'
@@ -88,5 +89,47 @@ void main() {
 
     expect(tabController.index, 1);
     expect(find.byKey(const ValueKey('family_merged_tab')), findsOneWidget);
+  });
+
+  testWidgets('tab headers do not overflow on constrained layout', (tester) async {
+    final tabController = TabController(
+      length: FormConstants.totalTabs,
+      vsync: const TestVSync(),
+    );
+
+    addTearDown(tabController.dispose);
+
+    tester.view.physicalSize = const Size(320, 520);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(375, 812),
+        builder: (_, __) => MaterialApp(
+          home: Scaffold(
+            body: BeneficiaryFormTabBar4(
+              controller: tabController,
+              currentIndex: tabController.index,
+              tabStats: const <int, TabCompletionStats>{
+                0: TabCompletionStats(completedFields: 2, totalFields: 5, progress: 0.40),
+                1: TabCompletionStats(completedFields: 1, totalFields: 4, progress: 0.25),
+                2: TabCompletionStats(completedFields: 3, totalFields: 4, progress: 0.75),
+                3: TabCompletionStats(completedFields: 0, totalFields: 2, progress: 0.0),
+                4: TabCompletionStats(completedFields: 0, totalFields: 1, progress: 0.0),
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.text('المراجعة').first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

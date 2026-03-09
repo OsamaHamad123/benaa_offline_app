@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart' as drift;
 import '../../../../../data/db/drift_database.dart';
 import '../../../../../core/providers/providers.dart';
 import 'package:benaa_offline_app/core/utils/unified_logger.dart';
+import 'package:benaa_offline_app/features/dashboard/presentation/providers/activity_providers.dart';
+import 'package:benaa_offline_app/features/sync/presentation/providers/file_id_providers.dart';
 import 'beneficiaries_list_state.dart';
 import 'filters_provider.dart';
 import 'cache_manager.dart';
@@ -33,6 +36,8 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
     state = state.copyWith(isLoading: showLoading ? true : state.isLoading, error: null);
 
     try {
+      await _backfillMissingFileIds();
+
       final filters = _filters;
       final cacheKey = filters.cacheKey;
 
@@ -65,6 +70,58 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       await _updateStatistics();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> _backfillMissingFileIds() async {
+    try {
+      final fileIdService = _ref.read(fileIdServiceProvider);
+      final candidates = await (_db.select(_db.beneficiaries)
+            ..where(
+                (b) => b.syncState.equals('pending') | b.syncState.equals('modified') | b.syncState.equals('failed')))
+          .get();
+
+      final rowsNeedingFileId = candidates.where((row) {
+        final raw = row.fileIdNumber?.trim();
+        if (raw == null || raw.isEmpty) return true;
+        final parsed = int.tryParse(raw);
+        return parsed == null || parsed <= 0;
+      }).toList(growable: false);
+
+      if (rowsNeedingFileId.isEmpty) {
+        return;
+      }
+
+      var repairedCount = 0;
+      for (final row in rowsNeedingFileId) {
+        var fileId = await fileIdService.getNextId();
+        if (fileId == null) {
+          await fileIdService.forceReserve();
+          fileId = await fileIdService.getNextId();
+        }
+
+        if (fileId == null || fileId <= 0) {
+          continue;
+        }
+
+        await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(row.id))).write(
+          BeneficiariesCompanion(fileIdNumber: drift.Value(fileId.toString())),
+        );
+
+        try {
+          await fileIdService.markAsUsed(fileId, row.id, recordType: 'data', recordId: row.id);
+        } catch (e) {
+          UnifiedLogger.warning('Failed to mark auto-assigned file ID as used for beneficiary #${row.id}: $e');
+        }
+
+        repairedCount++;
+      }
+
+      if (repairedCount > 0) {
+        UnifiedLogger.info('Auto-assigned file IDs for $repairedCount beneficiary records');
+      }
+    } catch (e) {
+      UnifiedLogger.warning('Skipping file-id backfill on list load: $e');
     }
   }
 
@@ -280,6 +337,12 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
     final oldItems = state.items;
     final oldCachedData = _cachedData;
+    final beneficiariesToDelete = state.items.where((b) => ids.contains(b.id)).toList();
+
+    if (beneficiariesToDelete.isEmpty) {
+      state = state.copyWith(error: 'المستفيدون المحددون غير موجودين');
+      return;
+    }
 
     // حذف فوري من الواجهة
     final newItems = state.items.where((b) => !ids.contains(b.id)).toList();
@@ -288,6 +351,8 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
     final stopwatch = Stopwatch()..start();
     try {
+      await _logBulkDeleteActivities(beneficiariesToDelete);
+
       // استخدام batch delete للسرعة
       await _db.beneficiariesDao.batchDeleteBeneficiaries(ids.toList());
       await _updateStatistics();
@@ -302,6 +367,33 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
       state = state.copyWith(items: oldItems, error: e.toString());
       _cachedData = oldCachedData;
       rethrow;
+    }
+  }
+
+  Future<void> _logBulkDeleteActivities(List<Beneficiary> beneficiaries) async {
+    final logActivity = _ref.read(logActivityUseCaseProvider);
+
+    for (final beneficiary in beneficiaries) {
+      try {
+        await logActivity(
+          type: 'beneficiary',
+          description: 'تم حذف المستفيد',
+          beneficiaryId: beneficiary.id.toString(),
+          beneficiaryName: beneficiary.fullName,
+          metadata: {
+            'action': 'delete',
+            'source': 'bulk_delete',
+            if (beneficiary.fileIdNumber != null) 'file_no': beneficiary.fileIdNumber,
+            'deleted_at': DateTime.now().toIso8601String(),
+          },
+        );
+      } catch (e, stackTrace) {
+        UnifiedLogger.error(
+          'Failed to log bulk delete activity for beneficiary #${beneficiary.id}',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
     }
   }
 

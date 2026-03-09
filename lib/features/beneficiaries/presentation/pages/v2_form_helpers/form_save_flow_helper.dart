@@ -25,6 +25,7 @@ class FormSaveFlowHelper {
     required Future<String?> Function() getSavedBeneficiaryId,
     required Future<int> Function(String beneficiaryId) saveAttachments,
     required Future<void> Function(String beneficiaryId) saveFamilyMembers,
+    Future<void> Function(String beneficiaryId)? saveGuardianBankAccount,
     required void Function() clearPendingAttachments,
   }) {
     return coordinator.execute(
@@ -33,6 +34,7 @@ class FormSaveFlowHelper {
       getSavedBeneficiaryId: getSavedBeneficiaryId,
       saveAttachments: saveAttachments,
       saveFamilyMembers: saveFamilyMembers,
+      saveGuardianBankAccount: saveGuardianBankAccount,
       clearPendingAttachments: clearPendingAttachments,
     );
   }

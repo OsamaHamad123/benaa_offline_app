@@ -23,7 +23,7 @@ class AssociationsRemoteSyncDataSource {
         'page': page,
         'per_page': perPage,
         if (updatedAfter != null) 'updated_after': updatedAfter.toIso8601String(),
-        if (ids != null && ids.isNotEmpty) 'ids': ids,
+        if (ids != null && ids.isNotEmpty) 'ids': ids.join(','),
       },
     );
 
@@ -37,6 +37,7 @@ class AssociationsRemoteSyncDataSource {
 
   Future<EmployeesListResponseDto> fetchEmployees({
     int? sponsorId,
+    List<int>? ids,
     DateTime? updatedAfter,
     int page = 1,
     int perPage = 100,
@@ -47,6 +48,7 @@ class AssociationsRemoteSyncDataSource {
         'page': page,
         'per_page': perPage,
         if (sponsorId != null) 'sponsor_id': sponsorId,
+        if (ids != null && ids.isNotEmpty) 'ids': ids.join(','),
         if (updatedAfter != null) 'updated_after': updatedAfter.toIso8601String(),
       },
     );

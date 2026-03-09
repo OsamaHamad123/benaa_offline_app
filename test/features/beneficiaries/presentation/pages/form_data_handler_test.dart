@@ -96,4 +96,59 @@ void main() {
       expect(entity.fileIdNumber, '9001');
     });
   });
+
+  group('BeneficiaryFormDataHandler.populateControllers', () {
+    test('strips metadata suffix from notes and restores taxonomy payload fields', () {
+      final controllers = BeneficiaryFormControllers();
+      addTearDown(controllers.dispose);
+
+      const rawNotes = 'ملاحظة ميدانية مهمة\n\n#meta:{"assistanceType":"2","incomeSource":"5"}';
+      final beneficiary = Beneficiary(
+        id: 'B-10',
+        fullName: 'محمد أحمد علي',
+        nationalId: '123456789',
+        gender: Gender.male,
+        category: BeneficiaryCategory.widow,
+        createdAt: DateTime(2026, 1, 1),
+        updatedAt: DateTime(2026, 1, 1),
+        notes: rawNotes,
+      );
+
+      BeneficiaryFormDataHandler.populateControllers(
+        controllers,
+        beneficiary,
+        (apply) => apply(),
+      );
+
+      expect(controllers.notesController.text, 'ملاحظة ميدانية مهمة');
+      expect(controllers.selectedAssistanceType, '2');
+      expect(controllers.selectedIncomeSource, '5');
+    });
+
+    test('restores specialNeedsCount and infers disability when count is positive', () {
+      final controllers = BeneficiaryFormControllers();
+      addTearDown(controllers.dispose);
+
+      final beneficiary = Beneficiary(
+        id: 'B-11',
+        fullName: 'سارة حسين عبدالله',
+        nationalId: '987654321',
+        gender: Gender.female,
+        category: BeneficiaryCategory.orphan,
+        createdAt: DateTime(2026, 1, 1),
+        updatedAt: DateTime(2026, 1, 1),
+        hasDisability: false,
+        specialNeedsCount: 2,
+      );
+
+      BeneficiaryFormDataHandler.populateControllers(
+        controllers,
+        beneficiary,
+        (apply) => apply(),
+      );
+
+      expect(controllers.specialNeedsCountController.text, '2');
+      expect(controllers.hasDisability, isTrue);
+    });
+  });
 }

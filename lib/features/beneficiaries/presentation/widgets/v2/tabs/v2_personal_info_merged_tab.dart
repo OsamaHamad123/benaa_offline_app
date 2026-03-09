@@ -7,11 +7,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../../../features/taxonomies/taxonomies.dart';
 import '../../../../../../features/taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
+import '../../../../../../core/analytics/ux_flow_analytics.dart';
 import '../../../../../../core/utils/debouncer.dart';
 import '../../../pages/v2_form_helpers/civil_registry_lookup_controller.dart';
 import '../../../pages/v2_form_helpers/civil_registry_autofill_feedback_helper.dart';
 import '../../../pages/v2_form_helpers/form_constants.dart';
 import '../../../pages/v2_form_helpers/form_controllers.dart';
+import '../../../pages/v2_form_helpers/personal_profile_validator.dart';
 import '../../../pages/v2_form_helpers/widgets/material3_components.dart';
 import '../../../../../../core/utils/responsive_utils_v2.dart';
 import '../../../providers/beneficiary_dependencies.dart';
@@ -44,6 +46,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
   final Throttler _uiRefreshThrottler = Throttler(interval: const Duration(milliseconds: 120));
   Timer? _deferredSecondarySectionsTimer;
   bool _secondarySectionsReady = false;
+  bool _nationalIdAutoAdvanced = false;
 
   @override
   void initState() {
@@ -152,14 +155,156 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
     );
   }
 
+  Widget _buildQuickStartHint(BuildContext context, {required bool canUseCivilRegistry}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.tips_and_updates_outlined, size: 16.sp, color: colorScheme.primary),
+              SizedBox(width: 6.w),
+              Text(
+                'ابدأ من الهوية ثم أكمل الاسم',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            canUseCivilRegistry
+                ? 'أدخل الرقم الوطني (9 أرقام) ثم استخدم التعبئة التلقائية من السجل المدني عند توفر البيانات.'
+                : 'أدخل الرقم الوطني أولاً، ثم أكمل الاسم الكامل والحقول الأساسية المطلوبة.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCriticalValidationStatus(
+    BuildContext context, {
+    required List<String> criticalIssues,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isReady = criticalIssues.isEmpty;
+    final toneColor = isReady ? colorScheme.primary : colorScheme.error;
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 10.h),
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: isReady
+            ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+            : colorScheme.errorContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(
+          color: isReady ? colorScheme.primary.withValues(alpha: 0.4) : colorScheme.error.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            isReady ? Icons.verified_outlined : Icons.error_outline_rounded,
+            size: 16.sp,
+            color: toneColor,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: isReady
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'المدخلات الحرجة مكتملة. يمكنك المتابعة لباقي الحقول بثقة.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                      ),
+                      if (widget.onRequestNextTab != null) ...[
+                        SizedBox(height: 8.h),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: FilledButton.tonalIcon(
+                            onPressed: () {
+                              UxFlowAnalytics.trackBeneficiaryPersonalQuickNext(
+                                source: 'critical_status_ready',
+                              );
+                              widget.onRequestNextTab?.call();
+                            },
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: const Text('انتقل لتبويب العائلة'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'تحقق سريع قبل المتابعة:',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        criticalIssues.join(' • '),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurface,
+                            ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onNationalIdInputChanged(String value) {
+    final digits = value.trim();
+    if (digits.length == FormConstants.nationalIdLength) {
+      if (_nationalIdAutoAdvanced) {
+        return;
+      }
+      _nationalIdAutoAdvanced = true;
+      UxFlowAnalytics.trackBeneficiaryPersonalAutoAdvance(
+        field: 'national_id',
+        inputLength: digits.length,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        FocusScope.of(context).nextFocus();
+      });
+      return;
+    }
+    _nationalIdAutoAdvanced = false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final taxonomyIndexAsync = ref.watch(bridgeTaxonomiesIndexOnceProvider);
+    final canUseCivilRegistry = ref.watch(civilRegistryAvailableProvider).value ?? false;
     final taxonomyReady = taxonomyIndexAsync.hasValue;
     final specialNeedsCount = int.tryParse(widget.formControllers.specialNeedsCountController.text.trim()) ?? 0;
     final hasSpecialNeeds = specialNeedsCount > 0;
     final hasEmploymentStatus = widget.formControllers.selectedEmploymentStatus?.trim().isNotEmpty ?? false;
     final hasCategory = widget.formControllers.selectedCategory?.trim().isNotEmpty ?? false;
+    final validation = PersonalProfileValidator.evaluate(widget.formControllers);
+    final criticalIssues = validation.criticalIssues;
 
     List<Taxonomy> optionsFor(TaxonomyGroup group) {
       final index = taxonomyIndexAsync.asData?.value;
@@ -188,77 +333,15 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
         physics: const ClampingScrollPhysics(),
         cacheExtent: 24,
         children: [
-          M3SectionCard(
-            title: 'الاسم الكامل',
-            icon: Icons.person_rounded,
-            headerColor: FormColors.tabGradients[0]![0].withValues(alpha: 0.2),
-            children: [
-              ResponsiveFormLayout(
-                children: [
-                  _orderedField(
-                    10,
-                    M3TextField(
-                      controller: widget.formControllers.firstNameController,
-                      label: 'الاسم الأول',
-                      prefixIcon: Icons.person_rounded,
-                      isRequired: true,
-                      focusNode: widget.firstFieldFocusNode,
-                      validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
-                    ),
-                  ),
-                  _orderedField(
-                    20,
-                    M3TextField(
-                      controller: widget.formControllers.fatherNameController,
-                      label: 'اسم الأب',
-                      prefixIcon: Icons.person_outline_rounded,
-                      isRequired: true,
-                      validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12.h),
-              ResponsiveFormLayout(
-                children: [
-                  _orderedField(
-                    30,
-                    M3TextField(
-                      controller: widget.formControllers.grandfatherNameController,
-                      label: 'اسم الجد',
-                      prefixIcon: Icons.elderly_rounded,
-                    ),
-                  ),
-                  _orderedField(
-                    40,
-                    M3TextField(
-                      controller: widget.formControllers.lastNameController,
-                      label: 'اللقب',
-                      prefixIcon: Icons.family_restroom_rounded,
-                      isRequired: true,
-                      validator: (value) => value?.isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12.h),
-              _orderedField(
-                50,
-                M3TextField(
-                  controller: widget.formControllers.motherNameController,
-                  label: 'اسم الأم',
-                  prefixIcon: Icons.face_rounded,
-                ),
-              ),
-            ],
-          ),
+          _buildQuickStartHint(context, canUseCivilRegistry: canUseCivilRegistry),
+          _buildCriticalValidationStatus(context, criticalIssues: criticalIssues),
           M3SectionCard(
             title: 'الهوية والسجل المدني',
             icon: Icons.credit_card_rounded,
             headerColor: FormColors.tabGradients[0]![0].withValues(alpha: 0.2),
             children: [
               _orderedField(
-                60,
+                10,
                 M3TextField(
                   controller: widget.formControllers.nationalIdController,
                   label: 'الرقم الوطني',
@@ -266,6 +349,9 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                   keyboardType: TextInputType.number,
                   maxLength: FormConstants.nationalIdLength,
                   isRequired: true,
+                  focusNode: widget.firstFieldFocusNode,
+                  textInputAction: TextInputAction.next,
+                  onChanged: _onNationalIdInputChanged,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
                     LengthLimitingTextInputFormatter(FormConstants.nationalIdLength),
@@ -354,7 +440,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               ResponsiveFormLayout(
                 children: [
                   _orderedField(
-                    70,
+                    20,
                     M3TextField(
                       controller: widget.formControllers.birthDateController,
                       label: 'تاريخ الميلاد',
@@ -368,7 +454,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                     ),
                   ),
                   _orderedField(
-                    80,
+                    30,
                     TaxonomyBridgeDropdown(
                       group: TaxonomyGroup.gender,
                       preloadedOptions: optionsFor(TaxonomyGroup.gender),
@@ -385,7 +471,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
               ),
               SizedBox(height: 12.h),
               _orderedField(
-                90,
+                40,
                 TaxonomyBridgeDropdown(
                   group: TaxonomyGroup.category,
                   preloadedOptions: optionsFor(TaxonomyGroup.category),
@@ -398,49 +484,137 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
                 ),
               ),
               SizedBox(height: 12.h),
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  childrenPadding: EdgeInsets.only(top: 8.h),
+                  shape: Border.all(color: Colors.transparent, width: 0),
+                  collapsedShape: Border.all(color: Colors.transparent, width: 0),
+                  title: Text(
+                    'حقول إدارية إضافية (اختياري)',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'افتحها عند الحاجة فقط لتقليل ازدحام الإدخال',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  children: [
+                    ResponsiveFormLayout(
+                      children: [
+                        _buildServerFileIdField(),
+                        TaxonomyBridgeDropdown(
+                          group: TaxonomyGroup.beneficiaryStatus,
+                          preloadedOptions: optionsFor(TaxonomyGroup.beneficiaryStatus),
+                          enabled: taxonomyReady,
+                          selectedCode: widget.formControllers.selectedRequestStatus,
+                          onCodeChanged: (value) => widget.formControllers.selectedRequestStatus = value,
+                          labelText: 'حالة الطلب',
+                          prefixIcon: Icons.pending_actions_rounded,
+                          autoSyncOnEmpty: true,
+                        ),
+                        TaxonomyBridgeDropdown(
+                          group: TaxonomyGroup.assistanceType,
+                          preloadedOptions: optionsFor(TaxonomyGroup.assistanceType),
+                          enabled: taxonomyReady,
+                          selectedCode: widget.formControllers.selectedAssistanceType,
+                          onCodeChanged: (value) => widget.formControllers.selectedAssistanceType = value,
+                          labelText: 'نوع المساعدة',
+                          prefixIcon: Icons.handshake_rounded,
+                          isRequired: hasCategory,
+                        ),
+                        TaxonomyBridgeDropdown(
+                          group: TaxonomyGroup.guaranteeType,
+                          preloadedOptions: optionsFor(TaxonomyGroup.guaranteeType),
+                          enabled: taxonomyReady,
+                          selectedCode: widget.formControllers.selectedGuaranteeType,
+                          onCodeChanged: (value) => widget.formControllers.selectedGuaranteeType = value,
+                          labelText: 'نوع الضمان',
+                          prefixIcon: Icons.verified_rounded,
+                        ),
+                        TaxonomyBridgeDropdown(
+                          group: TaxonomyGroup.section,
+                          preloadedOptions: optionsFor(TaxonomyGroup.section),
+                          enabled: taxonomyReady,
+                          selectedCode: widget.formControllers.selectedSection,
+                          onCodeChanged: (value) => widget.formControllers.selectedSection = value,
+                          labelText: 'القسم',
+                          prefixIcon: Icons.account_tree_rounded,
+                          autoSyncOnEmpty: true,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          M3SectionCard(
+            title: 'الاسم الكامل',
+            icon: Icons.person_rounded,
+            headerColor: FormColors.tabGradients[0]![0].withValues(alpha: 0.2),
+            children: [
               ResponsiveFormLayout(
                 children: [
-                  _buildServerFileIdField(),
-                  TaxonomyBridgeDropdown(
-                    group: TaxonomyGroup.beneficiaryStatus,
-                    preloadedOptions: optionsFor(TaxonomyGroup.beneficiaryStatus),
-                    enabled: taxonomyReady,
-                    selectedCode: widget.formControllers.selectedRequestStatus,
-                    onCodeChanged: (value) => widget.formControllers.selectedRequestStatus = value,
-                    labelText: 'حالة الطلب',
-                    prefixIcon: Icons.pending_actions_rounded,
-                    autoSyncOnEmpty: true,
+                  _orderedField(
+                    50,
+                    M3TextField(
+                      controller: widget.formControllers.firstNameController,
+                      label: 'الاسم الأول',
+                      prefixIcon: Icons.person_rounded,
+                      isRequired: true,
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => value?.trim().isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
+                    ),
                   ),
-                  TaxonomyBridgeDropdown(
-                    group: TaxonomyGroup.assistanceType,
-                    preloadedOptions: optionsFor(TaxonomyGroup.assistanceType),
-                    enabled: taxonomyReady,
-                    selectedCode: widget.formControllers.selectedAssistanceType,
-                    onCodeChanged: (value) => widget.formControllers.selectedAssistanceType = value,
-                    labelText: 'نوع المساعدة',
-                    prefixIcon: Icons.handshake_rounded,
-                    isRequired: hasCategory,
-                  ),
-                  TaxonomyBridgeDropdown(
-                    group: TaxonomyGroup.guaranteeType,
-                    preloadedOptions: optionsFor(TaxonomyGroup.guaranteeType),
-                    enabled: taxonomyReady,
-                    selectedCode: widget.formControllers.selectedGuaranteeType,
-                    onCodeChanged: (value) => widget.formControllers.selectedGuaranteeType = value,
-                    labelText: 'نوع الضمان',
-                    prefixIcon: Icons.verified_rounded,
-                  ),
-                  TaxonomyBridgeDropdown(
-                    group: TaxonomyGroup.section,
-                    preloadedOptions: optionsFor(TaxonomyGroup.section),
-                    enabled: taxonomyReady,
-                    selectedCode: widget.formControllers.selectedSection,
-                    onCodeChanged: (value) => widget.formControllers.selectedSection = value,
-                    labelText: 'القسم',
-                    prefixIcon: Icons.account_tree_rounded,
-                    autoSyncOnEmpty: true,
+                  _orderedField(
+                    60,
+                    M3TextField(
+                      controller: widget.formControllers.fatherNameController,
+                      label: 'اسم الأب',
+                      prefixIcon: Icons.person_outline_rounded,
+                      isRequired: true,
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => value?.trim().isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
+                    ),
                   ),
                 ],
+              ),
+              SizedBox(height: 12.h),
+              ResponsiveFormLayout(
+                children: [
+                  _orderedField(
+                    70,
+                    M3TextField(
+                      controller: widget.formControllers.grandfatherNameController,
+                      label: 'اسم الجد',
+                      prefixIcon: Icons.elderly_rounded,
+                      textInputAction: TextInputAction.next,
+                    ),
+                  ),
+                  _orderedField(
+                    80,
+                    M3TextField(
+                      controller: widget.formControllers.lastNameController,
+                      label: 'اللقب',
+                      prefixIcon: Icons.family_restroom_rounded,
+                      isRequired: true,
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => value?.trim().isEmpty ?? true ? FormConstants.requiredFieldMessage : null,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              _orderedField(
+                90,
+                M3TextField(
+                  controller: widget.formControllers.motherNameController,
+                  label: 'اسم الأم',
+                  prefixIcon: Icons.face_rounded,
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _showNextTabHint(),
+                ),
               ),
             ],
           ),

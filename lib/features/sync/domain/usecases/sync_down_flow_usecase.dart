@@ -90,8 +90,23 @@ class SyncDownFlowUseCase {
 
       final result = await syncBeneficiariesDown();
 
+      final mergedPayload = Map<String, int>.from(result.payloadCounters)
+        ..update('taxonomies_sync_runs', (value) => value + 1, ifAbsent: () => 1)
+        ..update('file_id_reservation_checks', (value) => value + 1, ifAbsent: () => 1);
+
+      final enrichedResult = SyncFlowResult(
+        success: result.success,
+        recordsSynced: result.recordsSynced,
+        recordsFailed: result.recordsFailed,
+        payloadCounters: mergedPayload,
+        writeCounters: result.writeCounters,
+        error: result.error,
+        errorCategory: result.errorCategory,
+        errorContext: result.errorContext,
+      );
+
       onProgress(
-        operation: 'تم تنزيل ${result.recordsSynced} مستفيد',
+        operation: 'تم تنزيل ${enrichedResult.recordsSynced} مستفيد',
         progress: 1.0,
         isSyncing: false,
         lastSyncAt: DateTime.now(),
@@ -108,7 +123,7 @@ class SyncDownFlowUseCase {
         ),
       );
 
-      return result;
+      return enrichedResult;
     } catch (error) {
       final message = error.toString();
       final category = classifyError(error);

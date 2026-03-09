@@ -5,6 +5,7 @@ class DownloadProgress {
   final double percentage;
   final DownloadStatus status;
   final String? errorMessage;
+  final DownloadFailureReason? failureReason;
 
   DownloadProgress({
     required this.downloadedBytes,
@@ -12,6 +13,7 @@ class DownloadProgress {
     required this.percentage,
     required this.status,
     this.errorMessage,
+    this.failureReason,
   });
 
   bool get isComplete => status == DownloadStatus.completed;
@@ -23,9 +25,7 @@ class DownloadProgress {
   String get downloadedSize => _formatBytes(downloadedBytes);
   String get totalSize => _formatBytes(totalBytes);
 
-  String get speedMBps => downloadSpeed != null
-      ? '${downloadSpeed!.toStringAsFixed(2)} MB/s'
-      : '0 MB/s';
+  String get speedMBps => downloadSpeed != null ? '${downloadSpeed!.toStringAsFixed(2)} MB/s' : '0 MB/s';
 
   double? downloadSpeed; // MB per second
 
@@ -35,6 +35,7 @@ class DownloadProgress {
     double? percentage,
     DownloadStatus? status,
     String? errorMessage,
+    DownloadFailureReason? failureReason,
     double? downloadSpeed,
   }) {
     return DownloadProgress(
@@ -43,6 +44,7 @@ class DownloadProgress {
       percentage: percentage ?? this.percentage,
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
+      failureReason: failureReason ?? this.failureReason,
     )..downloadSpeed = downloadSpeed ?? this.downloadSpeed;
   }
 
@@ -65,4 +67,14 @@ enum DownloadStatus {
   completed,
   failed,
   cancelled,
+}
+
+enum DownloadFailureReason {
+  network,
+  auth,
+  integrity,
+  storage,
+  server,
+  cancelled,
+  unknown,
 }

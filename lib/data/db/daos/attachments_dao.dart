@@ -101,4 +101,20 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase> with _$AttachmentsDao
   Future<List<Attachment>> getPendingAttachments() async {
     return await (select(attachments)..where((a) => a.syncState.equals('pending'))).get();
   }
+
+  /// Diagnostic: count attachments grouped by sync state
+  Future<Map<String, int>> getSyncStateDistribution() async {
+    final rows = await customSelect(
+      '''
+      SELECT sync_state, COUNT(*) AS count
+      FROM attachments
+      GROUP BY sync_state
+      ''',
+      readsFrom: {attachments},
+    ).get();
+
+    return {
+      for (final row in rows) row.read<String>('sync_state'): row.read<int>('count'),
+    };
+  }
 }

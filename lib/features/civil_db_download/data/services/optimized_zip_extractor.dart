@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 
 /// 🚀 Optimized ZIP Extractor for Large Files (4GB+)
 ///
@@ -75,9 +76,9 @@ class OptimizedZipExtractor {
         return;
       }
 
-      // قراءة الـ ZIP وفك الضغط
-      final bytes = zipFile.readAsBytesSync();
-      final archive = ZipDecoder().decodeBytes(bytes);
+      // قراءة الـ ZIP عبر stream لتقليل استهلاك الذاكرة
+      final inputStream = InputFileStream(params.zipPath);
+      final archive = ZipDecoder().decodeBuffer(inputStream, verify: true);
 
       final totalFiles = archive.files.where((f) => f.isFile).length;
       var processedFiles = 0;
@@ -110,6 +111,8 @@ class OptimizedZipExtractor {
         });
       }
 
+      inputStream.close();
+
       params.resultPort.send('SUCCESS');
     } catch (e) {
       params.resultPort.send('ERROR:$e');
@@ -132,8 +135,8 @@ class OptimizedZipExtractor {
   }
 
   static void _extractZipCompute(_SimpleExtractParams params) {
-    final bytes = File(params.zipPath).readAsBytesSync();
-    final archive = ZipDecoder().decodeBytes(bytes);
+    final inputStream = InputFileStream(params.zipPath);
+    final archive = ZipDecoder().decodeBuffer(inputStream, verify: true);
 
     for (final file in archive.files) {
       if (!file.isFile) continue;
@@ -150,6 +153,8 @@ class OptimizedZipExtractor {
       outputFile.createSync(recursive: true);
       outputFile.writeAsBytesSync(file.content as List<int>);
     }
+
+    inputStream.close();
   }
 }
 

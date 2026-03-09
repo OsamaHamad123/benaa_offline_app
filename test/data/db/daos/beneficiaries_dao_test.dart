@@ -40,9 +40,7 @@ void main() {
       final results = await dao.searchBeneficiaries('محمد أحمد');
 
       expect(results.isNotEmpty, true);
-      expect(
-          results.any((b) => b.firstName == 'محمد' && b.fatherName == 'أحمد'),
-          true);
+      expect(results.any((b) => b.firstName == 'محمد' && b.fatherName == 'أحمد'), true);
     });
 
     test('يجب أن يجد المستفيد بالاسم الأول فقط', () async {
@@ -228,6 +226,79 @@ void main() {
       expect(allAfter.length, equals(allBefore.length));
     });
   });
+
+  group('🔗 Delete Dependencies Tests', () {
+    test('deleteBeneficiary يحذف حتى مع وجود كفالات وfile reservation مرتبطة', () async {
+      final beneficiary = (await dao.getAllBeneficiaries()).first;
+      await _seedAssociation(database, id: 'assoc-delete-1');
+
+      await database.into(database.sponsorships).insert(
+            SponsorshipsCompanion.insert(
+              beneficiaryId: beneficiary.id,
+              associationId: 'assoc-delete-1',
+            ),
+          );
+
+      await database.into(database.fileIdReservationTable).insert(
+            FileIdReservationTableCompanion.insert(
+              fileId: 900001,
+              beneficiaryId: Value(beneficiary.id),
+            ),
+          );
+
+      await dao.deleteBeneficiary(beneficiary.id);
+
+      final deleted = await dao.getBeneficiaryById(beneficiary.id);
+      final sponsorshipRows =
+          await (database.select(database.sponsorships)..where((s) => s.beneficiaryId.equals(beneficiary.id))).get();
+      final reservation = await (database.select(database.fileIdReservationTable)
+            ..where((r) => r.fileId.equals(900001)))
+          .getSingleOrNull();
+
+      expect(deleted, null);
+      expect(sponsorshipRows, isEmpty);
+      expect(reservation?.beneficiaryId, null);
+    });
+
+    test('batchDeleteBeneficiaries ينظف العلاقات التابعة قبل الحذف', () async {
+      final beneficiaries = await dao.getAllBeneficiaries();
+      final first = beneficiaries[0];
+      final second = beneficiaries[1];
+
+      await _seedAssociation(database, id: 'assoc-delete-2');
+
+      await database.into(database.sponsorships).insert(
+            SponsorshipsCompanion.insert(
+              beneficiaryId: first.id,
+              associationId: 'assoc-delete-2',
+            ),
+          );
+
+      await database.into(database.fileIdReservationTable).insert(
+            FileIdReservationTableCompanion.insert(
+              fileId: 900002,
+              beneficiaryId: Value(second.id),
+            ),
+          );
+
+      final deletedCount = await dao.batchDeleteBeneficiaries([first.id, second.id]);
+
+      final firstAfter = await dao.getBeneficiaryById(first.id);
+      final secondAfter = await dao.getBeneficiaryById(second.id);
+      final sponsorshipRows = await (database.select(database.sponsorships)
+            ..where((s) => s.beneficiaryId.isIn([first.id, second.id])))
+          .get();
+      final reservation = await (database.select(database.fileIdReservationTable)
+            ..where((r) => r.fileId.equals(900002)))
+          .getSingleOrNull();
+
+      expect(deletedCount, equals(2));
+      expect(firstAfter, null);
+      expect(secondAfter, null);
+      expect(sponsorshipRows, isEmpty);
+      expect(reservation?.beneficiaryId, null);
+    });
+  });
 }
 
 /// إضافة بيانات تجريبية للاختبار
@@ -315,4 +386,21 @@ Future<void> _seedTestData(BeneficiariesDao dao) async {
       ben.copyWith(fullNameNorm: Value(fullNameNorm)),
     );
   }
+}
+
+Future<void> _seedAssociation(
+  AppDatabase database, {
+  required String id,
+}) async {
+  await database.into(database.associations).insert(
+        AssociationsCompanion.insert(
+          id: id,
+          name: 'جمعية اختبار $id',
+          phone: '770000000',
+          bankName: 'Bank Test',
+          accountNumber: 'ACC-$id',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 }

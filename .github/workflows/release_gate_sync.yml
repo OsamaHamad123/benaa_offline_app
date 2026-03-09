@@ -1,0 +1,62 @@
+name: Release Gate - Sync Contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "lib/core/sync/**"
+      - "lib/features/sync/**"
+      - "lib/features/taxonomies/**"
+      - "lib/features/beneficiaries/**"
+      - "scripts/smoke_codes_contract.ps1"
+      - "scripts/codes_end_to_end_diagnostics.ps1"
+      - "docs/CENTRAL_SYNC_FIELD_PARITY_MATRIX_2026-03-09.md"
+      - "docs/SYNC_PARITY_ARCHITECTURE_DECISION_2026-03-10.md"
+      - "test/features/sync/**"
+      - "test/features/taxonomies/**"
+      - ".github/workflows/release_gate_sync.yml"
+
+jobs:
+  release-gate-sync:
+    name: Smoke + Focused Sync Tests + Diagnostics
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Focused sync + taxonomy tests
+        run: |
+          flutter test test/core/mappers/beneficiary_sync_mapper_test.dart
+          flutter test test/features/sync/data/parsers/mobile_sync_response_parser_test.dart
+          flutter test test/features/sync/data/repositories/mobile_sync_related_entities_repository_test.dart
+          flutter test test/features/sync/data/datasources/file_id_remote_datasource_test.dart
+          flutter test test/features/sync/data/repositories/file_id_reservation_repository_impl_test.dart
+          flutter test test/features/taxonomies/domain/entities/taxonomy_group_test.dart
+          flutter test test/features/taxonomies/data/models/taxonomy_dto_test.dart
+
+      - name: Smoke codes contract
+        shell: pwsh
+        run: |
+          ./scripts/smoke_codes_contract.ps1 -DeviceId "ci-release-gate-${{ github.run_id }}" -RequestCount 1
+
+      - name: E2E diagnostics sanity
+        shell: pwsh
+        run: |
+          ./scripts/codes_end_to_end_diagnostics.ps1 -DeviceId "ci-diagnostics-${{ github.run_id }}" -RequestCount 1

@@ -16,6 +16,8 @@ Version: 1.0.0 (as documented)
 - ✅ Forced taxonomy provider invalidation after sync to reconnect form dropdowns.
 - ✅ Added taxonomy diagnostics card in sync screen + compact dashboard status badge.
 - ✅ Fixed beneficiary sync-down to import related entities (documents + family members + deceased) instead of importing only beneficiary core rows.
+- ✅ Added post-login File ID orchestration (sync used reservation counters + ensure fresh reservation availability).
+- ✅ Implemented server-aligned `codes/*` compatibility in mobile data layer with fallback to `file-ids/*` for backward compatibility.
 
 ### In progress
 
@@ -179,6 +181,8 @@ Implementation checklist:
 - Reserve low-watermark strategy and background refill.
 - Sync used IDs with retry/backoff and reconciliation report.
 - Track reservation health in diagnostics panel.
+- Trigger reservation orchestration right after successful login to reduce first-create failures.
+- Use explicit used code payload (`codes[]`) when server exposes `/api/mobile/codes/confirm-usage`, with automatic fallback to count-based `file-ids/sync-used`.
 
 Definition of done:
 

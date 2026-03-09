@@ -20,6 +20,11 @@ class FinalReviewSheet extends StatelessWidget {
     super.key,
   });
 
+  String _displayValue(String? raw) {
+    final value = raw?.trim() ?? '';
+    return value.isEmpty ? '---' : value;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -165,8 +170,11 @@ class FinalReviewSheet extends StatelessWidget {
                 _buildItem('نوع السكن', formControllers.selectedHousingType ?? '---'),
                 _buildItem('نوع الإعاقة', formControllers.selectedDisabilityType ?? '---'),
                 _buildItem('مصدر الدخل', formControllers.selectedIncomeSource ?? '---'),
-                _buildItem('الأمراض المزمنة', formControllers.chronicDiseasesController.text),
-                _buildItem('عدد ذوي الاحتياجات الخاصة', formControllers.specialNeedsCountController.text),
+                _buildItem('الأمراض المزمنة', _displayValue(formControllers.chronicDiseasesController.text)),
+                _buildItem(
+                  'عدد ذوي الاحتياجات الخاصة',
+                  _displayValue(formControllers.specialNeedsCountController.text),
+                ),
               ]),
 
               SizedBox(height: 16.h),
@@ -333,7 +341,8 @@ class FinalReviewSheet extends StatelessWidget {
   }
 
   Widget _buildItem(String label, String value, {bool isMultiline = false}) {
-    final displayValue = value.isEmpty ? '---' : value;
+    final normalizedValue = value.trim();
+    final displayValue = normalizedValue.isEmpty ? '---' : normalizedValue;
 
     if (label.isEmpty) {
       // For notes or multiline content

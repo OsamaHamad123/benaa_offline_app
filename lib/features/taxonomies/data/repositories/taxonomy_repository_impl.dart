@@ -155,8 +155,13 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   @override
   Future<Result<void>> deleteTaxonomy(String id) async {
     try {
+      final localTaxonomy = await _localDataSource.getTaxonomyById(id);
+
       // حذف على السيرفر
-      await _remoteDataSource.deleteTaxonomy(id);
+      await _remoteDataSource.deleteTaxonomy(
+        id,
+        group: localTaxonomy?.group.value,
+      );
 
       // حذف محلياً
       await _localDataSource.deleteTaxonomy(id);

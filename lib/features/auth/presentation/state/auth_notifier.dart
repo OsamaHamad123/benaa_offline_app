@@ -17,12 +17,18 @@ import 'auth_state.dart';
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
   final Connectivity _connectivity;
+  final Future<void> Function()? _postLoginSync;
+  final Future<bool> Function()? _isOnlineOverride;
 
   AuthNotifier({
     required AuthRepository authRepository,
     Connectivity? connectivity,
+    Future<void> Function()? postLoginSync,
+    Future<bool> Function()? isOnline,
   })  : _authRepository = authRepository,
         _connectivity = connectivity ?? Connectivity(),
+        _postLoginSync = postLoginSync,
+        _isOnlineOverride = isOnline,
         super(const AuthInitial());
 
   /// 📊 الحصول على الحالة الحالية
@@ -53,8 +59,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           UnifiedLogger.info('📱 Found stored session for: ${session.user.name}');
 
           // التحقق من الاتصال
-          final connectivityResult = await _connectivity.checkConnectivity();
-          final isOnline = connectivityResult.first != ConnectivityResult.none;
+          final isOnline = await _isOnline();
 
           if (isOnline) {
             // Online: التحقق من الـ Token مع السيرفر
@@ -130,8 +135,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthLoading(message: 'جاري تسجيل الدخول...');
 
     try {
-      final connectivityResult = await _connectivity.checkConnectivity();
-      final isOnline = connectivityResult.first != ConnectivityResult.none;
+      final isOnline = await _isOnline();
       if (!isOnline) {
         state = const AuthError(
           message: 'الاتصال بالإنترنت مطلوب لتسجيل الدخول',
@@ -162,6 +166,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         case Success(value: final session):
           UnifiedLogger.success('✅ Login successful');
           state = AuthAuthenticated(session: session);
+          await _runPostLoginSync();
           return true;
       }
     } catch (e, stackTrace) {
@@ -171,6 +176,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
       return false;
     }
+  }
+
+  Future<bool> _isOnline() async {
+    final override = _isOnlineOverride;
+    if (override != null) {
+      return override();
+    }
+
+    final connectivityResult = await _connectivity.checkConnectivity();
+    return connectivityResult.first != ConnectivityResult.none;
   }
 
   // ===========================
@@ -233,6 +248,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e, stackTrace) {
       UnifiedLogger.error('❌ Token refresh error', error: e, stackTrace: stackTrace);
       return false;
+    }
+  }
+
+  Future<void> _runPostLoginSync() async {
+    final sync = _postLoginSync;
+    if (sync == null) return;
+
+    try {
+      await sync();
+      UnifiedLogger.info('✅ Post-login file ID sync completed');
+    } catch (e, stackTrace) {
+      UnifiedLogger.warning('⚠️ Post-login file ID sync failed: $e');
+      UnifiedLogger.error('Post-login sync stacktrace', error: e, stackTrace: stackTrace);
     }
   }
 

@@ -36,6 +36,8 @@ class SecureStorage {
   static const String _serverUrlKey = 'server_url';
   static const String _deviceIdKey = 'device_id';
   static const String _lastSyncTimeKey = 'last_sync_time';
+  static const String _syncLockUntilKey = 'sync_lock_until';
+  static const String _syncLockOwnerKey = 'sync_lock_owner';
   static const String _isLoggedInKey = 'is_logged_in';
   // 🆕 New Keys for Auth Session
   static const String _authSessionKey = 'auth_session';
@@ -270,6 +272,73 @@ class SecureStorage {
       UnifiedLogger.error('❌ Failed to read last sync time', error: e);
       return null;
     }
+  }
+
+  /// 🔒 Acquire distributed sync lock (works across foreground/background isolates)
+  Future<bool> acquireSyncLock({
+    required String owner,
+    Duration ttl = const Duration(minutes: 10),
+  }) async {
+    try {
+      final now = DateTime.now();
+      final active = await getSyncLockInfo();
+      if (active != null && active.until.isAfter(now) && active.owner != owner) {
+        return false;
+      }
+
+      final lockUntil = now.add(ttl).toIso8601String();
+      await Future.wait([
+        _storage.write(key: _syncLockUntilKey, value: lockUntil),
+        _storage.write(key: _syncLockOwnerKey, value: owner),
+      ]);
+
+      return true;
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to acquire sync lock', error: e);
+      return false;
+    }
+  }
+
+  /// 🔓 Release distributed sync lock
+  Future<void> releaseSyncLock({String? owner}) async {
+    try {
+      if (owner != null) {
+        final currentOwner = await _storage.read(key: _syncLockOwnerKey);
+        if (currentOwner != null && currentOwner != owner) {
+          return;
+        }
+      }
+
+      await Future.wait([
+        _storage.delete(key: _syncLockUntilKey),
+        _storage.delete(key: _syncLockOwnerKey),
+      ]);
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to release sync lock', error: e);
+    }
+  }
+
+  /// ℹ️ Returns active lock info if present
+  Future<({DateTime until, String? owner})?> getSyncLockInfo() async {
+    try {
+      final untilRaw = await _storage.read(key: _syncLockUntilKey);
+      if (untilRaw == null || untilRaw.isEmpty) return null;
+
+      final until = DateTime.tryParse(untilRaw);
+      if (until == null) return null;
+
+      final owner = await _storage.read(key: _syncLockOwnerKey);
+      return (until: until, owner: owner);
+    } catch (e) {
+      UnifiedLogger.error('❌ Failed to read sync lock', error: e);
+      return null;
+    }
+  }
+
+  Future<bool> isSyncLockActive() async {
+    final lockInfo = await getSyncLockInfo();
+    if (lockInfo == null) return false;
+    return lockInfo.until.isAfter(DateTime.now());
   }
 
   // ===========================

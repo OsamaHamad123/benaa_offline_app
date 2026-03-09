@@ -31,11 +31,25 @@ class SyncRelatedEntitiesUpUseCase {
     int failed = 0;
 
     try {
+      final syncStateDistribution = await _database.attachmentsDao.getSyncStateDistribution();
+      _logger.i('Attachments sync-state distribution: $syncStateDistribution');
+
       final pendingAttachments = await _database.attachmentsDao.getPendingAttachments();
       _logger.i('Found ${pendingAttachments.length} attachments to upload');
 
+      if (pendingAttachments.isEmpty) {
+        _logger.w(
+          'No pending attachments for upload. Check attachments.sync_state and ensure new attachments are saved as pending.',
+        );
+      }
+
       for (final attachment in pendingAttachments) {
         try {
+          _logger.i(
+            'Uploading attachment id=${attachment.id}, beneficiaryId=${attachment.beneficiaryId}, '
+            'personId=${attachment.personId ?? '-'}, documentType=${attachment.documentType ?? '-'}',
+          );
+
           final file = File(attachment.filePath);
           if (!file.existsSync()) {
             _logger.w('File not found: ${attachment.filePath}');
@@ -45,7 +59,11 @@ class SyncRelatedEntitiesUpUseCase {
 
           final personIdentityNumber = await _resolvePersonIdentityNumberForAttachment(attachment);
           if (personIdentityNumber == null || personIdentityNumber.isEmpty) {
-            _logger.w('Missing person_identity_number for attachment ${attachment.id}');
+            final beneficiaryDebug = await _buildAttachmentBeneficiaryDebug(attachment);
+            _logger.w(
+              'Missing person_identity_number for attachment ${attachment.id}. '
+              'Beneficiary debug => $beneficiaryDebug',
+            );
             failed++;
             continue;
           }
@@ -86,6 +104,14 @@ class SyncRelatedEntitiesUpUseCase {
             failed++;
             _logger.w('Failed to upload attachment ${attachment.id}: ${response.statusCode}');
           }
+        } on DioException catch (e) {
+          final statusCode = e.response?.statusCode;
+          final responseData = e.response?.data;
+          _logger.w(
+            'Error uploading attachment ${attachment.id}: '
+            'status=$statusCode, message=${e.message}, response=$responseData',
+          );
+          failed++;
         } catch (e) {
           _logger.w('Error uploading attachment ${attachment.id}: $e');
           failed++;
@@ -174,6 +200,13 @@ class SyncRelatedEntitiesUpUseCase {
           } else {
             failed++;
           }
+        } on DioException catch (e) {
+          _logger.w(
+            'Error uploading family member ${member.id}: '
+            'status=${e.response?.statusCode}, '
+            'message=${e.message}, response=${e.response?.data}',
+          );
+          failed++;
         } catch (e) {
           _logger.w('Error uploading family member ${member.id}: $e');
           failed++;
@@ -268,6 +301,13 @@ class SyncRelatedEntitiesUpUseCase {
           } else {
             failed += entry.value.length;
           }
+        } on DioException catch (e) {
+          _logger.w(
+            'Error uploading dead-people for beneficiary ${entry.key}: '
+            'status=${e.response?.statusCode}, '
+            'message=${e.message}, response=${e.response?.data}',
+          );
+          failed += entry.value.length;
         } catch (e) {
           _logger.w('Error uploading dead-people for beneficiary ${entry.key}: $e');
           failed += entry.value.length;
@@ -275,6 +315,165 @@ class SyncRelatedEntitiesUpUseCase {
       }
     } catch (e) {
       _logger.e('Dead-people sync up failed', error: e);
+      failed++;
+    }
+
+    return SyncStageCounters(uploaded: uploaded, failed: failed);
+  }
+
+  Future<SyncStageCounters> syncGuardianBankAccounts(String deviceId) async {
+    int uploaded = 0;
+    int failed = 0;
+
+    try {
+      final pendingRows = await _database.customSelect(
+        '''
+        SELECT
+          local_id,
+          server_id,
+          guardian_registration,
+          bank_name_id,
+          iban_usd,
+          iban_shekel,
+          re_id_number,
+          re_guardian_name,
+          re_phone_number,
+          person_owner_identity_number,
+          check_account,
+          sync_state
+        FROM guardian_bank_accounts
+        WHERE sync_state IN ('pending', 'modified', 'failed', 'deleted')
+        ORDER BY local_id ASC
+        ''',
+      ).get();
+
+      _logger.i('Found ${pendingRows.length} guardian bank accounts to upload');
+
+      for (final row in pendingRows) {
+        final localId = row.read<int>('local_id');
+        final serverId = row.read<int?>('server_id');
+        final guardianRegistration = row.read<int>('guardian_registration');
+        final syncState = row.read<String>('sync_state').trim().toLowerCase();
+
+        try {
+          if (syncState == 'deleted') {
+            if (serverId != null && serverId > 0) {
+              final response = await _dio.delete(
+                _normalizeApiEndpoint('${ApiConfig.guardianBankAccountsEndpoint}/$serverId'),
+                data: {'device_id': deviceId},
+                options: Options(validateStatus: (status) => status != null && status < 500),
+              );
+
+              if (response.statusCode == 200 || response.statusCode == 204 || response.statusCode == 404) {
+                await _database.customStatement(
+                  'DELETE FROM guardian_bank_accounts WHERE local_id = ?',
+                  [localId],
+                );
+                uploaded++;
+                continue;
+              }
+
+              failed++;
+              await _database.customStatement(
+                "UPDATE guardian_bank_accounts SET sync_state = 'failed' WHERE local_id = ?",
+                [localId],
+              );
+              continue;
+            }
+
+            await _database.customStatement('DELETE FROM guardian_bank_accounts WHERE local_id = ?', [localId]);
+            uploaded++;
+            continue;
+          }
+
+          final payload = <String, dynamic>{
+            'guardian_registration': guardianRegistration,
+            'bank_name': row.read<int?>('bank_name_id'),
+            'iban_usd': row.read<String?>('iban_usd'),
+            'iban_shekel': row.read<String?>('iban_shekel'),
+            're_id_number': row.read<String?>('re_id_number'),
+            're_guardian_name': row.read<String?>('re_guardian_name'),
+            're_phone_number': row.read<String?>('re_phone_number'),
+            'person_owner_identity_number': row.read<String?>('person_owner_identity_number'),
+            'check_account': row.read<int?>('check_account') ?? 0,
+            'device_id': deviceId,
+          };
+          payload.removeWhere((_, value) => value == null || (value is String && value.trim().isEmpty));
+
+          Response response;
+          if (serverId != null && serverId > 0) {
+            response = await _dio.put(
+              _normalizeApiEndpoint('${ApiConfig.guardianBankAccountsEndpoint}/$serverId'),
+              data: payload,
+              options: Options(validateStatus: (status) => status != null && status < 500),
+            );
+          } else {
+            response = await _dio.post(
+              _normalizeApiEndpoint(ApiConfig.guardianBankAccountsEndpoint),
+              data: payload,
+              options: Options(validateStatus: (status) => status != null && status < 500),
+            );
+          }
+
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            int? resolvedServerId = serverId;
+            final body = response.data;
+            if (body is Map<String, dynamic>) {
+              final data = body['data'];
+              if (data is Map<String, dynamic>) {
+                final account = data['bank_account'] ?? data['record'] ?? data['item'];
+                if (account is Map<String, dynamic>) {
+                  resolvedServerId = _asInt(account['id']) ?? resolvedServerId;
+                }
+              }
+            }
+
+            await _database.customStatement(
+              '''
+              UPDATE guardian_bank_accounts
+              SET
+                server_id = COALESCE(?, server_id),
+                sync_state = 'synced',
+                last_synced_at = ?,
+                updated_at = COALESCE(updated_at, ?)
+              WHERE local_id = ?
+              ''',
+              [
+                resolvedServerId,
+                DateTime.now().toIso8601String(),
+                DateTime.now().toIso8601String(),
+                localId,
+              ],
+            );
+            uploaded++;
+          } else {
+            failed++;
+            await _database.customStatement(
+              "UPDATE guardian_bank_accounts SET sync_state = 'failed' WHERE local_id = ?",
+              [localId],
+            );
+          }
+        } on DioException catch (e) {
+          _logger.w(
+            'Error uploading guardian bank account local_id=$localId: '
+            'status=${e.response?.statusCode}, message=${e.message}, response=${e.response?.data}',
+          );
+          failed++;
+          await _database.customStatement(
+            "UPDATE guardian_bank_accounts SET sync_state = 'failed' WHERE local_id = ?",
+            [localId],
+          );
+        } catch (e) {
+          _logger.w('Error uploading guardian bank account local_id=$localId: $e');
+          failed++;
+          await _database.customStatement(
+            "UPDATE guardian_bank_accounts SET sync_state = 'failed' WHERE local_id = ?",
+            [localId],
+          );
+        }
+      }
+    } catch (e) {
+      _logger.e('Guardian bank accounts sync up failed', error: e);
       failed++;
     }
 
@@ -309,12 +508,42 @@ class SyncRelatedEntitiesUpUseCase {
     final beneficiary = await (_database.select(_database.beneficiaries)..where((b) => b.id.equals(localBeneficiaryId)))
         .getSingleOrNull();
 
-    final idNumber = beneficiary?.idNumber;
-    if (idNumber == null) {
+    if (beneficiary == null) {
       return null;
     }
 
-    return idNumber.toString();
+    final idNumber = beneficiary.idNumber;
+    if (idNumber > 0) {
+      return idNumber.toString();
+    }
+
+    final fileIdNumber = beneficiary.fileIdNumber?.trim();
+    if (fileIdNumber != null && fileIdNumber.isNotEmpty) {
+      _logger.w(
+        'Attachment ${attachment.id}: idNumber is missing, using fileIdNumber as person_identity_number: '
+        '$fileIdNumber',
+      );
+      return fileIdNumber;
+    }
+
+    return null;
+  }
+
+  Future<String> _buildAttachmentBeneficiaryDebug(Attachment attachment) async {
+    final localBeneficiaryId = int.tryParse(attachment.beneficiaryId);
+    if (localBeneficiaryId == null) {
+      return 'invalid beneficiaryId="${attachment.beneficiaryId}"';
+    }
+
+    final beneficiary = await (_database.select(_database.beneficiaries)..where((b) => b.id.equals(localBeneficiaryId)))
+        .getSingleOrNull();
+
+    if (beneficiary == null) {
+      return 'beneficiary not found for localId=$localBeneficiaryId';
+    }
+
+    return 'localId=${beneficiary.id}, idNumber=${beneficiary.idNumber}, '
+        'fileIdNumber=${beneficiary.fileIdNumber ?? '-'}, serverId=${beneficiary.serverId?.toString() ?? '-'}';
   }
 
   String? _resolveAttachmentFileTypeForUpload(Attachment attachment, File file) {

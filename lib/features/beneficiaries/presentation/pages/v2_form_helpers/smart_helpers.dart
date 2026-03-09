@@ -1,4 +1,5 @@
 import 'form_controllers.dart';
+import 'personal_profile_validator.dart';
 import 'widgets/tab_completion_badge.dart'; // 🏆 Tab Stats
 
 /// 🎯 Smart Category Suggester
@@ -15,8 +16,7 @@ class CategorySuggester {
         final date = DateTime.parse(birthDate);
         final now = DateTime.now();
         age = now.year - date.year;
-        if (now.month < date.month ||
-            (now.month == date.month && now.day < date.day)) {
+        if (now.month < date.month || (now.month == date.month && now.day < date.day)) {
           age--;
         }
       } catch (e) {
@@ -49,8 +49,7 @@ class CategorySuggester {
       return 'ذوي احتياجات خاصة'; // Disabled
     }
 
-    if (controllers.selectedDisplacementStatus != null &&
-        controllers.selectedDisplacementStatus != '1') {
+    if (controllers.selectedDisplacementStatus != null && controllers.selectedDisplacementStatus != '1') {
       return 'نازح/نازحة'; // Displaced
     }
 
@@ -110,53 +109,27 @@ class FormCompletionCalculator {
     'address',
   ];
 
-  // 🚀 Cache for expensive calculations
-  static Map<int, TabCompletionStats>? _cachedTabStats;
-  static int? _cachedCompletedCount;
-  static int? _lastControllersHashCode;
-
-  /// Calculate completion percentage (cached)
+  /// Calculate completion percentage
   static int calculateCompletion(BeneficiaryFormControllers controllers) {
-    final currentHash = controllers.hashCode;
-
-    // Return cached value if controllers haven't changed
-    if (_lastControllersHashCode == currentHash &&
-        _cachedCompletedCount != null) {
-      final total = requiredFields.length;
-      return ((_cachedCompletedCount! / total) * 100).round();
-    }
-
     final int completed = getCompletedCount(controllers);
     final total = requiredFields.length;
 
     return ((completed / total) * 100).round();
   }
 
-  /// Get completed count (cached)
+  /// Get completed count
   static int getCompletedCount(BeneficiaryFormControllers controllers) {
-    final currentHash = controllers.hashCode;
-
-    // Return cached value if controllers haven't changed
-    if (_lastControllersHashCode == currentHash &&
-        _cachedCompletedCount != null) {
-      return _cachedCompletedCount!;
-    }
-
     int completed = 0;
 
     if (controllers.firstNameController.text.trim().isNotEmpty) completed++;
     if (controllers.fatherNameController.text.trim().isNotEmpty) completed++;
     if (controllers.lastNameController.text.trim().isNotEmpty) completed++;
-    if (controllers.nationalIdController.text.trim().length == 9) completed++;
+    if (PersonalProfileValidator.hasValidNationalId(controllers)) completed++;
     if (controllers.birthDateController.text.isNotEmpty) completed++;
     if (controllers.selectedGender != null) completed++;
     if (controllers.selectedCategory != null) completed++;
     if (controllers.phoneController.text.trim().isNotEmpty) completed++;
     if (controllers.addressController.text.trim().isNotEmpty) completed++;
-
-    // Cache the result
-    _cachedCompletedCount = completed;
-    _lastControllersHashCode = currentHash;
 
     return completed;
   }
@@ -164,36 +137,21 @@ class FormCompletionCalculator {
   /// Get total required fields count
   static int getTotalRequired() => requiredFields.length;
 
-  /// حساب إحصائيات الإكمال لكل تاب (cached)
+  /// حساب إحصائيات الإكمال لكل تاب
   static Map<int, TabCompletionStats> calculateTabStats(
     BeneficiaryFormControllers controllers,
   ) {
-    final currentHash = controllers.hashCode;
-
-    // Return cached value if controllers haven't changed
-    if (_lastControllersHashCode == currentHash && _cachedTabStats != null) {
-      return _cachedTabStats!;
-    }
-
-    final stats = {
+    return {
       0: _calculatePersonalTabStats(controllers),
       1: _calculateFamilyTabStats(controllers),
       2: _calculateContactTabStats(controllers),
       3: _calculateAttachmentsTabStats(controllers),
     };
-
-    // Cache the result
-    _cachedTabStats = stats;
-    _lastControllersHashCode = currentHash;
-
-    return stats;
   }
 
-  /// Clear cache (call when controllers change significantly)
+  /// Clear cache (no-op for backward compatibility)
   static void clearCache() {
-    _cachedTabStats = null;
-    _cachedCompletedCount = null;
-    _lastControllersHashCode = null;
+    // intentionally empty
   }
 
   // Tab 0: Personal Info
@@ -263,9 +221,7 @@ class FormCompletionCalculator {
     if (controllers.altPhoneController.text.trim().isNotEmpty) completed++;
     if (controllers.addressController.text.trim().isNotEmpty) completed++;
     if (controllers.neighborhoodController.text.trim().isNotEmpty) completed++;
-    if (controllers.addressBeforeDisplacementController.text
-        .trim()
-        .isNotEmpty) {
+    if (controllers.addressBeforeDisplacementController.text.trim().isNotEmpty) {
       completed++;
     }
     if (controllers.selectedDisplacementStatus != null) completed++;

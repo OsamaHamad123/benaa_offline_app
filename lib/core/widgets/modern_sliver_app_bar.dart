@@ -28,6 +28,7 @@ class ModernSliverAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final onPrimary = colorScheme.onPrimary;
     final effectiveExpandedHeight = expandedHeight ?? (isTablet ? 120.h : 100.h);
 
     return SliverAppBar(
@@ -37,29 +38,29 @@ class ModernSliverAppBar extends StatelessWidget {
       scrolledUnderElevation: 0,
       surfaceTintColor: Colors.transparent,
       backgroundColor: colorScheme.primary,
-      foregroundColor: Colors.white,
+      foregroundColor: onPrimary,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: EdgeInsets.only(
           left: isTablet ? 24.w : 20.w,
-          right: 8.w,
+          right: 10.w,
           bottom: 16.h,
         ),
 
         title: Row(
           children: [
-            SizedBox(width: 4.w), // مسافة من البداية
+            SizedBox(width: 2.w), // مسافة من البداية
             // أيقونة مع خلفية
             Container(
-              padding: EdgeInsets.all(8.r),
+              padding: EdgeInsets.all(9.r),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10.r),
+                color: onPrimary.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Icon(icon, color: Colors.white, size: 20.sp),
+              child: Icon(icon, color: onPrimary, size: 16.sp),
             ),
 
-            SizedBox(width: 12.w),
+            SizedBox(width: 10.w),
 
             // العنوان مع Flexible لمنع overflow
             Flexible(
@@ -68,7 +69,7 @@ class ModernSliverAppBar extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isTablet ? 20.sp : 18.sp,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: onPrimary,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -95,7 +96,7 @@ class ModernSliverAppBar extends StatelessWidget {
       actions: actions != null
           ? [
               ...actions!,
-              SizedBox(width: 8.w), // مسافة من النهاية
+              SizedBox(width: 10.w), // مسافة من النهاية
             ]
           : null,
     );
@@ -117,34 +118,32 @@ class ModernActionButton extends StatelessWidget {
     required this.tooltip,
     super.key,
     this.onPressed,
-    this.iconSize = 24,
+    this.iconSize = 17,
     this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final Widget iconButton = Tooltip(
       message: tooltip,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(10.r),
           onTap: onPressed,
           child: Ink(
-            width: 44.w,
-            height: 44.h,
+            width: 38.w,
+            height: 38.h,
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white.withValues(alpha: 0.28),
-              ),
+              color: isDark ? onPrimary.withValues(alpha: 0.14) : onPrimary.withValues(alpha: 0.20),
+              borderRadius: BorderRadius.circular(11.r),
             ),
             child: Icon(
               icon,
-              size: iconSize.sp,
-              color: Colors.white,
+              size: iconSize,
+              color: onPrimary,
             ),
           ),
         ),

@@ -29,10 +29,17 @@ class ApiConfig {
   static const String fileIdReservationsEndpoint = '/api/mobile/database/file-ids/reservations';
   static const String syncUsedFileIdsEndpoint = '/api/mobile/database/file-ids/sync-used';
 
+  // 🔢 Mobile Codes Reservation Endpoints (server contract compatibility)
+  static const String codesLoginSyncEndpoint = '/api/mobile/codes/login-sync';
+  static const String codesConfirmUsageEndpoint = '/api/mobile/codes/confirm-usage';
+  static const String codesRequestCodesEndpoint = '/api/mobile/codes/request-codes';
+  static const String codesDeviceStatsEndpoint = '/api/mobile/codes/device-stats';
+
   // 🚀 Batch Data Endpoints
   static const String batchDataSyncEndpoint = '/api/mobile/database/data/batch';
   static const String visitsBatchSyncEndpoint = '/api/mobile/visits/batch';
   static const String attachmentUploadEndpoint = '/api/mobile/database/attachments';
+  static const String guardianBankAccountsEndpoint = '/api/mobile/database/bank-accounts';
 
   // 🏢 Associations (Sponsors/Employees) Sync Endpoints
   static const String associationsSponsorsEndpoint = '/api/mobile/associations/sponsors';
@@ -72,6 +79,11 @@ class ApiConfig {
   // 📦 Data Settings
   static const int maxPendingChanges = 1000; // أقصى عدد للتغييرات المعلقة
   static const int batchSize = 50; // عدد السجلات في كل دفعة
+
+  // 🆔 File ID Reservation Settings (contract-aligned defaults)
+  // Can be overridden from AppConfig/env for runtime tuning.
+  static const int fileIdReserveBatchSize = 5000;
+  static const int fileIdRenewThreshold = 1000;
 
   // 🔐 Security
   static const bool enableSslPinning = false; // تفعيل SSL Pinning

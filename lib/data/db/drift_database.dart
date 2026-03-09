@@ -71,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration {
@@ -80,9 +80,14 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
         await _createImportBatchesTable();
         await _createFileIdReservationBatchesTable();
+        await _ensureFileIdReservationCompatColumns();
+        await _createLocalCodesTable();
+        await _backfillLocalCodesFromFileReservations();
         await _createSyncTombstonesTable();
         await _createAssociationsSponsorProfileTable();
         await _createAssociationsEmployeeProfileTable();
+        await _createGuardianBankAccountsTable();
+        await _createRelatedEntitiesContractParityTables();
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
@@ -226,6 +231,27 @@ class AppDatabase extends _$AppDatabase {
           await _normalizeLegacyAttachmentPersonMetadata();
         }
 
+        if (from < 29) {
+          // v29: add local-codes compatibility columns to file_id_reservations.
+          await _ensureFileIdReservationCompatColumns();
+        }
+
+        if (from < 30) {
+          // v30: add literal local_codes table (todo contract) and backfill data.
+          await _createLocalCodesTable();
+          await _backfillLocalCodesFromFileReservations();
+        }
+
+        if (from < 31) {
+          // v31: add guardian bank accounts local sync table.
+          await _createGuardianBankAccountsTable();
+        }
+
+        if (from < 32) {
+          // v32: add sidecar parity tables for related entities contract fields.
+          await _createRelatedEntitiesContractParityTables();
+        }
+
         await _createPerformanceIndexes();
       },
     );
@@ -295,6 +321,61 @@ class AppDatabase extends _$AppDatabase {
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_file_id_batches_next ON file_id_reservation_batches(next_available_id);',
     );
+  }
+
+  Future<void> _ensureFileIdReservationCompatColumns() async {
+    await customStatement(
+      'ALTER TABLE file_id_reservations ADD COLUMN record_type TEXT;',
+    ).catchError((_) {});
+
+    await customStatement(
+      'ALTER TABLE file_id_reservations ADD COLUMN record_id INTEGER;',
+    ).catchError((_) {});
+  }
+
+  Future<void> _createLocalCodesTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS local_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT UNIQUE NOT NULL,
+        is_used INTEGER NOT NULL DEFAULT 0,
+        used_at TEXT,
+        synced INTEGER NOT NULL DEFAULT 0,
+        record_type TEXT,
+        record_id INTEGER,
+        created_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_unused ON local_codes(is_used) WHERE is_used = 0;',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_unsynced ON local_codes(synced, is_used) WHERE synced = 0 AND is_used = 1;',
+    );
+  }
+
+  Future<void> _backfillLocalCodesFromFileReservations() async {
+    await customStatement('''
+      INSERT OR IGNORE INTO local_codes (
+        code,
+        is_used,
+        used_at,
+        synced,
+        record_type,
+        record_id,
+        created_at
+      )
+      SELECT
+        printf('%06d', file_id) AS code,
+        CASE WHEN status IN ('used', 'synced', 'conflict') THEN 1 ELSE 0 END AS is_used,
+        COALESCE(used_at, synced_at) AS used_at,
+        CASE WHEN status = 'synced' THEN 1 ELSE 0 END AS synced,
+        COALESCE(record_type, 'data') AS record_type,
+        COALESCE(record_id, beneficiary_id) AS record_id,
+        COALESCE(reserved_at, CURRENT_TIMESTAMP) AS created_at
+      FROM file_id_reservations;
+    ''');
   }
 
   Future<void> _createImportBatchesTable() async {
@@ -375,6 +456,97 @@ class AppDatabase extends _$AppDatabase {
 
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_assoc_employee_profile_sponsor ON associations_employee_profile(sponsor_server_id);',
+    );
+  }
+
+  Future<void> _createGuardianBankAccountsTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS guardian_bank_accounts (
+        local_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id INTEGER UNIQUE,
+        guardian_registration INTEGER NOT NULL,
+        bank_name_id INTEGER,
+        bank_name_label TEXT,
+        iban_usd TEXT,
+        iban_shekel TEXT,
+        re_id_number TEXT,
+        re_guardian_name TEXT,
+        re_phone_number TEXT,
+        person_owner_identity_number TEXT,
+        check_account INTEGER NOT NULL DEFAULT 0,
+        is_approved INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT,
+        updated_at TEXT,
+        sync_state TEXT NOT NULL DEFAULT 'synced',
+        last_synced_at TEXT
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_guardian_bank_accounts_guardian ON guardian_bank_accounts(guardian_registration);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_guardian_bank_accounts_sync ON guardian_bank_accounts(sync_state);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_guardian_bank_accounts_server ON guardian_bank_accounts(server_id);',
+    );
+  }
+
+  Future<void> _createRelatedEntitiesContractParityTables() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS re_people_contract_fields (
+        family_member_id INTEGER PRIMARY KEY,
+        server_id INTEGER,
+        first_name_normalized TEXT,
+        second_name_normalized TEXT,
+        third_name_normalized TEXT,
+        last_name_normalized TEXT,
+        person_health_status_name TEXT,
+        sponsorship_status_name TEXT,
+        person_type_of_guarantee_name TEXT,
+        updated_at TEXT,
+        FOREIGN KEY(family_member_id) REFERENCES family_members(id) ON DELETE CASCADE
+      );
+    ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS dead_people_contract_fields (
+        family_deceased_id INTEGER PRIMARY KEY,
+        server_id INTEGER,
+        re_file_id TEXT,
+        death_reason_name TEXT,
+        raw_parent_payload TEXT,
+        updated_at TEXT,
+        FOREIGN KEY(family_deceased_id) REFERENCES family_deceased(id) ON DELETE CASCADE
+      );
+    ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS attachments_contract_fields (
+        attachment_id TEXT PRIMARY KEY,
+        server_attachment_id INTEGER,
+        person_identity_number TEXT,
+        stored_file_name TEXT,
+        mime_type TEXT,
+        file_type_label TEXT,
+        download_url TEXT,
+        google_drive_file_id TEXT,
+        google_drive_path TEXT,
+        uploaded_to_drive_at TEXT,
+        updated_at TEXT,
+        FOREIGN KEY(attachment_id) REFERENCES attachments(id) ON DELETE CASCADE
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_re_people_contract_server ON re_people_contract_fields(server_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_dead_people_contract_server ON dead_people_contract_fields(server_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_attachments_contract_server ON attachments_contract_fields(server_attachment_id);',
     );
   }
 
@@ -626,6 +798,7 @@ LazyDatabase openEncryptedDb() {
         // Performance optimizations
         db.execute('PRAGMA synchronous = NORMAL;');
         db.execute('PRAGMA temp_store = MEMORY;');
+        db.execute('PRAGMA busy_timeout = 10000;');
         // db.execute('PRAGMA mmap_size = 30000000000;'); // Removed excessive mmap which can cause ANRs
       },
     );

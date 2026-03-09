@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../form_controllers.dart';
 import '../form_constants.dart';
+import '../personal_profile_validator.dart';
 import '../smart_helpers.dart';
 import 'tab_completion_badge.dart';
 import 'form_tabs_4_merged.dart';
@@ -117,10 +118,12 @@ class _FormContentWidgetState extends State<FormContentWidget> {
     );
     final nextAction = _resolveNextAction();
     final compactFocusMode = isCompact && widget.minimizeTopInsights;
+    final shouldShowProgressCard = widget.showProgressCard && mediaQuery.size.height >= 700;
+    final shouldShowSearchBar = mediaQuery.size.height >= 760 || _searchQuery.isNotEmpty;
 
     return Column(
       children: [
-        if (widget.showProgressCard)
+        if (shouldShowProgressCard)
           Semantics(
             container: true,
             liveRegion: true,
@@ -261,8 +264,8 @@ class _FormContentWidgetState extends State<FormContentWidget> {
             ),
           ),
 
-        // 🔍 Quick Search Bar (if active)
-        if (_searchQuery.isNotEmpty)
+        // 🔍 Quick Search Bar (adaptive to avoid vertical overflow)
+        if (shouldShowSearchBar)
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
             color: theme.colorScheme.primaryContainer,
@@ -270,7 +273,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
               controller: _searchController,
               hint: 'ابحث في الحقول...',
               onSearch: (query) {
-                setState(() => _searchQuery = query); // Local setState only!
+                setState(() => _searchQuery = query);
               },
             ),
           ),
@@ -443,16 +446,8 @@ class _FormContentWidgetState extends State<FormContentWidget> {
   }
 
   int _calculateMissingRequiredFields() {
-    int missing = 0;
-    if (widget.controllers.firstNameController.text.trim().isEmpty) missing++;
-    if (widget.controllers.fatherNameController.text.trim().isEmpty) missing++;
-    if (widget.controllers.lastNameController.text.trim().isEmpty) missing++;
-    if (widget.controllers.selectedGender == null) missing++;
-
-    final nationalId = widget.controllers.nationalIdController.text.trim();
-    if (nationalId.isEmpty || nationalId.length != FormConstants.nationalIdLength) {
-      missing++;
-    }
+    final validation = PersonalProfileValidator.evaluate(widget.controllers);
+    int missing = validation.missingCriticalFields;
     if (widget.controllers.phoneController.text.trim().isEmpty) missing++;
     return missing;
   }

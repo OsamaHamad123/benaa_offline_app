@@ -23,10 +23,10 @@ class BulkActionsBar extends ConsumerWidget {
         vertical: rv.isTablet ? 14 : 12,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        boxShadow: const [
+        color: theme.colorScheme.surfaceContainerHigh,
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
+            color: theme.colorScheme.shadow.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: Offset(0, -2),
           ),

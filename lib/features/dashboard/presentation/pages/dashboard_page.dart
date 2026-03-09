@@ -17,7 +17,9 @@ import '../../../../core/widgets/shimmer_loading.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../../core/monitoring/app_monitoring.dart';
 import '../../../../core/analytics/app_analytics.dart';
-import '../../../../core/settings/enhanced_settings_page.dart';
+import '../../../../core/analytics/ux_flow_analytics.dart';
+import '../../../../core/analytics/ux_feature_flags.dart';
+import '../../../../core/settings/clean_settings_page.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../theme/app_colors.dart';
@@ -52,6 +54,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   bool _showWelcomeBanner = false;
   String _selectedFilter = 'all';
   bool _isOnline = true;
+  _DashboardViewMode _dashboardViewMode = _DashboardViewMode.operational;
+  DateTime? _dashboardOpenedAt;
+  bool _dashboardFirstActionTracked = false;
 
   // Advanced Filters
   String? _selectedCategory;
@@ -64,6 +69,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    _startDashboardSession();
     _checkWelcomeBanner();
     _checkConnectivity();
     _listenToConnectivity();
@@ -82,6 +88,36 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     // Direct static call avoids provider access while route is popping.
     AppAnalytics.logScreenExit('Dashboard');
     super.dispose();
+  }
+
+  void _startDashboardSession() {
+    _dashboardOpenedAt = DateTime.now();
+    _dashboardFirstActionTracked = false;
+    UxFlowAnalytics.trackDashboardOpened(viewMode: _dashboardViewMode.name);
+  }
+
+  void _trackDashboardAction(
+    String action, {
+    Map<String, dynamic>? extra,
+  }) {
+    final now = DateTime.now();
+
+    if (!_dashboardFirstActionTracked && _dashboardOpenedAt != null) {
+      _dashboardFirstActionTracked = true;
+      UxFlowAnalytics.trackDashboardFirstAction(
+        action: action,
+        elapsedMs: now.difference(_dashboardOpenedAt!).inMilliseconds,
+        viewMode: _dashboardViewMode.name,
+      );
+    }
+
+    UxFlowAnalytics.trackDashboardAction(
+      action,
+      parameters: {
+        'view_mode': _dashboardViewMode.name,
+        ...?extra,
+      },
+    );
   }
 
   void _checkConnectivity() async {
@@ -161,6 +197,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final uxFlags = ref.watch(core_providers.uxFeatureFlagsProvider).valueOrNull ?? const UxFeatureFlags();
     final Widget currentPage;
 
     switch (_selectedIndex) {
@@ -169,6 +206,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           showWelcomeBanner: _showWelcomeBanner,
           selectedFilter: _selectedFilter,
           isOnline: _isOnline,
+          dashboardViewMode: _dashboardViewMode,
           selectedCategory: _selectedCategory,
           selectedGovernorate: _selectedGovernorate,
           syncedOnly: _syncedOnly,
@@ -182,20 +220,30 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               _selectedFilter = filter;
             });
           },
+          onViewModeChanged: (mode) {
+            setState(() {
+              _dashboardViewMode = mode;
+            });
+            UxFlowAnalytics.trackDashboardModeChanged(mode: mode.name);
+            _trackDashboardAction('view_mode_changed', extra: {'mode': mode.name});
+          },
           onShowFilters: _showAdvancedFilters,
+          onDashboardAction: _trackDashboardAction,
+          enableAnalyticalMode: uxFlags.enableDashboardAnalyticalMode,
         );
         break;
       case 1:
         currentPage = const MobileSyncPage();
         break;
       case 2:
-        currentPage = const _SettingsView();
+        currentPage = const CleanSettingsPage();
         break;
       default:
         currentPage = _DashboardHome(
           showWelcomeBanner: _showWelcomeBanner,
           selectedFilter: _selectedFilter,
           isOnline: _isOnline,
+          dashboardViewMode: _dashboardViewMode,
           selectedCategory: _selectedCategory,
           selectedGovernorate: _selectedGovernorate,
           syncedOnly: _syncedOnly,
@@ -209,7 +257,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               _selectedFilter = filter;
             });
           },
+          onViewModeChanged: (mode) {
+            setState(() {
+              _dashboardViewMode = mode;
+            });
+            UxFlowAnalytics.trackDashboardModeChanged(mode: mode.name);
+            _trackDashboardAction('view_mode_changed', extra: {'mode': mode.name});
+          },
           onShowFilters: _showAdvancedFilters,
+          onDashboardAction: _trackDashboardAction,
+          enableAnalyticalMode: uxFlags.enableDashboardAnalyticalMode,
         );
     }
 
@@ -236,24 +293,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           DashboardHaptics.onNavigation();
+          if (index == 0 && _selectedIndex != 0) {
+            _startDashboardSession();
+          }
           setState(() {
             _selectedIndex = index;
           });
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
+            icon: Icon(Icons.dashboard_outlined, size: 22),
+            selectedIcon: Icon(Icons.dashboard, size: 22),
             label: 'الرئيسية',
           ),
           NavigationDestination(
-            icon: Icon(Icons.sync_outlined),
-            selectedIcon: Icon(Icons.sync),
+            icon: Icon(Icons.sync_outlined, size: 22),
+            selectedIcon: Icon(Icons.sync, size: 22),
             label: 'المزامنة',
           ),
           NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings),
+            icon: Icon(Icons.settings_outlined, size: 22),
+            selectedIcon: Icon(Icons.settings, size: 22),
             label: 'الإعدادات',
           ),
         ],
@@ -267,22 +327,30 @@ class _DashboardHome extends ConsumerWidget {
   final String selectedFilter;
   final VoidCallback onWelcomeDismiss;
   final Function(String) onFilterChanged;
+  final ValueChanged<_DashboardViewMode> onViewModeChanged;
   final bool isOnline;
+  final _DashboardViewMode dashboardViewMode;
   final String? selectedCategory;
   final String? selectedGovernorate;
   final bool? syncedOnly;
   final VoidCallback onShowFilters;
+  final void Function(String action, {Map<String, dynamic>? extra}) onDashboardAction;
+  final bool enableAnalyticalMode;
 
   const _DashboardHome({
     required this.showWelcomeBanner,
     required this.selectedFilter,
     required this.onWelcomeDismiss,
     required this.onFilterChanged,
+    required this.onViewModeChanged,
     required this.isOnline,
+    required this.dashboardViewMode,
     required this.selectedCategory,
     required this.selectedGovernorate,
     required this.syncedOnly,
     required this.onShowFilters,
+    required this.onDashboardAction,
+    required this.enableAnalyticalMode,
   });
 
   @override
@@ -339,8 +407,8 @@ class _DashboardHome extends ConsumerWidget {
             ModernActionButton(
               icon: Icons.search_rounded,
               tooltip: 'البحث',
-              iconSize: 28,
               onPressed: () {
+                onDashboardAction('search_opened');
                 showSearch(
                   context: context,
                   delegate: DashboardSearchDelegate(ref),
@@ -350,8 +418,8 @@ class _DashboardHome extends ConsumerWidget {
             ModernActionButton(
               icon: Icons.file_download_outlined,
               tooltip: 'تصدير التقرير',
-              iconSize: 28,
               onPressed: () {
+                onDashboardAction('export_report_tapped');
                 // Show export dialog
                 final dashboard = state.statistics;
                 if (dashboard != null) {
@@ -370,9 +438,9 @@ class _DashboardHome extends ConsumerWidget {
             ModernActionButton(
               icon: Icons.notifications_outlined,
               tooltip: 'الإشعارات',
-              iconSize: 28,
               badge: pendingTasksCount,
               onPressed: () {
+                onDashboardAction('notifications_opened');
                 final count = pendingTasksCount ?? 0;
                 EnhancedSnackbar.showInfo(
                   context,
@@ -388,6 +456,7 @@ class _DashboardHome extends ConsumerWidget {
           child: EnhancedRefreshIndicator(
             onRefresh: () async {
               DashboardHaptics.onRefresh();
+              onDashboardAction('pull_to_refresh');
               await notifier.refresh();
             },
             color: DashboardColors.totalBeneficiaries,
@@ -453,16 +522,22 @@ class _DashboardHome extends ConsumerWidget {
           EnhancedSnackbar.showInfo(context, message: message);
         },
         child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.18),
-            borderRadius: BorderRadius.circular(14.r),
-            border: Border.all(color: badgeColor.withOpacity(0.9), width: 1.2),
+            color: Colors.white.withOpacity(0.20),
+            borderRadius: BorderRadius.circular(16.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Icon(icon, size: 14.sp, color: Colors.white),
-              SizedBox(width: 4.w),
+              Icon(icon, size: 13.sp, color: Colors.white),
+              SizedBox(width: 5.w),
               Text(
                 label,
                 style: DashboardTextStyles.badge.copyWith(
@@ -491,6 +566,8 @@ class _DashboardHome extends ConsumerWidget {
     // ✅ Memoization: استخدام cached chart data
     final trendChartData = ref.watch(trendChartDataProvider);
 
+    final effectiveViewMode = enableAnalyticalMode ? dashboardViewMode : _DashboardViewMode.operational;
+
     return SingleChildScrollView(
       padding: padding,
       child: Column(
@@ -511,13 +588,73 @@ class _DashboardHome extends ConsumerWidget {
               userName: 'المستخدم',
               message: 'مرحباً بك في منظومة بناء',
               onGetStarted: () {
+                onDashboardAction('welcome_get_started');
                 DashboardNavigationService.navigateToAddBeneficiary(context);
               },
               onDismiss: onWelcomeDismiss,
             ),
 
-          // Filter Chips with Advanced Filters Button - في الأعلى للوصول السريع
-          SizedBox(height: 16.h),
+          SizedBox(height: 12.h),
+
+          _buildHomeModeSwitcher(),
+
+          // Dashboard Summary Widget - لوحة المعلومات المصغرة
+          const RepaintBoundary(
+            child: FadeSlideTransition(
+              duration: AppDurations.fast,
+              delay: Duration(), // ✅ Stagger: أول widget
+              child: DashboardSummaryWidget(contextLabel: 'اليوم'),
+            ),
+          ),
+
+          SizedBox(height: 24.h),
+
+          // Section: Quick Actions (الأكثر استخداماً - في الأعلى)
+          const SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
+          SizedBox(height: 12.h),
+          FadeSlideTransition(
+            duration: AppDurations.fast,
+            delay: const Duration(milliseconds: 50), // ✅ Stagger: ثاني widget
+            child: QuickActionsGrid(
+              onAddBeneficiaryTap: () {
+                onDashboardAction('quick_add_beneficiary');
+                DashboardNavigationService.navigateToAddBeneficiary(context);
+              },
+              onKafalatTap: () {
+                onDashboardAction('quick_kafalat');
+                DashboardNavigationService.navigateToKafalat(context);
+              },
+              onSearchTap: () {
+                onDashboardAction('quick_search_beneficiaries');
+                DashboardNavigationService.navigateToBeneficiariesList(context);
+              },
+              onSyncTap: () {
+                onDashboardAction('quick_sync_hub');
+                DashboardNavigationService.navigateToSync(context);
+              },
+              onReportsTap: () {
+                onDashboardAction('quick_reports');
+                DashboardNavigationService.navigateToReports(context);
+              },
+              onCivilRegistryTap: () {
+                onDashboardAction('quick_civil_registry');
+                DashboardNavigationService.navigateToCivilRegistry(context);
+              },
+              onVisitsTap: () {
+                onDashboardAction('quick_visits');
+                DashboardNavigationService.navigateToVisits(context);
+              },
+              onAssociationsTap: () {
+                onDashboardAction('quick_associations');
+                DashboardNavigationService.navigateToAssociations(context);
+              },
+              syncBadge: stats.pendingSync,
+            ),
+          ),
+
+          SizedBox(height: 24.h),
+
+          // Filter Chips with Advanced Filters Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -530,10 +667,10 @@ class _DashboardHome extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Refresh Button
                   IconButton(
                     icon: const Icon(Icons.refresh),
                     onPressed: () {
+                      onDashboardAction('filters_refresh');
                       HapticFeedback.mediumImpact();
                       notifier.refresh();
                       EnhancedSnackbar.showSuccess(
@@ -543,7 +680,6 @@ class _DashboardHome extends ConsumerWidget {
                     },
                     tooltip: 'تحديث البيانات',
                   ),
-                  // Advanced Filters
                   IconButton(
                     icon: Badge(
                       isLabelVisible: selectedCategory != null || selectedGovernorate != null || syncedOnly != null,
@@ -591,160 +727,181 @@ class _DashboardHome extends ConsumerWidget {
             selectedFilter: selectedFilter,
             onSelectionChanged: (selected) {
               if (selected.isNotEmpty) {
+                onDashboardAction('filter_changed', extra: {'filter': selected.first});
                 onFilterChanged(selected.first);
-                // Filter is applied through onFilterChanged callback
-                // which triggers dashboard data refresh
               }
             },
           ),
 
-          SizedBox(height: 24.h),
-
-          // Dashboard Summary Widget - لوحة المعلومات المصغرة
-          const RepaintBoundary(
-            child: FadeSlideTransition(
+          if (effectiveViewMode == _DashboardViewMode.operational) ...[
+            SizedBox(height: 24.h),
+            const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
+            SizedBox(height: 12.h),
+            const ScaleTransitionWidget(
               duration: AppDurations.fast,
-              delay: Duration(), // ✅ Stagger: أول widget
-              child: DashboardSummaryWidget(contextLabel: 'اليوم'),
+              delay: Duration(milliseconds: 120),
+              child: UrgentCasesSection(),
             ),
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Section: Quick Actions (الأكثر استخداماً - في الأعلى)
-          const SectionTitle(title: 'إجراءات سريعة', icon: Icons.flash_on),
-          SizedBox(height: 12.h),
-          FadeSlideTransition(
-            duration: AppDurations.fast,
-            delay: const Duration(milliseconds: 50), // ✅ Stagger: ثاني widget
-            child: QuickActionsGrid(
-              onAddBeneficiaryTap: () {
-                DashboardNavigationService.navigateToAddBeneficiary(context);
-              },
-              onKafalatTap: () {
-                DashboardNavigationService.navigateToKafalat(context);
-              },
-              onSearchTap: () {
-                DashboardNavigationService.navigateToBeneficiariesList(context);
-              },
-              onSyncTap: () {
-                DashboardNavigationService.navigateToSync(context);
-              },
-              onReportsTap: () {
-                DashboardNavigationService.navigateToReports(context);
-              },
-              onCivilRegistryTap: () {
-                DashboardNavigationService.navigateToCivilRegistry(context);
-              },
-              onVisitsTap: () {
-                DashboardNavigationService.navigateToVisits(context);
-              },
-              onAssociationsTap: () {
-                DashboardNavigationService.navigateToAssociations(context);
-              },
-              syncBadge: stats.pendingSync,
-            ),
-          ),
-          // 📊 Interactive Charts Section - NEW!
-          const SectionTitle(title: 'الإحصائيات التفاعلية', icon: Icons.bar_chart),
-          SizedBox(height: 12.h),
-
-          // Trend Line Chart
-          RepaintBoundary(
-            child: FadeSlideTransition(
-              delay: const Duration(milliseconds: 100), // ✅ Stagger: ثالث widget
-              slideOffset: const Offset(0, 0.2),
-              child: TrendLineChart(
-                title: 'نمو المستفيدين (آخر 6 أشهر)',
-                data: trendChartData, // ✅ Memoized data
-                labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
-                lineColor: DashboardColors.totalBeneficiaries,
-              ),
-            ),
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
-          const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
-          SizedBox(height: 12.h),
-          const ScaleTransitionWidget(
-            duration: AppDurations.fast,
-            delay: Duration(milliseconds: 150), // ✅ Stagger
-            child: UrgentCasesSection(),
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Section: Daily Performance - مؤشر الأداء اليومي
-          const SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
-          SizedBox(height: 12.h),
-          const ScaleTransitionWidget(
-            duration: AppDurations.fast,
-            delay: Duration(milliseconds: 200), // ✅ Stagger
-            child: DailyPerformanceSection(),
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Section: Recent Activities (آخر 5 فقط)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const SectionTitle(title: 'الأنشطة الحديثة', icon: Icons.history),
-              TextButton.icon(
-                onPressed: () {
-                  DashboardNavigationService.navigateToAllActivities(context);
-                },
-                icon: const Icon(Icons.arrow_forward, size: 16),
-                label: const Text('عرض الكل'),
-              ),
-            ],
-          ),
-          SizedBox(height: 12.h),
-          RecentActivitiesList(
-            activities: state.activities.take(5).toList(),
-            isLoading: state.isLoadingActivities,
-            hasMore: state.hasMoreActivities,
-            onLoadMore: () => notifier.loadMoreActivities(),
-          ),
-
-          SizedBox(height: 24.h),
-
-          // Section: Charts (قابلة للطي)
-          CollapsibleSection(
-            title: 'إحصائيات النمو',
-            icon: Icons.trending_up,
-            child: Column(
+            SizedBox(height: 24.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(height: 12.h),
-                GrowthChart(growthData: stats.growthData),
-                SizedBox(height: 16.h),
-                CategoryDistributionChart(categoryCounts: stats.categoryCounts),
+                const SectionTitle(title: 'الأنشطة الحديثة', icon: Icons.history),
+                TextButton.icon(
+                  onPressed: () {
+                    DashboardNavigationService.navigateToAllActivities(context);
+                  },
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  label: const Text('عرض الكل'),
+                ),
               ],
             ),
-          ),
+            SizedBox(height: 12.h),
+            RecentActivitiesList(
+              activities: state.activities.take(5).toList(),
+              isLoading: state.isLoadingActivities,
+              hasMore: state.hasMoreActivities,
+              onLoadMore: () => notifier.loadMoreActivities(),
+            ),
+            SizedBox(height: 32.h),
+          ] else ...[
+            // 📊 Interactive Charts Section - NEW!
+            const SectionTitle(title: 'الإحصائيات التفاعلية', icon: Icons.bar_chart),
+            SizedBox(height: 12.h),
 
-          SizedBox(height: 24.h),
+            // Trend Line Chart
+            RepaintBoundary(
+              child: FadeSlideTransition(
+                delay: const Duration(milliseconds: 100), // ✅ Stagger: ثالث widget
+                slideOffset: const Offset(0, 0.2),
+                child: TrendLineChart(
+                  title: 'نمو المستفيدين (آخر 6 أشهر)',
+                  data: trendChartData, // ✅ Memoized data
+                  labels: const ['ين', 'فب', 'مار', 'أبر', 'ماي', 'يون'],
+                  lineColor: DashboardColors.totalBeneficiaries,
+                ),
+              ),
+            ),
 
-          // Section: Geographic Distribution (قابلة للطي)
-          CollapsibleSection(
-            title: 'التوزيع الجغرافي',
-            icon: Icons.map,
-            child: Column(
+            SizedBox(height: 24.h),
+
+            // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
+            const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
+            SizedBox(height: 12.h),
+            const ScaleTransitionWidget(
+              duration: AppDurations.fast,
+              delay: Duration(milliseconds: 150), // ✅ Stagger
+              child: UrgentCasesSection(),
+            ),
+
+            SizedBox(height: 24.h),
+
+            // Section: Daily Performance - مؤشر الأداء اليومي
+            const SectionTitle(title: 'الأداء اليومي', icon: Icons.trending_up),
+            SizedBox(height: 12.h),
+            const ScaleTransitionWidget(
+              duration: AppDurations.fast,
+              delay: Duration(milliseconds: 200), // ✅ Stagger
+              child: DailyPerformanceSection(),
+            ),
+
+            SizedBox(height: 24.h),
+
+            // Section: Recent Activities (آخر 5 فقط)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(height: 12.h),
-                const GeographicDistributionSection(),
+                const SectionTitle(title: 'الأنشطة الحديثة', icon: Icons.history),
+                TextButton.icon(
+                  onPressed: () {
+                    DashboardNavigationService.navigateToAllActivities(context);
+                  },
+                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  label: const Text('عرض الكل'),
+                ),
               ],
             ),
-          ),
+            SizedBox(height: 12.h),
+            RecentActivitiesList(
+              activities: state.activities.take(5).toList(),
+              isLoading: state.isLoadingActivities,
+              hasMore: state.hasMoreActivities,
+              onLoadMore: () => notifier.loadMoreActivities(),
+            ),
 
-          SizedBox(height: 32.h),
+            SizedBox(height: 24.h),
+
+            // Section: Charts (قابلة للطي)
+            CollapsibleSection(
+              title: 'إحصائيات النمو',
+              icon: Icons.trending_up,
+              child: Column(
+                children: [
+                  SizedBox(height: 12.h),
+                  GrowthChart(growthData: stats.growthData),
+                  SizedBox(height: 16.h),
+                  CategoryDistributionChart(categoryCounts: stats.categoryCounts),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 24.h),
+
+            // Section: Geographic Distribution (قابلة للطي)
+            CollapsibleSection(
+              title: 'التوزيع الجغرافي',
+              icon: Icons.map,
+              child: Column(
+                children: [
+                  SizedBox(height: 12.h),
+                  const GeographicDistributionSection(),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 32.h),
+          ],
         ],
       ),
     );
   }
+
+  Widget _buildHomeModeSwitcher() {
+    return Row(
+      children: [
+        Semantics(
+          label: 'وضع الداشبورد التشغيلي',
+          button: true,
+          child: ChoiceChip(
+            label: const Text('تشغيلي'),
+            selected: dashboardViewMode == _DashboardViewMode.operational,
+            onSelected: (_) {
+              onDashboardAction('mode_chip_tapped', extra: {'mode': _DashboardViewMode.operational.name});
+              onViewModeChanged(_DashboardViewMode.operational);
+            },
+          ),
+        ),
+        if (enableAnalyticalMode) ...[
+          SizedBox(width: 8.w),
+          Semantics(
+            label: 'وضع الداشبورد التحليلي',
+            button: true,
+            child: ChoiceChip(
+              label: const Text('تحليلي'),
+              selected: dashboardViewMode == _DashboardViewMode.analytical,
+              onSelected: (_) {
+                onDashboardAction('mode_chip_tapped', extra: {'mode': _DashboardViewMode.analytical.name});
+                onViewModeChanged(_DashboardViewMode.analytical);
+              },
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
+
+enum _DashboardViewMode { operational, analytical }
 
 class _TaxonomySyncHealthBanner extends ConsumerWidget {
   const _TaxonomySyncHealthBanner();
@@ -802,31 +959,6 @@ class _TaxonomySyncHealthBanner extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Settings View
-class _SettingsView extends StatelessWidget {
-  const _SettingsView();
-
-  @override
-  Widget build(BuildContext context) {
-    // استخدم صفحة الإعدادات الجديدة المحسّنة مع زر Dashboard Settings
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الإعدادات'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.dashboard_customize),
-            tooltip: 'إعدادات الداشبورد',
-            onPressed: () {
-              context.push('/settings/dashboard');
-            },
-          ),
-        ],
-      ),
-      body: const EnhancedSettingsPage(),
     );
   }
 }

@@ -10,6 +10,11 @@ class SponsorshipsRemoteSyncDataSource {
 
   Future<SponsorshipsListResponseDto> fetchSponsorships({
     DateTime? updatedAfter,
+    int? sponsorId,
+    int? statusId,
+    int? typeId,
+    String? identityNumber,
+    String? internalFileNumber,
     int page = 1,
     int perPage = 100,
   }) async {
@@ -19,6 +24,12 @@ class SponsorshipsRemoteSyncDataSource {
         'page': page,
         'per_page': perPage,
         if (updatedAfter != null) 'updated_after': updatedAfter.toIso8601String(),
+        if (sponsorId != null) 'sponsor_id': sponsorId,
+        if (statusId != null) 'status_id': statusId,
+        if (typeId != null) 'type_id': typeId,
+        if (identityNumber != null && identityNumber.trim().isNotEmpty) 'identity_number': identityNumber.trim(),
+        if (internalFileNumber != null && internalFileNumber.trim().isNotEmpty)
+          'internal_file_number': internalFileNumber.trim(),
       },
     );
 

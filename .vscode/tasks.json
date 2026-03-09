@@ -1,0 +1,21 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "smoke-codes",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				".\\scripts\\smoke_codes_contract.ps1",
+				"-DeviceId",
+				"copilot-smoke-device-final",
+				"-RequestCount",
+				"1"
+			],
+			"isBackground": false
+		}
+	]
+}

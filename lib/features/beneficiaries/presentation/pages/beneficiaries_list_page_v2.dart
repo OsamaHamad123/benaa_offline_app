@@ -205,18 +205,27 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
         EnhancedSnackbar.showSuccess(context, message: 'تم الحذف بنجاح');
       }
     } catch (e) {
+      final message = _mapDeleteErrorMessage(e);
       if (mounted) {
         GlobalErrorHandler.handleError(
           context,
           AppError(
             type: ErrorType.database,
-            message: 'فشل الحذف',
+            message: message,
             originalError: e,
           ),
           onRetry: () => _handleDelete(id),
         );
       }
     }
+  }
+
+  String _mapDeleteErrorMessage(Object error) {
+    final raw = error.toString().toLowerCase();
+    if (raw.contains('foreign key') || raw.contains('constraint failed')) {
+      return 'تعذر الحذف لوجود بيانات مرتبطة بهذا المستفيد.';
+    }
+    return 'فشل الحذف، حاول مرة أخرى.';
   }
 
   @override

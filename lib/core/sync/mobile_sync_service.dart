@@ -4,11 +4,11 @@ import 'package:drift/drift.dart' as drift;
 import 'package:logger/logger.dart';
 
 import 'package:benaa_offline_app/core/config/api_config.dart';
+import 'package:benaa_offline_app/core/error_handling/result.dart';
 import 'package:benaa_offline_app/core/sync/domain/entities/sync_result.dart';
 import 'package:benaa_offline_app/core/sync/domain/repositories/i_sync_repository.dart';
 import '../../data/db/drift_database.dart';
 import '../mappers/beneficiary_sync_mapper.dart' as mapper;
-import '../mappers/visit_sync_mapper.dart' as visit_mapper;
 import '../storage/secure_storage.dart';
 import '../notifications/notifications_service.dart';
 import '../../features/sync/services/file_id_service.dart';
@@ -42,6 +42,8 @@ import '../../features/taxonomies/domain/repositories/taxonomy_repository.dart';
 /// ========================================================================
 
 class MobileSyncService {
+  static const String syncCodeVersion = 'sync-fix-2026-02-27-v3';
+
   final AppDatabase _db;
   final Dio _dio;
   final SecureStorage _storage;
@@ -64,9 +66,15 @@ class MobileSyncService {
   final _operationEventsController = StreamController<SyncOperationEvent>.broadcast();
   MobileSyncStatus _currentStatus = MobileSyncStatus();
   static const int _uiYieldInterval = 20;
+  static bool _inProcessSyncRunning = false;
+  static const Duration _syncLockTtl = Duration(minutes: 10);
+  static const Duration _syncLockHeartbeatInterval = Duration(minutes: 3);
   bool _wasSyncingForNotification = false;
   int _lastSyncProgressNotification = -1;
   String _lastSyncOperationNotification = '';
+  String? _currentSyncLockOwner;
+  Timer? _syncLockHeartbeatTimer;
+  final List<String> _nonCriticalStageWarnings = <String>[];
 
   MobileSyncService(
     this._db,
@@ -204,11 +212,83 @@ class MobileSyncService {
     }
   }
 
+  Future<bool> _acquireSyncExecutionLock(String operation) async {
+    if (_inProcessSyncRunning) {
+      _logger.w('Skip $operation: another sync is already running in-process.');
+      return false;
+    }
+
+    final owner = '$operation-${DateTime.now().millisecondsSinceEpoch}-${identityHashCode(this)}';
+    final acquired = await _storage.acquireSyncLock(owner: owner, ttl: _syncLockTtl);
+    if (!acquired) {
+      final lockInfo = await _storage.getSyncLockInfo();
+      _logger.w(
+        'Skip $operation: distributed sync lock is active '
+        '(owner=${lockInfo?.owner ?? '-'}, until=${lockInfo?.until.toIso8601String() ?? '-'})',
+      );
+      return false;
+    }
+
+    _inProcessSyncRunning = true;
+    _currentSyncLockOwner = owner;
+    _startSyncLockHeartbeat(owner);
+    return true;
+  }
+
+  Future<void> _releaseSyncExecutionLock() async {
+    _stopSyncLockHeartbeat();
+    _inProcessSyncRunning = false;
+    final owner = _currentSyncLockOwner;
+    _currentSyncLockOwner = null;
+    await _storage.releaseSyncLock(owner: owner);
+  }
+
+  void _startSyncLockHeartbeat(String owner) {
+    _syncLockHeartbeatTimer?.cancel();
+    _syncLockHeartbeatTimer = Timer.periodic(_syncLockHeartbeatInterval, (_) {
+      unawaited(_renewSyncLock(owner));
+    });
+  }
+
+  void _stopSyncLockHeartbeat() {
+    _syncLockHeartbeatTimer?.cancel();
+    _syncLockHeartbeatTimer = null;
+  }
+
+  Future<void> _renewSyncLock(String owner) async {
+    try {
+      final renewed = await _storage.acquireSyncLock(owner: owner, ttl: _syncLockTtl);
+      if (!renewed) {
+        final lockInfo = await _storage.getSyncLockInfo();
+        _logger.w(
+          'Failed to renew sync lock for owner=$owner '
+          '(current_owner=${lockInfo?.owner ?? '-'}, until=${lockInfo?.until.toIso8601String() ?? '-'})',
+        );
+      }
+    } catch (e) {
+      _logger.w('Sync lock heartbeat renew failed for owner=$owner: $e');
+    }
+  }
+
+  bool _isDatabaseLockedError(Object error) {
+    return error.toString().toLowerCase().contains('database is locked');
+  }
+
   // ========================================================================
   // 🔽 SYNC DOWN - تنزيل البيانات من السيرفر
   // ========================================================================
 
   Future<MobileSyncResult> syncRecordByFileId(String fileIdNumber) async {
+    final acquired = await _acquireSyncExecutionLock('sync_record');
+    if (!acquired) {
+      return MobileSyncResult(
+        success: false,
+        recordsSynced: 0,
+        error: 'sync_already_running',
+        errorCategory: 'local_lock',
+      );
+    }
+
     _updateStatus(
       _currentStatus.copyWith(
         isSyncing: true,
@@ -277,146 +357,199 @@ class MobileSyncService {
         errorCategory: _classifyError(e),
         errorContext: _extractErrorContext(e),
       );
+    } finally {
+      await _releaseSyncExecutionLock();
     }
   }
 
   /// مزامنة كاملة - تنزيل كل البيانات من السيرفر
   Future<MobileSyncResult> syncDown() async {
-    final flowResult = await _syncDownFlowUseCase.execute(
-      syncTaxonomies: _syncTaxonomiesNonCritical,
-      ensureFileReservation: _ensureFileReservationNonCritical,
-      syncBeneficiariesDown: () async {
-        final result = await _syncBeneficiariesDown();
-        _logger.i('Synced ${result.recordsSynced} beneficiaries');
-        return _toFlowResult(result);
-      },
-      onProgress: ({
-        required String operation,
-        required double progress,
-        bool isSyncing = true,
-        DateTime? lastSyncAt,
-        String? lastError,
-      }) {
-        _updateStatus(
-          _currentStatus.copyWith(
-            isSyncing: isSyncing,
-            currentOperation: operation,
-            progress: progress,
-            lastSyncAt: lastSyncAt,
-            lastError: lastError,
-          ),
-        );
-      },
-      classifyError: _classifyError,
-      extractErrorContext: _extractErrorContext,
-    );
-    final baseResult = _fromFlowResult(flowResult);
-
-    if (!baseResult.success) {
-      return baseResult;
+    final acquired = await _acquireSyncExecutionLock('sync_down');
+    if (!acquired) {
+      return MobileSyncResult(
+        success: false,
+        recordsSynced: 0,
+        error: 'sync_already_running',
+        errorCategory: 'local_lock',
+      );
     }
 
-    var result = baseResult;
+    try {
+      _clearNonCriticalStageWarnings();
 
-    if (_syncAssociationsModuleUseCase != null) {
-      try {
-        _updateStatus(
-          _currentStatus.copyWith(
-            isSyncing: true,
-            currentOperation: 'جاري مزامنة الجمعيات والموظفين... ',
-            progress: 0.95,
-          ),
-        );
+      final flowResult = await _syncDownFlowUseCase.execute(
+        syncTaxonomies: _syncTaxonomiesNonCritical,
+        ensureFileReservation: _ensureFileReservationNonCritical,
+        syncBeneficiariesDown: () async {
+          final result = await _syncBeneficiariesDown();
+          _logger.i('Synced ${result.recordsSynced} beneficiaries');
+          return _toFlowResult(result);
+        },
+        onProgress: ({
+          required String operation,
+          required double progress,
+          bool isSyncing = true,
+          DateTime? lastSyncAt,
+          String? lastError,
+        }) {
+          _updateStatus(
+            _currentStatus.copyWith(
+              isSyncing: isSyncing,
+              currentOperation: operation,
+              progress: progress,
+              lastSyncAt: lastSyncAt,
+              lastError: lastError,
+            ),
+          );
+        },
+        classifyError: _classifyError,
+        extractErrorContext: _extractErrorContext,
+      );
+      var result = _fromFlowResult(flowResult);
 
-        final counters = await _syncAssociationsModuleUseCase.syncDown();
+      final nonCriticalWarnings = _consumeNonCriticalStageWarnings();
+      if (nonCriticalWarnings.isNotEmpty) {
+        final taxonomyFailures =
+            nonCriticalWarnings.where((warning) => warning.startsWith('taxonomies_sync_failed')).length;
+        final fileIdFailures =
+            nonCriticalWarnings.where((warning) => warning.startsWith('file_id_reservation_failed')).length;
 
         final mergedPayload = Map<String, int>.from(result.payloadCounters)
           ..update(
-            'sponsors',
-            (value) => value + counters.uploaded,
-            ifAbsent: () => counters.uploaded,
-          );
-
-        result = MobileSyncResult(
-          success: result.success && counters.failed == 0,
-          recordsSynced: result.recordsSynced + counters.uploaded,
-          recordsFailed: result.recordsFailed + counters.failed,
-          payloadCounters: mergedPayload,
-          writeCounters: result.writeCounters,
-          error: counters.failed > 0 ? 'associations_sync_partial_failure' : result.error,
-          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
-          errorContext: result.errorContext,
-        );
-      } catch (e) {
-        _logger.w('Associations module sync-down step failed: $e');
-        result = MobileSyncResult(
-          success: false,
-          recordsSynced: result.recordsSynced,
-          recordsFailed: result.recordsFailed + 1,
-          payloadCounters: result.payloadCounters,
-          writeCounters: result.writeCounters,
-          error: 'associations_sync_down_failed: $e',
-          errorCategory: _classifyError(e),
-          errorContext: _extractErrorContext(e),
-        );
-      }
-    }
-
-    if (_syncSponsorshipsModuleUseCase != null) {
-      try {
-        _updateStatus(
-          _currentStatus.copyWith(
-            isSyncing: true,
-            currentOperation: 'جاري مزامنة الكفالات... ',
-            progress: 0.98,
-          ),
-        );
-
-        final counters = await _syncSponsorshipsModuleUseCase.syncDown();
-
-        final mergedPayload = Map<String, int>.from(result.payloadCounters)
+            'taxonomies_sync_failed',
+            (value) => value + taxonomyFailures,
+            ifAbsent: () => taxonomyFailures,
+          )
           ..update(
-            'sponsorships',
-            (value) => value + counters.uploaded,
-            ifAbsent: () => counters.uploaded,
+            'file_id_reservation_failed',
+            (value) => value + fileIdFailures,
+            ifAbsent: () => fileIdFailures,
+          )
+          ..update(
+            'non_critical_stage_failures',
+            (value) => value + nonCriticalWarnings.length,
+            ifAbsent: () => nonCriticalWarnings.length,
           );
 
-        result = MobileSyncResult(
-          success: result.success && counters.failed == 0,
-          recordsSynced: result.recordsSynced + counters.uploaded,
-          recordsFailed: result.recordsFailed + counters.failed,
-          payloadCounters: mergedPayload,
-          writeCounters: result.writeCounters,
-          error: counters.failed > 0 ? 'sponsorships_sync_partial_failure' : result.error,
-          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
-          errorContext: result.errorContext,
-        );
-      } catch (e) {
-        _logger.w('Sponsorships module sync-down step failed: $e');
+        final details = nonCriticalWarnings.join(' | ');
+        final errorPrefix = 'non_critical_sync_stage_failed';
+
         result = MobileSyncResult(
           success: false,
           recordsSynced: result.recordsSynced,
-          recordsFailed: result.recordsFailed + 1,
-          payloadCounters: result.payloadCounters,
+          recordsFailed: result.recordsFailed + nonCriticalWarnings.length,
+          payloadCounters: mergedPayload,
           writeCounters: result.writeCounters,
-          error: 'sponsorships_sync_down_failed: $e',
-          errorCategory: _classifyError(e),
-          errorContext: _extractErrorContext(e),
+          error: result.error == null || result.error!.trim().isEmpty
+              ? '$errorPrefix: $details'
+              : '${result.error}; $errorPrefix: $details',
+          errorCategory: 'partial_failure',
+          errorContext: result.errorContext,
         );
       }
+
+      if (_syncAssociationsModuleUseCase != null) {
+        try {
+          _updateStatus(
+            _currentStatus.copyWith(
+              isSyncing: true,
+              currentOperation: 'جاري مزامنة الجمعيات والموظفين... ',
+              progress: 0.95,
+            ),
+          );
+
+          final counters = await _syncAssociationsModuleUseCase.syncDown();
+
+          final mergedPayload = Map<String, int>.from(result.payloadCounters)
+            ..update(
+              'sponsors',
+              (value) => value + counters.uploaded,
+              ifAbsent: () => counters.uploaded,
+            );
+
+          result = MobileSyncResult(
+            success: result.success && counters.failed == 0,
+            recordsSynced: result.recordsSynced + counters.uploaded,
+            recordsFailed: result.recordsFailed + counters.failed,
+            payloadCounters: mergedPayload,
+            writeCounters: result.writeCounters,
+            error: counters.failed > 0 ? 'associations_sync_partial_failure' : result.error,
+            errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+            errorContext: result.errorContext,
+          );
+        } catch (e) {
+          _logger.w('Associations module sync-down step failed: $e');
+          result = MobileSyncResult(
+            success: false,
+            recordsSynced: result.recordsSynced,
+            recordsFailed: result.recordsFailed + 1,
+            payloadCounters: result.payloadCounters,
+            writeCounters: result.writeCounters,
+            error: 'associations_sync_down_failed: $e',
+            errorCategory: _classifyError(e),
+            errorContext: _extractErrorContext(e),
+          );
+        }
+      }
+
+      if (_syncSponsorshipsModuleUseCase != null) {
+        try {
+          _updateStatus(
+            _currentStatus.copyWith(
+              isSyncing: true,
+              currentOperation: 'جاري مزامنة الكفالات... ',
+              progress: 0.98,
+            ),
+          );
+
+          final counters = await _syncSponsorshipsModuleUseCase.syncDown();
+
+          final mergedPayload = Map<String, int>.from(result.payloadCounters)
+            ..update(
+              'sponsorships',
+              (value) => value + counters.uploaded,
+              ifAbsent: () => counters.uploaded,
+            );
+
+          result = MobileSyncResult(
+            success: result.success && counters.failed == 0,
+            recordsSynced: result.recordsSynced + counters.uploaded,
+            recordsFailed: result.recordsFailed + counters.failed,
+            payloadCounters: mergedPayload,
+            writeCounters: result.writeCounters,
+            error: counters.failed > 0 ? 'sponsorships_sync_partial_failure' : result.error,
+            errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+            errorContext: result.errorContext,
+          );
+        } catch (e) {
+          _logger.w('Sponsorships module sync-down step failed: $e');
+          result = MobileSyncResult(
+            success: false,
+            recordsSynced: result.recordsSynced,
+            recordsFailed: result.recordsFailed + 1,
+            payloadCounters: result.payloadCounters,
+            writeCounters: result.writeCounters,
+            error: 'sponsorships_sync_down_failed: $e',
+            errorCategory: _classifyError(e),
+            errorContext: _extractErrorContext(e),
+          );
+        }
+      }
+
+      _updateStatus(
+        _currentStatus.copyWith(
+          isSyncing: false,
+          currentOperation: result.success ? 'اكتملت المزامنة النهائية' : 'اكتملت المزامنة مع مشاكل',
+          progress: 1.0,
+          lastSyncAt: DateTime.now(),
+          lastError: result.success ? null : result.error,
+        ),
+      );
+
+      return result;
+    } finally {
+      await _releaseSyncExecutionLock();
     }
-
-    _updateStatus(
-      _currentStatus.copyWith(
-        isSyncing: false,
-        currentOperation: result.success ? 'اكتملت المزامنة النهائية' : 'اكتملت المزامنة مع مشاكل',
-        progress: 1.0,
-        lastSyncAt: DateTime.now(),
-        lastError: result.success ? null : result.error,
-      ),
-    );
-
-    return result;
   }
 
   /// مزامنة المستفيدين - تنزيل
@@ -428,6 +561,7 @@ class MobileSyncService {
     int payloadAttachments = 0;
     int payloadFamilyMembers = 0;
     int payloadDeadPeople = 0;
+    int payloadGuardianBankAccounts = 0;
     final writeCounter = _EntityWriteCounter();
     final identityIndex = _BeneficiaryIdentityIndex();
 
@@ -449,44 +583,72 @@ class MobileSyncService {
 
         if (records.isEmpty) break;
 
-        await _db.transaction(() async {
-          for (var index = 0; index < records.length; index++) {
-            final record = records[index];
+        const writeChunkSize = 20;
+        int processedInPage = 0;
+
+        for (var offset = 0; offset < records.length; offset += writeChunkSize) {
+          final end = (offset + writeChunkSize < records.length) ? offset + writeChunkSize : records.length;
+          final chunk = records.sublist(offset, end);
+
+          var attempt = 0;
+          while (true) {
             try {
-              if (_isServerDeletedRow(record)) {
-                final deleted = await _deleteBeneficiaryFromServerRow(record);
-                writeCounter.record('beneficiaries', deleted ? _WriteOutcome.updated : _WriteOutcome.skipped);
-                await _yieldToUiIfNeeded(index + 1);
+              await _db.transaction(() async {
+                for (final record in chunk) {
+                  try {
+                    if (_isServerDeletedRow(record)) {
+                      final deleted = await _deleteBeneficiaryFromServerRow(record);
+                      writeCounter.record('beneficiaries', deleted ? _WriteOutcome.updated : _WriteOutcome.skipped);
+                      continue;
+                    }
+
+                    final upsertResult = await _upsertBeneficiaryRecord(record as Map<String, dynamic>);
+                    writeCounter.record('beneficiaries', upsertResult.outcome);
+
+                    _registerBeneficiaryIdentity(
+                      record,
+                      localBeneficiaryId: upsertResult.localBeneficiaryId,
+                      serverBeneficiaryId: upsertResult.serverBeneficiaryId,
+                      index: identityIndex,
+                    );
+
+                    await _syncRelatedEntitiesForBeneficiary(
+                      record,
+                      upsertResult.localBeneficiaryId,
+                      writeCounter,
+                    );
+
+                    totalSynced++;
+                  } catch (e) {
+                    if (_isDatabaseLockedError(e)) {
+                      rethrow;
+                    }
+                    writeCounter.record('beneficiaries', _WriteOutcome.skipped);
+                    _logger.w('Failed to sync record ${record['id']}: $e');
+                  }
+                }
+              });
+              break;
+            } catch (e) {
+              if (_isDatabaseLockedError(e) && attempt < 3) {
+                attempt++;
+                final delayMs = 120 * attempt;
+                _logger.w(
+                  'Database lock detected while syncing beneficiary chunk '
+                  '($offset-$end), retry $attempt/3 after ${delayMs}ms',
+                );
+                await Future<void>.delayed(Duration(milliseconds: delayMs));
                 continue;
               }
-
-              final upsertResult = await _upsertBeneficiaryRecord(record as Map<String, dynamic>);
-              writeCounter.record('beneficiaries', upsertResult.outcome);
-
-              _registerBeneficiaryIdentity(
-                record,
-                localBeneficiaryId: upsertResult.localBeneficiaryId,
-                serverBeneficiaryId: upsertResult.serverBeneficiaryId,
-                index: identityIndex,
-              );
-
-              await _syncRelatedEntitiesForBeneficiary(
-                record,
-                upsertResult.localBeneficiaryId,
-                writeCounter,
-              );
-
-              totalSynced++;
-            } catch (e) {
-              writeCounter.record('beneficiaries', _WriteOutcome.skipped);
-              _logger.w('Failed to sync record ${record['id']}: $e');
+              rethrow;
             }
-
-            await _yieldToUiIfNeeded(index + 1);
           }
 
-          await _syncRelatedEntitiesFromPage(pageResult, writeCounter, identityIndex: identityIndex);
-        });
+          processedInPage += chunk.length;
+          await _yieldToUiIfNeeded(processedInPage);
+        }
+
+        await _syncRelatedEntitiesFromPage(pageResult, writeCounter, identityIndex: identityIndex);
 
         _logger.i('Page $page: ${records.length} records');
 
@@ -505,6 +667,7 @@ class MobileSyncService {
       payloadAttachments += dedicatedRelated.attachments;
       payloadFamilyMembers += dedicatedRelated.familyMembers;
       payloadDeadPeople += dedicatedRelated.familyDeceased;
+      payloadGuardianBankAccounts += dedicatedRelated.guardianBankAccounts;
 
       return MobileSyncResult(
         success: true,
@@ -514,6 +677,7 @@ class MobileSyncService {
           'attachments': payloadAttachments,
           'family_members': payloadFamilyMembers,
           'dead_people': payloadDeadPeople,
+          'guardian_bank_accounts': payloadGuardianBankAccounts,
         },
         writeCounters: writeCounter.toFlatMap(),
       );
@@ -528,6 +692,7 @@ class MobileSyncService {
           'attachments': payloadAttachments,
           'family_members': payloadFamilyMembers,
           'dead_people': payloadDeadPeople,
+          'guardian_bank_accounts': payloadGuardianBankAccounts,
         },
         writeCounters: writeCounter.toFlatMap(),
         errorCategory: _classifyError(e),
@@ -536,7 +701,8 @@ class MobileSyncService {
     }
   }
 
-  Future<({int attachments, int familyMembers, int familyDeceased})> _syncRelatedEntitiesFromDedicatedEndpoints({
+  Future<({int attachments, int familyMembers, int familyDeceased, int guardianBankAccounts})>
+      _syncRelatedEntitiesFromDedicatedEndpoints({
     required int pageSize,
     required _EntityWriteCounter writeCounter,
     required _BeneficiaryIdentityIndex identityIndex,
@@ -544,6 +710,7 @@ class MobileSyncService {
     int attachmentsSynced = 0;
     int familyMembersSynced = 0;
     int familyDeceasedSynced = 0;
+    int guardianBankAccountsSynced = 0;
 
     _updateStatus(
       _currentStatus.copyWith(
@@ -636,14 +803,42 @@ class MobileSyncService {
       writeCounter: writeCounter,
     );
 
+    _updateStatus(
+      _currentStatus.copyWith(
+        currentOperation: 'جاري تنزيل الحسابات البنكية للأوصياء من المسار الرسمي... ',
+        progress: 0.94,
+      ),
+    );
+
+    await _syncEndpointRows(
+      entityKey: 'guardian_bank_accounts',
+      endpoint: _normalizeApiEndpoint(ApiConfig.guardianBankAccountsEndpoint),
+      listKeys: const ['bank_accounts', 'guardian_bank_accounts', 'records', 'items', 'data'],
+      pageSize: pageSize,
+      onRow: (row, _) async {
+        if (_isServerDeletedRow(row)) {
+          final deleted = await _relatedEntitiesRepository.deleteGuardianBankAccountFromServerRow(row);
+          return deleted ? _WriteOutcome.updated : _WriteOutcome.skipped;
+        }
+
+        final outcome = await _relatedEntitiesRepository.upsertGuardianBankAccount(row);
+        return _mapRelatedWriteOutcome(outcome);
+      },
+      onCounted: (count) => guardianBankAccountsSynced += count,
+      writeCounter: writeCounter,
+    );
+
     _logger.i(
-      'Dedicated related endpoints synced => attachments: $attachmentsSynced, family_members: $familyMembersSynced, dead_people: $familyDeceasedSynced',
+      'Dedicated related endpoints synced => attachments: $attachmentsSynced, '
+      'family_members: $familyMembersSynced, dead_people: $familyDeceasedSynced, '
+      'guardian_bank_accounts: $guardianBankAccountsSynced',
     );
 
     return (
       attachments: attachmentsSynced,
       familyMembers: familyMembersSynced,
       familyDeceased: familyDeceasedSynced,
+      guardianBankAccounts: guardianBankAccountsSynced,
     );
   }
 
@@ -877,7 +1072,6 @@ class MobileSyncService {
       if (_isServerDeletedRow(member)) {
         final deleted = await _deleteFamilyMemberFromServerRow(member);
         writeCounter.record('family_members', deleted ? _WriteOutcome.updated : _WriteOutcome.skipped);
-        await _yieldToUiIfNeeded(index + 1);
         continue;
       }
 
@@ -887,8 +1081,6 @@ class MobileSyncService {
       );
       final outcome = _mapRelatedWriteOutcome(relatedOutcome);
       writeCounter.record('family_members', outcome);
-
-      await _yieldToUiIfNeeded(index + 1);
     }
 
     final nestedDeceased = _extractListOfMaps(
@@ -900,7 +1092,6 @@ class MobileSyncService {
       if (_isServerDeletedRow(deceased)) {
         final deleted = await _deleteFamilyDeceasedFromServerRow(deceased);
         writeCounter.record('dead_people', deleted ? _WriteOutcome.updated : _WriteOutcome.skipped);
-        await _yieldToUiIfNeeded(index + 1);
         continue;
       }
 
@@ -910,8 +1101,6 @@ class MobileSyncService {
       );
       final outcome = _mapRelatedWriteOutcome(relatedOutcome);
       writeCounter.record('dead_people', outcome);
-
-      await _yieldToUiIfNeeded(index + 1);
     }
   }
 
@@ -1273,200 +1462,261 @@ class MobileSyncService {
 
   /// رفع المستفيدين المحليين للسيرفر باستخدام الـ Batch API
   Future<MobileSyncResult> syncUp() async {
-    final flowResult = await _syncUpFlowUseCase.execute(
-      runUnifiedBridge: () async {
-        final result = await _runUnifiedSyncBridge();
-        return SyncUnifiedBridgeOutcome(
-          uploaded: result.uploaded,
-          failed: result.failed,
-          handledBeneficiaries: result.handledBeneficiaries,
-          handledVisits: result.handledVisits,
-        );
-      },
-      getDeviceId: _storage.getDeviceId,
-      syncLegacyBeneficiaries: () async {
-        final deviceId = await _storage.getDeviceId();
-        return _syncLegacyBeneficiariesBatch(deviceId);
-      },
-      syncDeleteTombstones: () async {
-        final deleteResult = await _tombstoneDeleteSyncUseCase.execute();
-        return SyncStageCounters(
-          uploaded: deleteResult.deletedCount,
-          failed: deleteResult.failedCount,
-        );
-      },
-      syncVisits: () async {
-        final deviceId = await _storage.getDeviceId();
-        final result = await _syncVisitsUp(deviceId);
-        return SyncStageCounters(
-          uploaded: result.recordsSynced,
-          failed: result.recordsFailed,
-        );
-      },
-      syncFamilyMembers: () async {
-        final deviceId = await _storage.getDeviceId();
-        final result = await _syncFamilyMembersUp(deviceId);
-        return SyncStageCounters(
-          uploaded: result.recordsSynced,
-          failed: result.recordsFailed,
-        );
-      },
-      syncDeadPeople: () async {
-        final deviceId = await _storage.getDeviceId();
-        final result = await _syncDeadPeopleUp(deviceId);
-        return SyncStageCounters(
-          uploaded: result.recordsSynced,
-          failed: result.recordsFailed,
-        );
-      },
-      syncAttachments: () async {
-        final deviceId = await _storage.getDeviceId();
-        final result = await _syncAttachmentsUp(deviceId);
-        return SyncStageCounters(
-          uploaded: result.recordsSynced,
-          failed: result.recordsFailed,
-        );
-      },
-      syncUsedFileIds: () async {
-        if (_fileIdService == null) return;
-        await _fileIdService.syncUsage();
-      },
-      onProgress: ({
-        required String operation,
-        required double progress,
-        bool isSyncing = true,
-        DateTime? lastSyncAt,
-        String? lastError,
-      }) {
-        _updateStatus(
-          _currentStatus.copyWith(
-            isSyncing: isSyncing,
-            currentOperation: operation,
-            progress: progress,
-            lastSyncAt: lastSyncAt,
-            lastError: lastError,
-          ),
-        );
-      },
-      classifyError: _classifyError,
-      extractErrorContext: _extractErrorContext,
-    );
-    final baseResult = _fromFlowResult(flowResult);
-
-    if (_syncAssociationsModuleUseCase == null && _syncSponsorshipsModuleUseCase == null) {
-      return baseResult;
+    final acquired = await _acquireSyncExecutionLock('sync_up');
+    if (!acquired) {
+      return MobileSyncResult(
+        success: false,
+        recordsSynced: 0,
+        error: 'sync_already_running',
+        errorCategory: 'local_lock',
+      );
     }
 
-    var result = baseResult;
+    try {
+      final modifiedMissingServerId = await (_db.select(_db.beneficiaries)
+            ..where((b) => b.syncState.equals('modified') & b.serverId.isNull())
+            ..limit(1))
+          .get();
 
-    if (_syncAssociationsModuleUseCase != null) {
-      try {
+      if (modifiedMissingServerId.isNotEmpty) {
+        _logger.w(
+          'Detected modified beneficiaries without serverId before sync-up. '
+          'Running beneficiaries sync-down preflight to recover mapping.',
+        );
         _updateStatus(
           _currentStatus.copyWith(
             isSyncing: true,
-            currentOperation: 'جاري رفع مزامنة الجمعيات والموظفين... ',
-            progress: 0.92,
+            currentOperation: 'اكتشاف تعارض تعديل محلي — جاري مزامنة تنزيل سريعة لاسترجاع معرف السيرفر...',
+            progress: 0.05,
           ),
         );
 
-        final counters = await _syncAssociationsModuleUseCase.syncUp();
+        try {
+          final downResult = await _syncBeneficiariesDown();
+          _logger.i(
+            'Preflight beneficiaries sync-down finished: synced=${downResult.recordsSynced}, '
+            'failed=${downResult.recordsFailed}',
+          );
+        } catch (e, stack) {
+          _logger.w(
+            'Preflight beneficiaries sync-down failed; proceeding with sync-up. error=$e',
+            error: e,
+            stackTrace: stack,
+          );
+        }
+      }
 
-        final mergedPayload = Map<String, int>.from(result.payloadCounters)
-          ..update(
-            'associations_up',
-            (value) => value + counters.uploaded,
-            ifAbsent: () => counters.uploaded,
+      final flowResult = await _syncUpFlowUseCase.execute(
+        runUnifiedBridge: () async {
+          final result = await _runUnifiedSyncBridge();
+          return SyncUnifiedBridgeOutcome(
+            uploaded: result.uploaded,
+            failed: result.failed,
+            handledBeneficiaries: result.handledBeneficiaries,
+            handledVisits: result.handledVisits,
+          );
+        },
+        getDeviceId: _storage.getDeviceId,
+        syncLegacyBeneficiaries: () async {
+          final deviceId = await _storage.getDeviceId();
+          return _syncLegacyBeneficiariesBatch(deviceId);
+        },
+        syncDeleteTombstones: () async {
+          final deleteResult = await _tombstoneDeleteSyncUseCase.execute();
+          return SyncStageCounters(
+            uploaded: deleteResult.deletedCount,
+            failed: deleteResult.failedCount,
+          );
+        },
+        syncVisits: () async {
+          final deviceId = await _storage.getDeviceId();
+          final result = await _syncVisitsUp(deviceId);
+          return SyncStageCounters(
+            uploaded: result.recordsSynced,
+            failed: result.recordsFailed,
+          );
+        },
+        syncFamilyMembers: () async {
+          final deviceId = await _storage.getDeviceId();
+          final result = await _syncFamilyMembersUp(deviceId);
+          return SyncStageCounters(
+            uploaded: result.recordsSynced,
+            failed: result.recordsFailed,
+          );
+        },
+        syncDeadPeople: () async {
+          final deviceId = await _storage.getDeviceId();
+          final result = await _syncDeadPeopleUp(deviceId);
+          return SyncStageCounters(
+            uploaded: result.recordsSynced,
+            failed: result.recordsFailed,
+          );
+        },
+        syncAttachments: () async {
+          final deviceId = await _storage.getDeviceId();
+          final result = await _syncAttachmentsUp(deviceId);
+          return SyncStageCounters(
+            uploaded: result.recordsSynced,
+            failed: result.recordsFailed,
+          );
+        },
+        syncGuardianBankAccounts: () async {
+          final deviceId = await _storage.getDeviceId();
+          final result = await _syncGuardianBankAccountsUp(deviceId);
+          return SyncStageCounters(
+            uploaded: result.recordsSynced,
+            failed: result.recordsFailed,
+          );
+        },
+        syncUsedFileIds: () async {
+          if (_fileIdService == null) return;
+          await _fileIdService.syncUsage();
+        },
+        onProgress: ({
+          required String operation,
+          required double progress,
+          bool isSyncing = true,
+          DateTime? lastSyncAt,
+          String? lastError,
+        }) {
+          _updateStatus(
+            _currentStatus.copyWith(
+              isSyncing: isSyncing,
+              currentOperation: operation,
+              progress: progress,
+              lastSyncAt: lastSyncAt,
+              lastError: lastError,
+            ),
+          );
+        },
+        classifyError: _classifyError,
+        extractErrorContext: _extractErrorContext,
+      );
+      final baseResult = _fromFlowResult(flowResult);
+
+      if (_syncAssociationsModuleUseCase == null && _syncSponsorshipsModuleUseCase == null) {
+        return baseResult;
+      }
+
+      var result = baseResult;
+
+      if (_syncAssociationsModuleUseCase != null) {
+        try {
+          _updateStatus(
+            _currentStatus.copyWith(
+              isSyncing: true,
+              currentOperation: 'جاري رفع مزامنة الجمعيات والموظفين... ',
+              progress: 0.92,
+            ),
           );
 
-        result = MobileSyncResult(
-          success: result.success && counters.failed == 0,
-          recordsSynced: result.recordsSynced + counters.uploaded,
-          recordsFailed: result.recordsFailed + counters.failed,
-          payloadCounters: mergedPayload,
-          writeCounters: result.writeCounters,
-          error: counters.failed > 0 ? 'associations_sync_up_partial_failure' : result.error,
-          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
-          errorContext: result.errorContext,
-        );
-      } catch (e) {
-        _logger.w('Associations module sync-up step failed: $e');
-        result = MobileSyncResult(
-          success: false,
-          recordsSynced: result.recordsSynced,
-          recordsFailed: result.recordsFailed + 1,
-          payloadCounters: result.payloadCounters,
-          writeCounters: result.writeCounters,
-          error: 'associations_sync_up_failed: $e',
-          errorCategory: _classifyError(e),
-          errorContext: _extractErrorContext(e),
-        );
+          final counters = await _syncAssociationsModuleUseCase.syncUp();
+
+          final mergedPayload = Map<String, int>.from(result.payloadCounters)
+            ..update(
+              'associations_up',
+              (value) => value + counters.uploaded,
+              ifAbsent: () => counters.uploaded,
+            );
+
+          result = MobileSyncResult(
+            success: result.success && counters.failed == 0,
+            recordsSynced: result.recordsSynced + counters.uploaded,
+            recordsFailed: result.recordsFailed + counters.failed,
+            payloadCounters: mergedPayload,
+            writeCounters: result.writeCounters,
+            error: counters.failed > 0 ? 'associations_sync_up_partial_failure' : result.error,
+            errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+            errorContext: result.errorContext,
+          );
+        } catch (e) {
+          _logger.w('Associations module sync-up step failed: $e');
+          result = MobileSyncResult(
+            success: false,
+            recordsSynced: result.recordsSynced,
+            recordsFailed: result.recordsFailed + 1,
+            payloadCounters: result.payloadCounters,
+            writeCounters: result.writeCounters,
+            error: 'associations_sync_up_failed: $e',
+            errorCategory: _classifyError(e),
+            errorContext: _extractErrorContext(e),
+          );
+        }
       }
-    }
 
-    if (_syncSponsorshipsModuleUseCase != null) {
-      try {
-        _updateStatus(
-          _currentStatus.copyWith(
-            isSyncing: true,
-            currentOperation: 'جاري رفع مزامنة الكفالات... ',
-            progress: 0.96,
-          ),
-        );
-
-        final counters = await _syncSponsorshipsModuleUseCase.syncUp();
-
-        final mergedPayload = Map<String, int>.from(result.payloadCounters)
-          ..update(
-            'sponsorships_up',
-            (value) => value + counters.uploaded,
-            ifAbsent: () => counters.uploaded,
+      if (_syncSponsorshipsModuleUseCase != null) {
+        try {
+          _updateStatus(
+            _currentStatus.copyWith(
+              isSyncing: true,
+              currentOperation: 'جاري رفع مزامنة الكفالات... ',
+              progress: 0.96,
+            ),
           );
 
-        result = MobileSyncResult(
-          success: result.success && counters.failed == 0,
-          recordsSynced: result.recordsSynced + counters.uploaded,
-          recordsFailed: result.recordsFailed + counters.failed,
-          payloadCounters: mergedPayload,
-          writeCounters: result.writeCounters,
-          error: counters.failed > 0 ? 'sponsorships_sync_up_partial_failure' : result.error,
-          errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
-          errorContext: result.errorContext,
-        );
-      } catch (e) {
-        _logger.w('Sponsorships module sync-up step failed: $e');
-        result = MobileSyncResult(
-          success: false,
-          recordsSynced: result.recordsSynced,
-          recordsFailed: result.recordsFailed + 1,
-          payloadCounters: result.payloadCounters,
-          writeCounters: result.writeCounters,
-          error: 'sponsorships_sync_up_failed: $e',
-          errorCategory: _classifyError(e),
-          errorContext: _extractErrorContext(e),
-        );
+          final counters = await _syncSponsorshipsModuleUseCase.syncUp();
+
+          final mergedPayload = Map<String, int>.from(result.payloadCounters)
+            ..update(
+              'sponsorships_up',
+              (value) => value + counters.uploaded,
+              ifAbsent: () => counters.uploaded,
+            );
+
+          result = MobileSyncResult(
+            success: result.success && counters.failed == 0,
+            recordsSynced: result.recordsSynced + counters.uploaded,
+            recordsFailed: result.recordsFailed + counters.failed,
+            payloadCounters: mergedPayload,
+            writeCounters: result.writeCounters,
+            error: counters.failed > 0 ? 'sponsorships_sync_up_partial_failure' : result.error,
+            errorCategory: counters.failed > 0 ? 'partial_failure' : result.errorCategory,
+            errorContext: result.errorContext,
+          );
+        } catch (e) {
+          _logger.w('Sponsorships module sync-up step failed: $e');
+          result = MobileSyncResult(
+            success: false,
+            recordsSynced: result.recordsSynced,
+            recordsFailed: result.recordsFailed + 1,
+            payloadCounters: result.payloadCounters,
+            writeCounters: result.writeCounters,
+            error: 'sponsorships_sync_up_failed: $e',
+            errorCategory: _classifyError(e),
+            errorContext: _extractErrorContext(e),
+          );
+        }
       }
+
+      _updateStatus(
+        _currentStatus.copyWith(
+          isSyncing: false,
+          currentOperation: result.success ? 'اكتمل رفع المزامنة النهائية' : 'اكتمل رفع المزامنة مع مشاكل',
+          progress: 1.0,
+          lastSyncAt: DateTime.now(),
+          lastError: result.success ? null : result.error,
+        ),
+      );
+
+      return result;
+    } finally {
+      await _releaseSyncExecutionLock();
     }
-
-    _updateStatus(
-      _currentStatus.copyWith(
-        isSyncing: false,
-        currentOperation: result.success ? 'اكتمل رفع المزامنة النهائية' : 'اكتمل رفع المزامنة مع مشاكل',
-        progress: 1.0,
-        lastSyncAt: DateTime.now(),
-        lastError: result.success ? null : result.error,
-      ),
-    );
-
-    return result;
   }
 
   Future<void> _syncTaxonomiesNonCritical() async {
     if (_taxonomyRepository == null) return;
     _logger.i('Syncing taxonomies...');
     try {
-      await _taxonomyRepository.syncFromServer();
+      final taxonomyResult = await _taxonomyRepository.syncFromServer();
+      if (taxonomyResult.isFailure) {
+        final failure = taxonomyResult as Failure<dynamic>;
+        _logger.w('Taxonomy sync failed (non-critical): ${failure.error.message}');
+        _registerNonCriticalStageWarning('taxonomies_sync_failed: ${failure.error.message}');
+      }
     } catch (e) {
       _logger.w('Taxonomy sync failed (non-critical): $e');
+      _registerNonCriticalStageWarning('taxonomies_sync_failed: $e');
     }
   }
 
@@ -1477,13 +1727,32 @@ class MobileSyncService {
       await _fileIdService.ensureReservation();
     } catch (e) {
       _logger.w('File ID reservation failed (non-critical): $e');
+      _registerNonCriticalStageWarning('file_id_reservation_failed: $e');
     }
   }
 
+  void _registerNonCriticalStageWarning(String warning) {
+    final normalized = warning.trim();
+    if (normalized.isEmpty) return;
+    _nonCriticalStageWarnings.add(normalized);
+  }
+
+  void _clearNonCriticalStageWarnings() {
+    _nonCriticalStageWarnings.clear();
+  }
+
+  List<String> _consumeNonCriticalStageWarnings() {
+    final snapshot = List<String>.from(_nonCriticalStageWarnings);
+    _nonCriticalStageWarnings.clear();
+    return snapshot;
+  }
+
   Future<SyncStageCounters> _syncLegacyBeneficiariesBatch(String deviceId) async {
+    _logger.i('Beneficiary batch upload path active (code=$syncCodeVersion)');
+
     final localBeneficiaries = await (_db.select(_db.beneficiaries)
           ..where(
-            (b) => b.syncState.equals('pending') | b.syncState.equals('modified'),
+            (b) => b.syncState.equals('pending') | b.syncState.equals('modified') | b.syncState.equals('failed'),
           ))
         .get();
 
@@ -1494,7 +1763,14 @@ class MobileSyncService {
 
     int uploaded = 0;
     int failed = 0;
+    String? lastFailureReason;
     const batchSize = ApiConfig.batchSize;
+
+    void rememberFailure(Object? reason) {
+      final text = reason?.toString().trim();
+      if (text == null || text.isEmpty) return;
+      lastFailureReason = text.length > 500 ? text.substring(0, 500) : text;
+    }
 
     for (int i = 0; i < localBeneficiaries.length; i += batchSize) {
       final end = (i + batchSize < localBeneficiaries.length) ? i + batchSize : localBeneficiaries.length;
@@ -1508,7 +1784,77 @@ class MobileSyncService {
       );
 
       try {
-        final dataList = batch.map((b) => mapper.BeneficiaryMapper.toBackend(b)).toList();
+        final localIdByFileId = <int, int>{};
+        final localIdByIdNumber = <int, int>{};
+
+        final prepared = <_PreparedBeneficiaryUpload>[];
+        for (final b in batch) {
+          final ensuredFileId = await _ensureBeneficiaryFileIdForUpload(b);
+
+          final payload = mapper.BeneficiaryMapper.toBackend(b);
+          if (ensuredFileId != null && ensuredFileId > 0) {
+            payload['file_id_number'] = ensuredFileId.toString();
+          }
+
+          int normalizePositive(dynamic value, {int fallback = 1}) {
+            final parsed = _asInt(value);
+            if (parsed == null || parsed <= 0) return fallback;
+            return parsed;
+          }
+
+          payload['data_academic_qualification'] = normalizePositive(payload['data_academic_qualification']);
+          payload['data_employment_status_breadwinner'] =
+              normalizePositive(payload['data_employment_status_breadwinner']);
+          payload['data_displacement_status'] = normalizePositive(payload['data_displacement_status']);
+          payload['data_health_status'] = normalizePositive(payload['data_health_status']);
+          payload['data_housing_status'] = normalizePositive(payload['data_housing_status']);
+          payload['data_current_housing_type'] = normalizePositive(payload['data_current_housing_type']);
+
+          final fileId = _asIntLoose(payload['file_id_number']);
+          if (fileId != null) {
+            localIdByFileId[fileId] = b.id;
+          }
+
+          final idNumber = _asInt(payload['data_id_number']);
+          if (idNumber != null) {
+            localIdByIdNumber[idNumber] = b.id;
+          }
+
+          prepared.add(
+            _PreparedBeneficiaryUpload(
+              localId: b.id,
+              syncState: b.syncState,
+              payload: payload,
+            ),
+          );
+        }
+
+        final preflight = _runBeneficiaryPreflight(prepared);
+
+        if (preflight.invalidLocalIds.isNotEmpty) {
+          await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(preflight.invalidLocalIds))).write(
+            BeneficiariesCompanion(syncState: const drift.Value('failed')),
+          );
+          failed += preflight.invalidLocalIds.length;
+          rememberFailure(
+            preflight.issues.take(3).map((e) => '#${e.localId}:${e.reason}').join(' | '),
+          );
+          _logger.w(
+            'Quarantined ${preflight.invalidLocalIds.length} beneficiaries before upload: '
+            '${preflight.issues.take(3).map((e) => '#${e.localId}:${e.reason}').join(', ')}',
+          );
+        }
+
+        if (preflight.validRecords.isEmpty) {
+          continue;
+        }
+
+        final dataList = preflight.validRecords.map((e) => e.payload).toList(growable: false);
+        final attemptedLocalIds = preflight.validRecords.map((e) => e.localId).toSet();
+        final attemptedFileIds = preflight.validRecords
+            .map((e) => _asIntLoose(e.payload['file_id_number']))
+            .whereType<int>()
+            .toList(growable: false);
 
         final response = await _dio.post(
           _normalizeApiEndpoint(ApiConfig.batchDataSyncEndpoint),
@@ -1516,11 +1862,16 @@ class MobileSyncService {
             'records': dataList,
             'device_id': deviceId,
           },
+          options: Options(
+            validateStatus: (status) => status != null && status < 500,
+          ),
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           final responseMap = _toStringDynamicMap(response.data) ?? const <String, dynamic>{};
           final responseDataNode = _toStringDynamicMap(responseMap['data']) ?? const <String, dynamic>{};
+          final backendMessage = responseDataNode['message']?.toString() ?? responseMap['message']?.toString();
+          final backendError = responseDataNode['error']?.toString() ?? responseMap['error']?.toString();
 
           final created = _extractIntList(
             responseDataNode['created'] ?? responseMap['created'],
@@ -1533,14 +1884,6 @@ class MobileSyncService {
           final failedExplicit = _asInt(
             responseDataNode['failed_count'] ?? responseMap['failed_count'],
           );
-
-          final localIdByFileId = <int, int>{};
-          for (final row in batch) {
-            final fileId = int.tryParse((row.fileIdNumber ?? '').trim());
-            if (fileId != null) {
-              localIdByFileId[fileId] = row.id;
-            }
-          }
 
           if (successfulFileIds.isNotEmpty) {
             final successLocalIds =
@@ -1556,11 +1899,56 @@ class MobileSyncService {
             }
 
             uploaded += successLocalIds.length;
-            failed += failedExplicit ?? (batch.length - successLocalIds.length).clamp(0, batch.length);
+            failed += failedExplicit ?? (dataList.length - successLocalIds.length).clamp(0, dataList.length);
+
+            final failedRowsValue = responseDataNode['failed'] ?? responseMap['failed'];
+            final failedRows = failedRowsValue is List ? failedRowsValue : const <dynamic>[];
+            final failedLocalIds = <int>{};
+            String? sampleBackendFailure;
+            for (final row in failedRows) {
+              final rowMap = _toStringDynamicMap(row);
+              if (rowMap == null) continue;
+
+              if (sampleBackendFailure == null) {
+                sampleBackendFailure =
+                    rowMap['message']?.toString() ?? rowMap['error']?.toString() ?? rowMap['reason']?.toString();
+              }
+
+              final failedFileId = _asIntLoose(rowMap['file_id_number']);
+              if (failedFileId != null && localIdByFileId.containsKey(failedFileId)) {
+                failedLocalIds.add(localIdByFileId[failedFileId]!);
+                continue;
+              }
+
+              final failedIdNumber = _asInt(
+                rowMap['data_id_number'] ?? rowMap['id_number'] ?? rowMap['national_id'],
+              );
+              if (failedIdNumber != null && localIdByIdNumber.containsKey(failedIdNumber)) {
+                failedLocalIds.add(localIdByIdNumber[failedIdNumber]!);
+              }
+            }
+
+            final successLocalIdSet = successLocalIds.toSet();
+            final unresolvedFailedIds = attemptedLocalIds.difference(successLocalIdSet);
+            failedLocalIds.addAll(unresolvedFailedIds);
+
+            if (failedLocalIds.isNotEmpty) {
+              await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(failedLocalIds.toList()))).write(
+                BeneficiariesCompanion(syncState: const drift.Value('failed')),
+              );
+              rememberFailure(
+                'backend_failed_count=${failedExplicit ?? failedLocalIds.length}, '
+                'local_ids=${failedLocalIds.take(5).join(',')}, '
+                'file_ids=${attemptedFileIds.take(5).join(',')}, '
+                'backend_error=${backendError ?? '-'}, '
+                'backend_message=${sampleBackendFailure ?? backendMessage ?? '-'}',
+              );
+            }
+
             _logger.i(
-                '✅ Synced beneficiaries batch: success=${successLocalIds.length}, failed=${failedExplicit ?? (batch.length - successLocalIds.length)}');
+                '✅ Synced beneficiaries batch: success=${successLocalIds.length}, failed=${failedExplicit ?? (dataList.length - successLocalIds.length)}');
           } else if ((failedExplicit ?? 0) == 0) {
-            final ids = batch.map((b) => b.id).toList(growable: false);
+            final ids = preflight.validRecords.map((e) => e.localId).toList(growable: false);
             await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
               BeneficiariesCompanion(
                 syncState: const drift.Value('synced'),
@@ -1568,20 +1956,67 @@ class MobileSyncService {
               ),
             );
 
-            uploaded += batch.length;
-            _logger.i('✅ Synced batch of ${batch.length} records');
+            uploaded += ids.length;
+            _logger.i('✅ Synced batch of ${ids.length} records');
           } else {
             failed += failedExplicit!;
+            final ids = preflight.validRecords.map((e) => e.localId).toList(growable: false);
+            if (ids.isNotEmpty) {
+              await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
+                BeneficiariesCompanion(syncState: const drift.Value('failed')),
+              );
+            }
+            rememberFailure(
+              'backend_failed_count=$failedExplicit, '
+              'local_ids=${ids.take(5).join(',')}, '
+              'file_ids=${attemptedFileIds.take(5).join(',')}, '
+              'backend_error=${backendError ?? '-'}, '
+              'backend_message=${backendMessage ?? '-'}',
+            );
             _logger.w('❌ Sync batch partially failed: failed_count=$failedExplicit');
           }
         } else {
-          failed += batch.length;
+          failed += dataList.length;
+          final ids = preflight.validRecords.map((e) => e.localId).toList(growable: false);
+          if (ids.isNotEmpty) {
+            await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
+              BeneficiariesCompanion(syncState: const drift.Value('failed')),
+            );
+          }
+          rememberFailure('status=${response.statusCode}, response=${response.data}');
           _logger.w('❌ Sync batch failed: ${response.data}');
         }
+      } on DioException catch (e) {
+        failed += batch.length;
+        if (e.response?.statusCode == 422) {
+          final ids = batch.map((b) => b.id).toList(growable: false);
+          await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(ids))).write(
+            BeneficiariesCompanion(syncState: const drift.Value('failed')),
+          );
+        }
+        rememberFailure(e.response?.data ?? e.message ?? e.toString());
+        _logger.e(
+          'Error syncing batch: status=${e.response?.statusCode}, '
+          'message=${e.message}, response=${e.response?.data}',
+          error: e,
+        );
       } catch (e) {
         failed += batch.length;
+        rememberFailure(e);
         _logger.e('Error syncing batch', error: e);
       }
+    }
+
+    if (failed > 0) {
+      await _db.syncMetadataDao.updateSyncFailure(
+        'beneficiaries',
+        error: lastFailureReason ?? 'beneficiaries_sync_up_failed',
+      );
+    } else {
+      await _db.syncMetadataDao.updateSyncSuccess(
+        'beneficiaries',
+        totalSynced: uploaded,
+      );
     }
 
     return SyncStageCounters(uploaded: uploaded, failed: failed);
@@ -1698,64 +2133,35 @@ class MobileSyncService {
     );
   }
 
+  Future<MobileSyncResult> _syncGuardianBankAccountsUp(String deviceId) async {
+    final counters = await _syncRelatedEntitiesUpUseCase.syncGuardianBankAccounts(deviceId);
+    return MobileSyncResult(
+      success: counters.failed == 0,
+      recordsSynced: counters.uploaded,
+      recordsFailed: counters.failed,
+    );
+  }
+
   /// مزامنة الزيارات محلية الرفع للسيرفر
   Future<MobileSyncResult> _syncVisitsUp(String deviceId) async {
-    int uploaded = 0;
-    int failedCount = 0;
-
     try {
       final pendingVisits = await _db.visitsDao.getPendingVisits();
-      _logger.i('Found ${pendingVisits.length} visits to upload');
+      _logger.i('Visits server sync disabled (local-only mode). Pending visits: ${pendingVisits.length}');
 
       if (pendingVisits.isEmpty) {
         return MobileSyncResult(success: true, recordsSynced: 0);
       }
 
-      // Process in batches
-      const batchSize = ApiConfig.batchSize;
-      for (int i = 0; i < pendingVisits.length; i += batchSize) {
-        final end = (i + batchSize < pendingVisits.length) ? i + batchSize : pendingVisits.length;
-        final batch = pendingVisits.sublist(i, end);
-        final dataList = batch.map(visit_mapper.VisitSyncMapper.toBackend).toList();
-
-        try {
-          final response = await _dio.post(
-            _normalizeApiEndpoint(ApiConfig.visitsBatchSyncEndpoint),
-            data: {
-              'records': dataList,
-              'device_id': deviceId,
-            },
-          );
-
-          if (response.statusCode == 200 || response.statusCode == 201) {
-            final results = response.data['results'] as List?;
-            if (results != null) {
-              for (var res in results) {
-                final localId = res['local_id']?.toString();
-                final serverId = res['id']?.toString();
-                if (localId != null && serverId != null) {
-                  await _db.visitsDao.updateVisitSyncStatus(localId, serverId);
-                  uploaded++;
-                }
-              }
-            }
-          } else {
-            failedCount += batch.length;
-            _logger.w('❌ Visits sync batch failed: ${response.statusCode}');
-          }
-        } catch (e) {
-          failedCount += batch.length;
-          _logger.e('Error syncing visits batch', error: e);
-        }
-      }
+      final updatedCount = await _db.visitsDao.markPendingVisitsAsLocalOnlySynced();
+      _logger.i('Marked $updatedCount visits as locally synced (no server upload).');
 
       return MobileSyncResult(
-        success: failedCount == 0,
-        recordsSynced: uploaded,
-        recordsFailed: failedCount,
+        success: true,
+        recordsSynced: updatedCount,
+        recordsFailed: 0,
       );
     } catch (e) {
-      _logger.e('Visits sync up failed', error: e);
+      _logger.e('Visits local-only sync handling failed', error: e);
       return MobileSyncResult(success: false, recordsSynced: 0, error: e.toString());
     }
   }
@@ -1797,6 +2203,7 @@ class MobileSyncService {
 
   /// Dispose
   void dispose() {
+    _stopSyncLockHeartbeat();
     _statusController.close();
     _operationEventsController.close();
   }
@@ -1811,6 +2218,101 @@ class MobileSyncService {
   List<int> _extractIntList(dynamic value) {
     if (value is! List) return const <int>[];
     return value.map((e) => _asInt(e)).whereType<int>().toList(growable: false);
+  }
+
+  _BeneficiaryPreflightResult _runBeneficiaryPreflight(
+    List<_PreparedBeneficiaryUpload> records,
+  ) {
+    final validRecords = <_PreparedBeneficiaryUpload>[];
+    final invalidLocalIds = <int>[];
+    final issues = <_BeneficiaryPreflightIssue>[];
+
+    for (final record in records) {
+      final payload = record.payload;
+      final idNumber = _asInt(payload['data_id_number']);
+      final phoneNumber = _asInt(payload['data_phone_number']);
+      final firstName = payload['data_first_name'];
+      final fatherName = payload['data_father_name'];
+      final familyName = payload['data_family_name'];
+      final fileId = _asInt(payload['file_id_number']);
+      final serverId = _asInt(payload['id']);
+
+      String? reason;
+      if (idNumber == null || idNumber <= 0) {
+        reason = 'invalid data_id_number';
+      } else if (phoneNumber == null || phoneNumber <= 0) {
+        reason = 'invalid data_phone_number';
+      } else if (!_isNonEmptyText(firstName)) {
+        reason = 'missing data_first_name';
+      } else if (!_isNonEmptyText(fatherName)) {
+        reason = 'missing data_father_name';
+      } else if (!_isNonEmptyText(familyName)) {
+        reason = 'missing data_family_name';
+      } else if (fileId == null || fileId <= 0) {
+        reason = 'invalid file_id_number';
+      } else if (record.syncState == 'modified' && (serverId == null || serverId <= 0)) {
+        reason = 'modified_without_server_id';
+      }
+
+      if (reason != null) {
+        invalidLocalIds.add(record.localId);
+        issues.add(_BeneficiaryPreflightIssue(localId: record.localId, reason: reason));
+      } else {
+        validRecords.add(record);
+      }
+    }
+
+    return _BeneficiaryPreflightResult(
+      validRecords: validRecords,
+      invalidLocalIds: invalidLocalIds,
+      issues: issues,
+    );
+  }
+
+  bool _isNonEmptyText(dynamic value) {
+    final text = value?.toString().trim();
+    return text != null && text.isNotEmpty;
+  }
+
+  Future<int?> _ensureBeneficiaryFileIdForUpload(Beneficiary row) async {
+    final existing = _asIntLoose(row.fileIdNumber);
+    if (existing != null && existing > 0) {
+      final normalized = existing.toString();
+      if (row.fileIdNumber != normalized) {
+        await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(row.id))).write(
+          BeneficiariesCompanion(fileIdNumber: drift.Value(normalized)),
+        );
+      }
+      return existing;
+    }
+
+    final fileIdService = _fileIdService;
+    if (fileIdService == null) {
+      return null;
+    }
+
+    int? allocated = await fileIdService.getNextId();
+    if (allocated == null) {
+      await fileIdService.forceReserve();
+      allocated = await fileIdService.getNextId();
+    }
+
+    if (allocated == null || allocated <= 0) {
+      return null;
+    }
+
+    final fileIdString = allocated.toString();
+    await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(row.id))).write(
+      BeneficiariesCompanion(fileIdNumber: drift.Value(fileIdString)),
+    );
+
+    try {
+      await fileIdService.markAsUsed(allocated, row.id, recordType: 'data', recordId: row.id);
+    } catch (e) {
+      _logger.w('Failed to mark allocated file ID as used for beneficiary ${row.id}: $e');
+    }
+
+    return allocated;
   }
 }
 
@@ -1924,6 +2426,40 @@ class _EntityWriteCounter {
     }
     return flat;
   }
+}
+
+class _PreparedBeneficiaryUpload {
+  final int localId;
+  final String syncState;
+  final Map<String, dynamic> payload;
+
+  const _PreparedBeneficiaryUpload({
+    required this.localId,
+    required this.syncState,
+    required this.payload,
+  });
+}
+
+class _BeneficiaryPreflightIssue {
+  final int localId;
+  final String reason;
+
+  const _BeneficiaryPreflightIssue({
+    required this.localId,
+    required this.reason,
+  });
+}
+
+class _BeneficiaryPreflightResult {
+  final List<_PreparedBeneficiaryUpload> validRecords;
+  final List<int> invalidLocalIds;
+  final List<_BeneficiaryPreflightIssue> issues;
+
+  const _BeneficiaryPreflightResult({
+    required this.validRecords,
+    required this.invalidLocalIds,
+    required this.issues,
+  });
 }
 
 class _BeneficiaryIdentityIndex {

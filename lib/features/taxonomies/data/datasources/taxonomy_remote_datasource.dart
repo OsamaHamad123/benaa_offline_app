@@ -31,7 +31,7 @@ abstract class TaxonomyRemoteDataSource {
   Future<TaxonomyResponseDTO> updateTaxonomy(String id, TaxonomyRequestDTO request);
 
   /// حذف تصنيف
-  Future<void> deleteTaxonomy(String id);
+  Future<void> deleteTaxonomy(String id, {String? group});
 
   /// إنشاء عدة تصنيفات دفعة واحدة
   Future<List<TaxonomyDTO>> createTaxonomiesBatch(String group, List<String> names);
@@ -437,11 +437,14 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
   }
 
   @override
-  Future<void> deleteTaxonomy(String id) async {
+  Future<void> deleteTaxonomy(String id, {String? group}) async {
     DioException? lastDioError;
     final remoteId = TaxonomyDTO.extractRemoteId(id);
+    final categoryCandidates = (group != null && group.trim().isNotEmpty)
+        ? _categorySlugCandidatesFromGroup(group)
+        : _allCategorySlugCandidates();
 
-    for (final categorySlug in _allCategorySlugCandidates()) {
+    for (final categorySlug in categoryCandidates) {
       try {
         await _withRetry(() => _dio.delete('$_basePath/$categorySlug/$remoteId'));
         return;
