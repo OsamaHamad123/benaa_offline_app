@@ -12,7 +12,9 @@ class TestMobileApiPage extends StatefulWidget {
 class _TestMobileApiPageState extends State<TestMobileApiPage> {
   final _dio = Dio(
     BaseOptions(
-      baseUrl: 'https://palestine.benaadev.org',
+      // DISABLED FOR PUBLIC GITHUB VERSION:
+      // Real server URL has been disabled. This test page does not connect to any live server.
+      baseUrl: 'https://disabled-api.example.com',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
     ),

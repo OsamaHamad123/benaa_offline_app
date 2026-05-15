@@ -1748,8 +1748,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow('السيرفر', 'palestine.benaadev.org'),
-          _buildInfoRow('قاعدة البيانات', 'u983550065_sy_test'),
+          _buildInfoRow('السيرفر', '[DISABLED - demo mode]'),
+          _buildInfoRow('قاعدة البيانات', '[DISABLED]'),
           _buildInfoRow('الجدول', 'sy_benaa_application'),
           _buildInfoRow('التشفير', 'HTTPS'),
         ],

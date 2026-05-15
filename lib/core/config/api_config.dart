@@ -5,7 +5,10 @@
 class ApiConfig {
   // 🌐 Base URL - سيتم استبداله بالرابط الفعلي
   // يمكن تغييره من واجهة تسجيل الدخول
-  static const String defaultBaseUrl = 'https://palestine.benaadev.org';
+  // DISABLED FOR PUBLIC GITHUB VERSION:
+  // Real server URL has been removed to protect sensitive infrastructure.
+  // TODO: Replace with Firebase or new backend URL.
+  static const String defaultBaseUrl = 'https://disabled-api.example.com';
 
   // 🔗 Mobile Auth Endpoints (الجديدة)
   static const String loginEndpoint = '/api/mobile/auth/login';

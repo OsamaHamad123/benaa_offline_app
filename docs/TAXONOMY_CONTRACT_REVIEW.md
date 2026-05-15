@@ -2,7 +2,7 @@
 
 مرجع العقد الرسمي:
 
-- https://palestine.benaadev.org/api-documentation.html
+- https://disabled-api.example.com/api-documentation.html
 
 ## القاعدة المعتمدة داخل التطبيق
 

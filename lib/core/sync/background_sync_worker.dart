@@ -126,21 +126,11 @@ class BackgroundSyncWorker {
 
   /// Initialize Background Sync
   static Future<void> initialize() async {
-    if (_initialized) {
-      DebugLogger.info('ℹ️ Background Sync Worker already initialized in this process');
-      return;
-    }
-
-    await Workmanager().initialize(
-      callbackDispatcher,
-      isInDebugMode: kDebugMode,
-    );
-
-    // Register periodic sync task
-    await registerPeriodicSync();
-    _initialized = true;
-
-    DebugLogger.success('✅ Background Sync Worker initialized');
+    // DISABLED FOR PUBLIC GITHUB VERSION:
+    // Background sync connected to the old company server has been disabled.
+    // TODO: Rebuild sync using Firebase Cloud Functions or a new backend.
+    DebugLogger.info('ℹ️ [DEMO MODE] Background Sync Worker is disabled in this version.');
+    return;
   }
 
   /// Register Periodic Sync Task

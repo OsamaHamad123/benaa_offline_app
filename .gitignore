@@ -62,17 +62,46 @@ builds/
 .env.*
 !.env.example
 
+# App environment config (contains real API URLs - use env.example.json instead)
+assets/env.json
+
 # Firebase (IMPORTANT: Never commit these!)
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 firebase-credentials.json
 **/firebase-debug.log
 .firebase/
+lib/firebase_options.dart
+
+# Keystore and signing credentials (NEVER commit these!)
+*.keystore
+*.jks
+*.p12
+*.pem
+*.key
+android/app/*.keystore
+android/app/*.jks
+android/key.properties
+
+# Sentry credentials
+sentry.properties
+
+# Sentry wizard binary (development tool, not for distribution)
+sentry-wizard.exe
+
+# Private server credentials and secrets
+secrets/
+credentials/
+production.secret.json
+*.secret.json
+service-account.json
+google-service-account.json
+
+# Internal API documentation and test reports (contain server details)
+api-doc.html
+scripts/codes_e2e_report_*.json
+todo.md
 
 # Database files (too large for Git)
 assets/database/*.db
 assets/database/*.db-*
-
-sentry.properties
-
-sentry.properties

@@ -1,6 +1,6 @@
 # Mobile API Development Plan (Comprehensive)
 
-Base Domain: https://palestine.benaadev.org
+Base Domain: https://disabled-api.example.com
 
 API Prefix (from official docs): /api/mobile
 

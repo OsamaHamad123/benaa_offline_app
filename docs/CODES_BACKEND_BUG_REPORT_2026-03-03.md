@@ -2,7 +2,7 @@
 
 Date: 2026-03-03
 Environment: Production
-Base URL: https://palestine.benaadev.org
+Base URL: https://disabled-api.example.com
 Reporter: Mobile App Team
 
 ## Summary

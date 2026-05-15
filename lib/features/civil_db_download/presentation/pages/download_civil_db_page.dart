@@ -20,11 +20,11 @@ class _DownloadCivilDbPageState extends ConsumerState<DownloadCivilDbPage> with 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  // 🔧 Development: Will copy from Assets (see CivilDbManager.isDevelopmentMode)
-  // 🌐 Production: Downloads from API server
+  // DISABLED FOR PUBLIC GITHUB VERSION:
+  // Civil registry download URL has been disabled.
+  // TODO: Replace with Firebase Storage or a new authorized backend URL.
   static String get _downloadUrl {
-    // In production, this will use the API endpoint from ApiConfig
-    return 'https://palestine.benaadev.org/api/mobile/civil-db/download';
+    return 'https://disabled-api.example.com/civil-registry/download';
   }
 
   @override

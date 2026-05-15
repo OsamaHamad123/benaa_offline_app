@@ -1,5 +1,5 @@
 param(
-    [string]$BaseUrl = 'https://palestine.benaadev.org',
+    [string]$BaseUrl = 'https://disabled-api.example.com',
     [string]$Email = 'admin@gmail.com',
     [securestring]$Password,
     [string]$DeviceId = 'copilot-e2e-device',

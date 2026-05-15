@@ -2,7 +2,7 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$FileId,
 
-  [string]$BaseUrl = 'https://palestine.benaadev.org',
+  [string]$BaseUrl = 'https://disabled-api.example.com',
 
   [string]$Token,
 

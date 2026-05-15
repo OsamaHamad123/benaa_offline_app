@@ -31,7 +31,7 @@ import '../../features/taxonomies/domain/repositories/taxonomy_repository.dart';
 /// هذا Service للمزامنة المؤقتة مع API الموبايل الموجود
 /// الـ API بدون authentication ولا file upload لكن يسمح بمزامنة البيانات النصية
 ///
-/// Base URL: https://palestine.benaadev.org
+/// Base URL: https://disabled-api.example.com (DISABLED FOR PUBLIC GITHUB VERSION)
 /// Database: u983550065_sy_test
 ///
 /// ⚠️ LIMITATIONS:
@@ -279,6 +279,17 @@ class MobileSyncService {
   // ========================================================================
 
   Future<MobileSyncResult> syncRecordByFileId(String fileIdNumber) async {
+    // DISABLED FOR PUBLIC GITHUB VERSION:
+    // This endpoint was connected to the old company server and was disabled to protect sensitive data.
+    // TODO: Replace with Firebase integration.
+    _logger.i('[DEMO MODE] syncRecordByFileId is disabled in this version.');
+    return MobileSyncResult(
+      success: false,
+      recordsSynced: 0,
+      error: 'demo_mode_disabled',
+      errorCategory: 'demo',
+    );
+    // ignore: dead_code
     final acquired = await _acquireSyncExecutionLock('sync_record');
     if (!acquired) {
       return MobileSyncResult(
@@ -364,6 +375,17 @@ class MobileSyncService {
 
   /// مزامنة كاملة - تنزيل كل البيانات من السيرفر
   Future<MobileSyncResult> syncDown() async {
+    // DISABLED FOR PUBLIC GITHUB VERSION:
+    // Old backend sync-down has been disabled to protect sensitive server connections.
+    // TODO: Rebuild sync using Firebase Firestore or a new backend.
+    _logger.i('[DEMO MODE] syncDown is disabled in this version.');
+    return MobileSyncResult(
+      success: false,
+      recordsSynced: 0,
+      error: 'demo_mode_disabled',
+      errorCategory: 'demo',
+    );
+    // ignore: dead_code
     final acquired = await _acquireSyncExecutionLock('sync_down');
     if (!acquired) {
       return MobileSyncResult(
@@ -1462,6 +1484,17 @@ class MobileSyncService {
 
   /// رفع المستفيدين المحليين للسيرفر باستخدام الـ Batch API
   Future<MobileSyncResult> syncUp() async {
+    // DISABLED FOR PUBLIC GITHUB VERSION:
+    // Old backend sync-up has been disabled to protect sensitive server connections.
+    // TODO: Rebuild sync using Firebase Firestore or a new backend.
+    _logger.i('[DEMO MODE] syncUp is disabled in this version.');
+    return MobileSyncResult(
+      success: false,
+      recordsSynced: 0,
+      error: 'demo_mode_disabled',
+      errorCategory: 'demo',
+    );
+    // ignore: dead_code
     final acquired = await _acquireSyncExecutionLock('sync_up');
     if (!acquired) {
       return MobileSyncResult(

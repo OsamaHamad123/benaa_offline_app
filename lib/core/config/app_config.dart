@@ -5,7 +5,10 @@ import 'package:path_provider/path_provider.dart';
 import 'api_config.dart';
 
 class AppConfig {
-  static const String _defaultApiBaseUrl = 'https://palestine.benaadev.org';
+  // DISABLED FOR PUBLIC GITHUB VERSION:
+  // Real server URL has been removed to protect sensitive infrastructure.
+  // TODO: Replace with Firebase or new backend URL.
+  static const String _defaultApiBaseUrl = 'https://disabled-api.example.com';
 
   final String apiBaseUrl;
   final int syncBatchSize;

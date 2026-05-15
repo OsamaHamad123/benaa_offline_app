@@ -2,7 +2,57 @@
 
 تطبيق Flutter للعمل الميداني مع قدرات كاملة للعمل أوفلاين، مع مزامنة دورية وقاعدة بيانات مشفرة.
 
-[![CI Status](https://github.com/OsamaHamad123/benaa_offline_app/workflows/CI%20-%20Testing%20&%20Analysis/badge.svg)](https://github.com/OsamaHamad123/benaa_offline_app/actions)
+---
+
+## ⚠️ GitHub Safe Demo Version
+
+> **هذه نسخة آمنة للـ GitHub — جميع الاتصالات بالسيرفر القديم مُعطّلة.**
+
+### ما الذي تغيّر في هذه النسخة؟
+
+| الجانب                   | الحالة                                                        |
+| ------------------------ | ------------------------------------------------------------- |
+| روابط API القديمة        | ✅ تم حذفها واستبدالها بـ `disabled-api.example.com`          |
+| تسجيل الدخول عبر السيرفر | ✅ مُعطّل — يعمل الآن في وضع Demo المحلي                      |
+| مزامنة البيانات (Sync)   | ✅ مُعطّلة — لا يُرسل أي طلب للسيرفر القديم                   |
+| تحميل قاعدة السجل المدني | ✅ مُعطّل — لا اتصال بسجلات المواطنين                         |
+| مفاتيح Sentry            | ✅ محذوفة — استبدلها بمشروع Sentry الخاص                      |
+| Firebase                 | 🔜 مخطط — ملفات placeholder جاهزة في `lib/services/firebase/` |
+
+### تسجيل الدخول في وضع Demo
+
+- شاشة تسجيل الدخول تعمل بشكل طبيعي.
+- أي اسم مستخدم وكلمة مرور غير فارغين سيمرران تسجيل الدخول.
+- **لا يُرسل أي بيانات إلى أي سيرفر خارجي.**
+
+### للبدء بتشغيل التطبيق
+
+```bash
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter run
+```
+
+### للتطوير المستقبلي — دمج Firebase
+
+1. أنشئ مشروع Firebase على [console.firebase.google.com](https://console.firebase.google.com)
+2. ثبّت FlutterFire CLI: `dart pub global activate flutterfire_cli`
+3. شغّل: `flutterfire configure`
+4. طوّر الخدمات الموجودة في `lib/services/firebase/`
+5. استبدل منطق تسجيل الدخول المحلي في `lib/features/auth/login_page.dart`
+
+### الملفات الحساسة المستثناة من Git
+
+الملفات التالية **مُدرجة في `.gitignore`** ويجب **عدم** رفعها:
+
+- `assets/env.json` — يحتوي رابط API الحقيقي
+- `sentry.properties` — يحتوي Sentry auth token
+- `android/app/google-services.json` — Firebase config
+- `ios/Runner/GoogleService-Info.plist` — Firebase config (iOS)
+- `lib/firebase_options.dart` — Firebase options
+- `*.keystore`, `*.jks` — ملفات توقيع التطبيق
+
+استخدم `assets/env.example.json` كقالب لإنشاء `assets/env.json` الخاص بك.
 
 ---
 
@@ -113,6 +163,7 @@ bundle exec fastlane deploy_firebase
 ### GitHub Actions
 
 تتم العمليات التالية تلقائياً:
+
 - ✅ عند كل Push: تشغيل tests، analyze، formatting check
 - ✅ عند كل PR: فحص conflicts، تشغيل tests، بناء APK
 - ✅ عند Merge على main: بناء release APK + نشر على Firebase
@@ -185,16 +236,16 @@ Update-FromDevelop
 
 ## 📚 التوثيق
 
-| الملف | الوصف |
-|-------|-------|
-| `START_HERE.md` | 🚀 ابدأ من هنا! |
-| `FIREBASE_QUICK_START.md` | 🔥 إعداد Firebase السريع |
-| `FIREBASE_SETUP_GUIDE.md` | 🔥 دليل Firebase الشامل |
-| `GIT_WORKFLOW_GUIDE.md` | دليل شامل للعمل مع Git وتجنب Conflicts |
-| `TESTING_SETUP_GUIDE.md` | إعداد نظام Testing و CI/CD |
-| `QUICK_START.md` | دليل البدء السريع |
-| `DATABASE_PATHS_GUIDE.md` | دليل قاعدة البيانات |
-| `COMPLETE_ENHANCEMENTS_FINAL_REPORT.md` | تقرير التحسينات |
+| الملف                                   | الوصف                                  |
+| --------------------------------------- | -------------------------------------- |
+| `START_HERE.md`                         | 🚀 ابدأ من هنا!                        |
+| `FIREBASE_QUICK_START.md`               | 🔥 إعداد Firebase السريع               |
+| `FIREBASE_SETUP_GUIDE.md`               | 🔥 دليل Firebase الشامل                |
+| `GIT_WORKFLOW_GUIDE.md`                 | دليل شامل للعمل مع Git وتجنب Conflicts |
+| `TESTING_SETUP_GUIDE.md`                | إعداد نظام Testing و CI/CD             |
+| `QUICK_START.md`                        | دليل البدء السريع                      |
+| `DATABASE_PATHS_GUIDE.md`               | دليل قاعدة البيانات                    |
+| `COMPLETE_ENHANCEMENTS_FINAL_REPORT.md` | تقرير التحسينات                        |
 
 ---
 
@@ -247,6 +298,7 @@ flutter build windows --release
 5. افتح Pull Request
 
 تأكد من:
+
 - ✅ تشغيل `Test-BeforeCommit` قبل الـ push
 - ✅ كتابة tests للكود الجديد
 - ✅ تحديث التوثيق إذا لزم الأمر
@@ -265,4 +317,7 @@ This project is private and proprietary.
 للمشاكل والأسئلة، افتح [Issue](https://github.com/OsamaHamad123/benaa_offline_app/issues) على GitHub.
 
 flutter analyze
+
+```
+
 ```

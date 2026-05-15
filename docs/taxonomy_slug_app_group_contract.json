@@ -1,6 +1,6 @@
 {
   "version": "2026-02-23",
-  "sourceOfTruth": "https://palestine.benaadev.org/api-documentation.html",
+  "sourceOfTruth": "https://disabled-api.example.com/api-documentation.html",
   "metadataPriority": ["slug", "endpoint", "name", "arabicName", "englishName"],
   "canonicalGroups": {
     "gender": "gender",

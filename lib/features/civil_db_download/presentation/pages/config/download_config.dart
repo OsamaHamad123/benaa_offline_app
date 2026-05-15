@@ -1,10 +1,14 @@
 /// 📥 Database Download Configuration
 class DownloadConfig {
-  /// 🔗 Server Download URL (Admin Only - requires Bearer Token)
-  static const String downloadUrl = 'https://palestine.benaadev.org/api/mobile/database/persons-file/download';
+  // DISABLED FOR PUBLIC GITHUB VERSION:
+  // Real civil registry database download URLs have been removed.
+  // These endpoints were connected to the company's civil registry server.
+  // TODO: Replace with a new backend or Firebase Storage URL.
+  static const String downloadUrl = 'https://disabled-api.example.com/civil-registry/download';
 
-  /// 🔗 File Info URL (to get size and metadata)
-  static const String fileInfoUrl = 'https://palestine.benaadev.org/api/mobile/database/persons-file/info';
+  // DISABLED FOR PUBLIC GITHUB VERSION:
+  // File info URL has been disabled.
+  static const String fileInfoUrl = 'https://disabled-api.example.com/civil-registry/info';
 
   /// Optional: Fallback URLs in case primary fails
   static const List<String> fallbackUrls = [

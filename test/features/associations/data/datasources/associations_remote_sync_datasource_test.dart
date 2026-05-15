@@ -79,7 +79,7 @@ void main() {
         ),
       ]);
 
-      final dio = Dio(BaseOptions(baseUrl: 'https://palestine.benaadev.org'));
+      final dio = Dio(BaseOptions(baseUrl: 'https://disabled-api.example.com'));
       dio.httpClientAdapter = adapter;
 
       final datasource = AssociationsRemoteSyncDataSource(dio);
@@ -105,7 +105,7 @@ void main() {
         ),
       ]);
 
-      final dio = Dio(BaseOptions(baseUrl: 'https://palestine.benaadev.org'));
+      final dio = Dio(BaseOptions(baseUrl: 'https://disabled-api.example.com'));
       dio.httpClientAdapter = adapter;
 
       final datasource = AssociationsRemoteSyncDataSource(dio);

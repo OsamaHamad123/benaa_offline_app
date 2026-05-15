@@ -1,7 +1,9 @@
 .PHONY: gen seed clean-db run-windows run-android smoke-codes help
 
-BASE_URL ?= https://palestine.benaadev.org
-SMOKE_EMAIL ?= admin@gmail.com
+# DISABLED FOR PUBLIC GITHUB VERSION:
+# Real server URL has been removed. Replace with your own backend URL.
+BASE_URL ?= https://disabled-api.example.com
+SMOKE_EMAIL ?= demo@example.com
 SMOKE_PASSWORD ?= password
 SMOKE_DEVICE ?= copilot-smoke-device-final
 SMOKE_COUNT ?= 1

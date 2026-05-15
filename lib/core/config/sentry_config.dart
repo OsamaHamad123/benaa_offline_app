@@ -5,10 +5,10 @@
 /// 2. Project Settings → Client Keys (DSN)
 /// 3. Copy the DSN and paste below
 class SentryConfig {
-  // ✅ DSN from Sentry project: palistine/flutter
-  // Project: https://palistine.sentry.io/issues/?project=4510539427807232
-  static const String dsn =
-      'https://9f435522e83b9934c04f145696070cd6@o4510539424923648.ingest.us.sentry.io/4510539427807232';
+  // DISABLED FOR PUBLIC GITHUB VERSION:
+  // Real Sentry DSN has been removed to protect company monitoring infrastructure.
+  // TODO: Replace with a new Sentry project DSN or Firebase Crashlytics.
+  static const String dsn = '';
 
   // Environment names
   static const String prodEnvironment = 'production';
