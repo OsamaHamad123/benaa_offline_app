@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:benaa_offline_app/core/backend/backend_provider.dart';
 import 'package:benaa_offline_app/core/sync/sync_manager.dart';
 import 'package:benaa_offline_app/core/providers/providers.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/providers/activity_providers.dart';
@@ -7,8 +8,8 @@ import 'package:benaa_offline_app/features/sync/domain/usecases/sync_with_activi
 /// Provider: SyncManager
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final database = ref.watch(databaseProvider);
-  final apiClient = ref.watch(apiClientProvider);
-  return SyncManager(database, apiClient: apiClient);
+  final backend = ref.watch(remoteBackendProvider);
+  return SyncManager(database, remoteBackend: backend);
 });
 
 /// Provider: SyncWithActivity UseCase

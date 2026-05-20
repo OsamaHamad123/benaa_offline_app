@@ -1,8 +1,11 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
+import 'firebase_options.dart';
+import 'core/backend/firebase/firebase_backend.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 import 'features/visits/presentation/providers/visit_providers.dart' as visit_providers;
@@ -25,6 +28,22 @@ import 'package:benaa_offline_app/core/config/app_config.dart';
 /// - Optimized for production use
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    await FirebaseBackend.initializeFirebaseAtStartup();
+  } catch (error, stackTrace) {
+    debugPrint('🔥 [Firebase Init Failed - Release] $error');
+    debugPrint('📍 [Firebase Init Stack]\n$stackTrace');
+    runApp(
+      const _ReleaseStartupErrorApp(
+        message: 'تعذر تهيئة خدمات Firebase. يرجى إعادة تشغيل التطبيق أو مراجعة إعدادات الاتصال.',
+      ),
+    );
+    return;
+  }
 
   await BackgroundSyncWorker.initialize();
 
@@ -66,6 +85,43 @@ Future<void> main() async {
     },
     appRunner: () => _runApp(sharedPreferences, appConfig),
   );
+}
+
+class _ReleaseStartupErrorApp extends StatelessWidget {
+  const _ReleaseStartupErrorApp({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 56, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Startup Error',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig) {

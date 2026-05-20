@@ -48,6 +48,9 @@ class SecureStorage {
   static const String _rememberMeKey = 'remember_me';
   static const String _savedEmailKey = 'saved_email';
   static const String _savedPasswordKey = 'saved_password_encrypted';
+  static const String _lastSuccessfulEmailKey = 'last_successful_email';
+  static const String _offlineAuthHashKey = 'offline_auth_hash';
+  static const String _biometricEnabledKey = 'biometric_auth_enabled';
 
   // ===========================
   // 🔐 Authentication Methods
@@ -746,5 +749,34 @@ class SecureStorage {
     } catch (e) {
       UnifiedLogger.error('❌ Failed to update remember me', error: e);
     }
+  }
+
+  // ===========================
+  // 🔐 OFFLINE AUTH METHODS
+  // ===========================
+
+  Future<void> saveLastSuccessfulEmail(String email) async {
+    await _storage.write(key: _lastSuccessfulEmailKey, value: email);
+  }
+
+  Future<String?> getLastSuccessfulEmail() async {
+    return _storage.read(key: _lastSuccessfulEmailKey);
+  }
+
+  Future<void> saveOfflineAuthHash(String hash) async {
+    await _storage.write(key: _offlineAuthHashKey, value: hash);
+  }
+
+  Future<String?> getOfflineAuthHash() async {
+    return _storage.read(key: _offlineAuthHashKey);
+  }
+
+  Future<void> setBiometricEnabledFlag(bool enabled) async {
+    await _storage.write(key: _biometricEnabledKey, value: enabled ? 'true' : 'false');
+  }
+
+  Future<bool> getBiometricEnabledFlag() async {
+    final value = await _storage.read(key: _biometricEnabledKey);
+    return value == 'true';
   }
 }

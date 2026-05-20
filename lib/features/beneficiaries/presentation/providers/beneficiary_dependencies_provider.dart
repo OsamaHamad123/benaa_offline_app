@@ -36,7 +36,7 @@ final beneficiaryDependenciesProvider = Provider<BeneficiaryDependencies>((
 
   // Data Layer
   final dataSource = BeneficiaryLocalDataSource(database);
-  final repository = BeneficiaryRepositoryImpl(dataSource);
+  final repository = BeneficiaryRepositoryImpl(dataSource, database);
 
   // Use Cases
   final createUseCase = CreateBeneficiaryUseCase(repository);

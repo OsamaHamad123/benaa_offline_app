@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          request.auth.token.admin == true ||
+          request.auth.token.role == 'admin'
+        );
+    }
+
+    function isValidFileSize() {
+      return request.resource != null && request.resource.size <= 10 * 1024 * 1024;
+    }
+
+    function isValidContentType() {
+      return request.resource != null &&
+        request.resource.contentType.matches('^image/.*$|^application/pdf$');
+    }
+
+    // Required path: beneficiaries/{beneficiaryId}/attachments/{fileName}
+    match /beneficiaries/{beneficiaryId}/attachments/{fileName} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidFileSize() && isValidContentType();
+      // Restrict delete; prefer soft delete by metadata in Firestore
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
+import 'firebase_options.dart';
+import 'core/backend/firebase/firebase_backend.dart';
 import 'core/providers/providers.dart' as core_providers;
 import 'core/widgets/safe_widgets.dart';
 import 'core/sync/presentation/providers/sync_providers.dart' as sync_providers;
@@ -30,6 +33,19 @@ Future<void> main() async {
 
     WidgetsFlutterBinding.ensureInitialized();
     _logStartup('Widgets binding initialized', startupStopwatch);
+
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      _logStartup('Firebase initialized with FlutterFire options', startupStopwatch);
+    } catch (error, stackTrace) {
+      debugPrint('🔥 [Firebase Init Failed - Debug] $error');
+      debugPrint('📍 [Firebase Init Stack]\n$stackTrace');
+    }
+
+    await FirebaseBackend.initializeFirebaseAtStartup();
+    _logStartup('Firebase startup initialization attempted', startupStopwatch);
 
     await BackgroundSyncWorker.initialize();
     _logStartup('Background worker initialized', startupStopwatch);

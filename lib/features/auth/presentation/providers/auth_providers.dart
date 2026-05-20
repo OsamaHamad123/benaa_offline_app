@@ -9,6 +9,7 @@ import 'package:benaa_offline_app/features/auth/domain/repositories/auth_reposit
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_notifier.dart';
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_state.dart';
 import 'package:benaa_offline_app/features/sync/presentation/providers/file_id_providers.dart';
+import 'package:benaa_offline_app/core/backend/backend_provider.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -63,7 +64,7 @@ final authDioProvider = Provider<Dio>((ref) {
 /// 🔐 Auth Repository Provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
-    dio: ref.watch(baseDioProvider), // استخدام baseDio للـ login (لا يحتاج token)
+    remoteBackend: ref.watch(remoteBackendProvider),
     secureStorage: ref.watch(secureStorageProvider),
   );
 });

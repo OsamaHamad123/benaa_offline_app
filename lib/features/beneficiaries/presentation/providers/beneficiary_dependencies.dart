@@ -35,7 +35,8 @@ final beneficiaryDataSourceProvider = Provider<BeneficiaryLocalDataSource>((
 // Repository
 final beneficiaryRepositoryProvider = Provider<BeneficiaryRepository>((ref) {
   final dataSource = ref.watch(beneficiaryDataSourceProvider);
-  return BeneficiaryRepositoryImpl(dataSource);
+  final db = ref.watch(databaseProvider);
+  return BeneficiaryRepositoryImpl(dataSource, db);
 });
 
 final guardianBankAccountRepositoryProvider = Provider<GuardianBankAccountRepository>((ref) {

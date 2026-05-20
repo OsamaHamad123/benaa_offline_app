@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:dio/dio.dart';
+import 'package:dio/dio.dart' show DioException, DioExceptionType;
 
-import '../../../../core/config/api_config.dart';
+import '../../../../core/backend/remote_backend.dart';
 import '../../../../core/error_handling/result.dart';
+import '../../../../core/services/password_hash_service.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../core/utils/unified_logger.dart';
 import '../../domain/entities/auth_device.dart';
@@ -12,7 +13,6 @@ import '../../domain/entities/auth_token.dart';
 import '../../domain/entities/auth_user.dart';
 import '../../domain/failures/auth_failures.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../dto/auth_dto.dart';
 import '../mappers/auth_mappers.dart';
 
 /// 🔐 Auth Repository Implementation
@@ -23,15 +23,15 @@ import '../mappers/auth_mappers.dart';
 /// - دعم Offline-first
 /// - تجديد تلقائي للـ Token
 class AuthRepositoryImpl implements AuthRepository {
-  final Dio _dio;
+  final RemoteBackend _remoteBackend;
   final SecureStorage _secureStorage;
   final DeviceInfoPlugin _deviceInfo;
 
   AuthRepositoryImpl({
-    required Dio dio,
+    required RemoteBackend remoteBackend,
     required SecureStorage secureStorage,
     DeviceInfoPlugin? deviceInfo,
-  })  : _dio = dio,
+  })  : _remoteBackend = remoteBackend,
         _secureStorage = secureStorage,
         _deviceInfo = deviceInfo ?? DeviceInfoPlugin();
 
@@ -49,45 +49,37 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     try {
       UnifiedLogger.info('🔑 Attempting login for: $email');
+      final firebaseResult = await _remoteBackend.signIn(email, password);
 
-      final request = MobileLoginRequest(
-        email: email,
-        password: password,
-        deviceId: deviceId,
-        deviceName: deviceName ?? await getDeviceName(),
-        devicePlatform: devicePlatform ?? getDevicePlatform(),
-      );
-
-      final response = await _dio.post(
-        ApiConfig.loginEndpoint,
-        data: request.toJson(),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final loginResponse = MobileLoginResponse.fromJson(response.data);
-
-        if (loginResponse.success && loginResponse.data != null) {
-          final session = AuthMappers.sessionFromLoginResponse(loginResponse);
-
-          if (session != null) {
-            // حفظ الجلسة محلياً
-            await saveSession(session);
-            UnifiedLogger.success('✅ Login successful for: ${session.user.name}');
-            return Success(session);
-          }
-        }
-
-        // فشل مع رسالة من السيرفر
-        final errorMessage = loginResponse.message ?? loginResponse.error ?? 'فشل تسجيل الدخول';
-        return Failure(InvalidCredentialsFailure(errorMessage));
+      if (firebaseResult == null || (firebaseResult['uid']?.toString().isEmpty ?? true)) {
+        return const Failure(InvalidCredentialsFailure('فشل تسجيل الدخول عبر Firebase'));
       }
 
-      return Failure(_handleHttpError(response.statusCode));
+      final session = _buildSessionFromFirebase(
+        firebaseResult,
+        email: email,
+        deviceId: deviceId,
+      );
+
+      await saveSession(session);
+      await _secureStorage.saveLastSuccessfulEmail(email);
+      await _secureStorage.saveOfflineAuthHash(PasswordHashService.hashPassword(password));
+
+      UnifiedLogger.success('✅ Firebase login successful for: ${session.user.name}');
+      return Success(session);
     } on DioException catch (e) {
-      return Failure(_handleDioError(e));
+      return _tryOfflineLogin(email: email, password: password, fallbackError: _handleDioError(e));
     } catch (e, stackTrace) {
-      UnifiedLogger.error('❌ Login failed', error: e, stackTrace: stackTrace);
-      return Failure(UnexpectedAuthFailure(e.toString()));
+      UnifiedLogger.warning('⚠️ Online Firebase login unavailable, trying offline auth');
+      final fallback = await _tryOfflineLogin(
+        email: email,
+        password: password,
+        fallbackError: UnexpectedAuthFailure(e.toString()),
+      );
+      if (fallback is Failure<AuthSession>) {
+        UnifiedLogger.error('❌ Login failed', error: e, stackTrace: stackTrace);
+      }
+      return fallback;
     }
   }
 
@@ -99,24 +91,10 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       UnifiedLogger.info('🚪 Attempting logout');
 
-      final token = await _secureStorage.getAuthToken();
-
-      if (token != null) {
-        try {
-          await _dio.post(
-            ApiConfig.logoutEndpoint,
-            data: LogoutRequest(
-              deviceId: deviceId,
-              logoutAllDevices: logoutAllDevices,
-            ).toJson(),
-            options: Options(
-              headers: {'Authorization': 'Bearer $token'},
-            ),
-          );
-        } catch (e) {
-          // تجاهل خطأ API - نكمل الخروج المحلي
-          UnifiedLogger.warning('⚠️ Server logout failed, continuing local logout');
-        }
+      try {
+        await _remoteBackend.signOut();
+      } catch (_) {
+        UnifiedLogger.warning('⚠️ Firebase signOut failed, continuing local logout');
       }
 
       // حذف البيانات المحلية دائماً
@@ -135,28 +113,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<AuthUser>> getProfile() async {
     try {
-      final token = await _secureStorage.getAuthToken();
-      if (token == null || token.isEmpty) {
-        return const Failure(NoStoredSessionFailure());
+      final storedSession = await getStoredSession();
+      if (storedSession is Success<AuthSession>) {
+        return Success(storedSession.value.user);
       }
 
-      final response = await _dio.get(
-        ApiConfig.profileEndpoint,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-
-      if (response.statusCode == 200) {
-        final root = (response.data as Map<String, dynamic>);
-        final data = root['data'];
-        if (data is Map<String, dynamic>) {
-          final userMap = data['user'];
-          if (userMap is Map<String, dynamic>) {
-            return Success(_mapUser(userMap));
-          }
-        }
-      }
-
-      return const Failure(ServerConnectionFailure('استجابة غير متوقعة من الخادم'));
+      return const Failure(NoStoredSessionFailure());
     } on DioException catch (e) {
       return Failure(_handleDioError(e));
     } catch (e, stackTrace) {
@@ -168,28 +130,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<List<AuthDevice>>> getActiveDevices() async {
     try {
-      final token = await _secureStorage.getAuthToken();
-      if (token == null || token.isEmpty) {
-        return const Failure(NoStoredSessionFailure());
-      }
-
-      final response = await _dio.get(
-        ApiConfig.devicesEndpoint,
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-
-      if (response.statusCode == 200) {
-        final root = (response.data as Map<String, dynamic>);
-        final data = root['data'];
-        if (data is Map<String, dynamic>) {
-          final devicesJson = data['devices'];
-          if (devicesJson is List) {
-            final devices = devicesJson.whereType<Map<String, dynamic>>().map(_mapDevice).toList(growable: false);
-            return Success(devices);
-          }
-        }
-      }
-
       return const Success(<AuthDevice>[]);
     } on DioException catch (e) {
       return Failure(_handleDioError(e));
@@ -206,43 +146,21 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<TokenValidationResult>> validateToken() async {
     try {
-      final token = await _secureStorage.getAuthToken();
-
-      if (token == null) {
+      final sessionResult = await getStoredSession();
+      if (sessionResult is Failure<AuthSession>) {
         return const Failure(NoStoredSessionFailure());
       }
+      final session = (sessionResult as Success<AuthSession>).value;
 
-      UnifiedLogger.info('✅ Validating token with server');
-
-      final response = await _dio.get(
-        ApiConfig.validateTokenEndpoint,
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final validateResponse = ValidateTokenResponse.fromJson(response.data);
-
-        if (validateResponse.valid && validateResponse.data != null) {
-          final data = validateResponse.data!;
-
-          return Success(TokenValidationResult(
-            valid: true,
-            userId: data.userId,
-            userName: data.userName,
-            tokenExpiresAt: DateTime.parse(data.tokenExpiresAt),
-            remainingDays: data.remainingDays,
-            remainingSeconds: data.remainingSeconds,
-            shouldRefresh: data.shouldRefresh,
-            actionRequired: validateResponse.actionRequired,
-          ));
-        }
-
-        return const Failure(InvalidTokenFailure());
-      }
-
-      return Failure(_handleHttpError(response.statusCode));
+      return Success(TokenValidationResult(
+        valid: session.token.isValid,
+        userId: session.user.id,
+        userName: session.user.name,
+        tokenExpiresAt: session.token.expiresAt,
+        remainingDays: session.token.remainingDays,
+        remainingSeconds: session.token.remainingSeconds,
+        shouldRefresh: session.token.shouldRefresh,
+      ));
     } on DioException catch (e) {
       return Failure(_handleDioError(e));
     } catch (e, stackTrace) {
@@ -262,36 +180,25 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       final session = (currentSessionResult as Success<AuthSession>).value;
-      final token = session.token.accessToken;
-
-      UnifiedLogger.info('🔄 Refreshing token');
-
-      final response = await _dio.post(
-        ApiConfig.refreshTokenEndpoint,
-        data: RefreshTokenRequest(deviceId: deviceId).toJson(),
-        options: Options(
-          headers: {'Authorization': 'Bearer $token'},
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        final refreshResponse = RefreshTokenResponse.fromJson(response.data);
-
-        if (refreshResponse.success && refreshResponse.data != null) {
-          final newToken = AuthMappers.tokenFromDto(refreshResponse.data!.token);
-
-          // تحديث الجلسة في الذاكرة والتخزين
-          final updatedSession = session.updateToken(newToken);
-          await saveSession(updatedSession);
-
-          UnifiedLogger.success('✅ Token refreshed - expires in ${newToken.remainingDays} days');
-          return Success(newToken);
-        }
-
-        return const Failure(TokenRefreshFailure());
+      final rawIdToken = await _secureStorage.getAuthToken();
+      if (rawIdToken == null || rawIdToken.isEmpty) {
+        return const Failure(TokenRefreshFailure('لا يوجد token محفوظ'));
       }
 
-      return Failure(_handleHttpError(response.statusCode));
+      final expiresAt = DateTime.now().add(const Duration(minutes: 55));
+      final newToken = AuthToken(
+        accessToken: rawIdToken,
+        tokenType: 'Bearer',
+        expiresAt: expiresAt,
+        expiresInDays: expiresAt.difference(DateTime.now()).inDays,
+        expiresInSeconds: expiresAt.difference(DateTime.now()).inSeconds,
+      );
+
+      final updatedSession = session.updateToken(newToken);
+      await saveSession(updatedSession);
+
+      UnifiedLogger.success('✅ Token refreshed locally (Firebase session)');
+      return Success(newToken);
     } on DioException catch (e) {
       return Failure(_handleDioError(e));
     } catch (e, stackTrace) {
@@ -433,38 +340,62 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  AuthUser _mapUser(Map<String, dynamic> userMap) {
-    final rolesRaw = userMap['roles'];
-    final permissionsRaw = userMap['permissions'];
+  Future<Result<AuthSession>> _tryOfflineLogin({
+    required String email,
+    required String password,
+    required AppFailure fallbackError,
+  }) async {
+    final lastEmail = await _secureStorage.getLastSuccessfulEmail();
+    final storedHash = await _secureStorage.getOfflineAuthHash();
 
-    return AuthUser(
-      id: (userMap['id'] as num?)?.toInt() ?? 0,
-      name: userMap['name']?.toString() ?? '',
-      email: userMap['email']?.toString() ?? '',
-      phone: userMap['phone']?.toString(),
-      avatar: userMap['avatar']?.toString(),
-      role: userMap['role']?.toString() ?? '',
-      roles: rolesRaw is List ? rolesRaw.map((e) => e.toString()).toList(growable: false) : const <String>[],
-      permissions:
-          permissionsRaw is List ? permissionsRaw.map((e) => e.toString()).toList(growable: false) : const <String>[],
-    );
+    if (lastEmail == null || storedHash == null) {
+      return Failure(fallbackError is AuthFailure ? fallbackError : const NoStoredSessionFailure());
+    }
+
+    final sameUser = lastEmail.trim().toLowerCase() == email.trim().toLowerCase();
+    final validPassword = PasswordHashService.verifyPassword(password, storedHash);
+
+    if (!sameUser || !validPassword) {
+      return const Failure(InvalidCredentialsFailure('بيانات الدخول غير صحيحة'));
+    }
+
+    return getStoredSession();
   }
 
-  AuthDevice _mapDevice(Map<String, dynamic> deviceMap) {
-    return AuthDevice(
-      deviceId: deviceMap['device_id']?.toString() ?? '',
-      deviceName: deviceMap['device_name']?.toString(),
-      devicePlatform: deviceMap['device_platform']?.toString(),
-      lastLoginAt: _tryParseDateTime(deviceMap['last_login_at']),
-      expiresAt: _tryParseDateTime(deviceMap['expires_at']),
-      ipAddress: deviceMap['ip_address']?.toString(),
-    );
-  }
+  AuthSession _buildSessionFromFirebase(
+    JsonMap firebaseData, {
+    required String email,
+    required String deviceId,
+  }) {
+    final uid = firebaseData['uid']?.toString() ?? '';
+    final idToken = firebaseData['idToken']?.toString() ?? uid;
+    final resolvedEmail = firebaseData['email']?.toString() ?? email;
+    final displayName = firebaseData['displayName']?.toString();
 
-  DateTime? _tryParseDateTime(Object? value) {
-    if (value == null) return null;
-    final text = value.toString();
-    if (text.isEmpty) return null;
-    return DateTime.tryParse(text);
+    final expiresAt = DateTime.now().add(const Duration(minutes: 55));
+    final authToken = AuthToken(
+      accessToken: idToken,
+      tokenType: 'Bearer',
+      expiresAt: expiresAt,
+      expiresInDays: expiresAt.difference(DateTime.now()).inDays,
+      expiresInSeconds: expiresAt.difference(DateTime.now()).inSeconds,
+    );
+
+    return AuthSession(
+      user: AuthUser(
+        id: uid.hashCode,
+        name: (displayName == null || displayName.trim().isEmpty) ? resolvedEmail : displayName,
+        email: resolvedEmail,
+        role: 'user',
+      ),
+      token: authToken,
+      offlineConfig: const OfflineConfig(
+        maxOfflineDays: 10,
+        requireOnlineReauth: false,
+        syncRequiredOnExpiry: false,
+      ),
+      loginAt: DateTime.now(),
+      deviceId: deviceId,
+    );
   }
 }

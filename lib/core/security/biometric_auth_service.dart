@@ -1,20 +1,18 @@
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../storage/secure_storage.dart';
 
 /// 🔒 Biometric Authentication Service
 ///
 /// خدمة المصادقة البيومترية (بصمة الإصبع / Face ID)
 
 class BiometricAuthService {
-  static final BiometricAuthService _instance =
-      BiometricAuthService._internal();
+  static final BiometricAuthService _instance = BiometricAuthService._internal();
   factory BiometricAuthService() => _instance;
   BiometricAuthService._internal();
 
   final LocalAuthentication _localAuth = LocalAuthentication();
-
-  static const String _biometricEnabledKey = 'biometric_auth_enabled';
+  final SecureStorage _secureStorage = SecureStorage();
 
   /// التحقق من توفر المصادقة البيومترية
   Future<bool> canCheckBiometrics() async {
@@ -71,14 +69,12 @@ class BiometricAuthService {
 
   /// التحقق من تمكين المصادقة البيومترية
   Future<bool> isBiometricEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_biometricEnabledKey) ?? false;
+    return _secureStorage.getBiometricEnabledFlag();
   }
 
   /// تمكين/تعطيل المصادقة البيومترية
   Future<void> setBiometricEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_biometricEnabledKey, enabled);
+    await _secureStorage.setBiometricEnabledFlag(enabled);
   }
 
   /// الحصول على نوع المصادقة المتاح
@@ -91,8 +87,7 @@ class BiometricAuthService {
       return 'بصمة الإصبع';
     } else if (types.contains(BiometricType.iris)) {
       return 'بصمة العين';
-    } else if (types.contains(BiometricType.strong) ||
-        types.contains(BiometricType.weak)) {
+    } else if (types.contains(BiometricType.strong) || types.contains(BiometricType.weak)) {
       return 'المصادقة البيومترية';
     }
 

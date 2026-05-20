@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
@@ -15,13 +16,10 @@ import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v3.da
 import '../features/beneficiaries/presentation/pages/beneficiary_details_page_v2.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
 import '../features/search/presentation/pages/update_normalization_page.dart';
-import '../features/civil_registry/civil_registry_test_page.dart';
 import '../features/civil_db_download/presentation/pages/welcome_page.dart';
 import '../features/civil_db_download/presentation/pages/download_civil_db_page.dart';
 import '../features/civil_db_download/presentation/pages/database_download_page.dart';
-import '../features/sync/import_test_data_page.dart';
 import '../features/sync/mobile_sync_page.dart';
-import '../features/sync/test_mobile_api_page.dart';
 import '../features/reports/reports_page.dart';
 import '../features/reports/presentation/pages/beneficiaries_report_page.dart';
 import '../features/attachments/attachments_page.dart';
@@ -115,6 +113,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: '/app-init',
     redirect: (context, state) async {
       updateSyncGuards(state.matchedLocation);
+
+      const blockedInReleaseRoutes = <String>{
+        '/civil-test',
+        '/import-test',
+        '/test-mobile-api',
+        '/sentry-test',
+        '/widgets-example',
+      };
+
+      if (!kDebugMode && blockedInReleaseRoutes.contains(state.matchedLocation)) {
+        return '/dashboard';
+      }
 
       final isGoingToAppInit = state.matchedLocation == '/app-init';
       final isGoingToInit = state.matchedLocation == '/init';
@@ -221,10 +231,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const UpdateNormalizationPage(),
       ),
       GoRoute(
-        path: '/civil-test',
-        builder: (context, state) => const CivilRegistryTestPage(),
-      ),
-      GoRoute(
         path: '/attachments/:beneficiaryId',
         builder: (context, state) {
           final beneficiaryId = state.pathParameters['beneficiaryId']!;
@@ -263,10 +269,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/performance-monitor',
         builder: (context, state) => const RealTimePerformanceMonitor(),
       ),
-      GoRoute(
-        path: '/sentry-test',
-        builder: (context, state) => const SentryTestPage(),
-      ),
+      if (kDebugMode)
+        GoRoute(
+          path: '/sentry-test',
+          builder: (context, state) => const SentryTestPage(),
+        ),
       GoRoute(
         path: '/visits',
         builder: (context, state) => const VisitsListPageM3(),
@@ -362,16 +369,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const AllActivitiesPageM3(),
       ),
       GoRoute(
-        path: '/import-test',
-        builder: (context, state) => const ImportTestDataPage(),
-      ),
-      GoRoute(
         path: '/mobile-sync',
         builder: (context, state) => const MobileSyncPage(),
-      ),
-      GoRoute(
-        path: '/test-mobile-api',
-        builder: (context, state) => const TestMobileApiPage(),
       ),
       // Performance & Monitoring Dashboards
       GoRoute(

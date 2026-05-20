@@ -1,22 +1,27 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path/path.dart' as path;
 import '../../data/db/drift_database.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:uuid/uuid.dart';
 import '../providers/providers.dart';
+import '../backend/backend_provider.dart';
+import '../backend/remote_backend.dart';
+import '../mappers/beneficiary_sync_mapper.dart';
+import '../mappers/visit_sync_mapper.dart';
 import '../utils/batch_operations.dart';
-import '../../features/beneficiaries/data/models/beneficiary_data_model.dart';
-import '../network/api_client.dart';
 import '../notifications/notifications_service.dart';
 
 // Provider للـ SyncManager
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final database = ref.watch(databaseProvider);
-  final apiClient = ref.watch(apiClientProvider);
-  return SyncManager(database, apiClient: apiClient);
+  final backend = ref.watch(remoteBackendProvider);
+  return SyncManager(database, remoteBackend: backend);
 });
 
 // Provider for sync status
@@ -72,7 +77,7 @@ class SyncPriority {
 // مدير المزامنة
 class SyncManager {
   final AppDatabase _db;
-  final ApiClient? _apiClient;
+  final RemoteBackend _remoteBackend;
   final _statusController = StreamController<SyncStatus>.broadcast();
   final _uuid = const Uuid();
 
@@ -81,8 +86,10 @@ class SyncManager {
   bool _wasSyncingForNotification = false;
   int _lastSyncProgressNotification = -1;
   String _lastSyncEntityNotification = '';
+  static const int _maxAttachmentBytes = 10 * 1024 * 1024; // 10 MB
+  static const bool _deleteLocalAfterUpload = false;
 
-  SyncManager(this._db, {ApiClient? apiClient}) : _apiClient = apiClient {
+  SyncManager(this._db, {required RemoteBackend remoteBackend}) : _remoteBackend = remoteBackend {
     _startAutoSync();
   }
 
@@ -230,6 +237,8 @@ class SyncManager {
     _updateStatus(_currentStatus.copyWith(isSyncing: true));
 
     try {
+      await _remoteBackend.initialize();
+
       // جلب قائمة المزامنة مرتبة حسب الأولوية
       final items = await _db.syncDao.getSyncQueue();
 
@@ -257,20 +266,15 @@ class SyncManager {
             await _db.syncDao.removeFromSyncQueue(item.id);
           } catch (e) {
             // تحديث عدد المحاولات والخطأ
-            await _db.syncDao.updateSyncQueueError(
-              item.id,
-              e.toString(),
-              item.attempts + 1,
-            );
+            final nextAttempts = item.attempts + 1;
+            final retryDelayMinutes = 1 << (nextAttempts.clamp(1, 6)); // 2,4,8,16,32,64
+            final scheduledAt = DateTime.now().add(Duration(minutes: retryDelayMinutes));
 
-            // إعادة جدولة للمحاولة لاحقاً (backoff exponential)
-            final delay = Duration(minutes: (5 * (item.attempts + 1)).toInt());
-            await _db.customStatement(
-              'UPDATE sync_queue SET scheduled_at = ? WHERE id = ?',
-              [
-                drift.Variable.withDateTime(DateTime.now().add(delay)),
-                drift.Variable.withString(item.id),
-              ],
+            await _db.syncDao.updateSyncQueueRetry(
+              id: item.id,
+              error: e.toString(),
+              attempts: nextAttempts,
+              scheduledAt: scheduledAt,
             );
           }
         },
@@ -312,10 +316,6 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    if (_apiClient == null) {
-      throw Exception('ApiClient not configured');
-    }
-
     try {
       // Convert String id to int for database lookup
       final intId = int.tryParse(id);
@@ -329,30 +329,19 @@ class SyncManager {
         throw Exception('Beneficiary not found: $id');
       }
 
-      // استخدام BeneficiaryDataModel للتحويل
-      final dataModel = BeneficiaryDataModel.fromDrift(beneficiary);
-      final backendData = dataModel.toJson();
+      final backendData = BeneficiaryMapper.toBackend(beneficiary);
 
-      // Send to backend
-      final response = await _apiClient.syncBeneficiaries([backendData]);
+      // create/update are both handled as upsert in remote backend
+      await _remoteBackend.upsertBeneficiary(backendData);
 
-      // Update local record with server ID and sync status
-      if (response['data'] != null && response['data'].isNotEmpty) {
-        final serverRecord = response['data'][0];
-        final serverId = serverRecord['id']?.toString();
-
-        if (serverId != null) {
-          await _db.customStatement(
-            'UPDATE beneficiaries SET server_id = ?, last_synced_at = ?, sync_state = ? WHERE id = ?',
-            [
-              drift.Variable.withString(serverId),
-              drift.Variable.withDateTime(DateTime.now()),
-              drift.Variable.withString('synced'),
-              drift.Variable.withString(id),
-            ],
-          );
-        }
-      }
+      final now = DateTime.now();
+      await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(intId))).write(
+        BeneficiariesCompanion(
+          syncState: const drift.Value('synced'),
+          lastSyncedAt: drift.Value(now),
+          updatedAt: drift.Value(now),
+        ),
+      );
     } catch (e) {
       throw Exception('Failed to sync beneficiary: $e');
     }
@@ -364,8 +353,19 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    // TODO: Implement actual API call
-    await Future.delayed(const Duration(milliseconds: 500));
+    final visit = await _db.visitsDao.getVisitById(id);
+    if (visit == null) {
+      throw Exception('Visit not found: $id');
+    }
+
+    final backendData = VisitSyncMapper.toBackend(visit);
+    final beneficiaryId = visit.beneficiaryId.trim();
+    if (beneficiaryId.isEmpty) {
+      throw Exception('Visit beneficiary id is missing: $id');
+    }
+
+    await _remoteBackend.upsertVisit(beneficiaryId, backendData);
+    await _db.visitsDao.updateVisitSyncStatus(id, visit.serverId ?? visit.id);
   }
 
   // مزامنة مرفق
@@ -374,8 +374,172 @@ class SyncManager {
     String operation,
     Map<String, dynamic> data,
   ) async {
-    // TODO: Implement actual API call for file upload
-    await Future.delayed(const Duration(milliseconds: 500));
+    _AttachmentUploadPreparation? preparation;
+
+    final attachment = await _db.attachmentsDao.getAttachment(id);
+    if (attachment == null) {
+      throw Exception('Attachment not found: $id');
+    }
+
+    final beneficiaryId = attachment.beneficiaryId.trim();
+    if (beneficiaryId.isEmpty) {
+      throw Exception('Attachment beneficiary id is missing: $id');
+    }
+
+    final file = File(attachment.filePath);
+    if (!await file.exists()) {
+      throw Exception('Attachment file does not exist: ${attachment.filePath}');
+    }
+
+    final normalizedType = attachment.type.trim().toLowerCase();
+    if (normalizedType != 'image' && normalizedType != 'pdf') {
+      throw Exception('Unsupported attachment type for sync: ${attachment.type}. Only image/pdf are allowed.');
+    }
+
+    try {
+      preparation = await _prepareAttachmentForUpload(
+        attachmentId: attachment.id,
+        attachmentType: normalizedType,
+        originalFile: file,
+      );
+
+      if (preparation.uploadFileSizeBytes > _maxAttachmentBytes) {
+        throw Exception('Attachment exceeds max size (${_maxAttachmentBytes ~/ (1024 * 1024)} MB).');
+      }
+
+      // Rule: upload binary to storage first, then persist metadata in Firestore.
+      final uploadedUrl = await _remoteBackend.uploadAttachment(
+        beneficiaryId,
+        preparation.uploadPath,
+        preparation.storageFileName,
+        preparation.contentType,
+      );
+
+      if (uploadedUrl == null || uploadedUrl.trim().isEmpty) {
+        throw Exception('Attachment upload returned empty URL for: $id');
+      }
+
+      final metadata = <String, dynamic>{
+        'id': attachment.id,
+        'beneficiary_id': attachment.beneficiaryId,
+        'visit_id': attachment.visitId,
+        'file_name': attachment.fileName,
+        'file_path': attachment.filePath,
+        'file_type': attachment.type,
+        'file_size': preparation.uploadFileSizeBytes,
+        'thumbnail_path': attachment.thumbnailPath,
+        'document_type': attachment.documentType,
+        'person_type': attachment.personType,
+        'person_id': attachment.personId,
+        'notes': attachment.notes,
+        'server_url': uploadedUrl,
+        'download_url': uploadedUrl,
+        'created_at': attachment.createdAt,
+        'updated_at': DateTime.now(),
+      };
+
+      await _remoteBackend.upsertAttachmentMetadata(beneficiaryId, metadata);
+      await _db.attachmentsDao.updateAttachmentSyncState(
+        id,
+        'synced',
+        serverUrl: uploadedUrl,
+      );
+      await _db.customStatement(
+        '''
+        INSERT INTO attachments_contract_fields (
+          attachment_id,
+          download_url,
+          updated_at
+        ) VALUES (?, ?, ?)
+        ON CONFLICT(attachment_id) DO UPDATE SET
+          download_url = excluded.download_url,
+          updated_at = excluded.updated_at
+        ''',
+        [
+          attachment.id,
+          uploadedUrl,
+          DateTime.now().toIso8601String(),
+        ],
+      );
+
+      if (_deleteLocalAfterUpload) {
+        try {
+          await file.delete();
+        } catch (_) {
+          // Non-blocking cleanup when explicitly enabled.
+        }
+      }
+    } catch (e) {
+      await _db.attachmentsDao.updateAttachmentSyncState(
+        id,
+        'failed',
+      );
+      throw Exception('Attachment upload failed for $id: $e');
+    } finally {
+      if (preparation?.isTemporary == true && preparation?.uploadPath != null) {
+        try {
+          final temp = File(preparation!.uploadPath);
+          if (await temp.exists()) {
+            await temp.delete();
+          }
+        } catch (_) {
+          // Ignore temp cleanup failures.
+        }
+      }
+    }
+  }
+
+  Future<_AttachmentUploadPreparation> _prepareAttachmentForUpload({
+    required String attachmentId,
+    required String attachmentType,
+    required File originalFile,
+  }) async {
+    final safeOriginalName = path.basename(originalFile.path).replaceAll('/', '_').replaceAll('\\', '_');
+    final storageFileName = '${attachmentId}_$safeOriginalName';
+
+    if (attachmentType == 'pdf') {
+      return _AttachmentUploadPreparation(
+        uploadPath: originalFile.path,
+        storageFileName: storageFileName,
+        contentType: 'application/pdf',
+        uploadFileSizeBytes: await originalFile.length(),
+        isTemporary: false,
+      );
+    }
+
+    // image: try compression first and use compressed file if available.
+    final compressedPath = path.join(
+      Directory.systemTemp.path,
+      'benaa_sync_${attachmentId}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+
+    final compressedFile = await FlutterImageCompress.compressAndGetFile(
+      originalFile.absolute.path,
+      compressedPath,
+      quality: 82,
+      minHeight: 1920,
+      minWidth: 1920,
+      format: CompressFormat.jpeg,
+    );
+
+    if (compressedFile == null) {
+      return _AttachmentUploadPreparation(
+        uploadPath: originalFile.path,
+        storageFileName: storageFileName,
+        contentType: 'image/jpeg',
+        uploadFileSizeBytes: await originalFile.length(),
+        isTemporary: false,
+      );
+    }
+
+    final compressedSize = await File(compressedFile.path).length();
+    return _AttachmentUploadPreparation(
+      uploadPath: compressedFile.path,
+      storageFileName: storageFileName,
+      contentType: 'image/jpeg',
+      uploadFileSizeBytes: compressedSize,
+      isTemporary: true,
+    );
   }
 
   // ============================================================================
@@ -384,28 +548,22 @@ class SyncManager {
 
   // مزامنة المستفيدين من السيرفر (Pull)
   Future<int> pullBeneficiariesFromServer({DateTime? updatedAfter}) async {
-    if (_apiClient == null) {
-      throw Exception('ApiClient not configured');
-    }
-
     try {
       // جلب البيانات من السيرفر
-      final response = await _apiClient.pullSync(updatedAfter: updatedAfter);
-      final beneficiariesData = response['beneficiaries'] as List? ?? [];
+      final beneficiariesData = await _remoteBackend.pullUpdatedBeneficiaries(since: updatedAfter);
 
       int insertedCount = 0;
 
       // استخدام BatchDatabaseHelper لمعالجة البيانات بكفاءة
       await BatchDatabaseHelper.batchInsert(
-        beneficiariesData.cast<Map<String, dynamic>>(),
+        beneficiariesData,
         (item) async {
           try {
             // تحويل من Backend JSON إلى Data Model ثم إلى Drift Companion
-            final dataModel = BeneficiaryDataModel.fromJson(item);
-            final beneficiaryCompanion = dataModel.toDriftCompanion();
+            final beneficiaryCompanion = BeneficiaryMapper.fromBackend(item);
 
             // البحث عن مستفيد موجود بنفس الـ serverId
-            final serverId = item['id'] as int?;
+            final serverId = item['id'] is int ? item['id'] as int : int.tryParse(item['id']?.toString() ?? '');
             if (serverId != null) {
               final existing = await _db.beneficiariesDao.getBeneficiaryByServerId(serverId);
 
@@ -472,4 +630,20 @@ class SyncManager {
     _autoSyncTimer?.cancel();
     _statusController.close();
   }
+}
+
+class _AttachmentUploadPreparation {
+  const _AttachmentUploadPreparation({
+    required this.uploadPath,
+    required this.storageFileName,
+    required this.contentType,
+    required this.uploadFileSizeBytes,
+    required this.isTemporary,
+  });
+
+  final String uploadPath;
+  final String storageFileName;
+  final String contentType;
+  final int uploadFileSizeBytes;
+  final bool isTemporary;
 }

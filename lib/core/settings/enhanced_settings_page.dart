@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -337,15 +338,17 @@ class EnhancedSettingsPage extends ConsumerWidget {
                           color: Colors.purple,
                           onTap: () => context.push('/performance-monitor'),
                         ),
-                        _buildDivider(),
-                        _buildNavigationTile(
-                          context,
-                          title: '🐛 Sentry Test',
-                          subtitle: 'اختبار تقارير الأخطاء والمراقبة',
-                          icon: Icons.bug_report_rounded,
-                          color: Colors.red,
-                          onTap: () => context.push('/sentry-test'),
-                        ),
+                        if (kDebugMode) ...[
+                          _buildDivider(),
+                          _buildNavigationTile(
+                            context,
+                            title: '🐛 Sentry Test',
+                            subtitle: 'اختبار تقارير الأخطاء والمراقبة',
+                            icon: Icons.bug_report_rounded,
+                            color: Colors.red,
+                            onTap: () => context.push('/sentry-test'),
+                          ),
+                        ],
                       ],
                     ]),
 

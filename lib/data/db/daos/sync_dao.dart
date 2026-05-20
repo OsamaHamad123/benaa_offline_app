@@ -15,9 +15,11 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   // SYNC QUEUE OPERATIONS
   // ============================================================================
 
-  /// Get sync queue items (ordered by priority)
+  /// Get sync queue items ready for processing (ordered by priority then createdAt)
   Future<List<SyncQueueItem>> getSyncQueue({int limit = 100}) async {
+    final now = DateTime.now();
     return await (select(syncQueue)
+          ..where((s) => s.scheduledAt.isNull() | s.scheduledAt.isSmallerOrEqualValue(now))
           ..orderBy([
             (s) => OrderingTerm.desc(s.priority),
             (s) => OrderingTerm.asc(s.createdAt),
@@ -44,6 +46,22 @@ class SyncDao extends DatabaseAccessor<AppDatabase> with _$SyncDaoMixin {
   ) async {
     await (update(syncQueue)..where((s) => s.id.equals(id))).write(
       SyncQueueCompanion(lastError: Value(error), attempts: Value(attempts)),
+    );
+  }
+
+  /// Update sync queue retry state with exponential backoff schedule.
+  Future<void> updateSyncQueueRetry({
+    required String id,
+    required String error,
+    required int attempts,
+    required DateTime scheduledAt,
+  }) async {
+    await (update(syncQueue)..where((s) => s.id.equals(id))).write(
+      SyncQueueCompanion(
+        lastError: Value(error),
+        attempts: Value(attempts),
+        scheduledAt: Value(scheduledAt),
+      ),
     );
   }
 

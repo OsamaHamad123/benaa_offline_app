@@ -136,13 +136,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     try {
       final isOnline = await _isOnline();
-      if (!isOnline) {
-        state = const AuthError(
-          message: 'الاتصال بالإنترنت مطلوب لتسجيل الدخول',
-          canRetry: true,
-        );
-        return false;
-      }
 
       final deviceId = await _authRepository.getDeviceId();
       final deviceName = await _authRepository.getDeviceName();
@@ -165,7 +158,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           return false;
         case Success(value: final session):
           UnifiedLogger.success('✅ Login successful');
-          state = AuthAuthenticated(session: session);
+          state = AuthAuthenticated(session: session, isOffline: !isOnline);
           await _runPostLoginSync();
           return true;
       }

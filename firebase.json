@@ -1,0 +1,28 @@
+{
+	"firestore": {
+		"rules": "firestore.rules"
+	},
+	"storage": {
+		"rules": "storage.rules"
+	},
+	"flutter": {
+		"platforms": {
+			"android": {
+				"default": {
+					"projectId": "benaa-offline-app",
+					"appId": "1:1060294362458:android:6a7ad62a19e2cf07219f63",
+					"fileOutput": "android/app/google-services.json"
+				}
+			},
+			"dart": {
+				"lib/firebase_options.dart": {
+					"projectId": "benaa-offline-app",
+					"configurations": {
+						"android": "1:1060294362458:android:6a7ad62a19e2cf07219f63",
+						"ios": "1:1060294362458:ios:116d45e28c1816cf219f63"
+					}
+				}
+			}
+		}
+	}
+}

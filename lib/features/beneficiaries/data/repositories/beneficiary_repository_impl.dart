@@ -1,4 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:uuid/uuid.dart';
+import 'dart:convert';
+import '../../../../data/db/drift_database.dart' hide Beneficiary;
 import '../../domain/entities/beneficiary.dart';
 import '../../domain/repositories/beneficiary_repository.dart';
 import '../datasources/beneficiary_local_datasource.dart';
@@ -12,8 +16,10 @@ import '../../../../core/error_handling/error_logger.dart';
 /// Implements the repository interface using local datasource.
 class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
   final BeneficiaryLocalDataSource localDataSource;
+  final AppDatabase db;
+  final _uuid = const Uuid();
 
-  const BeneficiaryRepositoryImpl(this.localDataSource);
+  const BeneficiaryRepositoryImpl(this.localDataSource, this.db);
 
   @override
   Future<Result<Beneficiary>> create(Beneficiary beneficiary) async {
@@ -63,6 +69,16 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       ).toDrift();
 
       final result = await localDataSource.create(companion);
+      await _enqueueSync(
+        entityId: result.id,
+        operation: 'create',
+        payload: <String, dynamic>{
+          'id': result.id,
+          'operation': 'create',
+          'entity': 'beneficiary',
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+      );
       return Success(result as Beneficiary);
     } catch (e, stackTrace) {
       await ErrorLogger.logError(
@@ -132,6 +148,16 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       }
 
       await localDataSource.update(id, companion);
+      await _enqueueSync(
+        entityId: beneficiary.id,
+        operation: 'update',
+        payload: <String, dynamic>{
+          'id': beneficiary.id,
+          'operation': 'update',
+          'entity': 'beneficiary',
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+      );
       return Success(beneficiary);
     } catch (e, stackTrace) {
       await ErrorLogger.logError(
@@ -277,5 +303,24 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
     } catch (e, stackTrace) {
       return Failure(UnknownFailure('Failed to load from civil registry: $e', stackTrace));
     }
+  }
+
+  Future<void> _enqueueSync({
+    required String entityId,
+    required String operation,
+    required Map<String, dynamic> payload,
+  }) async {
+    await db.syncDao.addToSyncQueue(
+      SyncQueueCompanion(
+        id: drift.Value(_uuid.v4()),
+        entity: const drift.Value('beneficiary'),
+        entityId: drift.Value(entityId),
+        operation: drift.Value(operation),
+        payload: drift.Value(jsonEncode(payload)),
+        priority: const drift.Value(9),
+        attempts: const drift.Value(0),
+        createdAt: drift.Value(DateTime.now()),
+      ),
+    );
   }
 }

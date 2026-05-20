@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          request.auth.token.admin == true ||
+          request.auth.token.role == 'admin'
+        );
+    }
+
+    function hasValidUpdatedAtOnCreate() {
+      return request.resource.data.updated_at is timestamp;
+    }
+
+    function hasValidUpdatedAtOnUpdate() {
+      return request.resource.data.updated_at is timestamp &&
+        resource.data.updated_at is timestamp &&
+        request.resource.data.updated_at > resource.data.updated_at;
+    }
+
+    // Users profile documents
+    match /users/{uid} {
+      allow read: if isAuthenticated() && (request.auth.uid == uid || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == uid;
+      allow update: if isAuthenticated() &&
+        (request.auth.uid == uid || isAdmin()) &&
+        hasValidUpdatedAtOnUpdate();
+      // Prefer soft delete (deleted_at / is_deleted fields)
+      allow delete: if false;
+    }
+
+    // Beneficiaries domain (normal users can create/update)
+    match /beneficiaries/{beneficiaryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && hasValidUpdatedAtOnCreate();
+      allow update: if isAuthenticated() && hasValidUpdatedAtOnUpdate();
+      // Prefer soft delete
+      allow delete: if false;
+
+      match /visits/{visitId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && hasValidUpdatedAtOnCreate();
+        allow update: if isAuthenticated() && hasValidUpdatedAtOnUpdate();
+        allow delete: if false;
+      }
+
+      match /attachments/{attachmentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && hasValidUpdatedAtOnCreate();
+        allow update: if isAuthenticated() && hasValidUpdatedAtOnUpdate();
+        allow delete: if false;
+      }
+
+      match /family_members/{memberId} {
+        allow read: if isAuthenticated();
+        allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+        allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+        allow delete: if isAdmin();
+      }
+
+      match /family_deceased/{deceasedId} {
+        allow read: if isAuthenticated();
+        allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+        allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Admin-managed collections
+    match /associations/{associationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+      allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+      allow delete: if isAdmin();
+
+      match /representatives/{representativeId} {
+        allow read: if isAuthenticated();
+        allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+        allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+        allow delete: if isAdmin();
+      }
+    }
+
+    match /taxonomies/{groupId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+      allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+      allow delete: if isAdmin();
+
+      match /items/{itemId} {
+        allow read: if isAuthenticated();
+        allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+        allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Other collections: authenticated read, admin write
+    match /sponsorships/{sponsorshipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+      allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+      allow delete: if false;
+    }
+
+    match /activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+      allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+      allow delete: if false;
+    }
+
+    match /data_requests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && hasValidUpdatedAtOnCreate();
+      allow update: if isAdmin() && hasValidUpdatedAtOnUpdate();
+      allow delete: if false;
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
