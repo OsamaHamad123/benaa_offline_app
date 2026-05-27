@@ -335,6 +335,7 @@ class InfoBuilders {
   /// Build education and health info items
   static List<InfoItem> buildEducationHealthItems(
     dynamic beneficiary, {
+    Map<String, String> categoryLabelsByCode = const <String, String>{},
     Map<String, String> assistanceTypeLabelsByCode = const <String, String>{},
     Map<String, String> disabilityTypeLabelsByCode = const <String, String>{},
     Map<String, String> incomeSourceLabelsByCode = const <String, String>{},
@@ -407,9 +408,37 @@ class InfoBuilders {
     }
 
     final metadata = _extractDetailsMetadata(beneficiary.notes);
+    final subCategoryRaw = metadata['subCategory'];
+    final subSubCategoryRaw = metadata['subSubCategory'];
     final assistanceTypeRaw = metadata['assistanceType'];
     final disabilityTypeRaw = metadata['disabilityType'];
     final incomeSourceRaw = metadata['incomeSource'];
+
+    if (subCategoryRaw != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.subdirectory_arrow_right,
+          label: 'الفئة الفرعية',
+          value: TaxonomyValueResolver.displayLabel(
+            rawValue: subCategoryRaw,
+            resolvedLabel: _resolveTaxonomyLabel(subCategoryRaw, categoryLabelsByCode),
+          ),
+        ),
+      );
+    }
+
+    if (subSubCategoryRaw != null) {
+      items.add(
+        InfoItem(
+          icon: Icons.account_tree_outlined,
+          label: 'الفئة الفرعية الثانية',
+          value: TaxonomyValueResolver.displayLabel(
+            rawValue: subSubCategoryRaw,
+            resolvedLabel: _resolveTaxonomyLabel(subSubCategoryRaw, categoryLabelsByCode),
+          ),
+        ),
+      );
+    }
 
     if (assistanceTypeRaw != null) {
       items.add(

@@ -55,7 +55,7 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> w
 
   Future<void> _initialize() async {
     try {
-      await Future.delayed(const Duration(milliseconds: 1500));
+      await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
 
       setState(() {
@@ -87,7 +87,7 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> w
       }
 
       setState(() {
-        _statusMessage = 'يجب تسجيل الدخول لتنزيل قاعدة البيانات...';
+        _statusMessage = 'قاعدة البيانات غير متوفرة، سيتم فتح صفحة التحميل...';
       });
       await Future.delayed(const Duration(milliseconds: 500));
 
@@ -98,10 +98,10 @@ class _AppInitializationPageState extends ConsumerState<AppInitializationPage> w
             'duration_ms': _initStopwatch.elapsedMilliseconds,
             'db_available': dbState.isAvailable,
             'db_skipped': dbState.wasSkipped,
-            'destination': 'login_requires_db',
+            'destination': 'database_download_required',
           },
         );
-        context.go('/login');
+        context.go('/database-download');
       }
     } catch (error) {
       if (!mounted) return;

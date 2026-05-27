@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/providers/providers.dart';
 import '../../core/sync/mobile_sync_service.dart';
@@ -27,7 +29,9 @@ import '../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../taxonomies/domain/services/taxonomy_integrity_guard.dart';
 import 'presentation/providers/file_id_providers.dart';
 import 'presentation/providers/mobile_sync_operations_providers.dart';
+import 'presentation/providers/sync_progress_providers.dart';
 import 'domain/repositories/file_id_reservation_repository.dart';
+import 'services/firebase_beneficiary_upload_service.dart';
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
@@ -41,6 +45,8 @@ class MobileSyncPage extends ConsumerStatefulWidget {
 }
 
 class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBindingObserver {
+  static const String _taxonomySeedVersion = 'gaza_v1';
+  static const String _syncProgressStorageKey = 'sync_progress_state_v1';
   MobileSyncStatus? _status;
   MobileSyncResult? _lastResult;
   DateTime? _lastResultAt;
@@ -48,6 +54,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
   String? _lastResultSource;
   Map<String, int>? _stats;
   FileIdDiagnostics? _fileIdDiagnostics;
+  BeneficiaryUploadSummary? _lastBeneficiaryUploadSummary;
   String? _beneficiariesLastSyncError;
   StreamSubscription<MobileSyncStatus>? _syncStatusSubscription;
   _SyncViewMode _syncViewMode = _SyncViewMode.operational;
@@ -58,13 +65,59 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
   final Map<String, int> _syncTriggerCounts = <String, int>{};
   final Map<String, DateTime> _syncFirstTriggerAt = <String, DateTime>{};
 
+  String? _lastSyncResumeOperation;
+  ProviderSubscription<SyncProgressState>? _syncProgressPersistenceSub;
+
   @override
   void initState() {
     super.initState();
     _startSyncHubSession();
     WidgetsBinding.instance.addObserver(this);
+    _bindSyncProgressPersistence();
+    unawaited(_restorePersistedSyncProgress());
     _listenToSyncStatus();
     _refreshDashboardData();
+  }
+
+  void _bindSyncProgressPersistence() {
+    _syncProgressPersistenceSub?.close();
+    _syncProgressPersistenceSub = ref.listenManual<SyncProgressState>(
+      syncProgressProvider,
+      (_, next) {
+        unawaited(_persistSyncProgress(next));
+      },
+      fireImmediately: true,
+    );
+  }
+
+  Future<void> _persistSyncProgress(SyncProgressState state) async {
+    final prefs = await ref.read(sharedPreferencesProvider.future);
+    await prefs.setString(_syncProgressStorageKey, jsonEncode(state.toJson()));
+  }
+
+  Future<void> _restorePersistedSyncProgress() async {
+    try {
+      final prefs = await ref.read(sharedPreferencesProvider.future);
+      final raw = prefs.getString(_syncProgressStorageKey);
+      if (raw == null || raw.trim().isEmpty) {
+        return;
+      }
+
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map<String, dynamic>) {
+        return;
+      }
+
+      final snapshot = SyncProgressState.fromJson(decoded);
+      if (snapshot.operation == 'idle' && snapshot.phase == 'idle') {
+        return;
+      }
+
+      ref.read(syncControllerProvider.notifier).restore(snapshot);
+      _lastSyncResumeOperation = snapshot.operation;
+    } catch (_) {
+      // Ignore invalid snapshots and continue with fresh state.
+    }
   }
 
   void _startSyncHubSession() {
@@ -113,6 +166,20 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     _syncStatusSubscription?.cancel();
     _syncStatusSubscription = service.statusStream.listen((status) {
       final previousStatus = _status;
+      final syncProgressController = ref.read(syncControllerProvider.notifier);
+      final syncProgress = ref.read(syncProgressProvider);
+
+      if (syncProgress.isRunning && syncProgress.operation != 'taxonomy_upload') {
+        final baseTotal = syncProgress.total <= 0 ? 100 : syncProgress.total;
+        final mappedProcessed = (status.progress * baseTotal).round();
+        syncProgressController.update(
+          phase: status.isSyncing ? 'uploading' : syncProgress.phase,
+          total: baseTotal,
+          processed: mappedProcessed,
+          message: status.currentOperation,
+        );
+      }
+
       if (mounted) {
         setState(() {
           _status = status;
@@ -136,6 +203,20 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
           _syncFunnelTrigger = null;
           _syncFunnelTriggeredAt = null;
+
+          if (syncProgress.isRunning && syncProgress.operation != 'taxonomy_upload') {
+            final hasError = (status.lastError ?? '').trim().isNotEmpty;
+            if (hasError) {
+              syncProgressController.fail(
+                phase: 'failed',
+                errorCode: 'sync_error',
+                errorMessage: status.lastError,
+                message: status.currentOperation,
+              );
+            } else {
+              syncProgressController.complete(message: status.currentOperation);
+            }
+          }
         }
 
         if (!status.isSyncing) {
@@ -184,45 +265,232 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     WidgetsBinding.instance.removeObserver(this);
     _syncStatusSubscription?.cancel();
     _syncStatusSubscription = null;
+    _syncProgressPersistenceSub?.close();
+    _syncProgressPersistenceSub = null;
     super.dispose();
   }
 
-  Future<void> _syncDown() async {
-    _trackSyncFunnelTrigger('sync_down');
-    await BackgroundSyncWorker.triggerSyncDown();
+  Future<bool> _hasInternetConnection() async {
+    final result = await Connectivity().checkConnectivity();
+    return !result.contains(ConnectivityResult.none);
+  }
 
-    if (!mounted) return;
-    setState(() {
-      _status = MobileSyncStatus(
-        isSyncing: true,
-        currentOperation: 'تمت جدولة مزامنة التنزيل بالخلفية',
-        progress: 0,
+  Future<void> _runWithForegroundSyncGuard(Future<void> Function() task) async {
+    await WakelockPlus.enable();
+    if (mounted) {
+      EnhancedSnackbar.showInfo(
+        context,
+        message: 'يرجى إبقاء التطبيق مفتوحاً أثناء المزامنة',
       );
-    });
+    }
+    try {
+      await task();
+    } finally {
+      await WakelockPlus.disable();
+    }
+  }
 
-    EnhancedSnackbar.showSuccess(
-      context,
-      message: '✅ تمت جدولة Sync Down بالخلفية (تستمر حتى بعد إغلاق التطبيق)',
+  Future<void> _syncDown() async {
+    if (!await _hasInternetConnection()) {
+      ref.read(syncControllerProvider.notifier).pause(
+            phase: 'paused_due_to_network',
+            errorCode: 'offline',
+            errorMessage: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+            message: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+          );
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+      }
+      return;
+    }
+
+    _trackSyncFunnelTrigger('sync_down');
+    _lastSyncResumeOperation = 'full_download';
+
+    final syncProgressController = ref.read(syncControllerProvider.notifier);
+    syncProgressController.start(
+      operation: 'full_download',
+      phase: 'downloading',
+      total: 100,
+      message: 'جاري تنزيل البيانات من السيرفر...',
     );
+
+    final scheduled = await BackgroundSyncWorker.triggerSyncDown();
+    if (scheduled) {
+      if (!mounted) return;
+      setState(() {
+        _status = MobileSyncStatus(
+          isSyncing: true,
+          currentOperation: 'تمت جدولة مزامنة التنزيل بالخلفية',
+          progress: 0,
+        );
+      });
+      if (mounted) {
+        EnhancedSnackbar.showSuccess(context, message: '✅ تمت جدولة Sync Down بالخلفية');
+      }
+      return;
+    }
+
+    await _runWithForegroundSyncGuard(() async {
+      final service = ref.read(mobileSyncServiceProvider);
+      final result = await service.syncDown();
+      if (result.success) {
+        syncProgressController.complete(message: 'اكتمل تنزيل البيانات بنجاح.');
+        if (mounted) {
+          EnhancedSnackbar.showSuccess(context, message: '✅ اكتمل تنزيل البيانات بنجاح');
+        }
+      } else {
+        final isNetwork = ((result.errorCategory ?? '').toLowerCase() == 'network') ||
+            ((result.error ?? '').toLowerCase().contains('unavailable'));
+        if (isNetwork) {
+          syncProgressController.pause(
+            phase: 'paused_due_to_network',
+            errorCode: result.errorCategory ?? 'unavailable',
+            errorMessage: result.error ?? 'انقطع الاتصال أثناء التنزيل.',
+            message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
+          );
+        } else {
+          syncProgressController.fail(
+            phase: 'failed',
+            errorCode: result.errorCategory,
+            errorMessage: result.error,
+            message: 'فشل تنزيل البيانات.',
+          );
+        }
+
+        if (mounted) {
+          EnhancedSnackbar.showError(context, message: '❌ ${result.error ?? 'فشل تنزيل البيانات'}');
+        }
+      }
+    });
   }
 
   Future<void> _syncUp() async {
-    _trackSyncFunnelTrigger('sync_up');
-    await BackgroundSyncWorker.triggerSyncUp();
-
-    if (!mounted) return;
-    setState(() {
-      _status = MobileSyncStatus(
-        isSyncing: true,
-        currentOperation: 'تمت جدولة مزامنة الرفع بالخلفية',
-        progress: 0,
-      );
-    });
-
-    EnhancedSnackbar.showSuccess(
-      context,
-      message: '✅ تمت جدولة Sync Up بالخلفية (تستمر حتى بعد إغلاق التطبيق)',
+    await _syncTaxonomyMasterDataForUpload(
+      trigger: 'sync_page_upload_changes',
+      force: false,
     );
+
+    if (!await _hasInternetConnection()) {
+      ref.read(syncControllerProvider.notifier).pause(
+            phase: 'paused_due_to_network',
+            errorCode: 'offline',
+            errorMessage: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+            message: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+          );
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+      }
+      return;
+    }
+
+    _trackSyncFunnelTrigger('sync_up');
+    _lastSyncResumeOperation = 'full_upload';
+
+    final syncProgressController = ref.read(syncControllerProvider.notifier);
+    syncProgressController.start(
+      operation: 'beneficiary_upload',
+      phase: 'preparing',
+      total: 1,
+      message: 'جاري تجهيز رفع المستفيدين...',
+    );
+
+    final diagnosticsBefore = await ref.read(fileIdServiceProvider).getDiagnostics();
+    syncProgressController.update(
+      phase: 'preparing',
+      processed: 0,
+      fileNumbersAvailable: diagnosticsBefore?.availableCount,
+      pendingAssignedFileNumbers: diagnosticsBefore?.usedUnsyncedCount,
+      message: 'جاري تجهيز رفع المستفيدين...',
+    );
+
+    await _runWithForegroundSyncGuard(() async {
+      final uploadService = ref.read(firebaseBeneficiaryUploadServiceProvider);
+      final summary = await uploadService.uploadPendingBeneficiaries(
+        onProgress: (progress) async {
+          syncProgressController.update(
+            phase: progress.phase,
+            total: progress.total,
+            processed: progress.processed,
+            created: progress.uploaded,
+            failed: progress.failed,
+            skipped: progress.skipped,
+            pending: progress.total - progress.processed,
+            confirmedFileNumbers: progress.fileNumbersConfirmed,
+            currentItemId: progress.currentLocalId,
+            message: progress.message,
+            errorCode: progress.errorCode,
+            errorMessage: progress.errorMessage,
+          );
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _lastBeneficiaryUploadSummary = summary;
+        });
+      }
+
+      final diagnosticsAfter = await ref.read(fileIdServiceProvider).getDiagnostics();
+
+      if (summary.hadNoPending) {
+        syncProgressController.complete(message: 'لا توجد تغييرات لرفعها');
+        if (mounted) {
+          EnhancedSnackbar.showInfo(context, message: 'لا توجد تغييرات لرفعها');
+        }
+        return;
+      }
+
+      if (summary.pausedByNetwork) {
+        syncProgressController.pause(
+          phase: 'paused_due_to_network',
+          errorCode: 'offline',
+          errorMessage: 'انقطع الاتصال أثناء الرفع.',
+          message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
+        );
+        if (mounted) {
+          EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+        }
+        return;
+      }
+
+      if (summary.failed == 0) {
+        syncProgressController.update(
+          phase: 'beneficiary_upload',
+          total: summary.totalPending,
+          processed: summary.totalPending,
+          created: summary.uploaded,
+          failed: summary.failed,
+          skipped: summary.skipped,
+          pending: 0,
+          fileNumbersAvailable: diagnosticsAfter?.availableCount,
+          pendingAssignedFileNumbers: diagnosticsAfter?.usedUnsyncedCount,
+          confirmedFileNumbers: summary.fileNumbersConfirmed,
+          failedFileNumberConfirmations: summary.failed,
+          message: diagnosticsAfter == null
+              ? 'تم رفع كل المستفيدين بنجاح'
+              : 'تم رفع ${summary.uploaded} من ${summary.totalPending}',
+        );
+        syncProgressController.complete(message: 'اكتمل رفع التغييرات بنجاح.');
+        if (mounted) {
+          EnhancedSnackbar.showSuccess(context, message: '✅ اكتمل رفع التغييرات بنجاح');
+        }
+      } else {
+        syncProgressController.fail(
+          phase: 'failed',
+          errorCode: 'partial_failure',
+          errorMessage: 'فشل رفع ${summary.failed} مستفيد',
+          message: 'فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة',
+        );
+
+        if (mounted) {
+          EnhancedSnackbar.showError(context, message: '❌ فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة');
+        }
+      }
+
+      await _refreshDashboardData();
+      ref.invalidate(fileNumberPoolStatusProvider);
+    });
   }
 
   Future<void> _syncTaxonomies() async {
@@ -247,23 +515,183 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     );
   }
 
-  Future<void> _syncNowOfficial() async {
-    _trackSyncFunnelTrigger('sync_now_full');
-    await BackgroundSyncWorker.triggerManualSync();
+  Future<void> _uploadCedarFileNumbers() async {
+    if (!await _hasInternetConnection()) {
+      ref.read(syncControllerProvider.notifier).pause(
+            phase: 'paused_due_to_network',
+            errorCode: 'offline',
+            errorMessage: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+            message: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+          );
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+      }
+      return;
+    }
 
-    if (!mounted) return;
-    setState(() {
-      _status = MobileSyncStatus(
-        isSyncing: true,
-        currentOperation: 'تمت جدولة المزامنة الشاملة بالخلفية',
-        progress: 0,
-      );
-    });
-
-    EnhancedSnackbar.showSuccess(
-      context,
-      message: '✅ تمت جدولة المزامنة الشاملة بالخلفية (تستمر حتى بعد إغلاق التطبيق)',
+    final syncProgressController = ref.read(syncControllerProvider.notifier);
+    syncProgressController.start(
+      operation: 'cedar_file_numbers_upload',
+      phase: 'reserving_block',
+      total: 500,
+      message: 'جاري حجز أرقام الملفات...',
     );
+
+    try {
+      final fileIdService = ref.read(fileIdServiceProvider);
+      await fileIdService.debugFileNumberFirestoreAccess(year: 2026);
+
+      final result = await fileIdService.uploadCedarFileNumbers(
+        blockSize: 500,
+        year: 2026,
+        onProgress: (progress) async {
+          syncProgressController.update(
+            phase: progress.phase,
+            total: progress.total,
+            processed: progress.processed,
+            fileNumbersAvailable: progress.available,
+            reservedBlockSize: progress.total,
+            fileNumberRangeStart: progress.rangeStart,
+            fileNumberRangeEnd: progress.rangeEnd,
+            message: progress.phase == 'completed' ? 'تم حجز ${progress.total} رقم ملف' : 'جاري حجز أرقام الملفات...',
+          );
+        },
+      );
+
+      syncProgressController.complete(
+        phase: 'completed',
+        message:
+            'تم حجز ${result.reservedCount} رقم ملف. النطاق: ${result.rangeStart} إلى ${result.rangeEnd}. الأرقام المتاحة محلياً: ${result.availableCount}',
+      );
+
+      await _refreshDashboardData();
+      ref.invalidate(fileNumberPoolStatusProvider);
+
+      if (!mounted) return;
+      EnhancedSnackbar.showSuccess(
+        context,
+        message:
+            '✅ تم حجز ${result.reservedCount} رقم ملف\nالنطاق: ${result.rangeStart} إلى ${result.rangeEnd}\nالأرقام المتاحة محلياً: ${result.availableCount}',
+      );
+    } catch (e) {
+      syncProgressController.fail(
+        phase: 'failed',
+        errorCode: 'cedar_upload_failed',
+        errorMessage: e.toString(),
+        message: 'فشل رفع/حجز أرقام الملفات الأساسية.',
+      );
+      if (!mounted) return;
+      EnhancedSnackbar.showError(context, message: '❌ فشل رفع أرقام الملفات الأساسية: $e');
+    }
+  }
+
+  Future<void> _syncNowOfficial() async {
+    await _syncTaxonomyMasterDataForUpload(
+      trigger: 'sync_page_full_sync',
+      force: false,
+    );
+
+    if (!await _hasInternetConnection()) {
+      ref.read(syncControllerProvider.notifier).pause(
+            phase: 'paused_due_to_network',
+            errorCode: 'offline',
+            errorMessage: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+            message: 'لا يوجد اتصال مستقر بالإنترنت. سيتم الاستكمال لاحقاً.',
+          );
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+      }
+      return;
+    }
+
+    _trackSyncFunnelTrigger('sync_now_full');
+    _lastSyncResumeOperation = 'full_sync';
+
+    final syncProgressController = ref.read(syncControllerProvider.notifier);
+    syncProgressController.start(
+      operation: 'background_sync',
+      phase: 'preparing',
+      total: 100,
+      message: 'جاري تنفيذ المزامنة الشاملة...',
+    );
+
+    final scheduled = await BackgroundSyncWorker.triggerManualSync();
+    if (scheduled) {
+      if (!mounted) return;
+      setState(() {
+        _status = MobileSyncStatus(
+          isSyncing: true,
+          currentOperation: 'تمت جدولة المزامنة الشاملة بالخلفية',
+          progress: 0,
+        );
+      });
+
+      EnhancedSnackbar.showSuccess(
+        context,
+        message: '✅ تمت جدولة المزامنة الشاملة بالخلفية',
+      );
+      return;
+    }
+
+    await _runWithForegroundSyncGuard(() async {
+      final service = ref.read(mobileSyncServiceProvider);
+      syncProgressController.update(phase: 'downloading', message: 'جاري تنزيل البيانات...');
+      final down = await service.syncDown();
+      if (!down.success) {
+        final isNetwork = ((down.errorCategory ?? '').toLowerCase() == 'network') ||
+            ((down.error ?? '').toLowerCase().contains('unavailable'));
+        if (isNetwork) {
+          syncProgressController.pause(
+            phase: 'paused_due_to_network',
+            errorCode: down.errorCategory ?? 'unavailable',
+            errorMessage: down.error,
+            message: 'انقطع الاتصال أثناء التنزيل، يمكنك المتابعة لاحقاً.',
+          );
+        } else {
+          syncProgressController.fail(
+            phase: 'failed',
+            errorCode: down.errorCategory,
+            errorMessage: down.error,
+            message: 'فشل جزء التنزيل في المزامنة الشاملة.',
+          );
+        }
+        if (mounted) {
+          EnhancedSnackbar.showError(context, message: '❌ ${down.error ?? 'فشل تنزيل البيانات'}');
+        }
+        return;
+      }
+
+      syncProgressController.update(phase: 'uploading', processed: 65, message: 'جاري رفع التغييرات...');
+      final up = await service.syncUp();
+      if (up.success) {
+        syncProgressController.complete(message: 'اكتملت المزامنة الشاملة بنجاح.');
+        if (mounted) {
+          EnhancedSnackbar.showSuccess(context, message: '✅ اكتملت المزامنة الشاملة بنجاح');
+        }
+      } else {
+        final isNetwork = ((up.errorCategory ?? '').toLowerCase() == 'network') ||
+            ((up.error ?? '').toLowerCase().contains('unavailable'));
+        if (isNetwork) {
+          syncProgressController.pause(
+            phase: 'paused_due_to_network',
+            errorCode: up.errorCategory ?? 'unavailable',
+            errorMessage: up.error,
+            message: 'انقطع الاتصال أثناء الرفع، يمكنك المتابعة لاحقاً.',
+          );
+        } else {
+          syncProgressController.fail(
+            phase: 'failed',
+            errorCode: up.errorCategory,
+            errorMessage: up.error,
+            message: 'فشل جزء الرفع في المزامنة الشاملة.',
+          );
+        }
+
+        if (mounted) {
+          EnhancedSnackbar.showError(context, message: '❌ ${up.error ?? 'فشل رفع التغييرات'}');
+        }
+      }
+    });
   }
 
   ({int score, String level, Color color, String hint}) _buildSyncHealthScore(MobileSyncResult result) {
@@ -654,6 +1082,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     final taxonomyLastSyncAsync = ref.watch(lastSyncTimeProvider);
     final taxonomySyncAsync = ref.watch(taxonomySyncNotifierProvider);
     final isTaxonomySyncing = taxonomySyncStatus == TaxonomySyncStatus.syncing || taxonomySyncAsync.isLoading;
+    final syncProgress = ref.watch(syncProgressProvider);
+    final fileNumberPoolStatusAsync = ref.watch(fileNumberPoolStatusProvider);
 
     return Scaffold(
       body: CustomScrollView(
@@ -714,6 +1144,19 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
                   // Status card
                   _buildStatusCard(status),
+
+                  SizedBox(height: 12.h),
+
+                  _buildSyncProgressCard(syncProgress),
+
+                  if (_lastBeneficiaryUploadSummary != null) ...[
+                    SizedBox(height: 12.h),
+                    _buildBeneficiaryUploadSummaryCard(_lastBeneficiaryUploadSummary!),
+                  ],
+
+                  SizedBox(height: 12.h),
+
+                  _buildFileNumberPoolStatusCard(fileNumberPoolStatusAsync),
 
                   SizedBox(height: 12.h),
 
@@ -1160,11 +1603,51 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
   Widget _buildSyncButtons(MobileSyncStatus status) {
     final theme = Theme.of(context);
-    final isSyncing = status.isSyncing;
+    final isSyncing = status.isSyncing || ref.watch(syncProgressProvider).isRunning;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        OutlinedButton.icon(
+          onPressed: isSyncing
+              ? null
+              : () => _syncTaxonomyMasterDataForUpload(
+                    trigger: 'sync_page_master_data_button',
+                    force: false,
+                    showSuccessSnackbar: true,
+                  ),
+          icon: const Icon(Icons.dataset_linked_rounded),
+          label: const Text(
+            'Upload/Sync Taxonomy Master Data',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: EdgeInsets.symmetric(vertical: 14.h),
+          ),
+        ),
+
+        SizedBox(height: 10.h),
+
+        ElevatedButton.icon(
+          onPressed: isSyncing ? null : _uploadCedarFileNumbers,
+          icon: const Icon(Icons.confirmation_num_rounded),
+          label: const Text(
+            'رفع أرقام الملفات الأساسية',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            backgroundColor: Colors.indigo,
+            foregroundColor: Colors.white,
+          ),
+        ),
+
+        SizedBox(height: 10.h),
+
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncNowOfficial,
           icon: const Icon(Icons.sync),
@@ -1207,7 +1690,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
           onPressed: isSyncing ? null : _syncUp,
           icon: const Icon(Icons.cloud_upload),
           label: const Text(
-            'رفع التغييرات للسيرفر',
+            'رفع التغييرات',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
@@ -1219,6 +1702,278 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _syncTaxonomyMasterDataForUpload({
+    required String trigger,
+    required bool force,
+    bool showSuccessSnackbar = false,
+  }) async {
+    final isRunning = ref.read(isTaxonomyMasterSyncRunningProvider);
+    if (isRunning) {
+      return;
+    }
+
+    ref.read(isTaxonomyMasterSyncRunningProvider.notifier).state = true;
+    _lastSyncResumeOperation = 'taxonomy_upload';
+    final syncController = ref.read(syncControllerProvider.notifier);
+    syncController.start(
+      operation: 'taxonomy_upload',
+      phase: 'preparing',
+      total: 208,
+      message: 'جاري رفع التصنيفات الأساسية...',
+    );
+    try {
+      final report = await ref.read(firestoreTaxonomySeederProvider).seedFirestoreTaxonomies(
+            force: force,
+            trigger: trigger,
+            onProgress: (progress) {
+              syncController.update(
+                phase: progress.phase,
+                total: progress.total,
+                processed: progress.processed,
+                created: progress.created,
+                skipped: progress.skipped,
+                updated: progress.updated,
+                failed: progress.failed,
+                pending: progress.pending,
+                currentItemId: progress.currentItemId,
+                currentGroup: progress.currentGroup,
+                message: progress.message,
+                errorCode: progress.errorCode,
+                errorMessage: progress.errorMessage,
+                failures: progress.failures
+                    .map(
+                      (f) => SyncFailure(
+                        itemId: f.documentId,
+                        group: f.group,
+                        code: f.errorCode,
+                        message: f.message,
+                      ),
+                    )
+                    .toList(growable: false),
+              );
+            },
+          );
+
+      await ref.read(taxonomyFirestoreHydratorProvider).hydrateAllGroups();
+
+      final stats = await ref.read(taxonomyStatisticsProvider.future);
+      final requiredCoverage = _requiredCoverageFromStats(stats);
+      final missingGroups = requiredCoverage.missing.map((entry) => entry.value).toList(growable: false);
+
+      if (missingGroups.isNotEmpty) {
+        syncController.fail(
+          phase: 'failed',
+          errorCode: 'missing_taxonomy_groups',
+          errorMessage: missingGroups.join(', '),
+          message: 'Missing taxonomy groups after sync.',
+        );
+      } else if (report.pausedDueToNetwork) {
+        syncController.pause(
+          phase: 'paused_due_to_network',
+          errorCode: 'unavailable',
+          errorMessage: report.message,
+          message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
+        );
+      } else if (report.pending > 0 || report.failed > 0) {
+        syncController.fail(
+          phase: 'failed',
+          errorCode: 'partial_failure',
+          errorMessage: report.message ?? 'Some taxonomy items are still pending.',
+          message: 'تمت مزامنة جزئية للتصنيفات.',
+        );
+      } else {
+        syncController.complete(message: 'اكتمل رفع التصنيفات الأساسية بنجاح.');
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      if (showSuccessSnackbar || report.failed > 0) {
+        final suffix = report.failed == 0 ? '' : ' (فشل: ${report.failed})';
+        EnhancedSnackbar.showSuccess(
+          context,
+          message:
+              'Taxonomy master sync $_taxonomySeedVersion: prepared=${report.prepared}, created=${report.created}, skipped=${report.skipped}, updated=${report.updated}, pending=${report.pending}$suffix',
+        );
+      }
+    } catch (e) {
+      syncController.fail(
+        phase: 'failed',
+        errorCode: 'exception',
+        errorMessage: e.toString(),
+        message: 'فشل Taxonomy master sync.',
+      );
+      if (!mounted) {
+        return;
+      }
+      EnhancedSnackbar.showError(context, message: '❌ فشل Taxonomy master sync: $e');
+    } finally {
+      ref.read(isTaxonomyMasterSyncRunningProvider.notifier).state = false;
+    }
+  }
+
+  Future<void> _resumeSyncFromProgressState(SyncProgressState progress) async {
+    switch (_lastSyncResumeOperation ?? progress.operation) {
+      case 'taxonomy_upload':
+        await _syncTaxonomyMasterDataForUpload(
+          trigger: 'sync_page_resume_taxonomy_upload',
+          force: false,
+          showSuccessSnackbar: true,
+        );
+        break;
+      case 'full_download':
+        await _syncDown();
+        break;
+      case 'full_upload':
+        await _syncUp();
+        break;
+      default:
+        await _syncNowOfficial();
+        break;
+    }
+  }
+
+  Widget _buildSyncProgressCard(SyncProgressState progress) {
+    if (progress.operation == 'idle' && !progress.isRunning && progress.phase == 'idle') {
+      return const SizedBox.shrink();
+    }
+
+    final percentText = '${(progress.percent * 100).toStringAsFixed(0)}%';
+    final canResume = progress.phase == 'paused_due_to_network' || progress.pending > 0;
+    final canRetry = progress.phase == 'failed';
+    final previewFailures = progress.failures.take(10).toList(growable: false);
+
+    return SyncSectionCard(
+      title: 'تقدم المزامنة',
+      icon: progress.isRunning ? Icons.sync_rounded : Icons.task_alt_rounded,
+      tone: progress.phase == 'failed'
+          ? SyncTone.error
+          : (progress.phase == 'paused_due_to_network' ? SyncTone.warning : SyncTone.primary),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(progress.message ?? 'جاري تنفيذ المزامنة...',
+              style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600)),
+          SizedBox(height: 8.h),
+          LinearProgressIndicator(
+            value: progress.total <= 0 ? null : progress.percent,
+            minHeight: 8.h,
+            borderRadius: BorderRadius.circular(4.r),
+          ),
+          SizedBox(height: 8.h),
+          Text('$percentText - ${progress.processed}/${progress.total}', style: TextStyle(fontSize: 12.sp)),
+          SizedBox(height: 6.h),
+          Text('Phase: ${progress.phase}', style: TextStyle(fontSize: 12.sp)),
+          Text(
+              'Created: ${progress.created} | Skipped: ${progress.skipped} | Updated: ${progress.updated} | Failed: ${progress.failed}',
+              style: TextStyle(fontSize: 12.sp)),
+          Text('Pending: ${progress.pending}', style: TextStyle(fontSize: 12.sp)),
+          if (progress.fileNumberRangeStart != null && progress.fileNumberRangeEnd != null)
+            Text(
+              'النطاق: ${progress.fileNumberRangeStart} إلى ${progress.fileNumberRangeEnd}',
+              style: TextStyle(fontSize: 12.sp),
+            ),
+          if (progress.fileNumbersAvailable != null)
+            Text(
+              'الأرقام المتاحة محلياً: ${progress.fileNumbersAvailable}',
+              style: TextStyle(fontSize: 12.sp),
+            ),
+          if (progress.currentGroup != null || progress.currentItemId != null)
+            Text(
+              'Group: ${progress.currentGroup ?? '-'} | Item: ${progress.currentItemId ?? '-'}',
+              style: TextStyle(fontSize: 12.sp),
+            ),
+          if (progress.errorMessage != null && progress.errorMessage!.trim().isNotEmpty) ...[
+            SizedBox(height: 6.h),
+            Text(
+              progress.errorMessage!,
+              style: TextStyle(fontSize: 12.sp, color: Colors.red[800], fontWeight: FontWeight.w600),
+            ),
+          ],
+          if (previewFailures.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Text(
+              'آخر الأخطاء (${previewFailures.length}/${progress.failures.length}):',
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w700, color: Colors.red[900]),
+            ),
+            SizedBox(height: 4.h),
+            for (final failure in previewFailures)
+              Text(
+                '- ${failure.group ?? 'group?'} / ${failure.itemId}: ${failure.code ?? 'error'}',
+                style: TextStyle(fontSize: 11.sp, color: Colors.red[800]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+          ],
+          SizedBox(height: 10.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              if (canResume)
+                OutlinedButton.icon(
+                  onPressed: progress.isRunning ? null : () => _resumeSyncFromProgressState(progress),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('متابعة'),
+                ),
+              if (canRetry)
+                OutlinedButton.icon(
+                  onPressed: progress.isRunning ? null : () => _resumeSyncFromProgressState(progress),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('إعادة المحاولة'),
+                ),
+              OutlinedButton.icon(
+                onPressed: progress.isRunning
+                    ? () {
+                        ref.read(syncControllerProvider.notifier).pause(
+                              phase: 'paused',
+                              message: 'تم إيقاف العملية من المستخدم',
+                            );
+                      }
+                    : null,
+                icon: const Icon(Icons.pause_circle_outline_rounded),
+                label: const Text('إيقاف'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBeneficiaryUploadSummaryCard(BeneficiaryUploadSummary summary) {
+    final tone = summary.failed > 0 ? SyncTone.warning : SyncTone.success;
+    final title = summary.failed > 0 ? 'ملخص رفع التغييرات (جزئي)' : 'ملخص رفع التغييرات';
+
+    return SyncSectionCard(
+      title: title,
+      icon: Icons.fact_check_rounded,
+      tone: tone,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('إجمالي المعلق: ${summary.totalPending}',
+              style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w600)),
+          SizedBox(height: 4.h),
+          Text('تم الرفع بنجاح: ${summary.uploaded}', style: TextStyle(fontSize: 12.sp)),
+          Text('فشل: ${summary.failed}', style: TextStyle(fontSize: 12.sp)),
+          Text('تم التخطي: ${summary.skipped}', style: TextStyle(fontSize: 12.sp)),
+          Text('تم تأكيد أرقام الملفات: ${summary.fileNumbersConfirmed}', style: TextStyle(fontSize: 12.sp)),
+          Text('بيانات مرفقات مرفوعة: ${summary.attachmentsUploaded}', style: TextStyle(fontSize: 12.sp)),
+          Text('آخر مزامنة: ${_formatDateTime(summary.completedAt)}', style: TextStyle(fontSize: 12.sp)),
+          if (summary.failed > 0) ...[
+            SizedBox(height: 8.h),
+            Text(
+              'فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة.',
+              style: TextStyle(fontSize: 12.sp, color: Colors.orange[900], fontWeight: FontWeight.w700),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1690,6 +2445,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
   Widget _buildFileIdDiagnosticsCard(FileIdDiagnostics diagnostics) {
     final lastRefillIssue = diagnostics.lastRefillErrorMessage?.trim();
+    final available = diagnostics.availableCount;
+    final isCritical = available <= 0;
+    final isWarning = !isCritical && available < 50;
 
     return SyncSectionCard(
       title: 'تشخيص أرقام الملفات',
@@ -1698,6 +2456,24 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isCritical)
+            Padding(
+              padding: EdgeInsets.only(bottom: 10.h),
+              child: SyncStatusBanner(
+                message: 'حرج: لا توجد أرقام ملفات متاحة محلياً',
+                tone: SyncTone.error,
+                icon: Icons.error_outline_rounded,
+              ),
+            ),
+          if (isWarning)
+            Padding(
+              padding: EdgeInsets.only(bottom: 10.h),
+              child: SyncStatusBanner(
+                message: 'تحذير: الأرقام المتاحة محلياً منخفضة ($available)',
+                tone: SyncTone.warning,
+                icon: Icons.warning_amber_rounded,
+              ),
+            ),
           if (lastRefillIssue != null && lastRefillIssue.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(bottom: 10.h),
@@ -1736,6 +2512,63 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
             diagnostics.lastLoginSyncAt != null ? _formatDateTime(diagnostics.lastLoginSyncAt!) : 'لا يوجد',
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFileNumberPoolStatusCard(AsyncValue<FileNumberPoolStatus> poolStatusAsync) {
+    return poolStatusAsync.when(
+      data: (pool) {
+        return SyncSectionCard(
+          title: 'أرقام الملفات',
+          icon: Icons.confirmation_num_outlined,
+          tone: pool.critical ? SyncTone.error : (pool.warning ? SyncTone.warning : SyncTone.success),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (pool.critical)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: const SyncStatusBanner(
+                    message: 'لا توجد أرقام ملفات متاحة. الرجاء رفع/حجز أرقام ملفات من السيرفر.',
+                    tone: SyncTone.error,
+                    icon: Icons.error_outline_rounded,
+                  ),
+                ),
+              if (!pool.critical && pool.warning)
+                Padding(
+                  padding: EdgeInsets.only(bottom: 10.h),
+                  child: const SyncStatusBanner(
+                    message: 'تنبيه: أرقام الملفات أوشكت على النفاد.',
+                    tone: SyncTone.warning,
+                    icon: Icons.warning_amber_rounded,
+                  ),
+                ),
+              _buildInfoRow('Available locally', pool.available.toString()),
+              _buildInfoRow('Assigned locally', pool.pendingAssigned.toString()),
+              _buildInfoRow('Synced', pool.synced.toString()),
+              _buildInfoRow('Conflicts', pool.conflicts.toString()),
+              _buildInfoRow(
+                'Current reserved range',
+                (pool.rangeStart != null && pool.rangeEnd != null)
+                    ? '${pool.rangeStart} → ${pool.rangeEnd}'
+                    : 'غير متاح',
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SyncSectionCard(
+        title: 'أرقام الملفات',
+        icon: Icons.confirmation_num_outlined,
+        tone: SyncTone.surface,
+        child: LinearProgressIndicator(),
+      ),
+      error: (error, _) => SyncSectionCard(
+        title: 'أرقام الملفات',
+        icon: Icons.confirmation_num_outlined,
+        tone: SyncTone.warning,
+        child: Text('تعذر تحميل حالة أرقام الملفات: $error'),
       ),
     );
   }

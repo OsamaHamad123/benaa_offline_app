@@ -309,6 +309,7 @@ class V2ContactNotesMergedTab extends StatelessWidget {
                     label: 'IBAN بالدولار',
                     prefixIcon: Icons.attach_money_rounded,
                     textInputAction: TextInputAction.next,
+                    helperText: BankAccountValidator.ibanValidationEnabled ? null : 'سيتم التحقق من رقم الحساب لاحقاً',
                     validator: (value) => BankAccountValidator.validateIbanPair(
                       currentValue: value,
                       otherIbanValue: formControllers.ibanShekelController.text,
@@ -324,6 +325,7 @@ class V2ContactNotesMergedTab extends StatelessWidget {
                     label: 'IBAN بالشيكل',
                     prefixIcon: Icons.currency_exchange_rounded,
                     textInputAction: TextInputAction.next,
+                    helperText: BankAccountValidator.ibanValidationEnabled ? null : 'سيتم التحقق من رقم الحساب لاحقاً',
                     validator: (value) => BankAccountValidator.validateIbanPair(
                       currentValue: value,
                       otherIbanValue: formControllers.ibanUsdController.text,

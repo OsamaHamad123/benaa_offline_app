@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -59,7 +60,13 @@ class BackgroundSyncWorker {
   // Configuration
   static const Duration syncInterval = Duration(minutes: 15);
   static const bool requireWifi = false; // Set to true for WiFi-only
-  static bool _initialized = false;
+  static const bool _enableWorkmanager = bool.fromEnvironment('ENABLE_WORKMANAGER', defaultValue: false);
+
+  static bool _isInitialized = false;
+  static bool _isEnabled = false;
+
+  static bool get isInitialized => _isInitialized;
+  static bool get isEnabled => _isEnabled;
 
   static bool _shouldRetrySyncResult(MobileSyncResult result) {
     if (result.success) return false;
@@ -126,15 +133,40 @@ class BackgroundSyncWorker {
 
   /// Initialize Background Sync
   static Future<void> initialize() async {
-    // DISABLED FOR PUBLIC GITHUB VERSION:
-    // Background sync connected to the old company server has been disabled.
-    // TODO: Rebuild sync using Firebase Cloud Functions or a new backend.
-    DebugLogger.info('ℹ️ [DEMO MODE] Background Sync Worker is disabled in this version.');
-    return;
+    if (_isInitialized) {
+      return;
+    }
+
+    if (!_enableWorkmanager) {
+      _isEnabled = false;
+      _isInitialized = true;
+      DebugLogger.info('ℹ️ [DEMO MODE] WorkManager background sync disabled. Foreground fallback will be used.');
+      return;
+    }
+
+    try {
+      await Workmanager().initialize(callbackDispatcher, isInDebugMode: kDebugMode);
+      _isEnabled = true;
+      _isInitialized = true;
+      DebugLogger.info('✅ WorkManager initialized successfully.');
+    } on PlatformException catch (e) {
+      _isEnabled = false;
+      _isInitialized = false;
+      DebugLogger.error('❌ WorkManager initialize failed (PlatformException)', e);
+    } catch (e) {
+      _isEnabled = false;
+      _isInitialized = false;
+      DebugLogger.error('❌ WorkManager initialize failed', e);
+    }
   }
 
   /// Register Periodic Sync Task
-  static Future<void> registerPeriodicSync() async {
+  static Future<bool> registerPeriodicSync() async {
+    if (!_isEnabled || !_isInitialized) {
+      DebugLogger.warning('⚠️ registerPeriodicSync skipped: WorkManager not initialized/enabled.');
+      return false;
+    }
+
     await Workmanager().registerPeriodicTask(
       periodicSyncUniqueName,
       periodicSyncTaskName,
@@ -153,59 +185,119 @@ class BackgroundSyncWorker {
     DebugLogger.info(
       '⏰ Periodic sync registered: every ${syncInterval.inMinutes} minutes',
     );
+    return true;
   }
 
   /// Cancel Background Sync
   static Future<void> cancel() async {
+    if (!_isEnabled || !_isInitialized) {
+      return;
+    }
     await Workmanager().cancelByUniqueName(periodicSyncUniqueName);
     DebugLogger.info('❌ Background sync cancelled');
   }
 
   /// Trigger Manual Sync (One-time)
-  static Future<void> triggerManualSync() async {
-    await Workmanager().registerOneOffTask(
-      oneOffFullSyncUniqueName,
-      oneOffFullSyncTaskName,
-      constraints: Constraints(networkType: NetworkType.connected),
-      initialDelay: Duration.zero,
-      existingWorkPolicy: ExistingWorkPolicy.keep,
-    );
+  static Future<bool> triggerManualSync() async {
+    if (!_isEnabled || !_isInitialized) {
+      DebugLogger.warning('⚠️ triggerManualSync fallback: WorkManager not initialized/enabled.');
+      return false;
+    }
 
-    DebugLogger.info('🚀 Manual sync triggered');
+    try {
+      await Workmanager().registerOneOffTask(
+        oneOffFullSyncUniqueName,
+        oneOffFullSyncTaskName,
+        constraints: Constraints(networkType: NetworkType.connected),
+        initialDelay: Duration.zero,
+        existingWorkPolicy: ExistingWorkPolicy.keep,
+      );
+
+      DebugLogger.info('🚀 Manual sync triggered');
+      return true;
+    } on PlatformException catch (e) {
+      DebugLogger.error('❌ triggerManualSync PlatformException', e);
+      return false;
+    } catch (e) {
+      DebugLogger.error('❌ triggerManualSync failed', e);
+      return false;
+    }
   }
 
-  static Future<void> triggerSyncDown() async {
-    await Workmanager().registerOneOffTask(
-      oneOffSyncDownUniqueName,
-      oneOffSyncDownTaskName,
-      constraints: Constraints(networkType: NetworkType.connected),
-      initialDelay: Duration.zero,
-      existingWorkPolicy: ExistingWorkPolicy.keep,
-    );
+  static Future<bool> triggerSyncDown() async {
+    if (!_isEnabled || !_isInitialized) {
+      DebugLogger.warning('⚠️ triggerSyncDown fallback: WorkManager not initialized/enabled.');
+      return false;
+    }
+
+    try {
+      await Workmanager().registerOneOffTask(
+        oneOffSyncDownUniqueName,
+        oneOffSyncDownTaskName,
+        constraints: Constraints(networkType: NetworkType.connected),
+        initialDelay: Duration.zero,
+        existingWorkPolicy: ExistingWorkPolicy.keep,
+      );
+      return true;
+    } on PlatformException catch (e) {
+      DebugLogger.error('❌ triggerSyncDown PlatformException', e);
+      return false;
+    } catch (e) {
+      DebugLogger.error('❌ triggerSyncDown failed', e);
+      return false;
+    }
   }
 
-  static Future<void> triggerSyncUp() async {
-    await Workmanager().registerOneOffTask(
-      oneOffSyncUpUniqueName,
-      oneOffSyncUpTaskName,
-      constraints: Constraints(networkType: NetworkType.connected),
-      initialDelay: Duration.zero,
-      existingWorkPolicy: ExistingWorkPolicy.keep,
-    );
+  static Future<bool> triggerSyncUp() async {
+    if (!_isEnabled || !_isInitialized) {
+      DebugLogger.warning('⚠️ triggerSyncUp fallback: WorkManager not initialized/enabled.');
+      return false;
+    }
+
+    try {
+      await Workmanager().registerOneOffTask(
+        oneOffSyncUpUniqueName,
+        oneOffSyncUpTaskName,
+        constraints: Constraints(networkType: NetworkType.connected),
+        initialDelay: Duration.zero,
+        existingWorkPolicy: ExistingWorkPolicy.keep,
+      );
+      return true;
+    } on PlatformException catch (e) {
+      DebugLogger.error('❌ triggerSyncUp PlatformException', e);
+      return false;
+    } catch (e) {
+      DebugLogger.error('❌ triggerSyncUp failed', e);
+      return false;
+    }
   }
 
-  static Future<void> triggerCivilDbDownload({String? downloadUrl}) async {
-    await Workmanager().registerOneOffTask(
-      oneOffDbDownloadUniqueName,
-      oneOffDbDownloadTaskName,
-      constraints: Constraints(networkType: NetworkType.connected),
-      initialDelay: Duration.zero,
-      existingWorkPolicy: ExistingWorkPolicy.replace,
-      inputData: {
-        _downloadUrlInputKey:
-            (downloadUrl == null || downloadUrl.trim().isEmpty) ? DownloadConfig.downloadUrl : downloadUrl.trim(),
-      },
-    );
+  static Future<bool> triggerCivilDbDownload({String? downloadUrl}) async {
+    if (!_isEnabled || !_isInitialized) {
+      DebugLogger.warning('⚠️ triggerCivilDbDownload fallback: WorkManager not initialized/enabled.');
+      return false;
+    }
+
+    try {
+      await Workmanager().registerOneOffTask(
+        oneOffDbDownloadUniqueName,
+        oneOffDbDownloadTaskName,
+        constraints: Constraints(networkType: NetworkType.connected),
+        initialDelay: Duration.zero,
+        existingWorkPolicy: ExistingWorkPolicy.replace,
+        inputData: {
+          _downloadUrlInputKey:
+              (downloadUrl == null || downloadUrl.trim().isEmpty) ? DownloadConfig.downloadUrl : downloadUrl.trim(),
+        },
+      );
+      return true;
+    } on PlatformException catch (e) {
+      DebugLogger.error('❌ triggerCivilDbDownload PlatformException', e);
+      return false;
+    } catch (e) {
+      DebugLogger.error('❌ triggerCivilDbDownload failed', e);
+      return false;
+    }
   }
 
   /// Check if sync should run

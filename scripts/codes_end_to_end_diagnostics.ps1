@@ -1,6 +1,6 @@
 param(
     [string]$BaseUrl = 'https://disabled-api.example.com',
-    [string]$Email = 'admin@gmail.com',
+    [string]$Email = '',
     [securestring]$Password,
     [string]$DeviceId = 'copilot-e2e-device',
     [int]$RequestCount = 5000,
@@ -85,8 +85,20 @@ Write-Host '=== CODES E2E DIAGNOSTICS ===' -ForegroundColor Cyan
 Write-Host "BaseUrl=$BaseUrl" -ForegroundColor DarkGray
 Write-Host "DeviceId=$DeviceId" -ForegroundColor DarkGray
 
+if ([string]::IsNullOrWhiteSpace($Email)) {
+    $Email = $env:BENAA_TEST_EMAIL
+}
+
+if ($null -eq $Password -and -not [string]::IsNullOrWhiteSpace($env:BENAA_TEST_PASSWORD)) {
+    $Password = ConvertTo-SecureString $env:BENAA_TEST_PASSWORD -AsPlainText -Force
+}
+
+if ([string]::IsNullOrWhiteSpace($Email)) {
+    throw 'Missing required email. Provide -Email or set BENAA_TEST_EMAIL.'
+}
+
 if ($null -eq $Password) {
-    $Password = ConvertTo-SecureString 'password' -AsPlainText -Force
+    throw 'Missing required password. Provide -Password (SecureString) or set BENAA_TEST_PASSWORD.'
 }
 
 $plainPassword = ConvertTo-PlainText -Secret $Password

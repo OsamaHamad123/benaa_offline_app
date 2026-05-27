@@ -8,6 +8,7 @@ import '../datasources/file_id_remote_datasource.dart';
 class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   final FileIdRemoteDataSource remoteDataSource;
   final FileIdReservationDao localDao;
+  final bool legacyRemoteSyncEnabled;
   FileIdReservationSnapshot? _lastReservedSnapshot;
   static const int _maxRequestCodesCount = 5000;
   DateTime? _lastLoginSyncAt;
@@ -18,10 +19,16 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
   FileIdReservationRepositoryImpl({
     required this.remoteDataSource,
     required this.localDao,
+    this.legacyRemoteSyncEnabled = true,
   });
 
   @override
   Future<Result<void>> loginSyncCodes() async {
+    if (!legacyRemoteSyncEnabled) {
+      // TODO(firebase): Replace legacy REST login-sync with Firestore/Cloud Function equivalent.
+      return const Success(null);
+    }
+
     try {
       var deviceId = '';
 
@@ -80,6 +87,11 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
 
   @override
   Future<Result<List<int>>> reserveFromRemote(int count) async {
+    if (!legacyRemoteSyncEnabled) {
+      // Legacy reservation is disabled in Firebase mode.
+      return const Success(<int>[]);
+    }
+
     try {
       final snapshot = await remoteDataSource.reserveBatchSnapshot(count);
       if (snapshot != null) {
@@ -159,6 +171,11 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
 
   @override
   Future<Result<void>> syncUsedIds() async {
+    if (!legacyRemoteSyncEnabled) {
+      // Legacy usage sync is disabled in Firebase mode.
+      return const Success(null);
+    }
+
     try {
       final usedRecords = await localDao.getUsedUnsyncedIds();
       if (usedRecords.isNotEmpty) {
@@ -230,6 +247,14 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
     required int lowThreshold,
     required int requestCount,
   }) async {
+    if (!legacyRemoteSyncEnabled) {
+      _setRefillIssue(
+        code: 'legacy_sync_disabled',
+        message: 'Legacy REST code reservation is disabled for Firebase mode',
+      );
+      return const Success(0);
+    }
+
     try {
       _clearRefillIssue();
       final localAvailableBefore = await localDao.countAvailable();
@@ -265,7 +290,7 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
       if (stats.unusedCount >= lowThreshold) {
         final loginSyncResult = await loginSyncCodes();
         if (loginSyncResult.isFailure) {
-          return Failure(NetworkFailure('Failed to recover assigned codes via login-sync'));
+          return const Failure(NetworkFailure('Failed to recover assigned codes via login-sync'));
         }
 
         final localAvailableAfterSync = await localDao.countAvailable();
@@ -347,23 +372,26 @@ class FileIdReservationRepositoryImpl implements FileIdReservationRepository {
       final lastReservedAt = await localDao.getLastReservedAt();
       final lastSyncedAt = await localDao.getLastSyncedAt();
       var latestStats = _lastDeviceCodeStats;
-      try {
-        final remoteStats = await remoteDataSource.getDeviceCodeStats();
-        if (remoteStats != null) {
-          latestStats = remoteStats;
-          _lastDeviceCodeStats = remoteStats;
-        }
-      } catch (_) {}
-
       int? reservationId;
       int? remainingCount;
-      try {
-        final remoteStatus = await remoteDataSource.getActiveReservationStatus();
-        reservationId = remoteStatus.reservationId;
-        remainingCount = remoteStatus.remainingCount;
-      } catch (_) {
-        reservationId = null;
-        remainingCount = null;
+
+      if (legacyRemoteSyncEnabled) {
+        try {
+          final remoteStats = await remoteDataSource.getDeviceCodeStats();
+          if (remoteStats != null) {
+            latestStats = remoteStats;
+            _lastDeviceCodeStats = remoteStats;
+          }
+        } catch (_) {}
+
+        try {
+          final remoteStatus = await remoteDataSource.getActiveReservationStatus();
+          reservationId = remoteStatus.reservationId;
+          remainingCount = remoteStatus.remainingCount;
+        } catch (_) {
+          reservationId = null;
+          remainingCount = null;
+        }
       }
 
       return Success(

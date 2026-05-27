@@ -6,6 +6,7 @@ import 'package:benaa_offline_app/features/auth/data/repositories/auth_repositor
 import 'package:benaa_offline_app/features/auth/domain/entities/auth_session.dart';
 import 'package:benaa_offline_app/features/auth/domain/entities/auth_user.dart';
 import 'package:benaa_offline_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_notifier.dart';
 import 'package:benaa_offline_app/features/auth/presentation/state/auth_state.dart';
 import 'package:benaa_offline_app/features/sync/presentation/providers/file_id_providers.dart';
@@ -39,7 +40,7 @@ final baseDioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(LogInterceptor(
     requestBody: true,
     responseBody: true,
-    logPrint: (object) => print('🌐 DIO: $object'),
+    logPrint: (object) => debugPrint('🌐 DIO: $object'),
   ));
 
   return dio;
@@ -76,10 +77,15 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 /// 🔐 Auth Notifier Provider - Main Auth State
 final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final fileIdService = ref.watch(fileIdServiceProvider);
+  final legacyFileIdSyncEnabled = ref.watch(legacyFileIdSyncEnabledProvider);
 
   return AuthNotifier(
     authRepository: ref.watch(authRepositoryProvider),
     postLoginSync: () async {
+      if (!legacyFileIdSyncEnabled) {
+        // Legacy REST code reservation flow is intentionally disabled in Firebase mode.
+        return;
+      }
       await fileIdService.loginSync();
       await fileIdService.syncUsage();
       await fileIdService.ensureReservation();

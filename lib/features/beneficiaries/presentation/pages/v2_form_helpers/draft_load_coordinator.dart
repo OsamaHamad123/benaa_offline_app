@@ -59,6 +59,10 @@ class DraftLoadCoordinator {
     controllers.selectedEmploymentStatus =
         _safeTaxonomyValue(formDataRaw['selectedEmploymentStatus'] ?? formDataRaw['employmentStatus']);
     controllers.selectedCategory = _safeTaxonomyValue(formDataRaw['selectedCategory'] ?? formDataRaw['category']);
+    controllers.selectedSubCategory =
+        _safeTaxonomyValue(formDataRaw['selectedSubCategory'] ?? formDataRaw['subCategory']);
+    controllers.selectedSubSubCategory =
+        _safeTaxonomyValue(formDataRaw['selectedSubSubCategory'] ?? formDataRaw['subSubCategory']);
     controllers.selectedRelationship =
         _safeTaxonomyValue(formDataRaw['selectedRelationship'] ?? formDataRaw['relationship']);
     controllers.selectedSection = _safeTaxonomyValue(formDataRaw['selectedSection'] ?? formDataRaw['section']);

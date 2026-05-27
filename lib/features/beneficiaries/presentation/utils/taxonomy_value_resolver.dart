@@ -44,10 +44,17 @@ class TaxonomyValueResolver {
     if (fromCode != null) return fromCode;
 
     final fromId = _extractInt(id);
-    if (fromId == null && group != null) {
+    if (fromId != null) return fromId;
+
+    final canonical = resolveCanonicalToken(code: code, id: id);
+    if (canonical != null && canonical.isNotEmpty) {
+      return _stableTokenInt(canonical);
+    }
+
+    if (group != null) {
       _logParseFailure(group: group, source: source, code: code, id: id);
     }
-    return fromId;
+    return null;
   }
 
   static String? resolveCanonicalToken({required String code, required String id}) {
@@ -108,5 +115,19 @@ class TaxonomyValueResolver {
       'taxonomy parse failure | group=${group.value} source=$source code=$code id=$id',
       name: 'BeneficiaryTaxonomyParsing',
     );
+  }
+
+  static int _stableTokenInt(String token) {
+    var hash = 0x811C9DC5;
+    for (final unit in token.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+
+    if (hash == 0) {
+      return 1;
+    }
+
+    return hash;
   }
 }

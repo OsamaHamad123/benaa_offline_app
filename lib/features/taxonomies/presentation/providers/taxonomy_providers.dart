@@ -1,6 +1,11 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:benaa_offline_app/core/error_handling/result.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../../../../core/backend/backend_config.dart';
+import '../../../../core/providers/providers.dart';
 import '../../../../data/db/drift_database.dart' show AppDatabase;
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
@@ -9,7 +14,10 @@ import '../../domain/usecases/taxonomy_usecases.dart';
 import '../../data/datasources/taxonomy_remote_datasource.dart';
 import '../../data/datasources/taxonomy_local_datasource.dart';
 import '../../data/datasources/taxonomy_local_drift_datasource.dart';
+import '../../data/dev/firestore_taxonomy_seeder.dart';
 import '../../data/repositories/taxonomy_repository_impl.dart';
+import '../../data/services/firestore_taxonomy_service.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import 'taxonomy_bridge_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════
@@ -38,11 +46,62 @@ final taxonomyLocalDataSourceProvider = Provider<TaxonomyLocalDataSource>((ref) 
   return TaxonomyLocalDriftDataSource(db.taxonomiesDao, db.syncMetadataDao);
 });
 
+/// Legacy taxonomy REST sync enablement.
+///
+/// Re-enable only when ALL conditions are true:
+/// 1) --dart-define=ENABLE_LEGACY_TAXONOMY_REST_SYNC=true
+/// 2) BACKEND_FLAVOR is not firebase
+/// 3) apiBaseUrl is not the disabled placeholder host
+final legacyTaxonomyRestSyncEnabledProvider = Provider<bool>((ref) {
+  const explicitlyEnabled = bool.fromEnvironment('ENABLE_LEGACY_TAXONOMY_REST_SYNC');
+  if (!explicitlyEnabled) {
+    return false;
+  }
+
+  final backendIsFirebase = BackendConfig.current.flavor == BackendFlavor.firebase;
+  if (backendIsFirebase) {
+    return false;
+  }
+
+  final appConfigState = ref.watch(appConfigProvider);
+  final appConfig = appConfigState.asData?.value;
+  if (appConfig == null) {
+    return false;
+  }
+
+  final baseUrl = appConfig.apiBaseUrl.trim().toLowerCase();
+  final isDisabledPlaceholder = baseUrl.contains('disabled-api.example.com');
+  if (isDisabledPlaceholder) {
+    return false;
+  }
+
+  return true;
+});
+
+final firestoreTaxonomyServiceProvider = Provider<FirestoreTaxonomyService>((ref) {
+  return FirestoreTaxonomyService();
+});
+
+final firestoreTaxonomySeederProvider = Provider<FirestoreTaxonomySeeder>((ref) {
+  return FirestoreTaxonomySeeder();
+});
+
+/// Manual Firestore seed is currently running.
+final taxonomySeedInProgressProvider = StateProvider<bool>((ref) => false);
+
+/// Manual Firestore seed has completed once in current app session.
+final taxonomyHasSeededThisSessionProvider = StateProvider<bool>((ref) => false);
+
+/// Lock for running taxonomy master sync once per upload action.
+final isTaxonomyMasterSyncRunningProvider = StateProvider<bool>((ref) => false);
+
 /// Repository Provider
 final taxonomyRepositoryProvider = Provider<TaxonomyRepository>((ref) {
   return TaxonomyRepositoryImpl(
     remoteDataSource: ref.watch(taxonomyRemoteDataSourceProvider),
     localDataSource: ref.watch(taxonomyLocalDataSourceProvider),
+    legacyRestSyncEnabled: ref.watch(legacyTaxonomyRestSyncEnabledProvider),
+    firestoreTaxonomyService: ref.watch(firestoreTaxonomyServiceProvider),
   );
 });
 
@@ -261,8 +320,76 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
 
   TaxonomySyncNotifier(this._syncUseCase, this._ref) : super(const AsyncValue.data(null));
 
+  bool _ensureAuthenticated() {
+    final isAuthenticated = _ref.read(isAuthenticatedProvider);
+    if (isAuthenticated) {
+      return true;
+    }
+
+    const message = 'يجب تسجيل الدخول قبل مزامنة التصنيفات.';
+    _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.error;
+    _ref.read(taxonomyErrorMessageProvider.notifier).state = message;
+    state = AsyncValue.error(StateError(message), StackTrace.current);
+    return false;
+  }
+
+  Future<void> _seedFirestoreFromLocalIfNeeded() async {
+    try {
+      await _ref.read(taxonomyFirestoreHydratorProvider).seedFromLocalIfFirestoreEmpty();
+    } on FirestoreTaxonomyPermissionDeniedException catch (e) {
+      final message = e.toString();
+      _ref.read(taxonomyErrorMessageProvider.notifier).state = message;
+      developer.log(message, name: 'TaxonomySync');
+    } catch (e, st) {
+      developer.log('Failed to seed Firestore from local taxonomy cache: $e', name: 'TaxonomySync', stackTrace: st);
+    }
+  }
+
+  TaxonomySyncResult _buildSkippedResult({
+    required String message,
+    int hydratedCount = 0,
+  }) {
+    return TaxonomySyncResult(
+      addedCount: hydratedCount,
+      updatedCount: 0,
+      deletedCount: 0,
+      syncTime: DateTime.now(),
+      success: true,
+      message: message,
+    );
+  }
+
   /// مزامنة كاملة
   Future<void> sync() async {
+    if (!_ensureAuthenticated()) {
+      return;
+    }
+
+    final legacyRestEnabled = _ref.read(legacyTaxonomyRestSyncEnabledProvider);
+    if (!legacyRestEnabled) {
+      state = const AsyncValue.loading();
+      _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.syncing;
+      _ref.read(taxonomyErrorMessageProvider.notifier).state = null;
+
+      final hydratedCount = await _ref.read(taxonomyFirestoreHydratorProvider).hydrateAllGroups();
+      final skippedResult = _buildSkippedResult(
+        message: hydratedCount > 0
+            ? 'Legacy taxonomy REST sync is disabled. Taxonomies hydrated from Firestore.'
+            : 'Legacy taxonomy REST sync is disabled. Firestore returned no records.',
+        hydratedCount: hydratedCount,
+      );
+
+      _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.success;
+      _ref.read(lastSyncResultProvider.notifier).state = skippedResult;
+      _ref.invalidate(allTaxonomiesProvider);
+      _ref.invalidate(taxonomyStatisticsProvider);
+      _ref.invalidate(lastSyncTimeProvider);
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider);
+      state = AsyncValue.data(skippedResult);
+      return;
+    }
+
     state = const AsyncValue.loading();
     _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.syncing;
     _ref.read(taxonomyErrorMessageProvider.notifier).state = null;
@@ -271,6 +398,7 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
 
     if (result.isSuccess) {
       final syncResult = (result as Success<TaxonomySyncResult>).value;
+      await _seedFirestoreFromLocalIfNeeded();
       _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.success;
       _ref.read(lastSyncResultProvider.notifier).state = syncResult;
       _ref.invalidate(allTaxonomiesProvider);
@@ -289,12 +417,35 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
 
   /// مزامنة مجموعة معينة
   Future<void> syncGroup(TaxonomyGroup group) async {
+    if (!_ensureAuthenticated()) {
+      return;
+    }
+
+    final legacyRestEnabled = _ref.read(legacyTaxonomyRestSyncEnabledProvider);
+    if (!legacyRestEnabled) {
+      state = const AsyncValue.loading();
+
+      final hydratedCount = await _ref.read(taxonomyFirestoreHydratorProvider).hydrateGroup(group);
+      final skippedResult = _buildSkippedResult(
+        message: hydratedCount > 0
+            ? 'Legacy taxonomy REST sync is disabled. Group hydrated from Firestore.'
+            : 'Legacy taxonomy REST sync is disabled. No Firestore records found for this group.',
+        hydratedCount: hydratedCount,
+      );
+
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider(group));
+      state = AsyncValue.data(skippedResult);
+      return;
+    }
+
     state = const AsyncValue.loading();
 
     final result = await _syncUseCase.syncGroup(group);
 
     if (result.isSuccess) {
       final syncResult = (result as Success<TaxonomySyncResult>).value;
+      await _seedFirestoreFromLocalIfNeeded();
       _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
       _ref.invalidate(taxonomiesByGroupProvider(group));
       state = AsyncValue.data(syncResult);
@@ -306,6 +457,34 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
 
   /// إعادة تعيين ومزامنة
   Future<void> resetAndSync() async {
+    if (!_ensureAuthenticated()) {
+      return;
+    }
+
+    final legacyRestEnabled = _ref.read(legacyTaxonomyRestSyncEnabledProvider);
+    if (!legacyRestEnabled) {
+      state = const AsyncValue.loading();
+      _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.syncing;
+
+      final hydratedCount = await _ref.read(taxonomyFirestoreHydratorProvider).hydrateAllGroups();
+      final skippedResult = _buildSkippedResult(
+        message: hydratedCount > 0
+            ? 'Legacy taxonomy REST sync is disabled. Reset/hydration completed from Firestore.'
+            : 'Legacy taxonomy REST sync is disabled. Firestore returned no records.',
+        hydratedCount: hydratedCount,
+      );
+
+      _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.success;
+      _ref.read(lastSyncResultProvider.notifier).state = skippedResult;
+      _ref.invalidate(allTaxonomiesProvider);
+      _ref.invalidate(taxonomyStatisticsProvider);
+      _ref.invalidate(lastSyncTimeProvider);
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider);
+      state = AsyncValue.data(skippedResult);
+      return;
+    }
+
     state = const AsyncValue.loading();
     _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.syncing;
 
@@ -313,6 +492,7 @@ class TaxonomySyncNotifier extends StateNotifier<AsyncValue<TaxonomySyncResult?>
 
     if (result.isSuccess) {
       final syncResult = (result as Success<TaxonomySyncResult>).value;
+      await _seedFirestoreFromLocalIfNeeded();
       _ref.read(taxonomySyncStatusProvider.notifier).state = TaxonomySyncStatus.success;
       _ref.read(lastSyncResultProvider.notifier).state = syncResult;
       _ref.invalidate(allTaxonomiesProvider);
@@ -420,6 +600,168 @@ class TaxonomyCrudNotifier extends StateNotifier<AsyncValue<void>> {
 final taxonomyCrudNotifierProvider = StateNotifierProvider<TaxonomyCrudNotifier, AsyncValue<void>>((ref) {
   return TaxonomyCrudNotifier(ref);
 });
+
+// ═══════════════════════════════════════════════════════════════
+// 🔥 Firestore Taxonomy Integration (Minimal Safe)
+// ═══════════════════════════════════════════════════════════════
+
+final taxonomyFirestoreHydratorProvider = Provider<TaxonomyFirestoreHydrator>((ref) {
+  final hydrator = TaxonomyFirestoreHydrator(ref);
+  ref.onDispose(hydrator.dispose);
+  return hydrator;
+});
+
+class TaxonomyFirestoreHydrator {
+  final Ref _ref;
+  final Map<TaxonomyGroup, StreamSubscription<List<Taxonomy>>> _groupSubscriptions =
+      <TaxonomyGroup, StreamSubscription<List<Taxonomy>>>{};
+  final Set<String> _permissionDeniedLoggedCollections = <String>{};
+  final Set<TaxonomyGroup> _emptyGroupWatchLogged = <TaxonomyGroup>{};
+
+  TaxonomyFirestoreHydrator(this._ref);
+
+  void _setPermissionDeniedMessage(String collectionName) {
+    final message =
+        'Firestore taxonomy permission denied. Check Firestore rules for taxonomy_categories and confirm the app is connected to the correct Firebase project.';
+    _ref.read(taxonomyErrorMessageProvider.notifier).state = message;
+    if (_permissionDeniedLoggedCollections.add(collectionName)) {
+      developer.log(message, name: 'TaxonomyFirestore');
+      developer.log(
+        'Check Firebase Console → App Check → Firestore enforcement. Disable enforcement for development or configure DebugAppCheckProvider.',
+        name: 'TaxonomyFirestore',
+      );
+    }
+  }
+
+  Future<int> hydrateAllGroups() async {
+    var total = 0;
+    for (final group in TaxonomyGroup.values) {
+      total += await hydrateGroup(group);
+    }
+    return total;
+  }
+
+  Future<void> ensureRealtimeGroupSync(TaxonomyGroup group) async {
+    final isAuthenticated = _ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      return;
+    }
+
+    if (_groupSubscriptions.containsKey(group)) {
+      return;
+    }
+
+    final service = _ref.read(firestoreTaxonomyServiceProvider);
+    developer.log('Firestore taxonomy watch started: group=${group.value}', name: 'TaxonomyFirestore');
+
+    final subscription = service.watchByGroup(group).listen(
+      (remoteItems) async {
+        if (remoteItems.isEmpty) {
+          if (_emptyGroupWatchLogged.add(group)) {
+            developer.log('Firestore taxonomy watch empty group: group=${group.value}', name: 'TaxonomyFirestore');
+          }
+          return;
+        }
+
+        _emptyGroupWatchLogged.remove(group);
+
+        final repository = _ref.read(taxonomyRepositoryProvider);
+        final result = await repository.upsertTaxonomies(remoteItems);
+        if (!result.isSuccess) {
+          return;
+        }
+
+        _ref.invalidate(allTaxonomiesProvider);
+        _ref.invalidate(taxonomyStatisticsProvider);
+        _ref.invalidate(lastSyncTimeProvider);
+        _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+        _ref.invalidate(taxonomiesByGroupProvider);
+      },
+      onError: (error, _) {
+        if (error is FirestoreTaxonomyPermissionDeniedException) {
+          _setPermissionDeniedMessage(service.collectionName);
+          return;
+        }
+        developer.log('Firestore taxonomy watch failed for ${group.value}: $error', name: 'TaxonomyFirestore');
+      },
+    );
+
+    _groupSubscriptions[group] = subscription;
+  }
+
+  void dispose() {
+    for (final subscription in _groupSubscriptions.values) {
+      subscription.cancel();
+    }
+    _groupSubscriptions.clear();
+  }
+
+  Future<int> hydrateGroup(TaxonomyGroup group) async {
+    final isAuthenticated = _ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      return 0;
+    }
+
+    final service = _ref.read(firestoreTaxonomyServiceProvider);
+    try {
+      final remoteItems = await service.fetchByGroup(group);
+      if (remoteItems.isEmpty) {
+        return 0;
+      }
+
+      final repository = _ref.read(taxonomyRepositoryProvider);
+      final result = await repository.upsertTaxonomies(remoteItems);
+      if (!result.isSuccess) {
+        return 0;
+      }
+
+      _ref.invalidate(allTaxonomiesProvider);
+      _ref.invalidate(taxonomyStatisticsProvider);
+      _ref.invalidate(lastSyncTimeProvider);
+      _ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
+      _ref.invalidate(taxonomiesByGroupProvider);
+
+      return remoteItems.length;
+    } on FirestoreTaxonomyPermissionDeniedException {
+      _setPermissionDeniedMessage(service.collectionName);
+      return 0;
+    }
+  }
+
+  Future<int> seedFromLocalIfFirestoreEmpty({List<TaxonomyGroup>? groups}) async {
+    final isAuthenticated = _ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      return 0;
+    }
+
+    final targetGroups = groups ?? TaxonomyGroup.values;
+    final repository = _ref.read(taxonomyRepositoryProvider);
+    final service = _ref.read(firestoreTaxonomyServiceProvider);
+
+    var seeded = 0;
+
+    for (final group in targetGroups) {
+      final localResult = await repository.getTaxonomiesByGroup(group);
+      if (!localResult.isSuccess) {
+        continue;
+      }
+
+      final localItems = (localResult as Success<List<Taxonomy>>).value;
+      if (localItems.isEmpty) {
+        continue;
+      }
+
+      try {
+        seeded += await service.seedGroupIfEmpty(group, localItems);
+      } on FirestoreTaxonomyPermissionDeniedException {
+        _setPermissionDeniedMessage(service.collectionName);
+        return seeded;
+      }
+    }
+
+    return seeded;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // 🛠️ Utility Providers

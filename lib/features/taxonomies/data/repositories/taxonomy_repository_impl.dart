@@ -10,6 +10,7 @@ import '../datasources/taxonomy_local_datasource.dart';
 import '../datasources/taxonomy_local_drift_datasource.dart';
 import '../datasources/taxonomy_remote_datasource.dart';
 import '../models/taxonomy_dto.dart';
+import '../services/firestore_taxonomy_service.dart';
 
 /// 🔧 Taxonomy Repository Implementation
 ///
@@ -18,14 +19,20 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   final TaxonomyRemoteDataSource _remoteDataSource;
   final TaxonomyLocalDataSource _localDataSource;
   final TaxonomyIntegrityGuard _integrityGuard;
+  final bool _legacyRestSyncEnabled;
+  final FirestoreTaxonomyService? _firestoreTaxonomyService;
 
   TaxonomyRepositoryImpl({
     required TaxonomyRemoteDataSource remoteDataSource,
     required TaxonomyLocalDataSource localDataSource,
     TaxonomyIntegrityGuard integrityGuard = const TaxonomyIntegrityGuard(),
+    bool legacyRestSyncEnabled = true,
+    FirestoreTaxonomyService? firestoreTaxonomyService,
   })  : _remoteDataSource = remoteDataSource,
         _localDataSource = localDataSource,
-        _integrityGuard = integrityGuard;
+        _integrityGuard = integrityGuard,
+        _legacyRestSyncEnabled = legacyRestSyncEnabled,
+        _firestoreTaxonomyService = firestoreTaxonomyService;
 
   // ═══════════════════════════════════════════════════════════════
   // 📖 READ Operations
@@ -281,6 +288,10 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
 
   @override
   Future<Result<TaxonomySyncResult>> syncFromServer() async {
+    if (!_legacyRestSyncEnabled) {
+      return _syncFromFirestoreOrSkip(groups: TaxonomyGroup.values, sourceLabel: 'syncFromServer');
+    }
+
     try {
       final lastSync = await _localDataSource.getLastSyncTime();
 
@@ -340,6 +351,10 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
 
   @override
   Future<Result<TaxonomySyncResult>> syncGroupFromServer(TaxonomyGroup group) async {
+    if (!_legacyRestSyncEnabled) {
+      return _syncFromFirestoreOrSkip(groups: [group], sourceLabel: 'syncGroup:${group.value}');
+    }
+
     try {
       final response = await _remoteDataSource.getTaxonomiesByGroup(group);
 
@@ -392,6 +407,15 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
 
   @override
   Future<Result<TaxonomySyncResult>> resetAndSync() async {
+    if (!_legacyRestSyncEnabled) {
+      try {
+        await _localDataSource.clearAll();
+      } catch (_) {
+        // Ignore local clear failures for safe fallback mode.
+      }
+      return _syncFromFirestoreOrSkip(groups: TaxonomyGroup.values, sourceLabel: 'resetAndSync');
+    }
+
     try {
       // مسح كل البيانات المحلية
       await _localDataSource.clearAll();
@@ -490,6 +514,58 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     }).toList();
 
     await local.upsertCompanions(companions);
+  }
+
+  Future<Result<TaxonomySyncResult>> _syncFromFirestoreOrSkip({
+    required Iterable<TaxonomyGroup> groups,
+    required String sourceLabel,
+  }) async {
+    final service = _firestoreTaxonomyService;
+    if (service == null) {
+      final now = DateTime.now();
+      return Success(TaxonomySyncResult(
+        addedCount: 0,
+        updatedCount: 0,
+        deletedCount: 0,
+        syncTime: now,
+        success: true,
+        message: 'Legacy taxonomy REST sync skipped (Firestore service is not configured).',
+      ));
+    }
+
+    try {
+      var totalUpserted = 0;
+      for (final group in groups) {
+        final remoteItems = await service.fetchByGroup(group);
+        if (remoteItems.isEmpty) {
+          continue;
+        }
+        await _localDataSource.saveTaxonomies(remoteItems);
+        totalUpserted += remoteItems.length;
+      }
+
+      await _repairLocalTaxonomyStorage();
+      await _enforceTaxonomyIntegrity();
+
+      final syncTime = DateTime.now();
+      await _localDataSource.updateLastSyncTime(syncTime);
+      await _logCoverageSummary(sourceLabel);
+
+      return Success(TaxonomySyncResult(
+        addedCount: totalUpserted,
+        updatedCount: 0,
+        deletedCount: 0,
+        syncTime: syncTime,
+        success: true,
+        message: totalUpserted == 0
+            ? 'Legacy taxonomy REST sync skipped. Firestore has no records for requested group(s).'
+            : 'Taxonomies hydrated from Firestore successfully.',
+      ));
+    } on FirestoreTaxonomyPermissionDeniedException catch (e) {
+      return Failure(SyncFailure(e.toString()));
+    } catch (e, st) {
+      return Failure(SyncFailure('فشل مزامنة تصنيفات Firestore: $e', st));
+    }
   }
 
   Future<void> _syncAllServerCatalogGroups() async {

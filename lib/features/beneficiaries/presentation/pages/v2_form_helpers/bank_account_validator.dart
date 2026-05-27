@@ -2,6 +2,19 @@ import 'form_controllers.dart';
 
 class BankAccountValidator {
   static final RegExp _ibanPattern = RegExp(r'^[A-Z]{2}[0-9A-Z]{13,32}$');
+  static const bool _defaultIbanValidationEnabled = bool.fromEnvironment(
+    'ENABLE_IBAN_VALIDATION',
+    defaultValue: false,
+  );
+
+  static bool ibanValidationEnabled = _defaultIbanValidationEnabled;
+
+  static String? softValidateIban(String? value) {
+    final current = (value ?? '').trim();
+    if (current.isEmpty) return null;
+    if (current.length > 34) return 'رقم الحساب طويل جداً';
+    return null;
+  }
 
   static bool hasAnyBankData(BeneficiaryFormControllers controllers) {
     return [
@@ -47,6 +60,10 @@ class BankAccountValidator {
   }) {
     final current = (currentValue ?? '').trim().toUpperCase();
     final other = (otherIbanValue ?? '').trim().toUpperCase();
+
+    if (!ibanValidationEnabled) {
+      return softValidateIban(current);
+    }
 
     if (current.isEmpty && other.isEmpty && hasAnyBankData) {
       return 'أدخل IBAN واحد على الأقل (دولار أو شيكل)';

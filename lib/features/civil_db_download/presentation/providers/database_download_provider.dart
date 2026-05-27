@@ -89,13 +89,15 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
   Future<void> _checkDatabase() async {
     if (!mounted) return;
 
-    final isAvailable = await _downloadService.isDatabaseAvailable();
-    final size = await _downloadService.getDatabaseSize();
-    final downloadDate = await _downloadService.getDownloadDate();
+    final status = await _downloadService.getDatabaseFileStatus();
     final wasSkipped = _prefs?.getBool(DownloadConfig.skipPreferenceKey) ?? false;
+    final isAvailable = status.isAvailable;
+    final size = status.size;
 
     if (kDebugMode) {
-      debugPrint('📊 Database check: isAvailable=$isAvailable, size=$size, wasSkipped=$wasSkipped');
+      debugPrint(
+        '📊 Database check: isAvailable=$isAvailable, exists=${status.exists}, size=$size, wasSkipped=$wasSkipped, path=${status.path}',
+      );
     }
 
     if (!mounted) return;
@@ -103,7 +105,7 @@ class DatabaseDownloadNotifier extends StateNotifier<DatabaseDownloadState> {
     state = state.copyWith(
       isAvailable: isAvailable,
       databaseSize: size > 0 ? size : null,
-      downloadDate: downloadDate,
+      downloadDate: status.modifiedAt,
       wasSkipped: wasSkipped,
     );
   }

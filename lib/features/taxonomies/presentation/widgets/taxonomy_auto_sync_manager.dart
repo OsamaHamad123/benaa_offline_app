@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:benaa_offline_app/core/error_handling/result.dart';
+import 'package:benaa_offline_app/core/storage/secure_storage.dart';
 
 import '../providers/taxonomy_providers.dart';
 import '../providers/taxonomy_bridge_providers.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
 class TaxonomyAutoSyncManager extends ConsumerStatefulWidget {
   final Widget child;
@@ -120,6 +122,28 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
         ));
 
     try {
+      final authState = ref.read(authNotifierProvider);
+      if (!authState.isAuthenticated) {
+        _publishState((state) => state.copyWith(
+              inFlight: false,
+              lastSkipReason: 'logged_out',
+              clearLastError: true,
+            ));
+        _scheduleNext(delay: _withJitter(const Duration(seconds: 45)));
+        return;
+      }
+
+      final hasValidSession = await SecureStorage().hasValidSession();
+      if (!hasValidSession) {
+        _publishState((state) => state.copyWith(
+              inFlight: false,
+              lastSkipReason: 'missing_or_expired_token',
+              clearLastError: true,
+            ));
+        _scheduleNext(delay: _withJitter(const Duration(seconds: 45)));
+        return;
+      }
+
       if (!force) {
         final lastSyncResult = await ref.read(taxonomyRepositoryProvider).getLastSyncTime();
         if (lastSyncResult is Success<DateTime?>) {
@@ -152,14 +176,25 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
         ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
         ref.invalidate(taxonomiesByGroupProvider);
       } else {
+        final message = (result as Failure).error.message;
+        if (_isExpectedLoggedOutError(message)) {
+          _failureCount = 0;
+          _publishState((state) => state.copyWith(
+                inFlight: false,
+                lastSkipReason: 'logged_out',
+                clearLastError: true,
+              ));
+          _scheduleNext(delay: _withJitter(const Duration(seconds: 45)));
+          return;
+        }
+
         _failureCount = (_failureCount + 1).clamp(1, 8);
-        final failure = result as Failure;
         _publishState((state) => state.copyWith(
               inFlight: false,
               consecutiveFailures: _failureCount,
-              lastError: failure.error.message,
+              lastError: message,
             ));
-        debugPrint('Taxonomy auto-sync failed ($reason): ${failure.error.message}');
+        debugPrint('Taxonomy auto-sync failed ($reason): $message');
       }
     } catch (e) {
       _failureCount = (_failureCount + 1).clamp(1, 8);
@@ -224,6 +259,11 @@ class _TaxonomyAutoSyncManagerState extends ConsumerState<TaxonomyAutoSyncManage
     final jitter = _random.nextInt(spread * 2 + 1) - spread;
     final withJitter = max(1000, baseMs + jitter);
     return Duration(milliseconds: withJitter);
+  }
+
+  bool _isExpectedLoggedOutError(String message) {
+    final normalized = message.toLowerCase();
+    return normalized.contains('unauthorized') || normalized.contains('401') || message.contains('غير مصرح');
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/error_handling/result.dart';
 import '../../domain/entities/taxonomy.dart';
@@ -56,6 +57,36 @@ class _TaxonomyManagementPageState extends ConsumerState<TaxonomyManagementPage>
             },
             tooltip: 'مزامنة',
           ),
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.cloud_upload_outlined),
+              tooltip: 'Seed Firestore (Debug)',
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final seeded = await ref.read(taxonomyFirestoreHydratorProvider).seedFromLocalIfFirestoreEmpty(
+                  groups: const [
+                    TaxonomyGroup.gender,
+                    TaxonomyGroup.category,
+                    TaxonomyGroup.relationship,
+                    TaxonomyGroup.section,
+                  ],
+                );
+
+                if (!context.mounted) {
+                  return;
+                }
+
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      seeded > 0
+                          ? 'تم Seed لـ $seeded عنصر إلى Firestore'
+                          : 'لا توجد بيانات جديدة للـ Seed أو Firestore يحتوي بيانات مسبقاً',
+                    ),
+                  ),
+                );
+              },
+            ),
           if (_selectedGroup.isEditable)
             IconButton(
               icon: const Icon(Icons.playlist_add),

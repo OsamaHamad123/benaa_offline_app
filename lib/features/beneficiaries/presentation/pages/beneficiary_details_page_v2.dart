@@ -129,8 +129,8 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     }
 
     return ColorInfo(
-      primary: resolvedColor.value,
-      light: resolvedColor.withOpacity(0.15).value,
+      primary: resolvedColor.toARGB32(),
+      light: resolvedColor.withValues(alpha: 0.15).toARGB32(),
     );
   }
 
@@ -450,6 +450,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
                     accentColor: colorScheme.tertiary,
                     items: InfoBuilders.buildEducationHealthItems(
                       beneficiary,
+                      categoryLabelsByCode: categoryLabelsByCode,
                       assistanceTypeLabelsByCode: assistanceTypeLabelsByCode,
                       disabilityTypeLabelsByCode: disabilityTypeLabelsByCode,
                       incomeSourceLabelsByCode: incomeSourceLabelsByCode,

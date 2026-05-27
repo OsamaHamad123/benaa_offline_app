@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// نظام الثيمات للتطبيق (Material 3 + Cupertino Adaptive)
 class AppTheme {
   AppTheme._();
+
+  static const String _fontFamily = 'Cairo';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // COLOR SCHEME MAPPER
@@ -68,88 +69,99 @@ class AppTheme {
   // ═══════════════════════════════════════════════════════════════════════════
 
   static TextTheme _buildTextTheme(bool isDark, double multiplier) {
-    final baseColor =
-        isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1A1A1A);
-    final secondaryColor =
-        isDark ? const Color(0xFFB0B0B0) : const Color(0xFF757575);
+    final baseColor = isDark ? const Color(0xFFE3E3E3) : const Color(0xFF1A1A1A);
+    final secondaryColor = isDark ? const Color(0xFFB0B0B0) : const Color(0xFF757575);
 
-    return GoogleFonts.cairoTextTheme(
-      TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 57 * multiplier,
-          fontWeight: FontWeight.w400,
-          color: baseColor,
-        ),
-        displayMedium: TextStyle(
-          fontSize: 45 * multiplier,
-          fontWeight: FontWeight.w400,
-          color: baseColor,
-        ),
-        displaySmall: TextStyle(
-          fontSize: 36 * multiplier,
-          fontWeight: FontWeight.w400,
-          color: baseColor,
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 32 * multiplier,
-          fontWeight: FontWeight.w700,
-          color: baseColor,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 28 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 24 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 22 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        titleSmall: TextStyle(
-          fontSize: 14 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16 * multiplier,
-          fontWeight: FontWeight.w400,
-          color: baseColor,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14 * multiplier,
-          fontWeight: FontWeight.w400,
-          color: baseColor,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12 * multiplier,
-          fontWeight: FontWeight.w400,
-          color: secondaryColor,
-        ),
-        labelLarge: TextStyle(
-          fontSize: 14 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        labelMedium: TextStyle(
-          fontSize: 12 * multiplier,
-          fontWeight: FontWeight.w600,
-          color: baseColor,
-        ),
-        labelSmall: TextStyle(
-          fontSize: 11 * multiplier,
-          fontWeight: FontWeight.w500,
-          color: secondaryColor,
-        ),
+    return TextTheme(
+      displayLarge: TextStyle(
+        fontSize: 57 * multiplier,
+        fontWeight: FontWeight.w400,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      displayMedium: TextStyle(
+        fontSize: 45 * multiplier,
+        fontWeight: FontWeight.w400,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      displaySmall: TextStyle(
+        fontSize: 36 * multiplier,
+        fontWeight: FontWeight.w400,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      headlineLarge: TextStyle(
+        fontSize: 32 * multiplier,
+        fontWeight: FontWeight.w700,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: 28 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      headlineSmall: TextStyle(
+        fontSize: 24 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 22 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      titleSmall: TextStyle(
+        fontSize: 14 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16 * multiplier,
+        fontWeight: FontWeight.w400,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14 * multiplier,
+        fontWeight: FontWeight.w400,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      bodySmall: TextStyle(
+        fontSize: 12 * multiplier,
+        fontWeight: FontWeight.w400,
+        fontFamily: _fontFamily,
+        color: secondaryColor,
+      ),
+      labelLarge: TextStyle(
+        fontSize: 14 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      labelMedium: TextStyle(
+        fontSize: 12 * multiplier,
+        fontWeight: FontWeight.w600,
+        fontFamily: _fontFamily,
+        color: baseColor,
+      ),
+      labelSmall: TextStyle(
+        fontSize: 11 * multiplier,
+        fontWeight: FontWeight.w500,
+        fontFamily: _fontFamily,
+        color: secondaryColor,
       ),
     );
   }
@@ -175,7 +187,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: useMaterial3,
       brightness: Brightness.light,
-      fontFamily: GoogleFonts.cairo().fontFamily,
+      fontFamily: _fontFamily,
       textTheme: textTheme,
       colorScheme: ColorScheme.light(
         primary: primaryColor,
@@ -202,9 +214,10 @@ class AppTheme {
         scrolledUnderElevation: 2,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        titleTextStyle: GoogleFonts.cairo(
+        titleTextStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
+          fontFamily: _fontFamily,
           color: Colors.white,
         ),
       ),
@@ -248,9 +261,10 @@ class AppTheme {
           elevation: 2,
           backgroundColor: primaryColor,
           foregroundColor: Colors.white,
-          textStyle: GoogleFonts.cairo(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
+            fontFamily: _fontFamily,
           ),
         ),
       ),
@@ -310,8 +324,7 @@ class AppTheme {
     const backgroundDark = Color(
       0xFF0D0D0D,
     ); // True AMOLED black for better contrast
-    const surfaceDark =
-        Color(0xFF1A1A1A); // Elevated surface - improved contrast
+    const surfaceDark = Color(0xFF1A1A1A); // Elevated surface - improved contrast
     const cardDark = Color(0xFF242424); // Card background - better visibility
     const textPrimary = Color(0xFFF5F5F5); // WCAG AAA contrast (21:1)
     const textSecondary = Color(0xFFBDBDBD); // Better readability
@@ -320,7 +333,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: useMaterial3,
       brightness: Brightness.dark,
-      fontFamily: GoogleFonts.cairo().fontFamily,
+      fontFamily: _fontFamily,
       textTheme: textTheme,
 
       colorScheme: ColorScheme.dark(
@@ -353,9 +366,10 @@ class AppTheme {
         scrolledUnderElevation: 4,
         backgroundColor: surfaceDark,
         foregroundColor: textPrimary,
-        titleTextStyle: GoogleFonts.cairo(
+        titleTextStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
+          fontFamily: _fontFamily,
           color: textPrimary,
         ),
         shadowColor: Colors.black.withOpacity(0.5),
@@ -405,9 +419,10 @@ class AppTheme {
           elevation: 4,
           backgroundColor: primaryLight,
           foregroundColor: Colors.black87,
-          textStyle: GoogleFonts.cairo(
+          textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
+            fontFamily: _fontFamily,
           ),
           shadowColor: Colors.black.withOpacity(0.3),
         ),
@@ -457,12 +472,13 @@ class AppTheme {
       // Additional dark theme enhancements
       dialogTheme: DialogThemeData(
         backgroundColor: cardDark,
-        titleTextStyle: GoogleFonts.cairo(
+        titleTextStyle: const TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
+          fontFamily: _fontFamily,
           color: textPrimary,
         ),
-        contentTextStyle: GoogleFonts.cairo(fontSize: 14, color: textSecondary),
+        contentTextStyle: const TextStyle(fontSize: 14, fontFamily: _fontFamily, color: textSecondary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 

@@ -5,6 +5,7 @@ import '../../../../../core/providers/providers.dart';
 import 'package:benaa_offline_app/core/utils/unified_logger.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/providers/activity_providers.dart';
 import 'package:benaa_offline_app/features/sync/presentation/providers/file_id_providers.dart';
+import 'package:benaa_offline_app/features/sync/services/file_number_formatter.dart';
 import 'beneficiaries_list_state.dart';
 import 'filters_provider.dart';
 import 'cache_manager.dart';
@@ -83,9 +84,7 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
       final rowsNeedingFileId = candidates.where((row) {
         final raw = row.fileIdNumber?.trim();
-        if (raw == null || raw.isEmpty) return true;
-        final parsed = int.tryParse(raw);
-        return parsed == null || parsed <= 0;
+        return !FileNumberFormatter.isValidCandidate(raw);
       }).toList(growable: false);
 
       if (rowsNeedingFileId.isEmpty) {
@@ -94,22 +93,25 @@ class BeneficiariesListNotifier extends StateNotifier<BeneficiariesListState> {
 
       var repairedCount = 0;
       for (final row in rowsNeedingFileId) {
-        var fileId = await fileIdService.getNextId();
-        if (fileId == null) {
+        var fileNumber = await fileIdService.getNextFileNumber();
+        if (fileNumber == null || fileNumber.trim().isEmpty) {
           await fileIdService.forceReserve();
-          fileId = await fileIdService.getNextId();
+          fileNumber = await fileIdService.getNextFileNumber();
         }
 
-        if (fileId == null || fileId <= 0) {
+        if (fileNumber == null || fileNumber.trim().isEmpty) {
           continue;
         }
 
         await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(row.id))).write(
-          BeneficiariesCompanion(fileIdNumber: drift.Value(fileId.toString())),
+          BeneficiariesCompanion(fileIdNumber: drift.Value(fileNumber)),
         );
 
         try {
-          await fileIdService.markAsUsed(fileId, row.id, recordType: 'data', recordId: row.id);
+          await fileIdService.assignFileNumberToBeneficiary(
+            fileNumber: fileNumber,
+            beneficiaryLocalId: row.id,
+          );
         } catch (e) {
           UnifiedLogger.warning('Failed to mark auto-assigned file ID as used for beneficiary #${row.id}: $e');
         }

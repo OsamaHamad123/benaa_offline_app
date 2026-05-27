@@ -29,6 +29,7 @@ import sqflite_darwin
 import sqflite_sqlcipher
 import sqlite3_flutter_libs
 import url_launcher_macos
+import wakelock_plus
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FLTFirebaseFirestorePlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseFirestorePlugin"))
@@ -55,4 +56,5 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SqfliteSqlCipherPlugin.register(with: registry.registrar(forPlugin: "SqfliteSqlCipherPlugin"))
   Sqlite3FlutterLibsPlugin.register(with: registry.registrar(forPlugin: "Sqlite3FlutterLibsPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
+  WakelockPlusMacosPlugin.register(with: registry.registrar(forPlugin: "WakelockPlusMacosPlugin"))
 }

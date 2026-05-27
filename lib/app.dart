@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'dart:async';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
@@ -18,11 +19,35 @@ import 'features/taxonomies/presentation/widgets/taxonomy_auto_sync_manager.dart
 
 class BenaaApp extends ConsumerWidget {
   static bool _analyticsSessionStarted = false;
+  static bool _buildStartLogged = false;
 
   const BenaaApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (!_buildStartLogged) {
+      _buildStartLogged = true;
+      debugPrint('⏱️ [STARTUP] BenaaApp build started');
+    }
+
+    if (Firebase.apps.isEmpty) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('جاري تهيئة Firebase...'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final router = ref.watch(appRouterProvider);
     ref.watch(authBootstrapProvider);
     ref.watch(tokenManagerProvider);
@@ -74,7 +99,7 @@ class BenaaApp extends ConsumerWidget {
               return old.size != data.size ||
                   old.orientation != data.orientation ||
                   old.devicePixelRatio != data.devicePixelRatio ||
-                  old.textScaleFactor != data.textScaleFactor ||
+                  old.textScaler != data.textScaler ||
                   old.platformBrightness != data.platformBrightness;
             },
             builder: (context, child) {

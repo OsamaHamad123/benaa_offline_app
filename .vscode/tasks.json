@@ -15,6 +15,12 @@
 				"-RequestCount",
 				"1"
 			],
+			"options": {
+				"env": {
+					"BENAA_TEST_EMAIL": "${env:BENAA_TEST_EMAIL}",
+					"BENAA_TEST_PASSWORD": "${env:BENAA_TEST_PASSWORD}"
+				}
+			},
 			"isBackground": false
 		}
 	]

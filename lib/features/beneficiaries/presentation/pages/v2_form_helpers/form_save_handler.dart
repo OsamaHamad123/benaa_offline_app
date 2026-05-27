@@ -30,10 +30,15 @@ class BeneficiaryFormSaveHandler {
 
       if (result is Failure<List<Beneficiary>>) {
         debugPrint('Error checking duplicate: ${result.error}');
-        return false; // Continue with save even if check fails
+        return true; // Controlled validation block on duplicate-check failure
       }
 
-      final existingList = (result as Success<List<Beneficiary>>).value;
+      if (result is! Success<List<Beneficiary>>) {
+        debugPrint('Error checking duplicate: unexpected result type ${result.runtimeType}');
+        return true;
+      }
+
+      final existingList = result.value;
 
       // Check if any result has exact match of national ID
       for (final b in existingList) {
@@ -57,7 +62,7 @@ class BeneficiaryFormSaveHandler {
       return false; // No duplicate
     } catch (e) {
       debugPrint('Error checking duplicate: $e');
-      return false; // Continue with save even if check fails
+      return true; // Controlled validation block on duplicate-check failure
     }
   }
 

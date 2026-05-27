@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app.dart';
 import 'firebase_options.dart';
@@ -33,22 +34,8 @@ Future<void> main() async {
 
     WidgetsFlutterBinding.ensureInitialized();
     _logStartup('Widgets binding initialized', startupStopwatch);
-
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      _logStartup('Firebase initialized with FlutterFire options', startupStopwatch);
-    } catch (error, stackTrace) {
-      debugPrint('🔥 [Firebase Init Failed - Debug] $error');
-      debugPrint('📍 [Firebase Init Stack]\n$stackTrace');
-    }
-
-    await FirebaseBackend.initializeFirebaseAtStartup();
-    _logStartup('Firebase startup initialization attempted', startupStopwatch);
-
-    await BackgroundSyncWorker.initialize();
-    _logStartup('Background worker initialized', startupStopwatch);
+    GoogleFonts.config.allowRuntimeFetching = false;
+    _logStartup('Disabled runtime Google Fonts fetching', startupStopwatch);
 
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
@@ -67,6 +54,29 @@ Future<void> main() async {
     FlutterErrorHandler.initialize();
     _logStartup('Safe widgets initialized', startupStopwatch);
 
+    _logStartup('Firebase initialization started', startupStopwatch);
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      _logStartup('Firebase initialization completed', startupStopwatch);
+    } catch (error, stackTrace) {
+      debugPrint('🔥 [Firebase Init Failed - Debug] $error');
+      debugPrint('📍 [Firebase Init Stack]\n$stackTrace');
+      runApp(
+        const _StartupErrorApp(
+          message: 'تعذر تهيئة Firebase. يرجى إعادة تشغيل التطبيق والتحقق من إعدادات Firebase.',
+        ),
+      );
+      return;
+    }
+
+    await _runStartupStep(
+      label: 'Firebase startup initialization completed',
+      startupStopwatch: startupStopwatch,
+      action: () async {
+        await FirebaseBackend.initializeFirebaseAtStartup();
+      },
+    );
+
     final results = await Future.wait([
       SharedPreferences.getInstance(),
       AppConfig.load(),
@@ -78,14 +88,80 @@ Future<void> main() async {
 
     _runApp(sharedPreferences, appConfig);
     _logStartup('runApp called', startupStopwatch);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_initializeDeferredStartupTasks(startupStopwatch));
+    });
   }, (Object error, StackTrace stack) {
     debugPrint('❌ [Uncaught Zoned Error] $error');
     debugPrint('📍 [Zoned stack]\n$stack');
   });
 }
 
+Future<void> _initializeDeferredStartupTasks(Stopwatch startupStopwatch) async {
+  await _runStartupStep(
+    label: 'Background worker initialized (deferred)',
+    startupStopwatch: startupStopwatch,
+    action: () async {
+      await BackgroundSyncWorker.initialize();
+    },
+  );
+}
+
+Future<void> _runStartupStep({
+  required String label,
+  required Stopwatch startupStopwatch,
+  required Future<void> Function() action,
+}) async {
+  final stepStopwatch = Stopwatch()..start();
+  try {
+    await action();
+    _logStartup('$label [step=${stepStopwatch.elapsedMilliseconds}ms]', startupStopwatch);
+  } catch (error, stackTrace) {
+    debugPrint('🔥 [Startup Deferred Step Failed] $label: $error');
+    debugPrint('📍 [Startup Deferred Step Stack]\n$stackTrace');
+  }
+}
+
 void _logStartup(String message, Stopwatch stopwatch) {
   debugPrint('⏱️ [STARTUP +${stopwatch.elapsedMilliseconds}ms] $message');
+}
+
+class _StartupErrorApp extends StatelessWidget {
+  const _StartupErrorApp({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline, size: 56, color: Colors.red),
+                const SizedBox(height: 16),
+                const Text(
+                  'Startup Error',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void _runApp(SharedPreferences sharedPreferences, AppConfig appConfig) {

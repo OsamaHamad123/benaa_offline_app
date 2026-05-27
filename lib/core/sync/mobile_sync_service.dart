@@ -23,6 +23,7 @@ import '../../features/sync/data/parsers/mobile_sync_response_parser.dart';
 import '../../features/sync/data/repositories/mobile_sync_beneficiary_repository.dart';
 import '../../features/sync/data/repositories/mobile_sync_related_entities_repository.dart';
 import '../../features/sync/domain/utils/api_endpoint_normalizer.dart' as sync_endpoint;
+import '../../features/sync/services/file_number_formatter.dart';
 import '../../features/taxonomies/domain/repositories/taxonomy_repository.dart';
 
 /// ========================================================================
@@ -1756,11 +1757,42 @@ class MobileSyncService {
   Future<void> _ensureFileReservationNonCritical() async {
     if (_fileIdService == null) return;
     _logger.i('Checking file ID reservation...');
+    _updateStatus(
+      _currentStatus.copyWith(
+        isSyncing: true,
+        currentOperation: 'جاري حجز أرقام الملفات...',
+        progress: 0.14,
+      ),
+    );
+
     try {
       await _fileIdService.ensureReservation();
+
+      final diagnostics = await _fileIdService.getDiagnostics();
+      final available = diagnostics?.availableCount ?? 0;
+      if (available <= 0) {
+        _registerNonCriticalStageWarning('file_number_pool_critical_zero');
+      } else if (available < 50) {
+        _registerNonCriticalStageWarning('file_number_pool_warning_lt_50');
+      }
+
+      _updateStatus(
+        _currentStatus.copyWith(
+          isSyncing: true,
+          currentOperation: 'الأرقام المتاحة محلياً: $available',
+          progress: 0.16,
+        ),
+      );
     } catch (e) {
       _logger.w('File ID reservation failed (non-critical): $e');
       _registerNonCriticalStageWarning('file_id_reservation_failed: $e');
+      _updateStatus(
+        _currentStatus.copyWith(
+          isSyncing: true,
+          currentOperation: 'انقطع الاتصال، سيتم الاستكمال لاحقاً',
+          progress: 0.16,
+        ),
+      );
     }
   }
 
@@ -1822,11 +1854,11 @@ class MobileSyncService {
 
         final prepared = <_PreparedBeneficiaryUpload>[];
         for (final b in batch) {
-          final ensuredFileId = await _ensureBeneficiaryFileIdForUpload(b);
+          final ensuredFileNumber = await _ensureBeneficiaryFileIdForUpload(b);
 
           final payload = mapper.BeneficiaryMapper.toBackend(b);
-          if (ensuredFileId != null && ensuredFileId > 0) {
-            payload['file_id_number'] = ensuredFileId.toString();
+          if (ensuredFileNumber != null && ensuredFileNumber.trim().isNotEmpty) {
+            payload['file_id_number'] = ensuredFileNumber;
           }
 
           int normalizePositive(dynamic value, {int fallback = 1}) {
@@ -1937,19 +1969,30 @@ class MobileSyncService {
             final failedRowsValue = responseDataNode['failed'] ?? responseMap['failed'];
             final failedRows = failedRowsValue is List ? failedRowsValue : const <dynamic>[];
             final failedLocalIds = <int>{};
+            final conflictLocalIds = <int>{};
             String? sampleBackendFailure;
             for (final row in failedRows) {
               final rowMap = _toStringDynamicMap(row);
               if (rowMap == null) continue;
 
+              final rowFailureText =
+                  rowMap['message']?.toString() ?? rowMap['error']?.toString() ?? rowMap['reason']?.toString();
               if (sampleBackendFailure == null) {
-                sampleBackendFailure =
-                    rowMap['message']?.toString() ?? rowMap['error']?.toString() ?? rowMap['reason']?.toString();
+                sampleBackendFailure = rowFailureText;
               }
+
+              final isFileNumberConflict = (rowFailureText ?? '').toLowerCase().contains('file') &&
+                  ((rowFailureText ?? '').toLowerCase().contains('exist') ||
+                      (rowFailureText ?? '').toLowerCase().contains('duplicate') ||
+                      (rowFailureText ?? '').toLowerCase().contains('conflict'));
 
               final failedFileId = _asIntLoose(rowMap['file_id_number']);
               if (failedFileId != null && localIdByFileId.containsKey(failedFileId)) {
-                failedLocalIds.add(localIdByFileId[failedFileId]!);
+                final localId = localIdByFileId[failedFileId]!;
+                failedLocalIds.add(localId);
+                if (isFileNumberConflict) {
+                  conflictLocalIds.add(localId);
+                }
                 continue;
               }
 
@@ -1957,7 +2000,11 @@ class MobileSyncService {
                 rowMap['data_id_number'] ?? rowMap['id_number'] ?? rowMap['national_id'],
               );
               if (failedIdNumber != null && localIdByIdNumber.containsKey(failedIdNumber)) {
-                failedLocalIds.add(localIdByIdNumber[failedIdNumber]!);
+                final localId = localIdByIdNumber[failedIdNumber]!;
+                failedLocalIds.add(localId);
+                if (isFileNumberConflict) {
+                  conflictLocalIds.add(localId);
+                }
               }
             }
 
@@ -1969,6 +2016,42 @@ class MobileSyncService {
               await (_db.update(_db.beneficiaries)..where((b) => b.id.isIn(failedLocalIds.toList()))).write(
                 BeneficiariesCompanion(syncState: const drift.Value('failed')),
               );
+
+              if (conflictLocalIds.isNotEmpty && _fileIdService != null) {
+                for (final localId in conflictLocalIds) {
+                  final row =
+                      await (_db.select(_db.beneficiaries)..where((b) => b.id.equals(localId))).getSingleOrNull();
+                  if (row == null) continue;
+
+                  final conflictedFileNumber = (row.fileIdNumber ?? '').trim();
+                  if (conflictedFileNumber.isNotEmpty) {
+                    await _fileIdService.markFileNumberConflict(conflictedFileNumber);
+                  }
+
+                  var replacement = await _fileIdService.getNextFileNumber();
+                  if (replacement == null || replacement.trim().isEmpty) {
+                    await _fileIdService.forceReserve();
+                    replacement = await _fileIdService.getNextFileNumber();
+                  }
+
+                  if (replacement == null || replacement.trim().isEmpty) {
+                    continue;
+                  }
+
+                  await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(localId))).write(
+                    BeneficiariesCompanion(
+                      fileIdNumber: drift.Value(replacement),
+                      syncState: const drift.Value('pending'),
+                    ),
+                  );
+
+                  await _fileIdService.assignFileNumberToBeneficiary(
+                    fileNumber: replacement,
+                    beneficiaryLocalId: localId,
+                  );
+                }
+              }
+
               rememberFailure(
                 'backend_failed_count=${failedExplicit ?? failedLocalIds.length}, '
                 'local_ids=${failedLocalIds.take(5).join(',')}, '
@@ -2267,7 +2350,7 @@ class MobileSyncService {
       final firstName = payload['data_first_name'];
       final fatherName = payload['data_father_name'];
       final familyName = payload['data_family_name'];
-      final fileId = _asInt(payload['file_id_number']);
+      final fileIdRaw = payload['file_id_number']?.toString();
       final serverId = _asInt(payload['id']);
 
       String? reason;
@@ -2281,7 +2364,7 @@ class MobileSyncService {
         reason = 'missing data_father_name';
       } else if (!_isNonEmptyText(familyName)) {
         reason = 'missing data_family_name';
-      } else if (fileId == null || fileId <= 0) {
+      } else if (!FileNumberFormatter.isValidCandidate(fileIdRaw)) {
         reason = 'invalid file_id_number';
       } else if (record.syncState == 'modified' && (serverId == null || serverId <= 0)) {
         reason = 'modified_without_server_id';
@@ -2307,16 +2390,15 @@ class MobileSyncService {
     return text != null && text.isNotEmpty;
   }
 
-  Future<int?> _ensureBeneficiaryFileIdForUpload(Beneficiary row) async {
-    final existing = _asIntLoose(row.fileIdNumber);
-    if (existing != null && existing > 0) {
-      final normalized = existing.toString();
-      if (row.fileIdNumber != normalized) {
+  Future<String?> _ensureBeneficiaryFileIdForUpload(Beneficiary row) async {
+    final existingRaw = (row.fileIdNumber ?? '').trim();
+    if (FileNumberFormatter.isValidCandidate(existingRaw)) {
+      if (existingRaw != row.fileIdNumber) {
         await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(row.id))).write(
-          BeneficiariesCompanion(fileIdNumber: drift.Value(normalized)),
+          BeneficiariesCompanion(fileIdNumber: drift.Value(existingRaw)),
         );
       }
-      return existing;
+      return existingRaw;
     }
 
     final fileIdService = _fileIdService;
@@ -2324,23 +2406,25 @@ class MobileSyncService {
       return null;
     }
 
-    int? allocated = await fileIdService.getNextId();
-    if (allocated == null) {
+    String? allocated = await fileIdService.getNextFileNumber();
+    if (allocated == null || allocated.trim().isEmpty) {
       await fileIdService.forceReserve();
-      allocated = await fileIdService.getNextId();
+      allocated = await fileIdService.getNextFileNumber();
     }
 
-    if (allocated == null || allocated <= 0) {
+    if (allocated == null || allocated.trim().isEmpty) {
       return null;
     }
 
-    final fileIdString = allocated.toString();
     await (_db.update(_db.beneficiaries)..where((b) => b.id.equals(row.id))).write(
-      BeneficiariesCompanion(fileIdNumber: drift.Value(fileIdString)),
+      BeneficiariesCompanion(fileIdNumber: drift.Value(allocated)),
     );
 
     try {
-      await fileIdService.markAsUsed(allocated, row.id, recordType: 'data', recordId: row.id);
+      await fileIdService.assignFileNumberToBeneficiary(
+        fileNumber: allocated,
+        beneficiaryLocalId: row.id,
+      );
     } catch (e) {
       _logger.w('Failed to mark allocated file ID as used for beneficiary ${row.id}: $e');
     }

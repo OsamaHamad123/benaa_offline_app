@@ -85,8 +85,8 @@ class ApiConfig {
 
   // 🆔 File ID Reservation Settings (contract-aligned defaults)
   // Can be overridden from AppConfig/env for runtime tuning.
-  static const int fileIdReserveBatchSize = 5000;
-  static const int fileIdRenewThreshold = 1000;
+  static const int fileIdReserveBatchSize = 500;
+  static const int fileIdRenewThreshold = 100;
 
   // 🔐 Security
   static const bool enableSslPinning = false; // تفعيل SSL Pinning

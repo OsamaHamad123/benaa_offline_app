@@ -79,8 +79,10 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
       if (result is Failure<Beneficiary>) {
         throw Exception(result.error.message);
       }
-
-      final beneficiary = (result as Success<Beneficiary>).value;
+      if (result is! Success<Beneficiary>) {
+        throw Exception('Unexpected repository result type: ${result.runtimeType}');
+      }
+      final beneficiary = result.value;
       state = state.copyWith(
         beneficiary: beneficiary,
         isLoading: false,
@@ -126,7 +128,11 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         return;
       }
 
-      final data = (result as Success<Map<String, dynamic>>).value;
+      if (result is! Success<Map<String, dynamic>>) {
+        throw Exception('Unexpected repository result type: ${result.runtimeType}');
+      }
+
+      final data = result.value;
 
       // Update current beneficiary with civil registry data
       final updated = state.beneficiary?.copyWith(
@@ -170,22 +176,41 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
     state = state.copyWith(isSaving: true);
 
+    var attemptedFileNumberForDiagnostics = '';
+    var assignedBeforePersistence = false;
+    var persistedLocalEntity = false;
+
     try {
       final beneficiary = state.beneficiary!;
       final now = DateTime.now();
       final fullName = beneficiary.fullName;
 
       if (state.isNew) {
-        // 🆔 Allocate File ID from local pool
-        var fileId = await _fileIdService.getNextId();
+        var attemptedFileNumber = '';
+        var duplicateCheckStatus = 'handled_in_form_layer';
+        var validationStatus = 'passed';
+        var localSaveStatus = 'not_started';
 
-        if (fileId == null) {
+        final poolSnapshot = await _fileIdService.getLocalPoolSnapshot();
+        final hasFileNumberPool = poolSnapshot != null;
+        var availableFileNumbers = poolSnapshot?.available ?? 0;
+
+        // 🆔 Allocate official file number from local offline-first pool.
+        var fileNumber = await _fileIdService.getNextFileNumber();
+
+        if (fileNumber == null || fileNumber.trim().isEmpty) {
           await _fileIdService.forceReserve();
-          fileId = await _fileIdService.getNextId();
+          fileNumber = await _fileIdService.getNextFileNumber();
         }
 
-        if (fileId == null) {
+        if (fileNumber == null || fileNumber.trim().isEmpty) {
+          validationStatus = 'blocked_no_file_number';
+          localSaveStatus = 'blocked';
           DebugLogger.warning('File ID reservation unavailable. Blocking beneficiary save.');
+          DebugLogger.warning('Save failed before file number assignment.');
+          DebugLogger.warning(
+            '[BeneficiarySave] summary hasFileNumberPool=$hasFileNumberPool availableFileNumbers=$availableFileNumbers attemptedFileNumber=$attemptedFileNumber duplicateCheckStatus=$duplicateCheckStatus validationStatus=$validationStatus localSaveStatus=$localSaveStatus',
+          );
           Sentry.addBreadcrumb(
             Breadcrumb(
               category: 'beneficiary.save',
@@ -201,28 +226,49 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
           return false;
         }
 
+        attemptedFileNumber = fileNumber;
+        attemptedFileNumberForDiagnostics = fileNumber;
+
+        final generatedLocalId = DateTime.now().millisecondsSinceEpoch.toString();
+        final generatedLocalIdInt = int.tryParse(generatedLocalId);
+        if (generatedLocalIdInt != null) {
+          await _fileIdService.assignFileNumberToBeneficiary(
+            fileNumber: attemptedFileNumber,
+            beneficiaryLocalId: generatedLocalIdInt,
+          );
+          assignedBeforePersistence = true;
+          DebugLogger.info('[BeneficiarySave] file number assigned=$attemptedFileNumber');
+        }
+
         // Create new
+        localSaveStatus = 'in_progress';
         final createResult = await _createUseCase.execute(
           beneficiary.copyWith(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            fileNo: fileId.toString(),
-            fileIdNumber: fileId.toString(),
+            id: generatedLocalId,
+            fileNo: fileNumber,
+            fileIdNumber: fileNumber,
             createdAt: now,
             updatedAt: now,
           ),
         );
 
         if (createResult is Failure<Beneficiary>) {
+          localSaveStatus = 'failed';
           throw Exception(createResult.error.message);
         }
-
-        final created = (createResult as Success<Beneficiary>).value;
-
-        // ✅ Mark File ID as used if it was allocated
-        final localId = int.tryParse(created.id);
-        if (localId != null) {
-          await _fileIdService.markAsUsed(fileId, localId);
+        if (createResult is! Success<Beneficiary>) {
+          localSaveStatus = 'failed';
+          throw Exception('Unexpected repository result type: ${createResult.runtimeType}');
         }
+        final created = createResult.value;
+        persistedLocalEntity = true;
+        localSaveStatus = 'success';
+        availableFileNumbers = (await _fileIdService.getLocalPoolSnapshot())?.available ?? availableFileNumbers;
+
+        DebugLogger.info('[BeneficiarySave] save completed beneficiaryLocalId=${created.id}');
+        DebugLogger.info(
+          '[BeneficiarySave] summary hasFileNumberPool=$hasFileNumberPool availableFileNumbers=$availableFileNumbers attemptedFileNumber=$attemptedFileNumber duplicateCheckStatus=$duplicateCheckStatus validationStatus=$validationStatus localSaveStatus=$localSaveStatus',
+        );
 
         // Log activity if available
         final logActivity = _logActivity;
@@ -259,8 +305,10 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
         if (updateResult is Failure<Beneficiary>) {
           throw Exception(updateResult.error.message);
         }
-
-        final updated = (updateResult as Success<Beneficiary>).value;
+        if (updateResult is! Success<Beneficiary>) {
+          throw Exception('Unexpected repository result type: ${updateResult.runtimeType}');
+        }
+        final updated = updateResult.value;
 
         // Log activity if available
         final logActivity = _logActivity;
@@ -288,6 +336,30 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 
       return true;
     } catch (e, stackTrace) {
+      if (assignedBeforePersistence && !persistedLocalEntity && attemptedFileNumberForDiagnostics.isNotEmpty) {
+        try {
+          await _fileIdService.releaseAssignedFileNumber(attemptedFileNumberForDiagnostics);
+          DebugLogger.warning(
+            '[BeneficiarySave] save failed; file number released=$attemptedFileNumberForDiagnostics',
+          );
+          DebugLogger.warning('Save failed after file number assignment; number released.');
+        } catch (releaseError) {
+          DebugLogger.error('Failed to release assigned file number', releaseError);
+        }
+      } else {
+        DebugLogger.warning('Save failed before file number assignment.');
+      }
+
+      final poolSnapshot = await _fileIdService.getLocalPoolSnapshot();
+      DebugLogger.warning(
+        '[BeneficiarySave] summary hasFileNumberPool=${poolSnapshot != null} '
+        'availableFileNumbers=${poolSnapshot?.available ?? -1} '
+        'attemptedFileNumber=$attemptedFileNumberForDiagnostics '
+        'duplicateCheckStatus=handled_in_form_layer '
+        'validationStatus=failed '
+        'localSaveStatus=failed',
+      );
+
       // Log the error with stack trace
       DebugLogger.error('Error saving beneficiary', e, stackTrace);
 

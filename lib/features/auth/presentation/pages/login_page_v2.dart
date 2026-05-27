@@ -109,14 +109,8 @@ class _LoginPageV2State extends ConsumerState<LoginPageV2> with TickerProviderSt
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(appMonitoringProvider).logScreenView('Login');
-      unawaited(_checkInitialAuthState());
       unawaited(_loadSavedCredentials());
     });
-  }
-
-  Future<void> _checkInitialAuthState() async {
-    final authNotifier = ref.read(authNotifierProvider.notifier);
-    await authNotifier.checkAuthStatus();
   }
 
   /// 📥 تحميل بيانات تسجيل الدخول المحفوظة (Remember Me)

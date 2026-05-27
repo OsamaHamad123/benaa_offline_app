@@ -34,6 +34,10 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
   final FocusNode? firstFieldFocusNode;
   final String? selectedCategory;
   final Function(String?) onCategoryChanged;
+  final String? selectedSubCategory;
+  final Function(String?) onSubCategoryChanged;
+  final String? selectedSubSubCategory;
+  final Function(String?) onSubSubCategoryChanged;
   final String? selectedRelationship;
   final Function(String?) onRelationshipChanged;
   final String? selectedSection;
@@ -51,12 +55,16 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
     required this.onGenderChanged,
     required this.onBirthDateTap,
     required this.onCategoryChanged,
+    required this.onSubCategoryChanged,
+    required this.onSubSubCategoryChanged,
     required this.onRelationshipChanged,
     required this.onSectionChanged,
     super.key,
     this.selectedGender,
     this.firstFieldFocusNode,
     this.selectedCategory,
+    this.selectedSubCategory,
+    this.selectedSubSubCategory,
     this.selectedRelationship,
     this.selectedSection,
     this.formControllers,
@@ -92,6 +100,25 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
     }
 
     return null;
+  }
+
+  bool _isChildOf(Taxonomy child, Taxonomy parent) {
+    final parentId = child.parentId?.trim();
+    if (parentId == null || parentId.isEmpty) {
+      return false;
+    }
+
+    final byId = parentId == parent.id;
+    final byCode = parentId == parent.code;
+    final byLocalIdSuffix = parentId == '${parent.group.value}::${parent.id}';
+
+    final normalizedParentTokens =
+        parentId.split(RegExp(r'[:/\-]')).map((token) => token.trim()).where((token) => token.isNotEmpty).toSet();
+
+    final byTokenMatch = normalizedParentTokens.contains(parent.id) || normalizedParentTokens.contains(parent.code);
+    final byEndsWithId = parentId.endsWith(parent.id);
+
+    return byId || byCode || byLocalIdSuffix || byTokenMatch || byEndsWithId;
   }
 
   @override
@@ -158,6 +185,26 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
     final civilRegistryAvailable = ref.watch(civilRegistryAvailableProvider);
     final canUseCivilRegistry = civilRegistryAvailable.value ?? false;
     final civilRegistryState = ref.watch(civilRegistryProvider);
+
+    final allCategoryTaxonomies = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.category)).maybeWhen(
+          data: (value) => value,
+          orElse: () => const <Taxonomy>[],
+        );
+
+    final selectedCategoryTaxonomy = allCategoryTaxonomies.where((t) => t.code == widget.selectedCategory).firstOrNull;
+
+    final subCategoryOptions = selectedCategoryTaxonomy == null
+        ? const <Taxonomy>[]
+        : allCategoryTaxonomies.where((t) => _isChildOf(t, selectedCategoryTaxonomy)).toList(growable: false)
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    final selectedSubCategoryTaxonomy =
+        subCategoryOptions.where((t) => t.code == widget.selectedSubCategory).firstOrNull;
+
+    final subSubCategoryOptions = selectedSubCategoryTaxonomy == null
+        ? const <Taxonomy>[]
+        : allCategoryTaxonomies.where((t) => _isChildOf(t, selectedSubCategoryTaxonomy)).toList(growable: false)
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     // Check completion status
     final isNameComplete = widget.firstNameController.text.trim().isNotEmpty &&
@@ -326,10 +373,39 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
             TaxonomyBridgeDropdown(
               group: TaxonomyGroup.category,
               selectedCode: widget.selectedCategory,
-              onCodeChanged: widget.onCategoryChanged,
+              onCodeChanged: (value) {
+                widget.onCategoryChanged(value);
+                widget.onSubCategoryChanged(null);
+                widget.onSubSubCategoryChanged(null);
+              },
               labelText: 'فئة المستفيد',
               isRequired: requiresCategory,
               autoSyncOnEmpty: true,
+            ),
+            SizedBox(height: 12.h),
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.category,
+              preloadedOptions: subCategoryOptions,
+              selectedCode: widget.selectedSubCategory,
+              onCodeChanged: (value) {
+                widget.onSubCategoryChanged(value);
+                widget.onSubSubCategoryChanged(null);
+              },
+              labelText: 'الفئة الفرعية',
+              prefixIcon: Icons.subdirectory_arrow_right_rounded,
+              enabled: subCategoryOptions.isNotEmpty,
+              showSyncAction: false,
+            ),
+            SizedBox(height: 12.h),
+            TaxonomyBridgeDropdown(
+              group: TaxonomyGroup.category,
+              preloadedOptions: subSubCategoryOptions,
+              selectedCode: widget.selectedSubSubCategory,
+              onCodeChanged: widget.onSubSubCategoryChanged,
+              labelText: 'الفئة الفرعية الثانية',
+              prefixIcon: Icons.account_tree_rounded,
+              enabled: subSubCategoryOptions.isNotEmpty,
+              showSyncAction: false,
             ),
             SizedBox(height: 12.h),
             // 🏷️ صلة القرابة - من نظام التصنيفات

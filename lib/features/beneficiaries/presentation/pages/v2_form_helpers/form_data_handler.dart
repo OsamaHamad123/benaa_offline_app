@@ -258,6 +258,8 @@ class BeneficiaryFormDataHandler {
       controllers.selectedEmploymentStatus = beneficiary.employmentStatus?.name;
       controllers.selectedHealthStatus = beneficiary.healthStatus.name;
       controllers.selectedCategory = beneficiary.category.code.toString();
+      controllers.selectedSubCategory = metadataPayload['subCategory'];
+      controllers.selectedSubSubCategory = metadataPayload['subSubCategory'];
       controllers.selectedDisplacementStatus = beneficiary.displacementStatus?.name;
       controllers.selectedHousingStatus = beneficiary.housingStatus?.name;
       controllers.selectedHousingType = beneficiary.housingType?.name;
@@ -268,7 +270,6 @@ class BeneficiaryFormDataHandler {
       controllers.selectedGuaranteeType = beneficiary.guaranteeTypeCode ?? metadataPayload['guaranteeType'];
       controllers.selectedRelationship = beneficiary.relationship?.toString();
       controllers.selectedSection = beneficiary.sectionId?.toString();
-      controllers.hasDisability = beneficiary.hasDisability || (beneficiary.specialNeedsCount ?? 0) > 0;
       // Note: city, province, relationship need enum conversion from IDs
     });
   }
@@ -306,13 +307,16 @@ class BeneficiaryFormDataHandler {
     final parsedSpecialNeedsCount = controllers.specialNeedsCountController.text.trim().isEmpty
         ? null
         : int.tryParse(controllers.specialNeedsCountController.text.trim());
-    final hasDisability = (parsedSpecialNeedsCount ?? 0) > 0 || controllers.hasDisability;
+    final hasDisability =
+        (parsedSpecialNeedsCount ?? 0) > 0 || (controllers.selectedDisabilityType?.trim().isNotEmpty == true);
     final mergedNotes = _mergeExtendedFieldMetadataIntoNotes(
       baseNotes: controllers.notesController.text,
       assistanceType: controllers.selectedAssistanceType,
       disabilityType: controllers.selectedDisabilityType,
       incomeSource: controllers.selectedIncomeSource,
       guaranteeType: controllers.selectedGuaranteeType,
+      subCategory: controllers.selectedSubCategory,
+      subSubCategory: controllers.selectedSubSubCategory,
     );
 
     return Beneficiary(
@@ -395,6 +399,8 @@ class BeneficiaryFormDataHandler {
     required String? disabilityType,
     required String? incomeSource,
     required String? guaranteeType,
+    required String? subCategory,
+    required String? subSubCategory,
   }) {
     final notes = baseNotes?.trim() ?? '';
     final existingPayload = _extractMetadataPayload(notes);
@@ -405,6 +411,8 @@ class BeneficiaryFormDataHandler {
       if (disabilityType?.trim().isNotEmpty == true) 'disabilityType': disabilityType!.trim(),
       if (incomeSource?.trim().isNotEmpty == true) 'incomeSource': incomeSource!.trim(),
       if (guaranteeType?.trim().isNotEmpty == true) 'guaranteeType': guaranteeType!.trim(),
+      if (subCategory?.trim().isNotEmpty == true) 'subCategory': subCategory!.trim(),
+      if (subSubCategory?.trim().isNotEmpty == true) 'subSubCategory': subSubCategory!.trim(),
     };
 
     if (payload.isEmpty) {

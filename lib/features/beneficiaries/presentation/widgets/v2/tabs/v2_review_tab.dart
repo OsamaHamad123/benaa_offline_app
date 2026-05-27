@@ -354,6 +354,24 @@ class V2ReviewTab extends ConsumerWidget {
               icon: Icons.category_rounded,
             ),
             ReviewDataRow(
+              label: 'الفئة الفرعية',
+              value: _resolveTaxonomyLabel(
+                index: taxonomyIndex,
+                group: TaxonomyGroup.category,
+                code: formControllers.selectedSubCategory,
+              ),
+              icon: Icons.subdirectory_arrow_right_rounded,
+            ),
+            ReviewDataRow(
+              label: 'الفئة الفرعية الثانية',
+              value: _resolveTaxonomyLabel(
+                index: taxonomyIndex,
+                group: TaxonomyGroup.category,
+                code: formControllers.selectedSubSubCategory,
+              ),
+              icon: Icons.account_tree_rounded,
+            ),
+            ReviewDataRow(
               label: 'حالة الطلب',
               value: _resolveTaxonomyLabel(
                 index: taxonomyIndex,
@@ -754,6 +772,8 @@ class V2ReviewTab extends ConsumerWidget {
     final probes = <(TaxonomyGroup group, String? code)>[
       (TaxonomyGroup.gender, formControllers.selectedGender),
       (TaxonomyGroup.category, formControllers.selectedCategory),
+      (TaxonomyGroup.category, formControllers.selectedSubCategory),
+      (TaxonomyGroup.category, formControllers.selectedSubSubCategory),
       (TaxonomyGroup.beneficiaryStatus, formControllers.selectedRequestStatus),
       (TaxonomyGroup.governorate, formControllers.selectedProvince),
       (TaxonomyGroup.city, formControllers.selectedCity),

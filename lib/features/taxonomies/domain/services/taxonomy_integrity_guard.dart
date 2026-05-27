@@ -128,7 +128,7 @@ class TaxonomyIntegrityGuard {
         final option = options[index];
         out.add(
           Taxonomy(
-            id: '__fallback_${group.value}_${option.code}',
+            id: '${group.value}_${option.code}',
             group: group,
             code: option.code,
             label: option.label,

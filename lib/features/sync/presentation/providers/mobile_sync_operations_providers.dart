@@ -12,6 +12,7 @@ import '../../domain/usecases/sync_associations_module_usecase.dart';
 import '../../domain/usecases/sync_sponsorships_module_usecase.dart';
 import '../../domain/usecases/sync_related_entities_up_usecase.dart';
 import '../../domain/usecases/tombstone_delete_sync_usecase.dart';
+import '../../services/firebase_beneficiary_upload_service.dart';
 import '../../../associations/data/datasources/associations_remote_sync_datasource.dart';
 import '../../../kafalat/data/datasources/sponsorships_remote_sync_datasource.dart';
 import '../../domain/utils/api_endpoint_normalizer.dart' as sync_endpoint;
@@ -92,6 +93,16 @@ final mobileSyncServiceProvider = Provider<MobileSyncService>((ref) {
     syncRelatedEntitiesUpUseCase: syncRelatedEntitiesUpUseCase,
     syncAssociationsModuleUseCase: syncAssociationsModuleUseCase,
     syncSponsorshipsModuleUseCase: syncSponsorshipsModuleUseCase,
+  );
+});
+
+final firebaseBeneficiaryUploadServiceProvider = Provider<FirebaseBeneficiaryUploadService>((ref) {
+  final database = ref.watch(databaseProvider);
+  final fileIdService = ref.watch(fileIdServiceProvider);
+  return FirebaseBeneficiaryUploadService(
+    database: database,
+    fileIdService: fileIdService,
+    secureStorage: SecureStorage(),
   );
 });
 

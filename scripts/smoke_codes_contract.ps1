@@ -1,6 +1,6 @@
 param(
   [string]$BaseUrl = 'https://disabled-api.example.com',
-  [string]$Email = 'admin@gmail.com',
+  [string]$Email = '',
   [securestring]$Password,
   [string]$DeviceId = 'copilot-smoke-device',
   [int]$RequestCount = 1
@@ -12,7 +12,8 @@ function Write-Step {
   param([string]$Name, [int]$Status, [string]$Note = '')
   if ([string]::IsNullOrWhiteSpace($Note)) {
     Write-Output ("$Name => $Status")
-  } else {
+  }
+  else {
     Write-Output ("$Name => $Status | $Note")
   }
 }
@@ -36,7 +37,8 @@ function ConvertTo-PlainText {
   $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secret)
   try {
     return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-  } finally {
+  }
+  finally {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
   }
 }
@@ -44,17 +46,29 @@ function ConvertTo-PlainText {
 $failed = $false
 
 try {
+  if ([string]::IsNullOrWhiteSpace($Email)) {
+    $Email = $env:BENAA_TEST_EMAIL
+  }
+
+  if ($null -eq $Password -and -not [string]::IsNullOrWhiteSpace($env:BENAA_TEST_PASSWORD)) {
+    $Password = ConvertTo-SecureString $env:BENAA_TEST_PASSWORD -AsPlainText -Force
+  }
+
+  if ([string]::IsNullOrWhiteSpace($Email)) {
+    throw 'Missing required email. Provide -Email or set BENAA_TEST_EMAIL.'
+  }
+
   if ($null -eq $Password) {
-    $Password = ConvertTo-SecureString 'password' -AsPlainText -Force
+    throw 'Missing required password. Provide -Password (SecureString) or set BENAA_TEST_PASSWORD.'
   }
 
   $plainPassword = ConvertTo-PlainText -Secret $Password
 
   $loginPayload = @{
-    email = $Email
-    password = $plainPassword
-    device_id = $DeviceId
-    device_name = 'Copilot Smoke Contract'
+    email           = $Email
+    password        = $plainPassword
+    device_id       = $DeviceId
+    device_name     = 'Copilot Smoke Contract'
     device_platform = 'android'
   } | ConvertTo-Json
 
@@ -67,8 +81,8 @@ try {
   Write-Step -Name 'LOGIN' -Status 200
 
   $headers = @{
-    Authorization = "Bearer $token"
-    Accept = 'application/json'
+    Authorization  = "Bearer $token"
+    Accept         = 'application/json'
     'Content-Type' = 'application/json'
   }
 
@@ -77,7 +91,7 @@ try {
   Write-Step -Name 'DEVICE-STATS' -Status $statsResp.StatusCode
 
   $loginSyncBody = @{
-    device_id = $DeviceId
+    device_id    = $DeviceId
     device_codes = @()
   } | ConvertTo-Json -Depth 10
 
@@ -87,12 +101,12 @@ try {
 
   $confirmBody = @{
     device_id = $DeviceId
-    codes = @(
+    codes     = @(
       @{
-        code = '999999'
-        used_at = (Get-Date).ToUniversalTime().ToString('o')
+        code        = '999999'
+        used_at     = (Get-Date).ToUniversalTime().ToString('o')
         record_type = 'data'
-        record_id = 1
+        record_id   = 1
       }
     )
   } | ConvertTo-Json -Depth 10
@@ -103,7 +117,7 @@ try {
 
   $requestBody = @{
     device_id = $DeviceId
-    count = $RequestCount
+    count     = $RequestCount
   } | ConvertTo-Json
 
   try {
@@ -113,7 +127,8 @@ try {
       $failed = $true
     }
     Write-Step -Name 'REQUEST-CODES' -Status $requestStatus
-  } catch {
+  }
+  catch {
     $ex = $_.Exception
     $status = if ($null -ne $ex.Response) { [int]$ex.Response.StatusCode } else { 0 }
     $body = Read-ErrorBody -Exception $ex
@@ -127,7 +142,8 @@ try {
       try {
         $json = $body | ConvertFrom-Json
         $errorCode = $json.error
-      } catch {
+      }
+      catch {
       }
     }
 
@@ -141,7 +157,8 @@ try {
 
   Write-Output 'SMOKE RESULT => PASS'
   exit 0
-} catch {
+}
+catch {
   Write-Output ("SMOKE RESULT => FAIL | " + $_.Exception.Message)
   exit 1
 }

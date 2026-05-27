@@ -31,34 +31,56 @@ class SaveOperationsHelper {
     final cleanedNationalId = nationalId.trim();
     if (cleanedNationalId.isEmpty) return false;
 
-    _log('🔍 checkDuplicate: Starting check...');
-    _log('🔍 National ID: $cleanedNationalId');
+    _log('[BeneficiarySave] duplicate check started nationalId=$cleanedNationalId');
     _log('🔍 Is New: $isNewBeneficiary');
     _log('🔍 Current ID: $currentBeneficiaryId');
 
     try {
       final result = await repository.getByNationalId(cleanedNationalId);
 
-      if (result is Failure<Beneficiary>) {
-        final failure = result as Failure<Beneficiary>;
-        // NotFoundFailure means no duplicate
-        if (failure.error is NotFoundFailure) {
-          _log('✅ checkDuplicate: No duplicate found');
-          return false;
+      if (result.isFailure) {
+        try {
+          result.getOrThrow();
+        } catch (error) {
+          if (error is NotFoundFailure) {
+            _log('[BeneficiarySave] duplicate check result=success no_duplicate');
+            return false;
+          }
+
+          _log('[BeneficiarySave] duplicate check result=failure');
+          _log('[BeneficiarySave] duplicate check failure code=lookup_failed message=$error');
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('تعذر التحقق من التكرار. يرجى المحاولة مرة أخرى.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            );
+          }
+
+          // Controlled validation error: block save safely.
+          return true;
         }
-        // Other failures - log and continue
-        _log('❌ Error checking duplicate: ${failure.error}');
-        return false;
       }
 
-      final existing = (result as Success<Beneficiary>).value;
+      final existing = result.getOrNull();
+      if (existing == null) {
+        _log('[BeneficiarySave] duplicate check result=failure');
+        _log('[BeneficiarySave] duplicate check failure code=empty_success message=null_result');
+        return true;
+      }
       _log(
         '🔍 Query result: Found (ID: ${existing.id})',
       );
 
       // إذا كان تعديل لمستفيد موجود، تجاهل نفس المستفيد
       if (!isNewBeneficiary && existing.id == currentBeneficiaryId) {
-        _log('✅ checkDuplicate: Same beneficiary, no duplicate');
+        _log('[BeneficiarySave] duplicate check result=success same_beneficiary');
         return false; // نفس المستفيد، لا يعتبر تكرار
       }
 
@@ -80,8 +102,21 @@ class SaveOperationsHelper {
       }
       return true; // Duplicate found
     } catch (e) {
-      _log('❌ Error checking duplicate: $e');
-      return false; // Continue with save even if check fails
+      _log('[BeneficiarySave] duplicate check result=failure');
+      _log('[BeneficiarySave] duplicate check failure code=exception message=$e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('تعذر التحقق من التكرار. يرجى المحاولة مرة أخرى.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+          ),
+        );
+      }
+      return true;
     }
   }
 

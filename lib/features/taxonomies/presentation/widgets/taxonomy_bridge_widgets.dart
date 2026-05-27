@@ -7,15 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/sync/presentation/providers/sync_providers.dart' as sync_providers;
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
+import '../providers/taxonomy_providers.dart';
 import '../providers/taxonomy_bridge_providers.dart';
 
 /// 📝 Taxonomy Bridge Dropdown
 ///
 /// Dropdown يستخدم Drift Database للبيانات
 /// متوافق مع باقي نظام التطبيق
-class TaxonomyBridgeDropdown extends ConsumerWidget {
+class TaxonomyBridgeDropdown extends ConsumerStatefulWidget {
   /// المجموعة (category, gender, etc.)
   final TaxonomyGroup group;
 
@@ -81,13 +83,49 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final preloaded = preloadedOptions;
+  ConsumerState<TaxonomyBridgeDropdown> createState() => _TaxonomyBridgeDropdownState();
+}
+
+class _TaxonomyBridgeDropdownState extends ConsumerState<TaxonomyBridgeDropdown> {
+  bool _realtimeSyncScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleRealtimeGroupSync();
+  }
+
+  @override
+  void didUpdateWidget(covariant TaxonomyBridgeDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.group != widget.group) {
+      _realtimeSyncScheduled = false;
+      _scheduleRealtimeGroupSync();
+    }
+  }
+
+  void _scheduleRealtimeGroupSync() {
+    if (_realtimeSyncScheduled) {
+      return;
+    }
+
+    _realtimeSyncScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.read(taxonomyFirestoreHydratorProvider).ensureRealtimeGroupSync(widget.group);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preloaded = widget.preloadedOptions;
     if (preloaded != null) {
       return _buildDropdown(context, ref, preloaded);
     }
 
-    final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupResolvedOnceProvider(group));
+    final taxonomiesAsync = ref.watch(bridgeTaxonomiesByGroupResolvedOnceProvider(widget.group));
 
     return taxonomiesAsync.when(
       data: (taxonomies) => _buildDropdown(context, ref, taxonomies),
@@ -101,10 +139,10 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
       return;
     }
 
-    ref.read(bridgeGroupAutoSyncAttemptedProvider(group).notifier).state = false;
+    ref.read(bridgeGroupAutoSyncAttemptedProvider(widget.group).notifier).state = false;
     ref.invalidate(bridgeTaxonomiesIndexOnceProvider);
-    ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(group));
-    ref.invalidate(bridgeTaxonomiesByGroupResolvedOnceProvider(group));
+    ref.invalidate(bridgeTaxonomiesByGroupOnceProvider(widget.group));
+    ref.invalidate(bridgeTaxonomiesByGroupResolvedOnceProvider(widget.group));
   }
 
   bool _isRefUsable(WidgetRef ref) {
@@ -121,6 +159,32 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
       return;
     }
 
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      return;
+    }
+
+    final hydratedCount = await ref.read(taxonomyFirestoreHydratorProvider).hydrateGroup(widget.group);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!_isRefUsable(ref)) {
+      return;
+    }
+
+    if (hydratedCount > 0) {
+      _invalidateTaxonomyCache(ref);
+      return;
+    }
+
+    final legacyRestEnabled = ref.read(legacyTaxonomyRestSyncEnabledProvider);
+    if (!legacyRestEnabled) {
+      _invalidateTaxonomyCache(ref);
+      return;
+    }
+
     await ref.read(sync_providers.syncControllerProvider.notifier).deltaSync('taxonomies');
 
     if (!_isRefUsable(ref)) {
@@ -128,6 +192,14 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
     }
 
     _invalidateTaxonomyCache(ref);
+  }
+
+  String _normalizeErrorForDisplay(String error) {
+    final normalized = error.toLowerCase();
+    if (normalized.contains('permission-denied') || normalized.contains('permission denied')) {
+      return 'Firestore taxonomy permission denied. Check Firestore rules for taxonomy_categories and confirm the app is connected to the correct Firebase project.';
+    }
+    return error;
   }
 
   Widget _buildDropdown(BuildContext context, WidgetRef ref, List<Taxonomy> taxonomies) {
@@ -149,20 +221,21 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
 
     // Find selected taxonomy
     Taxonomy? selectedTaxonomy;
-    if (selectedCode != null) {
-      selectedTaxonomy = uniqueTaxonomies.where((t) => t.code == selectedCode).firstOrNull;
-    } else if (selectedId != null) {
-      selectedTaxonomy = uniqueTaxonomies.where((t) => t.id == selectedId).firstOrNull;
+    if (widget.selectedCode != null) {
+      selectedTaxonomy = uniqueTaxonomies.where((t) => t.code == widget.selectedCode).firstOrNull;
+    } else if (widget.selectedId != null) {
+      selectedTaxonomy = uniqueTaxonomies.where((t) => t.id == widget.selectedId).firstOrNull;
     }
 
     return DropdownButtonFormField<String>(
       initialValue: selectedTaxonomy?.code,
-      decoration: decoration ??
+      decoration: widget.decoration ??
           InputDecoration(
-            labelText: labelText ?? group.arabicName,
-            hintText: hintText ?? 'اختر ${group.arabicName}',
-            errorText: errorText,
-            prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
+            labelText: widget.labelText ?? widget.group.arabicName,
+            hintText: widget.hintText ?? 'اختر ${widget.group.arabicName}',
+            errorText: widget.errorText,
+            prefixIcon:
+                widget.prefixIcon != null ? Icon(widget.prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
             ),
@@ -197,18 +270,20 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
           ),
         );
       }).toList(),
-      onChanged: enabled
+      onChanged: widget.enabled
           ? (code) {
-              if (onCodeChanged != null) {
-                onCodeChanged!(code);
+              if (widget.onCodeChanged != null) {
+                widget.onCodeChanged!(code);
               }
-              if (onTaxonomyChanged != null) {
+              if (widget.onTaxonomyChanged != null) {
                 final taxonomy = uniqueTaxonomies.where((t) => t.code == code).firstOrNull;
-                onTaxonomyChanged!(taxonomy);
+                widget.onTaxonomyChanged!(taxonomy);
               }
             }
           : null,
-      validator: isRequired ? (value) => value == null || value.isEmpty ? '${group.arabicName} مطلوب' : null : null,
+      validator: widget.isRequired
+          ? (value) => value == null || value.isEmpty ? '${widget.group.arabicName} مطلوب' : null
+          : null,
       isExpanded: true,
       style: theme.textTheme.bodyLarge,
       dropdownColor: theme.cardColor,
@@ -220,8 +295,9 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
     final theme = Theme.of(context);
     return InputDecorator(
       decoration: InputDecoration(
-        labelText: labelText ?? group.arabicName,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
+        labelText: widget.labelText ?? widget.group.arabicName,
+        prefixIcon:
+            widget.prefixIcon != null ? Icon(widget.prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.r),
         ),
@@ -249,9 +325,10 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
 
   Widget _buildErrorDropdown(BuildContext context, WidgetRef ref, String error) {
     final theme = Theme.of(context);
+    final normalizedError = _normalizeErrorForDisplay(error);
     return InputDecorator(
       decoration: InputDecoration(
-        labelText: labelText ?? group.arabicName,
+        labelText: widget.labelText ?? widget.group.arabicName,
         prefixIcon: Icon(Icons.error_outline, color: theme.colorScheme.error, size: 22.sp),
         errorText: 'فشل تحميل البيانات',
         border: OutlineInputBorder(
@@ -262,12 +339,12 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'تعذر تحميل بيانات ${group.arabicName}.',
+            'تعذر تحميل بيانات ${widget.group.arabicName}.',
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
           ),
           SizedBox(height: 6.h),
           Text(
-            error,
+            normalizedError,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall,
@@ -281,7 +358,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('إعادة المحاولة'),
               ),
-              if (showSyncAction)
+              if (widget.showSyncAction)
                 FilledButton.tonalIcon(
                   onPressed: () => _syncTaxonomiesAndRefresh(ref),
                   icon: const Icon(Icons.sync),
@@ -296,22 +373,23 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
 
   Widget _buildEmptyDropdown(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final autoSyncAttempted = ref.watch(bridgeGroupAutoSyncAttemptedProvider(group));
+    final autoSyncAttempted = ref.watch(bridgeGroupAutoSyncAttemptedProvider(widget.group));
 
-    if (showSyncAction && autoSyncOnEmpty && !autoSyncAttempted) {
-      Future.microtask(() async {
-        if (!_isRefUsable(ref)) {
+    if (widget.showSyncAction && widget.autoSyncOnEmpty && !autoSyncAttempted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || !_isRefUsable(ref)) {
           return;
         }
-        ref.read(bridgeGroupAutoSyncAttemptedProvider(group).notifier).state = true;
+        ref.read(bridgeGroupAutoSyncAttemptedProvider(widget.group).notifier).state = true;
         await _syncTaxonomiesAndRefresh(ref);
       });
     }
 
     return InputDecorator(
       decoration: InputDecoration(
-        labelText: labelText ?? group.arabicName,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
+        labelText: widget.labelText ?? widget.group.arabicName,
+        prefixIcon:
+            widget.prefixIcon != null ? Icon(widget.prefixIcon, size: 22.sp) : Icon(_getDefaultIcon(), size: 22.sp),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12.r),
         ),
@@ -332,7 +410,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
                 icon: const Icon(Icons.refresh),
                 label: const Text('إعادة المحاولة'),
               ),
-              if (showSyncAction)
+              if (widget.showSyncAction)
                 FilledButton.tonalIcon(
                   onPressed: () => _syncTaxonomiesAndRefresh(ref),
                   icon: const Icon(Icons.cloud_download),
@@ -346,7 +424,7 @@ class TaxonomyBridgeDropdown extends ConsumerWidget {
   }
 
   IconData _getDefaultIcon() {
-    switch (group) {
+    switch (widget.group) {
       case TaxonomyGroup.governorate:
         return Icons.location_city_rounded;
       case TaxonomyGroup.city:

@@ -141,6 +141,24 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     }
   }
 
+  String? _selectedSubCategory;
+  String? get selectedSubCategory => _selectedSubCategory;
+  set selectedSubCategory(String? value) {
+    if (_selectedSubCategory != value) {
+      _selectedSubCategory = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
+  String? _selectedSubSubCategory;
+  String? get selectedSubSubCategory => _selectedSubSubCategory;
+  set selectedSubSubCategory(String? value) {
+    if (_selectedSubSubCategory != value) {
+      _selectedSubSubCategory = value;
+      _notifyAndScheduleAutoSave();
+    }
+  }
+
   String? _selectedRelationship;
   String? get selectedRelationship => _selectedRelationship;
   set selectedRelationship(String? value) {
@@ -582,6 +600,8 @@ class BeneficiaryFormControllers extends ChangeNotifier {
       'selectedEducationLevel': _selectedEducationLevel,
       'selectedEmploymentStatus': _selectedEmploymentStatus,
       'selectedCategory': _selectedCategory,
+      'selectedSubCategory': _selectedSubCategory,
+      'selectedSubSubCategory': _selectedSubSubCategory,
       'selectedCity': _selectedCity,
       'selectedProvince': _selectedProvince,
       'selectedDisplacementStatus': _selectedDisplacementStatus,
@@ -635,6 +655,8 @@ class BeneficiaryFormControllers extends ChangeNotifier {
     _selectedEducationLevel = map['selectedEducationLevel'];
     _selectedEmploymentStatus = map['selectedEmploymentStatus'];
     _selectedCategory = map['selectedCategory'];
+    _selectedSubCategory = map['selectedSubCategory'];
+    _selectedSubSubCategory = map['selectedSubSubCategory'];
     _selectedCity = map['selectedCity'];
     _selectedProvince = map['selectedProvince'];
     _selectedDisplacementStatus = map['selectedDisplacementStatus'];

@@ -18,8 +18,8 @@ This is server-side assignment logic issue, not mobile client payload issue.
 
 ## Reproduction Credentials
 
-- username: admin@gmail.com
-- password: password
+- Use a valid non-production test account with mobile API access.
+- Do not store credentials in docs or scripts; pass them at runtime via secure input or environment variables.
 
 ## Reproduction Steps (Exact)
 

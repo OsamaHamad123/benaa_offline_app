@@ -16,6 +16,7 @@ class AppConfig {
   final int attachmentChunkSize;
   final int fileIdReserveBatchSize;
   final int fileIdRenewThreshold;
+  final bool ibanValidationEnabled;
   final int searchTimeout;
   final String civilRegistryManifestPath;
 
@@ -26,6 +27,7 @@ class AppConfig {
     this.attachmentChunkSize = 512 * 1024, // 512KB
     this.fileIdReserveBatchSize = ApiConfig.fileIdReserveBatchSize,
     this.fileIdRenewThreshold = ApiConfig.fileIdRenewThreshold,
+    this.ibanValidationEnabled = false,
     this.searchTimeout = 800,
     this.civilRegistryManifestPath = 'assets/data/civil_registry/manifest.json',
   });
@@ -74,6 +76,8 @@ class AppConfig {
         attachmentChunkSize: _asInt(selected['ATTACHMENT_CHUNK_SIZE']) ?? 512 * 1024,
         fileIdReserveBatchSize: _asInt(selected['FILE_ID_RESERVE_BATCH_SIZE']) ?? ApiConfig.fileIdReserveBatchSize,
         fileIdRenewThreshold: _asInt(selected['FILE_ID_RENEW_THRESHOLD']) ?? ApiConfig.fileIdRenewThreshold,
+        ibanValidationEnabled:
+            _asBool(selected['IBAN_VALIDATION_ENABLED']) ?? _asBool(selected['ENABLE_IBAN_VALIDATION']) ?? false,
       );
     } catch (e) {
       // Fallback to defaults
@@ -116,11 +120,22 @@ class AppConfig {
     return null;
   }
 
+  static bool? _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1') return true;
+      if (normalized == 'false' || normalized == '0') return false;
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() => {
         'API_BASE_URL': apiBaseUrl,
         'SYNC_BATCH_SIZE': syncBatchSize,
         'ATTACHMENT_CHUNK_SIZE': attachmentChunkSize,
         'FILE_ID_RESERVE_BATCH_SIZE': fileIdReserveBatchSize,
         'FILE_ID_RENEW_THRESHOLD': fileIdRenewThreshold,
+        'IBAN_VALIDATION_ENABLED': ibanValidationEnabled,
       };
 }

@@ -20,7 +20,12 @@ class BeneficiaryFormTabs extends StatefulWidget {
   final String? beneficiaryId;
 
   const BeneficiaryFormTabs({
-    required this.controller, required this.formControllers, required this.onBirthDateTap, required this.firstFieldFocusNode, required this.beneficiaryId, super.key,
+    required this.controller,
+    required this.formControllers,
+    required this.onBirthDateTap,
+    required this.firstFieldFocusNode,
+    required this.beneficiaryId,
+    super.key,
   });
 
   @override
@@ -104,6 +109,10 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         firstFieldFocusNode: widget.firstFieldFocusNode,
         selectedCategory: widget.formControllers.selectedCategory,
         onCategoryChanged: (value) => widget.formControllers.selectedCategory = value,
+        selectedSubCategory: widget.formControllers.selectedSubCategory,
+        onSubCategoryChanged: (value) => widget.formControllers.selectedSubCategory = value,
+        selectedSubSubCategory: widget.formControllers.selectedSubSubCategory,
+        onSubSubCategoryChanged: (value) => widget.formControllers.selectedSubSubCategory = value,
         selectedRelationship: widget.formControllers.selectedRelationship,
         onRelationshipChanged: (value) => widget.formControllers.selectedRelationship = value,
         selectedSection: widget.formControllers.selectedSection,
@@ -148,6 +157,8 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
   }
 
   Widget _buildAdditionalInfoTab() {
+    final specialNeedsCount = int.tryParse(widget.formControllers.specialNeedsCountController.text.trim()) ?? 0;
+
     return RepaintBoundary(
       child: V2AdditionalInfoTab(
         key: const ValueKey('additional_info_tab'),
@@ -155,8 +166,13 @@ class _BeneficiaryFormTabsState extends State<BeneficiaryFormTabs> {
         onEducationLevelChanged: (value) => widget.formControllers.selectedEducationLevel = value,
         selectedEmploymentStatus: widget.formControllers.selectedEmploymentStatus,
         onEmploymentStatusChanged: (value) => widget.formControllers.selectedEmploymentStatus = value,
-        hasDisability: widget.formControllers.hasDisability,
-        onDisabilityChanged: (value) => widget.formControllers.hasDisability = value,
+        hasDisability: specialNeedsCount > 0,
+        onDisabilityChanged: (value) {
+          widget.formControllers.specialNeedsCountController.text = value ? '1' : '';
+          if (mounted) {
+            setState(() {});
+          }
+        },
         selectedHealthStatus: widget.formControllers.selectedHealthStatus,
         onHealthStatusChanged: (value) => widget.formControllers.selectedHealthStatus = value,
         chronicDiseasesController: widget.formControllers.chronicDiseasesController,

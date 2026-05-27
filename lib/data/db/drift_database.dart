@@ -71,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration {
@@ -82,6 +82,7 @@ class AppDatabase extends _$AppDatabase {
         await _createFileIdReservationBatchesTable();
         await _ensureFileIdReservationCompatColumns();
         await _createLocalCodesTable();
+        await _createLocalFileNumberPoolTables();
         await _backfillLocalCodesFromFileReservations();
         await _createSyncTombstonesTable();
         await _createAssociationsSponsorProfileTable();
@@ -252,6 +253,11 @@ class AppDatabase extends _$AppDatabase {
           await _createRelatedEntitiesContractParityTables();
         }
 
+        if (from < 33) {
+          // v33: add offline-first file number pool tables for Firestore block reservation.
+          await _createLocalFileNumberPoolTables();
+        }
+
         await _createPerformanceIndexes();
       },
     );
@@ -352,6 +358,60 @@ class AppDatabase extends _$AppDatabase {
     );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_unsynced ON local_codes(synced, is_used) WHERE synced = 0 AND is_used = 1;',
+    );
+  }
+
+  Future<void> _createLocalFileNumberPoolTables() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS local_file_number_blocks (
+        block_id TEXT PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        prefix TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        start_number INTEGER NOT NULL,
+        end_number INTEGER NOT NULL,
+        total_count INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'reserved',
+        reserved_at TEXT,
+        expires_at TEXT,
+        used_count INTEGER NOT NULL DEFAULT 0,
+        released_count INTEGER NOT NULL DEFAULT 0,
+        app_version TEXT,
+        updated_at TEXT
+      );
+    ''');
+
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS local_file_numbers (
+        file_number TEXT PRIMARY KEY,
+        number INTEGER NOT NULL,
+        year INTEGER NOT NULL,
+        prefix TEXT NOT NULL,
+        block_id TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'available',
+        beneficiary_local_id TEXT,
+        form_session_id TEXT,
+        tentative_at TEXT,
+        assigned_at TEXT,
+        synced_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(block_id) REFERENCES local_file_number_blocks(block_id) ON DELETE CASCADE
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_file_numbers_status ON local_file_numbers(status);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_file_numbers_block ON local_file_numbers(block_id, status);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_file_numbers_session ON local_file_numbers(form_session_id, status);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_local_file_number_blocks_device ON local_file_number_blocks(device_id, user_id, status);',
     );
   }
 

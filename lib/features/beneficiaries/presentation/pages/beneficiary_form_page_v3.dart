@@ -61,6 +61,7 @@ import 'v2_form_helpers/form_drafts_list_helper.dart';
 import 'v2_form_helpers/form_save_outcome_helper.dart';
 import 'v2_form_helpers/form_civil_registry_fill_helper.dart';
 import 'v2_form_helpers/personal_profile_validator.dart';
+import 'v2_form_helpers/bank_account_validator.dart';
 import 'v2_form_helpers/smart_helpers.dart';
 import '../../domain/entities/guardian_bank_account.dart';
 
@@ -222,6 +223,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
   void initState() {
     super.initState();
     _openBenchmark.start();
+    unawaited(_applyValidationFeatureFlags());
 
     // ✅ Initialize Debouncer for auto-save (2 seconds)
     _autoSaveDebouncer = Debouncer(delay: const Duration(seconds: 2));
@@ -272,6 +274,15 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         _progressCardDefaultApplied = true;
       }
     });
+  }
+
+  Future<void> _applyValidationFeatureFlags() async {
+    try {
+      final config = await ref.read(appConfigProvider.future);
+      BankAccountValidator.ibanValidationEnabled = config.ibanValidationEnabled;
+    } catch (_) {
+      // Keep compile-time default when app config is unavailable.
+    }
   }
 
   void _startUiWatchdog() {
