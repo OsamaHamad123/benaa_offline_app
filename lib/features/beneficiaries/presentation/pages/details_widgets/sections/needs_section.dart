@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../formatters/notes_needs_formatter.dart';
+
 /// 📝 Needs Section Widget
 ///
 /// Displays beneficiary needs and notes
@@ -11,8 +13,51 @@ class NeedsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayNotes = _cleanNotesForDisplay(beneficiary.notes?.toString());
+    final formatted = NotesNeedsFormatter.format(beneficiary.notes?.toString());
+    final notesText = formatted.notesText;
+    final needs = formatted.needs;
 
+    final children = [
+                Text(
+                  'الاحتياجات',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 8.h),
+                if (needs.isEmpty)
+                  Text(
+                    'لا توجد احتياجات مسجلة',
+                    style: TextStyle(fontSize: 13.sp, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: needs
+                        .map(
+                          (item) => Chip(
+                            label: Text(item),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                SizedBox(height: 14.h),
+                Text(
+                  'ملاحظات',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 8.h),
+                if (notesText.isEmpty)
+                  Text(
+                    'لا توجد ملاحظات مسجلة',
+                    style: TextStyle(fontSize: 13.sp, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  )
+                else
+                  Text(
+                    notesText,
+                    style: TextStyle(fontSize: 13.sp, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ),
+              ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -37,27 +82,13 @@ class NeedsSection extends StatelessWidget {
           ),
           child: Padding(
             padding: EdgeInsets.all(16.r),
-            child: Text(
-              displayNotes,
-              style: TextStyle(fontSize: 14.sp, height: 1.5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
             ),
           ),
         ),
       ],
     );
-  }
-
-  String _cleanNotesForDisplay(String? raw) {
-    final notes = (raw ?? '').trim();
-    if (notes.isEmpty) return '---';
-
-    const marker = '\n\n#meta:';
-    final markerIndex = notes.lastIndexOf(marker);
-    if (markerIndex == -1) {
-      return notes;
-    }
-
-    final clean = notes.substring(0, markerIndex).trimRight();
-    return clean.isEmpty ? '---' : clean;
   }
 }

@@ -236,6 +236,7 @@ class QuickActionsGrid extends StatelessWidget {
       crossAxisSpacing: spacing,
       childAspectRatio: childAspectRatio,
       children: [
+        // الإجراءات الأساسية الستة — مرتبة حسب الأهمية
         QuickActionCard(
           label: 'إضافة مستفيد',
           icon: Icons.person_add_rounded,
@@ -243,159 +244,39 @@ class QuickActionsGrid extends StatelessWidget {
           emphasized: true,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
-        if (onKafalatTap != null)
-          QuickActionCard(
-            label: 'الكفالات',
-            icon: Icons.volunteer_activism_rounded,
-            color: AppColors.accent,
-            onTap: onKafalatTap!,
-          ),
         QuickActionCard(
-          label: 'البحث',
-          icon: Icons.search_rounded,
+          label: 'المستفيدون',
+          icon: Icons.people_rounded,
           color: AppColors.success,
           onTap: onSearchTap ?? () {},
         ),
         QuickActionCard(
-          label: 'المزامنة',
-          icon: Icons.sync_rounded,
-          color: DashboardColors.normal,
-          emphasized: true,
-          badge: syncBadge,
-          onTap: onSyncTap ?? () {},
+          label: 'زيارات اليوم',
+          icon: Icons.event_note_rounded,
+          color: DashboardColors.disabled,
+          onTap: onVisitsTap ?? () {},
         ),
         QuickActionCard(
-          label: 'التقارير',
-          icon: Icons.assessment_rounded,
+          label: 'الكفالات',
+          icon: Icons.volunteer_activism_rounded,
+          color: AppColors.accent,
+          onTap: onKafalatTap ?? () {},
+        ),
+        QuickActionCard(
+          label: 'الجمعيات',
+          icon: Icons.business_rounded,
           color: DashboardColors.widows,
-          badge: reportsBadge,
-          onTap: onReportsTap ?? () {},
-        ),
-        QuickActionCard(
-          label: 'السجل المدني',
-          icon: Icons.account_balance_rounded,
-          color: DashboardColors.poor,
-          onTap: onCivilRegistryTap ?? () {},
-        ),
-        if (onVisitsTap != null)
-          QuickActionCard(
-            label: 'الزيارات',
-            icon: Icons.event_note_rounded,
-            color: DashboardColors.disabled,
-            onTap: onVisitsTap!,
-          ),
-        if (onAssociationsTap != null)
-          QuickActionCard(
-            label: 'الجمعيات',
-            icon: Icons.business_rounded,
-            color: DashboardColors.widows,
-            badge: associationsBadge,
-            onTap: onAssociationsTap!,
-          ),
-      ],
-    );
-  }
-}
-
-/// Compact Grid version - للاستخدام في الأماكن الضيقة
-class QuickActionsGridCompact extends StatelessWidget {
-  final VoidCallback? onAddBeneficiaryTap;
-  final VoidCallback? onSearchTap;
-  final VoidCallback? onSyncTap;
-  final VoidCallback? onReportsTap;
-  final VoidCallback? onCivilRegistryTap;
-  final VoidCallback? onVisitsTap;
-  final VoidCallback? onKafalatTap;
-  final int? syncBadge;
-  final int? reportsBadge;
-
-  const QuickActionsGridCompact({
-    super.key,
-    this.onAddBeneficiaryTap,
-    this.onKafalatTap,
-    this.onSearchTap,
-    this.onSyncTap,
-    this.onReportsTap,
-    this.onCivilRegistryTap,
-    this.onVisitsTap,
-    this.syncBadge,
-    this.reportsBadge,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final crossAxisCount = ResponsiveUtils.getCrossAxisCount(
-      context,
-      mobile: 3,
-      tablet: 4,
-      desktop: 6,
-    );
-
-    final childAspectRatio = ResponsiveUtils.getResponsiveValue(
-      context,
-      mobile: 0.9,
-      tablet: 1.0,
-      desktop: 1.1,
-    );
-
-    final spacing = ResponsiveUtils.getResponsiveSpacing(context) * 0.8;
-
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: spacing,
-      crossAxisSpacing: spacing,
-      childAspectRatio: childAspectRatio,
-      children: [
-        QuickActionCard(
-          label: 'إضافة مستفيد',
-          icon: Icons.person_add_rounded,
-          color: DashboardColors.totalBeneficiaries,
-          emphasized: true,
-          onTap: onAddBeneficiaryTap ?? () {},
-        ),
-        if (onKafalatTap != null)
-          QuickActionCard(
-            label: 'الكفالات',
-            icon: Icons.volunteer_activism_rounded,
-            color: AppColors.accent,
-            onTap: onKafalatTap!,
-          ),
-        QuickActionCard(
-          label: 'البحث',
-          icon: Icons.search_rounded,
-          color: DashboardColors.success,
-          onTap: onSearchTap ?? () {},
+          badge: associationsBadge,
+          onTap: onAssociationsTap ?? () {},
         ),
         QuickActionCard(
           label: 'المزامنة',
           icon: Icons.sync_rounded,
           color: DashboardColors.normal,
-          emphasized: true,
+          emphasized: syncBadge != null && syncBadge! > 0,
           badge: syncBadge,
           onTap: onSyncTap ?? () {},
         ),
-        QuickActionCard(
-          label: 'التقارير',
-          icon: Icons.assessment_rounded,
-          color: DashboardColors.widows,
-          badge: reportsBadge,
-          onTap: onReportsTap ?? () {},
-        ),
-        QuickActionCard(
-          label: 'السجل المدني',
-          icon: Icons.account_balance_rounded,
-          color: DashboardColors.poor,
-          onTap: onCivilRegistryTap ?? () {},
-        ),
-        if (onVisitsTap != null)
-          QuickActionCard(
-            label: 'الزيارات',
-            icon: Icons.event_note_rounded,
-            color: DashboardColors.disabled,
-            onTap: onVisitsTap!,
-          ),
       ],
     );
   }

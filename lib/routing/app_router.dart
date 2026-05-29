@@ -14,6 +14,7 @@ import '../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../features/beneficiaries/presentation/pages/beneficiaries_list_page_v2.dart';
 import '../features/beneficiaries/presentation/pages/beneficiary_form_page_v3.dart';
 import '../features/beneficiaries/presentation/pages/beneficiary_details_page_v2.dart';
+import '../features/beneficiaries/presentation/pages/beneficiary_relations_tabs_page.dart';
 import '../features/search/presentation/pages/civil_search_page.dart';
 import '../features/search/presentation/pages/update_normalization_page.dart';
 import '../features/civil_db_download/presentation/pages/welcome_page.dart';
@@ -24,7 +25,9 @@ import '../features/reports/reports_page.dart';
 import '../features/reports/presentation/pages/beneficiaries_report_page.dart';
 import '../features/attachments/attachments_page.dart';
 import '../features/visits/presentation/pages/visits_list_page_m3.dart';
+import '../features/visits/presentation/pages/followup_dashboard_page.dart';
 import '../features/associations/presentation/pages/associations_list_page_v2.dart';
+import '../features/associations/presentation/pages/associations_list_firestore_stub_page.dart';
 import '../features/kafalat/presentation/pages/kafalat_page.dart';
 import '../features/kafalat/presentation/pages/kafalat_import_page.dart';
 import '../features/kafalat/presentation/pages/sponsorship_charts_page.dart';
@@ -41,6 +44,8 @@ import '../features/civil_db_download/data/datasources/database_download_service
 import '../features/civil_db_download/presentation/pages/config/download_config.dart';
 import '../features/dashboard/presentation/widgets/performance_dashboard.dart';
 import '../features/dashboard/presentation/widgets/monitoring_dashboard.dart';
+import '../features/sponsorships/presentation/pages/sponsorship_files_list_page.dart';
+import '../features/sponsorships/presentation/pages/sponsorship_candidate_review_page.dart';
 import '../features/taxonomies/presentation/pages/taxonomy_management_page.dart';
 import '../features/taxonomies/presentation/providers/taxonomy_providers.dart' as taxonomy_ui;
 
@@ -120,6 +125,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/test-mobile-api',
         '/sentry-test',
         '/widgets-example',
+        '/analytics',
+        '/performance-monitor',
+        '/performance',
+        '/monitoring',
+        '/update-normalization',
       };
 
       if (!kDebugMode && blockedInReleaseRoutes.contains(state.matchedLocation)) {
@@ -223,6 +233,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/beneficiaries/:id/relations',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return BeneficiaryRelationsTabsPage(beneficiaryId: id);
+        },
+      ),
+      GoRoute(
         path: '/search',
         builder: (context, state) => const CivilSearchPage(),
       ),
@@ -261,14 +278,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/settings/dashboard',
         builder: (context, state) => const DashboardSettingsPage(),
       ),
-      GoRoute(
-        path: '/analytics',
-        builder: (context, state) => const UxAnalyticsDashboard(),
-      ),
-      GoRoute(
-        path: '/performance-monitor',
-        builder: (context, state) => const RealTimePerformanceMonitor(),
-      ),
+      if (kDebugMode) ...[
+        GoRoute(
+          path: '/analytics',
+          builder: (context, state) => const UxAnalyticsDashboard(),
+        ),
+        GoRoute(
+          path: '/performance-monitor',
+          builder: (context, state) => const RealTimePerformanceMonitor(),
+        ),
+      ],
       if (kDebugMode)
         GoRoute(
           path: '/sentry-test',
@@ -279,9 +298,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const VisitsListPageM3(),
       ),
       GoRoute(
+        path: '/followups/dashboard',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const FollowupDashboardPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
+      GoRoute(
         path: '/associations',
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: const AssociationsListPageV2(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/associations/firestore',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const AssociationsListFirestoreStubPage(),
           state: state,
           type: PageTransitionType.slideFromRight,
         ),
@@ -365,6 +400,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/sponsorships/files',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const SponsorshipFilesListPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
+      GoRoute(
+        path: '/sponsorships/candidates/review',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          child: const SponsorshipCandidateReviewPage(),
+          state: state,
+          type: PageTransitionType.slideFromRight,
+        ),
+      ),
+      GoRoute(
         path: '/activities',
         builder: (context, state) => const AllActivitiesPageM3(),
       ),
@@ -372,15 +423,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/mobile-sync',
         builder: (context, state) => const MobileSyncPage(),
       ),
-      // Performance & Monitoring Dashboards
-      GoRoute(
-        path: '/performance',
-        builder: (context, state) => const PerformanceDashboard(),
-      ),
-      GoRoute(
-        path: '/monitoring',
-        builder: (context, state) => const MonitoringDashboard(),
-      ),
+      // Performance & Monitoring Dashboards (debug only)
+      if (kDebugMode) ...[
+        GoRoute(
+          path: '/performance',
+          builder: (context, state) => const PerformanceDashboard(),
+        ),
+        GoRoute(
+          path: '/monitoring',
+          builder: (context, state) => const MonitoringDashboard(),
+        ),
+      ],
       // 🏷️ Taxonomies Management
       GoRoute(
         path: '/taxonomies',

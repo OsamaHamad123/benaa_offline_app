@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/utils/log_sanitizer.dart';
 import '../services/firestore_taxonomy_service.dart';
 import 'firestore_taxonomy_seed_data.dart';
 
@@ -293,8 +294,8 @@ class FirestoreTaxonomySeeder {
     final user = _auth.currentUser;
     final hasToken = await user?.getIdToken(false) != null;
 
-    developer.log('FirebaseAuth uid: ${user?.uid}', name: 'TaxonomySeeder');
-    developer.log('FirebaseAuth email: ${user?.email}', name: 'TaxonomySeeder');
+    developer.log('FirebaseAuth uid: ${LogSanitizer.maskId(user?.uid)}', name: 'TaxonomySeeder');
+    developer.log('FirebaseAuth email: ${LogSanitizer.maskEmail(user?.email)}', name: 'TaxonomySeeder');
     developer.log('FirebaseAuth hasIdToken: $hasToken', name: 'TaxonomySeeder');
 
     if (user == null) {
@@ -834,8 +835,9 @@ class FirestoreTaxonomySeeder {
 
     final user = _auth.currentUser;
     final hasToken = await user?.getIdToken(false) != null;
-    developer.log('debugFirestoreTaxonomyAccess user.uid=${user?.uid}', name: 'TaxonomySeeder');
-    developer.log('debugFirestoreTaxonomyAccess user.email=${user?.email}', name: 'TaxonomySeeder');
+    developer.log('debugFirestoreTaxonomyAccess user.uid=${LogSanitizer.maskId(user?.uid)}', name: 'TaxonomySeeder');
+    developer.log('debugFirestoreTaxonomyAccess user.email=${LogSanitizer.maskEmail(user?.email)}',
+        name: 'TaxonomySeeder');
     developer.log('debugFirestoreTaxonomyAccess hasIdToken=$hasToken', name: 'TaxonomySeeder');
 
     if (user == null) {

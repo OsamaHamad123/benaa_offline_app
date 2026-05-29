@@ -44,14 +44,33 @@ class NotificationsService {
     await initialize();
   }
 
+  /// مسار Navigation المعلق (يُعالج عند تشغيل التطبيق)
+  static String? _pendingRoute;
+
+  /// أخذ المسار المعلق ومسحه
+  static String? consumePendingRoute() {
+    final route = _pendingRoute;
+    _pendingRoute = null;
+    return route;
+  }
+
   /// معالجة الضغط على الإشعار
   static void _onNotificationTap(NotificationResponse response) {
-    // TODO: Handle notification tap - navigate to relevant screen
     final payload = response.payload;
-    if (payload != null) {
-      // Navigate based on payload
-      // Example: router.push('/beneficiary/$id')
+    if (payload == null || payload.isEmpty) return;
+
+    // تحليل payload: نتوقع نمط "route:/path" أو مجرد مسار
+    String route;
+    if (payload.startsWith('route:')) {
+      route = payload.replaceFirst('route:', '');
+    } else if (payload.startsWith('/')) {
+      route = payload;
+    } else {
+      // payload غير معروف — نوجه للصفحة الرئيسية
+      route = '/';
     }
+
+    _pendingRoute = route;
   }
 
   /// طلب صلاحيات الإشعارات

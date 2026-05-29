@@ -5,14 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:benaa_offline_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy.dart';
 import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy_group.dart';
 import 'package:benaa_offline_app/features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import 'package:benaa_offline_app/features/taxonomies/presentation/widgets/taxonomy_bridge_widgets.dart';
 
-Widget _host({required Widget child, List<Override> overrides = const []}) {
+Widget _host({required Widget child, List<Override> extraOverrides = const []}) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      // Prevent _scheduleRealtimeGroupSync from reaching Firebase/appConfig
+      isAuthenticatedProvider.overrideWith((ref) => false),
+      ...extraOverrides,
+    ],
     child: ScreenUtilInit(
       designSize: const Size(375, 812),
       builder: (_, __) => MaterialApp(
@@ -51,7 +56,7 @@ void main() {
 
     await tester.pumpWidget(
       _host(
-        overrides: [
+        extraOverrides: [
           bridgeTaxonomiesByGroupResolvedOnceProvider.overrideWith(
             (ref, group) => pendingResult.future,
           ),
@@ -67,7 +72,7 @@ void main() {
   testWidgets('shows actionable empty state when taxonomy list is empty', (tester) async {
     await tester.pumpWidget(
       _host(
-        overrides: [
+        extraOverrides: [
           bridgeTaxonomiesByGroupResolvedOnceProvider.overrideWith(
             (ref, group) async => const <Taxonomy>[],
           ),
@@ -86,7 +91,7 @@ void main() {
   testWidgets('renders dropdown options when taxonomy list is partial but valid', (tester) async {
     await tester.pumpWidget(
       _host(
-        overrides: [
+        extraOverrides: [
           bridgeTaxonomiesByGroupResolvedOnceProvider.overrideWith(
             (ref, group) async => <Taxonomy>[
               _taxonomy(
@@ -111,7 +116,7 @@ void main() {
   testWidgets('shows retry UI when taxonomy provider errors', (tester) async {
     await tester.pumpWidget(
       _host(
-        overrides: [
+        extraOverrides: [
           bridgeTaxonomiesByGroupResolvedOnceProvider.overrideWith(
             (ref, group) async => throw Exception('network error'),
           ),

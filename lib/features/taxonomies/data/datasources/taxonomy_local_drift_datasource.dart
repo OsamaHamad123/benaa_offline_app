@@ -103,9 +103,14 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
     final allItems = await _taxonomiesDao.getAllTaxonomies();
     final activeItems = allItems.where((item) => item.isActive).toList();
     final inactiveItems = allItems.where((item) => !item.isActive).toList();
+
     final counts = <TaxonomyGroup, int>{};
+    final deletedCounts = <TaxonomyGroup, int>{};
+
     for (final group in TaxonomyGroup.values) {
       counts[group] = activeItems.where((item) => TaxonomyGroup.normalizeValue(item.group) == group.value).length;
+      deletedCounts[group] =
+          inactiveItems.where((item) => TaxonomyGroup.normalizeValue(item.group) == group.value).length;
     }
 
     return TaxonomyStatistics(
@@ -113,6 +118,7 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
       activeCount: activeItems.length,
       inactiveCount: inactiveItems.length,
       countByGroup: counts,
+      deletedCountByGroup: deletedCounts,
       lastSyncTime: await getLastSyncTime(),
     );
   }
@@ -155,6 +161,15 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
     await _taxonomiesDao.upsertBatch(companions);
   }
 
+  /// حفظ تصنيفات قادمة من السيرفر مع احترام الحذف المحلي.
+  ///
+  /// لا يُعيد إحياء التصنيف الذي حذفه المستخدم محلياً حتى لو السيرفر
+  /// أرسله كـ isActive=true.
+  Future<void> saveTaxonomiesFromSync(List<Taxonomy> taxonomies) async {
+    final companions = taxonomies.map((t) => TaxonomyDTO.fromEntity(t).toDbCompanion()).toList();
+    await _taxonomiesDao.syncSafeUpsertBatch(companions);
+  }
+
   @override
   Future<void> saveTaxonomy(Taxonomy taxonomy) async {
     await _taxonomiesDao.upsertTaxonomy(TaxonomyDTO.fromEntity(taxonomy).toDbCompanion());
@@ -184,6 +199,17 @@ class TaxonomyLocalDriftDataSource implements TaxonomyLocalDataSource {
 
   Future<void> upsertCompanions(List<TaxonomiesCompanion> companions) async {
     await _taxonomiesDao.upsertBatch(companions);
+  }
+
+  /// نسخة آمنة من upsertCompanions تحترم الحذف المحلي.
+  /// تستخدم أثناء المزامنة من السيرفر فقط.
+  Future<void> upsertCompanionsFromSync(List<TaxonomiesCompanion> companions) async {
+    await _taxonomiesDao.syncSafeUpsertBatch(companions);
+  }
+
+  /// جلب IDs التصنيفات المحذوفة محلياً
+  Future<Set<String>> getLocallyDeletedIds() async {
+    return _taxonomiesDao.getLocallyDeletedIds();
   }
 
   Future<int> purgeUnsupportedGroups() async {

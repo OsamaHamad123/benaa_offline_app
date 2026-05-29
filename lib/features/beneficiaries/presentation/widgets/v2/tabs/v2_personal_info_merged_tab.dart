@@ -47,6 +47,8 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
   Timer? _deferredSecondarySectionsTimer;
   bool _secondarySectionsReady = false;
   bool _nationalIdAutoAdvanced = false;
+  bool _quickHintVisible = true; // dismissed after user taps close
+  bool _hasUserStartedEditing = false; // show validation status only after editing starts
 
   @override
   void initState() {
@@ -156,34 +158,34 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
   }
 
   Widget _buildQuickStartHint(BuildContext context, {required bool canUseCivilRegistry}) {
+    if (!_quickHintVisible) return const SizedBox.shrink();
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: EdgeInsets.fromLTRB(12.w, 0, 12.w, 10.h),
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+      padding: EdgeInsets.fromLTRB(12.w, 10.h, 4.w, 10.h),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10.r),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.tips_and_updates_outlined, size: 16.sp, color: colorScheme.primary),
-              SizedBox(width: 6.w),
-              Text(
-                'ابدأ من الهوية ثم أكمل الاسم',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
+          Icon(Icons.tips_and_updates_outlined, size: 16.sp, color: colorScheme.primary),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: Text(
+              canUseCivilRegistry
+                  ? 'أدخل الرقم الوطني (9 أرقام) للتعبئة التلقائية من السجل المدني.'
+                  : 'أدخل الرقم الوطني أولاً ثم أكمل الاسم والحقول الأساسية.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
-          SizedBox(height: 6.h),
-          Text(
-            canUseCivilRegistry
-                ? 'أدخل الرقم الوطني (9 أرقام) ثم استخدم التعبئة التلقائية من السجل المدني عند توفر البيانات.'
-                : 'أدخل الرقم الوطني أولاً، ثم أكمل الاسم الكامل والحقول الأساسية المطلوبة.',
-            style: Theme.of(context).textTheme.bodySmall,
+          IconButton(
+            icon: const Icon(Icons.close, size: 16),
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(minWidth: 32.w, minHeight: 32.h),
+            onPressed: () => _requestUiRefresh(() => _quickHintVisible = false),
           ),
         ],
       ),
@@ -276,6 +278,9 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
 
   void _onNationalIdInputChanged(String value) {
     final digits = value.trim();
+    if (!_hasUserStartedEditing && digits.isNotEmpty) {
+      _requestUiRefresh(() => _hasUserStartedEditing = true);
+    }
     if (digits.length == FormConstants.nationalIdLength) {
       if (_nationalIdAutoAdvanced) {
         return;
@@ -334,7 +339,7 @@ class _V2PersonalInfoMergedTabState extends ConsumerState<V2PersonalInfoMergedTa
         cacheExtent: 24,
         children: [
           _buildQuickStartHint(context, canUseCivilRegistry: canUseCivilRegistry),
-          _buildCriticalValidationStatus(context, criticalIssues: criticalIssues),
+          if (_hasUserStartedEditing) _buildCriticalValidationStatus(context, criticalIssues: criticalIssues),
           M3SectionCard(
             title: 'الهوية والسجل المدني',
             icon: Icons.credit_card_rounded,

@@ -121,41 +121,60 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
   @override
   Future<Result<Taxonomy>> createTaxonomy(Taxonomy taxonomy) async {
     try {
-      // إنشاء على السيرفر أولاً
-      final request = TaxonomyRequestDTO.fromEntity(taxonomy);
-      final response = await _remoteDataSource.createTaxonomy(request);
-      final createdTaxonomy = response.data.toEntity();
+      // Local-first: حفظ فوري محلياً
+      await _localDataSource.saveTaxonomy(taxonomy);
 
-      // حفظ محلياً
-      await _localDataSource.saveTaxonomy(createdTaxonomy);
+      if (!_legacyRestSyncEnabled) {
+        developer.log('Taxonomy remote sync skipped: API disabled', name: 'TaxonomyRepo');
+        return Success(taxonomy);
+      }
 
-      return Success(createdTaxonomy);
-    } on TaxonomyApiException catch (e) {
-      return Failure(ServerFailure(e.message, e.statusCode));
+      // مزامنة مع السيرفر (ثانوية)
+      try {
+        final request = TaxonomyRequestDTO.fromEntity(taxonomy);
+        final response = await _remoteDataSource.createTaxonomy(request);
+        final createdTaxonomy = response.data.toEntity();
+        await _localDataSource.saveTaxonomy(createdTaxonomy);
+        return Success(createdTaxonomy);
+      } on TaxonomyApiException catch (e) {
+        developer.log('Taxonomy remote create skipped: ${e.message}', name: 'TaxonomyRepo');
+      } catch (e) {
+        developer.log('Taxonomy remote create error: $e — النسخة المحلية محفوظة', name: 'TaxonomyRepo');
+      }
+
+      return Success(taxonomy);
     } catch (e, st) {
-      return Failure(UnknownFailure('فشل إنشاء التصنيف: $e', st));
+      return Failure(DatabaseFailure('فشل إنشاء التصنيف محلياً: $e', st));
     }
   }
 
   @override
   Future<Result<Taxonomy>> updateTaxonomy(Taxonomy taxonomy) async {
     try {
-      // تحديث على السيرفر
-      final request = TaxonomyRequestDTO.fromEntity(taxonomy);
-      final response = await _remoteDataSource.updateTaxonomy(
-        taxonomy.id,
-        request,
-      );
-      final updatedTaxonomy = response.data.toEntity();
+      // Local-first: حفظ فوري محلياً
+      await _localDataSource.saveTaxonomy(taxonomy);
 
-      // حفظ محلياً
-      await _localDataSource.saveTaxonomy(updatedTaxonomy);
+      if (!_legacyRestSyncEnabled) {
+        developer.log('Taxonomy remote sync skipped: API disabled', name: 'TaxonomyRepo');
+        return Success(taxonomy);
+      }
 
-      return Success(updatedTaxonomy);
-    } on TaxonomyApiException catch (e) {
-      return Failure(ServerFailure(e.message, e.statusCode));
+      // مزامنة مع السيرفر (ثانوية)
+      try {
+        final request = TaxonomyRequestDTO.fromEntity(taxonomy);
+        final response = await _remoteDataSource.updateTaxonomy(taxonomy.id, request);
+        final updatedTaxonomy = response.data.toEntity();
+        await _localDataSource.saveTaxonomy(updatedTaxonomy);
+        return Success(updatedTaxonomy);
+      } on TaxonomyApiException catch (e) {
+        developer.log('Taxonomy remote update skipped: ${e.message}', name: 'TaxonomyRepo');
+      } catch (e) {
+        developer.log('Taxonomy remote update error: $e — النسخة المحلية محفوظة', name: 'TaxonomyRepo');
+      }
+
+      return Success(taxonomy);
     } catch (e, st) {
-      return Failure(UnknownFailure('فشل تحديث التصنيف: $e', st));
+      return Failure(DatabaseFailure('فشل تحديث التصنيف محلياً: $e', st));
     }
   }
 
@@ -164,20 +183,26 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     try {
       final localTaxonomy = await _localDataSource.getTaxonomyById(id);
 
-      // حذف على السيرفر
-      await _remoteDataSource.deleteTaxonomy(
-        id,
-        group: localTaxonomy?.group.value,
-      );
-
-      // حذف محلياً
+      // Local-first: حذف فوري محلياً
       await _localDataSource.deleteTaxonomy(id);
 
+      if (!_legacyRestSyncEnabled) {
+        developer.log('Taxonomy remote sync skipped: API disabled — تم الحذف محلياً', name: 'TaxonomyRepo');
+        return const Success(null);
+      }
+
+      // مزامنة الحذف مع السيرفر (ثانوية)
+      try {
+        await _remoteDataSource.deleteTaxonomy(id, group: localTaxonomy?.group.value);
+      } on TaxonomyApiException catch (e) {
+        developer.log('Taxonomy remote delete skipped: ${e.message}', name: 'TaxonomyRepo');
+      } catch (e) {
+        developer.log('Taxonomy remote delete error: $e — الحذف المحلي مُنفَّذ', name: 'TaxonomyRepo');
+      }
+
       return const Success(null);
-    } on TaxonomyApiException catch (e) {
-      return Failure(ServerFailure(e.message, e.statusCode));
     } catch (e, st) {
-      return Failure(UnknownFailure('فشل حذف التصنيف: $e', st));
+      return Failure(DatabaseFailure('فشل حذف التصنيف: $e', st));
     }
   }
 
@@ -220,6 +245,35 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     TaxonomyGroup group,
     List<String> names,
   ) async {
+    if (!_legacyRestSyncEnabled) {
+      developer.log('Taxonomy batch create: remote disabled — creating locally', name: 'TaxonomyRepo');
+      try {
+        final now = DateTime.now();
+        final base = now.millisecondsSinceEpoch;
+        final entities = List.generate(names.length, (i) {
+          final name = names[i].trim();
+          final prefix =
+              name.length >= 2 ? name.substring(0, 2).toUpperCase().replaceAll(' ', '_') : name.toUpperCase();
+          return Taxonomy(
+            id: '${base + i}',
+            group: group,
+            code: '${prefix}_${base % 100000}_$i',
+            label: name,
+            isActive: true,
+            sortOrder: i,
+            createdAt: now,
+            updatedAt: now,
+          );
+        });
+        if (entities.isNotEmpty) {
+          await _localDataSource.saveTaxonomies(entities);
+        }
+        return Success(entities);
+      } catch (e, st) {
+        return Failure(DatabaseFailure('فشل إنشاء التصنيفات محلياً: $e', st));
+      }
+    }
+
     try {
       final createdDtos = await _remoteDataSource.createTaxonomiesBatch(
         group.value,
@@ -242,6 +296,25 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     TaxonomyGroup group,
     Map<String, String> updates,
   ) async {
+    if (!_legacyRestSyncEnabled) {
+      developer.log('Taxonomy batch update: remote disabled — updating locally', name: 'TaxonomyRepo');
+      try {
+        final now = DateTime.now();
+        final entities = <Taxonomy>[];
+        for (final entry in updates.entries) {
+          final existing = await _localDataSource.getTaxonomyById(entry.key);
+          if (existing != null) {
+            final updated = existing.copyWith(label: entry.value, updatedAt: now);
+            await _localDataSource.saveTaxonomy(updated);
+            entities.add(updated);
+          }
+        }
+        return Success(entities);
+      } catch (e, st) {
+        return Failure(DatabaseFailure('فشل تحديث التصنيفات محلياً: $e', st));
+      }
+    }
+
     try {
       final updatedDtos = await _remoteDataSource.updateTaxonomiesBatch(
         group.value,
@@ -264,6 +337,18 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     TaxonomyGroup group,
     List<String> ids,
   ) async {
+    if (!_legacyRestSyncEnabled) {
+      developer.log('Taxonomy batch delete: remote disabled — deleting locally', name: 'TaxonomyRepo');
+      try {
+        for (final id in ids) {
+          await _localDataSource.deleteTaxonomy(id);
+        }
+        return Success(ids);
+      } catch (e, st) {
+        return Failure(DatabaseFailure('فشل حذف التصنيفات محلياً: $e', st));
+      }
+    }
+
     try {
       final deletedIds = await _remoteDataSource.deleteTaxonomiesBatch(
         group.value,
@@ -484,6 +569,10 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     return result.isSuccess ? const Success(null) : Failure((result as Failure).error);
   }
 
+  /// حفظ التصنيفات القادمة من السيرفر مع احترام الحذف المحلي.
+  ///
+  /// ⚠️ لا يُعيد إحياء أي تصنيف تم حذفه محلياً (isActive=false).
+  /// التصنيفات الجديدة أو النشطة تُضاف/تُحدَّث بشكل طبيعي.
   Future<void> _saveCanonicalDtos(List<TaxonomyDTO> dtos) async {
     if (dtos.isEmpty) {
       return;
@@ -503,7 +592,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
         return;
       }
 
-      await _localDataSource.saveTaxonomies(taxonomies);
+      // Fallback non-Drift path: استخدام sync-safe save
+      await local.saveTaxonomiesFromSync(taxonomies);
       return;
     }
 
@@ -513,7 +603,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
       return dto.copyWith(groupValue: storedGroup).toDbCompanion();
     }).toList();
 
-    await local.upsertCompanions(companions);
+    // ✅ Sync-safe: لا يُعيد إحياء المحذوف محلياً
+    await local.upsertCompanionsFromSync(companions);
   }
 
   Future<Result<TaxonomySyncResult>> _syncFromFirestoreOrSkip({
@@ -540,7 +631,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
         if (remoteItems.isEmpty) {
           continue;
         }
-        await _localDataSource.saveTaxonomies(remoteItems);
+        // ✅ Sync-safe: لا يُعيد إحياء المحذوف محلياً
+        await _localDataSource.saveTaxonomiesFromSync(remoteItems);
         totalUpserted += remoteItems.length;
       }
 
@@ -601,7 +693,8 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
     final stats = await _localDataSource.getStatistics();
     final missingGroups = {
       for (final entry in stats.countByGroup.entries)
-        if (entry.value <= 0) entry.key,
+        // ✅ تخطي المجموعات التي بها حذف محلي — المستخدم حذفها عمداً
+        if (entry.value <= 0 && !stats.hasLocallyDeletedItems(entry.key)) entry.key,
     };
 
     if (missingGroups.isEmpty) {
@@ -799,8 +892,19 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
         return;
       }
 
+      // ✅ تخطي المجموعات التي حذف منها المستخدم تصنيفات عمداً.
+      // إذا كان count=0 بسبب حذف محلي وليس بسبب عدم وجود بيانات أصلاً،
+      // لا نضيف fallbacks حتى لا نُعيد إحياء ما حذفه المستخدم.
+      final groupsEligibleForFallback = missingCriticalGroups.where((group) {
+        return !stats.hasLocallyDeletedItems(group);
+      }).toList();
+
+      if (groupsEligibleForFallback.isEmpty) {
+        return;
+      }
+
       final existingByGroup = <TaxonomyGroup, List<Taxonomy>>{};
-      for (final group in missingCriticalGroups) {
+      for (final group in groupsEligibleForFallback) {
         existingByGroup[group] = await _localDataSource.getTaxonomiesByGroup(group);
       }
 
@@ -817,7 +921,7 @@ class TaxonomyRepositoryImpl implements TaxonomyRepository {
 
       developer.log(
         'taxonomy integrity remediation inserted ${fallbackTaxonomies.length} fallback entries '
-        'for missing groups=[${missingCriticalGroups.map((g) => g.value).join(', ')}]',
+        'for missing groups=[${groupsEligibleForFallback.map((g) => g.value).join(', ')}]',
         name: 'TaxonomySync',
       );
     } catch (error, stackTrace) {

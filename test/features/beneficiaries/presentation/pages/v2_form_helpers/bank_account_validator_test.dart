@@ -46,29 +46,55 @@ void main() {
       expect(ok, isNull);
     });
 
-    test('validateIbanPair requires at least one iban when section has data', () {
-      final error = BankAccountValidator.validateIbanPair(
-        currentValue: '',
-        otherIbanValue: '',
-        hasAnyBankData: true,
-      );
-      expect(error, isNotNull);
+    group('validateIbanPair (IBAN validation DISABLED — default / soft mode)', () {
+      // ibanValidationEnabled defaults to false
+      test('allows missing IBAN when both are empty (soft mode — no required-pair check)', () {
+        final error = BankAccountValidator.validateIbanPair(
+          currentValue: '',
+          otherIbanValue: '',
+          hasAnyBankData: true,
+        );
+        expect(error, isNull); // soft mode skips required-pair check
+      });
+
+      test('allows short IBAN format (soft mode — only length check)', () {
+        final result = BankAccountValidator.validateIbanPair(
+          currentValue: '123',
+          otherIbanValue: '',
+          hasAnyBankData: true,
+        );
+        expect(result, isNull); // soft mode: short value does not trigger error
+      });
     });
 
-    test('validateIbanPair accepts valid IBAN and rejects invalid format', () {
-      final invalid = BankAccountValidator.validateIbanPair(
-        currentValue: '123',
-        otherIbanValue: '',
-        hasAnyBankData: true,
-      );
-      expect(invalid, isNotNull);
+    group('validateIbanPair (IBAN validation ENABLED)', () {
+      setUp(() => BankAccountValidator.ibanValidationEnabled = true);
+      tearDown(() => BankAccountValidator.ibanValidationEnabled = false);
 
-      final valid = BankAccountValidator.validateIbanPair(
-        currentValue: 'PS92PIBC000000000012345678901',
-        otherIbanValue: '',
-        hasAnyBankData: true,
-      );
-      expect(valid, isNull);
+      test('requires at least one iban when section has data', () {
+        final error = BankAccountValidator.validateIbanPair(
+          currentValue: '',
+          otherIbanValue: '',
+          hasAnyBankData: true,
+        );
+        expect(error, isNotNull);
+      });
+
+      test('accepts valid IBAN and rejects invalid format', () {
+        final invalid = BankAccountValidator.validateIbanPair(
+          currentValue: '123',
+          otherIbanValue: '',
+          hasAnyBankData: true,
+        );
+        expect(invalid, isNotNull);
+
+        final valid = BankAccountValidator.validateIbanPair(
+          currentValue: 'PS92PIBC000000000012345678901',
+          otherIbanValue: '',
+          hasAnyBankData: true,
+        );
+        expect(valid, isNull);
+      });
     });
   });
 }

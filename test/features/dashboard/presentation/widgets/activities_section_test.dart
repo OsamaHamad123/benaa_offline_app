@@ -4,8 +4,7 @@ import 'package:drift/native.dart';
 import 'package:benaa_offline_app/data/db/drift_database.dart' as db;
 import '../../../../test_helpers/widget_wrapper.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/widgets/activities_section.dart';
-import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart'
-    as domain_activity;
+import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart' as domain_activity;
 
 void main() {
   group('Activities Section Tests', () {
@@ -39,7 +38,7 @@ void main() {
       // Should show empty state
       expect(find.byType(RecentActivitiesList), findsOneWidget);
       expect(
-        find.text('ابدأ بإضافة مستفيدين لرؤية الإحصائيات'),
+        find.text('لا توجد أنشطة حديثة حتى الآن'),
         findsOneWidget,
       );
     });

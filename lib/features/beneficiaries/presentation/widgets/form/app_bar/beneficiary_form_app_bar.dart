@@ -57,8 +57,8 @@ class BeneficiaryFormAppBar extends StatelessWidget implements PreferredSizeWidg
           Text(
             isEditMode ? 'تعديل مستفيد' : 'إضافة مستفيد',
             style: TextStyle(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.bold,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
             ),
           ),
           if (beneficiaryName != null && beneficiaryName!.isNotEmpty)

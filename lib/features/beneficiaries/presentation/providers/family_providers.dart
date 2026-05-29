@@ -60,6 +60,11 @@ final familyStatisticsProvider = FutureProvider.family<FamilyStatistics, int>((
     return age < 18;
   }).length;
 
+  final elderlyCount = livingMembers.where((m) {
+    final age = m.age ?? (now.difference(m.birthDate).inDays ~/ 365);
+    return age >= 60;
+  }).length;
+
   return FamilyStatistics(
     totalMembers: totalMembers,
     livingMembers: livingMembers.length,
@@ -67,6 +72,7 @@ final familyStatisticsProvider = FutureProvider.family<FamilyStatistics, int>((
     maleCount: maleCount,
     femaleCount: femaleCount,
     childrenCount: childrenCount,
+    elderlyCount: elderlyCount,
     healthySafe: healthStats.healthySafe,
     sick: healthStats.sick,
     chronicSick: healthStats.chronicSick,
@@ -94,6 +100,7 @@ class FamilyStatistics {
   final int maleCount;
   final int femaleCount;
   final int childrenCount;
+  final int elderlyCount;
   final int healthySafe;
   final int sick;
   final int chronicSick;
@@ -102,6 +109,7 @@ class FamilyStatistics {
   // Aliases للتوافق مع الكود القديم
   int get malesCount => maleCount;
   int get femalesCount => femaleCount;
+  int get sickTotal => sick + chronicSick;
 
   const FamilyStatistics({
     required this.totalMembers,
@@ -110,6 +118,7 @@ class FamilyStatistics {
     required this.maleCount,
     required this.femaleCount,
     required this.childrenCount,
+    required this.elderlyCount,
     required this.healthySafe,
     required this.sick,
     required this.chronicSick,

@@ -351,6 +351,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
       child: TabBar(
         controller: controller,
         isScrollable: useScrollableTabs,
+        tabAlignment: useScrollableTabs ? TabAlignment.start : TabAlignment.fill,
         onTap: (targetIndex) {
           if (targetIndex == currentIndex) return;
           final isForward = targetIndex > currentIndex;
@@ -362,7 +363,7 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
         unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
         indicatorColor: theme.colorScheme.primary,
         indicatorWeight: isMobile ? 4 : 3,
-        labelPadding: useScrollableTabs ? EdgeInsets.symmetric(horizontal: isMobile ? 6.w : 8.w) : EdgeInsets.zero,
+        labelPadding: useScrollableTabs ? EdgeInsets.symmetric(horizontal: isMobile ? 8.w : 12.w) : EdgeInsets.zero,
         labelStyle: TextStyle(fontSize: activeLabelSize, fontWeight: FontWeight.w700),
         unselectedLabelStyle: TextStyle(
           fontSize: inactiveLabelSize,
@@ -471,6 +472,151 @@ class BeneficiaryFormTabBar4 extends StatelessWidget {
   }
 }
 
+/// 🪄 Compact Step Indicator
+///
+/// مؤشر خطوات مدمج يستبدل التبويبات الكبيرة:
+/// - الارتفاع الإجمالي ~36px بدلاً من 56px
+/// - يعرض "خطوة X من Y · [العنوان]" على اليسار
+/// - نقاط قابلة للنقر على اليمين
+/// - شريط تقدم رفيع في الأسفل
+class CompactFormStepIndicator extends StatelessWidget {
+  final TabController controller;
+  final int currentIndex;
+  final Map<int, TabCompletionStats>? tabStats;
+
+  static const List<String> _stepTitles = [
+    'معلومات أساسية',
+    'العائلة',
+    'التواصل',
+    'المرفقات',
+    'المراجعة',
+  ];
+
+  const CompactFormStepIndicator({
+    required this.controller,
+    required this.currentIndex,
+    super.key,
+    this.tabStats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = FormConstants.totalTabs;
+    final safeIndex = currentIndex.clamp(0, _stepTitles.length - 1);
+    final title = _stepTitles[safeIndex];
+
+    final overallProgress = tabStats == null || tabStats!.isEmpty
+        ? (currentIndex / (total - 1)).clamp(0.0, 1.0)
+        : tabStats!.values.fold<double>(0.0, (s, e) => s + e.progress) / total;
+
+    return RepaintBoundary(
+      child: Container(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(14.w, 7.h, 14.w, 5.h),
+              child: Row(
+                children: [
+                  // "خطوة X من Y"
+                  Text(
+                    'خطوة ${safeIndex + 1} من $total',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  SizedBox(width: 5.w),
+                  Container(
+                    width: 3,
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(width: 5.w),
+                  // عنوان الخطوة الحالية
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  // نقاط الخطوات القابلة للنقر
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(total, (i) {
+                      final isActive = i == safeIndex;
+                      final stats = tabStats?[i];
+                      final isComplete = stats?.percentage == 100;
+                      final isPast = i < safeIndex;
+
+                      final Color dotColor;
+                      final double dotHeight = 7;
+                      if (isActive) {
+                        dotColor = theme.colorScheme.primary;
+                      } else if (isComplete) {
+                        dotColor = BeneficiaryFormColors.success;
+                      } else if (isPast) {
+                        dotColor = theme.colorScheme.outlineVariant;
+                      } else {
+                        dotColor = theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+                      }
+
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: i == safeIndex
+                            ? null
+                            : () {
+                                final isForward = i > safeIndex;
+                                controller.animateTo(
+                                  i,
+                                  duration: Duration(milliseconds: isForward ? 220 : 180),
+                                  curve: isForward ? Curves.easeOutCubic : Curves.easeOutQuad,
+                                );
+                              },
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 2.5.w, vertical: 4.h),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOut,
+                            width: isActive ? 18.w : dotHeight,
+                            height: dotHeight,
+                            decoration: BoxDecoration(
+                              color: dotColor,
+                              borderRadius: BorderRadius.circular(dotHeight / 2),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+            // شريط تقدم رفيع
+            LinearProgressIndicator(
+              value: overallProgress,
+              minHeight: 2.5,
+              backgroundColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
+              valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 📊 Enhanced Progress Indicator for 4 Tabs
 class FormProgress4Tabs extends StatelessWidget {
   final int currentStep;
@@ -488,7 +634,7 @@ class FormProgress4Tabs extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerLow,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

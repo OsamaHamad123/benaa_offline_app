@@ -11,9 +11,15 @@ class FirestorePaths {
   // Root collections
   static const String beneficiaries = 'beneficiaries';
   static const String visits = 'visits';
+  static const String beneficiaryVisits = 'beneficiary_visits';
+  static const String beneficiaryFollowups = 'beneficiary_followups';
   static const String associations = 'associations';
+  static const String associationContacts = 'association_contacts';
   static const String taxonomies = 'taxonomies';
   static const String sponsorships = 'sponsorships';
+  static const String sponsorshipFiles = 'sponsorship_files';
+  static const String sponsorshipCandidates = 'sponsorship_candidates';
+  static const String sponsorshipPayments = 'sponsorship_payments';
   static const String users = 'users';
   static const String devices = 'devices';
   static const String syncLogs = 'sync_logs';
@@ -21,5 +27,5 @@ class FirestorePaths {
   // Sub-collection paths
   static String userDevices(String userId) => 'users/$userId/devices';
   static String beneficiaryAttachments(String beneficiaryId) => 'beneficiaries/$beneficiaryId/attachments';
-  static String beneficiaryVisits(String beneficiaryId) => 'beneficiaries/$beneficiaryId/visits';
+  static String beneficiaryVisitsSubcollection(String beneficiaryId) => 'beneficiaries/$beneficiaryId/visits';
 }

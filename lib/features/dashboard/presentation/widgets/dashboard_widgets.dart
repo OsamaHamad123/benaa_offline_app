@@ -20,6 +20,11 @@ export 'core/dashboard_card.dart';
 
 // Banners
 export 'banners/offline_banner.dart';
+export 'dashboard_operational_status_strip.dart';
+
+// Phase 3 Cards
+export 'dashboard_todays_work_card.dart';
+export 'dashboard_sync_health_card.dart';
 
 // Loading
 export 'loading/dashboard_skeleton.dart';

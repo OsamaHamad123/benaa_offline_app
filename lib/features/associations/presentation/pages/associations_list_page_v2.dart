@@ -1,14 +1,19 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
+import '../../../../core/utils/arabic_normalizer.dart';
 import '../../../../core/widgets/custom_app_bar.dart';
 import '../../../../core/widgets/custom_empty_state.dart';
 import '../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
 import '../../../taxonomies/domain/entities/taxonomy_group.dart';
 import '../../../taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
 import '../providers/associations_provider.dart';
+import '../../../kafalat/presentation/providers/kafalat_providers.dart';
 import '../widgets/associations_skeleton_loader.dart';
 import '../widgets/associations_search_bar.dart';
 import '../widgets/associations_filter_button.dart';
@@ -40,6 +45,7 @@ class AssociationsListPageV2 extends ConsumerStatefulWidget {
 class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _searchDebounce;
 
   // Quick Filters
   String? _selectedFilterStatus; // null='الكل', 'active'='النشطة', 'inactive'='المعطلة'
@@ -88,13 +94,21 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String value) {
-    setState(() {
-      _searchQuery = value.toLowerCase();
+    _searchDebounce?.cancel();
+    if (value.isEmpty) {
+      if (mounted) setState(() => _searchQuery = '');
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      final normalized = ArabicNormalizer.normalize(value.trim());
+      setState(() => _searchQuery = normalized);
     });
   }
 
@@ -144,6 +158,41 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
     });
   }
 
+  Future<void> _runCedarAssociationsSeed({bool force = false}) async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            SizedBox(width: 12),
+            Expanded(child: Text('جاري إضافة جمعيات Cedar...')),
+          ],
+        ),
+      ),
+    );
+
+    final result = await ref.read(associationsProvider.notifier).seedCedarAssociations(force: force);
+    ref.invalidate(kafalatActiveAssociationsProvider);
+
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+      final summary =
+          'Cedar Associations Seed: created=${result.created} skipped=${result.skipped} updated=${result.updated} failed=${result.failed}';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(summary)));
+    }
+
+    developer.log(
+      '[CedarAssociations] created=${result.created} skipped=${result.skipped} updated=${result.updated} failed=${result.failed}',
+      name: 'CedarAssociations',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(associationsProvider);
@@ -177,26 +226,24 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
     // تطبيق الفلاتر والبحث
     var filteredAssociations = state.associations;
 
-    // Search filter
+    // Search filter — normalized (Arabic + case-insensitive)
     if (_searchQuery.isNotEmpty) {
       filteredAssociations = filteredAssociations.where((a) {
-        final nameMatch = a.name.toLowerCase().contains(_searchQuery);
-        final shortNameMatch = a.shortName?.toLowerCase().contains(_searchQuery) ?? false;
-        final phoneMatch = a.phone.toLowerCase().contains(_searchQuery);
-        final representative = state.representatives.where((r) => r.id == a.representativeId).firstOrNull;
-        final repMatch = representative?.name.toLowerCase().contains(_searchQuery) ?? false;
-        final bankMatch = a.bankName.toLowerCase().contains(_searchQuery);
-        final accountMatch = a.accountNumber.toLowerCase().contains(_searchQuery);
-        final associationTypeLabel = associationTypeLabelByCode[a.associationTypeCode?.trim() ?? ''];
-        final associationTypeMatch = associationTypeLabel?.toLowerCase().contains(_searchQuery) ?? false;
+        bool _contains(String? text) {
+          if (text == null || text.isEmpty) return false;
+          return ArabicNormalizer.normalize(text).contains(_searchQuery);
+        }
 
-        return nameMatch ||
-            shortNameMatch ||
-            phoneMatch ||
-            repMatch ||
-            bankMatch ||
-            accountMatch ||
-            associationTypeMatch;
+        final representative = state.representatives.where((r) => r.id == a.representativeId).firstOrNull;
+        final associationTypeLabel = associationTypeLabelByCode[a.associationTypeCode?.trim() ?? ''];
+
+        return _contains(a.name) ||
+            _contains(a.shortName) ||
+            _contains(a.phone) ||
+            _contains(representative?.name) ||
+            _contains(a.bankName) ||
+            _contains(a.accountNumber) ||
+            _contains(associationTypeLabel);
       }).toList();
     }
 
@@ -348,24 +395,55 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
           AnimatedCrossFade(
             duration: const Duration(milliseconds: 180),
             crossFadeState: _showQuickTools ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-            firstChild: AssociationsFiltersBar(
-              selectedStatus: _selectedFilterStatus,
-              selectedBank: _selectedBank,
-              selectedAssociationTypeCode: _selectedAssociationTypeCode,
-              availableBanks: _getUniqueBanks(
-                state.associations,
-                taxonomyBanks: bankNamesFromTaxonomy,
-              ),
-              associationTypeOptions: associationTypeLabelByCode,
-              onStatusChanged: (status) {
-                setState(() => _selectedFilterStatus = status);
-              },
-              onBankChanged: (bank) {
-                setState(() => _selectedBank = bank);
-              },
-              onAssociationTypeChanged: (associationTypeCode) {
-                setState(() => _selectedAssociationTypeCode = _normalizeNullableFilter(associationTypeCode));
-              },
+            firstChild: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AssociationsFiltersBar(
+                  selectedStatus: _selectedFilterStatus,
+                  selectedBank: _selectedBank,
+                  selectedAssociationTypeCode: _selectedAssociationTypeCode,
+                  availableBanks: _getUniqueBanks(
+                    state.associations,
+                    taxonomyBanks: bankNamesFromTaxonomy,
+                  ),
+                  associationTypeOptions: associationTypeLabelByCode,
+                  onStatusChanged: (status) {
+                    setState(() => _selectedFilterStatus = status);
+                  },
+                  onBankChanged: (bank) {
+                    setState(() => _selectedBank = bank);
+                  },
+                  onAssociationTypeChanged: (associationTypeCode) {
+                    setState(() => _selectedAssociationTypeCode = _normalizeNullableFilter(associationTypeCode));
+                  },
+                ),
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    ResponsiveUtils.mediumSpace,
+                    0,
+                    ResponsiveUtils.mediumSpace,
+                    ResponsiveUtils.smallSpace,
+                  ),
+                  child: Wrap(
+                    spacing: 8.w,
+                    runSpacing: 8.h,
+                    children: [
+                      if (kDebugMode) ...[
+                        OutlinedButton.icon(
+                          onPressed: () => _runCedarAssociationsSeed(force: false),
+                          icon: const Icon(Icons.playlist_add_check_circle_outlined),
+                          label: const Text('إضافة جمعيات Cedar'),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => _runCedarAssociationsSeed(force: true),
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('رفع Seed الجمعيات (force)'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
             secondChild: const SizedBox.shrink(),
           ),
@@ -455,7 +533,7 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
     return banks;
   }
 
-  /// قائمة الجمعيات مع تصميم Responsive Grid
+  /// قائمة الجمعيات مع تصميم Responsive
   Widget _buildAssociationsList(
     List associations, {
     required Map<String, String> associationTypeLabelByCode,
@@ -469,73 +547,73 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
             ? 3 // Desktop: 3 أعمدة
             : constraints.maxWidth > 720
                 ? 2 // Tablet: عمودين
-                : 1; // Mobile: عمود واحد
+                : 1; // Mobile: عمود واحد — SliverList بدون aspect ratio
+
+        // دالة بناء عنصر واحد (مشتركة بين List وGrid)
+        Widget buildItem(BuildContext ctx, int index) {
+          final association = associations[index];
+          final representative = state.representatives.where((r) => r.id == association.representativeId).firstOrNull;
+
+          return CardAnimationWrapper(
+            index: index,
+            child: SwipeActionsWrapper(
+              itemName: association.name,
+              onEdit: () => _showEditAssociationSheet(association),
+              onDelete: () => _confirmDelete(association.id, association.name),
+              child: ProfessionalAssociationCard(
+                id: association.id,
+                name: association.name,
+                shortName: association.shortName,
+                phone: association.phone,
+                email: association.email,
+                bankName: association.bankName,
+                accountNumber: association.accountNumber,
+                currency: association.accountCurrency,
+                associationTypeLabel:
+                    associationTypeLabelByCode[_normalizeNullableFilter(association.associationTypeCode) ?? ''],
+                representativeName: representative?.name,
+                isActive: association.isActive,
+                createdAt: association.createdAt,
+                updatedAt: association.updatedAt,
+                onTap: () => _showAssociationDetailsSheet(
+                  association,
+                  representativeName: representative?.name,
+                  associationTypeLabel:
+                      associationTypeLabelByCode[_normalizeNullableFilter(association.associationTypeCode) ?? ''],
+                ),
+                onEdit: () => _showEditAssociationSheet(association),
+                onDelete: () => _confirmDelete(association.id, association.name),
+              ),
+            ),
+          );
+        }
 
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // 🏢 Grid بطاقات الجمعيات
             SliverPadding(
-              padding: EdgeInsets.fromLTRB(
-                ResponsiveUtils.mediumSpace,
-                ResponsiveUtils.smallSpace,
-                ResponsiveUtils.mediumSpace,
-                ResponsiveUtils.mediumSpace,
-              ),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: 2.h, // مسافة صغيرة جداً بين البطاقات
-                  crossAxisSpacing: ResponsiveUtils.getListSpacing(context),
-                  childAspectRatio: crossAxisCount == 1
-                      ? 1.1 // Mobile: compact وعرض أكثر
-                      : crossAxisCount == 2
-                          ? 1.15 // Tablet: compact
-                          : 1.2, // Desktop: compact
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final association = associations[index];
-                    final representative =
-                        state.representatives.where((r) => r.id == association.representativeId).firstOrNull;
-
-                    // استخدام البطاقة الاحترافية الجديدة مع Swipe Actions و Animations
-                    return CardAnimationWrapper(
-                      index: index,
-                      child: SwipeActionsWrapper(
-                        itemName: association.name,
-                        onEdit: () => _showEditAssociationSheet(association),
-                        onDelete: () => _confirmDelete(association.id, association.name),
-                        child: ProfessionalAssociationCard(
-                          id: association.id,
-                          name: association.name,
-                          shortName: association.shortName,
-                          phone: association.phone,
-                          email: association.email,
-                          bankName: association.bankName,
-                          accountNumber: association.accountNumber,
-                          currency: association.accountCurrency,
-                          associationTypeLabel: associationTypeLabelByCode[
-                              _normalizeNullableFilter(association.associationTypeCode) ?? ''],
-                          representativeName: representative?.name,
-                          isActive: association.isActive,
-                          createdAt: association.createdAt,
-                          updatedAt: association.updatedAt,
-                          onTap: () => _showAssociationDetailsSheet(
-                            association,
-                            representativeName: representative?.name,
-                            associationTypeLabel: associationTypeLabelByCode[
-                                _normalizeNullableFilter(association.associationTypeCode) ?? ''],
-                          ),
-                          onEdit: () => _showEditAssociationSheet(association),
-                          onDelete: () => _confirmDelete(association.id, association.name),
-                        ),
+              padding: EdgeInsets.fromLTRB(12.w, 4.h, 12.w, 16.h),
+              sliver: crossAxisCount == 1
+                  // Mobile: SliverList — الكارد يتحدد حجمه من المحتوى، لا من aspect ratio
+                  ? SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        buildItem,
+                        childCount: associations.length,
                       ),
-                    );
-                  },
-                  childCount: associations.length,
-                ),
-              ),
+                    )
+                  // Tablet / Desktop: SliverGrid
+                  : SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 6.h,
+                        crossAxisSpacing: 8.w,
+                        childAspectRatio: crossAxisCount == 2 ? 1.9 : 2.1,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        buildItem,
+                        childCount: associations.length,
+                      ),
+                    ),
             ),
           ],
         );

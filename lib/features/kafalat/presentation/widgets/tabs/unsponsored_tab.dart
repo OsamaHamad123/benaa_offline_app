@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:benaa_offline_app/data/db/drift_database.dart';
 import 'package:benaa_offline_app/features/kafalat/presentation/providers/kafalat_providers.dart';
 import 'package:benaa_offline_app/features/kafalat/presentation/widgets/cards/unsponsored_beneficiary_card.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/providers/providers.dart';
+import '../../../../../core/utils/arabic_normalizer.dart';
 import '../../../../../core/utils/haptic_patterns.dart';
 import '../../../../../core/widgets/shimmer_loaders.dart';
 import '../../../../taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
@@ -26,6 +28,7 @@ class UnsponsoredTab extends ConsumerStatefulWidget {
 class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
+  Timer? _searchDebounce;
   bool _showTools = false;
   bool _selectionMode = false;
   final Set<int> _selectedBeneficiaryIds = <int>{};
@@ -35,13 +38,21 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String value) {
-    if (!mounted) return;
-    setState(() => _query = value.trim());
+    _searchDebounce?.cancel();
+    if (value.isEmpty) {
+      if (mounted) setState(() => _query = '');
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() => _query = ArabicNormalizer.normalize(value.trim()));
+    });
   }
 
   int _priorityScore(Beneficiary beneficiary) {
@@ -195,13 +206,23 @@ class _UnsponsoredTabState extends ConsumerState<UnsponsoredTab> with AutomaticK
                     ),
                     SizedBox(height: 12.h),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: selectedAssociationId,
                       decoration: const InputDecoration(
                         labelText: 'الجمعية *',
                         border: OutlineInputBorder(),
                       ),
-                      items:
-                          associations.map((a) => DropdownMenuItem<String>(value: a.id, child: Text(a.name))).toList(),
+                      selectedItemBuilder: (ctx) =>
+                          associations.map((a) => Text(a.name, overflow: TextOverflow.ellipsis, maxLines: 1)).toList(),
+                      items: associations
+                          .map((a) => DropdownMenuItem<String>(
+                                value: a.id,
+                                child: Tooltip(
+                                  message: a.name,
+                                  child: Text(a.name, overflow: TextOverflow.ellipsis, maxLines: 1),
+                                ),
+                              ))
+                          .toList(),
                       onChanged: (value) => setSheetState(() => selectedAssociationId = value),
                     ),
                     SizedBox(height: 12.h),

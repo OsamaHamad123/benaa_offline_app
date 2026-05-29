@@ -43,7 +43,7 @@ final dashboardSummaryProvider = FutureProvider.autoDispose<DashboardSummary>((
 });
 
 /// Daily Performance Data Provider
-final dailyPerformanceProvider = FutureProvider<DailyPerformance>((ref) async {
+final dailyPerformanceProvider = FutureProvider.autoDispose<DailyPerformance>((ref) async {
   final db = ref.watch(databaseProvider);
 
   // Count visits today
@@ -63,7 +63,7 @@ final dailyPerformanceProvider = FutureProvider<DailyPerformance>((ref) async {
 });
 
 /// Urgent Cases Data Provider
-final urgentCasesProvider = FutureProvider<UrgentCases>((ref) async {
+final urgentCasesProvider = FutureProvider.autoDispose<UrgentCases>((ref) async {
   final db = ref.watch(databaseProvider);
 
   // Count beneficiaries with no visits in last 30 days
@@ -83,7 +83,7 @@ final urgentCasesProvider = FutureProvider<UrgentCases>((ref) async {
 });
 
 /// Geographic Distribution Provider
-final geographicDistributionProvider = FutureProvider<Map<int, int>>((
+final geographicDistributionProvider = FutureProvider.autoDispose<Map<int, int>>((
   ref,
 ) async {
   final db = ref.watch(databaseProvider);
@@ -138,13 +138,22 @@ class UrgentCases {
 }
 
 /// Pending Sync Count Provider
-final pendingSyncCountProvider = FutureProvider<int>((ref) async {
-  final db = ref.watch(databaseProvider);
-  return await db.beneficiariesDao.countPendingSync();
+///
+/// Delegates to [dashboardSummaryProvider] to avoid a duplicate
+/// `countPendingSync()` DB query when both providers are active simultaneously.
+/// Kept for backward compatibility with [DashboardInsightsWidget].
+final pendingSyncCountProvider = FutureProvider.autoDispose<int>((ref) async {
+  final summary = await ref.watch(dashboardSummaryProvider.future);
+  return summary.pending;
 });
 
 /// Data Quality Score Provider
-final dataQualityProvider = FutureProvider<DataQuality>((ref) async {
+///
+/// ⚠️ TODO(state-mgmt): This provider uses a hardcoded estimate (0.85) instead
+/// of real completeness data from the database. The score is NOT accurate.
+/// Replace with a real query (e.g. count records with required fields filled)
+/// before exposing this to users as a meaningful metric.
+final dataQualityProvider = FutureProvider.autoDispose<DataQuality>((ref) async {
   final db = ref.watch(databaseProvider);
   final total = await db.beneficiariesDao.countBeneficiaries();
 
@@ -152,7 +161,7 @@ final dataQualityProvider = FutureProvider<DataQuality>((ref) async {
     return const DataQuality(total: 0, complete: 0, score: 0);
   }
 
-  // TODO: حساب البيانات الكاملة من قاعدة البيانات
+  // TODO: حساب البيانات الكاملة من قاعدة البيانات — الحساب الحالي تقديري فقط
   final complete = (total * 0.85).round();
   final score = (complete / total * 100).round();
 

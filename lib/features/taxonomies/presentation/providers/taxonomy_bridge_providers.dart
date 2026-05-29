@@ -132,8 +132,13 @@ final bridgeTaxonomiesByGroupProvider = StreamProvider.family<List<domain.Taxono
 
 /// Indexed one-shot taxonomy cache for all groups.
 /// يقلل استعلامات قاعدة البيانات المتعددة عند بناء شاشات تحتوي عدة Dropdowns.
+///
+/// يُرجع التصنيفات النشطة فقط (isActive=true).
+/// التصنيفات المحذوفة محلياً (isActive=false) لا تظهر في الـ UI.
 final bridgeTaxonomiesIndexOnceProvider = FutureProvider<Map<TaxonomyGroup, List<domain.Taxonomy>>>((ref) async {
   final db = ref.read(sync_providers.databaseProvider);
+  // جلب النشطة فقط — activeOnly=true هو الإعداد الافتراضي لـ watchByGroup لكن
+  // getAllTaxonomies لا تفلتر، لذا نستخدم getByGroup لكل مجموعة أو نفلتر يدوياً.
   final allItems = await db.taxonomiesDao.getAllTaxonomies();
 
   final index = <TaxonomyGroup, List<domain.Taxonomy>>{
@@ -141,6 +146,8 @@ final bridgeTaxonomiesIndexOnceProvider = FutureProvider<Map<TaxonomyGroup, List
   };
 
   for (final row in allItems) {
+    // ✅ تخطي التصنيفات المحذوفة/غير النشطة — لا تعرض في الـ UI أبداً
+    if (!row.isActive) continue;
     final taxonomy = _convertFromDrift(row);
     if (taxonomy == null) continue;
     index[taxonomy.group]!.add(taxonomy);

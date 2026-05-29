@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -11,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/providers/providers.dart';
+import '../../core/backend/backend_config.dart';
 import '../../core/sync/mobile_sync_service.dart';
 import '../../core/sync/background_sync_worker.dart';
 import '../../core/analytics/ux_flow_analytics.dart';
@@ -27,11 +30,15 @@ import '../taxonomies/domain/entities/taxonomy.dart';
 import '../taxonomies/domain/entities/taxonomy_group.dart';
 import '../taxonomies/domain/contracts/beneficiary_taxonomy_contract.dart';
 import '../taxonomies/domain/services/taxonomy_integrity_guard.dart';
+import '../associations/presentation/providers/associations_provider.dart';
+import '../kafalat/presentation/providers/kafalat_providers.dart';
 import 'presentation/providers/file_id_providers.dart';
 import 'presentation/providers/mobile_sync_operations_providers.dart';
 import 'presentation/providers/sync_progress_providers.dart';
 import 'domain/repositories/file_id_reservation_repository.dart';
 import 'services/firebase_beneficiary_upload_service.dart';
+import '../dashboard/presentation/providers/dashboard_providers.dart';
+import '../dashboard/presentation/providers.dart' show dashboardProvider;
 
 /// ========================================================================
 /// 📱 Mobile Sync Page - صفحة مزامنة البيانات مع Mobile API
@@ -56,6 +63,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
   FileIdDiagnostics? _fileIdDiagnostics;
   BeneficiaryUploadSummary? _lastBeneficiaryUploadSummary;
   String? _beneficiariesLastSyncError;
+  int? _remoteBeneficiariesCount;
+  DateTime? _lastUploadAt;
+  DateTime? _lastDownloadAt;
   StreamSubscription<MobileSyncStatus>? _syncStatusSubscription;
   _SyncViewMode _syncViewMode = _SyncViewMode.operational;
   bool _showDetailedStatsInOperational = false;
@@ -67,6 +77,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
   String? _lastSyncResumeOperation;
   ProviderSubscription<SyncProgressState>? _syncProgressPersistenceSub;
+  DateTime? _lastDashboardRefreshAt;
+  bool _dashboardRefreshInFlight = false;
 
   @override
   void initState() {
@@ -113,6 +125,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
         return;
       }
 
+      if (!mounted) return;
       ref.read(syncControllerProvider.notifier).restore(snapshot);
       _lastSyncResumeOperation = snapshot.operation;
     } catch (_) {
@@ -121,6 +134,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
   }
 
   void _startSyncHubSession() {
+    developer.log('[SyncPage] opened', name: 'SyncPage');
     _syncHubOpenedAt = DateTime.now();
     _syncFunnelTriggeredAt = null;
     _syncFunnelTrigger = null;
@@ -226,21 +240,60 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     });
   }
 
-  Future<void> _refreshDashboardData() async {
+  Future<void> _refreshDashboardData({bool force = false}) async {
+    if (!force && _dashboardRefreshInFlight) {
+      return;
+    }
+
+    final now = DateTime.now();
+    if (!force && _lastDashboardRefreshAt != null && now.difference(_lastDashboardRefreshAt!).inSeconds < 2) {
+      return;
+    }
+
+    _dashboardRefreshInFlight = true;
     final db = ref.read(databaseProvider);
     final fileIdService = ref.read(fileIdServiceProvider);
-    final data = await MobileSyncDashboardLoader.load(db: db, fileIdService: fileIdService);
-    if (!mounted) return;
+    try {
+      final data = await MobileSyncDashboardLoader.load(db: db, fileIdService: fileIdService);
+      final lastUpload = await db.syncMetadataDao.getLastSyncTime('beneficiaries_upload');
+      final lastDownload = await db.syncMetadataDao.getLastSyncTime('beneficiaries_download');
 
-    setState(() {
-      _lastResult = data.lastResult;
-      _lastResultAt = data.lastResultAt;
-      _lastResultOperation = data.lastResultOperation;
-      _lastResultSource = data.lastResultSource;
-      _stats = data.stats;
-      _fileIdDiagnostics = data.fileIdDiagnostics;
-      _beneficiariesLastSyncError = data.beneficiariesLastSyncError;
-    });
+      if (!mounted) return;
+
+      int? remoteCount;
+      if (BackendConfig.current.flavor == BackendFlavor.firebase) {
+        remoteCount = await ref.read(firebaseBeneficiaryUploadServiceProvider).getRemoteBeneficiariesCount();
+      }
+
+      developer.log(
+        '[SyncDashboard] metrics loaded localCount=${data.stats['ben_total'] ?? 0} remoteCount=${remoteCount ?? -1} pending=${data.stats['total_pending_uploads'] ?? 0} visitsPending=${data.stats['visits_needsSync'] ?? 0}',
+        name: 'SyncDashboard',
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _lastResult = data.lastResult;
+        _lastResultAt = data.lastResultAt;
+        _lastResultOperation = data.lastResultOperation;
+        _lastResultSource = data.lastResultSource;
+        _stats = data.stats;
+        _fileIdDiagnostics = data.fileIdDiagnostics;
+        _beneficiariesLastSyncError = data.beneficiariesLastSyncError;
+        _remoteBeneficiariesCount = remoteCount;
+        _lastUploadAt = lastUpload;
+        _lastDownloadAt = lastDownload;
+      });
+      _lastDashboardRefreshAt = now;
+
+      // Invalidate Dashboard metrics so the Home screen reflects updated counts.
+      // dashboardSummaryProvider is autoDispose with 30s keepAlive — invalidating
+      // forces an immediate re-fetch on next watch rather than waiting for timer.
+      ref.invalidate(dashboardSummaryProvider);
+      unawaited(ref.read(dashboardProvider.notifier).refresh());
+    } finally {
+      _dashboardRefreshInFlight = false;
+    }
   }
 
   Future<void> _runContractParityBackfill() async {
@@ -290,6 +343,168 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     }
   }
 
+  String _humanizeFirebaseError(Object error) {
+    final raw = error.toString().toLowerCase();
+    if (raw.contains('permission-denied')) {
+      return 'لا توجد صلاحية للوصول إلى Firestore. تحقق من القواعد وحساب المستخدم.';
+    }
+    if (raw.contains('unauthenticated')) {
+      return 'انتهت الجلسة. يرجى تسجيل الدخول مجدداً.';
+    }
+    if (raw.contains('unavailable') || raw.contains('network') || raw.contains('offline')) {
+      return 'انقطع الاتصال، يمكن إعادة المحاولة.';
+    }
+    return error.toString();
+  }
+
+  Future<BeneficiaryDownloadSummary?> _runFirebaseDownload({
+    required SyncProgressController syncProgressController,
+    bool showSnackbars = true,
+  }) async {
+    final firebaseService = ref.read(firebaseBeneficiaryUploadServiceProvider);
+    final summary = await firebaseService.syncDownBeneficiariesFromFirebase(
+      onProgress: (progress) async {
+        syncProgressController.update(
+          phase: progress.phase,
+          total: progress.total,
+          processed: progress.processed,
+          created: progress.created,
+          updated: progress.updated,
+          failed: progress.failed,
+          skipped: progress.skipped,
+          pending: progress.total - progress.processed,
+          currentItemId: progress.currentRemoteId,
+          message: progress.message,
+          errorCode: progress.errorCode,
+          errorMessage: progress.errorMessage,
+        );
+      },
+    );
+
+    if (summary.pausedByNetwork) {
+      syncProgressController.pause(
+        phase: 'paused_due_to_network',
+        errorCode: 'offline',
+        errorMessage: 'لا يوجد اتصال مستقر بالإنترنت.',
+        message: 'انقطع الاتصال، يمكنك إعادة المحاولة.',
+      );
+      if (mounted && showSnackbars) {
+        EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+      }
+      return null;
+    }
+
+    if (summary.failed > 0) {
+      syncProgressController.fail(
+        phase: 'failed',
+        errorCode: 'partial_failure',
+        errorMessage: 'فشل تنزيل ${summary.failed} سجل',
+        message: 'اكتمل التنزيل مع أخطاء جزئية.',
+      );
+      if (mounted && showSnackbars) {
+        EnhancedSnackbar.showError(context, message: '❌ اكتمل التنزيل مع بعض الأخطاء.');
+      }
+      return summary;
+    }
+
+    return summary;
+  }
+
+  Future<BeneficiaryUploadSummary?> _runFirebaseUpload({
+    required SyncProgressController syncProgressController,
+    bool showSnackbars = true,
+  }) async {
+    final diagnosticsBefore = await ref.read(fileIdServiceProvider).getDiagnostics();
+    syncProgressController.update(
+      phase: 'preparing',
+      processed: 0,
+      fileNumbersAvailable: diagnosticsBefore?.availableCount,
+      pendingAssignedFileNumbers: diagnosticsBefore?.usedUnsyncedCount,
+      message: 'جاري تجهيز رفع المستفيدين...',
+    );
+
+    final uploadService = ref.read(firebaseBeneficiaryUploadServiceProvider);
+    final summary = await uploadService.uploadPendingBeneficiaries(
+      onProgress: (progress) async {
+        syncProgressController.update(
+          phase: progress.phase,
+          total: progress.total,
+          processed: progress.processed,
+          created: progress.uploaded,
+          failed: progress.failed,
+          skipped: progress.skipped,
+          pending: progress.total - progress.processed,
+          confirmedFileNumbers: progress.fileNumbersConfirmed,
+          currentItemId: progress.currentLocalId,
+          message: progress.message,
+          errorCode: progress.errorCode,
+          errorMessage: progress.errorMessage,
+        );
+      },
+    );
+
+    if (mounted) {
+      setState(() {
+        _lastBeneficiaryUploadSummary = summary;
+      });
+    }
+
+    final diagnosticsAfter = await ref.read(fileIdServiceProvider).getDiagnostics();
+
+    if (summary.hadNoPending) {
+      syncProgressController.complete(message: 'لا توجد تغييرات لرفعها');
+      if (mounted && showSnackbars) {
+        EnhancedSnackbar.showInfo(context, message: 'لا توجد تغييرات لرفعها');
+      }
+      return summary;
+    }
+
+    if (summary.pausedByNetwork) {
+      syncProgressController.pause(
+        phase: 'paused_due_to_network',
+        errorCode: 'offline',
+        errorMessage: 'انقطع الاتصال أثناء الرفع.',
+        message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
+      );
+      if (mounted && showSnackbars) {
+        EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
+      }
+      return null;
+    }
+
+    if (summary.failed == 0) {
+      syncProgressController.update(
+        phase: 'beneficiary_upload',
+        total: summary.totalPending,
+        processed: summary.totalPending,
+        created: summary.uploaded,
+        failed: summary.failed,
+        skipped: summary.skipped,
+        pending: 0,
+        fileNumbersAvailable: diagnosticsAfter?.availableCount,
+        pendingAssignedFileNumbers: diagnosticsAfter?.usedUnsyncedCount,
+        confirmedFileNumbers: summary.fileNumbersConfirmed,
+        failedFileNumberConfirmations: summary.failed,
+        message: diagnosticsAfter == null
+            ? 'تم رفع كل المستفيدين بنجاح'
+            : 'تم رفع ${summary.uploaded} من ${summary.totalPending}',
+      );
+      return summary;
+    }
+
+    syncProgressController.fail(
+      phase: 'failed',
+      errorCode: 'partial_failure',
+      errorMessage: 'فشل رفع ${summary.failed} مستفيد',
+      message: 'فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة',
+    );
+
+    if (mounted && showSnackbars) {
+      EnhancedSnackbar.showError(context, message: '❌ فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة');
+    }
+    return summary;
+  }
+
   Future<void> _syncDown() async {
     if (!await _hasInternetConnection()) {
       ref.read(syncControllerProvider.notifier).pause(
@@ -309,59 +524,81 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
     final syncProgressController = ref.read(syncControllerProvider.notifier);
     syncProgressController.start(
-      operation: 'full_download',
-      phase: 'downloading',
-      total: 100,
-      message: 'جاري تنزيل البيانات من السيرفر...',
+      operation: 'beneficiary_download',
+      phase: 'preparing',
+      total: 1,
+      message: 'جاري التحضير لتنزيل البيانات من Firebase...',
     );
 
-    final scheduled = await BackgroundSyncWorker.triggerSyncDown();
-    if (scheduled) {
-      if (!mounted) return;
-      setState(() {
-        _status = MobileSyncStatus(
-          isSyncing: true,
-          currentOperation: 'تمت جدولة مزامنة التنزيل بالخلفية',
-          progress: 0,
-        );
-      });
-      if (mounted) {
-        EnhancedSnackbar.showSuccess(context, message: '✅ تمت جدولة Sync Down بالخلفية');
-      }
-      return;
-    }
-
     await _runWithForegroundSyncGuard(() async {
-      final service = ref.read(mobileSyncServiceProvider);
-      final result = await service.syncDown();
-      if (result.success) {
-        syncProgressController.complete(message: 'اكتمل تنزيل البيانات بنجاح.');
+      if (BackendConfig.current.flavor == BackendFlavor.firebase) {
         if (mounted) {
-          EnhancedSnackbar.showSuccess(context, message: '✅ اكتمل تنزيل البيانات بنجاح');
+          EnhancedSnackbar.showInfo(context, message: 'سيتم تنفيذ المزامنة داخل التطبيق الآن');
+        }
+        final summary = await _runFirebaseDownload(
+          syncProgressController: syncProgressController,
+          showSnackbars: true,
+        );
+
+        if (summary != null && summary.failed == 0) {
+          syncProgressController.complete(message: 'اكتمل تنزيل البيانات من Firebase بنجاح.');
+          if (mounted) {
+            EnhancedSnackbar.showSuccess(
+              context,
+              message: '✅ تم تنزيل ${summary.remoteFetched} سجل (جديد: ${summary.created}, تحديث: ${summary.updated})',
+            );
+          }
         }
       } else {
-        final isNetwork = ((result.errorCategory ?? '').toLowerCase() == 'network') ||
-            ((result.error ?? '').toLowerCase().contains('unavailable'));
-        if (isNetwork) {
-          syncProgressController.pause(
-            phase: 'paused_due_to_network',
-            errorCode: result.errorCategory ?? 'unavailable',
-            errorMessage: result.error ?? 'انقطع الاتصال أثناء التنزيل.',
-            message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
-          );
-        } else {
-          syncProgressController.fail(
-            phase: 'failed',
-            errorCode: result.errorCategory,
-            errorMessage: result.error,
-            message: 'فشل تنزيل البيانات.',
-          );
+        final scheduled = await BackgroundSyncWorker.triggerSyncDown();
+        if (scheduled) {
+          if (!mounted) return;
+          setState(() {
+            _status = MobileSyncStatus(
+              isSyncing: true,
+              currentOperation: 'تمت جدولة مزامنة التنزيل بالخلفية',
+              progress: 0,
+            );
+          });
+          if (mounted) {
+            EnhancedSnackbar.showSuccess(context, message: '✅ تمت جدولة Sync Down بالخلفية');
+          }
+          return;
         }
 
-        if (mounted) {
-          EnhancedSnackbar.showError(context, message: '❌ ${result.error ?? 'فشل تنزيل البيانات'}');
+        final service = ref.read(mobileSyncServiceProvider);
+        final result = await service.syncDown();
+        if (result.success) {
+          syncProgressController.complete(message: 'اكتمل تنزيل البيانات بنجاح.');
+          if (mounted) {
+            EnhancedSnackbar.showSuccess(context, message: '✅ اكتمل تنزيل البيانات بنجاح');
+          }
+        } else {
+          final isNetwork = ((result.errorCategory ?? '').toLowerCase() == 'network') ||
+              ((result.error ?? '').toLowerCase().contains('unavailable'));
+          if (isNetwork) {
+            syncProgressController.pause(
+              phase: 'paused_due_to_network',
+              errorCode: result.errorCategory ?? 'unavailable',
+              errorMessage: result.error ?? 'انقطع الاتصال أثناء التنزيل.',
+              message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
+            );
+          } else {
+            syncProgressController.fail(
+              phase: 'failed',
+              errorCode: result.errorCategory,
+              errorMessage: result.error,
+              message: 'فشل تنزيل البيانات.',
+            );
+          }
+
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ ${result.error ?? 'فشل تنزيل البيانات'}');
+          }
         }
       }
+
+      await _refreshDashboardData(force: true);
     });
   }
 
@@ -387,108 +624,66 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     _trackSyncFunnelTrigger('sync_up');
     _lastSyncResumeOperation = 'full_upload';
 
+    final registry = ref.read(syncCollectionRegistryProvider);
+    final totalPending = await registry.totalPendingChanges(remoteBeneficiariesCount: _remoteBeneficiariesCount);
+
+    if (totalPending == 0) {
+      ref.read(syncControllerProvider.notifier).complete(message: 'لا توجد تغييرات لرفعها');
+      if (mounted) {
+        EnhancedSnackbar.showInfo(context, message: 'لا توجد تغييرات لرفعها');
+      }
+      await _refreshDashboardData(force: true);
+      return;
+    }
+
+    developer.log('[SyncUpload] started totalPending=$totalPending', name: 'SyncUpload');
+
     final syncProgressController = ref.read(syncControllerProvider.notifier);
     syncProgressController.start(
-      operation: 'beneficiary_upload',
+      operation: 'full_upload',
       phase: 'preparing',
-      total: 1,
-      message: 'جاري تجهيز رفع المستفيدين...',
-    );
-
-    final diagnosticsBefore = await ref.read(fileIdServiceProvider).getDiagnostics();
-    syncProgressController.update(
-      phase: 'preparing',
-      processed: 0,
-      fileNumbersAvailable: diagnosticsBefore?.availableCount,
-      pendingAssignedFileNumbers: diagnosticsBefore?.usedUnsyncedCount,
-      message: 'جاري تجهيز رفع المستفيدين...',
+      total: totalPending,
+      message: 'جاري تجهيز رفع جميع التغييرات...',
     );
 
     await _runWithForegroundSyncGuard(() async {
-      final uploadService = ref.read(firebaseBeneficiaryUploadServiceProvider);
-      final summary = await uploadService.uploadPendingBeneficiaries(
-        onProgress: (progress) async {
-          syncProgressController.update(
-            phase: progress.phase,
-            total: progress.total,
-            processed: progress.processed,
-            created: progress.uploaded,
-            failed: progress.failed,
-            skipped: progress.skipped,
-            pending: progress.total - progress.processed,
-            confirmedFileNumbers: progress.fileNumbersConfirmed,
-            currentItemId: progress.currentLocalId,
-            message: progress.message,
-            errorCode: progress.errorCode,
-            errorMessage: progress.errorMessage,
-          );
-        },
-      );
+      final result = await registry.uploadAllPendingChangesToFirebase();
 
-      if (mounted) {
-        setState(() {
-          _lastBeneficiaryUploadSummary = summary;
-        });
-      }
-
-      final diagnosticsAfter = await ref.read(fileIdServiceProvider).getDiagnostics();
-
-      if (summary.hadNoPending) {
+      if (result.noData) {
         syncProgressController.complete(message: 'لا توجد تغييرات لرفعها');
         if (mounted) {
           EnhancedSnackbar.showInfo(context, message: 'لا توجد تغييرات لرفعها');
         }
-        return;
-      }
-
-      if (summary.pausedByNetwork) {
-        syncProgressController.pause(
-          phase: 'paused_due_to_network',
-          errorCode: 'offline',
-          errorMessage: 'انقطع الاتصال أثناء الرفع.',
-          message: 'انقطع الاتصال، يمكنك المتابعة عند رجوع الإنترنت',
-        );
-        if (mounted) {
-          EnhancedSnackbar.showError(context, message: '❌ لا يوجد اتصال مستقر بالإنترنت.');
-        }
-        return;
-      }
-
-      if (summary.failed == 0) {
+      } else if (result.totalFailed == 0) {
         syncProgressController.update(
-          phase: 'beneficiary_upload',
-          total: summary.totalPending,
-          processed: summary.totalPending,
-          created: summary.uploaded,
-          failed: summary.failed,
-          skipped: summary.skipped,
+          phase: 'uploading',
+          total: result.totalPending,
+          processed: result.totalPending,
+          created: result.totalUploaded,
+          failed: result.totalFailed,
           pending: 0,
-          fileNumbersAvailable: diagnosticsAfter?.availableCount,
-          pendingAssignedFileNumbers: diagnosticsAfter?.usedUnsyncedCount,
-          confirmedFileNumbers: summary.fileNumbersConfirmed,
-          failedFileNumberConfirmations: summary.failed,
-          message: diagnosticsAfter == null
-              ? 'تم رفع كل المستفيدين بنجاح'
-              : 'تم رفع ${summary.uploaded} من ${summary.totalPending}',
+          message: 'اكتمل رفع جميع التغييرات بنجاح',
         );
         syncProgressController.complete(message: 'اكتمل رفع التغييرات بنجاح.');
         if (mounted) {
-          EnhancedSnackbar.showSuccess(context, message: '✅ اكتمل رفع التغييرات بنجاح');
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: '✅ اكتمل رفع ${result.totalUploaded} تغيير',
+          );
         }
       } else {
         syncProgressController.fail(
           phase: 'failed',
           errorCode: 'partial_failure',
-          errorMessage: 'فشل رفع ${summary.failed} مستفيد',
-          message: 'فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة',
+          errorMessage: 'فشل رفع ${result.totalFailed} عنصر',
+          message: 'اكتمل الرفع مع بعض الأخطاء',
         );
-
         if (mounted) {
-          EnhancedSnackbar.showError(context, message: '❌ فشل رفع ${summary.failed} مستفيد، يمكنك إعادة المحاولة');
+          EnhancedSnackbar.showError(context, message: '❌ اكتمل الرفع مع ${result.totalFailed} أخطاء');
         }
       }
 
-      await _refreshDashboardData();
+      await _refreshDashboardData(force: true);
       ref.invalidate(fileNumberPoolStatusProvider);
     });
   }
@@ -609,89 +804,522 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
     final syncProgressController = ref.read(syncControllerProvider.notifier);
     syncProgressController.start(
-      operation: 'background_sync',
+      operation: 'full_sync',
       phase: 'preparing',
       total: 100,
       message: 'جاري تنفيذ المزامنة الشاملة...',
     );
 
-    final scheduled = await BackgroundSyncWorker.triggerManualSync();
-    if (scheduled) {
-      if (!mounted) return;
-      setState(() {
-        _status = MobileSyncStatus(
-          isSyncing: true,
-          currentOperation: 'تمت جدولة المزامنة الشاملة بالخلفية',
-          progress: 0,
-        );
-      });
-
-      EnhancedSnackbar.showSuccess(
-        context,
-        message: '✅ تمت جدولة المزامنة الشاملة بالخلفية',
-      );
-      return;
-    }
-
     await _runWithForegroundSyncGuard(() async {
-      final service = ref.read(mobileSyncServiceProvider);
-      syncProgressController.update(phase: 'downloading', message: 'جاري تنزيل البيانات...');
-      final down = await service.syncDown();
-      if (!down.success) {
-        final isNetwork = ((down.errorCategory ?? '').toLowerCase() == 'network') ||
-            ((down.error ?? '').toLowerCase().contains('unavailable'));
-        if (isNetwork) {
-          syncProgressController.pause(
-            phase: 'paused_due_to_network',
-            errorCode: down.errorCategory ?? 'unavailable',
-            errorMessage: down.error,
-            message: 'انقطع الاتصال أثناء التنزيل، يمكنك المتابعة لاحقاً.',
+      if (BackendConfig.current.flavor == BackendFlavor.firebase) {
+        if (mounted) {
+          EnhancedSnackbar.showInfo(context, message: 'سيتم تنفيذ المزامنة داخل التطبيق الآن');
+        }
+
+        developer.log('[FullSync] step=taxonomy status=started', name: 'FullSync');
+        syncProgressController.update(phase: 'preparing', processed: 5, message: 'مزامنة التصنيفات الأساسية...');
+        await _syncTaxonomyMasterDataForUpload(
+          trigger: 'sync_page_full_sync_taxonomy_step',
+          force: false,
+          showSuccessSnackbar: false,
+        );
+        developer.log('[FullSync] step=taxonomy status=completed', name: 'FullSync');
+
+        developer.log('[FullSync] step=file_numbers status=started', name: 'FullSync');
+        syncProgressController.update(
+          phase: 'confirming_file_numbers',
+          processed: 20,
+          message: 'التأكد من توفر أرقام الملفات...',
+        );
+        final fileNumberSyncResult = await ref.read(fileIdServiceProvider).syncDownFileNumberState();
+        if (fileNumberSyncResult.success) {
+          developer.log('[FullSync] step=file_numbers status=completed', name: 'FullSync');
+        } else if (fileNumberSyncResult.isWarning) {
+          developer.log(
+            '[FullSync] step=file_numbers status=warning(${fileNumberSyncResult.errorCode ?? 'warning'})',
+            name: 'FullSync',
           );
+          syncProgressController.update(
+            phase: 'confirming_file_numbers',
+            processed: 22,
+            message: fileNumberSyncResult.message,
+            errorCode: fileNumberSyncResult.errorCode,
+            errorMessage: fileNumberSyncResult.message,
+          );
+          if (mounted) {
+            EnhancedSnackbar.showInfo(context, message: '⚠️ ${fileNumberSyncResult.message}');
+          }
         } else {
+          developer.log('[FullSync] step=file_numbers status=failed', name: 'FullSync');
           syncProgressController.fail(
             phase: 'failed',
-            errorCode: down.errorCategory,
-            errorMessage: down.error,
-            message: 'فشل جزء التنزيل في المزامنة الشاملة.',
+            errorCode: fileNumberSyncResult.errorCode ?? 'file_numbers_sync_failed',
+            errorMessage: fileNumberSyncResult.message,
+            message: 'فشل مزامنة أرقام الملفات.',
           );
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ فشل مزامنة أرقام الملفات: ${fileNumberSyncResult.message}');
+          }
+          return;
         }
-        if (mounted) {
-          EnhancedSnackbar.showError(context, message: '❌ ${down.error ?? 'فشل تنزيل البيانات'}');
-        }
-        return;
-      }
 
-      syncProgressController.update(phase: 'uploading', processed: 65, message: 'جاري رفع التغييرات...');
-      final up = await service.syncUp();
-      if (up.success) {
+        developer.log('[FullSync] step=upload status=started', name: 'FullSync');
+        syncProgressController.update(phase: 'uploading', processed: 35, message: 'جاري رفع التغييرات...');
+        final uploadSummary = await _runFirebaseUpload(
+          syncProgressController: syncProgressController,
+          showSnackbars: false,
+        );
+        if (uploadSummary == null || uploadSummary.failed > 0) {
+          developer.log('[FullSync] step=upload status=failed', name: 'FullSync');
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ فشل خطوة رفع المستفيدين أثناء المزامنة الكاملة.');
+          }
+          return;
+        }
+        developer.log('[FullSync] step=upload status=completed', name: 'FullSync');
+
+        developer.log('[FullSync] step=modules_upload status=started', name: 'FullSync');
+        syncProgressController.update(
+          phase: 'uploading',
+          processed: 55,
+          message: 'جاري رفع الجمعيات/الكفالات/الزيارات/المتابعات...',
+        );
+        final modulesUploadSummary = await ref.read(syncFirestoreModulesUseCaseProvider).uploadAll();
+        final modulesUploadFailed = modulesUploadSummary.aggregate.failed;
+        if (modulesUploadFailed > 0) {
+          developer.log('[FullSync] step=modules_upload status=failed', name: 'FullSync');
+          syncProgressController.fail(
+            phase: 'failed',
+            errorCode: 'modules_upload_failed',
+            errorMessage: 'فشل رفع $modulesUploadFailed سجل في وحدات الجمعيات/الكفالات/الزيارات',
+            message: 'فشلت مزامنة الوحدات الإضافية أثناء الرفع.',
+          );
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ فشلت مزامنة الوحدات الإضافية أثناء الرفع.');
+          }
+          return;
+        }
+        developer.log('[FullSync] step=modules_upload status=completed', name: 'FullSync');
+
+        developer.log('[FullSync] step=download status=started', name: 'FullSync');
+        syncProgressController.update(phase: 'downloading', processed: 75, message: 'جاري تنزيل التغييرات...');
+        final downSummary = await _runFirebaseDownload(
+          syncProgressController: syncProgressController,
+          showSnackbars: false,
+        );
+        if (downSummary == null || downSummary.failed > 0) {
+          developer.log('[FullSync] step=download status=failed', name: 'FullSync');
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ فشلت خطوة تنزيل المستفيدين أثناء المزامنة الكاملة.');
+          }
+          return;
+        }
+        developer.log('[FullSync] step=download status=completed', name: 'FullSync');
+
+        developer.log('[FullSync] step=modules_download status=started', name: 'FullSync');
+        syncProgressController.update(
+          phase: 'downloading',
+          processed: 90,
+          message: 'جاري تنزيل الجمعيات/الكفالات/الزيارات/المتابعات...',
+        );
+        final modulesDownloadSummary = await ref.read(syncFirestoreModulesUseCaseProvider).downloadAll();
+        final modulesDownloadFailed = modulesDownloadSummary.aggregate.failed;
+        if (modulesDownloadFailed > 0) {
+          developer.log('[FullSync] step=modules_download status=failed', name: 'FullSync');
+          final failedNames = modulesDownloadSummary.failedModules.map((m) => m.moduleName).join(', ');
+          syncProgressController.update(
+            phase: 'downloading',
+            processed: 96,
+            errorCode: 'modules_download_partial_failure',
+            errorMessage: 'فشل تنزيل بعض الوحدات: $failedNames',
+            message: 'تم تنزيل المستفيدين، لكن فشل تنزيل بعض الوحدات: $failedNames',
+          );
+          if (mounted) {
+            EnhancedSnackbar.showInfo(
+              context,
+              message:
+                  '⚠️ تم تنزيل المستفيدين، لكن فشل تنزيل بعض الوحدات: ${failedNames.isEmpty ? 'غير محدد' : failedNames}',
+            );
+          }
+        } else {
+          developer.log('[FullSync] step=modules_download status=completed', name: 'FullSync');
+        }
+
+        await ref.read(databaseProvider).syncMetadataDao.updateSyncSuccess(
+              'full_sync',
+              totalSynced: 1,
+              syncTime: DateTime.now(),
+            );
+
         syncProgressController.complete(message: 'اكتملت المزامنة الشاملة بنجاح.');
+        await _refreshDashboardData(force: true);
         if (mounted) {
           EnhancedSnackbar.showSuccess(context, message: '✅ اكتملت المزامنة الشاملة بنجاح');
         }
       } else {
-        final isNetwork = ((up.errorCategory ?? '').toLowerCase() == 'network') ||
-            ((up.error ?? '').toLowerCase().contains('unavailable'));
-        if (isNetwork) {
-          syncProgressController.pause(
-            phase: 'paused_due_to_network',
-            errorCode: up.errorCategory ?? 'unavailable',
-            errorMessage: up.error,
-            message: 'انقطع الاتصال أثناء الرفع، يمكنك المتابعة لاحقاً.',
+        final scheduled = await BackgroundSyncWorker.triggerManualSync();
+        if (scheduled) {
+          if (!mounted) return;
+          setState(() {
+            _status = MobileSyncStatus(
+              isSyncing: true,
+              currentOperation: 'تمت جدولة المزامنة الشاملة بالخلفية',
+              progress: 0,
+            );
+          });
+
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: '✅ تمت جدولة المزامنة الشاملة بالخلفية',
           );
-        } else {
-          syncProgressController.fail(
-            phase: 'failed',
-            errorCode: up.errorCategory,
-            errorMessage: up.error,
-            message: 'فشل جزء الرفع في المزامنة الشاملة.',
-          );
+          return;
         }
 
-        if (mounted) {
-          EnhancedSnackbar.showError(context, message: '❌ ${up.error ?? 'فشل رفع التغييرات'}');
+        final service = ref.read(mobileSyncServiceProvider);
+        syncProgressController.update(phase: 'downloading', message: 'جاري تنزيل البيانات...');
+        final down = await service.syncDown();
+        if (!down.success) {
+          final isNetwork = ((down.errorCategory ?? '').toLowerCase() == 'network') ||
+              ((down.error ?? '').toLowerCase().contains('unavailable'));
+          if (isNetwork) {
+            syncProgressController.pause(
+              phase: 'paused_due_to_network',
+              errorCode: down.errorCategory ?? 'unavailable',
+              errorMessage: down.error,
+              message: 'انقطع الاتصال أثناء التنزيل، يمكنك المتابعة لاحقاً.',
+            );
+          } else {
+            syncProgressController.fail(
+              phase: 'failed',
+              errorCode: down.errorCategory,
+              errorMessage: down.error,
+              message: 'فشل جزء التنزيل في المزامنة الشاملة.',
+            );
+          }
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ ${down.error ?? 'فشل تنزيل البيانات'}');
+          }
+          return;
+        }
+
+        syncProgressController.update(phase: 'uploading', processed: 65, message: 'جاري رفع التغييرات...');
+        final up = await service.syncUp();
+        if (up.success) {
+          syncProgressController.complete(message: 'اكتملت المزامنة الشاملة بنجاح.');
+          if (mounted) {
+            EnhancedSnackbar.showSuccess(context, message: '✅ اكتملت المزامنة الشاملة بنجاح');
+          }
+        } else {
+          final isNetwork = ((up.errorCategory ?? '').toLowerCase() == 'network') ||
+              ((up.error ?? '').toLowerCase().contains('unavailable'));
+          if (isNetwork) {
+            syncProgressController.pause(
+              phase: 'paused_due_to_network',
+              errorCode: up.errorCategory ?? 'unavailable',
+              errorMessage: up.error,
+              message: 'انقطع الاتصال أثناء الرفع، يمكنك المتابعة لاحقاً.',
+            );
+          } else {
+            syncProgressController.fail(
+              phase: 'failed',
+              errorCode: up.errorCategory,
+              errorMessage: up.error,
+              message: 'فشل جزء الرفع في المزامنة الشاملة.',
+            );
+          }
+
+          if (mounted) {
+            EnhancedSnackbar.showError(context, message: '❌ ${up.error ?? 'فشل رفع التغييرات'}');
+          }
         }
       }
     });
+  }
+
+  Future<void> _resetBeneficiariesAndRestore() async {
+    final uploadService = ref.read(firebaseBeneficiaryUploadServiceProvider);
+    final pending = await uploadService.getPendingUploadsCount();
+
+    if (!mounted) {
+      return;
+    }
+
+    final force = await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            final hasPending = pending > 0;
+            return AlertDialog(
+              title: const Text('مسح البيانات المحلية وإعادة التنزيل'),
+              content: Text(
+                hasPending
+                    ? 'يوجد $pending سجل بانتظار الرفع. سيتم حذف البيانات المحلية غير المرفوعة. هل أنت متأكد؟'
+                    : 'سيتم حذف البيانات المحلية غير المرفوعة. هل أنت متأكد؟',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('إلغاء'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: Text(hasPending ? 'متابعة بالقوة' : 'تأكيد'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!mounted) {
+      return;
+    }
+
+    if (pending > 0 && !force) {
+      EnhancedSnackbar.showInfo(context, message: 'تم إلغاء العملية لحماية البيانات غير المرفوعة.');
+      return;
+    }
+
+    final syncController = ref.read(syncControllerProvider.notifier);
+    syncController.start(
+      operation: 'beneficiary_download',
+      phase: 'preparing',
+      total: 1,
+      message: 'جاري مسح البيانات المحلية للمستفيدين...',
+    );
+
+    try {
+      final resetSummary = await uploadService.resetBeneficiariesLocalCache(force: force);
+
+      syncController.update(
+        phase: 'downloading',
+        total: 1,
+        processed: 0,
+        message: 'تم مسح ${resetSummary.deletedBeneficiaries} سجل محلياً. جاري إعادة التنزيل...',
+      );
+
+      final downSummary = await uploadService.syncDownBeneficiariesFromFirebase(
+        onProgress: (progress) async {
+          syncController.update(
+            phase: progress.phase,
+            total: progress.total,
+            processed: progress.processed,
+            created: progress.created,
+            updated: progress.updated,
+            skipped: progress.skipped,
+            failed: progress.failed,
+            pending: progress.total - progress.processed,
+            message: progress.message,
+            errorCode: progress.errorCode,
+            errorMessage: progress.errorMessage,
+            currentItemId: progress.currentRemoteId,
+          );
+        },
+      );
+
+      if (downSummary.failed > 0) {
+        syncController.fail(
+          phase: 'failed',
+          errorCode: 'partial_failure',
+          errorMessage: 'فشل تنزيل ${downSummary.failed} سجل.',
+          message: 'اكتملت الاستعادة مع أخطاء جزئية.',
+        );
+        if (mounted) {
+          EnhancedSnackbar.showError(context, message: '❌ اكتملت الاستعادة مع بعض الأخطاء.');
+        }
+      } else {
+        syncController.complete(message: 'اكتملت استعادة البيانات من Firebase.');
+        if (mounted) {
+          EnhancedSnackbar.showSuccess(
+            context,
+            message: '✅ تمت الاستعادة: ${downSummary.created + downSummary.updated} سجل',
+          );
+        }
+      }
+
+      await _refreshDashboardData(force: true);
+    } catch (e) {
+      syncController.fail(
+        phase: 'failed',
+        errorCode: 'reset_failed',
+        errorMessage: e.toString(),
+        message: 'فشلت عملية المسح والاستعادة.',
+      );
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ فشلت عملية المسح والاستعادة: $e');
+      }
+    }
+  }
+
+  Future<void> _resetTaxonomiesOnly() async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('مسح التصنيفات المحلية'),
+        content: const Text(
+          'سيتم مسح بيانات التصنيفات المحلية فقط.\n'
+          'هذا لا يؤثر على بيانات Firebase ولا يحذف أي بيانات بعيدة.\n\n'
+          'هل أنت متأكد؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('مسح محلي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(firebaseBeneficiaryUploadServiceProvider).resetTaxonomiesLocalCache();
+      await _refreshDashboardData(force: true);
+      if (mounted) {
+        EnhancedSnackbar.showSuccess(context, message: '✅ تم مسح التصنيفات المحلية فقط.');
+      }
+    } catch (e) {
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ فشل مسح التصنيفات المحلية: $e');
+      }
+    }
+  }
+
+  Future<void> _resetFileNumbersOnly() async {
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('مسح مخزون أرقام الملفات'),
+        content: const Text(
+          'سيتم مسح مخزون أرقام الملفات المحلي فقط.\n'
+          'هذا لا يؤثر على أرقام الملفات المحجوزة في Firebase.\n\n'
+          'هل أنت متأكد؟',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('مسح محلي'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await ref.read(firebaseBeneficiaryUploadServiceProvider).resetFileNumberPoolLocalCache();
+      ref.invalidate(fileNumberPoolStatusProvider);
+      if (mounted) {
+        EnhancedSnackbar.showSuccess(context, message: '✅ تم مسح مخزون أرقام الملفات المحلي.');
+      }
+    } catch (e) {
+      if (mounted) {
+        EnhancedSnackbar.showError(context, message: '❌ فشل مسح مخزون أرقام الملفات: $e');
+      }
+    }
+  }
+
+  Future<void> _checkFirestoreConnection() async {
+    try {
+      final count = await ref.read(firebaseBeneficiaryUploadServiceProvider).getRemoteBeneficiariesCount();
+      if (!mounted) return;
+      EnhancedSnackbar.showSuccess(
+        context,
+        message: '✅ اتصال Firestore سليم. remoteCount=${count ?? 'غير متاح'}',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      EnhancedSnackbar.showError(context, message: '❌ فشل اتصال Firestore: ${_humanizeFirebaseError(e)}');
+    }
+  }
+
+  Future<void> _checkFirestorePermissions() async {
+    try {
+      final report = await ref.read(firebaseBeneficiaryUploadServiceProvider).runFirestoreHealthChecks();
+      if (!mounted) return;
+
+      if (report.readOk && report.writeOk) {
+        EnhancedSnackbar.showSuccess(context, message: '✅ صلاحيات Firestore سليمة (read/write).');
+        return;
+      }
+
+      final readState = report.readOk ? 'ok' : 'failed';
+      final writeState = report.writeOk ? 'ok' : 'failed';
+      final writePermissionMissing = (report.writeError ?? '').toLowerCase().contains('permission-denied') ||
+          (report.writeError ?? '').toLowerCase().contains('permission_denied');
+
+      if (writePermissionMissing) {
+        EnhancedSnackbar.showError(
+          context,
+          message: '❌ Firestore rules missing for sync_health_checks',
+        );
+        return;
+      }
+
+      final details = <String>[
+        'read=$readState',
+        'write=$writeState',
+        if (report.readError != null) 'readError=${report.readError}',
+        if (report.writeError != null) 'writeError=${report.writeError}',
+      ].join(' | ');
+
+      EnhancedSnackbar.showError(context, message: '❌ فحص الصلاحيات: $details');
+    } catch (e) {
+      if (!mounted) return;
+      EnhancedSnackbar.showError(context, message: '❌ تعذر فحص الصلاحيات: ${_humanizeFirebaseError(e)}');
+    }
+  }
+
+  Future<void> _seedCedarAssociationsFromSync({bool force = false}) async {
+    if ((_status?.isSyncing ?? false) || ref.read(syncProgressProvider).isRunning) {
+      if (mounted) {
+        EnhancedSnackbar.showInfo(context, message: 'لا يمكن تشغيل Seed أثناء عملية مزامنة جارية.');
+      }
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            SizedBox(width: 12),
+            Expanded(child: Text('جاري إضافة جمعيات Cedar...')),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final result = await ref.read(associationsProvider.notifier).seedCedarAssociations(force: force);
+      ref.invalidate(kafalatActiveAssociationsProvider);
+      await _refreshDashboardData(force: true);
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+
+      final message =
+          'Cedar Associations Seed: created=${result.created} skipped=${result.skipped} updated=${result.updated} failed=${result.failed}';
+      EnhancedSnackbar.showSuccess(context, message: message);
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        EnhancedSnackbar.showError(context, message: '❌ فشل تنفيذ Seed الجمعيات: $e');
+      }
+    }
   }
 
   ({int score, String level, Color color, String hint}) _buildSyncHealthScore(MobileSyncResult result) {
@@ -1160,6 +1788,10 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
                   SizedBox(height: 12.h),
 
+                  _buildMaintenanceToolsCard(),
+
+                  SizedBox(height: 12.h),
+
                   // Operational constraints (secondary)
                   _buildWarningCard(),
 
@@ -1281,6 +1913,62 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     );
   }
 
+  Widget _buildMaintenanceToolsCard() {
+    final isSyncing = (_status?.isSyncing ?? false) || ref.watch(syncProgressProvider).isRunning;
+    return SyncSectionCard(
+      title: 'أدوات الصيانة',
+      icon: Icons.build_circle_outlined,
+      tone: SyncTone.warning,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: isSyncing ? null : _resetBeneficiariesAndRestore,
+            icon: const Icon(Icons.cleaning_services_outlined),
+            label: const Text('مسح بيانات المستفيدين محلياً وإعادة التنزيل'),
+          ),
+          SizedBox(height: 8.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: [
+              OutlinedButton.icon(
+                onPressed: isSyncing ? null : _resetTaxonomiesOnly,
+                icon: const Icon(Icons.category_outlined),
+                label: const Text('Reset التصنيفات فقط'),
+              ),
+              OutlinedButton.icon(
+                onPressed: isSyncing ? null : _resetFileNumbersOnly,
+                icon: const Icon(Icons.confirmation_num_outlined),
+                label: const Text('Reset أرقام الملفات فقط'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _checkFirestoreConnection,
+                icon: const Icon(Icons.wifi_tethering_outlined),
+                label: const Text('فحص اتصال Firestore'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _checkFirestorePermissions,
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: const Text('فحص الصلاحيات'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _exportSyncDiagnostics,
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('تصدير تقرير المزامنة'),
+              ),
+              OutlinedButton.icon(
+                onPressed: isSyncing ? null : () => _seedCedarAssociationsFromSync(force: false),
+                icon: const Icon(Icons.playlist_add_check_circle_outlined),
+                label: const Text('إضافة جمعيات Cedar'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOperationalStatsSummaryCard() {
     final stats = _stats;
     if (stats == null) return const SizedBox.shrink();
@@ -1293,7 +1981,10 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     final assocNeedsSync = stats['assoc_needsSync'] ?? 0;
     final repNeedsSync = stats['rep_needsSync'] ?? 0;
     final sponsorshipNeedsSync = stats['sponsorship_needsSync'] ?? 0;
-    final totalNeedsSync = benNeedsSync + assocNeedsSync + repNeedsSync + sponsorshipNeedsSync;
+    final visitsNeedsSync = stats['visits_needsSync'] ?? 0;
+    final followupsNeedsSync = (stats['followup_pending'] ?? 0) + (stats['followup_failed'] ?? 0);
+    final totalNeedsSync = stats['total_pending_uploads'] ??
+        (benNeedsSync + assocNeedsSync + repNeedsSync + sponsorshipNeedsSync + visitsNeedsSync + followupsNeedsSync);
 
     return SyncSectionCard(
       title: 'ملخص الحالة',
@@ -1308,6 +1999,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
             '$totalNeedsSync',
           ),
           _buildInfoRow('المستفيدون (غير متزامن)', '$benNeedsSync'),
+          _buildInfoRow('الزيارات (غير متزامن)', '$visitsNeedsSync'),
+          _buildInfoRow('المتابعات (غير متزامن)', '$followupsNeedsSync'),
           Divider(height: 18.h),
           _buildInfoRow('جاهز للرفع الآن (مستفيدون)', '$benReadyToUpload'),
           _buildInfoRow('بانتظار الرفع', '$benPending'),
@@ -1317,7 +2010,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
             Padding(
               padding: EdgeInsets.only(top: 4.h),
               child: Text(
-                'لا توجد تغييرات مستفيدين قابلة للرفع حاليًا.',
+                totalNeedsSync == 0
+                    ? 'لا توجد تغييرات قابلة للرفع حاليًا.'
+                    : 'توجد تغييرات في موديولات أخرى بانتظار الرفع.',
                 style: TextStyle(fontSize: 12.sp, color: Colors.grey[700]),
               ),
             ),
@@ -1369,10 +2064,22 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
               ],
               Divider(height: 20.h),
               _buildStatRow(
-                'يحتاج مزامنة',
+                'يحتاج مزامنة (مستفيدين)',
                 '${_stats!['ben_needsSync']}',
                 _stats!['ben_needsSync']! > 0 ? Colors.red : Colors.green,
                 bold: true,
+              ),
+              _buildStatRow(
+                'يحتاج مزامنة (زيارات)',
+                '${_stats!['visits_needsSync'] ?? 0}',
+                (_stats!['visits_needsSync'] ?? 0) > 0 ? Colors.red : Colors.green,
+              ),
+              _buildStatRow(
+                'يحتاج مزامنة (متابعات)',
+                '${(_stats!['followup_pending'] ?? 0) + (_stats!['followup_failed'] ?? 0)}',
+                ((_stats!['followup_pending'] ?? 0) + (_stats!['followup_failed'] ?? 0)) > 0
+                    ? Colors.red
+                    : Colors.green,
               ),
             ],
           ),
@@ -1523,6 +2230,12 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
 
   Widget _buildStatusCard(MobileSyncStatus status) {
     final theme = Theme.of(context);
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isFirebaseMode = BackendConfig.current.flavor == BackendFlavor.firebase;
+    final pendingUploads = _stats?['total_pending_uploads'] ?? 0;
+    final failedUploads =
+        (_stats?['ben_failed'] ?? 0) + (_stats?['visits_failed'] ?? 0) + (_stats?['sponsorship_failed'] ?? 0);
+    final localCount = _stats?['ben_total'] ?? 0;
 
     String _labelForSource(String value) {
       switch (value) {
@@ -1542,6 +2255,17 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isFirebaseMode) ...[
+            _buildInfoRow('Firebase', currentUser != null ? 'متصل' : 'غير متصل'),
+            _buildInfoRow('المستخدم الحالي', currentUser?.email ?? currentUser?.uid ?? 'غير مسجل'),
+            _buildInfoRow('آخر رفع', _lastUploadAt == null ? 'لا يوجد' : _formatDateTime(_lastUploadAt!)),
+            _buildInfoRow('آخر تنزيل', _lastDownloadAt == null ? 'لا يوجد' : _formatDateTime(_lastDownloadAt!)),
+            _buildInfoRow('بانتظار الرفع', '$pendingUploads'),
+            _buildInfoRow('فشل الرفع', '$failedUploads'),
+            _buildInfoRow('عدد المستفيدين محلياً', '$localCount'),
+            _buildInfoRow('عدد المستفيدين على Firebase', _remoteBeneficiariesCount?.toString() ?? 'غير متاح'),
+            SizedBox(height: 10.h),
+          ],
           if (!status.isSyncing && _lastResultSource != null && _lastResultSource!.trim().isNotEmpty) ...[
             Container(
               margin: EdgeInsets.only(bottom: 8.h),
@@ -1604,101 +2328,127 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
   Widget _buildSyncButtons(MobileSyncStatus status) {
     final theme = Theme.of(context);
     final isSyncing = status.isSyncing || ref.watch(syncProgressProvider).isRunning;
+    final taxonomyStats = ref.watch(taxonomyStatisticsProvider).valueOrNull;
+    final filePool = ref.watch(fileNumberPoolStatusProvider).valueOrNull;
+
+    final taxonomyFilled = taxonomyStats == null ? null : _requiredCoverageFromStats(taxonomyStats).filled;
+    final taxonomyTotal = taxonomyStats == null ? null : _requiredCoverageFromStats(taxonomyStats).total;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        OutlinedButton.icon(
-          onPressed: isSyncing
-              ? null
-              : () => _syncTaxonomyMasterDataForUpload(
-                    trigger: 'sync_page_master_data_button',
-                    force: false,
-                    showSuccessSnackbar: true,
+        SyncSectionCard(
+          title: 'رفع البيانات',
+          icon: Icons.cloud_upload_outlined,
+          tone: SyncTone.tertiary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton.icon(
+                onPressed: isSyncing ? null : _syncUp,
+                icon: const Icon(Icons.cloud_upload),
+                label: const Text('رفع التغييرات'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  backgroundColor: theme.colorScheme.tertiary,
+                  foregroundColor: theme.colorScheme.onTertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 10.h),
+        SyncSectionCard(
+          title: 'تنزيل البيانات',
+          icon: Icons.cloud_download_outlined,
+          tone: SyncTone.secondary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton.icon(
+                onPressed: isSyncing ? null : _syncDown,
+                icon: const Icon(Icons.cloud_download),
+                label: const Text('تنزيل البيانات من Firebase'),
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  backgroundColor: theme.colorScheme.secondary,
+                  foregroundColor: theme.colorScheme.onSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 10.h),
+        SyncSectionCard(
+          title: 'التصنيفات',
+          icon: Icons.category_outlined,
+          tone: SyncTone.primary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (taxonomyFilled != null && taxonomyTotal != null)
+                _buildInfoRow('تغطية التصنيفات', '$taxonomyFilled/$taxonomyTotal'),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: isSyncing ? null : _syncTaxonomies,
+                    icon: const Icon(Icons.sync),
+                    label: const Text('مزامنة التصنيفات'),
                   ),
-          icon: const Icon(Icons.dataset_linked_rounded),
-          label: const Text(
-            'Upload/Sync Taxonomy Master Data',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          style: OutlinedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: 14.h),
-          ),
-        ),
-
-        SizedBox(height: 10.h),
-
-        ElevatedButton.icon(
-          onPressed: isSyncing ? null : _uploadCedarFileNumbers,
-          icon: const Icon(Icons.confirmation_num_rounded),
-          label: const Text(
-            'رفع أرقام الملفات الأساسية',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: 16.h),
-            backgroundColor: Colors.indigo,
-            foregroundColor: Colors.white,
+                  OutlinedButton.icon(
+                    onPressed: isSyncing ? null : _exportSyncDiagnostics,
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('فحص التغطية'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-
         SizedBox(height: 10.h),
-
+        SyncSectionCard(
+          title: 'أرقام الملفات',
+          icon: Icons.confirmation_num_outlined,
+          tone: SyncTone.secondary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoRow('المتاح محلياً', '${filePool?.available ?? '-'}'),
+              _buildInfoRow('المعيّن محلياً', '${filePool?.pendingAssigned ?? '-'}'),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: isSyncing ? null : _uploadCedarFileNumbers,
+                    icon: const Icon(Icons.confirmation_num_rounded),
+                    label: const Text('حجز/رفع أرقام ملفات Cedar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: isSyncing ? null : () => ref.invalidate(fileNumberPoolStatusProvider),
+                    icon: const Icon(Icons.search),
+                    label: const Text('فحص أرقام الملفات'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12.h),
         ElevatedButton.icon(
           onPressed: isSyncing ? null : _syncNowOfficial,
           icon: const Icon(Icons.sync),
-          label: const Text(
-            'مزامنة الآن (شاملة)',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
+          label: const Text('مزامنة كاملة'),
           style: ElevatedButton.styleFrom(
             padding: EdgeInsets.symmetric(vertical: 16.h),
             backgroundColor: theme.colorScheme.primary,
             foregroundColor: theme.colorScheme.onPrimary,
-          ),
-        ),
-
-        SizedBox(height: 10.h),
-
-        // Sync Down button (secondary)
-        ElevatedButton.icon(
-          onPressed: isSyncing ? null : _syncDown,
-          icon: const Icon(Icons.cloud_download),
-          label: const Text(
-            'تنزيل البيانات من السيرفر',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: 16.h),
-            backgroundColor: theme.colorScheme.secondary,
-            foregroundColor: theme.colorScheme.onSecondary,
-          ),
-        ),
-
-        SizedBox(height: 12.h),
-
-        // Sync Up button (secondary)
-        ElevatedButton.icon(
-          onPressed: isSyncing ? null : _syncUp,
-          icon: const Icon(Icons.cloud_upload),
-          label: const Text(
-            'رفع التغييرات',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: 16.h),
-            backgroundColor: theme.colorScheme.tertiary,
-            foregroundColor: theme.colorScheme.onTertiary,
           ),
         ),
       ],
@@ -1846,6 +2596,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
     final canResume = progress.phase == 'paused_due_to_network' || progress.pending > 0;
     final canRetry = progress.phase == 'failed';
     final previewFailures = progress.failures.take(10).toList(growable: false);
+    final operationLabel = _operationLabel(progress.operation);
+    final phaseLabel = _phaseLabel(progress.phase);
 
     return SyncSectionCard(
       title: 'تقدم المزامنة',
@@ -1858,6 +2610,8 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
         children: [
           Text(progress.message ?? 'جاري تنفيذ المزامنة...',
               style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600)),
+          SizedBox(height: 4.h),
+          Text('العملية: $operationLabel', style: TextStyle(fontSize: 12.sp, color: Colors.grey[700])),
           SizedBox(height: 8.h),
           LinearProgressIndicator(
             value: progress.total <= 0 ? null : progress.percent,
@@ -1867,7 +2621,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
           SizedBox(height: 8.h),
           Text('$percentText - ${progress.processed}/${progress.total}', style: TextStyle(fontSize: 12.sp)),
           SizedBox(height: 6.h),
-          Text('Phase: ${progress.phase}', style: TextStyle(fontSize: 12.sp)),
+          Text('المرحلة: $phaseLabel', style: TextStyle(fontSize: 12.sp)),
           Text(
               'Created: ${progress.created} | Skipped: ${progress.skipped} | Updated: ${progress.updated} | Failed: ${progress.failed}',
               style: TextStyle(fontSize: 12.sp)),
@@ -1943,6 +2697,61 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
         ],
       ),
     );
+  }
+
+  String _phaseLabel(String phase) {
+    switch (phase) {
+      case 'preparing':
+        return 'جاري التحضير';
+      case 'uploading':
+      case 'beneficiary_upload':
+        return 'جاري الرفع';
+      case 'downloading':
+        return 'جاري التنزيل';
+      case 'merging_local':
+        return 'جاري الدمج محلياً';
+      case 'confirming_file_number':
+      case 'confirming_file_numbers':
+        return 'جاري تأكيد أرقام الملفات';
+      case 'completed':
+        return 'اكتملت المزامنة';
+      case 'failed':
+        return 'فشلت المزامنة';
+      case 'paused_due_to_network':
+        return 'انقطع الاتصال، يمكن إعادة المحاولة';
+      default:
+        return phase;
+    }
+  }
+
+  String _operationLabel(String operation) {
+    switch (operation) {
+      case 'beneficiary_upload':
+        return 'رفع المستفيدين';
+      case 'beneficiary_download':
+      case 'full_download':
+        return 'تنزيل المستفيدين';
+      case 'taxonomy_upload':
+        return 'رفع التصنيفات';
+      case 'taxonomy_download':
+        return 'تنزيل التصنيفات';
+      case 'cedar_file_numbers_upload':
+      case 'file_number_reservation':
+        return 'إدارة أرقام الملفات';
+      case 'full_sync':
+      case 'background_sync':
+        return 'مزامنة كاملة';
+      case 'association_upload':
+        return 'رفع الجمعيات';
+      case 'sponsorship_upload':
+        return 'رفع الكفالات';
+      case 'visit_upload':
+        return 'رفع الزيارات';
+      case 'followup_upload':
+        return 'رفع المتابعات';
+      default:
+        return operation;
+    }
   }
 
   Widget _buildBeneficiaryUploadSummaryCard(BeneficiaryUploadSummary summary) {
@@ -2574,6 +3383,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
   }
 
   Widget _buildInfoCard() {
+    final isFirebaseMode = BackendConfig.current.flavor == BackendFlavor.firebase;
     return SyncSectionCard(
       title: 'معلومات الاتصال',
       icon: Icons.info,
@@ -2581,9 +3391,9 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow('السيرفر', '[DISABLED - demo mode]'),
-          _buildInfoRow('قاعدة البيانات', '[DISABLED]'),
-          _buildInfoRow('الجدول', 'sy_benaa_application'),
+          _buildInfoRow('وضع backend', isFirebaseMode ? 'firebase' : 'legacy'),
+          _buildInfoRow('المصدر', isFirebaseMode ? 'Cloud Firestore' : 'Legacy API'),
+          _buildInfoRow('المجموعة', isFirebaseMode ? 'beneficiaries' : 'sy_benaa_application'),
           _buildInfoRow('التشفير', 'HTTPS'),
         ],
       ),
@@ -2635,7 +3445,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> with WidgetsBin
                 onPressed: status.isSyncing ? null : _syncNowOfficial,
                 icon: const Icon(Icons.sync),
                 label: const Text(
-                  'مزامنة الآن (الإجراء الرئيسي)',
+                  'مزامنة كاملة',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,

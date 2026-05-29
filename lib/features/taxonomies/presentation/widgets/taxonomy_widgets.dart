@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/error_handling/result.dart';
 import '../../domain/entities/taxonomy.dart';
 import '../../domain/entities/taxonomy_group.dart';
 import '../providers/taxonomy_providers.dart';
@@ -453,5 +454,252 @@ class TaxonomySyncStatusWidget extends ConsumerWidget {
 
   String _formatDateTime(DateTime dt) {
     return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 📝  TaxonomyFormDialog — نموذج إضافة/تعديل تصنيف
+// ─────────────────────────────────────────────────────────────────────────────
+class TaxonomyFormDialog extends ConsumerStatefulWidget {
+  final TaxonomyGroup group;
+  final Taxonomy? taxonomy;
+  final String? parentId; // لإنشاء تصنيف فرعي جديد
+  final VoidCallback? onSaved;
+
+  const TaxonomyFormDialog({
+    required this.group,
+    super.key,
+    this.taxonomy,
+    this.parentId,
+    this.onSaved,
+  });
+
+  @override
+  ConsumerState<TaxonomyFormDialog> createState() => _TaxonomyFormDialogState();
+}
+
+class _TaxonomyFormDialogState extends ConsumerState<TaxonomyFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _codeController;
+  late TextEditingController _labelController;
+  late TextEditingController _labelEnController;
+  late TextEditingController _descriptionController;
+  bool _isActive = true;
+  bool _isLoading = false;
+
+  // editing iff taxonomy exists AND has a real id
+  bool get _isEditing => widget.taxonomy != null && (widget.taxonomy!.id.isNotEmpty);
+
+  @override
+  void initState() {
+    super.initState();
+    _codeController = TextEditingController(text: widget.taxonomy?.code ?? '');
+    _labelController = TextEditingController(text: widget.taxonomy?.label ?? '');
+    _labelEnController = TextEditingController(text: widget.taxonomy?.labelEn ?? '');
+    _descriptionController = TextEditingController(text: widget.taxonomy?.description ?? '');
+    _isActive = widget.taxonomy?.isActive ?? true;
+  }
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    _labelController.dispose();
+    _labelEnController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_isEditing ? 'تعديل التصنيف' : 'إضافة تصنيف جديد'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _codeController,
+                decoration: const InputDecoration(
+                  labelText: 'الكود',
+                  hintText: 'مثال: BGD',
+                  border: OutlineInputBorder(),
+                ),
+                enabled: !_isEditing,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'الكود مطلوب';
+                  if (value.length < 2) return 'الكود يجب أن يكون حرفين على الأقل';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _labelController,
+                decoration: const InputDecoration(
+                  labelText: 'الاسم بالعربية',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'الاسم مطلوب';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _labelEnController,
+                decoration: const InputDecoration(
+                  labelText: 'الاسم بالإنجليزية (اختياري)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'الوصف (اختياري)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('نشط'),
+                value: _isActive,
+                onChanged: (value) => setState(() => _isActive = value),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _save,
+          child: _isLoading
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : Text(_isEditing ? 'حفظ' : 'إضافة'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final parentId = widget.taxonomy?.parentId ?? widget.parentId;
+      final taxonomy = Taxonomy(
+        id: _isEditing ? widget.taxonomy!.id : DateTime.now().millisecondsSinceEpoch.toString(),
+        group: widget.group,
+        code: _codeController.text.trim().toUpperCase(),
+        label: _labelController.text.trim(),
+        labelEn: _labelEnController.text.trim().isEmpty ? null : _labelEnController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+        parentId: parentId?.isEmpty == true ? null : parentId,
+        isActive: _isActive,
+        sortOrder: widget.taxonomy?.sortOrder ?? 0,
+        createdAt: widget.taxonomy?.createdAt ?? DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      final result = _isEditing
+          ? await ref.read(taxonomyCrudNotifierProvider.notifier).update(taxonomy)
+          : await ref.read(taxonomyCrudNotifierProvider.notifier).create(taxonomy);
+
+      if (result.isSuccess) {
+        widget.onSaved?.call();
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(_isEditing ? 'تم التحديث بنجاح' : 'تمت الإضافة بنجاح')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('فشل: ${(result as Failure).error.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 🔍  TaxonomyDetailsDialog — تفاصيل التصنيف
+// ─────────────────────────────────────────────────────────────────────────────
+class TaxonomyDetailsDialog extends StatelessWidget {
+  final Taxonomy taxonomy;
+
+  const TaxonomyDetailsDialog({required this.taxonomy, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(taxonomy.label),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _DetailRow('المجموعة', taxonomy.group.arabicName),
+            _DetailRow('الكود', taxonomy.code),
+            if (taxonomy.labelEn != null) _DetailRow('الاسم بالإنجليزية', taxonomy.labelEn!),
+            if (taxonomy.description != null) _DetailRow('الوصف', taxonomy.description!),
+            if (taxonomy.parentId != null) _DetailRow('معرّف الأب', taxonomy.parentId!),
+            _DetailRow('الحالة', taxonomy.isActive ? 'نشط' : 'غير نشط'),
+            _DetailRow('ترتيب العرض', taxonomy.sortOrder.toString()),
+            _DetailRow(
+              'تاريخ الإنشاء',
+              '${taxonomy.createdAt.day}/${taxonomy.createdAt.month}/${taxonomy.createdAt.year}',
+            ),
+            _DetailRow(
+              'آخر تحديث',
+              '${taxonomy.updatedAt.day}/${taxonomy.updatedAt.month}/${taxonomy.updatedAt.year}',
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إغلاق'),
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
   }
 }

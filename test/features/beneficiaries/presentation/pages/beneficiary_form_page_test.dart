@@ -1,6 +1,7 @@
 import 'package:benaa_offline_app/core/providers/providers.dart' as core_providers;
 import 'package:benaa_offline_app/core/config/app_config.dart';
 import 'package:benaa_offline_app/data/db/drift_database.dart' as drift_db;
+import 'package:benaa_offline_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/beneficiary_form_page_v3.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/providers/activity_providers.dart'
     as dashboard_providers;
@@ -35,6 +36,8 @@ Future<void> _pumpFormPage(
         beneficiary_providers.databaseProvider.overrideWith((ref) => mockDb),
         sync_providers.databaseProvider.overrideWith((ref) => mockDb),
         sync_providers.apiClientProvider.overrideWith((ref) => ref.watch(core_providers.apiClientProvider)),
+        // Prevent TaxonomyBridgeDropdown realtime-sync from reaching Firebase
+        isAuthenticatedProvider.overrideWith((ref) => false),
         bridgeTaxonomiesByGroupProvider.overrideWith(
           (ref, group) => Stream.value(taxonomyBuilder(group)),
         ),

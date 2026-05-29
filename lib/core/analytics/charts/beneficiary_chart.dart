@@ -55,7 +55,7 @@ class BeneficiaryChart extends StatelessWidget {
         horizontalInterval: 5,
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
             strokeWidth: 1,
           );
         },
@@ -109,7 +109,7 @@ class BeneficiaryChart extends StatelessWidget {
       borderData: FlBorderData(
         show: true,
         border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.3),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       lineBarsData: [
@@ -131,7 +131,7 @@ class BeneficiaryChart extends StatelessWidget {
           ),
           belowBarData: BarAreaData(
             show: true,
-            color: (showVisits ? colorScheme.tertiary : colorScheme.primary).withOpacity(0.1),
+            color: (showVisits ? colorScheme.tertiary : colorScheme.primary).withValues(alpha: 0.1),
           ),
         ),
       ],

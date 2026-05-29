@@ -1,4 +1,5 @@
 import '../../../../data/db/drift_database.dart';
+import '../../../../core/offline/firestore_local_cache_store.dart';
 import '../../../../core/sync/mobile_sync_service.dart';
 import '../../../../core/sync/sync_result_snapshot_store.dart';
 import '../../domain/repositories/file_id_reservation_repository.dart';
@@ -256,6 +257,7 @@ class MobileSyncDashboardLoader {
     final benModified = beneficiaries.where((b) => b.syncState == 'modified').length;
     final benSynced = beneficiaries.where((b) => b.syncState == 'synced').length;
     final benFailed = beneficiaries.where((b) => b.syncState == 'failed').length;
+    final benReady = benPending + benModified + benFailed;
 
     final beneficiariesSyncMeta =
         await (db.select(db.syncMetadataTable)..where((t) => t.entity.equals('beneficiaries'))).getSingleOrNull();
@@ -265,6 +267,7 @@ class MobileSyncDashboardLoader {
     final assocTotal = associations.length;
     final assocPending = associations.where((a) => a.syncState == 'pending').length;
     final assocModified = associations.where((a) => a.syncState == 'modified').length;
+    final assocFailed = associations.where((a) => a.syncState == 'failed').length;
     final assocNeedsSync = assocPending + assocModified;
     final assocSynced = associations.where((a) => a.isActive).length;
 
@@ -272,14 +275,48 @@ class MobileSyncDashboardLoader {
     final repTotal = representatives.length;
     final repPending = representatives.where((r) => r.syncState == 'pending').length;
     final repModified = representatives.where((r) => r.syncState == 'modified').length;
+    final repFailed = representatives.where((r) => r.syncState == 'failed').length;
     final repNeedsSync = repPending + repModified;
 
     final sponsorships = await db.select(db.sponsorships).get();
     final sponsorshipsTotal = sponsorships.length;
     final sponsorshipsPending = sponsorships.where((s) => s.syncState == 'pending').length;
     final sponsorshipsModified = sponsorships.where((s) => s.syncState == 'modified').length;
+    final sponsorshipsFailed = sponsorships.where((s) => s.syncState == 'failed').length;
     final sponsorshipsSynced = sponsorships.where((s) => s.syncState == 'synced').length;
     final sponsorshipsNeedsSync = sponsorshipsPending + sponsorshipsModified;
+
+    final visits = await db.select(db.visits).get();
+    final visitsPending = visits.where((v) => v.syncState == 'pending').length;
+    final visitsModified = visits.where((v) => v.syncState == 'modified').length;
+    final visitsFailed = visits.where((v) => v.syncState == 'failed').length;
+    final visitsReady = visitsPending + visitsModified + visitsFailed;
+
+    final cacheStore = FirestoreLocalCacheStore(db);
+    final followupsPending =
+        await cacheStore.countByStatuses('beneficiary_followups', const <String>['pending_upload']);
+    final followupsFailed = await cacheStore.countByStatuses('beneficiary_followups', const <String>['failed_upload']);
+    final filesPending = await cacheStore.countByStatuses('sponsorship_files', const <String>['pending_upload']);
+    final filesFailed = await cacheStore.countByStatuses('sponsorship_files', const <String>['failed_upload']);
+    final candidatesPending =
+        await cacheStore.countByStatuses('sponsorship_candidates', const <String>['pending_upload']);
+    final candidatesFailed =
+        await cacheStore.countByStatuses('sponsorship_candidates', const <String>['failed_upload']);
+    final paymentsPending = await cacheStore.countByStatuses('sponsorship_payments', const <String>['pending_upload']);
+    final paymentsFailed = await cacheStore.countByStatuses('sponsorship_payments', const <String>['failed_upload']);
+    final contactsPending = await cacheStore.countByStatuses('association_contacts', const <String>['pending_upload']);
+    final contactsFailed = await cacheStore.countByStatuses('association_contacts', const <String>['failed_upload']);
+
+    final totalPendingUploads = benReady +
+        visitsReady +
+        (sponsorshipsPending + sponsorshipsModified + sponsorshipsFailed) +
+        (assocPending + assocModified + assocFailed) +
+        (repPending + repModified + repFailed) +
+        (followupsPending + followupsFailed) +
+        (filesPending + filesFailed) +
+        (candidatesPending + candidatesFailed) +
+        (paymentsPending + paymentsFailed) +
+        (contactsPending + contactsFailed);
 
     final attachmentsTotal = await db.select(db.attachments).get().then((rows) => rows.length);
     final familyMembersTotal = await db.select(db.familyMembersTable).get().then((rows) => rows.length);
@@ -319,21 +356,40 @@ class MobileSyncDashboardLoader {
         'ben_modified': benModified,
         'ben_synced': benSynced,
         'ben_failed': benFailed,
-        'ben_needsSync': benPending + benModified,
+        'ben_needsSync': benReady,
+        'visits_total': visits.length,
+        'visits_pending': visitsPending,
+        'visits_modified': visitsModified,
+        'visits_failed': visitsFailed,
+        'visits_needsSync': visitsReady,
         'assoc_total': assocTotal,
         'assoc_active': assocSynced,
         'assoc_pending': assocPending,
         'assoc_modified': assocModified,
-        'assoc_needsSync': assocNeedsSync,
+        'assoc_failed': assocFailed,
+        'assoc_needsSync': assocNeedsSync + assocFailed,
         'rep_total': repTotal,
         'rep_pending': repPending,
         'rep_modified': repModified,
-        'rep_needsSync': repNeedsSync,
+        'rep_failed': repFailed,
+        'rep_needsSync': repNeedsSync + repFailed,
         'sponsorship_total': sponsorshipsTotal,
         'sponsorship_synced': sponsorshipsSynced,
         'sponsorship_pending': sponsorshipsPending,
         'sponsorship_modified': sponsorshipsModified,
-        'sponsorship_needsSync': sponsorshipsNeedsSync,
+        'sponsorship_failed': sponsorshipsFailed,
+        'sponsorship_needsSync': sponsorshipsNeedsSync + sponsorshipsFailed,
+        'followup_pending': followupsPending,
+        'followup_failed': followupsFailed,
+        'sponsorship_files_pending': filesPending,
+        'sponsorship_files_failed': filesFailed,
+        'sponsorship_candidates_pending': candidatesPending,
+        'sponsorship_candidates_failed': candidatesFailed,
+        'sponsorship_payments_pending': paymentsPending,
+        'sponsorship_payments_failed': paymentsFailed,
+        'association_contacts_pending': contactsPending,
+        'association_contacts_failed': contactsFailed,
+        'total_pending_uploads': totalPendingUploads,
         'attachments_total': attachmentsTotal,
         'family_members_total': familyMembersTotal,
         'dead_people_total': deadPeopleTotal,
@@ -345,7 +401,7 @@ class MobileSyncDashboardLoader {
         'attachments_contract_missing': attachmentsContractMissing,
         'attachments_contract_download_url_count': attachmentsContractWithDownloadUrl,
         'total': beneficiaries.length + assocTotal + repTotal + sponsorshipsTotal,
-        'needsSync': benPending + benModified + assocNeedsSync + repNeedsSync + sponsorshipsNeedsSync,
+        'needsSync': totalPendingUploads,
       },
       fileIdDiagnostics: fileIdDiagnostics,
       beneficiariesLastSyncError:

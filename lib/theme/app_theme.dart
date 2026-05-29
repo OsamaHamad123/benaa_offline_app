@@ -54,12 +54,14 @@ class AppTheme {
         primaryColor: primaryColor,
         useMaterial3: useMaterial3,
         textTheme: textTheme,
+        fontSizeMultiplier: fontSizeMultiplier,
       );
     } else {
       return _buildLightTheme(
         primaryColor: primaryColor,
         useMaterial3: useMaterial3,
         textTheme: textTheme,
+        fontSizeMultiplier: fontSizeMultiplier,
       );
     }
   }
@@ -174,6 +176,7 @@ class AppTheme {
     required Color primaryColor,
     required bool useMaterial3,
     required TextTheme textTheme,
+    required double fontSizeMultiplier,
   }) {
     final primaryLight = Color.alphaBlend(
       Colors.white.withOpacity(0.7),
@@ -214,8 +217,9 @@ class AppTheme {
         scrolledUnderElevation: 2,
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
-        titleTextStyle: const TextStyle(
-          fontSize: 20,
+        // Phase 5: use fontSizeMultiplier for consistency with text theme scale
+        titleTextStyle: TextStyle(
+          fontSize: 18 * fontSizeMultiplier,
           fontWeight: FontWeight.w600,
           fontFamily: _fontFamily,
           color: Colors.white,
@@ -313,6 +317,7 @@ class AppTheme {
     required Color primaryColor,
     required bool useMaterial3,
     required TextTheme textTheme,
+    required double fontSizeMultiplier,
   }) {
     // Enhanced dark colors for better contrast and readability
     final primaryLight = Color.alphaBlend(
@@ -366,8 +371,9 @@ class AppTheme {
         scrolledUnderElevation: 4,
         backgroundColor: surfaceDark,
         foregroundColor: textPrimary,
-        titleTextStyle: const TextStyle(
-          fontSize: 20,
+        // Phase 5: use fontSizeMultiplier for consistency with text theme scale
+        titleTextStyle: TextStyle(
+          fontSize: 18 * fontSizeMultiplier,
           fontWeight: FontWeight.w600,
           fontFamily: _fontFamily,
           color: textPrimary,

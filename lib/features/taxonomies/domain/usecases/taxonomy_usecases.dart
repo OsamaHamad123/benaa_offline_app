@@ -183,6 +183,47 @@ class DeleteTaxonomyUseCase {
   Future<Result<Taxonomy>> restore(String id) async {
     return await _repository.restoreTaxonomy(id);
   }
+
+  /// حذف متتالي: احذف كل الأبناء ثم الأب
+  Future<Result<void>> cascade(String id) async {
+    final childrenResult = await _repository.getChildTaxonomies(id);
+    if (childrenResult is Success<List<Taxonomy>>) {
+      for (final child in childrenResult.value) {
+        // حذف أبناء الأبناء أيضاً (recursive)
+        final grandChildrenResult = await _repository.getChildTaxonomies(child.id);
+        if (grandChildrenResult is Success<List<Taxonomy>>) {
+          for (final grandChild in grandChildrenResult.value) {
+            await _repository.deleteTaxonomy(grandChild.id);
+          }
+        }
+        await _repository.deleteTaxonomy(child.id);
+      }
+    }
+    return await _repository.deleteTaxonomy(id);
+  }
+
+  /// ترقية الأبناء: انقلهم لمستوى جذر ثم احذف الأب
+  Future<Result<void>> promoteChildren(String id) async {
+    final childrenResult = await _repository.getChildTaxonomies(id);
+    if (childrenResult is Success<List<Taxonomy>>) {
+      for (final child in childrenResult.value) {
+        final promoted = child.copyWith(clearParentId: true);
+        await _repository.updateTaxonomy(promoted);
+      }
+    }
+    return await _repository.deleteTaxonomy(id);
+  }
+
+  /// تعطيل بدلاً من الحذف
+  Future<Result<void>> deactivate(String id) async {
+    final result = await _repository.getTaxonomyById(id);
+    if (result is! Success<Taxonomy>) {
+      return const Failure(NotFoundFailure('التصنيف غير موجود'));
+    }
+    final deactivated = result.value.copyWith(isActive: false);
+    final updateResult = await _repository.updateTaxonomy(deactivated);
+    return updateResult is Success ? const Success(null) : updateResult as Result<void>;
+  }
 }
 
 /// 📊 Get Taxonomy Statistics Use Case

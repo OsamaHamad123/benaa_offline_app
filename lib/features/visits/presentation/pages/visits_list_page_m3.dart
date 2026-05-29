@@ -25,22 +25,14 @@ class VisitsListPageM3 extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPageM3> createState() => _VisitsListPageM3State();
 }
 
-class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> {
   String _selectedFilter = 'all'; // all, pending, synced
-  bool _showCalendar = false;
+  DateTime? _selectedDate; // null = بدون فلتر تاريخ
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadVisits();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadVisits() async {
@@ -52,14 +44,21 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
   List<VisitEntity> get _filteredVisits {
     final state = ref.watch(visitNotifierProvider);
     return state.visits.where((visit) {
-      switch (_selectedFilter) {
-        case 'pending':
-          return visit.syncState == 'pending';
-        case 'synced':
-          return visit.syncState == 'synced';
-        default:
-          return true;
+      // فلتر المزامنة
+      if (_selectedFilter == 'pending' && visit.syncState != 'pending') {
+        return false;
       }
+      if (_selectedFilter == 'synced' && visit.syncState != 'synced') {
+        return false;
+      }
+      // فلتر التاريخ — مقارنة السنة/الشهر/اليوم فقط
+      if (_selectedDate != null) {
+        final vd = visit.visitDate;
+        if (vd.year != _selectedDate!.year || vd.month != _selectedDate!.month || vd.day != _selectedDate!.day) {
+          return false;
+        }
+      }
+      return true;
     }).toList()
       ..sort((a, b) => b.visitDate.compareTo(a.visitDate));
   }
@@ -73,59 +72,61 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
       appBar: AppBar(
         title: Text(
           widget.beneficiaryId != null ? 'زيارات المستفيد' : 'جميع الزيارات',
-          style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
         ),
-        centerTitle: true,
+        centerTitle: false,
         elevation: 0,
         actions: [
-          // Calendar Toggle
+          // Calendar Date Picker
           IconButton(
-            icon: Icon(_showCalendar ? Icons.view_list : Icons.calendar_month),
-            tooltip: _showCalendar ? 'عرض القائمة' : 'عرض التقويم',
-            onPressed: () {
-              setState(() => _showCalendar = !_showCalendar);
-              HapticPatterns.selection();
-            },
+            icon: Badge(
+              isLabelVisible: _selectedDate != null,
+              smallSize: 8,
+              child: const Icon(Icons.calendar_month, size: 22),
+            ),
+            tooltip: 'تصفية حسب التاريخ',
+            onPressed: _pickDate,
           ),
-          // Filter Menu
+          // Merged options menu
           PopupMenuButton<String>(
             icon: Badge(
               isLabelVisible: _selectedFilter != 'all',
               label: const Text('1'),
-              child: const Icon(Icons.filter_list),
+              child: const Icon(Icons.more_vert, size: 22),
             ),
-            onSelected: (value) {
-              setState(() => _selectedFilter = value);
-              HapticPatterns.selection();
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'all', child: Text('🔹 الكل')),
-              const PopupMenuItem(
-                value: 'pending',
-                child: Text('⏳ قيد المزامنة'),
-              ),
-              const PopupMenuItem(value: 'synced', child: Text('✅ مزامنة')),
-            ],
-          ),
-          // More Options
-          PopupMenuButton<String>(
             onSelected: (value) async {
-              switch (value) {
-                case 'export':
-                  await _exportVisits();
-                  break;
-                case 'refresh':
-                  await _loadVisits();
-                  if (mounted) {
-                    EnhancedSnackbar.showSuccess(
-                      context,
-                      message: 'تم تحديث البيانات',
-                    );
-                  }
-                  break;
+              if (value == 'export') {
+                await _exportVisits();
+              } else if (value == 'refresh') {
+                await _loadVisits();
+                if (mounted) {
+                  EnhancedSnackbar.showSuccess(context, message: 'تم تحديث البيانات');
+                }
+              } else {
+                setState(() => _selectedFilter = value);
+                HapticPatterns.selection();
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuDivider(),
+              CheckedPopupMenuItem(
+                value: 'all',
+                checked: _selectedFilter == 'all',
+                child: const Text('الكل'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'pending',
+                checked: _selectedFilter == 'pending',
+                child: const Text('قيد المزامنة'),
+              ),
+              CheckedPopupMenuItem(
+                value: 'synced',
+                checked: _selectedFilter == 'synced',
+                child: const Text('مزامنة'),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'export',
                 child: Row(
@@ -149,50 +150,95 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
             ],
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(60.h),
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-            child: Row(
-              children: [
-                _buildFilterChip(
-                  label: 'الكل (${visits.length})',
-                  value: 'all',
-                  icon: Icons.list,
-                ),
-                SizedBox(width: 8.w),
-                _buildFilterChip(
-                  label: 'قيد المزامنة',
-                  value: 'pending',
-                  icon: Icons.sync,
-                ),
-                SizedBox(width: 8.w),
-                _buildFilterChip(
-                  label: 'مكتمل',
-                  value: 'synced',
-                  icon: Icons.check_circle,
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
-      body: state.isLoading
-          ? _buildLoadingSkeleton()
-          : visits.isEmpty
-              ? _buildEmptyState()
-              : _showCalendar
-                  ? _buildCalendarView(visits)
-                  : _buildTimelineView(visits),
+      body: Column(
+        children: [
+          _buildFilterBar(visits.length),
+          if (_selectedDate != null) _buildDateFilterChip(),
+          Expanded(
+            child: state.isLoading
+                ? _buildLoadingSkeleton()
+                : visits.isEmpty
+                    ? _buildEmptyState()
+                    : _buildTimelineView(visits),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           HapticPatterns.submit();
-          // Navigate to record visit page
-          context.push('/visits/record');
+          _navigateToRecordVisit();
         },
         icon: const Icon(Icons.add),
         label: const Text('تسجيل زيارة'),
         elevation: 4,
+      ),
+    );
+  }
+
+  /// يفتح DatePicker لاختيار تاريخ للتصفية.
+  Future<void> _pickDate() async {
+    HapticPatterns.selection();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      locale: const Locale('ar'),
+      helpText: 'اختر تاريخاً لتصفية الزيارات',
+      cancelText: 'إلغاء',
+      confirmText: 'تأكيد',
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedDate = picked);
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() => _selectedDate = null);
+    HapticPatterns.selection();
+  }
+
+  /// ينقل إلى صفحة تسجيل الزيارة.
+  /// إذا كانت الصفحة مفتوحة في سياق مستفيد معين، ينتقل لاحقاً.
+  /// إذا لم يكن هناك مستفيد، يوجّه المستخدم لاختيار مستفيد أولاً.
+  void _navigateToRecordVisit() {
+    if (widget.beneficiaryId != null) {
+      // Navigate to beneficiary details where user can record a visit
+      context.push('/beneficiaries/${widget.beneficiaryId}');
+    } else {
+      // No beneficiary context — direct user to beneficiaries list to select one
+      context.push('/beneficiaries');
+    }
+  }
+
+  Widget _buildFilterBar(int totalCount) {
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildFilterChip(
+              label: 'الكل ($totalCount)',
+              value: 'all',
+              icon: Icons.list,
+            ),
+            SizedBox(width: 8.w),
+            _buildFilterChip(
+              label: 'قيد المزامنة',
+              value: 'pending',
+              icon: Icons.sync,
+            ),
+            SizedBox(width: 8.w),
+            _buildFilterChip(
+              label: 'مكتمل',
+              value: 'synced',
+              icon: Icons.check_circle,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -239,7 +285,64 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
     );
   }
 
+  Widget _buildDateFilterChip() {
+    final label = DateFormat('yyyy/MM/dd', 'ar').format(_selectedDate!);
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 8.h),
+      child: Row(
+        children: [
+          Icon(Icons.event, size: 16.sp, color: AppColors.primary),
+          SizedBox(width: 6.w),
+          Text(
+            'التاريخ: $label',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(width: 8.w),
+          InkWell(
+            onTap: _clearDateFilter,
+            borderRadius: BorderRadius.circular(12.r),
+            child: Padding(
+              padding: EdgeInsets.all(4.r),
+              child: Icon(Icons.close, size: 16.sp, color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
+    // حالة فلتر تاريخ بدون نتائج
+    if (_selectedDate != null) {
+      final label = DateFormat('yyyy/MM/dd', 'ar').format(_selectedDate!);
+      return EmptyStateWidget(
+        icon: Icons.event_busy_outlined,
+        title: 'لا توجد زيارات في $label',
+        message: 'لم يتم تسجيل أي زيارة في هذا اليوم',
+        action: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: _clearDateFilter,
+              icon: const Icon(Icons.clear),
+              label: const Text('مسح التاريخ'),
+            ),
+            SizedBox(width: 8.w),
+            ElevatedButton.icon(
+              onPressed: _navigateToRecordVisit,
+              icon: const Icon(Icons.add),
+              label: const Text('تسجيل زيارة'),
+            ),
+          ],
+        ),
+      );
+    }
+    // حالة عدم وجود زيارات عامة
     return EmptyStateWidget(
       icon: Icons.event_note_outlined,
       title: 'لا توجد زيارات',
@@ -247,9 +350,9 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
           ? 'ابدأ بتسجيل زيارة جديدة'
           : 'لا توجد زيارات ${_selectedFilter == 'pending' ? 'قيد المزامنة' : 'مكتملة'}',
       action: ElevatedButton.icon(
-        onPressed: () => context.push('/visits/record'),
+        onPressed: _navigateToRecordVisit,
         icon: const Icon(Icons.add),
-        label: const Text('تسجيل زيارة'),
+        label: const Text('تسجيل أول زيارة'),
       ),
     );
   }
@@ -473,10 +576,6 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3> with Single
         ],
       ),
     );
-  }
-
-  Widget _buildCalendarView(List<VisitEntity> visits) {
-    return const Center(child: Text('Calendar View - Coming Soon'));
   }
 
   Future<void> _showVisitDetails(VisitEntity visit) async {

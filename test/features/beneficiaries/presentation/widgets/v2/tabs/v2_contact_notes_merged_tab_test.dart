@@ -2,6 +2,7 @@ import 'package:benaa_offline_app/core/config/app_config.dart';
 import 'package:benaa_offline_app/core/network/api_client.dart';
 import 'package:benaa_offline_app/core/sync/presentation/providers/sync_providers.dart' as sync_providers;
 import 'package:benaa_offline_app/data/db/drift_database.dart' as db;
+import 'package:benaa_offline_app/features/auth/presentation/providers/auth_providers.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/pages/v2_form_helpers/form_controllers.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/providers/beneficiary_dependencies.dart';
 import 'package:benaa_offline_app/features/beneficiaries/presentation/widgets/v2/tabs/v2_contact_notes_merged_tab.dart';
@@ -55,6 +56,8 @@ Widget _host(BeneficiaryFormControllers controllers) {
       sync_providers.apiClientProvider.overrideWithValue(_testApiClient),
       civilRegistryAvailableProvider.overrideWith((ref) async => false),
       bridgeTaxonomiesIndexOnceProvider.overrideWith((ref) => _seededTaxonomyIndex()),
+      // Prevent TaxonomyBridgeDropdown realtime-sync from reaching Firebase
+      isAuthenticatedProvider.overrideWith((ref) => false),
     ],
     child: ScreenUtilInit(
       designSize: const Size(375, 812),

@@ -32,6 +32,16 @@ abstract class TaxonomyLocalDataSource {
   /// حفظ/تحديث قائمة تصنيفات
   Future<void> saveTaxonomies(List<Taxonomy> taxonomies);
 
+  /// حفظ تصنيفات قادمة من السيرفر مع احترام الحذف المحلي.
+  ///
+  /// لا يُعيد إحياء تصنيف تم حذفه محلياً (isActive=false) حتى لو السيرفر أرسله كـ active.
+  /// الإعداد الافتراضي: يُعيد استدعاء [saveTaxonomies] (للتوافق مع Implementations القديمة).
+  /// Override في [TaxonomyLocalDriftDataSource] باستخدام [syncSafeUpsertBatch].
+  Future<void> saveTaxonomiesFromSync(List<Taxonomy> taxonomies) {
+    // Default implementation: same as saveTaxonomies — override for true safety
+    return saveTaxonomies(taxonomies);
+  }
+
   /// حذف تصنيف (soft delete)
   Future<void> deleteTaxonomy(String id);
 
@@ -155,6 +165,19 @@ class TaxonomyLocalDataSourceImpl implements TaxonomyLocalDataSource {
     }
 
     await _saveTaxonomies(allMap.values.toList());
+  }
+
+  @override
+  Future<void> saveTaxonomiesFromSync(List<Taxonomy> taxonomies) async {
+    // SharedPreferences implementation: تخطي التصنيفات المحذوفة محلياً
+    final all = await _getCachedTaxonomies();
+    final locallyDeletedIds = {
+      for (final t in all)
+        if (t.isDeleted) t.id
+    };
+    final safeToSave = taxonomies.where((t) => !locallyDeletedIds.contains(t.id)).toList();
+    if (safeToSave.isEmpty) return;
+    await saveTaxonomies(safeToSave);
   }
 
   @override

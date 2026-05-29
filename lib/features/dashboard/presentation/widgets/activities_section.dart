@@ -53,7 +53,10 @@ class ActivityItem extends StatelessWidget {
               ),
             ],
           ),
-          trailing: Icon(Icons.chevron_right, size: 20.sp),
+          trailing: Icon(
+            Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left : Icons.chevron_right,
+            size: 20.sp,
+          ),
         ),
       ),
     );
@@ -130,13 +133,13 @@ class RecentActivitiesList extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.analytics_outlined,
+              Icons.history_outlined,
               size: 80.sp,
-              color: Colors.blue.withOpacity(0.3),
+              color: Colors.blue.withValues(alpha: 0.3),
             ),
             SizedBox(height: 16.h),
             Text(
-              'ابدأ بإضافة مستفيدين لرؤية الإحصائيات',
+              'لا توجد أنشطة حديثة حتى الآن',
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w600,
@@ -146,7 +149,7 @@ class RecentActivitiesList extends ConsumerWidget {
             ),
             SizedBox(height: 8.h),
             Text(
-              'ستظهر هنا أنشطتك اليومية وتقاريرك',
+              'ستظهر هنا أنشطتك اليومية بعد إضافة أول مستفيد',
               style: TextStyle(fontSize: 14.sp, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),

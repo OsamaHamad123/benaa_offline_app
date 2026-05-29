@@ -3,9 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/file_number_entities.dart';
 
 class FirestoreFileNumberService {
-  FirestoreFileNumberService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreFileNumberService({FirebaseFirestore? firestore}) : _firestoreOverride = firestore;
 
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _firestoreOverride;
+  FirebaseFirestore get _firestore => _firestoreOverride ?? FirebaseFirestore.instance;
   String get projectId => _firestore.app.options.projectId;
 
   CollectionReference<Map<String, dynamic>> get _counters => _firestore.collection('file_number_counters');
@@ -168,8 +169,8 @@ class FirestoreFileNumberService {
       query = query.where('userId', isEqualTo: userId.trim());
     }
 
-    final snapshot = await query.orderBy('reservedAt', descending: true).limit(limit).get();
-    return snapshot.docs.map((doc) {
+    final snapshot = await query.limit(limit).get();
+    final items = snapshot.docs.map((doc) {
       final data = doc.data();
       return FileNumberBlock(
         blockId: data['blockId']?.toString() ?? doc.id,
@@ -187,6 +188,13 @@ class FirestoreFileNumberService {
         appVersion: data['appVersion']?.toString() ?? 'unknown',
       );
     }).toList(growable: false);
+
+    items.sort((a, b) {
+      final aTime = a.reservedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final bTime = b.reservedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bTime.compareTo(aTime);
+    });
+    return items;
   }
 
   Future<void> releaseUnusedBlockNumbers(String blockId) async {
@@ -209,8 +217,8 @@ class FirestoreFileNumberService {
       query = query.where('userId', isEqualTo: userId.trim());
     }
 
-    final snapshot = await query.orderBy('syncedAt', descending: true).limit(limit).get();
-    return snapshot.docs.map((doc) {
+    final snapshot = await query.limit(limit).get();
+    final items = snapshot.docs.map((doc) {
       final data = doc.data();
       return FileNumberAllocation(
         fileNumber: data['fileNumber']?.toString() ?? doc.id,
@@ -226,6 +234,9 @@ class FirestoreFileNumberService {
         assignedAtLocal: DateTime.tryParse(data['assignedAtLocal']?.toString() ?? '') ?? DateTime.now(),
       );
     }).toList(growable: false);
+
+    items.sort((a, b) => b.assignedAtLocal.compareTo(a.assignedAtLocal));
+    return items;
   }
 
   Future<FileNumberCounterStatus?> getRemoteCounterStatus({

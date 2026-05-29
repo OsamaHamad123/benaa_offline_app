@@ -48,28 +48,15 @@ class SaveStatusIndicator extends StatelessWidget {
   }
 
   Widget _buildSavingIndicator(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 16.w,
-          height: 16.h,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.onPrimary),
-          ),
+    return SizedBox(
+      width: 16.w,
+      height: 16.h,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(
+          Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.85),
         ),
-        SizedBox(width: 8.w),
-        Text(
-          'جاري الحفظ...',
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: colorScheme.onPrimary.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -80,60 +67,27 @@ class SaveStatusIndicator extends StatelessWidget {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (lastSaved == null) {
-      return const SizedBox.shrink();
+    // تغييرات غير محفوظة → نقطة برتقالية صغيرة فقط
+    if (hasUnsavedChanges) {
+      return Container(
+        width: 9.w,
+        height: 9.h,
+        decoration: BoxDecoration(
+          color: colorScheme.tertiary,
+          shape: BoxShape.circle,
+        ),
+      );
     }
 
-    final timeAgo = _formatTimeAgo(lastSaved);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // نقطة تحذير إذا كانت هناك تغييرات غير محفوظة
-        if (hasUnsavedChanges)
-          Container(
-            width: 8.w,
-            height: 8.h,
-            margin: EdgeInsets.only(left: 4.w),
-            decoration: BoxDecoration(
-              color: colorScheme.tertiary,
-              shape: BoxShape.circle,
-            ),
-          ),
-
-        Icon(
-          hasUnsavedChanges ? Icons.edit : Icons.check_circle,
-          size: 16.sp,
-          color: hasUnsavedChanges ? colorScheme.tertiary : colorScheme.secondary,
-        ),
-
-        SizedBox(width: 4.w),
-
-        Text(
-          hasUnsavedChanges ? 'تعديلات غير محفوظة' : 'حُفظ $timeAgo',
-          style: TextStyle(
-            fontSize: 11.sp,
-            color: colorScheme.onPrimary.withValues(alpha: 0.7),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inSeconds < 60) {
-      return 'الآن';
-    } else if (difference.inMinutes < 60) {
-      return 'منذ ${difference.inMinutes} د';
-    } else if (difference.inHours < 24) {
-      return 'منذ ${difference.inHours} س';
-    } else if (difference.inDays < 7) {
-      return 'منذ ${difference.inDays} ي';
-    } else {
-      return 'منذ ${(difference.inDays / 7).floor()} أ';
+    // محفوظ → أيقونة اختيار صغيرة فقط
+    if (lastSaved != null) {
+      return Icon(
+        Icons.check_circle_rounded,
+        size: 16.sp,
+        color: colorScheme.onPrimary.withValues(alpha: 0.7),
+      );
     }
+
+    return const SizedBox.shrink();
   }
 }

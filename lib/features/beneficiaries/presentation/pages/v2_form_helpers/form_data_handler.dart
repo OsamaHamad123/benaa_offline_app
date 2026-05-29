@@ -270,6 +270,9 @@ class BeneficiaryFormDataHandler {
       controllers.selectedGuaranteeType = beneficiary.guaranteeTypeCode ?? metadataPayload['guaranteeType'];
       controllers.selectedRelationship = beneficiary.relationship?.toString();
       controllers.selectedSection = beneficiary.sectionId?.toString();
+      // Infer hasDisability from specialNeedsCount if not explicitly set
+      controllers.hasDisability =
+          beneficiary.hasDisability || (beneficiary.specialNeedsCount != null && beneficiary.specialNeedsCount! > 0);
       // Note: city, province, relationship need enum conversion from IDs
     });
   }

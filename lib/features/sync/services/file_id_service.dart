@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/config/api_config.dart';
 import '../../../../core/notifications/notifications_service.dart';
 import '../../../../core/storage/secure_storage.dart';
+import '../../../../core/utils/log_sanitizer.dart';
 import '../../../../core/utils/unified_logger.dart';
 import '../data/repositories/local_file_number_pool_repository.dart';
 import '../data/services/firestore_file_number_service.dart';
@@ -57,6 +58,27 @@ class FileNumberPoolSnapshot {
     required this.rangeStart,
     required this.rangeEnd,
   });
+}
+
+class FileNumberSyncDownResult {
+  const FileNumberSyncDownResult({
+    required this.success,
+    required this.isWarning,
+    required this.errorCode,
+    required this.message,
+  });
+
+  final bool success;
+  final bool isWarning;
+  final String? errorCode;
+  final String message;
+
+  static const FileNumberSyncDownResult ok = FileNumberSyncDownResult(
+    success: true,
+    isWarning: false,
+    errorCode: null,
+    message: 'تمت مزامنة حالة أرقام الملفات بنجاح.',
+  );
 }
 
 /// 🆔 File ID Service
@@ -198,7 +220,7 @@ class FileIdService {
       final id = result.getOrNull();
 
       // Check if we are running low and need to reserve more
-      _checkAndReserveIfNeeded();
+      unawaited(_checkAndReserveIfNeeded());
 
       return id;
     } catch (e) {
@@ -276,10 +298,17 @@ class FileIdService {
     await _checkAndReserveIfNeeded();
   }
 
-  Future<void> syncDownFileNumberState() async {
+  Future<FileNumberSyncDownResult> syncDownFileNumberState() async {
     final localPool = _localPoolRepository;
     final remote = _firestoreFileNumberService;
-    if (localPool == null || remote == null) return;
+    if (localPool == null || remote == null) {
+      return const FileNumberSyncDownResult(
+        success: true,
+        isWarning: false,
+        errorCode: null,
+        message: 'File-number sync-down غير مفعّل في الوضع الحالي.',
+      );
+    }
 
     try {
       final deviceId = await _resolveDeviceId();
@@ -292,8 +321,36 @@ class FileIdService {
 
       final allocations = await remote.fetchDeviceAllocations(deviceId: deviceId, userId: userId);
       await localPool.mergeRemoteAllocationStatuses(allocations);
+      return FileNumberSyncDownResult.ok;
+    } on FirebaseException catch (e) {
+      final message = e.message ?? e.toString();
+      final lowerMessage = message.toLowerCase();
+      final requiresIndex = e.code == 'failed-precondition' && lowerMessage.contains('requires an index');
+      if (requiresIndex) {
+        const warningMessage = 'Firestore يحتاج Index لأرقام الملفات. افتح الرابط من اللوج أو أنشئ index يدويًا.';
+        UnifiedLogger.warning('⚠️ File-number sync-down merge failed: $warningMessage | raw=$message');
+        return const FileNumberSyncDownResult(
+          success: false,
+          isWarning: true,
+          errorCode: 'index_required',
+          message: warningMessage,
+        );
+      }
+      UnifiedLogger.warning('⚠️ File-number sync-down merge failed: $e');
+      return FileNumberSyncDownResult(
+        success: false,
+        isWarning: false,
+        errorCode: e.code,
+        message: message,
+      );
     } catch (e) {
       UnifiedLogger.warning('⚠️ File-number sync-down merge failed: $e');
+      return FileNumberSyncDownResult(
+        success: false,
+        isWarning: false,
+        errorCode: 'sync_down_failed',
+        message: e.toString(),
+      );
     }
   }
 
@@ -343,7 +400,7 @@ class FileIdService {
     final effectiveYear = year ?? DateTime.now().year;
     UnifiedLogger.info('[CedarFileNumbers] debug project=${remote.projectId} year=$effectiveYear');
     UnifiedLogger.info(
-      '[CedarFileNumbers] debug user uid=${currentUser.uid} email=${currentUser.email ?? 'unknown'}',
+      '[CedarFileNumbers] debug user uid=${LogSanitizer.maskId(currentUser.uid)} email=${LogSanitizer.maskEmail(currentUser.email)}',
     );
 
     try {

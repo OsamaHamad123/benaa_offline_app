@@ -1,8 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/widgets/dashboard_charts.dart';
 import 'package:benaa_offline_app/features/dashboard/domain/entities/dashboard_statistics.dart';
+import 'package:benaa_offline_app/features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
+import 'package:benaa_offline_app/features/taxonomies/domain/entities/taxonomy.dart';
 
 void main() {
   group('Dashboard Charts Tests', () {
@@ -78,13 +81,21 @@ void main() {
         'disabled': 8,
       };
 
-      // Act
+      // Act — CategoryDistributionChart is a ConsumerWidget; needs ProviderScope
       await tester.pumpWidget(
-        ScreenUtilInit(
-          designSize: const Size(375, 812),
-          builder: (context, child) => MaterialApp(
-            home: Scaffold(
-              body: CategoryDistributionChart(categoryCounts: categoryCounts),
+        ProviderScope(
+          overrides: [
+            // Return empty taxonomy lists — fallback labels will be used
+            bridgeTaxonomiesByGroupOnceProvider.overrideWith(
+              (ref, group) async => const <Taxonomy>[],
+            ),
+          ],
+          child: ScreenUtilInit(
+            designSize: const Size(375, 812),
+            builder: (context, child) => MaterialApp(
+              home: Scaffold(
+                body: CategoryDistributionChart(categoryCounts: categoryCounts),
+              ),
             ),
           ),
         ),

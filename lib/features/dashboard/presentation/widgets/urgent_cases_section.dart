@@ -226,7 +226,7 @@ class UrgentCasesSection extends ConsumerWidget {
             Icon(Icons.check_circle_outline, size: 48.sp, color: Colors.green),
             SizedBox(height: 12.h),
             Text(
-              'لا توجد حالات طارئة',
+              'أحسنت! لا توجد حالات تحتاج متابعة اليوم',
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w600,

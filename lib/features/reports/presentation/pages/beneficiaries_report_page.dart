@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../../core/widgets/loading_state.dart';
 import '../../../../data/db/drift_database.dart';
 import '../../../../core/providers/providers.dart';
@@ -16,11 +18,28 @@ class BeneficiariesReportPage extends ConsumerStatefulWidget {
 }
 
 class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPage> {
+  final _searchController = TextEditingController();
   String _searchQuery = '';
+  Timer? _searchDebounce;
   String? _selectedGovernorate;
   String? _selectedCategory;
   String? _selectedSyncState;
   bool _showFilters = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() => _searchQuery = value.trim().toLowerCase());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +89,7 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
+              _searchController.clear();
               setState(() {
                 _searchQuery = '';
                 _selectedGovernorate = null;
@@ -248,18 +268,26 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
                       ),
                       const SizedBox(height: 12),
                       TextField(
+                        controller: _searchController,
                         decoration: InputDecoration(
                           hintText: 'بحث بالاسم أو الرقم الوطني',
                           prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _onSearchChanged('');
+                                  },
+                                )
+                              : null,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
                           fillColor: Colors.grey[50],
                         ),
-                        onChanged: (value) {
-                          setState(() => _searchQuery = value);
-                        },
+                        onChanged: _onSearchChanged,
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -467,9 +495,13 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
                                     tooltip: 'تصدير التقرير',
                                     onSelected: (value) {
                                       if (value == 'excel') {
-                                        _exportToExcel(filteredBeneficiaries);
+                                        _exportToExcel(filteredBeneficiaries, share: false);
                                       } else if (value == 'pdf') {
-                                        _exportToPdf(filteredBeneficiaries);
+                                        _exportToPdf(filteredBeneficiaries, share: false);
+                                      } else if (value == 'share_excel') {
+                                        _exportToExcel(filteredBeneficiaries, share: true);
+                                      } else if (value == 'share_pdf') {
+                                        _exportToPdf(filteredBeneficiaries, share: true);
                                       }
                                     },
                                     itemBuilder: (context) => [
@@ -477,10 +509,7 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
                                         value: 'excel',
                                         child: Row(
                                           children: [
-                                            Icon(
-                                              Icons.table_chart,
-                                              color: Colors.green,
-                                            ),
+                                            Icon(Icons.table_chart, color: Colors.green),
                                             SizedBox(width: 12),
                                             Text('تصدير Excel'),
                                           ],
@@ -490,12 +519,30 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
                                         value: 'pdf',
                                         child: Row(
                                           children: [
-                                            Icon(
-                                              Icons.picture_as_pdf,
-                                              color: Colors.red,
-                                            ),
+                                            Icon(Icons.picture_as_pdf, color: Colors.red),
                                             SizedBox(width: 12),
                                             Text('تصدير PDF'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuDivider(),
+                                      const PopupMenuItem(
+                                        value: 'share_excel',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.share, color: Colors.blue),
+                                            SizedBox(width: 12),
+                                            Text('مشاركة Excel'),
+                                          ],
+                                        ),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'share_pdf',
+                                        child: Row(
+                                          children: [
+                                            Icon(Icons.share, color: Colors.deepOrange),
+                                            SizedBox(width: 12),
+                                            Text('مشاركة PDF'),
                                           ],
                                         ),
                                       ),
@@ -536,9 +583,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
     };
   }
 
-  void _exportToExcel(List<Beneficiary> beneficiaries) async {
+  void _exportToExcel(List<Beneficiary> beneficiaries, {bool share = false}) async {
     try {
-      // Show loading
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -549,30 +595,28 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
         beneficiaries,
       );
 
-      // Close loading
       if (!mounted) return;
       Navigator.pop(context);
 
-      // Show success
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم تصدير التقرير بنجاح\n$filePath'),
-          action: SnackBarAction(
-            label: 'فتح',
-            onPressed: () => BeneficiariesExportService.openFile(filePath),
+      if (share) {
+        await _shareFile(filePath, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تصدير التقرير بنجاح\n$filePath'),
+            action: SnackBarAction(
+              label: 'فتح',
+              onPressed: () => BeneficiariesExportService.openFile(filePath),
+            ),
+            duration: const Duration(seconds: 5),
           ),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-
-      // Auto open file
-      await BeneficiariesExportService.openFile(filePath);
+        );
+        await BeneficiariesExportService.openFile(filePath);
+      }
     } catch (e) {
-      // Close loading if still showing
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('فشل التصدير: $e'), backgroundColor: Colors.red),
@@ -580,9 +624,8 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
     }
   }
 
-  void _exportToPdf(List<Beneficiary> beneficiaries) async {
+  void _exportToPdf(List<Beneficiary> beneficiaries, {bool share = false}) async {
     try {
-      // Show loading
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -593,35 +636,40 @@ class _BeneficiariesReportPageState extends ConsumerState<BeneficiariesReportPag
         beneficiaries,
       );
 
-      // Close loading
       if (!mounted) return;
       Navigator.pop(context);
 
-      // Show success
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('تم تصدير التقرير بنجاح\n$filePath'),
-          action: SnackBarAction(
-            label: 'فتح',
-            onPressed: () => BeneficiariesExportService.openFile(filePath),
+      if (share) {
+        await _shareFile(filePath, 'application/pdf');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('تم تصدير التقرير بنجاح\n$filePath'),
+            action: SnackBarAction(
+              label: 'فتح',
+              onPressed: () => BeneficiariesExportService.openFile(filePath),
+            ),
+            duration: const Duration(seconds: 5),
           ),
-          duration: const Duration(seconds: 5),
-        ),
-      );
-
-      // Auto open file
-      await BeneficiariesExportService.openFile(filePath);
+        );
+        await BeneficiariesExportService.openFile(filePath);
+      }
     } catch (e) {
-      // Close loading if still showing
       if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('فشل التصدير: $e'), backgroundColor: Colors.red),
       );
     }
+  }
+
+  Future<void> _shareFile(String filePath, String mimeType) async {
+    await Share.shareXFiles(
+      [XFile(filePath, mimeType: mimeType)],
+      subject: 'تقرير المستفيدين',
+    );
   }
 }
 

@@ -29,7 +29,8 @@ class ModernSliverAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final onPrimary = colorScheme.onPrimary;
-    final effectiveExpandedHeight = expandedHeight ?? (isTablet ? 120.h : 100.h);
+    // Phase 5: reduced height for a lighter, more comfortable AppBar
+    final effectiveExpandedHeight = expandedHeight ?? (isTablet ? 110.h : 88.h);
 
     return SliverAppBar(
       expandedHeight: effectiveExpandedHeight,
@@ -134,8 +135,9 @@ class ModernActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(10.r),
           onTap: onPressed,
           child: Ink(
-            width: 38.w,
-            height: 38.h,
+            // Phase 5: increased touch target (closer to 48dp WCAG recommendation)
+            width: 40.w,
+            height: 40.h,
             decoration: BoxDecoration(
               color: isDark ? onPrimary.withValues(alpha: 0.14) : onPrimary.withValues(alpha: 0.20),
               borderRadius: BorderRadius.circular(11.r),

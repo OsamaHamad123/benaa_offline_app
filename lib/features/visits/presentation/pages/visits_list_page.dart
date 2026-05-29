@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:benaa_offline_app/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
+import '../../../../core/utils/arabic_normalizer.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/ux/ux_widgets.dart';
 import '../../domain/entities/visit_entity.dart';
@@ -21,13 +23,17 @@ class VisitsListPage extends ConsumerStatefulWidget {
   ConsumerState<VisitsListPage> createState() => _VisitsListPageState();
 }
 
-class _VisitsListPageState extends ConsumerState<VisitsListPage>
-    with SingleTickerProviderStateMixin {
+class _VisitsListPageState extends ConsumerState<VisitsListPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   DateTime _selectedMonth = DateTime.now();
   String _selectedFilter = 'all'; // all, pending, submitted
   bool _isLoading = true;
   List<VisitEntity> _visits = [];
+
+  // Search
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  Timer? _searchDebounce;
 
   @override
   void initState() {
@@ -39,7 +45,33 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    if (value.isEmpty) {
+      if (mounted) setState(() => _searchQuery = '');
+      return;
+    }
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() => _searchQuery = ArabicNormalizer.normalize(value.trim()));
+    });
+  }
+
+  List<VisitEntity> get _filteredVisits {
+    if (_searchQuery.isEmpty) return _visits;
+    return _visits.where((v) {
+      bool _c(String? t) {
+        if (t == null || t.isEmpty) return false;
+        return ArabicNormalizer.normalize(t).contains(_searchQuery);
+      }
+
+      return _c(v.staffName) || _c(v.notes) || _c(v.syncState);
+    }).toList();
   }
 
   Future<void> _loadVisits() async {
@@ -47,9 +79,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
     try {
       // Load visits from provider
       if (widget.beneficiaryId != null) {
-        await ref
-            .read(visitNotifierProvider.notifier)
-            .loadBeneficiaryVisits(widget.beneficiaryId!);
+        await ref.read(visitNotifierProvider.notifier).loadBeneficiaryVisits(widget.beneficiaryId!);
       }
 
       final state = ref.read(visitNotifierProvider);
@@ -191,6 +221,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('سجل الزيارات'),
@@ -206,12 +237,48 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
             onPressed: _exportVisits,
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.timeline), text: 'الجدول الزمني'),
-            Tab(icon: Icon(Icons.calendar_month), text: 'التقويم'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(104),
+          child: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 4.h),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'بحث في الزيارات...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              _onSearchChanged('');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: colorScheme.surface,
+                    contentPadding: EdgeInsets.symmetric(vertical: 8.h),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    isDense: true,
+                  ),
+                ),
+              ),
+              TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(icon: Icon(Icons.timeline), text: 'الجدول الزمني'),
+                  Tab(icon: Icon(Icons.calendar_month), text: 'التقويم'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       body: TabBarView(
@@ -253,13 +320,40 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
       );
     }
 
+    final displayed = _filteredVisits;
+
+    if (displayed.isEmpty && _searchQuery.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'لا توجد نتائج لـ "$_searchQuery"',
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () {
+                _searchController.clear();
+                _onSearchChanged('');
+              },
+              child: const Text('مسح البحث'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return PullToRefreshWrapper(
       onRefresh: _loadVisits,
       child: ListView.builder(
         padding: EdgeInsets.all(16.r),
-        itemCount: _visits.length,
+        itemCount: displayed.length,
         itemBuilder: (context, index) {
-          final visit = _visits[index];
+          final visit = displayed[index];
           return FadeSlideTransition(
             duration: AppDurations.fast,
             child: _buildVisitTimelineCard(visit, index),
@@ -295,8 +389,7 @@ class _VisitsListPageState extends ConsumerState<VisitsListPage>
                     size: 20.sp,
                   ),
                 ),
-                if (index < _visits.length - 1)
-                  Container(width: 2, height: 60.h, color: Colors.grey[300]),
+                if (index < _visits.length - 1) Container(width: 2, height: 60.h, color: Colors.grey[300]),
               ],
             ),
           ),

@@ -8,7 +8,8 @@ class SmartAutoSaveIndicator extends StatefulWidget {
   final bool hasUnsavedChanges;
 
   const SmartAutoSaveIndicator({
-    required this.isSaving, super.key,
+    required this.isSaving,
+    super.key,
     this.lastSaved,
     this.hasUnsavedChanges = false,
   });
@@ -17,8 +18,7 @@ class SmartAutoSaveIndicator extends StatefulWidget {
   State<SmartAutoSaveIndicator> createState() => _SmartAutoSaveIndicatorState();
 }
 
-class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator>
-    with SingleTickerProviderStateMixin {
+class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
@@ -43,8 +43,7 @@ class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator>
   @override
   void didUpdateWidget(SmartAutoSaveIndicator oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.isSaving != oldWidget.isSaving ||
-        widget.lastSaved != oldWidget.lastSaved) {
+    if (widget.isSaving != oldWidget.isSaving || widget.lastSaved != oldWidget.lastSaved) {
       _animationController.forward(from: 0.0);
     }
   }
@@ -85,92 +84,57 @@ class _SmartAutoSaveIndicatorState extends State<SmartAutoSaveIndicator>
   }
 
   Widget _buildSavingIndicator(ThemeData theme) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 14.w,
-            height: 14.h,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation(theme.colorScheme.primary),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 12.w,
+          height: 12.h,
+          child: CircularProgressIndicator(
+            strokeWidth: 1.5,
+            valueColor: AlwaysStoppedAnimation(
+              theme.colorScheme.onPrimary.withValues(alpha: 0.8),
             ),
           ),
-          SizedBox(width: 6.w),
-          Text(
-            'جاري الحفظ...',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w600,
-            ),
+        ),
+        SizedBox(width: 5.w),
+        Text(
+          'حفظ...',
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildSavedIndicator(ThemeData theme) {
-    final timeSince = _getTimeSinceLastSave(widget.lastSaved!);
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.green.shade200),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.check_circle_rounded,
-            size: 14.sp,
-            color: Colors.green.shade700,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.cloud_done_rounded,
+          size: 13.sp,
+          color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
+        ),
+        SizedBox(width: 4.w),
+        Text(
+          _getTimeSinceLastSave(widget.lastSaved!),
+          style: TextStyle(
+            fontSize: 11.sp,
+            color: theme.colorScheme.onPrimary.withValues(alpha: 0.7),
           ),
-          SizedBox(width: 6.w),
-          Text(
-            timeSince,
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: Colors.green.shade700,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildUnsavedIndicator(ThemeData theme) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.orange.shade200),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.edit_rounded, size: 14.sp, color: Colors.orange.shade700),
-          SizedBox(width: 6.w),
-          Text(
-            'تعديلات غير محفوظة',
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: Colors.orange.shade700,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+    return Icon(
+      Icons.edit_rounded,
+      size: 14.sp,
+      color: theme.colorScheme.onPrimary.withValues(alpha: 0.6),
     );
   }
 

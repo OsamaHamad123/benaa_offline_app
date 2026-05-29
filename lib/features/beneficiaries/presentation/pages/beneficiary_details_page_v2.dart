@@ -281,8 +281,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
       foregroundColor: foregroundColor,
       iconTheme: IconThemeData(color: foregroundColor),
       actionsIconTheme: IconThemeData(color: foregroundColor),
-      titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: foregroundColor,
+      titleTextStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
       actions: [
@@ -310,6 +309,17 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
                   ),
                   SizedBox(width: 10.w),
                   Text(_showTimelineView ? 'عرض القائمة' : 'عرض Timeline'),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'relations',
+              child: Row(
+                children: [
+                  Icon(Icons.dashboard_outlined, size: 20.sp),
+                  SizedBox(width: 10.w),
+                  const Text('الكفالات والزيارات'),
                 ],
               ),
             ),
@@ -511,6 +521,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
         child: ActionButtons(
           onEdit: () => _navigateToEdit(context),
           onAddVisit: _navigateToAddVisit,
+          onOpenRelations: _navigateToRelationsTabs,
         ),
       ),
     );
@@ -574,7 +585,7 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
                 SizedBox(width: 8.w),
                 Expanded(
                   child: Text(
-                    'Profile Strength: $percent%',
+                    'قوة الملف الشخصي: $percent%',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -731,6 +742,12 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
     }
   }
 
+  Future<void> _navigateToRelationsTabs() async {
+    if (!mounted) return;
+    final beneficiaryId = _resolvedBeneficiaryId ?? widget.beneficiaryId;
+    await context.push('/beneficiaries/$beneficiaryId/relations');
+  }
+
   Future<void> _handleRefresh() async {
     if (_beneficiaryIntId == null) return;
 
@@ -745,6 +762,9 @@ class _BeneficiaryDetailsPageV2State extends ConsumerState<BeneficiaryDetailsPag
 
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
+      case 'relations':
+        _navigateToRelationsTabs();
+        break;
       case 'delete':
         _showDeleteDialog(context);
         break;

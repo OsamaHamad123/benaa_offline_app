@@ -70,7 +70,8 @@ class AssociationRepositoryImpl implements AssociationRepository {
     AssociationParams params,
   ) async {
     try {
-      final id = _uuid.v4();
+      final incomingId = params.id?.trim();
+      final id = (incomingId == null || incomingId.isEmpty) ? _uuid.v4() : incomingId;
       final now = DateTime.now();
 
       final companion = AssociationsCompanion(

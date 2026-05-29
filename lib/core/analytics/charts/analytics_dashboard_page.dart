@@ -423,6 +423,7 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
             _lastExportedType = ExportType.pdf;
           });
           await service.openFile(result.filePath!);
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('تم تصدير التقرير: ${result.fileName}'),
@@ -448,6 +449,7 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
             _lastExportedType = ExportType.excel;
           });
           await service.openFile(result.filePath!);
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('تم تصدير التقرير: ${result.fileName}'),
@@ -495,7 +497,7 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
       final bytes = await File(result.filePath!).readAsBytes();
       await Printing.layoutPdf(
         onLayout: (_) async => bytes,
-        name: 'analytics_${_selectedYear}',
+        name: 'analytics_$_selectedYear',
       );
     } catch (e) {
       if (!mounted) return;
@@ -612,9 +614,9 @@ class _AnalyticsDashboardPageState extends ConsumerState<AnalyticsDashboardPage>
           title: 'مقارنة السنوات',
           headers: const ['المؤشر', 'النمو %'],
           rows: [
-            ['المستفيدون', '${(growth['beneficiaries'] as num?)?.toStringAsFixed(1) ?? '0.0'}'],
-            ['الزيارات', '${(growth['visits'] as num?)?.toStringAsFixed(1) ?? '0.0'}'],
-            ['الكفالات', '${(growth['sponsorships'] as num?)?.toStringAsFixed(1) ?? '0.0'}'],
+            ['المستفيدون', (growth['beneficiaries'] as num?)?.toStringAsFixed(1) ?? '0.0'],
+            ['الزيارات', (growth['visits'] as num?)?.toStringAsFixed(1) ?? '0.0'],
+            ['الكفالات', (growth['sponsorships'] as num?)?.toStringAsFixed(1) ?? '0.0'],
           ],
         ),
       ],

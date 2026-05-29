@@ -8,8 +8,9 @@ class DashboardTextStyles {
   DashboardTextStyles._();
 
   // Section Title
+  // Phase 5: reduced from 18.sp to 17.sp for a lighter visual hierarchy
   static TextStyle sectionTitle = TextStyle(
-    fontSize: 18.sp,
+    fontSize: 17.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
     letterSpacing: -0.5,
@@ -17,7 +18,7 @@ class DashboardTextStyles {
 
   // Stat Value (الرقم الكبير)
   static TextStyle statValue = TextStyle(
-    fontSize: 28.sp,
+    fontSize: 24.sp,
     fontWeight: FontWeight.bold,
     color: AppColors.textPrimary,
     height: 1.2,
@@ -31,8 +32,9 @@ class DashboardTextStyles {
   );
 
   // Card Title
+  // Phase 5: reduced from 16.sp to 15.sp for a lighter card heading
   static TextStyle cardTitle = TextStyle(
-    fontSize: 16.sp,
+    fontSize: 15.sp,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );

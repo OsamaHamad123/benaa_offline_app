@@ -238,7 +238,7 @@ class _RealTimePerformanceMonitorState
                 Container(
                   padding: EdgeInsets.all(8.r),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8.r),
                   ),
                   child: Icon(icon, color: color, size: 24.sp),
@@ -337,7 +337,7 @@ class _RealTimePerformanceMonitorState
     }
 
     return Card(
-      color: color.withOpacity(0.1),
+      color: color.withValues(alpha: 0.1),
       child: Padding(
         padding: EdgeInsets.all(16.r),
         child: Row(
@@ -450,7 +450,7 @@ class _ChartPainter extends CustomPainter {
 
     // Draw threshold line
     final thresholdPaint = Paint()
-      ..color = Colors.red.withOpacity(0.3)
+      ..color = Colors.red.withValues(alpha: 0.3)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 

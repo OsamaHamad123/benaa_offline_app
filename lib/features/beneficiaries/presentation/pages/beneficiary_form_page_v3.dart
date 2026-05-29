@@ -1046,27 +1046,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     if (_hasUnsavedChangesNotifier.value && !_isSaving && !_isDeleting && !_isLoading) {
       unawaited(_autoSaveDraft());
     }
-
-    final firstIncomplete = _firstIncompleteTabIndex();
-    if (firstIncomplete != null && newIndex > firstIncomplete && newIndex > previousIndex) {
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      messenger?.hideCurrentSnackBar();
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text('لا يزال هناك حقول ناقصة. أول تبويب يحتاج متابعة: ${FormTabs.tabs[firstIncomplete].title}'),
-          action: SnackBarAction(
-            label: 'اذهب الآن',
-            onPressed: () {
-              _tabController.animateTo(
-                firstIncomplete,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-              );
-            },
-          ),
-        ),
-      );
-    }
   }
 
   /// 📋 Show final review before saving
@@ -1408,6 +1387,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     return '${dt.year}/${dt.month}/${dt.day}';
   }
 
+  // ignore: unused_element
   Widget _buildAutoSaveIndicator(BuildContext context, DateTime? lastAutoSavedAt) {
     if (lastAutoSavedAt == null) {
       return const SizedBox.shrink();
@@ -1900,16 +1880,6 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                         // 🚨 Error Banner - Separated widget
                         const FormErrorBanner(),
 
-                        if (!isMobile && !isShortHeight) ...[
-                          ValueListenableBuilder<DateTime?>(
-                            valueListenable: _lastAutoSavedNotifier,
-                            builder: (context, lastAutoSavedAt, _) {
-                              return _buildAutoSaveIndicator(context, lastAutoSavedAt);
-                            },
-                          ),
-                          _buildSaveSyncTimeline(context, syncState),
-                        ],
-
                         ValueListenableBuilder<bool>(
                           valueListenable: _isTaxonomyCoverageLoadingNotifier,
                           builder: (context, isCoverageLoading, _) {
@@ -2150,6 +2120,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     );
   }
 
+  // ignore: unused_element
   Widget _buildSaveSyncTimeline(BuildContext context, sync_providers.SyncState syncState) {
     return ValueListenableBuilder<DateTime?>(
       valueListenable: _lastSavedNotifier,

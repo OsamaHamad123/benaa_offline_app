@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/providers.dart';
+import 'dart:developer' as developer;
 import '../../domain/entities/association.dart';
 import '../../domain/entities/representative.dart';
 import '../../domain/usecases/get_all_active_associations.dart';
@@ -13,6 +14,7 @@ import '../../domain/usecases/search_associations.dart';
 import '../../data/repositories/association_repository_impl.dart';
 import '../../../../core/error_handling/result.dart';
 import '../../domain/repositories/association_repository.dart';
+import '../../data/dev/cedar_associations_seed.dart';
 
 // ============================================================================
 // PROVIDERS
@@ -63,6 +65,11 @@ final createRepresentativeUseCaseProvider = Provider((ref) {
 final searchAssociationsUseCaseProvider = Provider((ref) {
   final repository = ref.watch(associationRepositoryProvider);
   return SearchAssociationsUseCase(repository);
+});
+
+final cedarAssociationsSeederProvider = Provider<CedarAssociationsSeeder>((ref) {
+  final repository = ref.watch(associationRepositoryProvider);
+  return CedarAssociationsSeeder(repository);
 });
 
 // ============================================================================
@@ -182,9 +189,8 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
     switch (result) {
       case Success(value: final updatedAssociation):
-        final updatedList = state.associations
-            .map((a) => a.id == updatedAssociation.id ? updatedAssociation : a)
-            .toList();
+        final updatedList =
+            state.associations.map((a) => a.id == updatedAssociation.id ? updatedAssociation : a).toList();
 
         state = state.copyWith(
           associations: updatedList,
@@ -209,8 +215,7 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 
     switch (result) {
       case Success():
-        final updatedList =
-            state.associations.where((a) => a.id != id).toList();
+        final updatedList = state.associations.where((a) => a.id != id).toList();
 
         state = state.copyWith(
           associations: updatedList,
@@ -224,6 +229,19 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
         );
         return false;
     }
+  }
+
+  Future<CedarAssociationsSeedResult> seedCedarAssociations({bool force = false}) async {
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    final seeder = _ref.read(cedarAssociationsSeederProvider);
+
+    final result = await seeder.seedCedarAssociations(force: force);
+    await loadAssociations();
+
+    developer.log('[CedarAssociations] list refreshed', name: 'CedarAssociations');
+
+    state = state.copyWith(isLoading: false);
+    return result;
   }
 
   // ============================================================================
@@ -259,7 +277,6 @@ class AssociationsNotifier extends StateNotifier<AssociationsState> {
 }
 
 /// Associations State Provider
-final associationsProvider =
-    StateNotifierProvider<AssociationsNotifier, AssociationsState>((ref) {
+final associationsProvider = StateNotifierProvider<AssociationsNotifier, AssociationsState>((ref) {
   return AssociationsNotifier(ref);
 });

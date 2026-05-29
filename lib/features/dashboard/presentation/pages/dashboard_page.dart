@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +15,7 @@ import '../../../../core/widgets/charts.dart';
 import '../../../../core/widgets/modern_sliver_app_bar.dart';
 import '../../../../core/widgets/enhanced_refresh_indicator.dart';
 import '../../../../core/widgets/shimmer_loading.dart';
+import '../../../../core/auth/role_provider.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../../../../core/monitoring/app_monitoring.dart';
 import '../../../../core/analytics/app_analytics.dart';
@@ -31,6 +33,7 @@ import '../../../civil_db_download/domain/entities/download_progress.dart';
 
 // Dashboard
 import '../providers.dart';
+import '../providers/dashboard_ui_state_provider.dart';
 import '../services/dashboard_navigation_service.dart';
 import '../utils/dashboard_colors.dart';
 import '../utils/dashboard_text_styles.dart';
@@ -38,6 +41,7 @@ import '../utils/dashboard_haptics.dart';
 import '../widgets/dashboard_widgets.dart';
 import '../widgets/dashboard_search_delegate.dart';
 import '../widgets/dashboard_export_dialog.dart';
+import '../widgets/monitoring_dashboard.dart';
 import '../../../sync/mobile_sync_page.dart';
 
 /// Dashboard Page - Clean Architecture Version with Navigation
@@ -52,16 +56,13 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int _selectedIndex = 0;
   bool _showWelcomeBanner = false;
-  String _selectedFilter = 'all';
   bool _isOnline = true;
+  // _dashboardViewMode stays local — it is a view-mode enum not in DashboardUIState.
+  // Filter fields (_selectedFilter, _selectedCategory, _selectedGovernorate, _syncedOnly)
+  // are stored in dashboardUIStateProvider to survive screen recreation.
   _DashboardViewMode _dashboardViewMode = _DashboardViewMode.operational;
   DateTime? _dashboardOpenedAt;
   bool _dashboardFirstActionTracked = false;
-
-  // Advanced Filters
-  String? _selectedCategory;
-  String? _selectedGovernorate;
-  bool? _syncedOnly;
 
   // Connectivity subscription - لتجنب memory leak
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -141,11 +142,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
         if (wasOffline && isNowOnline) {
           _showOnlineSnackbar();
-          // ✅ أعد تحميل البيانات عند عودة الاتصال
-          try {
+          // ✅ أعد تحميل البيانات عند عودة الاتصال — guard with mounted check
+          if (mounted) {
             ref.read(dashboardProvider.notifier).refresh();
-          } catch (_) {
-            // Ignore if provider is not available
           }
         }
       }
@@ -170,20 +169,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 
   void _showAdvancedFilters() {
+    final uiState = ref.read(dashboardUIStateProvider);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AdvancedFiltersWidget(
-        selectedCategory: _selectedCategory,
-        selectedGovernorate: _selectedGovernorate,
-        syncedOnly: _syncedOnly,
+        selectedCategory: uiState.selectedCategory,
+        selectedGovernorate: uiState.selectedGovernorate,
+        syncedOnly: uiState.syncedOnly,
         onApply: (category, governorate, synced) {
-          setState(() {
-            _selectedCategory = category;
-            _selectedGovernorate = governorate;
-            _syncedOnly = synced;
-          });
+          ref.read(dashboardUIStateProvider.notifier).applyAdvancedFilters(
+                category: category,
+                governorate: governorate,
+                syncedOnly: synced,
+              );
 
           // Note: Filter implementation depends on provider architecture
           // Currently filters are applied when beneficiaries list is loaded
@@ -198,27 +198,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   Widget build(BuildContext context) {
     final uxFlags = ref.watch(core_providers.uxFeatureFlagsProvider).valueOrNull ?? const UxFeatureFlags();
+    // Read UI filter state from provider — survives screen recreation.
+    final uiState = ref.watch(dashboardUIStateProvider);
     final Widget currentPage;
 
     switch (_selectedIndex) {
       case 0:
         currentPage = _DashboardHome(
           showWelcomeBanner: _showWelcomeBanner,
-          selectedFilter: _selectedFilter,
+          selectedFilter: uiState.selectedFilter,
           isOnline: _isOnline,
           dashboardViewMode: _dashboardViewMode,
-          selectedCategory: _selectedCategory,
-          selectedGovernorate: _selectedGovernorate,
-          syncedOnly: _syncedOnly,
+          selectedCategory: uiState.selectedCategory,
+          selectedGovernorate: uiState.selectedGovernorate,
+          syncedOnly: uiState.syncedOnly,
           onWelcomeDismiss: () {
             setState(() {
               _showWelcomeBanner = false;
             });
           },
           onFilterChanged: (filter) {
-            setState(() {
-              _selectedFilter = filter;
-            });
+            ref.read(dashboardUIStateProvider.notifier).setSelectedFilter(filter);
           },
           onViewModeChanged: (mode) {
             setState(() {
@@ -241,21 +241,19 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       default:
         currentPage = _DashboardHome(
           showWelcomeBanner: _showWelcomeBanner,
-          selectedFilter: _selectedFilter,
+          selectedFilter: uiState.selectedFilter,
           isOnline: _isOnline,
           dashboardViewMode: _dashboardViewMode,
-          selectedCategory: _selectedCategory,
-          selectedGovernorate: _selectedGovernorate,
-          syncedOnly: _syncedOnly,
+          selectedCategory: uiState.selectedCategory,
+          selectedGovernorate: uiState.selectedGovernorate,
+          syncedOnly: uiState.syncedOnly,
           onWelcomeDismiss: () {
             setState(() {
               _showWelcomeBanner = false;
             });
           },
           onFilterChanged: (filter) {
-            setState(() {
-              _selectedFilter = filter;
-            });
+            ref.read(dashboardUIStateProvider.notifier).setSelectedFilter(filter);
           },
           onViewModeChanged: (mode) {
             setState(() {
@@ -388,22 +386,20 @@ class _DashboardHome extends ConsumerWidget {
     final pendingTasksCount = ref.watch(
       dashboardProvider.select((state) => state.todayStats?.pendingTasks),
     );
-    final taxonomySyncStatus = ref.watch(taxonomySyncStatusProvider);
-    final taxonomyStatsAsync = ref.watch(taxonomyStatisticsProvider);
-    final taxonomyTotal = taxonomyStatsAsync.valueOrNull?.totalCount ?? 0;
+
+    // Admin role — used for gating admin-only AppBar tools
+    final isAdmin = ref.watch(isAdminProvider);
 
     return CustomScrollView(
       slivers: [
-        // Modern App Bar - مكون موحد قابل لإعادة الاستخدام
+        // Modern App Bar — أدوات المستخدم الأساسية فقط
+        // الأدوات التقنية/الإدارية مخفية في قائمة الـ popup للمدير فقط
         ModernSliverAppBar(
           title: !isOnline ? 'منظومة بناء (غير متصل)' : 'منظومة بناء',
           icon: Icons.dashboard_rounded,
           actions: [
-            _buildTaxonomyStatusBadge(
-              context,
-              taxonomySyncStatus,
-              taxonomyTotal,
-            ),
+            // Phase 5: explicit spacing between AppBar icons for visual breathing room
+            // بحث — متاح لجميع المستخدمين
             ModernActionButton(
               icon: Icons.search_rounded,
               tooltip: 'البحث',
@@ -415,26 +411,8 @@ class _DashboardHome extends ConsumerWidget {
                 );
               },
             ),
-            ModernActionButton(
-              icon: Icons.file_download_outlined,
-              tooltip: 'تصدير التقرير',
-              onPressed: () {
-                onDashboardAction('export_report_tapped');
-                // Show export dialog
-                final dashboard = state.statistics;
-                if (dashboard != null) {
-                  showDialog(
-                    context: context,
-                    builder: (_) => DashboardExportDialog(dashboard: dashboard),
-                  );
-                } else {
-                  EnhancedSnackbar.showWarning(
-                    context,
-                    message: 'الرجاء الانتظار حتى يتم تحميل البيانات',
-                  );
-                }
-              },
-            ),
+            SizedBox(width: 6.w),
+            // إشعارات — متاحة لجميع المستخدمين
             ModernActionButton(
               icon: Icons.notifications_outlined,
               tooltip: 'الإشعارات',
@@ -444,9 +422,15 @@ class _DashboardHome extends ConsumerWidget {
                 final count = pendingTasksCount ?? 0;
                 EnhancedSnackbar.showInfo(
                   context,
-                  message: count > 0 ? 'لديك $count مهمة معلقة' : 'لا توجد مهام معلقة',
+                  message: count > 0 ? '$count سجل بانتظار الرفع' : 'لا توجد سجلات معلقة',
                 );
               },
+            ),
+            SizedBox(width: 4.w),
+            // قائمة إضافية: التصدير/المراقبة/التصنيفات — للمدير أو debug فقط
+            _DashboardAdminPopupMenu(
+              isAdmin: isAdmin,
+              onDashboardAction: onDashboardAction,
             ),
           ],
         ),
@@ -496,62 +480,6 @@ class _DashboardHome extends ConsumerWidget {
     return RetryWidget(message: error, onRetry: () => notifier.refresh());
   }
 
-  Widget _buildTaxonomyStatusBadge(
-    BuildContext context,
-    TaxonomySyncStatus status,
-    int totalTaxonomies,
-  ) {
-    final (Color badgeColor, IconData icon, String label) = switch (status) {
-      TaxonomySyncStatus.success => (Colors.green, Icons.category_rounded, 'تصنيفات $totalTaxonomies'),
-      TaxonomySyncStatus.syncing => (Colors.blue, Icons.sync_rounded, 'تصنيفات...'),
-      TaxonomySyncStatus.error => (Colors.red, Icons.error_outline_rounded, 'تصنيفات !'),
-      TaxonomySyncStatus.idle => (Colors.grey, Icons.category_outlined, 'تصنيفات'),
-    };
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w),
-      child: GestureDetector(
-        onTap: () {
-          final message = switch (status) {
-            TaxonomySyncStatus.success => 'التصنيفات جاهزة ($totalTaxonomies)',
-            TaxonomySyncStatus.syncing => 'جاري مزامنة التصنيفات...',
-            TaxonomySyncStatus.error => 'هناك مشكلة في مزامنة التصنيفات',
-            TaxonomySyncStatus.idle => 'لم يتم فحص التصنيفات بعد',
-          };
-
-          EnhancedSnackbar.showInfo(context, message: message);
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 7.h),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.20),
-            borderRadius: BorderRadius.circular(16.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 6,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 13.sp, color: Colors.white),
-              SizedBox(width: 5.w),
-              Text(
-                label,
-                style: DashboardTextStyles.badge.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildContent(
     BuildContext context,
     WidgetRef ref,
@@ -563,27 +491,42 @@ class _DashboardHome extends ConsumerWidget {
     final stats = state.statistics;
     if (stats == null) return const SizedBox();
 
-    // ✅ Memoization: استخدام cached chart data
-    final trendChartData = ref.watch(trendChartDataProvider);
-
+    // ✅ Conditional watch: trendChartData يُحمل فقط في وضع التحليل لتجنب البناء غير الضروري
     final effectiveViewMode = enableAnalyticalMode ? dashboardViewMode : _DashboardViewMode.operational;
+    final trendChartData =
+        effectiveViewMode == _DashboardViewMode.analytical ? ref.watch(trendChartDataProvider) : const <double>[];
+
+    // Admin role — needed for taxonomy banner gate
+    final isAdmin = ref.watch(isAdminProvider);
+
+    // Compute operational status from cheap available data
+    final operationalStatus = DashboardOperationalStatus.resolve(
+      isOnline: isOnline,
+      pendingSync: stats.pendingSync,
+      lastSyncTime: stats.lastSyncTime,
+    );
 
     return SingleChildScrollView(
       padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Offline Indicator Banner
-          if (!isOnline) const OfflineBanner(),
+          // Operational Status Strip - يوحد حالة التشغيل (يستبدل OfflineBanner)
+          DashboardOperationalStatusStrip(
+            status: operationalStatus,
+            onTap: operationalStatus.level != DashboardStatusLevel.normal
+                ? () => DashboardNavigationService.navigateToSync(context)
+                : null,
+          ),
 
-          // Civil Registry Banner - إذا لم يتم تحميل السجل المدني
+          // Civil Registry Banner — يظهر فقط أثناء التحميل (مخفي عند الجهوزية — Phase 1)
           _CivilRegistryBanner(ref: ref),
 
-          // Taxonomies Sync Health Banner
-          const _TaxonomySyncHealthBanner(),
+          // Taxonomy Sync Health Banner — للمدير أو وضع debug فقط (ليس حقل العمل)
+          if (isAdmin || kDebugMode) const _TaxonomySyncHealthBanner(),
 
-          // Welcome Banner (First time users)
-          if (showWelcomeBanner)
+          // Welcome Banner — يظهر فقط عند الحالة الطبيعية (لا أعباء معلقة، لا أخطاء)
+          if (showWelcomeBanner && operationalStatus.level == DashboardStatusLevel.normal)
             WelcomeBanner(
               userName: 'المستخدم',
               message: 'مرحباً بك في منظومة بناء',
@@ -594,9 +537,11 @@ class _DashboardHome extends ConsumerWidget {
               onDismiss: onWelcomeDismiss,
             ),
 
-          SizedBox(height: 12.h),
-
-          _buildHomeModeSwitcher(),
+          if (enableAnalyticalMode) ...[
+            SizedBox(height: 8.h),
+            _buildHomeModeSwitcher(),
+            SizedBox(height: 8.h),
+          ],
 
           // Dashboard Summary Widget - لوحة المعلومات المصغرة
           const RepaintBoundary(
@@ -654,14 +599,50 @@ class _DashboardHome extends ConsumerWidget {
 
           SizedBox(height: 24.h),
 
-          // Filter Chips with Advanced Filters Button
+          // Today's Work Card — ملخص عمل اليوم للعمال الميدانيين
+          if (effectiveViewMode == _DashboardViewMode.operational)
+            DashboardTodaysWorkCard(
+              todayStats: stats.todayStats,
+              onViewVisits: () {
+                onDashboardAction('todays_work_view_visits');
+                DashboardNavigationService.navigateToVisits(context);
+              },
+              onAddVisit: () {
+                onDashboardAction('todays_work_add_visit');
+                DashboardNavigationService.navigateToAddVisit(context);
+              },
+            ),
+
+          if (effectiveViewMode == _DashboardViewMode.operational) SizedBox(height: 16.h),
+
+          // Compact Sync Health Card — حالة المزامنة المختصرة
+          if (effectiveViewMode == _DashboardViewMode.operational)
+            DashboardSyncHealthCard(
+              pendingSync: stats.pendingSync,
+              isOnline: isOnline,
+              lastSyncTime: stats.lastSyncTime,
+              onOpenSync: () {
+                onDashboardAction('sync_health_open_sync');
+                DashboardNavigationService.navigateToSync(context);
+              },
+            ),
+
+          SizedBox(height: 24.h),
+
+          // Phase 5: Filter section — replaced heavy SectionTitle with a compact
+          // secondary row. Filters are a secondary control, not a primary section.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
-                child: SectionTitle(
-                  title: 'التصنيفات السريعة',
-                  icon: Icons.filter_alt,
+              Padding(
+                padding: EdgeInsets.only(right: 4.w),
+                child: Text(
+                  'عرض البيانات',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+                        letterSpacing: 0.3,
+                      ),
                 ),
               ),
               Row(
@@ -735,7 +716,7 @@ class _DashboardHome extends ConsumerWidget {
 
           if (effectiveViewMode == _DashboardViewMode.operational) ...[
             SizedBox(height: 24.h),
-            const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
+            const SectionTitle(title: 'تفاصيل المتابعة', icon: Icons.warning_amber),
             SizedBox(height: 12.h),
             const ScaleTransitionWidget(
               duration: AppDurations.fast,
@@ -751,7 +732,10 @@ class _DashboardHome extends ConsumerWidget {
                   onPressed: () {
                     DashboardNavigationService.navigateToAllActivities(context);
                   },
-                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  icon: Icon(
+                    Directionality.of(context) == TextDirection.rtl ? Icons.arrow_back : Icons.arrow_forward,
+                    size: 16,
+                  ),
                   label: const Text('عرض الكل'),
                 ),
               ],
@@ -786,7 +770,7 @@ class _DashboardHome extends ConsumerWidget {
             SizedBox(height: 24.h),
 
             // Section: Urgent Cases - الحالات الطارئة (أولوية عالية)
-            const SectionTitle(title: 'حالات تحتاج متابعة', icon: Icons.warning_amber),
+            const SectionTitle(title: 'تفاصيل المتابعة', icon: Icons.warning_amber),
             SizedBox(height: 12.h),
             const ScaleTransitionWidget(
               duration: AppDurations.fast,
@@ -816,7 +800,10 @@ class _DashboardHome extends ConsumerWidget {
                   onPressed: () {
                     DashboardNavigationService.navigateToAllActivities(context);
                   },
-                  icon: const Icon(Icons.arrow_forward, size: 16),
+                  icon: Icon(
+                    Directionality.of(context) == TextDirection.rtl ? Icons.arrow_back : Icons.arrow_forward,
+                    size: 16,
+                  ),
                   label: const Text('عرض الكل'),
                 ),
               ],
@@ -870,10 +857,10 @@ class _DashboardHome extends ConsumerWidget {
     return Row(
       children: [
         Semantics(
-          label: 'وضع الداشبورد التشغيلي',
+          label: 'وضع الداشبورد المبسط',
           button: true,
           child: ChoiceChip(
-            label: const Text('تشغيلي'),
+            label: const Text('عرض مبسط'),
             selected: dashboardViewMode == _DashboardViewMode.operational,
             onSelected: (_) {
               onDashboardAction('mode_chip_tapped', extra: {'mode': _DashboardViewMode.operational.name});
@@ -881,27 +868,122 @@ class _DashboardHome extends ConsumerWidget {
             },
           ),
         ),
-        if (enableAnalyticalMode) ...[
-          SizedBox(width: 8.w),
-          Semantics(
-            label: 'وضع الداشبورد التحليلي',
-            button: true,
-            child: ChoiceChip(
-              label: const Text('تحليلي'),
-              selected: dashboardViewMode == _DashboardViewMode.analytical,
-              onSelected: (_) {
-                onDashboardAction('mode_chip_tapped', extra: {'mode': _DashboardViewMode.analytical.name});
-                onViewModeChanged(_DashboardViewMode.analytical);
-              },
-            ),
+        SizedBox(width: 8.w),
+        Semantics(
+          label: 'وضع الداشبورد التفصيلي',
+          button: true,
+          child: ChoiceChip(
+            label: const Text('عرض تفصيلي'),
+            selected: dashboardViewMode == _DashboardViewMode.analytical,
+            onSelected: (_) {
+              onDashboardAction('mode_chip_tapped', extra: {'mode': _DashboardViewMode.analytical.name});
+              onViewModeChanged(_DashboardViewMode.analytical);
+            },
           ),
-        ],
+        ),
       ],
     );
   }
 }
 
 enum _DashboardViewMode { operational, analytical }
+
+// ============================================================
+// Admin / Secondary actions popup menu — مخفي لغير المدير
+// ============================================================
+
+/// قائمة الإجراءات الإدارية والثانوية في AppBar — للمدير أو debug فقط.
+///
+/// يُظهر:
+/// - تصدير التقرير
+/// - إدارة التصنيفات (Taxonomies)
+/// - لوحة المراقبة (Monitoring Dashboard)
+///
+/// [Dashboard] admin tools visible: `true|false`
+class _DashboardAdminPopupMenu extends ConsumerWidget {
+  final bool isAdmin;
+  final void Function(String action, {Map<String, dynamic>? extra}) onDashboardAction;
+
+  const _DashboardAdminPopupMenu({
+    required this.isAdmin,
+    required this.onDashboardAction,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showAdmin = isAdmin || kDebugMode;
+    debugPrint('[Dashboard] admin tools visible: $showAdmin');
+    if (!showAdmin) return const SizedBox.shrink();
+
+    final onPrimary = Theme.of(context).colorScheme.onPrimary;
+
+    return Tooltip(
+      message: 'أدوات إدارية',
+      child: PopupMenuButton<_AdminAction>(
+        icon: Icon(Icons.more_vert_rounded, color: onPrimary, size: 20),
+        onSelected: (action) => _handleAction(context, ref, action),
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: _AdminAction.export,
+            child: ListTile(
+              leading: Icon(Icons.file_download_outlined),
+              title: Text('تصدير التقرير'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
+          ),
+          const PopupMenuItem(
+            value: _AdminAction.taxonomies,
+            child: ListTile(
+              leading: Icon(Icons.category_rounded),
+              title: Text('إدارة التصنيفات'),
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
+          ),
+          if (kDebugMode)
+            const PopupMenuItem(
+              value: _AdminAction.monitoring,
+              child: ListTile(
+                leading: Icon(Icons.monitor_heart_outlined),
+                title: Text('لوحة المراقبة'),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _handleAction(BuildContext context, WidgetRef ref, _AdminAction action) {
+    switch (action) {
+      case _AdminAction.export:
+        onDashboardAction('export_report_tapped');
+        // Use ref.read — this is an imperative action, not a watch.
+        final dashboard = ref.read(dashboardProvider).statistics;
+        if (dashboard != null) {
+          showDialog(
+            context: context,
+            builder: (_) => DashboardExportDialog(dashboard: dashboard),
+          );
+        } else {
+          EnhancedSnackbar.showWarning(context, message: 'الرجاء الانتظار حتى يتم تحميل البيانات');
+        }
+      case _AdminAction.taxonomies:
+        onDashboardAction('admin_taxonomies_tapped');
+        context.push('/taxonomies');
+      case _AdminAction.monitoring:
+        onDashboardAction('admin_monitoring_tapped');
+        debugPrint('[Dashboard] MonitoringDashboard access: ${isAdmin ? 'allowed' : 'debug_only'}');
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MonitoringDashboard()),
+        );
+    }
+  }
+}
+
+enum _AdminAction { export, taxonomies, monitoring }
 
 class _TaxonomySyncHealthBanner extends ConsumerWidget {
   const _TaxonomySyncHealthBanner();
@@ -984,6 +1066,9 @@ class _CivilRegistryBanner extends ConsumerWidget {
             '${downloadedAt.hour.toString().padLeft(2, '0')}:${downloadedAt.minute.toString().padLeft(2, '0')}';
 
     final isReady = dbState.isAvailable;
+
+    // بانر "السجل المدني جاهز" غير ضروري — يُختفى لتقليل التراكم البصري
+    if (isReady) return const SizedBox.shrink();
 
     final accentColor = isReady
         ? Colors.green

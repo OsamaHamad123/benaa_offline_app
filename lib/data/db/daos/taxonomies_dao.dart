@@ -217,6 +217,38 @@ class TaxonomiesDao extends DatabaseAccessor<AppDatabase> with _$TaxonomiesDaoMi
     await upsertBatch(newTaxonomies);
   }
 
+  /// مزامنة آمنة من السيرفر مع احترام الحذف المحلي (Soft-Delete Preserving Upsert)
+  ///
+  /// [companions] التصنيفات القادمة من السيرفر
+  ///
+  /// القاعدة:
+  /// - إذا كان التصنيف موجوداً محلياً وتم حذفه (isActive=false)، لا يُعاد إحياؤه من السيرفر.
+  /// - إذا لم يكن موجوداً محلياً، يُضاف.
+  /// - إذا كان موجوداً ونشطاً، يُحدَّث.
+  Future<void> syncSafeUpsertBatch(List<TaxonomiesCompanion> companions) async {
+    if (companions.isEmpty) return;
+
+    // جلب IDs المحذوفة محلياً
+    final deletedRows = await (select(taxonomies)..where((t) => t.isActive.equals(false))).get();
+    final locallyDeletedIds = {for (final r in deletedRows) r.id};
+
+    // تصفية التصنيفات القادمة — لا نُعيد إحياء المحذوف محلياً
+    final safeCompanions = companions.where((c) {
+      final id = c.id.present ? c.id.value : null;
+      if (id == null) return true; // عنصر جديد بدون id → يُضاف
+      return !locallyDeletedIds.contains(id);
+    }).toList();
+
+    if (safeCompanions.isEmpty) return;
+    await upsertBatch(safeCompanions);
+  }
+
+  /// جلب IDs التصنيفات المحذوفة محلياً (isActive=false)
+  Future<Set<String>> getLocallyDeletedIds() async {
+    final deletedRows = await (select(taxonomies)..where((t) => t.isActive.equals(false))).get();
+    return {for (final r in deletedRows) r.id};
+  }
+
   /// التحقق من الحاجة للمزامنة
   ///
   /// [group] المجموعة

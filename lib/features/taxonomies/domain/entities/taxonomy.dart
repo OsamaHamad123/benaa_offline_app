@@ -96,6 +96,7 @@ class Taxonomy extends Equatable {
     DateTime? updatedAt,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
+    bool clearParentId = false,
   }) {
     return Taxonomy(
       id: id ?? this.id,
@@ -103,7 +104,7 @@ class Taxonomy extends Equatable {
       code: code ?? this.code,
       label: label ?? this.label,
       labelEn: labelEn ?? this.labelEn,
-      parentId: parentId ?? this.parentId,
+      parentId: clearParentId ? null : (parentId ?? this.parentId),
       sortOrder: sortOrder ?? this.sortOrder,
       isActive: isActive ?? this.isActive,
       description: description ?? this.description,
@@ -150,8 +151,13 @@ class TaxonomyStatistics extends Equatable {
   /// عدد التصنيفات غير النشطة
   final int inactiveCount;
 
-  /// عدد التصنيفات لكل مجموعة
+  /// عدد التصنيفات لكل مجموعة (النشطة فقط)
   final Map<TaxonomyGroup, int> countByGroup;
+
+  /// عدد التصنيفات المحذوفة محلياً لكل مجموعة (isActive=false).
+  ///
+  /// يُستخدم لتجنب إضافة fallbacks أو إعادة جلب تصنيفات حذفها المستخدم عمداً.
+  final Map<TaxonomyGroup, int> deletedCountByGroup;
 
   /// آخر وقت مزامنة
   final DateTime? lastSyncTime;
@@ -161,8 +167,17 @@ class TaxonomyStatistics extends Equatable {
     required this.activeCount,
     required this.inactiveCount,
     required this.countByGroup,
+    this.deletedCountByGroup = const {},
     this.lastSyncTime,
   });
+
+  /// هل المجموعة تحتوي على تصنيفات محذوفة محلياً؟
+  ///
+  /// إذا كانت true، فالمستخدم حذف تصنيفات في هذه المجموعة عمداً —
+  /// لا يجب إضافة fallbacks أو إعادة الجلب من السيرفر.
+  bool hasLocallyDeletedItems(TaxonomyGroup group) {
+    return (deletedCountByGroup[group] ?? 0) > 0;
+  }
 
   /// إنشاء إحصائيات فارغة
   factory TaxonomyStatistics.empty() {
@@ -171,6 +186,7 @@ class TaxonomyStatistics extends Equatable {
       activeCount: 0,
       inactiveCount: 0,
       countByGroup: {},
+      deletedCountByGroup: {},
     );
   }
 
@@ -180,6 +196,7 @@ class TaxonomyStatistics extends Equatable {
         activeCount,
         inactiveCount,
         countByGroup,
+        deletedCountByGroup,
         lastSyncTime,
       ];
 }

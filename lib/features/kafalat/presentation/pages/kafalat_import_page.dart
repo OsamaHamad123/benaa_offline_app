@@ -1236,17 +1236,23 @@ class _AssociationDropdown extends ConsumerWidget {
     return state.when(
       data: (items) {
         return DropdownButtonFormField<String>(
+          isExpanded: true,
           initialValue: value,
           onChanged: enabled ? onChanged : null,
           decoration: const InputDecoration(
             labelText: 'المؤسسة الكافلة',
             border: OutlineInputBorder(),
           ),
+          selectedItemBuilder: (ctx) =>
+              items.map((a) => Text(a.name, overflow: TextOverflow.ellipsis, maxLines: 1)).toList(),
           items: items
               .map(
                 (a) => DropdownMenuItem<String>(
                   value: a.id,
-                  child: Text(a.name, textAlign: TextAlign.right),
+                  child: Tooltip(
+                    message: a.name,
+                    child: Text(a.name, overflow: TextOverflow.ellipsis, maxLines: 1),
+                  ),
                 ),
               )
               .toList(growable: false),

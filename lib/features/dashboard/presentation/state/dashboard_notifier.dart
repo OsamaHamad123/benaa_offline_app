@@ -1,4 +1,5 @@
 import 'package:benaa_offline_app/features/dashboard/domain/entities/dashboard_statistics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/usecases/get_dashboard_statistics.dart';
 import '../../domain/usecases/get_today_stats.dart';
@@ -6,6 +7,7 @@ import '../../domain/usecases/get_recent_activities.dart';
 import '../../domain/entities/activity.dart';
 import 'dashboard_state.dart';
 import '../../../../core/error_handling/result.dart';
+import '../../../../core/utils/log_sanitizer.dart';
 
 /// Dashboard Notifier - Manages Dashboard State
 class DashboardNotifier extends StateNotifier<DashboardState> {
@@ -21,7 +23,10 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
     required this.getDashboardStatistics,
     required this.getTodayStats,
     required this.getRecentActivities,
-  }) : super(const DashboardState.initial());
+  }) : super(const DashboardState.initial()) {
+    // ✅ تفعيل إخفاء البيانات الحساسة في debug mode للاختبار
+    LogSanitizer.enableDebugMasking();
+  }
 
   // ============================================================================
   // INITIALIZATION - Auto-load on creation
@@ -36,6 +41,8 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   // ============================================================================
 
   Future<void> loadStatistics({bool forceRefresh = false}) async {
+    final sw = Stopwatch()..start();
+    debugPrint('[Dashboard] loadMetrics started forceRefresh=$forceRefresh');
     try {
       state = state.copyWith(isLoadingStats: true);
 
@@ -48,6 +55,9 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
       final stats = (result as Success<DashboardStatistics>).value;
 
+      // تحقق أن الـ notifier لم يُتلف قبل تحديث الحالة
+      if (!mounted) return;
+
       state = state.copyWith(
         statistics: stats,
         todayStats: stats.todayStats,
@@ -55,9 +65,18 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         lastRefreshTime: DateTime.now(),
       );
 
-      // ✅ Lazy Loading: تحميل البيانات الثانوية بشكل تدريجي (غير محظور)
-      Future.microtask(() => _loadInitialActivities());
+      sw.stop();
+      debugPrint('[Dashboard] loadMetrics completed ms=${sw.elapsedMilliseconds}');
+
+      // ✅ تحميل البيانات الثانوية بشكل تدريجي بعد الإطار الأول
+      // استخدام addPostFrameCallback بدلاً من Future.microtask لتجنب race conditions
+      if (mounted) {
+        await _loadInitialActivities();
+      }
     } catch (e) {
+      sw.stop();
+      debugPrint('[Dashboard] loadMetrics failed ms=${sw.elapsedMilliseconds} error=${e.runtimeType}');
+      if (!mounted) return;
       state = state.copyWith(
         isLoadingStats: false,
         errorMessage: 'فشل تحميل البيانات: ${e.toString()}',
@@ -82,12 +101,14 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
       final activities = (result as Success<List<Activity>>).value;
 
+      if (!mounted) return;
       state = state.copyWith(
         activities: activities,
         isLoadingActivities: false,
         hasMoreActivities: activities.length == _pageSize,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         isLoadingActivities: false,
         errorMessage: 'فشل تحميل الأنشطة',
@@ -131,12 +152,14 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
 
       final newActivities = (result as Success<List<Activity>>).value;
 
+      if (!mounted) return;
       state = state.copyWith(
         activities: [...state.activities, ...newActivities],
         isLoadingActivities: false,
         hasMoreActivities: newActivities.length == _pageSize,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         isLoadingActivities: false,
         errorMessage: 'فشل تحميل المزيد من الأنشطة',

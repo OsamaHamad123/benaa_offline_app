@@ -187,6 +187,7 @@ class QuickFiltersBar extends ConsumerWidget {
           if (associations.isNotEmpty) ...[
             SizedBox(height: 10.h),
             DropdownButtonFormField<String?>(
+              isExpanded: true,
               initialValue: selectedAssociationId,
               decoration: const InputDecoration(
                 labelText: 'الجمعية',
@@ -195,12 +196,12 @@ class QuickFiltersBar extends ConsumerWidget {
               items: [
                 const DropdownMenuItem<String?>(
                   value: null,
-                  child: Text('كل الجمعيات'),
+                  child: Text('كل الجمعيات', overflow: TextOverflow.ellipsis),
                 ),
                 ...associations.map(
                   (assoc) => DropdownMenuItem<String?>(
                     value: assoc.id,
-                    child: Text(assoc.name),
+                    child: Text(assoc.name, overflow: TextOverflow.ellipsis, maxLines: 1),
                   ),
                 ),
               ],

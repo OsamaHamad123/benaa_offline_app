@@ -8,13 +8,18 @@ import '../../../../core/sync/data/repositories/sync_repository_impl.dart';
 import '../../../../core/sync/mobile_sync_service.dart';
 import '../../../taxonomies/presentation/providers/taxonomy_providers.dart';
 import '../../domain/usecases/mobile_sync_operations_usecases.dart';
+import '../../domain/usecases/sync_firestore_modules_usecase.dart';
 import '../../domain/usecases/sync_associations_module_usecase.dart';
 import '../../domain/usecases/sync_sponsorships_module_usecase.dart';
 import '../../domain/usecases/sync_related_entities_up_usecase.dart';
 import '../../domain/usecases/tombstone_delete_sync_usecase.dart';
 import '../../services/firebase_beneficiary_upload_service.dart';
+import '../../services/sync_collection_registry.dart';
 import '../../../associations/data/datasources/associations_remote_sync_datasource.dart';
+import '../../../associations/presentation/providers/association_firestore_providers.dart';
 import '../../../kafalat/data/datasources/sponsorships_remote_sync_datasource.dart';
+import '../../../sponsorships/presentation/providers/sponsorship_providers.dart';
+import '../../../visits/presentation/providers/visit_firestore_providers.dart';
 import '../../domain/utils/api_endpoint_normalizer.dart' as sync_endpoint;
 import 'file_id_providers.dart';
 
@@ -139,4 +144,30 @@ final mobileOfficialSyncUseCaseProvider = Provider<MobileOfficialSyncUseCase>((r
   final syncDown = ref.watch(mobileSyncDownUseCaseProvider);
   final syncUp = ref.watch(mobileSyncUpUseCaseProvider);
   return MobileOfficialSyncUseCase(syncDown: syncDown, syncUp: syncUp);
+});
+
+final syncFirestoreModulesUseCaseProvider = Provider<SyncFirestoreModulesUseCase>((ref) {
+  final associationRepository = ref.watch(associationFirestoreRepositoryProvider);
+  final sponsorshipRepository = ref.watch(sponsorshipRepositoryProvider);
+  final visitRepository = ref.watch(visitFirestoreRepositoryProvider);
+
+  return SyncFirestoreModulesUseCase(
+    associationRepository: associationRepository,
+    sponsorshipRepository: sponsorshipRepository,
+    visitRepository: visitRepository,
+  );
+});
+
+final syncCollectionRegistryProvider = Provider<SyncCollectionRegistry>((ref) {
+  final database = ref.watch(databaseProvider);
+  final localCacheStore = ref.watch(firestoreLocalCacheStoreProvider);
+  final beneficiaryUploadService = ref.watch(firebaseBeneficiaryUploadServiceProvider);
+  final modulesUseCase = ref.watch(syncFirestoreModulesUseCaseProvider);
+
+  return SyncCollectionRegistry(
+    database: database,
+    localCacheStore: localCacheStore,
+    beneficiaryUploadService: beneficiaryUploadService,
+    modulesUseCase: modulesUseCase,
+  );
 });

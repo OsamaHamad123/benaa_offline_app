@@ -88,6 +88,14 @@ class TaxonomyRemoteDataSourceImpl implements TaxonomyRemoteDataSource {
       return true;
     }
 
+    // DNS lookup failures are not transient — never retry them.
+    if (e.type == DioExceptionType.connectionError) {
+      final msg = e.error?.toString() ?? '';
+      if (msg.contains('Failed host lookup') || msg.contains('SocketException')) {
+        return false;
+      }
+    }
+
     return e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.sendTimeout ||
         e.type == DioExceptionType.receiveTimeout ||

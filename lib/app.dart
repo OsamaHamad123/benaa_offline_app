@@ -16,6 +16,7 @@ import 'features/auth/services/token_manager.dart';
 import 'core/security/auth_session_events.dart';
 import 'l10n/app_localizations.dart';
 import 'features/taxonomies/presentation/widgets/taxonomy_auto_sync_manager.dart';
+import 'core/notifications/notifications_service.dart';
 
 class BenaaApp extends ConsumerWidget {
   static bool _analyticsSessionStarted = false;
@@ -55,6 +56,14 @@ class BenaaApp extends ConsumerWidget {
       final event = next.valueOrNull;
       if (event?.type == AuthSessionEventType.sessionExpired) {
         router.go('/login');
+      }
+    });
+
+    // معالجة الإشعارات المعلقة (عند فتح التطبيق من إشعار)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final pendingRoute = NotificationsService.consumePendingRoute();
+      if (pendingRoute != null && pendingRoute.isNotEmpty) {
+        router.go(pendingRoute);
       }
     });
 

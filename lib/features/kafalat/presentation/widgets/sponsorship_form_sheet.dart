@@ -12,7 +12,7 @@ import '../../../../data/db/drift_database.dart';
 import '../../../../features/taxonomies/domain/entities/taxonomy.dart' as taxonomy_domain;
 import '../../../../features/taxonomies/domain/entities/taxonomy_group.dart';
 import '../../../../features/taxonomies/presentation/providers/taxonomy_bridge_providers.dart';
-import '../providers/kafalat_providers.dart';
+import 'common/sponsor_organization_dropdown.dart';
 
 class SponsorshipFormSheet extends ConsumerStatefulWidget {
   final int beneficiaryId;
@@ -190,7 +190,6 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final associationsState = ref.watch(kafalatActiveAssociationsProvider);
     final sponsorshipTypeOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.sponsorshipType));
     final guaranteeTypeOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.guaranteeType));
     final sponsorshipStatusOptions = ref.watch(bridgeTaxonomiesByGroupOnceProvider(TaxonomyGroup.beneficiaryStatus));
@@ -271,37 +270,15 @@ class _SponsorshipFormSheetState extends ConsumerState<SponsorshipFormSheet> {
                 padding: EdgeInsets.all(12.w),
                 child: Column(
                   children: [
-                    associationsState.when(
-                      data: (associations) {
-                        return DropdownButtonFormField<String>(
-                          initialValue: _associationId,
-                          decoration: const InputDecoration(
-                            labelText: 'المؤسسة الكافلة *',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: associations
-                              .map(
-                                (a) => DropdownMenuItem(
-                                  value: a.id,
-                                  child: Text(a.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: _saving
-                              ? null
-                              : (v) {
-                                  setState(() => _associationId = v);
-                                },
-                          validator: (v) {
-                            if (v == null || v.isEmpty) {
-                              return 'اختر المؤسسة الكافلة';
-                            }
-                            return null;
-                          },
-                        );
+                    SponsorOrganizationDropdown(
+                      value: _associationId,
+                      label: 'المؤسسة الكافلة *',
+                      enabled: !_saving,
+                      onChanged: (v) => setState(() => _associationId = v),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'اختر المؤسسة الكافلة';
+                        return null;
                       },
-                      loading: () => const LinearProgressIndicator(),
-                      error: (e, _) => Text('فشل تحميل الجمعيات: $e'),
                     ),
                     SizedBox(height: 12.h),
                     TextFormField(

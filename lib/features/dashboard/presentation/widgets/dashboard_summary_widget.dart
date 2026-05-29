@@ -22,7 +22,8 @@ class DashboardSummaryWidget extends ConsumerWidget {
 
     return summaryAsync.when(
       data: (stats) => Card(
-        elevation: 2,
+        // Phase 5: reduced elevation for a lighter, more premium feel
+        elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
         ),
@@ -70,7 +71,8 @@ class DashboardSummaryWidget extends ConsumerWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: isCompact ? 10.h : 12.h,
                 crossAxisSpacing: isCompact ? 10.w : 12.w,
-                childAspectRatio: isCompact ? 2.35 : 2.5,
+                // Phase 5: increased aspect ratio slightly for shorter, less dominating cards
+                childAspectRatio: isCompact ? 2.5 : 2.7,
                 children: [
                   _QuickStatCard(
                     icon: Icons.people,
@@ -121,7 +123,8 @@ class DashboardSummaryWidget extends ConsumerWidget {
         ),
       ),
       loading: () => Card(
-        elevation: 2,
+        // Phase 5: consistent reduced elevation
+        elevation: 1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
         ),

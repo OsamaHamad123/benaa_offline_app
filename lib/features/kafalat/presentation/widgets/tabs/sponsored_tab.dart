@@ -15,9 +15,7 @@ import '../../../../taxonomies/presentation/providers/taxonomy_bridge_providers.
 import '../../providers/kafalat_providers.dart';
 import '../sponsorship_form_sheet.dart';
 import '../cards/professional_sponsorship_card.dart';
-import '../filters/quick_filters_bar.dart';
 import '../filters/enhanced_search_bar.dart';
-import '../filters/advanced_filters_sheet.dart';
 import '../filters/sorting_menu.dart';
 import '../actions/swipe_action_wrapper.dart';
 import '../animations/card_entrance_animation.dart';
@@ -90,7 +88,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
   static const String _prefsQueryKey = '${_prefsPrefix}query';
   static const String _prefsAssociationKey = '${_prefsPrefix}association';
   static const String _prefsSortKey = '${_prefsPrefix}sort';
-  static const String _prefsShowFiltersKey = '${_prefsPrefix}show_quick_filters';
   static const String _prefsSavedPresetsKey = '${_prefsPrefix}saved_presets';
 
   final TextEditingController _searchController = TextEditingController();
@@ -114,7 +111,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
   double? _minAmountFilter;
   double? _maxAmountFilter;
   SortOption _sortOption = SortOption.dateNewest;
-  bool _showQuickFilters = false;
   List<_SavedPreset> _savedPresets = const [];
 
   @override
@@ -123,10 +119,8 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
     _status = widget.initialStatus;
     _type = widget.initialType;
     _query = widget.initialQuery.trim();
-    _showQuickFilters = widget.initiallyShowQuickFilters || _status != 'all' || _type != 'all';
     if (_query.isNotEmpty) {
       _searchController.text = _query;
-      _showQuickFilters = true;
     }
 
     Future.microtask(_restoreUiStateIfNeeded);
@@ -134,10 +128,7 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
   }
 
   bool get _hasDeepLinkOverrides =>
-      widget.initialStatus != 'all' ||
-      widget.initialType != 'all' ||
-      widget.initialQuery.trim().isNotEmpty ||
-      widget.initiallyShowQuickFilters;
+      widget.initialStatus != 'all' || widget.initialType != 'all' || widget.initialQuery.trim().isNotEmpty;
 
   Future<void> _restoreUiStateIfNeeded() async {
     if (_hasDeepLinkOverrides || !mounted) {
@@ -151,15 +142,12 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
     final savedQuery = prefs.getString(_prefsQueryKey);
     final savedAssociation = prefs.getString(_prefsAssociationKey);
     final savedSort = prefs.getString(_prefsSortKey);
-    final savedShowFilters = prefs.getBool(_prefsShowFiltersKey);
-
     setState(() {
       _status = savedStatus ?? _status;
       _type = savedType ?? _type;
       _query = savedQuery ?? _query;
       _associationId = (savedAssociation == null || savedAssociation.isEmpty) ? null : savedAssociation;
       _sortOption = _sortFromName(savedSort);
-      _showQuickFilters = savedShowFilters ?? _showQuickFilters;
       _searchController.text = _query;
     });
   }
@@ -178,7 +166,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
       prefs.setString(_prefsQueryKey, _query);
       prefs.setString(_prefsAssociationKey, _associationId ?? '');
       prefs.setString(_prefsSortKey, _sortOption.name);
-      prefs.setBool(_prefsShowFiltersKey, _showQuickFilters);
     });
   }
 
@@ -205,58 +192,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
     await prefs.setString(_prefsSavedPresetsKey, encoded);
   }
 
-  Future<void> _saveCurrentPreset() async {
-    final nameController = TextEditingController();
-    final name = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('حفظ عرض مخصص', textAlign: TextAlign.right),
-          content: TextField(
-            controller: nameController,
-            autofocus: true,
-            textAlign: TextAlign.right,
-            decoration: const InputDecoration(
-              hintText: 'اسم العرض',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(nameController.text.trim()),
-              child: const Text('حفظ'),
-            ),
-          ],
-        );
-      },
-    );
-    nameController.dispose();
-
-    final normalizedName = (name ?? '').trim();
-    if (normalizedName.isEmpty) return;
-
-    final preset = _SavedPreset(
-      name: normalizedName,
-      status: _status,
-      type: _type,
-      query: _query,
-      associationId: _associationId,
-      sortName: _sortOption.name,
-      showQuickFilters: true,
-    );
-
-    setState(() {
-      _savedPresets = [
-        preset,
-        ..._savedPresets.where((p) => p.name != normalizedName),
-      ];
-    });
-    await _persistSavedPresets();
-  }
-
   void _applySavedPreset(_SavedPreset preset) {
     setState(() {
       _status = preset.status;
@@ -264,7 +199,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
       _query = preset.query;
       _associationId = preset.associationId;
       _sortOption = _sortFromName(preset.sortName);
-      _showQuickFilters = preset.showQuickFilters;
       _searchController.text = _query;
     });
     _persistUiState();
@@ -300,22 +234,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
     await _persistSavedPresets();
   }
 
-  void _onSavedPresetMenuSelected(String value) {
-    if (value.startsWith('apply::')) {
-      final name = value.substring('apply::'.length);
-      final preset = _savedPresets.where((p) => p.name == name).firstOrNull;
-      if (preset != null) {
-        _applySavedPreset(preset);
-      }
-      return;
-    }
-
-    if (value.startsWith('delete::')) {
-      final name = value.substring('delete::'.length);
-      _deleteSavedPreset(name);
-    }
-  }
-
   bool get _hasAdvancedFilters =>
       _startDateFilter != null || _endDateFilter != null || _minAmountFilter != null || _maxAmountFilter != null;
 
@@ -341,7 +259,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
       _minAmountFilter = null;
       _maxAmountFilter = null;
       _searchController.clear();
-      _showQuickFilters = false;
     });
     _persistUiState();
   }
@@ -349,49 +266,307 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
   bool get _hasActiveFilters =>
       _status != 'all' || _type != 'all' || _associationId != null || _query.isNotEmpty || _hasAdvancedFilters;
 
-  void _openAdvancedFilters(BuildContext context) {
+  void _openFiltersSheet(BuildContext context) {
+    var tempStatus = _status;
+    var tempType = _type;
+    var tempAssociationId = _associationId;
+    var tempStartDate = _startDateFilter;
+    var tempEndDate = _endDateFilter;
+    var tempMinAmount = _minAmountFilter;
+    var tempMaxAmount = _maxAmountFilter;
+    var tempSort = _sortOption;
+
+    final rawAssoc = ref.read(kafalatActiveAssociationsProvider).valueOrNull;
+    final List<({String id, String name})> associations =
+        rawAssoc?.map((a) => (id: a.id, name: a.name)).toList() ?? const <({String id, String name})>[];
+    final minAmountCtrl = TextEditingController(text: _minAmountFilter?.toStringAsFixed(0) ?? '');
+    final maxAmountCtrl = TextEditingController(text: _maxAmountFilter?.toStringAsFixed(0) ?? '');
+
+    String fmtDate(DateTime d) => '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AdvancedFiltersSheet(
-        startDate: _startDateFilter,
-        endDate: _endDateFilter,
-        minAmount: _minAmountFilter,
-        maxAmount: _maxAmountFilter,
-        onApplyFilters: ({startDate, endDate, minAmount, maxAmount}) {
-          if (!mounted) return;
-          setState(() {
-            _startDateFilter = startDate;
-            _endDateFilter = endDate;
-            _minAmountFilter = minAmount;
-            _maxAmountFilter = maxAmount;
-            _showQuickFilters = true;
-          });
-          _persistUiState();
-        },
-      ),
-    );
-  }
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final theme = Theme.of(ctx);
 
-  void _applyQuickPreset(String preset) {
-    setState(() {
-      switch (preset) {
-        case 'active':
-          _status = 'active';
-          break;
-        case 'paused':
-          _status = 'paused';
-          break;
-        case 'ended':
-          _status = 'ended';
-          break;
-        default:
-          _status = 'all';
-      }
-      _showQuickFilters = true;
+            FilterChip buildChip(String label, bool selected, VoidCallback onTap, {IconData? icon}) => FilterChip(
+                  label: Text(label),
+                  selected: selected,
+                  onSelected: (_) => onTap(),
+                  avatar: icon != null ? Icon(icon, size: 16.sp) : null,
+                );
+
+            return SafeArea(
+              child: DraggableScrollableSheet(
+                initialChildSize: 0.72,
+                maxChildSize: 0.95,
+                minChildSize: 0.35,
+                expand: false,
+                builder: (_, ctrl) => Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 40.w,
+                        height: 4.h,
+                        margin: EdgeInsets.symmetric(vertical: 12.h),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.outlineVariant,
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.w, 0, 8.w, 8.h),
+                        child: Row(
+                          children: [
+                            Icon(Icons.filter_alt_outlined, color: theme.colorScheme.primary),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'فلترة الكفالات',
+                              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              onPressed: () => setSheet(() {
+                                tempStatus = 'all';
+                                tempType = 'all';
+                                tempAssociationId = null;
+                                tempStartDate = null;
+                                tempEndDate = null;
+                                tempMinAmount = null;
+                                tempMaxAmount = null;
+                                minAmountCtrl.clear();
+                                maxAmountCtrl.clear();
+                              }),
+                              icon: const Icon(Icons.clear_all, size: 18),
+                              label: const Text('مسح الكل'),
+                              style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: ListView(
+                          controller: ctrl,
+                          padding: EdgeInsets.all(16.w),
+                          children: [
+                            Text('الحالة',
+                                style: theme.textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                            SizedBox(height: 8.h),
+                            Wrap(
+                              spacing: 8.w,
+                              runSpacing: 6.h,
+                              children: [
+                                buildChip('الكل', tempStatus == 'all', () => setSheet(() => tempStatus = 'all'),
+                                    icon: Icons.apps),
+                                buildChip('نشطة', tempStatus == 'active', () => setSheet(() => tempStatus = 'active'),
+                                    icon: Icons.check_circle),
+                                buildChip('موقوفة', tempStatus == 'paused', () => setSheet(() => tempStatus = 'paused'),
+                                    icon: Icons.pause_circle),
+                                buildChip('منتهية', tempStatus == 'ended', () => setSheet(() => tempStatus = 'ended'),
+                                    icon: Icons.cancel),
+                              ],
+                            ),
+                            SizedBox(height: 16.h),
+                            Text('نوع الكفالة',
+                                style: theme.textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                            SizedBox(height: 8.h),
+                            Wrap(
+                              spacing: 8.w,
+                              runSpacing: 6.h,
+                              children: [
+                                buildChip('كل الأنواع', tempType == 'all', () => setSheet(() => tempType = 'all'),
+                                    icon: Icons.category),
+                                buildChip('شهرية', tempType == 'monthly', () => setSheet(() => tempType = 'monthly'),
+                                    icon: Icons.calendar_month),
+                                buildChip(
+                                    'مرة واحدة', tempType == 'one_time', () => setSheet(() => tempType = 'one_time'),
+                                    icon: Icons.bolt),
+                                buildChip('أخرى', tempType == 'other', () => setSheet(() => tempType = 'other'),
+                                    icon: Icons.more_horiz),
+                              ],
+                            ),
+                            if (associations.isNotEmpty) ...[
+                              SizedBox(height: 16.h),
+                              Text('الجمعية',
+                                  style: theme.textTheme.labelLarge
+                                      ?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                              SizedBox(height: 8.h),
+                              DropdownButtonFormField<String?>(
+                                isExpanded: true,
+                                initialValue: tempAssociationId,
+                                decoration: InputDecoration(
+                                  labelText: 'اختر الجمعية',
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+                                ),
+                                items: [
+                                  const DropdownMenuItem<String?>(
+                                    value: null,
+                                    child: Text('كل الجمعيات', overflow: TextOverflow.ellipsis),
+                                  ),
+                                  ...associations.map(
+                                    (a) => DropdownMenuItem<String?>(
+                                      value: a.id,
+                                      child: Text(a.name, overflow: TextOverflow.ellipsis, maxLines: 1),
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (v) => setSheet(() => tempAssociationId = v),
+                              ),
+                            ],
+                            SizedBox(height: 16.h),
+                            Text('نطاق التاريخ',
+                                style: theme.textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                            SizedBox(height: 8.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final d = await showDatePicker(
+                                        context: ctx,
+                                        initialDate: tempStartDate ?? DateTime.now(),
+                                        firstDate: DateTime(2010),
+                                        lastDate: DateTime.now(),
+                                      );
+                                      if (d != null) setSheet(() => tempStartDate = d);
+                                    },
+                                    icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                                    label: Text(
+                                      tempStartDate != null ? fmtDate(tempStartDate!) : 'من تاريخ',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () async {
+                                      final d = await showDatePicker(
+                                        context: ctx,
+                                        initialDate: tempEndDate ?? DateTime.now(),
+                                        firstDate: DateTime(2010),
+                                        lastDate: DateTime(2030),
+                                      );
+                                      if (d != null) setSheet(() => tempEndDate = d);
+                                    },
+                                    icon: const Icon(Icons.calendar_today_outlined, size: 16),
+                                    label: Text(
+                                      tempEndDate != null ? fmtDate(tempEndDate!) : 'إلى تاريخ',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 16.h),
+                            Text('نطاق المبلغ',
+                                style: theme.textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                            SizedBox(height: 8.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: minAmountCtrl,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      labelText: 'الحد الأدنى',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+                                    ),
+                                    onChanged: (v) => tempMinAmount = double.tryParse(v),
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: TextField(
+                                    controller: maxAmountCtrl,
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      labelText: 'الحد الأقصى',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r)),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 14.h),
+                                    ),
+                                    onChanged: (v) => tempMaxAmount = double.tryParse(v),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 16.h),
+                            Text('الترتيب',
+                                style: theme.textTheme.labelLarge
+                                    ?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
+                            SizedBox(height: 8.h),
+                            SortingMenu(
+                              currentSort: tempSort,
+                              onSortChanged: (v) => setSheet(() => tempSort = v),
+                            ),
+                            SizedBox(height: 8.h),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.of(sheetCtx).pop(),
+                                child: const Text('إلغاء'),
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              flex: 2,
+                              child: FilledButton.icon(
+                                onPressed: () {
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _status = tempStatus;
+                                    _type = tempType;
+                                    _associationId = tempAssociationId;
+                                    _startDateFilter = tempStartDate;
+                                    _endDateFilter = tempEndDate;
+                                    _minAmountFilter = tempMinAmount;
+                                    _maxAmountFilter = tempMaxAmount;
+                                    _sortOption = tempSort;
+                                  });
+                                  _persistUiState();
+                                  Navigator.of(sheetCtx).pop();
+                                },
+                                icon: const Icon(Icons.check),
+                                label: const Text('تطبيق الفلاتر'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      minAmountCtrl.dispose();
+      maxAmountCtrl.dispose();
     });
-    _persistUiState();
   }
 
   Future<void> _confirmDelete(BuildContext context, int fileNo) async {
@@ -514,8 +689,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
           orElse: () => const <taxonomy_domain.Taxonomy>[],
         );
 
-    final hasTaxonomyGap = sponsorshipTypeTaxonomies.isEmpty || beneficiaryStatusTaxonomies.isEmpty;
-
     final resolveTypeLabel = (String value) => _resolveTaxonomyLabel(
           value,
           sponsorshipTypeTaxonomies,
@@ -537,8 +710,6 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
       )),
     );
 
-    final associationsAsync = ref.watch(kafalatActiveAssociationsProvider);
-
     return Column(
       children: [
         Padding(
@@ -552,19 +723,16 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
                   hintText: 'ابحث برقم الملف، الاسم، الهوية...',
                 ),
               ),
-              SizedBox(width: 6.w),
+              SizedBox(width: 4.w),
               Stack(
                 clipBehavior: Clip.none,
                 children: [
                   IconButton(
-                    onPressed: () {
-                      setState(() => _showQuickFilters = !_showQuickFilters);
-                      _persistUiState();
-                    },
-                    tooltip: _showQuickFilters ? 'إخفاء الأدوات' : 'إظهار الأدوات',
+                    onPressed: () => _openFiltersSheet(context),
+                    tooltip: 'فلترة',
                     icon: Icon(
-                      _showQuickFilters ? Icons.tune_rounded : Icons.tune_outlined,
-                      color: _showQuickFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+                      _hasActiveFilters ? Icons.filter_alt : Icons.filter_alt_outlined,
+                      color: _hasActiveFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   if (_hasActiveFilters)
@@ -575,7 +743,7 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
+                          color: theme.colorScheme.error,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -585,170 +753,108 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
             ],
           ),
         ),
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 180),
-          crossFadeState: _showQuickFilters ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-          firstChild: Container(
-            margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 8.h),
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        if (_hasActiveFilters)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 8.h),
+            child: Row(
               children: [
-                if (hasTaxonomyGap)
+                if (_status != 'all')
                   Padding(
-                    padding: EdgeInsets.only(bottom: 6.h),
-                    child: Text(
-                      'بعض التصنيفات غير مكتملة حاليًا.',
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                Wrap(
-                  spacing: 8.w,
-                  runSpacing: 6.h,
-                  children: [
-                    ActionChip(
-                      avatar: const Icon(Icons.check_circle_outline, size: 18),
-                      label: const Text('نشطة'),
-                      onPressed: () => _applyQuickPreset('active'),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.pause_circle_outline, size: 18),
-                      label: const Text('موقوفة'),
-                      onPressed: () => _applyQuickPreset('paused'),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.cancel_outlined, size: 18),
-                      label: const Text('منتهية'),
-                      onPressed: () => _applyQuickPreset('ended'),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.layers_clear_outlined, size: 18),
-                      label: const Text('الكل'),
-                      onPressed: () => _applyQuickPreset('all'),
-                    ),
-                    ActionChip(
-                      avatar: const Icon(Icons.bookmark_add_outlined, size: 18),
-                      label: const Text('حفظ العرض'),
-                      onPressed: _saveCurrentPreset,
-                    ),
-                    if (_savedPresets.isNotEmpty)
-                      PopupMenuButton<String>(
-                        tooltip: 'العروض المحفوظة',
-                        itemBuilder: (context) {
-                          final items = <PopupMenuEntry<String>>[];
-                          for (final preset in _savedPresets) {
-                            items.add(
-                              PopupMenuItem<String>(
-                                value: 'apply::${preset.name}',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.playlist_add_check_rounded, size: 18),
-                                    SizedBox(width: 8.w),
-                                    Expanded(child: Text('تطبيق: ${preset.name}')),
-                                  ],
-                                ),
-                              ),
-                            );
-                            items.add(
-                              PopupMenuItem<String>(
-                                value: 'delete::${preset.name}',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete_outline_rounded,
-                                        size: 18, color: Theme.of(context).colorScheme.error),
-                                    SizedBox(width: 8.w),
-                                    Expanded(child: Text('حذف: ${preset.name}')),
-                                  ],
-                                ),
-                              ),
-                            );
-                            items.add(const PopupMenuDivider());
-                          }
-                          if (items.isNotEmpty) {
-                            items.removeLast();
-                          }
-                          return items;
-                        },
-                        onSelected: _onSavedPresetMenuSelected,
-                        child: const Chip(
-                          avatar: Icon(Icons.bookmarks_outlined, size: 18),
-                          label: Text('العروض المحفوظة'),
-                        ),
-                      ),
-                  ],
-                ),
-                SizedBox(height: 8.h),
-                associationsAsync.when(
-                  data: (associations) => QuickFiltersBar(
-                    selectedStatus: _status,
-                    selectedType: _type,
-                    selectedAssociationId: _associationId,
-                    associations: associations.map((a) => (id: a.id, name: a.name)).toList(),
-                    onStatusChanged: (v) {
-                      setState(() => _status = v);
-                      _persistUiState();
-                    },
-                    onTypeChanged: (v) {
-                      setState(() => _type = v);
-                      _persistUiState();
-                    },
-                    onAssociationChanged: (v) {
-                      setState(() => _associationId = v);
-                      _persistUiState();
-                    },
-                    onClearFilters: _clearFilters,
-                  ),
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-                if (_hasActiveFilters)
-                  Padding(
-                    padding: EdgeInsets.only(top: 6.h),
-                    child: Wrap(
-                      spacing: 8.w,
-                      runSpacing: 6.h,
-                      children: [
-                        if (_status != 'all') _ActiveChip(label: 'الحالة: ${resolveStatusLabel(_status)}'),
-                        if (_type != 'all') _ActiveChip(label: 'النوع: ${resolveTypeLabel(_type)}'),
-                        if (_query.isNotEmpty) _ActiveChip(label: 'بحث: $_query'),
-                        if (_startDateFilter != null || _endDateFilter != null) const _ActiveChip(label: 'نطاق تاريخ'),
-                        if (_minAmountFilter != null || _maxAmountFilter != null) const _ActiveChip(label: 'نطاق مبلغ'),
-                      ],
-                    ),
-                  ),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => _openAdvancedFilters(context),
-                      tooltip: 'فلاتر متقدمة',
-                      icon: Icon(
-                        Icons.tune_rounded,
-                        color: _hasAdvancedFilters ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    SortingMenu(
-                      currentSort: _sortOption,
-                      onSortChanged: (v) {
-                        setState(() => _sortOption = v);
+                    padding: EdgeInsets.only(left: 6.w),
+                    child: Chip(
+                      label: Text(resolveStatusLabel(_status), style: theme.textTheme.labelSmall),
+                      avatar: const Icon(Icons.radio_button_checked, size: 14),
+                      onDeleted: () {
+                        setState(() => _status = 'all');
                         _persistUiState();
                       },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.symmetric(horizontal: 2.w),
                     ),
-                    if (_hasActiveFilters)
-                      TextButton(
-                        onPressed: _clearFilters,
-                        child: const Text('مسح'),
-                      ),
-                  ],
+                  ),
+                if (_type != 'all')
+                  Padding(
+                    padding: EdgeInsets.only(left: 6.w),
+                    child: Chip(
+                      label: Text(resolveTypeLabel(_type), style: theme.textTheme.labelSmall),
+                      avatar: const Icon(Icons.category_outlined, size: 14),
+                      onDeleted: () {
+                        setState(() => _type = 'all');
+                        _persistUiState();
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.symmetric(horizontal: 2.w),
+                    ),
+                  ),
+                if (_associationId != null)
+                  Padding(
+                    padding: EdgeInsets.only(left: 6.w),
+                    child: Chip(
+                      label: Text('الجمعية', style: theme.textTheme.labelSmall),
+                      avatar: const Icon(Icons.business_outlined, size: 14),
+                      onDeleted: () {
+                        setState(() => _associationId = null);
+                        _persistUiState();
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.symmetric(horizontal: 2.w),
+                    ),
+                  ),
+                if (_query.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(left: 6.w),
+                    child: Chip(
+                      label: Text('بحث: $_query', style: theme.textTheme.labelSmall),
+                      avatar: const Icon(Icons.search, size: 14),
+                      onDeleted: () {
+                        setState(() {
+                          _query = '';
+                          _searchController.clear();
+                        });
+                        _persistUiState();
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.symmetric(horizontal: 2.w),
+                    ),
+                  ),
+                if (_hasAdvancedFilters)
+                  Padding(
+                    padding: EdgeInsets.only(left: 6.w),
+                    child: Chip(
+                      label: Text('فلاتر متقدمة', style: theme.textTheme.labelSmall),
+                      avatar: const Icon(Icons.tune, size: 14),
+                      onDeleted: () {
+                        setState(() {
+                          _startDateFilter = null;
+                          _endDateFilter = null;
+                          _minAmountFilter = null;
+                          _maxAmountFilter = null;
+                        });
+                        _persistUiState();
+                      },
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.symmetric(horizontal: 2.w),
+                    ),
+                  ),
+                TextButton(
+                  onPressed: _clearFilters,
+                  style: TextButton.styleFrom(
+                    foregroundColor: theme.colorScheme.error,
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('مسح الكل'),
                 ),
               ],
             ),
           ),
-          secondChild: const SizedBox.shrink(),
-        ),
 
         // Content with Responsive Layout
         Expanded(
@@ -913,29 +1019,5 @@ class _SponsoredTabState extends ConsumerState<SponsoredTab> with AutomaticKeepA
     });
 
     return sorted;
-  }
-}
-
-class _ActiveChip extends StatelessWidget {
-  final String label;
-
-  const _ActiveChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(20.r),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
   }
 }

@@ -109,7 +109,7 @@ class BarChartWidget extends StatelessWidget {
       borderData: FlBorderData(
         show: true,
         border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.3),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
         ),
       ),
       barGroups: _buildBarGroups(context),
@@ -118,7 +118,7 @@ class BarChartWidget extends StatelessWidget {
         horizontalInterval: _getMaxY() / 5,
         getDrawingHorizontalLine: (value) {
           return FlLine(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
             strokeWidth: 1,
           );
         },

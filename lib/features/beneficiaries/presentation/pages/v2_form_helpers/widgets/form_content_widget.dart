@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -46,6 +48,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
   static const double _panelTop = 8;
   static const double _panelBottom = 6;
 
+  // ignore: unused_field - reserved for future inline guidance feature
   static const Map<int, String> _tabGuidance = {
     0: 'أكمل البيانات الأساسية أولاً ثم انتقل للعائلة.',
     1: 'أضف معلومات أفراد العائلة الأساسية قبل المتابعة.',
@@ -55,15 +58,20 @@ class _FormContentWidgetState extends State<FormContentWidget> {
   };
 
   // ⚡ Local state - prevents parent rebuilds
+  // ignore: unused_field - reserved for future search feature
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  bool _showCompactGuidance = false;
-  bool _showCompactInsights = false;
+
+  // ⚡ Cached tab stats - only recalculate on tab change or after idle
+  Map<int, TabCompletionStats>? _cachedTabStats;
+  Timer? _statsRefreshTimer;
 
   @override
   void initState() {
     super.initState();
     widget.tabController.addListener(_onTabChanged);
+    // Initial stats calculation deferred to avoid blocking first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshStats());
   }
 
   static const List<int> _tabOrderByPriority = [0, 2, 1, 3, 4];
@@ -75,19 +83,35 @@ class _FormContentWidgetState extends State<FormContentWidget> {
       oldWidget.tabController.removeListener(_onTabChanged);
       widget.tabController.addListener(_onTabChanged);
     }
+    if (oldWidget.controllers != widget.controllers) {
+      _scheduleStatsRefresh();
+    }
   }
 
   void _onTabChanged() {
     if (!mounted) return;
     if (widget.tabController.indexIsChanging) return;
-    setState(() {
-      _showCompactGuidance = false;
-      _showCompactInsights = false;
-    });
+    // Refresh stats after tab settles (debounced)
+    _scheduleStatsRefresh();
+    setState(() {});
+  }
+
+  void _refreshStats() {
+    if (!mounted) return;
+    final stats = FormCompletionCalculator.calculateTabStats(widget.controllers);
+    if (mounted) {
+      setState(() => _cachedTabStats = stats);
+    }
+  }
+
+  void _scheduleStatsRefresh() {
+    _statsRefreshTimer?.cancel();
+    _statsRefreshTimer = Timer(const Duration(milliseconds: 600), _refreshStats);
   }
 
   @override
   void dispose() {
+    _statsRefreshTimer?.cancel();
     widget.tabController.removeListener(_onTabChanged);
     _searchController.dispose();
     super.dispose();
@@ -97,9 +121,8 @@ class _FormContentWidgetState extends State<FormContentWidget> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
-    final isCompact = mediaQuery.size.width < 360;
-    final isTablet = mediaQuery.size.shortestSide >= 600;
-    final tabStats = FormCompletionCalculator.calculateTabStats(widget.controllers);
+    // ⚡ Use cached stats - avoids expensive recalculation on every build
+    final tabStats = _cachedTabStats ?? const <int, TabCompletionStats>{};
     final currentIndex = widget.tabController.index.clamp(0, FormConstants.totalTabs - 1);
     final currentStats =
         tabStats[currentIndex] ?? const TabCompletionStats(completedFields: 0, totalFields: 1, progress: 0);
@@ -108,18 +131,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
         : tabStats.values.fold<double>(0.0, (sum, stat) => sum + stat.progress) / tabStats.length;
     final overallProgress = currentIndex == FormConstants.totalTabs - 1 ? 1.0 : baseAverage;
     final overallPercent = (overallProgress * 100).round().clamp(0, 100);
-    final guidanceText = _tabGuidance[currentIndex] ?? 'أكمل الحقول المطلوبة ثم تابع للخطوة التالية.';
-    final missingRequired = _calculateMissingRequiredFields();
-    final pendingAttachments = widget.controllers.pendingAttachments.length;
-    final confidenceScore = _calculateConfidenceScore(
-      overallPercent: overallPercent,
-      missingRequired: missingRequired,
-      pendingAttachments: pendingAttachments,
-    );
-    final nextAction = _resolveNextAction();
-    final compactFocusMode = isCompact && widget.minimizeTopInsights;
     final shouldShowProgressCard = widget.showProgressCard && mediaQuery.size.height >= 700;
-    final shouldShowSearchBar = mediaQuery.size.height >= 760 || _searchQuery.isNotEmpty;
 
     return Column(
       children: [
@@ -127,12 +139,11 @@ class _FormContentWidgetState extends State<FormContentWidget> {
           Semantics(
             container: true,
             liveRegion: true,
-            label:
-                'تقدم النموذج $overallPercent بالمئة. الحقول المطلوبة الناقصة $missingRequired. المرفقات المعلقة $pendingAttachments.',
+            label: 'تقدم النموذج $overallPercent بالمئة.',
             child: Container(
               width: double.infinity,
               margin: EdgeInsets.fromLTRB(_panelHorizontal.w, _panelTop.h, _panelHorizontal.w, _panelBottom.h),
-              padding: EdgeInsets.symmetric(horizontal: (isCompact ? 10 : 12).w, vertical: (isCompact ? 8 : 10).h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(_panelRadius.r),
@@ -141,26 +152,20 @@ class _FormContentWidgetState extends State<FormContentWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: 8.w,
-                    runSpacing: 6.h,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  Row(
                     children: [
                       Text(
-                        'تقدّم النموذج: $overallPercent%',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        '$overallPercent%',
+                        style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
                       ),
+                      SizedBox(width: 8.w),
                       Text(
-                        '${currentStats.completedFields}/${currentStats.totalFields}',
+                        '${currentStats.completedFields}/${currentStats.totalFields} حقل مكتمل',
                         style: theme.textTheme.bodySmall,
                       ),
-                      _buildKpiChip(context,
-                          icon: Icons.verified_outlined, label: 'جودة السجل', value: '$confidenceScore/100'),
                     ],
                   ),
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 6.h),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(5.r),
                     child: LinearProgressIndicator(
@@ -168,120 +173,15 @@ class _FormContentWidgetState extends State<FormContentWidget> {
                       minHeight: 6.h,
                     ),
                   ),
-                  if (compactFocusMode) ...[
-                    SizedBox(height: 8.h),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'وضع تركيز: تم إخفاء التفاصيل أثناء الإدخال',
-                            style: theme.textTheme.bodySmall,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Icon(Icons.keyboard_rounded, size: 16.sp, color: theme.colorScheme.primary),
-                      ],
-                    ),
-                  ],
-                  if (isCompact) ...[
-                    SizedBox(height: 8.h),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _showCompactInsights = !_showCompactInsights;
-                          });
-                        },
-                        icon: Icon(_showCompactInsights ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                        label: Text(_showCompactInsights ? 'إخفاء التفاصيل' : 'إظهار التفاصيل'),
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: 8.h),
-                  if (!compactFocusMode && (!isCompact || _showCompactInsights))
-                    Wrap(
-                      spacing: 6.w,
-                      runSpacing: 6.h,
-                      children: [
-                        _buildKpiChip(context,
-                            icon: Icons.rule_rounded, label: 'ناقص مطلوب', value: '$missingRequired'),
-                        _buildKpiChip(context,
-                            icon: Icons.attach_file_rounded, label: 'مرفقات معلّقة', value: '$pendingAttachments'),
-                        _buildKpiChip(context,
-                            icon: Icons.checklist_rounded, label: 'الإكمال', value: '$overallPercent%'),
-                      ],
-                    )
-                  else if (!compactFocusMode && _showCompactInsights)
-                    Wrap(
-                      spacing: 6.w,
-                      runSpacing: 6.h,
-                      children: [
-                        _buildKpiChip(context, icon: Icons.rule_rounded, label: 'ناقص', value: '$missingRequired'),
-                        _buildKpiChip(context,
-                            icon: Icons.attach_file_rounded, label: 'مرفقات', value: '$pendingAttachments'),
-                      ],
-                    ),
-                  SizedBox(height: 8.h),
-                  if (!compactFocusMode)
-                    if (!isCompact || _showCompactInsights)
-                      Text(
-                        guidanceText,
-                        style: theme.textTheme.bodySmall,
-                      )
-                    else
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _showCompactGuidance ? guidanceText : 'توجيه سريع متاح',
-                              style: theme.textTheme.bodySmall,
-                              maxLines: _showCompactGuidance ? 3 : 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _showCompactGuidance = !_showCompactGuidance;
-                              });
-                            },
-                            child: Text(_showCompactGuidance ? 'إخفاء' : 'إظهار'),
-                          ),
-                        ],
-                      ),
-                  SizedBox(height: 8.h),
-                  if (!compactFocusMode && (!isCompact || _showCompactInsights))
-                    _buildSmartNextAction(
-                      context,
-                      nextAction: nextAction,
-                      isCompact: isCompact,
-                      isTablet: isTablet,
-                    ),
                 ],
               ),
             ),
           ),
 
-        // 🔍 Quick Search Bar (adaptive to avoid vertical overflow)
-        if (shouldShowSearchBar)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-            color: theme.colorScheme.primaryContainer,
-            child: QuickSearchInput(
-              controller: _searchController,
-              hint: 'ابحث في الحقول...',
-              onSearch: (query) {
-                setState(() => _searchQuery = query);
-              },
-            ),
-          ),
-
         Semantics(
           container: true,
-          label: 'تبويبات إدخال بيانات المستفيد',
-          child: BeneficiaryFormTabBar4(
+          label: 'مؤشر تقدم الخطوات',
+          child: CompactFormStepIndicator(
             controller: widget.tabController,
             currentIndex: currentIndex,
             tabStats: tabStats,
@@ -303,6 +203,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildKpiChip(
     BuildContext context, {
     required IconData icon,
@@ -331,6 +232,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildSmartNextAction(
     BuildContext context, {
     required ({int targetTab, String message, IconData icon}) nextAction,
@@ -392,6 +294,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
     );
   }
 
+  // ignore: unused_element
   int _calculateConfidenceScore({
     required int overallPercent,
     required int missingRequired,
@@ -411,6 +314,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
     return score.clamp(0, 100);
   }
 
+  // ignore: unused_element
   ({int targetTab, String message, IconData icon}) _resolveNextAction() {
     if (widget.controllers.firstNameController.text.trim().isEmpty) {
       return (targetTab: 0, message: 'أدخل الاسم الأول لإكمال أساس السجل.', icon: Icons.person_outline_rounded);
@@ -445,6 +349,7 @@ class _FormContentWidgetState extends State<FormContentWidget> {
     );
   }
 
+  // ignore: unused_element
   int _calculateMissingRequiredFields() {
     final validation = PersonalProfileValidator.evaluate(widget.controllers);
     int missing = validation.missingCriticalFields;

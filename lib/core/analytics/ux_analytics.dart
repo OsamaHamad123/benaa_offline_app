@@ -48,11 +48,11 @@ class UxAnalytics {
       await prefs.setString(_hapticLastUsed, DateTime.now().toIso8601String());
 
       if (kDebugMode) {
-        print('📊 Haptic usage tracked: ${currentCount + 1}');
+        debugPrint('📊 Haptic usage tracked: ${currentCount + 1}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking haptic usage: $e');
+        debugPrint('❌ Error tracking haptic usage: $e');
       }
     }
   }
@@ -65,11 +65,11 @@ class UxAnalytics {
       await prefs.setInt(_hapticDisabledCount, currentCount + 1);
 
       if (kDebugMode) {
-        print('📊 Haptic disabled tracked: ${currentCount + 1}');
+        debugPrint('📊 Haptic disabled tracked: ${currentCount + 1}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking haptic disabled: $e');
+        debugPrint('❌ Error tracking haptic disabled: $e');
       }
     }
   }
@@ -89,12 +89,12 @@ class UxAnalytics {
       }
 
       if (kDebugMode) {
-        print(
+        debugPrint(
             '📊 Dark mode ${enabled ? "enabled" : "disabled"}: toggle #${toggleCount + 1}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking dark mode toggle: $e');
+        debugPrint('❌ Error tracking dark mode toggle: $e');
       }
     }
   }
@@ -107,11 +107,11 @@ class UxAnalytics {
       await prefs.setInt(_animationFrameDrops, dropCount + 1);
 
       if (kDebugMode) {
-        print('📊 Animation frame drop tracked: ${dropCount + 1}');
+        debugPrint('📊 Animation frame drop tracked: ${dropCount + 1}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking animation drop: $e');
+        debugPrint('❌ Error tracking animation drop: $e');
       }
     }
   }
@@ -125,11 +125,11 @@ class UxAnalytics {
       await prefs.setInt(_averageAnimationDuration, newAvg);
 
       if (kDebugMode && milliseconds > 350) {
-        print('⚠️ Slow animation detected: ${milliseconds}ms');
+        debugPrint('⚠️ Slow animation detected: ${milliseconds}ms');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking animation duration: $e');
+        debugPrint('❌ Error tracking animation duration: $e');
       }
     }
   }
@@ -141,11 +141,11 @@ class UxAnalytics {
       await prefs.setBool(_screenReaderUsage, true);
 
       if (kDebugMode) {
-        print('📊 Screen reader usage detected');
+        debugPrint('📊 Screen reader usage detected');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking screen reader: $e');
+        debugPrint('❌ Error tracking screen reader: $e');
       }
     }
   }
@@ -158,7 +158,7 @@ class UxAnalytics {
       await prefs.setInt(_semanticsInteractions, count + 1);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error tracking semantics: $e');
+        debugPrint('❌ Error tracking semantics: $e');
       }
     }
   }
@@ -174,11 +174,11 @@ class UxAnalytics {
       await prefs.setInt(_totalSessions, sessionCount + 1);
 
       if (kDebugMode) {
-        print('📊 Session started: #${sessionCount + 1}');
+        debugPrint('📊 Session started: #${sessionCount + 1}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error starting session: $e');
+        debugPrint('❌ Error starting session: $e');
       }
     }
   }
@@ -214,7 +214,7 @@ class UxAnalytics {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error getting analytics summary: $e');
+        debugPrint('❌ Error getting analytics summary: $e');
       }
       return {};
     }
@@ -230,11 +230,11 @@ class UxAnalytics {
       }
 
       if (kDebugMode) {
-        print('📊 Analytics reset complete');
+        debugPrint('📊 Analytics reset complete');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error resetting analytics: $e');
+        debugPrint('❌ Error resetting analytics: $e');
       }
     }
   }

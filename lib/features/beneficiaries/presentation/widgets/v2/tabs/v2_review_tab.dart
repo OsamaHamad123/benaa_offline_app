@@ -50,12 +50,6 @@ class V2ReviewTab extends ConsumerWidget {
     );
     final unresolvedTaxonomyCount = _countUnresolvedTaxonomySelections(taxonomyIndex);
     final canFinalSave = missingRequiredFields.isEmpty && unresolvedTaxonomyCount == 0;
-    final profileStrength = _calculateProfileStrength();
-    final profileStrengthColor = switch (profileStrength.$3) {
-      _ProfileStrengthLevel.strong => colorScheme.secondary,
-      _ProfileStrengthLevel.medium => colorScheme.tertiary,
-      _ProfileStrengthLevel.weak => colorScheme.error,
-    };
 
     final basicSectionColor = colorScheme.primary;
     final contactSectionColor = colorScheme.secondary;
@@ -65,145 +59,59 @@ class V2ReviewTab extends ConsumerWidget {
     final notesSectionColor = colorScheme.onSurfaceVariant;
 
     return ListView(
-      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
+      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
       physics: const ClampingScrollPhysics(),
       children: [
-        // 🎯 Header Card
-        Card(
-          elevation: 0,
-          color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-            side: BorderSide(color: colorScheme.primary.withValues(alpha: 0.3)),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(20.w),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.fact_check_rounded,
-                  size: 48.sp,
-                  color: colorScheme.primary,
-                ),
-                SizedBox(height: 12.h),
-                Text(
-                  'مراجعة جميع المعلومات المدخلة',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.primary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8.h),
-                Text(
-                  'يرجى التأكد من صحة جميع البيانات قبل الحفظ النهائي',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+        // 🎯 Compact Summary Banner (replaces the large redundant header)
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: completion >= 0.8
+                ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+                : colorScheme.errorContainer.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: completion >= 0.8
+                  ? colorScheme.primary.withValues(alpha: 0.35)
+                  : colorScheme.error.withValues(alpha: 0.35),
             ),
           ),
-        ),
-
-        SizedBox(height: 12.h),
-
-        Card(
-          elevation: 0,
-          color: colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14.r),
-            side: BorderSide(color: colorScheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(14.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Row(
+            children: [
+              Icon(
+                completion >= 0.8 ? Icons.check_circle_outline_rounded : Icons.info_outline_rounded,
+                size: 20.sp,
+                color: completion >= 0.8 ? colorScheme.primary : colorScheme.error,
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.rule_folder_outlined, size: 18.sp, color: colorScheme.primary),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        'الحقول الأساسية المكتملة: $filledRequiredCount/$requiredCount',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8.h),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999.r),
-                  child: LinearProgressIndicator(
-                    value: completion,
-                    minHeight: 8.h,
-                    backgroundColor: colorScheme.surfaceContainer,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      completion >= 0.8
-                          ? colorScheme.primary
-                          : completion >= 0.5
-                              ? colorScheme.secondary
-                              : colorScheme.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        SizedBox(height: 10.h),
-
-        Card(
-          elevation: 0,
-          color: colorScheme.surfaceContainerHighest,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14.r),
-            side: BorderSide(color: colorScheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(14.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.shield_outlined, size: 18.sp, color: colorScheme.primary),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        'Profile Strength: ${profileStrength.$1}%',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
                     Text(
-                      profileStrength.$2,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: profileStrengthColor,
+                      'الحقول الأساسية: $filledRequiredCount/$requiredCount مكتمل',
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    SizedBox(height: 4.h),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999.r),
+                      child: LinearProgressIndicator(
+                        value: completion,
+                        minHeight: 5.h,
+                        backgroundColor: colorScheme.surfaceContainer,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          completion >= 0.8
+                              ? colorScheme.primary
+                              : completion >= 0.5
+                                  ? colorScheme.secondary
+                                  : colorScheme.error,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 8.h),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999.r),
-                  child: LinearProgressIndicator(
-                    value: profileStrength.$1 / 100,
-                    minHeight: 8.h,
-                    backgroundColor: colorScheme.surfaceContainer,
-                    valueColor: AlwaysStoppedAnimation<Color>(profileStrengthColor),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
 
@@ -722,38 +630,6 @@ class V2ReviewTab extends ConsumerWidget {
     }
   }
 
-  (int, String, _ProfileStrengthLevel) _calculateProfileStrength() {
-    var score = 0;
-    var checks = 0;
-
-    bool addCheck(bool pass) {
-      checks += 1;
-      if (pass) score += 1;
-      return pass;
-    }
-
-    addCheck(_getFullName() != 'غير محدد');
-    addCheck(formControllers.nationalIdController.text.trim().isNotEmpty);
-    addCheck(formControllers.phoneController.text.trim().isNotEmpty);
-    addCheck(formControllers.selectedProvince?.trim().isNotEmpty == true);
-    addCheck(formControllers.selectedCity?.trim().isNotEmpty == true);
-    addCheck(formControllers.selectedGender?.trim().isNotEmpty == true);
-    addCheck(formControllers.selectedCategory?.trim().isNotEmpty == true);
-    addCheck(formControllers.numberOfDependentsController.text.trim().isNotEmpty);
-    addCheck(formControllers.pendingAttachments.isNotEmpty);
-    addCheck(formControllers.notesController.text.trim().isNotEmpty);
-
-    final percent = checks == 0 ? 0 : ((score / checks) * 100).round();
-
-    if (percent >= 85) {
-      return (percent, 'ممتاز', _ProfileStrengthLevel.strong);
-    }
-    if (percent >= 60) {
-      return (percent, 'جيد', _ProfileStrengthLevel.medium);
-    }
-    return (percent, 'ضعيف', _ProfileStrengthLevel.weak);
-  }
-
   Map<String, String?> _requiredFieldValues() {
     final fullName = _getFullName();
     return <String, String?>{
@@ -827,10 +703,4 @@ class V2ReviewTab extends ConsumerWidget {
 
     return code;
   }
-}
-
-enum _ProfileStrengthLevel {
-  weak,
-  medium,
-  strong,
 }

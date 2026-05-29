@@ -555,17 +555,19 @@ class ViewBeneficiaryPage extends ConsumerWidget {
                 SizedBox(height: 16.h),
               ],
 
-              // Additional Contact Info
-              _buildSectionTitle(context, 'معلومات اتصال إضافية'),
-              const SizedBox(height: 8),
-              Card(
-                child: InfoRow(
-                  icon: Icons.phone_android,
-                  label: 'رقم هاتف بديل',
-                  value: beneficiary.altPhoneNumber.toString(),
+              // Additional Contact Info — only show when alt phone is set
+              if (beneficiary.altPhoneNumber != 0) ...[
+                _buildSectionTitle(context, 'معلومات اتصال إضافية'),
+                const SizedBox(height: 8),
+                Card(
+                  child: InfoRow(
+                    icon: Icons.phone_android,
+                    label: 'رقم هاتف بديل',
+                    value: beneficiary.altPhoneNumber.toString(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
 
               // Metadata Section
               _buildSectionTitle(context, 'بيانات النظام'),

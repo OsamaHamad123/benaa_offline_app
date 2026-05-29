@@ -14,8 +14,7 @@ class SuccessAnimation extends StatefulWidget {
   State<SuccessAnimation> createState() => _SuccessAnimationState();
 }
 
-class _SuccessAnimationState extends State<SuccessAnimation>
-    with SingleTickerProviderStateMixin {
+class _SuccessAnimationState extends State<SuccessAnimation> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _checkAnimation;
@@ -152,8 +151,7 @@ class CheckmarkPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(CheckmarkPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+  bool shouldRepaint(CheckmarkPainter oldDelegate) => oldDelegate.progress != progress;
 }
 
 /// 🎨 Success Overlay - Shows success animation over the entire screen
@@ -161,14 +159,19 @@ class SuccessOverlay {
   static OverlayEntry? _overlayEntry;
 
   static void show(BuildContext context, {String? message}) {
+    // Guard: don't insert into an invalid or unmounted context
+    if (!context.mounted) return;
+
     hide(); // Remove any existing overlay
 
+    final overlay = Overlay.maybeOf(context);
+    if (overlay == null) return;
+
     _overlayEntry = OverlayEntry(
-      builder: (context) =>
-          SuccessAnimation(message: message, onComplete: () => hide()),
+      builder: (context) => SuccessAnimation(message: message, onComplete: () => hide()),
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
+    overlay.insert(_overlayEntry!);
   }
 
   static void hide() {
@@ -188,8 +191,7 @@ class ErrorShakeWidget extends StatefulWidget {
   State<ErrorShakeWidget> createState() => _ErrorShakeWidgetState();
 }
 
-class _ErrorShakeWidgetState extends State<ErrorShakeWidget>
-    with SingleTickerProviderStateMixin {
+class _ErrorShakeWidgetState extends State<ErrorShakeWidget> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _offsetAnimation;
 
