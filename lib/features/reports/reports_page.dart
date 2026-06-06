@@ -18,6 +18,7 @@ import '../../core/constants/report_styles.dart';
 import 'custom_reports_page.dart';
 import '../../core/services/export/export_models.dart';
 import '../../core/services/export/export_providers.dart';
+import '../beneficiaries/domain/entities/beneficiary.dart';
 
 enum ReportsTimeContext { today, week, month }
 
@@ -790,7 +791,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> with AutomaticKeepAli
               (b) => BeneficiaryExportRow(
                 fullName: b.fullName,
                 nationalId: b.nationalId,
-                gender: b.gender == 'male' ? 'ذكر' : 'أنثى',
+                gender: b.gender == Gender.male ? 'ذكر' : 'أنثى',
                 category: b.category.toString(),
                 governorate: b.governorate,
                 phoneNumber: b.phoneNumber,
