@@ -39,10 +39,12 @@ class SyncApiClient {
       _dio.interceptors.add(
         LogInterceptor(
           request: true,
-          requestHeader: true,
-          requestBody: ApiConfig.logNetworkResponses,
+          // لا تسجل الترويسات أو المحتوى: تحتوي على Token وكلمات المرور
+          // والبيانات الشخصية للمستفيدين
+          requestHeader: false,
+          requestBody: false,
           responseHeader: false,
-          responseBody: ApiConfig.logNetworkResponses,
+          responseBody: false,
           error: true,
           logPrint: (obj) => DebugLogger.info('🌐 $obj'),
         ),

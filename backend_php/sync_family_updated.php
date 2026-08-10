@@ -17,6 +17,11 @@
 
 // Database connection
 require_once 'config/database.php';
+// المصادقة والدوال المشتركة (verifyToken, sendError, ...)
+require_once 'config.php';
+
+// 🔒 جميع العمليات تتطلب تسجيل دخول صالح
+$currentUser = verifyToken();
 
 // Helper functions for enum conversions
 class FamilyEnums {
@@ -248,7 +253,9 @@ function processFamilyDeceasedChange($pdo, $change) {
             return ['success' => true, 'id' => $pdo->lastInsertId(), 'action' => 'created'];
         }
     } catch (PDOException $e) {
-        return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        // سجل التفاصيل على الخادم فقط ولا تكشفها للعميل
+        error_log('sync_family DB error: ' . $e->getMessage());
+        return ['success' => false, 'error' => 'Database error'];
     }
 }
 
@@ -349,7 +356,9 @@ function processFamilyMemberChange($pdo, $change) {
             return ['success' => true, 'id' => $pdo->lastInsertId(), 'action' => 'created'];
         }
     } catch (PDOException $e) {
-        return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        // سجل التفاصيل على الخادم فقط ولا تكشفها للعميل
+        error_log('sync_family DB error: ' . $e->getMessage());
+        return ['success' => false, 'error' => 'Database error'];
     }
 }
 
@@ -378,7 +387,9 @@ function fetchFamilyDeceased($pdo, $beneficiary_id) {
         
         return ['success' => true, 'data' => $results];
     } catch (PDOException $e) {
-        return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        // سجل التفاصيل على الخادم فقط ولا تكشفها للعميل
+        error_log('sync_family DB error: ' . $e->getMessage());
+        return ['success' => false, 'error' => 'Database error'];
     }
 }
 
@@ -404,7 +415,9 @@ function fetchFamilyMembers($pdo, $beneficiary_id) {
         
         return ['success' => true, 'data' => $results];
     } catch (PDOException $e) {
-        return ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+        // سجل التفاصيل على الخادم فقط ولا تكشفها للعميل
+        error_log('sync_family DB error: ' . $e->getMessage());
+        return ['success' => false, 'error' => 'Database error'];
     }
 }
 

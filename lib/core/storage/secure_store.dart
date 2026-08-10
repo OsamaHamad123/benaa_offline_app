@@ -91,8 +91,9 @@ class SecureStore {
     return token != null && token.isNotEmpty;
   }
 
-  /// Save user credentials (for login)
-  static Future<void> saveCredentials(String username, String password) async {
+  /// Save the logged-in username (for login prefill).
+  /// كلمات المرور لا تُخزن محلياً أبداً.
+  static Future<void> saveCredentials(String username) async {
     // Store username and create a mock token for offline mode
     await storeTokens(
       accessToken: 'offline_token_${DateTime.now().millisecondsSinceEpoch}',

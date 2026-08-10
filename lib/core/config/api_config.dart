@@ -67,10 +67,18 @@ class ApiConfig {
   }
 
   /// التحقق من صحة الـ URL
+  /// يُشترط HTTPS دائماً، ويُسمح بـ HTTP فقط للتطوير المحلي
   static bool isValidUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+      if (!uri.hasScheme) return false;
+      if (uri.scheme == 'https') return true;
+      if (uri.scheme == 'http') {
+        // localhost / محاكي Android فقط
+        const localHosts = {'localhost', '127.0.0.1', '10.0.2.2'};
+        return localHosts.contains(uri.host);
+      }
+      return false;
     } catch (e) {
       return false;
     }

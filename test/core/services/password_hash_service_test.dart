@@ -3,7 +3,7 @@ import 'package:benaa_offline_app/core/services/password_hash_service.dart';
 
 void main() {
   group('PasswordHashService Tests', () {
-    test('hashPassword should return consistent hash for same input', () {
+    test('hashPassword should use a random salt (different hash each call)', () {
       // Arrange
       const password = 'test_password_123';
 
@@ -11,9 +11,10 @@ void main() {
       final hash1 = PasswordHashService.hashPassword(password);
       final hash2 = PasswordHashService.hashPassword(password);
 
-      // Assert
-      expect(hash1, equals(hash2));
-      expect(hash1, isNotEmpty);
+      // Assert - salt عشوائي لكل تجزئة، لكن كلاهما يتحقق بنجاح
+      expect(hash1, isNot(equals(hash2)));
+      expect(PasswordHashService.verifyPassword(password, hash1), isTrue);
+      expect(PasswordHashService.verifyPassword(password, hash2), isTrue);
     });
 
     test(
@@ -57,6 +58,15 @@ void main() {
       expect(result, isFalse);
     });
 
+    test('verifyPassword should return false for malformed hash', () {
+      expect(PasswordHashService.verifyPassword('password', ''), isFalse);
+      expect(PasswordHashService.verifyPassword('password', 'not-a-hash'), isFalse);
+      expect(
+        PasswordHashService.verifyPassword('password', 'pbkdf2\$abc\$def\$ghi'),
+        isFalse,
+      );
+    });
+
     test('hashPassword should handle empty strings', () {
       // Arrange
       const emptyPassword = '';
@@ -93,25 +103,25 @@ void main() {
       expect(PasswordHashService.verifyPassword(specialPassword, hash), isTrue);
     });
 
-    test('hashPassword should produce SHA-256 length hash (64 hex chars)', () {
+    test('hashPassword should produce a well-formed PBKDF2 hash', () {
       // Arrange
       const password = 'test';
 
       // Act
       final hash = PasswordHashService.hashPassword(password);
 
-      // Assert
-      // SHA-256 produces 64 hex characters
-      expect(hash.length, equals(64));
-      expect(RegExp(r'^[a-f0-9]{64}$').hasMatch(hash), isTrue);
+      // Assert - format: pbkdf2$<iterations>$<base64 salt>$<base64 key>
+      final parts = hash.split(r'$');
+      expect(parts.length, equals(4));
+      expect(parts[0], equals('pbkdf2'));
+      expect(int.parse(parts[1]), greaterThanOrEqualTo(10000));
     });
 
     test(
       'generateSalt should return different values on multiple calls',
-      () async {
+      () {
         // Act
         final salt1 = PasswordHashService.generateSalt();
-        await Future.delayed(const Duration(milliseconds: 2)); // تأخير بسيط
         final salt2 = PasswordHashService.generateSalt();
 
         // Assert
@@ -127,12 +137,11 @@ void main() {
       const upperCase = 'PASSWORD';
 
       // Act
-      final hashLower = PasswordHashService.hashPassword(lowerCase);
       final hashUpper = PasswordHashService.hashPassword(upperCase);
 
       // Assert
-      expect(hashLower, isNot(equals(hashUpper)));
       expect(PasswordHashService.verifyPassword(lowerCase, hashUpper), isFalse);
+      expect(PasswordHashService.verifyPassword(upperCase, hashUpper), isTrue);
     });
 
     test('Whitespace handling test', () {
@@ -141,11 +150,17 @@ void main() {
       const passwordWithoutSpace = 'password';
 
       // Act
-      final hash1 = PasswordHashService.hashPassword(passwordWithSpace);
-      final hash2 = PasswordHashService.hashPassword(passwordWithoutSpace);
+      final hash = PasswordHashService.hashPassword(passwordWithSpace);
 
       // Assert
-      expect(hash1, isNot(equals(hash2)));
+      expect(
+        PasswordHashService.verifyPassword(passwordWithoutSpace, hash),
+        isFalse,
+      );
+      expect(
+        PasswordHashService.verifyPassword(passwordWithSpace, hash),
+        isTrue,
+      );
     });
 
     test('Long password handling', () {
@@ -157,7 +172,6 @@ void main() {
 
       // Assert
       expect(hash, isNotEmpty);
-      expect(hash.length, equals(64)); // Still 64 chars for SHA-256
       expect(PasswordHashService.verifyPassword(longPassword, hash), isTrue);
     });
 

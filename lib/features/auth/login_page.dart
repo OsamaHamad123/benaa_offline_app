@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/storage/secure_store.dart';
-import '../../core/services/password_hash_service.dart';
 import '../../theme/app_colors.dart';
 import '../../core/design_system/app_animations.dart';
 import '../../core/error_handling/error_handler.dart';
@@ -74,17 +73,9 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
       // TODO: Replace with actual API authentication
       // For now, accept any non-empty credentials
       if (_usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-        // ✅ SECURITY: Hash password before storing
-        final hashedPassword = PasswordHashService.hashPassword(
-          _passwordController.text,
-        );
-
-        // Save credentials if remember me is checked
+        // لا تُخزن كلمة المرور محلياً بأي شكل — يُحفظ اسم المستخدم فقط
         if (_rememberMe) {
-          await SecureStore.saveCredentials(
-            _usernameController.text,
-            hashedPassword, // Store hashed password instead of plain text
-          );
+          await SecureStore.saveCredentials(_usernameController.text);
         }
 
         if (mounted) {
