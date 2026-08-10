@@ -3,6 +3,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/responsive_utils_v2.dart';
 import '../../../../core/widgets/micro_interactions.dart';
 import '../../../../theme/app_colors.dart';
+import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
+import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
+import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
+import '../utils/dashboard_haptics.dart'; // ✅ Dashboard Haptics
 import '../../../../core/utils/haptic_patterns.dart';
 
 /// Quick Action Card - Modern card design for quick actions
@@ -14,12 +18,12 @@ class QuickActionCard extends StatelessWidget {
   final int? badge; // Badge counter (optional)
 
   const QuickActionCard({
-    super.key,
     required this.label,
     required this.icon,
     required this.color,
     required this.onTap,
     this.badge,
+    super.key,
   });
 
   @override
@@ -30,10 +34,9 @@ class QuickActionCard extends StatelessWidget {
       label: '$label${badge != null && badge! > 0 ? ', لديك $badge إشعار' : ''}',
       hint: 'اضغط للانتقال إلى $label',
       button: true,
-      enabled: true,
       child: MicroInteractions.bounceButton(
         onTap: () {
-          HapticPatterns.selection();
+          DashboardHaptics.onQuickAction();
           onTap();
         },
         child: Card(
@@ -41,8 +44,7 @@ class QuickActionCard extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16.r),
             side: BorderSide(
-              color: color.withOpacity(0.2),
-              width: 1,
+              color: color.withAlpha(51),
             ),
           ),
           color: isDark ? AppColors.surfaceDark : AppColors.surface,
@@ -50,8 +52,8 @@ class QuickActionCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  color.withOpacity(isDark ? 0.15 : 0.05),
-                  color.withOpacity(isDark ? 0.08 : 0.02),
+                  color.withAlpha(isDark ? 38 : 13),
+                  color.withAlpha(isDark ? 20 : 5),
                 ],
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
@@ -71,14 +73,14 @@ class QuickActionCard extends StatelessWidget {
                         padding: EdgeInsets.all(14.w),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [color, color.withOpacity(0.7)],
+                            colors: [color, color.withAlpha(179)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(14.r),
                           boxShadow: [
                             BoxShadow(
-                              color: color.withOpacity(0.3),
+                              color: color.withAlpha(77),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -105,7 +107,7 @@ class QuickActionCard extends StatelessWidget {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.error.withOpacity(0.4),
+                                  color: AppColors.error.withAlpha(102),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -123,11 +125,10 @@ class QuickActionCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: DashboardSpacing.small),
                   Text(
                     label,
-                    style: TextStyle(
-                      fontSize: 13.sp,
+                    style: DashboardTextStyles.cardSubtitle.copyWith(
                       fontWeight: FontWeight.w600,
                       color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary,
                       height: 1.2,
@@ -155,12 +156,12 @@ class QuickActionButton extends StatelessWidget {
   final int? badge;
 
   const QuickActionButton({
-    super.key,
     required this.label,
     required this.icon,
     required this.color,
     required this.onTap,
     this.badge,
+    super.key,
   });
 
   @override
@@ -183,8 +184,11 @@ class QuickActionsGrid extends StatelessWidget {
   final VoidCallback? onReportsTap;
   final VoidCallback? onCivilRegistryTap;
   final VoidCallback? onVisitsTap;
+  final VoidCallback? onAssociationsTap;
+  final VoidCallback? onKafalatTap;
   final int? syncBadge;
   final int? reportsBadge;
+  final int? associationsBadge;
 
   const QuickActionsGrid({
     super.key,
@@ -194,17 +198,17 @@ class QuickActionsGrid extends StatelessWidget {
     this.onReportsTap,
     this.onCivilRegistryTap,
     this.onVisitsTap,
+    this.onAssociationsTap,
+    this.onKafalatTap,
     this.syncBadge,
     this.reportsBadge,
+    this.associationsBadge,
   });
 
   @override
   Widget build(BuildContext context) {
     final crossAxisCount = ResponsiveUtils.getCrossAxisCount(
       context,
-      mobile: 2,
-      tablet: 3,
-      desktop: 4,
     );
 
     final childAspectRatio = ResponsiveUtils.getResponsiveValue(
@@ -227,9 +231,16 @@ class QuickActionsGrid extends StatelessWidget {
         QuickActionCard(
           label: 'إضافة مستفيد',
           icon: Icons.person_add_rounded,
-          color: AppColors.primary,
+          color: DashboardColors.totalBeneficiaries,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
+        if (onKafalatTap != null)
+          QuickActionCard(
+            label: 'الكفالات',
+            icon: Icons.volunteer_activism_rounded,
+            color: AppColors.accent,
+            onTap: onKafalatTap!,
+          ),
         QuickActionCard(
           label: 'البحث',
           icon: Icons.search_rounded,
@@ -239,29 +250,37 @@ class QuickActionsGrid extends StatelessWidget {
         QuickActionCard(
           label: 'المزامنة',
           icon: Icons.sync_rounded,
-          color: AppColors.secondary,
+          color: DashboardColors.normal,
           badge: syncBadge,
           onTap: onSyncTap ?? () {},
         ),
         QuickActionCard(
           label: 'التقارير',
           icon: Icons.assessment_rounded,
-          color: AppColors.orphan,
+          color: DashboardColors.widows,
           badge: reportsBadge,
           onTap: onReportsTap ?? () {},
         ),
         QuickActionCard(
           label: 'السجل المدني',
           icon: Icons.account_balance_rounded,
-          color: AppColors.info,
+          color: DashboardColors.poor,
           onTap: onCivilRegistryTap ?? () {},
         ),
         if (onVisitsTap != null)
           QuickActionCard(
             label: 'الزيارات',
             icon: Icons.event_note_rounded,
-            color: AppColors.accent,
+            color: DashboardColors.disabled,
             onTap: onVisitsTap!,
+          ),
+        if (onAssociationsTap != null)
+          QuickActionCard(
+            label: 'الجمعيات',
+            icon: Icons.business_rounded,
+            color: const Color(0xFF9C27B0), // Purple
+            badge: associationsBadge,
+            onTap: onAssociationsTap!,
           ),
       ],
     );
@@ -276,12 +295,14 @@ class QuickActionsGridCompact extends StatelessWidget {
   final VoidCallback? onReportsTap;
   final VoidCallback? onCivilRegistryTap;
   final VoidCallback? onVisitsTap;
+  final VoidCallback? onKafalatTap;
   final int? syncBadge;
   final int? reportsBadge;
 
   const QuickActionsGridCompact({
     super.key,
     this.onAddBeneficiaryTap,
+    this.onKafalatTap,
     this.onSearchTap,
     this.onSyncTap,
     this.onReportsTap,
@@ -320,40 +341,47 @@ class QuickActionsGridCompact extends StatelessWidget {
         QuickActionCard(
           label: 'إضافة مستفيد',
           icon: Icons.person_add_rounded,
-          color: AppColors.primary,
+          color: DashboardColors.totalBeneficiaries,
           onTap: onAddBeneficiaryTap ?? () {},
         ),
+        if (onKafalatTap != null)
+          QuickActionCard(
+            label: 'الكفالات',
+            icon: Icons.volunteer_activism_rounded,
+            color: AppColors.accent,
+            onTap: onKafalatTap!,
+          ),
         QuickActionCard(
           label: 'البحث',
           icon: Icons.search_rounded,
-          color: AppColors.success,
+          color: DashboardColors.success,
           onTap: onSearchTap ?? () {},
         ),
         QuickActionCard(
           label: 'المزامنة',
           icon: Icons.sync_rounded,
-          color: AppColors.secondary,
+          color: DashboardColors.normal,
           badge: syncBadge,
           onTap: onSyncTap ?? () {},
         ),
         QuickActionCard(
           label: 'التقارير',
           icon: Icons.assessment_rounded,
-          color: AppColors.orphan,
+          color: DashboardColors.widows,
           badge: reportsBadge,
           onTap: onReportsTap ?? () {},
         ),
         QuickActionCard(
           label: 'السجل المدني',
           icon: Icons.account_balance_rounded,
-          color: AppColors.info,
+          color: DashboardColors.poor,
           onTap: onCivilRegistryTap ?? () {},
         ),
         if (onVisitsTap != null)
           QuickActionCard(
             label: 'الزيارات',
             icon: Icons.event_note_rounded,
-            color: AppColors.accent,
+            color: DashboardColors.disabled,
             onTap: onVisitsTap!,
           ),
       ],

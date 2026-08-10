@@ -15,9 +15,7 @@ class SyncQueueService {
     required String operation,
     required Map<String, dynamic> payload,
   }) async {
-    await db
-        .into(db.syncQueue)
-        .insert(
+    await db.into(db.syncQueue).insert(
           SyncQueueCompanion.insert(
             id: _uuid.v4(),
             entity: entity,
@@ -44,11 +42,10 @@ class SyncQueueService {
   Future<void> markFailed(String id, String error) async {
     final item = await (db.select(
       db.syncQueue,
-    )..where((t) => t.id.equals(id))).getSingle();
+    )..where((t) => t.id.equals(id)))
+        .getSingle();
 
-    await db
-        .update(db.syncQueue)
-        .replace(
+    await db.update(db.syncQueue).replace(
           item.copyWith(attempts: item.attempts + 1, lastError: Value(error)),
         );
   }

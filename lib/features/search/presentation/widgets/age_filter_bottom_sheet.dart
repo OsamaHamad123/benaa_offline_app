@@ -216,7 +216,8 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
                     ),
                     child: Text(
                       'تطبيق الفلتر',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                 ),
@@ -229,7 +230,9 @@ class _AgeFilterBottomSheetState extends State<AgeFilterBottomSheet> {
   }
 
   Widget _buildPresetChip(String label, int min, int max) {
-    final isSelected = _isEnabled && _ageRange.start.round() == min && _ageRange.end.round() == max;
+    final isSelected = _isEnabled &&
+        _ageRange.start.round() == min &&
+        _ageRange.end.round() == max;
 
     return InkWell(
       onTap: () {

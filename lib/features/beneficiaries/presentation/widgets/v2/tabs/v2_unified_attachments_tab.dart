@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../attachments/presentation/widgets/attachments_section_enhanced.dart';
-import '../../../../../attachments/presentation/widgets/pending_attachments_section.dart';
+import '../../../../../attachments/presentation/widgets/enhanced_pending_attachments_section.dart'; // 🆕 Use enhanced version
 import '../../../pages/v2_form_helpers/form_controllers.dart';
 
 /// 📎 تبويب المرفقات الموحد
@@ -43,6 +43,7 @@ class V2UnifiedAttachmentsTab extends ConsumerWidget {
           beneficiaryId: beneficiaryId,
           pendingFiles: pendingFiles,
           onPendingFilesChanged: onPendingFilesChanged,
+          formControllers: formControllers, // 🆕 Pass formControllers
         ),
 
         SizedBox(height: 16.h),
@@ -82,11 +83,13 @@ class _MainBeneficiaryAttachmentsSection extends StatelessWidget {
   final String? beneficiaryId;
   final List<File>? pendingFiles;
   final Function(List<File>)? onPendingFilesChanged;
+  final BeneficiaryFormControllers? formControllers; // 🆕 Add formControllers
 
   const _MainBeneficiaryAttachmentsSection({
     this.beneficiaryId,
     this.pendingFiles,
     this.onPendingFilesChanged,
+    this.formControllers, // 🆕 Add to constructor
   });
 
   @override
@@ -113,10 +116,14 @@ class _MainBeneficiaryAttachmentsSection extends StatelessWidget {
                     readOnly: false,
                     showTitle: false,
                   )
-                : PendingAttachmentsSection(
-                    initialFiles: pendingFiles ?? [],
-                    onFilesChanged: onPendingFilesChanged,
+                : EnhancedPendingAttachmentsSection(
+                    // 🆕 Use enhanced version
+                    initialAttachments: formControllers?.pendingAttachments ?? [],
+                    onAttachmentsChanged: (attachments) {
+                      formControllers?.updatePendingAttachments(attachments);
+                    },
                     showTitle: false,
+                    requireMetadata: true, // 🆕 Require metadata input
                   ),
           ),
         ],
@@ -165,21 +172,14 @@ class _DeceasedParentsAttachmentsSection extends StatelessWidget {
                     itemCount: deceasedCount,
                     itemBuilder: (context, index) {
                       final deceased = formControllers.deceasedMembers[index];
-                      final type = deceased['deceasedType'] == 1
-                          ? 'الأب'
-                          : 'الأم';
-                      final fullName =
-                          '${deceased['firstName'] ?? ''} ${deceased['familyName'] ?? ''}';
+                      final type = deceased['deceasedType'] == 1 ? 'الأب' : 'الأم';
+                      final fullName = '${deceased['firstName'] ?? ''} ${deceased['familyName'] ?? ''}';
 
                       return _AttachmentSubSection(
                         key: ValueKey('deceased_attachments_$index'),
                         title: '$type - $fullName',
-                        icon: deceased['deceasedType'] == 1
-                            ? Icons.man
-                            : Icons.woman,
-                        color: deceased['deceasedType'] == 1
-                            ? Colors.blue
-                            : Colors.pink,
+                        icon: deceased['deceasedType'] == 1 ? Icons.man : Icons.woman,
+                        color: deceased['deceasedType'] == 1 ? Colors.blue : Colors.pink,
                         attachmentTypes: const [
                           'شهادة الوفاة',
                           'بطاقة الهوية',
@@ -238,8 +238,7 @@ class _OrphansAttachmentsSection extends StatelessWidget {
                     itemCount: orphansCount,
                     itemBuilder: (context, index) {
                       final orphan = formControllers.livingMembers[index];
-                      final fullName =
-                          '${orphan['firstName'] ?? ''} ${orphan['familyName'] ?? ''}';
+                      final fullName = '${orphan['firstName'] ?? ''} ${orphan['familyName'] ?? ''}';
                       final gender = orphan['gender'] as int?;
                       final isMale = gender == 1;
 

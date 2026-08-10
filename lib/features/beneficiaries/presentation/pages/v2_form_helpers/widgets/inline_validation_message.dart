@@ -36,10 +36,12 @@ class InlineValidationMessage extends StatefulWidget {
   });
 
   @override
-  State<InlineValidationMessage> createState() => _InlineValidationMessageState();
+  State<InlineValidationMessage> createState() =>
+      _InlineValidationMessageState();
 }
 
-class _InlineValidationMessageState extends State<InlineValidationMessage> with SingleTickerProviderStateMixin {
+class _InlineValidationMessageState extends State<InlineValidationMessage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;

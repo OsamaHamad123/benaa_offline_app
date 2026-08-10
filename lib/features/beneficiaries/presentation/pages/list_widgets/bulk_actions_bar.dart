@@ -159,4 +159,3 @@ class BulkActionsBar extends ConsumerWidget {
     }
   }
 }
-

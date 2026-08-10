@@ -14,9 +14,8 @@ SyncRequestDto _$SyncRequestDtoFromJson(Map<String, dynamic> json) =>
       pendingChanges: (json['pendingChanges'] as List<dynamic>)
           .map((e) => PendingChangeDto.fromJson(e as Map<String, dynamic>))
           .toList(),
-      deviceInfo: DeviceInfoDto.fromJson(
-        json['deviceInfo'] as Map<String, dynamic>,
-      ),
+      deviceInfo:
+          DeviceInfoDto.fromJson(json['deviceInfo'] as Map<String, dynamic>),
       userId: json['userId'] as String,
     );
 
@@ -141,12 +140,12 @@ Map<String, dynamic> _$FailedChangeDtoToJson(FailedChangeDto instance) =>
     };
 
 SyncStatsDto _$SyncStatsDtoFromJson(Map<String, dynamic> json) => SyncStatsDto(
-  receivedCount: (json['receivedCount'] as num).toInt(),
-  sentCount: (json['sentCount'] as num).toInt(),
-  deletedCount: (json['deletedCount'] as num).toInt(),
-  failedCount: (json['failedCount'] as num).toInt(),
-  durationSeconds: (json['durationSeconds'] as num?)?.toDouble(),
-);
+      receivedCount: (json['receivedCount'] as num).toInt(),
+      sentCount: (json['sentCount'] as num).toInt(),
+      deletedCount: (json['deletedCount'] as num).toInt(),
+      failedCount: (json['failedCount'] as num).toInt(),
+      durationSeconds: (json['durationSeconds'] as num?)?.toDouble(),
+    );
 
 Map<String, dynamic> _$SyncStatsDtoToJson(SyncStatsDto instance) =>
     <String, dynamic>{
@@ -194,17 +193,17 @@ Map<String, dynamic> _$LoginResponseDtoToJson(LoginResponseDto instance) =>
     };
 
 UserDto _$UserDtoFromJson(Map<String, dynamic> json) => UserDto(
-  id: json['id'] as String,
-  email: json['email'] as String,
-  name: json['name'] as String?,
-  role: json['role'] as String?,
-  permissions: json['permissions'] as Map<String, dynamic>?,
-);
+      id: json['id'] as String,
+      email: json['email'] as String,
+      name: json['name'] as String?,
+      role: json['role'] as String?,
+      permissions: json['permissions'] as Map<String, dynamic>?,
+    );
 
 Map<String, dynamic> _$UserDtoToJson(UserDto instance) => <String, dynamic>{
-  'id': instance.id,
-  'email': instance.email,
-  'name': instance.name,
-  'role': instance.role,
-  'permissions': instance.permissions,
-};
+      'id': instance.id,
+      'email': instance.email,
+      'name': instance.name,
+      'role': instance.role,
+      'permissions': instance.permissions,
+    };

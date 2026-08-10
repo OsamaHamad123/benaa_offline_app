@@ -120,9 +120,8 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
           ? (isTablet ? 45.0.r : 32.0.r)
           : (isTablet ? 35.0.r : 26.0.r);
 
-      final percentage = widget.total == 0
-          ? 0.0
-          : (item.count / widget.total) * 100;
+      final percentage =
+          widget.total == 0 ? 0.0 : (item.count / widget.total) * 100;
 
       return PieChartSectionData(
         color: _getColor(item.category),

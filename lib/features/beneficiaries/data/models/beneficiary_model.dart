@@ -68,9 +68,8 @@ class BeneficiaryModel extends domain.Beneficiary {
       grandFatherName: data.grandFatherName,
       familyName: data.familyName,
       phoneNumber: data.phoneNumber.toString(),
-      altPhoneNumber: data.altPhoneNumber != 0
-          ? data.altPhoneNumber.toString()
-          : null,
+      altPhoneNumber:
+          data.altPhoneNumber != 0 ? data.altPhoneNumber.toString() : null,
       governorate: data.province?.toString(),
       district: data.city?.toString(),
       address: null, // Not directly in new schema
@@ -124,12 +123,10 @@ class BeneficiaryModel extends domain.Beneficiary {
     final nameParts = fullName.split(' ');
     final firstName = nameParts.isNotEmpty ? nameParts[0] : null;
     final fatherName = nameParts.length > 1 ? nameParts[1] : this.fatherName;
-    final grandFatherName = nameParts.length > 2
-        ? nameParts[2]
-        : this.grandFatherName;
-    final familyName = nameParts.length > 3
-        ? nameParts.sublist(3).join(' ')
-        : this.familyName;
+    final grandFatherName =
+        nameParts.length > 2 ? nameParts[2] : this.grandFatherName;
+    final familyName =
+        nameParts.length > 3 ? nameParts.sublist(3).join(' ') : this.familyName;
 
     return BeneficiariesCompanion.insert(
       idNumber: int.tryParse(nationalId) ?? 0,
@@ -137,7 +134,7 @@ class BeneficiaryModel extends domain.Beneficiary {
           int.tryParse(phoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ?? 0,
       altPhoneNumber:
           int.tryParse(altPhoneNumber?.replaceAll(RegExp(r'\D'), '') ?? '0') ??
-          0,
+              0,
       fileIdNumber: drift.Value(fileNo),
       sectionId: drift.Value(category.code),
       requestStatus: drift.Value(requestStatus?.code ?? 1),

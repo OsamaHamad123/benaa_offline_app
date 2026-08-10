@@ -88,20 +88,17 @@ void main() {
 
       // Sort by days since last visit (descending)
       cases.sort((a, b) {
-        final aDays = DateTime.now()
-            .difference(a['lastVisit'] as DateTime)
-            .inDays;
-        final bDays = DateTime.now()
-            .difference(b['lastVisit'] as DateTime)
-            .inDays;
+        final aDays =
+            DateTime.now().difference(a['lastVisit'] as DateTime).inDays;
+        final bDays =
+            DateTime.now().difference(b['lastVisit'] as DateTime).inDays;
         return bDays.compareTo(aDays);
       });
 
       // Assert - أقدم زيارة يجب أن تكون أولاً
       final firstCase = cases[0];
-      final firstDays = DateTime.now()
-          .difference(firstCase['lastVisit'] as DateTime)
-          .inDays;
+      final firstDays =
+          DateTime.now().difference(firstCase['lastVisit'] as DateTime).inDays;
       expect(firstDays, 15);
     });
 
@@ -115,9 +112,8 @@ void main() {
       ];
 
       final urgentCases = allBeneficiaries.where((b) {
-        final daysSinceVisit = DateTime.now()
-            .difference(b['lastVisit'] as DateTime)
-            .inDays;
+        final daysSinceVisit =
+            DateTime.now().difference(b['lastVisit'] as DateTime).inDays;
         return daysSinceVisit > 7;
       }).length;
 

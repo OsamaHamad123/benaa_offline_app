@@ -138,7 +138,9 @@ class _FilterChipWidget extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white.withOpacity(0.3) : chipColor.withOpacity(0.2),
+                    color: isSelected
+                        ? Colors.white.withOpacity(0.3)
+                        : chipColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(10.r),
                   ),
                   child: Text(

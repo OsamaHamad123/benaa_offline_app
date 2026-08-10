@@ -48,7 +48,8 @@ class CivilRegistrySearchQueries {
     try {
       final cleaned = nationalId.trim().replaceAll(' ', '').replaceAll('-', '');
 
-      if (cleaned.isEmpty || cleaned.length < SearchConstants.minNationalIdLength) {
+      if (cleaned.isEmpty ||
+          cleaned.length < SearchConstants.minNationalIdLength) {
         UnifiedLogger.logSearch(
           query: 'NID: $nationalId',
           resultsCount: 0,
@@ -88,7 +89,8 @@ class CivilRegistrySearchQueries {
       return null;
     } catch (e, st) {
       stopwatch.stop();
-      UnifiedLogger.error('Error in searchByNationalId', error: e, stackTrace: st);
+      UnifiedLogger.error('Error in searchByNationalId',
+          error: e, stackTrace: st);
       throw DatabaseQueryFailure(e.toString());
     }
   }
@@ -370,7 +372,8 @@ class CivilRegistrySearchQueries {
           // Phase 3: Prefix all (ONLY if still no results)
           if (allResults.isEmpty) {
             // 🚀 SMART: For 4 words, try reducing to 3 first (MUCH faster!)
-            final wordsToSearch = smartWords.length >= 4 ? 3 : smartWords.length;
+            final wordsToSearch =
+                smartWords.length >= 4 ? 3 : smartWords.length;
 
             final prefixConditions = <String>[];
             final prefixParams = <dynamic>[];

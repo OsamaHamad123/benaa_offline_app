@@ -162,8 +162,8 @@ class _TestSyncPageState extends ConsumerState<TestSyncPage> {
                 color: _statusMessage.contains('✅')
                     ? Colors.green.shade50
                     : _statusMessage.contains('❌')
-                    ? Colors.red.shade50
-                    : Colors.blue.shade50,
+                        ? Colors.red.shade50
+                        : Colors.blue.shade50,
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(

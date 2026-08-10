@@ -196,8 +196,12 @@ class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProvid
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final baseColor = isDark ? theme.colorScheme.surfaceVariant : theme.colorScheme.surface.withOpacity(0.3);
-    final highlightColor = isDark ? theme.colorScheme.surface : theme.colorScheme.surface.withOpacity(0.1);
+    final baseColor = isDark
+        ? theme.colorScheme.surfaceVariant
+        : theme.colorScheme.surface.withOpacity(0.3);
+    final highlightColor = isDark
+        ? theme.colorScheme.surface
+        : theme.colorScheme.surface.withOpacity(0.1);
 
     return AnimatedBuilder(
       animation: _animation,

@@ -76,3 +76,7 @@ assets/database/*.db-*
 # Backend secrets - never commit
 backend_php/config.local.php
 backend_php.zip
+
+sentry.properties
+sentry-wizard.exe
+analysis_results.txt

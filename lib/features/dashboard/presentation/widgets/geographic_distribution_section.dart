@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart';
+import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
+import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 import '../providers/dashboard_providers.dart';
+import '../providers.dart'; // ✅ Import topGovernoratesProvider
 
 /// Provider for geographic distribution
 final geographicDistributionMapProvider = FutureProvider<Map<String, int>>((
@@ -52,10 +55,9 @@ class GeographicDistributionSection extends ConsumerWidget {
           return _buildEmptyState();
         }
 
-        // Get top 5 governorates
-        final entries = data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-        final topGovernorates = entries.take(5).toList();
-        final maxCount = topGovernorates.first.value;
+        // ✅ استخدام Provider للحسابات
+        final topGovernorates = ref.watch(topGovernoratesProvider(data));
+        final maxCount = topGovernorates.isNotEmpty ? topGovernorates.first.value : 0;
 
         return Card(
           elevation: 0,
@@ -119,7 +121,7 @@ class GeographicDistributionSection extends ConsumerWidget {
                     ),
                     if (data.length > 5)
                       TextButton(
-                        onPressed: () => _showAllGovernorates(context, entries),
+                        onPressed: () => _showAllGovernorates(context, data.entries.toList()),
                         child: Text(
                           'عرض الكل',
                           style: TextStyle(
@@ -198,16 +200,12 @@ class GeographicDistributionSection extends ConsumerWidget {
             SizedBox(height: 12.h),
             Text(
               'لا توجد بيانات',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
+              style: DashboardTextStyles.emptyStateTitle,
             ),
             SizedBox(height: 4.h),
             Text(
               'لم يتم إضافة مستفيدين بعد',
-              style: TextStyle(fontSize: 12.sp, color: AppColors.textHint),
+              style: DashboardTextStyles.emptyStateMessage,
             ),
           ],
         ),

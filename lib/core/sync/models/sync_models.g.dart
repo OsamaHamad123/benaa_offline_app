@@ -7,11 +7,11 @@ part of 'sync_models.dart';
 // **************************************************************************
 
 SyncRequest _$SyncRequestFromJson(Map<String, dynamic> json) => SyncRequest(
-  changes: (json['changes'] as List<dynamic>)
-      .map((e) => SyncChange.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  timestamp: DateTime.parse(json['timestamp'] as String),
-);
+      changes: (json['changes'] as List<dynamic>)
+          .map((e) => SyncChange.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
 
 Map<String, dynamic> _$SyncRequestToJson(SyncRequest instance) =>
     <String, dynamic>{
@@ -20,11 +20,11 @@ Map<String, dynamic> _$SyncRequestToJson(SyncRequest instance) =>
     };
 
 SyncChange _$SyncChangeFromJson(Map<String, dynamic> json) => SyncChange(
-  clientId: json['client_id'] as String,
-  action: json['action'] as String,
-  data: json['data'] as Map<String, dynamic>,
-  timestamp: DateTime.parse(json['timestamp'] as String),
-);
+      clientId: json['client_id'] as String,
+      action: json['action'] as String,
+      data: json['data'] as Map<String, dynamic>,
+      timestamp: DateTime.parse(json['timestamp'] as String),
+    );
 
 Map<String, dynamic> _$SyncChangeToJson(SyncChange instance) =>
     <String, dynamic>{
@@ -35,16 +35,16 @@ Map<String, dynamic> _$SyncChangeToJson(SyncChange instance) =>
     };
 
 SyncResponse _$SyncResponseFromJson(Map<String, dynamic> json) => SyncResponse(
-  success: (json['success'] as List<dynamic>)
-      .map((e) => SyncSuccess.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  conflicts: (json['conflicts'] as List<dynamic>)
-      .map((e) => SyncConflict.fromJson(e as Map<String, dynamic>))
-      .toList(),
-  errors: (json['errors'] as List<dynamic>)
-      .map((e) => SyncError.fromJson(e as Map<String, dynamic>))
-      .toList(),
-);
+      success: (json['success'] as List<dynamic>)
+          .map((e) => SyncSuccess.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      conflicts: (json['conflicts'] as List<dynamic>)
+          .map((e) => SyncConflict.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      errors: (json['errors'] as List<dynamic>)
+          .map((e) => SyncError.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
 
 Map<String, dynamic> _$SyncResponseToJson(SyncResponse instance) =>
     <String, dynamic>{
@@ -54,10 +54,10 @@ Map<String, dynamic> _$SyncResponseToJson(SyncResponse instance) =>
     };
 
 SyncSuccess _$SyncSuccessFromJson(Map<String, dynamic> json) => SyncSuccess(
-  clientId: json['client_id'] as String,
-  serverId: (json['server_id'] as num).toInt(),
-  status: json['status'] as String,
-);
+      clientId: json['client_id'] as String,
+      serverId: (json['server_id'] as num).toInt(),
+      status: json['status'] as String,
+    );
 
 Map<String, dynamic> _$SyncSuccessToJson(SyncSuccess instance) =>
     <String, dynamic>{
@@ -67,12 +67,11 @@ Map<String, dynamic> _$SyncSuccessToJson(SyncSuccess instance) =>
     };
 
 SyncConflict _$SyncConflictFromJson(Map<String, dynamic> json) => SyncConflict(
-  clientId: json['client_id'] as String,
-  reason: json['reason'] as String,
-  serverVersion: ServerVersion.fromJson(
-    json['server_version'] as Map<String, dynamic>,
-  ),
-);
+      clientId: json['client_id'] as String,
+      reason: json['reason'] as String,
+      serverVersion: ServerVersion.fromJson(
+          json['server_version'] as Map<String, dynamic>),
+    );
 
 Map<String, dynamic> _$SyncConflictToJson(SyncConflict instance) =>
     <String, dynamic>{
@@ -96,36 +95,37 @@ Map<String, dynamic> _$ServerVersionToJson(ServerVersion instance) =>
     };
 
 SyncError _$SyncErrorFromJson(Map<String, dynamic> json) => SyncError(
-  clientId: json['client_id'] as String?,
-  error: json['error'] as String,
-  message: json['message'] as String?,
-);
+      clientId: json['client_id'] as String?,
+      error: json['error'] as String,
+      message: json['message'] as String?,
+    );
 
 Map<String, dynamic> _$SyncErrorToJson(SyncError instance) => <String, dynamic>{
-  'client_id': instance.clientId,
-  'error': instance.error,
-  'message': instance.message,
-};
+      'client_id': instance.clientId,
+      'error': instance.error,
+      'message': instance.message,
+    };
 
 PullChangesResponse<T> _$PullChangesResponseFromJson<T>(
   Map<String, dynamic> json,
   T Function(Object? json) fromJsonT,
-) => PullChangesResponse<T>(
-  data: (json['data'] as List<dynamic>).map(fromJsonT).toList(),
-  pagination: PaginationMeta.fromJson(
-    json['pagination'] as Map<String, dynamic>,
-  ),
-  syncTimestamp: DateTime.parse(json['sync_timestamp'] as String),
-);
+) =>
+    PullChangesResponse<T>(
+      data: (json['data'] as List<dynamic>).map(fromJsonT).toList(),
+      pagination:
+          PaginationMeta.fromJson(json['pagination'] as Map<String, dynamic>),
+      syncTimestamp: DateTime.parse(json['sync_timestamp'] as String),
+    );
 
 Map<String, dynamic> _$PullChangesResponseToJson<T>(
   PullChangesResponse<T> instance,
   Object? Function(T value) toJsonT,
-) => <String, dynamic>{
-  'data': instance.data.map(toJsonT).toList(),
-  'pagination': instance.pagination,
-  'sync_timestamp': instance.syncTimestamp.toIso8601String(),
-};
+) =>
+    <String, dynamic>{
+      'data': instance.data.map(toJsonT).toList(),
+      'pagination': instance.pagination,
+      'sync_timestamp': instance.syncTimestamp.toIso8601String(),
+    };
 
 PaginationMeta _$PaginationMetaFromJson(Map<String, dynamic> json) =>
     PaginationMeta(
@@ -146,15 +146,17 @@ Map<String, dynamic> _$PaginationMetaToJson(PaginationMeta instance) =>
 ChangeItem<T> _$ChangeItemFromJson<T>(
   Map<String, dynamic> json,
   T Function(Object? json) fromJsonT,
-) => ChangeItem<T>(
-  item: fromJsonT(json['item']),
-  syncAction: json['_sync_action'] as String,
-);
+) =>
+    ChangeItem<T>(
+      item: fromJsonT(json['item']),
+      syncAction: json['_sync_action'] as String,
+    );
 
 Map<String, dynamic> _$ChangeItemToJson<T>(
   ChangeItem<T> instance,
   Object? Function(T value) toJsonT,
-) => <String, dynamic>{
-  'item': toJsonT(instance.item),
-  '_sync_action': instance.syncAction,
-};
+) =>
+    <String, dynamic>{
+      'item': toJsonT(instance.item),
+      '_sync_action': instance.syncAction,
+    };

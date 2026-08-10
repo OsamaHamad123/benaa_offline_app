@@ -7,12 +7,12 @@ part of 'auth_tokens.dart';
 // **************************************************************************
 
 AuthTokens _$AuthTokensFromJson(Map<String, dynamic> json) => AuthTokens(
-  accessToken: json['accessToken'] as String,
-  refreshToken: json['refreshToken'] as String,
-  userId: json['userId'] as String?,
-  username: json['username'] as String?,
-  expiresAt: DateTime.parse(json['expiresAt'] as String),
-);
+      accessToken: json['accessToken'] as String,
+      refreshToken: json['refreshToken'] as String,
+      userId: json['userId'] as String?,
+      username: json['username'] as String?,
+      expiresAt: DateTime.parse(json['expiresAt'] as String),
+    );
 
 Map<String, dynamic> _$AuthTokensToJson(AuthTokens instance) =>
     <String, dynamic>{
@@ -24,9 +24,9 @@ Map<String, dynamic> _$AuthTokensToJson(AuthTokens instance) =>
     };
 
 LoginRequest _$LoginRequestFromJson(Map<String, dynamic> json) => LoginRequest(
-  username: json['username'] as String,
-  password: json['password'] as String,
-);
+      username: json['username'] as String,
+      password: json['password'] as String,
+    );
 
 Map<String, dynamic> _$LoginRequestToJson(LoginRequest instance) =>
     <String, dynamic>{

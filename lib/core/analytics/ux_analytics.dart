@@ -13,21 +13,27 @@ class UxAnalytics {
 
   // 🎯 Haptic Feedback Metrics
   static const String _hapticUsageCount = '${_prefixKey}haptic_usage_count';
-  static const String _hapticDisabledCount = '${_prefixKey}haptic_disabled_count';
+  static const String _hapticDisabledCount =
+      '${_prefixKey}haptic_disabled_count';
   static const String _hapticLastUsed = '${_prefixKey}haptic_last_used';
 
   // 🌙 Dark Mode Metrics
   static const String _darkModeEnabled = '${_prefixKey}dark_mode_enabled';
-  static const String _darkModeToggleCount = '${_prefixKey}dark_mode_toggle_count';
-  static const String _darkModeFirstEnabled = '${_prefixKey}dark_mode_first_enabled';
+  static const String _darkModeToggleCount =
+      '${_prefixKey}dark_mode_toggle_count';
+  static const String _darkModeFirstEnabled =
+      '${_prefixKey}dark_mode_first_enabled';
 
   // 🎨 Animation Metrics
-  static const String _animationFrameDrops = '${_prefixKey}animation_frame_drops';
-  static const String _averageAnimationDuration = '${_prefixKey}avg_animation_duration';
+  static const String _animationFrameDrops =
+      '${_prefixKey}animation_frame_drops';
+  static const String _averageAnimationDuration =
+      '${_prefixKey}avg_animation_duration';
 
   // ♿ Accessibility Metrics
   static const String _screenReaderUsage = '${_prefixKey}screen_reader_usage';
-  static const String _semanticsInteractions = '${_prefixKey}semantics_interactions';
+  static const String _semanticsInteractions =
+      '${_prefixKey}semantics_interactions';
 
   // 📈 Performance Metrics
   static const String _sessionStartTime = '${_prefixKey}session_start';
@@ -78,11 +84,13 @@ class UxAnalytics {
       await prefs.setInt(_darkModeToggleCount, toggleCount + 1);
 
       if (enabled && !prefs.containsKey(_darkModeFirstEnabled)) {
-        await prefs.setString(_darkModeFirstEnabled, DateTime.now().toIso8601String());
+        await prefs.setString(
+            _darkModeFirstEnabled, DateTime.now().toIso8601String());
       }
 
       if (kDebugMode) {
-        print('📊 Dark mode ${enabled ? "enabled" : "disabled"}: toggle #${toggleCount + 1}');
+        print(
+            '📊 Dark mode ${enabled ? "enabled" : "disabled"}: toggle #${toggleCount + 1}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -159,7 +167,8 @@ class UxAnalytics {
   static Future<void> startSession() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_sessionStartTime, DateTime.now().toIso8601String());
+      await prefs.setString(
+          _sessionStartTime, DateTime.now().toIso8601String());
 
       final sessionCount = prefs.getInt(_totalSessions) ?? 0;
       await prefs.setInt(_totalSessions, sessionCount + 1);

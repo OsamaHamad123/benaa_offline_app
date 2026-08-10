@@ -20,11 +20,11 @@ final addAttachmentWithActivityProvider = Provider<AddAttachmentWithActivity>((
 /// Provider: DeleteAttachmentWithActivity UseCase
 final deleteAttachmentWithActivityProvider =
     Provider<DeleteAttachmentWithActivity>((ref) {
-      final database = ref.watch(databaseProvider);
-      final logActivity = ref.watch(logActivityUseCaseProvider);
+  final database = ref.watch(databaseProvider);
+  final logActivity = ref.watch(logActivityUseCaseProvider);
 
-      return DeleteAttachmentWithActivity(
-        database: database,
-        logActivity: logActivity,
-      );
-    });
+  return DeleteAttachmentWithActivity(
+    database: database,
+    logActivity: logActivity,
+  );
+});

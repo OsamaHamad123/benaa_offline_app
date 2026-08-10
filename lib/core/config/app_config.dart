@@ -47,8 +47,8 @@ class AppConfig {
   }
 
   Map<String, dynamic> toJson() => {
-    'API_BASE_URL': apiBaseUrl,
-    'SYNC_BATCH_SIZE': syncBatchSize,
-    'ATTACHMENT_CHUNK_SIZE': attachmentChunkSize,
-  };
+        'API_BASE_URL': apiBaseUrl,
+        'SYNC_BATCH_SIZE': syncBatchSize,
+        'ATTACHMENT_CHUNK_SIZE': attachmentChunkSize,
+      };
 }

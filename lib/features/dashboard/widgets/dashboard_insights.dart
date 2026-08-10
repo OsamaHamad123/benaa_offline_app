@@ -201,14 +201,20 @@ class DataQualityScore extends ConsumerWidget {
                         children: [
                           Text(
                             '$score%',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: _getColorForScore(score),
                                 ),
                           ),
                           Text(
                             _getStatusText(score),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
                           ),
                         ],
                       ),
@@ -287,7 +293,9 @@ class ConnectionStatusBar extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              isOnline ? 'متصل بالإنترنت - المزامنة متاحة' : 'وضع عدم الاتصال - البيانات محلية فقط',
+              isOnline
+                  ? 'متصل بالإنترنت - المزامنة متاحة'
+                  : 'وضع عدم الاتصال - البيانات محلية فقط',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -295,7 +303,8 @@ class ConnectionStatusBar extends StatelessWidget {
               ),
             ),
           ),
-          if (!isOnline) Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange[700]),
+          if (!isOnline)
+            Icon(Icons.cloud_off_rounded, size: 18, color: Colors.orange[700]),
         ],
       ),
     );

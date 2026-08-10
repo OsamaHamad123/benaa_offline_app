@@ -34,19 +34,19 @@ class DashboardStatistics extends Equatable {
 
   @override
   List<Object?> get props => [
-    totalBeneficiaries,
-    activeBeneficiaries,
-    pendingSync,
-    completedVisitsToday,
-    lastSyncTime,
-    categoryCounts,
-    growthData,
-    todayStats,
-    totalFamilyMembers,
-    totalDeceased,
-    totalOrphans,
-    averageFamilySize,
-  ];
+        totalBeneficiaries,
+        activeBeneficiaries,
+        pendingSync,
+        completedVisitsToday,
+        lastSyncTime,
+        categoryCounts,
+        growthData,
+        todayStats,
+        totalFamilyMembers,
+        totalDeceased,
+        totalOrphans,
+        averageFamilySize,
+      ];
 }
 
 /// Growth Data Point for charts
@@ -78,9 +78,9 @@ class TodayStats extends Equatable {
 
   @override
   List<Object> get props => [
-    newBeneficiaries,
-    completedVisits,
-    pendingTasks,
-    syncedRecords,
-  ];
+        newBeneficiaries,
+        completedVisits,
+        pendingTasks,
+        syncedRecords,
+      ];
 }

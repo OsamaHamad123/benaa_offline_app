@@ -285,8 +285,8 @@ class PerformanceRecommendation {
     final icon = severity == RecommendationSeverity.high
         ? '🔴'
         : severity == RecommendationSeverity.medium
-        ? '🟡'
-        : '🟢';
+            ? '🟡'
+            : '🟢';
     return '$icon [$category] $message\n   💡 $suggestion';
   }
 }
@@ -312,6 +312,6 @@ final performanceSummaryProvider = Provider<PerformanceSummary>((ref) {
 /// Provider للتوصيات
 final performanceRecommendationsProvider =
     Provider<List<PerformanceRecommendation>>((ref) {
-      final suite = ref.watch(performanceSuiteProvider);
-      return suite.getRecommendations();
-    });
+  final suite = ref.watch(performanceSuiteProvider);
+  return suite.getRecommendations();
+});

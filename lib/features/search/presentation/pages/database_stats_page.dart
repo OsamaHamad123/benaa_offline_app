@@ -83,7 +83,10 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
           'indexCount': indexes.length,
           'indexes': indexes.map((i) => i['name'] as String).toList(),
           'cityCount': cities.length,
-          'cities': cities.map((c) => c['CITY'] as String?).where((c) => c != null).toList(),
+          'cities': cities
+              .map((c) => c['CITY'] as String?)
+              .where((c) => c != null)
+              .toList(),
         };
         _searchStats = searchAnalytics;
         _isLoading = false;
@@ -192,7 +195,8 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                       SizedBox(height: 16),
                       Text(
                         'حدث خطأ:',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       SizedBox(height: 8),
                       Padding(
@@ -213,7 +217,8 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                     padding: EdgeInsets.all(16),
                     children: [
                       // Database Info Section
-                      _buildSectionHeader('معلومات قاعدة البيانات', Icons.storage),
+                      _buildSectionHeader(
+                          'معلومات قاعدة البيانات', Icons.storage),
                       SizedBox(height: 12),
                       _buildStatCard(
                         title: 'حجم القاعدة',
@@ -284,7 +289,8 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                                 children: (_dbStats!['indexes'] as List<String>)
                                     .map(
                                       (idx) => Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 4),
+                                        padding:
+                                            EdgeInsets.symmetric(vertical: 4),
                                         child: Row(
                                           children: [
                                             Icon(
@@ -334,14 +340,16 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                       SizedBox(height: 8),
                       _buildStatCard(
                         title: 'معدل النجاح',
-                        value: '${(_searchStats!['successRate'] * 100).toStringAsFixed(1)}%',
+                        value:
+                            '${(_searchStats!['successRate'] * 100).toStringAsFixed(1)}%',
                         icon: Icons.trending_up,
                         color: Colors.indigo,
                       ),
                       SizedBox(height: 8),
                       _buildStatCard(
                         title: 'متوسط وقت البحث',
-                        value: '${_searchStats!['averageSearchDuration'].toStringAsFixed(1)} ms',
+                        value:
+                            '${_searchStats!['averageSearchDuration'].toStringAsFixed(1)} ms',
                         icon: Icons.speed,
                         color: Colors.amber,
                       ),
@@ -349,7 +357,8 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                       SizedBox(height: 16),
 
                       // Popular Queries
-                      if ((_searchStats!['popularQueries'] as List).isNotEmpty) ...[
+                      if ((_searchStats!['popularQueries'] as List)
+                          .isNotEmpty) ...[
                         Card(
                           child: ExpansionTile(
                             leading: Icon(Icons.star),
@@ -358,12 +367,14 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                               Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
-                                  children: (_searchStats!['popularQueries'] as List<MapEntry>)
+                                  children: (_searchStats!['popularQueries']
+                                          as List<MapEntry>)
                                       .map(
                                         (entry) => ListTile(
                                           dense: true,
                                           leading: CircleAvatar(
-                                            backgroundColor: Colors.blue.shade100,
+                                            backgroundColor:
+                                                Colors.blue.shade100,
                                             child: Text(
                                               '${entry.value}',
                                               style: TextStyle(fontSize: 12),
@@ -382,7 +393,8 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                       ],
 
                       // Slow Queries
-                      if ((_searchStats!['slowQueries'] as List).isNotEmpty) ...[
+                      if ((_searchStats!['slowQueries'] as List)
+                          .isNotEmpty) ...[
                         Card(
                           color: Colors.orange.shade50,
                           child: ExpansionTile(
@@ -392,7 +404,8 @@ class _DatabaseStatsPageState extends ConsumerState<DatabaseStatsPage> {
                               Padding(
                                 padding: EdgeInsets.all(16),
                                 child: Column(
-                                  children: (_searchStats!['slowQueries'] as List<String>)
+                                  children: (_searchStats!['slowQueries']
+                                          as List<String>)
                                       .map(
                                         (query) => ListTile(
                                           dense: true,

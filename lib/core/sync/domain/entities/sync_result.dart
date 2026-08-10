@@ -85,14 +85,14 @@ class SyncConflict extends Equatable {
 
   @override
   List<Object?> get props => [
-    entityId,
-    entityType,
-    reason,
-    localData,
-    serverData,
-    localUpdatedAt,
-    serverUpdatedAt,
-  ];
+        entityId,
+        entityType,
+        reason,
+        localData,
+        serverData,
+        localUpdatedAt,
+        serverUpdatedAt,
+      ];
 
   /// هل السيرفر أحدث من النسخة المحلية؟
   bool get isServerNewer => serverUpdatedAt.isAfter(localUpdatedAt);
@@ -168,15 +168,15 @@ class SyncSummary extends Equatable {
 
   @override
   List<Object?> get props => [
-    entityType,
-    totalPulled,
-    totalPushed,
-    conflicts,
-    errors,
-    duration,
-    startedAt,
-    completedAt,
-  ];
+        entityType,
+        totalPulled,
+        totalPushed,
+        conflicts,
+        errors,
+        duration,
+        startedAt,
+        completedAt,
+      ];
 
   bool get isComplete => completedAt != null;
   bool get hasConflicts => conflicts > 0;

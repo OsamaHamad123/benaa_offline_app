@@ -32,9 +32,8 @@ class PhotoCaptureCard extends StatelessWidget {
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
         border: Border.all(
-          color: photoPath != null
-              ? Colors.green.shade300
-              : Colors.grey.shade300,
+          color:
+              photoPath != null ? Colors.green.shade300 : Colors.grey.shade300,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(12.r),
@@ -344,7 +343,6 @@ class VoiceNoteRecorder extends StatelessWidget {
             ],
           ),
           SizedBox(height: 16.h),
-
           if (savedNotePath != null)
             Row(
               children: [

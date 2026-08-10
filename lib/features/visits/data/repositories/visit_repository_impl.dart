@@ -22,12 +22,14 @@ class VisitRepositoryImpl implements VisitRepository {
   }
 
   @override
-  Future<Result<List<VisitEntity>>> getBeneficiaryVisits(String beneficiaryId) async {
+  Future<Result<List<VisitEntity>>> getBeneficiaryVisits(
+      String beneficiaryId) async {
     try {
       final models = await localDataSource.getBeneficiaryVisits(beneficiaryId);
       return Success(models.map((m) => m.toEntity()).toList());
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get beneficiary visits: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get beneficiary visits: $e', stackTrace));
     }
   }
 
@@ -62,7 +64,8 @@ class VisitRepositoryImpl implements VisitRepository {
 
       // Note: This needs a Drift Visit object, not a model
       // You may need to add a method in datasource to handle this
-      return Failure(UnknownFailure('Update visit needs proper Drift implementation'));
+      return Failure(
+          UnknownFailure('Update visit needs proper Drift implementation'));
     } catch (e, stackTrace) {
       return Failure(UnknownFailure('Failed to update visit: $e', stackTrace));
     }
@@ -97,7 +100,8 @@ class VisitRepositoryImpl implements VisitRepository {
       }
       return Success(date);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get last visit date: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get last visit date: $e', stackTrace));
     }
   }
 
@@ -107,7 +111,8 @@ class VisitRepositoryImpl implements VisitRepository {
       final models = await localDataSource.getRecentVisits(limit: limit);
       return Success(models.map((m) => m.toEntity()).toList());
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get recent visits: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get recent visits: $e', stackTrace));
     }
   }
 
@@ -117,7 +122,8 @@ class VisitRepositoryImpl implements VisitRepository {
       final count = await localDataSource.countVisitsToday();
       return Success(count);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to count today visits: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to count today visits: $e', stackTrace));
     }
   }
 
@@ -127,7 +133,8 @@ class VisitRepositoryImpl implements VisitRepository {
       final average = await localDataSource.getAverageVisitsPerDay(days);
       return Success(average);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to calculate average visits: $e', stackTrace));
+      return Failure(DatabaseFailure(
+          'Failed to calculate average visits: $e', stackTrace));
     }
   }
 }

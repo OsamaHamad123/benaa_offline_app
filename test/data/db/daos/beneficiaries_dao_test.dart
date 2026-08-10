@@ -40,7 +40,9 @@ void main() {
       final results = await dao.searchBeneficiaries('محمد أحمد');
 
       expect(results.isNotEmpty, true);
-      expect(results.any((b) => b.fullName.contains('محمد')), true);
+      expect(
+          results.any((b) => b.firstName == 'محمد' && b.fatherName == 'أحمد'),
+          true);
     });
 
     test('يجب أن يجد المستفيد بالاسم الأول فقط', () async {
@@ -298,4 +300,24 @@ Future<void> _seedTestData(BeneficiariesDao dao) async {
       gender: const Value(2), // أنثى
     ),
   );
+
+  // ✅ تحديث fullNameNorm يدوياً بما إن الـ trigger ما بيشتغل على in-memory database
+  // في بعض الحالات
+  final allBens = await dao.getAllBeneficiaries();
+  for (final ben in allBens) {
+    final fullNameNorm =
+        '${ben.firstName ?? ''} ${ben.fatherName ?? ''} ${ben.grandFatherName ?? ''} ${ben.familyName ?? ''}'
+            .toLowerCase()
+            .trim()
+            .replaceAll('أ', 'ا')
+            .replaceAll('إ', 'ا')
+            .replaceAll('آ', 'ا')
+            .replaceAll('ة', 'ه')
+            .replaceAll('ى', 'ي')
+            .replaceAll('ئ', 'ي');
+
+    await dao.updateBeneficiary(
+      ben.copyWith(fullNameNorm: Value(fullNameNorm)),
+    );
+  }
 }

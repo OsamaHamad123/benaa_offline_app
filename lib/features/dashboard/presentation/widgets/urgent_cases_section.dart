@@ -124,7 +124,8 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'بدون زيارات منذ 30+ يوم',
-                      database.beneficiariesDao.getBeneficiariesWithNoRecentVisits(30),
+                      database.beneficiariesDao
+                          .getBeneficiariesWithNoRecentVisits(30),
                     ),
                   ),
 
@@ -139,7 +140,8 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'حالة صحية سيئة',
-                      database.beneficiariesDao.getBeneficiariesWithPoorHealth(),
+                      database.beneficiariesDao
+                          .getBeneficiariesWithPoorHealth(),
                     ),
                   ),
                 ],
@@ -155,7 +157,8 @@ class UrgentCasesSection extends ConsumerWidget {
                       context,
                       database,
                       'ذوو إعاقة',
-                      database.beneficiariesDao.getBeneficiariesWithDisabilities(),
+                      database.beneficiariesDao
+                          .getBeneficiariesWithDisabilities(),
                     ),
                   ),
                 ],
@@ -244,7 +247,8 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'بدون زيارات منذ 30+ يوم',
-                    database.beneficiariesDao.getBeneficiariesWithNoRecentVisits(30),
+                    database.beneficiariesDao
+                        .getBeneficiariesWithNoRecentVisits(30),
                   );
                 },
               ),
@@ -280,7 +284,8 @@ class UrgentCasesSection extends ConsumerWidget {
                     context,
                     database,
                     'ذوو إعاقة',
-                    database.beneficiariesDao.getBeneficiariesWithDisabilities(),
+                    database.beneficiariesDao
+                        .getBeneficiariesWithDisabilities(),
                   );
                 },
               ),

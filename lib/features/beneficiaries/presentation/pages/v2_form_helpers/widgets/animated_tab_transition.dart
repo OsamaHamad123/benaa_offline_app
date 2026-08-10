@@ -26,8 +26,8 @@ class AnimatedTabTransition extends StatelessWidget {
         return SlideTransition(
           position: Tween<Offset>(begin: const Offset(0.1, 0), end: Offset.zero)
               .animate(
-                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-              ),
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+          ),
           child: child,
         );
 
@@ -35,16 +35,15 @@ class AnimatedTabTransition extends StatelessWidget {
         return FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
           child: SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(0.05, 0),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  ),
-                ),
+            position: Tween<Offset>(
+              begin: const Offset(0.05, 0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ),
+            ),
             child: child,
           ),
         );

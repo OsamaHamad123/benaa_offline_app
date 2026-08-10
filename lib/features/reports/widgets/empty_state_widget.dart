@@ -42,9 +42,9 @@ class EmptyStateWidget extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[700],
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[700],
+                  ),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8.h),

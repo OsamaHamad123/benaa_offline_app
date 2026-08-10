@@ -95,17 +95,17 @@ class BeneficiaryDetailsNotifier
 /// Provider: Beneficiary Details Provider
 final beneficiaryDetailsProvider =
     StateNotifierProvider<BeneficiaryDetailsNotifier, BeneficiaryDetailsState>((
-      ref,
-    ) {
-      final database = ref.watch(databaseProvider);
-      final dataSource = BeneficiaryLocalDataSource(database);
-      final getBeneficiaryDetailsUseCase = GetBeneficiaryDetailsUseCase(
-        dataSource,
-      );
-      final deleteBeneficiaryUseCase = DeleteBeneficiaryUseCase(dataSource);
+  ref,
+) {
+  final database = ref.watch(databaseProvider);
+  final dataSource = BeneficiaryLocalDataSource(database);
+  final getBeneficiaryDetailsUseCase = GetBeneficiaryDetailsUseCase(
+    dataSource,
+  );
+  final deleteBeneficiaryUseCase = DeleteBeneficiaryUseCase(dataSource);
 
-      return BeneficiaryDetailsNotifier(
-        getBeneficiaryDetailsUseCase,
-        deleteBeneficiaryUseCase,
-      );
-    });
+  return BeneficiaryDetailsNotifier(
+    getBeneficiaryDetailsUseCase,
+    deleteBeneficiaryUseCase,
+  );
+});

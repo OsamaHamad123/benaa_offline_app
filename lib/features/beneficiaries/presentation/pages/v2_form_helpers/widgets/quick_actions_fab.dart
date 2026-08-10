@@ -25,7 +25,8 @@ class QuickActionsFab extends StatefulWidget {
   State<QuickActionsFab> createState() => _QuickActionsFabState();
 }
 
-class _QuickActionsFabState extends State<QuickActionsFab> with SingleTickerProviderStateMixin {
+class _QuickActionsFabState extends State<QuickActionsFab>
+    with SingleTickerProviderStateMixin {
   bool _isExpanded = false;
   late AnimationController _controller;
   late Animation<double> _expandAnimation;

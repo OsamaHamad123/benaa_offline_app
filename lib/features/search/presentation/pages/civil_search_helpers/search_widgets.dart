@@ -60,7 +60,8 @@ class ModernSearchAppBar extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.people_alt_rounded, size: 24, color: Colors.white),
+                          const Icon(Icons.people_alt_rounded,
+                              size: 24, color: Colors.white),
                           const SizedBox(width: 10),
                           const Text(
                             'السجل المدني',
@@ -73,7 +74,8 @@ class ModernSearchAppBar extends ConsumerWidget {
                           const Spacer(),
                           // Update Normalization Button
                           IconButton(
-                            icon: const Icon(Icons.build_circle_outlined, color: Colors.white70),
+                            icon: const Icon(Icons.build_circle_outlined,
+                                color: Colors.white70),
                             onPressed: () {
                               // Navigate to update normalization
                             },

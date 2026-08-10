@@ -34,10 +34,12 @@ class BeneficiariesListPageV2 extends ConsumerStatefulWidget {
   const BeneficiariesListPageV2({super.key});
 
   @override
-  ConsumerState<BeneficiariesListPageV2> createState() => _BeneficiariesListPageV2State();
+  ConsumerState<BeneficiariesListPageV2> createState() =>
+      _BeneficiariesListPageV2State();
 }
 
-class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV2> {
+class _BeneficiariesListPageV2State
+    extends ConsumerState<BeneficiariesListPageV2> {
   final _scrollController = ScrollController();
   final _searchController = TextEditingController();
   late final Debouncer _searchDebouncer; // ✅ Debouncer for search
@@ -80,7 +82,8 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
 
   void _onScroll() {
     _scrollThrottler(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.9) {
         ref.read(beneficiariesListProvider.notifier).loadMore();
       }
     });
@@ -176,8 +179,8 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
                 duration: AppDurations.fast,
                 child: GestureDetector(
                   onTap: () {
-                    // Navigate to dedicated statistics page
-                    context.push('/statistics');
+                    // مسار '/statistics' غير موجود؛ نوجّه لصفحة التقارير الموجودة.
+                    context.push('/reports');
                   },
                   child: const StatisticsDashboard(),
                 ),
@@ -218,7 +221,9 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
                     final result = await context.push('/beneficiaries/add');
                     if (result == true && mounted) {
                       ref.read(beneficiariesListProvider.notifier).clearCache();
-                      await ref.read(beneficiariesListProvider.notifier).refresh();
+                      await ref
+                          .read(beneficiariesListProvider.notifier)
+                          .refresh();
                       if (mounted) {
                         VisualFeedback.showSuccess(
                           context,
@@ -270,13 +275,15 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
   /// ⚡ Build filter button with badge (memoized)
   Widget _buildFilterButton(FiltersState filters) {
     return Semantics(
-      label: 'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+      label:
+          'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
       button: true,
       child: Stack(
         children: [
           IconButton(
             icon: const Icon(Icons.filter_list),
-            tooltip: 'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
+            tooltip:
+                'فلاتر${filters.hasActiveFilters ? ' (${filters.activeFiltersCount} نشط)' : ''}',
             onPressed: () => _showFilters(context),
           ),
           if (filters.hasActiveFilters)
@@ -351,7 +358,9 @@ class _BeneficiariesListPageV2State extends ConsumerState<BeneficiariesListPageV
           HapticFeedback.lightImpact();
         }
       },
-      child: rv.isTablet ? _buildGridView(state, selection, rv) : _buildListView(state, selection, rv),
+      child: rv.isTablet
+          ? _buildGridView(state, selection, rv)
+          : _buildListView(state, selection, rv),
     );
   }
 

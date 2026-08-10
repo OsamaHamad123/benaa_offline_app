@@ -56,8 +56,8 @@ class _BeneficiaryFormTabs4MergedState
     // which can add jitter to timing measurements.
     // Skip background preloads in test bindings to avoid adding jitter.
     if (!WidgetsBinding.instance.runtimeType.toString().contains(
-      'TestWidgetsFlutterBinding',
-    )) {
+          'TestWidgetsFlutterBinding',
+        )) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // Staggered preload using cancellable timers to avoid leaving
         // pending timers in tests.

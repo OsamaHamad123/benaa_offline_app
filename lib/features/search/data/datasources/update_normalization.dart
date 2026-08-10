@@ -69,7 +69,8 @@ class UpdateNormalizationUtility {
       batch = db.batch();
 
       // Progress
-      final progress = ((offset + records.length) / total * 100).toStringAsFixed(1);
+      final progress =
+          ((offset + records.length) / total * 100).toStringAsFixed(1);
       if (kDebugMode) {
         debugPrint(
           '✅ Progress: $progress% (${_formatNumber(offset + records.length)}/${_formatNumber(total)})',

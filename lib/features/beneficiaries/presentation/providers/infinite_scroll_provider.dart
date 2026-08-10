@@ -93,5 +93,5 @@ class InfiniteScrollState {
 /// Provider instance
 final infiniteScrollProvider =
     StateNotifierProvider<InfiniteScrollNotifier, InfiniteScrollState>(
-      (ref) => InfiniteScrollNotifier(),
-    );
+  (ref) => InfiniteScrollNotifier(),
+);

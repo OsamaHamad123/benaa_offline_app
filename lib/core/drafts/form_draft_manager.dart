@@ -16,10 +16,10 @@ class FormDraft {
   });
 
   Map<String, dynamic> toJson() => {
-    'formType': formType,
-    'data': data,
-    'savedAt': savedAt.toIso8601String(),
-  };
+        'formType': formType,
+        'data': data,
+        'savedAt': savedAt.toIso8601String(),
+      };
 
   factory FormDraft.fromJson(Map<String, dynamic> json) {
     return FormDraft(

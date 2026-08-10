@@ -21,7 +21,8 @@ class AutofillButton extends StatefulWidget {
   State<AutofillButton> createState() => _AutofillButtonState();
 }
 
-class _AutofillButtonState extends State<AutofillButton> with SingleTickerProviderStateMixin {
+class _AutofillButtonState extends State<AutofillButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _rotationAnimation;
@@ -91,13 +92,17 @@ class _AutofillButtonState extends State<AutofillButton> with SingleTickerProvid
                     : null,
                 icon: Icon(Icons.bolt_rounded, size: 20.sp),
                 label: Text(
-                  widget.filledFieldsCount > 0 ? 'تعبئة ${widget.filledFieldsCount} حقل تلقائياً' : 'تعبئة تلقائية',
-                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
+                  widget.filledFieldsCount > 0
+                      ? 'تعبئة ${widget.filledFieldsCount} حقل تلقائياً'
+                      : 'تعبئة تلقائية',
+                  style:
+                      TextStyle(fontSize: 14.sp, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.amber.shade600,
                   foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12.r),
                   ),

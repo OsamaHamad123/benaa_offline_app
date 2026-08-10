@@ -44,7 +44,8 @@ class BeneficiaryCardV2 extends ConsumerStatefulWidget {
   ConsumerState<BeneficiaryCardV2> createState() => _BeneficiaryCardV2State();
 }
 
-class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with AutomaticKeepAliveClientMixin {
+class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true; // Keep card alive during scroll
 
@@ -69,13 +70,17 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
           margin: EdgeInsets.only(bottom: rv.spacing),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: widget.isSelected ? BorderSide(color: theme.colorScheme.primary, width: 3) : BorderSide.none,
+            side: widget.isSelected
+                ? BorderSide(color: theme.colorScheme.primary, width: 3)
+                : BorderSide.none,
           ),
           child: InkWell(
             onTap: widget.isSelectionMode
                 ? () {
                     HapticPatterns.selection();
-                    ref.read(selectionProvider.notifier).toggleItem(widget.beneficiary.id);
+                    ref
+                        .read(selectionProvider.notifier)
+                        .toggleItem(widget.beneficiary.id);
                   }
                 : (widget.onTap ??
                     () => context.push(
@@ -84,7 +89,9 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
             onLongPress: widget.onLongPress ??
                 () {
                   HapticPatterns.selection();
-                  ref.read(selectionProvider.notifier).startSelectionWith(widget.beneficiary.id);
+                  ref
+                      .read(selectionProvider.notifier)
+                      .startSelectionWith(widget.beneficiary.id);
                 },
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -143,14 +150,17 @@ class _BeneficiaryCardV2State extends ConsumerState<BeneficiaryCardV2> with Auto
       height: size,
       margin: EdgeInsets.only(left: rv.spacing),
       decoration: BoxDecoration(
-        color: widget.isSelected ? theme.colorScheme.primary : Colors.transparent,
+        color:
+            widget.isSelected ? theme.colorScheme.primary : Colors.transparent,
         border: Border.all(
           color: widget.isSelected ? theme.colorScheme.primary : Colors.grey,
           width: 2,
         ),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: widget.isSelected ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20) : null,
+      child: widget.isSelected
+          ? Icon(Icons.check, color: Colors.white, size: rv.isTablet ? 22 : 20)
+          : null,
     );
   }
 

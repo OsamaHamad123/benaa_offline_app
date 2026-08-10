@@ -76,30 +76,30 @@ class Beneficiaries extends Table {
 
   // Local Sync Fields
   TextColumn get syncState => text().withDefault(
-    const Constant('pending'),
-  )(); // 'pending', 'synced', 'failed', 'syncing'
+        const Constant('pending'),
+      )(); // 'pending', 'synced', 'failed', 'syncing'
   IntColumn get serverId => integer().nullable()(); // ID من السيرفر
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
   // Computed/Helper Fields for Local Use
   TextColumn get fullName => text().generatedAs(
-    firstName +
-        const Constant(' ') +
-        fatherName +
-        const Constant(' ') +
-        grandFatherName +
-        const Constant(' ') +
-        familyName,
-    stored: true,
-  )(); // حقل محسوب تلقائياً
+        firstName +
+            const Constant(' ') +
+            fatherName +
+            const Constant(' ') +
+            grandFatherName +
+            const Constant(' ') +
+            familyName,
+        stored: true,
+      )(); // حقل محسوب تلقائياً
 
   TextColumn get fullNameNorm =>
       text().nullable()(); // للبحث (يتم تحديثه عبر trigger)
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {idNumber}, // الرقم الوطني فريد
-  ];
+        {idNumber}, // الرقم الوطني فريد
+      ];
 }
 
 /// ملاحظات مهمة:

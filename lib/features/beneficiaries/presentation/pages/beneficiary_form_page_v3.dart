@@ -1,3 +1,4 @@
+import 'package:benaa_offline_app/core/widgets/responsive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,12 +9,10 @@ import 'dart:async';
 import '../../../../core/utils/debouncer.dart';
 import '../../../../core/theme/app_dimensions.dart';
 import '../../../../core/errors/user_friendly_error.dart';
-import '../../../../core/utils/value_listenable_builder.dart'; // ⚡ Multi ValueListenableBuilder
 import '../../../../core/error_handling/error_handler.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../core/widgets/responsive_bottom_sheet.dart'; // 📱 Responsive Bottom Sheet
-import '../../../../core/validation/field_validators.dart'; // 📋 Field Validators
 
 import '../providers/beneficiary_form_provider.dart';
 import '../providers/beneficiary_dependencies.dart';
@@ -43,10 +42,8 @@ import 'v2_form_helpers/widgets/success_animation.dart'; // ✅ Success Animatio
 
 // 🚀 Performance-optimized widgets
 import 'v2_form_helpers/widgets/form_error_banner_widget.dart';
-import 'v2_form_helpers/widgets/form_app_bar_widget.dart';
 import 'v2_form_helpers/widgets/form_content_widget.dart';
 import 'v2_form_helpers/widgets/form_bottom_nav_widget.dart';
-import 'v2_form_helpers/widgets/form_progress_widgets.dart'; // 📊 Progress widgets
 
 // 🚀 Phase 3 - Advanced UX Features
 import 'v2_form_helpers/widgets/field_dependency_system.dart'; // 🔗 Field Dependencies
@@ -54,6 +51,11 @@ import 'v2_form_helpers/widgets/smart_field_hints.dart'; // 💡 Smart Hints
 // Disabled for performance: import 'v2_form_helpers/widgets/form_progress_tracker.dart';
 import 'v2_form_helpers/widgets/mobile_quick_actions.dart'; // 📱 Mobile Quick Actions
 import 'v2_form_helpers/utils/animation_helpers.dart'; // 🎬 Animation helpers
+
+// ✨ NEW: Extracted Form Components (Phase 1.3)
+import '../widgets/form/app_bar/beneficiary_form_app_bar.dart';
+import '../widgets/form/actions/save_draft_fab.dart';
+import '../widgets/form/statistics/completion_stats_widget.dart';
 
 /// 🎨 Beneficiary Form Page V3 - Ultra Modern & Enhanced
 ///
@@ -356,9 +358,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
 
       final shouldRestore = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          icon: Icon(Icons.restore_outlined, color: Colors.blue, size: 48.sp),
-          title: const Text('استعادة مسودة تلقائية'),
+        builder: (context) => ResponsiveDialog(
+          title: 'استعادة مسودة تلقائية',
+          icon: Icons.restore_outlined,
+          iconColor: Colors.blue,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -976,11 +979,28 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
           showDialog(
             context: context,
             barrierDismissible: true,
-            barrierColor: Colors.black26,
-            builder: (context) => Center(
-              child: FormAnimations.successCheckmark(
-                size: 80.sp,
-                color: Theme.of(context).colorScheme.primary,
+            barrierColor: Colors.black54,
+            builder: (context) => Material(
+              color: Colors.transparent,
+              child: Center(
+                child: Container(
+                  padding: EdgeInsets.all(24.r),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: BorderRadius.circular(20.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: FormAnimations.successCheckmark(
+                    size: 80.sp,
+                    color: Colors.green,
+                  ),
+                ),
               ),
             ),
           );
@@ -1086,8 +1106,10 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                               onPressed: () async {
                                 final confirm = await showDialog<bool>(
                                   context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('حذف المسودة'),
+                                  builder: (context) => ResponsiveDialog(
+                                    title: 'حذف المسودة',
+                                    icon: Icons.delete_outline,
+                                    iconColor: Colors.red,
                                     content: Text(
                                       'هل تريد حذف هذه المسودة؟',
                                     ),
@@ -1230,6 +1252,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _tourShowTimer?.cancel();
     _controllers.removeListener(_onFormChanged);
     _controllers.dispose();
+    _dependencyController.dispose(); // كان يتسرّب عند كل فتح للنموذج
     _tabController.dispose();
     _firstFieldFocusNode.dispose();
     _formHistory.dispose();
@@ -1527,42 +1550,21 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
         child: Scaffold(
           backgroundColor: theme.colorScheme.surface,
 
-          // 📱 AppBar - Separated widget with ValueListenableBuilder
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(kToolbarHeight + 52),
-            child: ValueListenableBuilder3<bool, DateTime?, bool>(
-              first: _isSavingNotifier,
-              second: _lastSavedNotifier,
-              third: _hasUnsavedChangesNotifier,
-              builder: (context, isSaving, lastSaved, hasUnsavedChanges, _) {
-                return FormAppBarWidget(
-                  beneficiaryId: widget.beneficiaryId,
-                  isSaving: isSaving,
-                  lastSaved: lastSaved,
-                  hasUnsavedChanges: hasUnsavedChanges,
-                  showStatistics: _showStatistics,
-                  showFieldHelpers: _showFieldHelpers,
-                  // onToggleSearch removed - search is local to FormContentWidget
-                  onToggleStatistics: _toggleStatistics,
-                  onToggleFieldHelpers: () {
-                    setState(() => _showFieldHelpers = !_showFieldHelpers);
-                  },
-                  onViewDrafts: _showDraftsList,
-                  onSaveDraft: hasUnsavedChanges ? _handleDraftSave : null,
-                  onShowHelp: () => showKeyboardShortcutsHelp(context),
-                  onDelete: widget.beneficiaryId != null ? _handleDelete : null,
-                  onUndo: _formHistory.canUndo ? _handleUndo : null,
-                  onRedo: _formHistory.canRedo ? _handleRedo : null,
-                  bottom: PreferredSize(
-                    preferredSize: Size.fromHeight(52.h),
-                    child: FormProgressIndicator(
-                      filledFields: _calculateFilledFields(),
-                      totalRequiredFields: 12,
-                    ),
-                  ),
-                );
-              },
-            ),
+          // 📱 AppBar - NEW: Using extracted BeneficiaryFormAppBar
+          appBar: BeneficiaryFormAppBar(
+            isEditMode: widget.beneficiaryId != null,
+            beneficiaryName: widget.beneficiaryId != null ? _controllers.firstNameController.text : null,
+            isSavingNotifier: _isSavingNotifier,
+            lastSavedNotifier: _lastSavedNotifier,
+            hasUnsavedChangesNotifier: _hasUnsavedChangesNotifier,
+            onSave: _handleSave,
+            onDelete: widget.beneficiaryId != null ? _handleDelete : null,
+            onShowHistory: () {}, // TODO: Implement history viewer
+            onShowHelp: () => showKeyboardShortcutsHelp(context),
+            canUndo: _formHistory.canUndo,
+            canRedo: _formHistory.canRedo,
+            onUndo: _handleUndo,
+            onRedo: _handleRedo,
           ),
 
           body: _isLoading
@@ -1616,6 +1618,26 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                       },
                     ),
 
+                    // 📊 Statistics Widget (if visible)
+                    if (_showStatistics)
+                      Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: CompletionStatsWidget(
+                          overallCompletion: (_calculateFilledFields() / 12 * 100),
+                          completedFields: _calculateFilledFields(),
+                          totalFields: 12,
+                          tabCompletions: {
+                            'البيانات الأساسية': 75.0,
+                            'أفراد الأسرة': 50.0,
+                            'المرفقات': 25.0,
+                            'التقييم': 90.0,
+                          },
+                          onTap: _toggleStatistics,
+                        ),
+                      ),
+
                     // 🎓 Tour Guide
                     if (_showTourGuide)
                       TourGuide(
@@ -1668,6 +1690,20 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
                     ),
                   ],
                 ),
+
+          // 💾 NEW: Floating Action Button for quick draft save
+          floatingActionButton: ValueListenableBuilder<bool>(
+            valueListenable: _hasUnsavedChangesNotifier,
+            builder: (context, hasUnsavedChanges, _) {
+              return SaveDraftFAB(
+                onSaveDraft: _handleDraftSave,
+                onQuickSave: _handleSave,
+                onViewDrafts: _showDraftsList,
+                onShowStatistics: _toggleStatistics,
+                hasUnsavedChanges: hasUnsavedChanges,
+              );
+            },
+          ),
         ),
       ),
     );

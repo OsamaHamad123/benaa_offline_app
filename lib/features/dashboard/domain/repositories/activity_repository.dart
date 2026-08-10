@@ -10,7 +10,8 @@ abstract class ActivityRepository {
   Future<Result<List<Activity>>> getActivitiesByType(String type);
 
   /// Get activities for a specific beneficiary
-  Future<Result<List<Activity>>> getActivitiesForBeneficiary(String beneficiaryId);
+  Future<Result<List<Activity>>> getActivitiesForBeneficiary(
+      String beneficiaryId);
 
   /// Log a new activity
   Future<Result<void>> logActivity(Activity activity);

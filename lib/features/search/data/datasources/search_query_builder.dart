@@ -86,7 +86,7 @@ class SearchQueryBuilder {
   /// Build column conditions for a word with all its variations
   /// Returns: (conditions, parameters)
   static ({List<String> conditions, List<dynamic> parameters})
-  buildWordConditions({required String word, required String columnName}) {
+      buildWordConditions({required String word, required String columnName}) {
     final variations = generateCompoundVariations(word);
     final conditions = <String>[];
     final parameters = <dynamic>[];
@@ -114,11 +114,9 @@ class SearchQueryBuilder {
     final wordConditions = <String>[];
     final queryParams = <dynamic>[];
 
-    for (
-      int i = 0;
-      i < smartWords.length && i < SearchConstants.maxNameParts;
-      i++
-    ) {
+    for (int i = 0;
+        i < smartWords.length && i < SearchConstants.maxNameParts;
+        i++) {
       final word = smartWords[i];
 
       // Get column name based on position
@@ -136,9 +134,8 @@ class SearchQueryBuilder {
     }
 
     // Combine all word conditions with AND
-    final whereClause = wordConditions.isNotEmpty
-        ? wordConditions.join(' AND ')
-        : '';
+    final whereClause =
+        wordConditions.isNotEmpty ? wordConditions.join(' AND ') : '';
 
     return (whereClause: whereClause, params: queryParams);
   }
@@ -154,13 +151,11 @@ class SearchQueryBuilder {
 
     for (final variation in variations) {
       final isPrefix = variation.endsWith(SearchConstants.prefixWildcard);
-      final cleanTerm = isPrefix
-          ? variation.substring(0, variation.length - 1)
-          : variation;
+      final cleanTerm =
+          isPrefix ? variation.substring(0, variation.length - 1) : variation;
       final operator = isPrefix ? 'LIKE' : '=';
-      final pattern = isPrefix
-          ? SearchConstants.prefixPattern(cleanTerm)
-          : cleanTerm;
+      final pattern =
+          isPrefix ? SearchConstants.prefixPattern(cleanTerm) : cleanTerm;
 
       // Check all columns
       final conditions = <String>[];
@@ -172,9 +167,8 @@ class SearchQueryBuilder {
       allConditions.add('(${conditions.join(' OR ')})');
     }
 
-    final whereClause = allConditions.isNotEmpty
-        ? allConditions.join(' OR ')
-        : '';
+    final whereClause =
+        allConditions.isNotEmpty ? allConditions.join(' OR ') : '';
 
     return (whereClause: whereClause, params: allParams);
   }

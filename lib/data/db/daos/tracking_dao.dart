@@ -80,17 +80,17 @@ class TrackingDao extends DatabaseAccessor<AppDatabase>
   Future<int> getActivitiesCount() async {
     final count = await (selectOnly(
       activities,
-    )..addColumns([activities.id.count()])).getSingle();
+    )..addColumns([activities.id.count()]))
+        .getSingle();
     return count.read(activities.id.count()) ?? 0;
   }
 
   /// Get activities count by type
   Future<int> getActivitiesCountByType(String type) async {
-    final count =
-        await (selectOnly(activities)
-              ..where(activities.activityType.equals(type))
-              ..addColumns([activities.id.count()]))
-            .getSingle();
+    final count = await (selectOnly(activities)
+          ..where(activities.activityType.equals(type))
+          ..addColumns([activities.id.count()]))
+        .getSingle();
     return count.read(activities.id.count()) ?? 0;
   }
 

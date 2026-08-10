@@ -24,7 +24,8 @@ class PendingAttachmentsSection extends StatefulWidget {
   });
 
   @override
-  State<PendingAttachmentsSection> createState() => _PendingAttachmentsSectionState();
+  State<PendingAttachmentsSection> createState() =>
+      _PendingAttachmentsSectionState();
 }
 
 class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
@@ -154,93 +155,98 @@ class _PendingAttachmentsSectionState extends State<PendingAttachmentsSection> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(16.r),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40.w,
-                height: 4.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                'إضافة مرفق',
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 16.h),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8.r),
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(16.r),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40.w,
+                  height: 4.h,
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt,
-                    color: Colors.blue,
-                    size: 24.sp,
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),
-                title: const Text('التقاط صورة'),
-                subtitle: const Text('استخدام الكاميرا'),
-                trailing: Icon(Icons.chevron_right, size: 20.sp),
-                onTap: () {
-                  Navigator.pop(context);
-                  _addImageFromCamera();
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8.r),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Icon(
-                    Icons.photo_library,
-                    color: Colors.green,
-                    size: 24.sp,
-                  ),
+                SizedBox(height: 16.h),
+                Text(
+                  'إضافة مرفق',
+                  style:
+                      TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
                 ),
-                title: const Text('اختيار من المعرض'),
-                subtitle: const Text('اختيار صورة أو أكثر'),
-                trailing: Icon(Icons.chevron_right, size: 20.sp),
-                onTap: () {
-                  Navigator.pop(context);
-                  _addImageFromGallery();
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: EdgeInsets.all(8.r),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8.r),
+                SizedBox(height: 16.h),
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.camera_alt,
+                      color: Colors.blue,
+                      size: 24.sp,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.picture_as_pdf,
-                    color: Colors.red,
-                    size: 24.sp,
-                  ),
+                  title: const Text('التقاط صورة'),
+                  subtitle: const Text('استخدام الكاميرا'),
+                  trailing: Icon(Icons.chevron_right, size: 20.sp),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addImageFromCamera();
+                  },
                 ),
-                title: const Text('اختيار ملف PDF'),
-                subtitle: const Text('تحديد ملف أو أكثر'),
-                trailing: Icon(Icons.chevron_right, size: 20.sp),
-                onTap: () {
-                  Navigator.pop(context);
-                  _addPdfFile();
-                },
-              ),
-            ],
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.photo_library,
+                      color: Colors.green,
+                      size: 24.sp,
+                    ),
+                  ),
+                  title: const Text('اختيار من المعرض'),
+                  subtitle: const Text('اختيار صورة أو أكثر'),
+                  trailing: Icon(Icons.chevron_right, size: 20.sp),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addImageFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.picture_as_pdf,
+                      color: Colors.red,
+                      size: 24.sp,
+                    ),
+                  ),
+                  title: const Text('اختيار ملف PDF'),
+                  subtitle: const Text('تحديد ملف أو أكثر'),
+                  trailing: Icon(Icons.chevron_right, size: 20.sp),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _addPdfFile();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -547,7 +553,7 @@ class _PendingFileCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.red.withOpacity(0.9),
                           shape: BoxShape.circle,
-                          boxShadow: [
+                          boxShadow: const [
                             BoxShadow(
                               color: Colors.black26,
                               blurRadius: 2,
@@ -672,7 +678,8 @@ class _PendingFileCard extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          errorBuilder: (_, __, ___) => _buildIcon(Icons.broken_image, Colors.red),
+          errorBuilder: (_, __, ___) =>
+              _buildIcon(Icons.broken_image, Colors.red),
         ),
       );
     } else if (_isPdf()) {

@@ -31,6 +31,10 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
   final FocusNode? firstFieldFocusNode;
   final String? selectedCategory;
   final Function(String?) onCategoryChanged;
+  final String? selectedRelationship;
+  final Function(String?) onRelationshipChanged;
+  final String? selectedSection;
+  final Function(String?) onSectionChanged;
   final BeneficiaryFormControllers? formControllers; // For autofill
 
   const V2BasicInfoTab({
@@ -48,6 +52,10 @@ class V2BasicInfoTab extends ConsumerStatefulWidget {
     this.firstFieldFocusNode,
     this.selectedCategory,
     required this.onCategoryChanged,
+    this.selectedRelationship,
+    required this.onRelationshipChanged,
+    this.selectedSection,
+    required this.onSectionChanged,
     this.formControllers,
   });
 
@@ -294,6 +302,45 @@ class _V2BasicInfoTabState extends ConsumerState<V2BasicInfoTab> {
                 DropdownMenuItem(value: 'other', child: Text('أخرى')),
               ],
             ),
+            SizedBox(height: 12.h),
+            // 🆕 صلة القرابة (Relationship)
+            V2DropdownField<String>(
+              value: widget.selectedRelationship,
+              label: 'صلة القرابة',
+              prefixIcon: Icons.connect_without_contact_rounded,
+              onChanged: widget.onRelationshipChanged,
+              items: const [
+                DropdownMenuItem(value: '2', child: Text('أرملة')),
+                DropdownMenuItem(value: '3', child: Text('أرمل')),
+                DropdownMenuItem(value: '4', child: Text('يتيم')),
+                DropdownMenuItem(value: '5', child: Text('يتيمة')),
+                DropdownMenuItem(value: '6', child: Text('ولي أمر')),
+                DropdownMenuItem(value: '99', child: Text('أخرى')),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            // 🆕 القسم (Section/Department)
+            V2DropdownField<String>(
+              value: widget.selectedSection,
+              label: 'القسم',
+              prefixIcon: Icons.business_center_rounded,
+              onChanged: widget.onSectionChanged,
+              items: const [
+                DropdownMenuItem(value: '1', child: Text('القسم الأول')),
+                DropdownMenuItem(value: '2', child: Text('القسم الثاني')),
+                DropdownMenuItem(value: '3', child: Text('القسم الثالث')),
+                DropdownMenuItem(value: '4', child: Text('القسم الرابع')),
+                DropdownMenuItem(value: '5', child: Text('القسم الخامس')),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            // 🆕 المستخدم المدخل للبيانات (Created By User)
+            if (widget.formControllers != null)
+              V2CustomTextField(
+                controller: widget.formControllers!.createdByUserController,
+                label: 'المستخدم المدخل للبيانات',
+                prefixIcon: Icons.person_pin_rounded,
+              ),
 
             // 🧠 Smart Category Suggestion
             if (widget.formControllers != null && !_dismissedSuggestion)

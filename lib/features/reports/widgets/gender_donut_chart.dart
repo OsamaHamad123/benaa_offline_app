@@ -99,9 +99,8 @@ class _GenderDonutChartState extends State<GenderDonutChart> {
           ? (isTablet ? 70.0.r : 50.0.r)
           : (isTablet ? 60.0.r : 45.0.r);
 
-      final percentage = widget.total == 0
-          ? 0.0
-          : (item.count / widget.total) * 100;
+      final percentage =
+          widget.total == 0 ? 0.0 : (item.count / widget.total) * 100;
 
       final color = GenderColors.getColor(item.gender);
 

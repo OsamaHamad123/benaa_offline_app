@@ -296,7 +296,8 @@ class BeneficiaryFormNotifier extends StateNotifier<BeneficiaryFormState> {
 }
 
 /// Provider for beneficiary form
-final beneficiaryFormProvider = StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
+final beneficiaryFormProvider =
+    StateNotifierProvider<BeneficiaryFormNotifier, BeneficiaryFormState>((ref) {
   final dependencies = ref.watch(beneficiaryDependenciesProvider);
   final logActivity = ref.watch(logActivityUseCaseProvider);
 

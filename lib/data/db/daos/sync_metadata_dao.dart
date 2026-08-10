@@ -13,7 +13,8 @@ class SyncMetadataDao extends DatabaseAccessor<AppDatabase>
   Future<DateTime?> getLastSyncTime(String entity) async {
     final metadata = await (select(
       db.syncMetadataTable,
-    )..where((t) => t.entity.equals(entity))).getSingleOrNull();
+    )..where((t) => t.entity.equals(entity)))
+        .getSingleOrNull();
 
     return metadata?.lastSyncTime;
   }
@@ -39,7 +40,8 @@ class SyncMetadataDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateSyncFailure(String entity, {required String error}) async {
     final current = await (select(
       db.syncMetadataTable,
-    )..where((t) => t.entity.equals(entity))).getSingleOrNull();
+    )..where((t) => t.entity.equals(entity)))
+        .getSingleOrNull();
 
     await into(db.syncMetadataTable).insertOnConflictUpdate(
       SyncMetadataTableCompanion.insert(

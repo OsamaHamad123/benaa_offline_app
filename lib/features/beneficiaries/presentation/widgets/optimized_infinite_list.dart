@@ -8,7 +8,8 @@ class OptimizedInfiniteList extends ConsumerStatefulWidget {
   const OptimizedInfiniteList({super.key});
 
   @override
-  ConsumerState<OptimizedInfiniteList> createState() => _OptimizedInfiniteListState();
+  ConsumerState<OptimizedInfiniteList> createState() =>
+      _OptimizedInfiniteListState();
 }
 
 class _OptimizedInfiniteListState extends ConsumerState<OptimizedInfiniteList> {

@@ -37,13 +37,12 @@ class _AnimatedCounterState extends State<AnimatedCounter>
   void didUpdateWidget(AnimatedCounter oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value) {
-      _animation =
-          Tween<double>(
-            begin: _animation.value,
-            end: widget.value.toDouble(),
-          ).animate(
-            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-          );
+      _animation = Tween<double>(
+        begin: _animation.value,
+        end: widget.value.toDouble(),
+      ).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+      );
       _controller.forward(from: 0);
     }
   }

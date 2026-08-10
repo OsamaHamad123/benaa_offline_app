@@ -51,13 +51,12 @@ class _MobileQuickActionsState extends State<MobileQuickActions>
       curve: Curves.easeOut,
     );
 
-    _rotationAnimation =
-        Tween<double>(
-          begin: 0.0,
-          end: 0.125, // 45 degrees (1/8 turn)
-        ).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 0.125, // 45 degrees (1/8 turn)
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
   }
 
   @override

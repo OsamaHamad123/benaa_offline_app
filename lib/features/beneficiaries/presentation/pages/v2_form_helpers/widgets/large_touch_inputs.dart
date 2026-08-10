@@ -149,7 +149,9 @@ class LargeTouchDatePicker extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
             decoration: BoxDecoration(
               border: Border.all(
-                color: selectedDate != null ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+                color: selectedDate != null
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey.shade300,
                 width: 2.w,
               ),
               borderRadius: BorderRadius.circular(12.r),
@@ -159,7 +161,9 @@ class LargeTouchDatePicker extends StatelessWidget {
                 Icon(
                   Icons.calendar_today_rounded,
                   size: 24.sp,
-                  color: selectedDate != null ? Theme.of(context).colorScheme.primary : Colors.grey,
+                  color: selectedDate != null
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.grey,
                 ),
                 SizedBox(width: 16.w),
                 Expanded(
@@ -225,11 +229,15 @@ class LargeTouchRadioGroup extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isSelected ? theme.colorScheme.primary : Colors.grey.shade300,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : Colors.grey.shade300,
                     width: 2.w,
                   ),
                   borderRadius: BorderRadius.circular(12.r),
-                  color: isSelected ? theme.colorScheme.primary.withOpacity(0.05) : null,
+                  color: isSelected
+                      ? theme.colorScheme.primary.withOpacity(0.05)
+                      : null,
                 ),
                 child: Row(
                   children: [
@@ -239,7 +247,9 @@ class LargeTouchRadioGroup extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isSelected ? theme.colorScheme.primary : Colors.grey,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : Colors.grey,
                           width: 2.w,
                         ),
                       ),
@@ -262,7 +272,8 @@ class LargeTouchRadioGroup extends StatelessWidget {
                         option,
                         style: TextStyle(
                           fontSize: 17.sp,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -312,7 +323,9 @@ class LargeTouchNumberStepper extends StatelessWidget {
           children: [
             // Decrease button
             Material(
-              color: value > min ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+              color: value > min
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade300,
               borderRadius: BorderRadius.circular(12.r),
               child: InkWell(
                 onTap: value > min
@@ -356,7 +369,9 @@ class LargeTouchNumberStepper extends StatelessWidget {
             SizedBox(width: 16.w),
             // Increase button
             Material(
-              color: value < max ? Theme.of(context).colorScheme.primary : Colors.grey.shade300,
+              color: value < max
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade300,
               borderRadius: BorderRadius.circular(12.r),
               child: InkWell(
                 onTap: value < max

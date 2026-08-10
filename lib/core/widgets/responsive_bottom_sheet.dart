@@ -29,7 +29,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 ///   ),
 /// );
 /// ```
-class ResponsiveBottomSheet extends StatelessWidget {
+class ResponsiveBottomSheet extends StatefulWidget {
   /// Title text (optional)
   final String? title;
 
@@ -66,6 +66,10 @@ class ResponsiveBottomSheet extends StatelessWidget {
   /// Optional builder that receives scrollController for custom scroll handling
   final Widget Function(ScrollController)? builder;
 
+  /// When false, uses a fixed-height sheet instead of DraggableScrollableSheet.
+  /// This is recommended for heavy forms with many TextFields to avoid keyboard/focus jank.
+  final bool useDraggableScrollableSheet;
+
   const ResponsiveBottomSheet({
     super.key,
     this.title,
@@ -80,99 +84,165 @@ class ResponsiveBottomSheet extends StatelessWidget {
     this.showDragHandle = true,
     this.actions,
     this.builder,
-  }) : assert(child != null || builder != null, 'Either child or builder must be provided');
+    this.useDraggableScrollableSheet = true,
+  }) : assert(child != null || builder != null,
+            'Either child or builder must be provided');
+
+  @override
+  State<ResponsiveBottomSheet> createState() => _ResponsiveBottomSheetState();
+}
+
+class _ResponsiveBottomSheetState extends State<ResponsiveBottomSheet> {
+  ScrollController? _fixedScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.useDraggableScrollableSheet && widget.builder != null) {
+      _fixedScrollController = ScrollController();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ResponsiveBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final needsController =
+        !widget.useDraggableScrollableSheet && widget.builder != null;
+    final hadController = _fixedScrollController != null;
+
+    if (needsController && !hadController) {
+      _fixedScrollController = ScrollController();
+    } else if (!needsController && hadController) {
+      _fixedScrollController?.dispose();
+      _fixedScrollController = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _fixedScrollController?.dispose();
+    super.dispose();
+  }
+
+  Widget _buildSheetBody(
+      BuildContext context, ScrollController? scrollController) {
+    final theme = Theme.of(context);
+    final bgColor = widget.backgroundColor ?? theme.scaffoldBackgroundColor;
+
+    return SafeArea(
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1A000000),
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Drag Handle
+            if (widget.showDragHandle)
+              Center(
+                child: Container(
+                  margin: EdgeInsets.symmetric(vertical: 12.h),
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withAlpha(51),
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ),
+
+            // Header
+            if (widget.title != null || widget.titleWidget != null)
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 8.h,
+                ),
+                child: Row(
+                  children: [
+                    // Icon
+                    if (widget.icon != null && widget.titleWidget == null) ...[
+                      Icon(
+                        widget.icon,
+                        color: theme.colorScheme.primary,
+                        size: 24.sp,
+                      ),
+                      SizedBox(width: 12.w),
+                    ],
+
+                    // Title
+                    Expanded(
+                      child: widget.titleWidget ??
+                          Text(
+                            widget.title!,
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                    ),
+
+                    // Actions
+                    if (widget.actions != null) ...widget.actions!,
+
+                    // Close Button
+                    if (widget.showCloseButton)
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'إغلاق',
+                      ),
+                  ],
+                ),
+              ),
+
+            if (widget.title != null || widget.titleWidget != null)
+              const Divider(height: 1),
+
+            // Content
+            Expanded(
+              child: widget.builder != null
+                  ? widget.builder!(
+                      scrollController ?? PrimaryScrollController.of(context))
+                  : widget.child!,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bgColor = backgroundColor ?? theme.scaffoldBackgroundColor;
+    if (widget.useDraggableScrollableSheet) {
+      return DraggableScrollableSheet(
+        initialChildSize: widget.initialChildSize,
+        minChildSize: widget.minChildSize,
+        maxChildSize: widget.maxChildSize,
+        expand: false,
+        builder: (context, scrollController) {
+          return _buildSheetBody(context, scrollController);
+        },
+      );
+    }
 
-    return DraggableScrollableSheet(
-      initialChildSize: initialChildSize,
-      minChildSize: minChildSize,
-      maxChildSize: maxChildSize,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // Drag Handle
-              if (showDragHandle)
-                Center(
-                  child: Container(
-                    margin: EdgeInsets.symmetric(vertical: 12.h),
-                    width: 40.w,
-                    height: 4.h,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurface.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(2.r),
-                    ),
-                  ),
-                ),
-
-              // Header
-              if (title != null || titleWidget != null)
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  child: Row(
-                    children: [
-                      // Icon
-                      if (icon != null && titleWidget == null) ...[
-                        Icon(
-                          icon,
-                          color: theme.colorScheme.primary,
-                          size: 24.sp,
-                        ),
-                        SizedBox(width: 12.w),
-                      ],
-
-                      // Title
-                      Expanded(
-                        child: titleWidget ??
-                            Text(
-                              title!,
-                              style: TextStyle(
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                      ),
-
-                      // Actions
-                      if (actions != null) ...actions!,
-
-                      // Close Button
-                      if (showCloseButton)
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                          tooltip: 'إغلاق',
-                        ),
-                    ],
-                  ),
-                ),
-
-              if (title != null || titleWidget != null) const Divider(height: 1),
-
-              // Content
-              Expanded(
-                child: builder != null ? builder!(scrollController) : child!,
-              ),
-            ],
-          ),
-        );
-      },
+    final maxHeight = MediaQuery.of(context).size.height * widget.maxChildSize;
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: maxHeight,
+        ),
+        child: _buildSheetBody(context, _fixedScrollController),
+      ),
     );
   }
 }

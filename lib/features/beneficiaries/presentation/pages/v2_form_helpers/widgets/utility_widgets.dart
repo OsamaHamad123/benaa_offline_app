@@ -31,7 +31,8 @@ class LoadingOverlay extends StatelessWidget {
         if (isLoading)
           Positioned.fill(
             child: Container(
-              color: backgroundColor ?? theme.colorScheme.surface.withOpacity(0.8),
+              color:
+                  backgroundColor ?? theme.colorScheme.surface.withOpacity(0.8),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -86,7 +87,9 @@ class DateRangePickerButton extends StatelessWidget {
       onPressed: () => _showDateRangePicker(context),
       icon: Icon(icon, size: 18),
       label: Text(
-        selectedRange != null ? '${_formatDate(selectedRange!.start)} - ${_formatDate(selectedRange!.end)}' : label,
+        selectedRange != null
+            ? '${_formatDate(selectedRange!.start)} - ${_formatDate(selectedRange!.end)}'
+            : label,
         style: TextStyle(fontSize: 13.sp),
       ),
       style: OutlinedButton.styleFrom(
@@ -205,7 +208,9 @@ class ColorPickerButton extends StatelessWidget {
                     width: isSelected ? 3 : 1,
                   ),
                 ),
-                child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white)
+                    : null,
               ),
             );
           }).toList(),
@@ -455,7 +460,8 @@ class NotificationBadge extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: backgroundColor ?? theme.colorScheme.error,
                   borderRadius: BorderRadius.circular(10.r),
-                  border: Border.all(color: theme.colorScheme.surface, width: 2),
+                  border:
+                      Border.all(color: theme.colorScheme.surface, width: 2),
                 ),
                 constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
                 child: Text(
@@ -494,7 +500,8 @@ class SkeletonLoader extends StatefulWidget {
   State<SkeletonLoader> createState() => _SkeletonLoaderState();
 }
 
-class _SkeletonLoaderState extends State<SkeletonLoader> with SingleTickerProviderStateMixin {
+class _SkeletonLoaderState extends State<SkeletonLoader>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 

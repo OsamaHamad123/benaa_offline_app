@@ -8,6 +8,7 @@ import '../domain/repositories/dashboard_repository.dart';
 import '../domain/usecases/get_dashboard_statistics.dart';
 import '../domain/usecases/get_today_stats.dart';
 import '../domain/usecases/get_recent_activities.dart';
+import '../domain/entities/activity.dart'; // ✅ Import Activity
 import 'state/dashboard_state.dart';
 import 'state/dashboard_notifier.dart';
 
@@ -103,4 +104,73 @@ final todayStatsAutoRefreshProvider = FutureProvider.autoDispose<TodayStats>((
 final notificationsCountProvider = Provider<int>((ref) {
   final state = ref.watch(dashboardProvider);
   return state.todayStats?.pendingTasks ?? 0;
+});
+
+// ============================================================================
+// MEMOIZATION PROVIDERS - Cached computed data (Performance Optimization)
+// ============================================================================
+
+/// Chart data provider - يحسب فقط عند تغيير totalBeneficiaries
+final trendChartDataProvider = Provider<List<double>>((ref) {
+  final state = ref.watch(dashboardProvider);
+  final totalBeneficiaries = state.statistics?.totalBeneficiaries ?? 0;
+
+  if (totalBeneficiaries == 0) return [0, 0, 0, 0, 0, 0];
+
+  // ✅ Memoization: يحسب مرة واحدة ويخزن النتيجة
+  return [
+    totalBeneficiaries * 0.5,
+    totalBeneficiaries * 0.65,
+    totalBeneficiaries * 0.75,
+    totalBeneficiaries * 0.85,
+    totalBeneficiaries * 0.92,
+    totalBeneficiaries.toDouble(),
+  ];
+});
+
+// ============================================================================
+// COMPUTED DATA PROVIDERS - Move expensive calculations from build()
+// ============================================================================
+
+/// Filtered activities provider - تصفية وترتيب الأنشطة
+final filteredActivitiesProvider = Provider.family<List<Activity>, Map<String, dynamic>>((ref, filters) {
+  final state = ref.watch(dashboardProvider);
+  var activities = state.activities;
+
+  final filterType = filters['type'] as String? ?? 'all';
+  final selectedDate = filters['date'] as DateTime?;
+
+  // ✅ نقل التصفية من build إلى Provider
+  if (filterType != 'all') {
+    activities = activities.where((activity) => activity.type == filterType).toList();
+  }
+
+  if (selectedDate != null) {
+    activities = activities.where((activity) {
+      final activityDate = DateTime(
+        activity.timestamp.year,
+        activity.timestamp.month,
+        activity.timestamp.day,
+      );
+      final selectedDateOnly = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+      );
+      return activityDate == selectedDateOnly;
+    }).toList();
+  }
+
+  // ✅ نقل الترتيب من build إلى Provider
+  return activities..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+});
+
+/// Top governorates provider - ترتيب المحافظات حسب العدد
+final topGovernoratesProvider = Provider.family<List<MapEntry<String, int>>, Map<String, int>>((ref, data) {
+  if (data.isEmpty) return [];
+
+  // ✅ نقل الترتيب من build إلى Provider
+  final entries = data.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+  return entries.take(5).toList();
 });

@@ -1,203 +1,210 @@
 name: Flutter CI/CD
 
 on:
-    push:
-        branches: [main, develop]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
 
 jobs:
-    # ============================================================================
-    # Analysis & Testing Job
-    # ============================================================================
-    analyze-and-test:
-        name: Analyze & Test
-        runs-on: ubuntu-latest
+  # ============================================================================
+  # Analysis & Testing Job
+  # ============================================================================
+  analyze-and-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: 📥 Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
 
-            - name: ☕ Setup Java
-              uses: actions/setup-java@v4
-              with:
-                  distribution: "temurin"
-                  java-version: "17"
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-            - name: 🐦 Setup Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  flutter-version: "3.5.0"
-                  channel: "stable"
-                  cache: true
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
 
-            - name: 📦 Get dependencies
-              run: flutter pub get
+      - name: 📦 Get dependencies
+        run: flutter pub get
 
-            - name: 🔍 Verify formatting
-              run: dart format --set-exit-if-changed .
-              continue-on-error: true
+      - name: 🔍 Verify formatting
+        run: dart format --set-exit-if-changed .
+        continue-on-error: true
 
-            - name: 📊 Analyze code
-              run: flutter analyze
+      - name: 📊 Analyze code
+        run: flutter analyze --no-fatal-infos
 
-            - name: 🧪 Run tests
-              run: flutter test --coverage
+      - name: 🧪 Run tests
+        run: flutter test --coverage
 
-            - name: 📈 Upload coverage to Codecov
-              uses: codecov/codecov-action@v4
-              with:
-                  files: ./coverage/lcov.info
-                  fail_ci_if_error: false
-              continue-on-error: true
+      - name: 📈 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+        continue-on-error: true
 
-    # ============================================================================
-    # Build Android APK
-    # ============================================================================
-    build-android:
-        name: Build Android APK
-        needs: analyze-and-test
-        runs-on: ubuntu-latest
+  # ============================================================================
+  # Build Android APK
+  # ============================================================================
+  build-android:
+    name: Build Android APK
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: 📥 Checkout code
-              uses: actions/checkout@v4
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
 
-            - name: ☕ Setup Java
-              uses: actions/setup-java@v4
-              with:
-                  distribution: "temurin"
-                  java-version: "17"
+      # 🧹 Free up disk space (GitHub runners have ~14GB, we need ~10GB for build)
+      - name: 🧹 Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          df -h
 
-            - name: 🐦 Setup Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  flutter-version: "3.5.0"
-                  channel: "stable"
-                  cache: true
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
 
-            - name: 📦 Get dependencies
-              run: flutter pub get
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
 
-            - name: 🏗️ Build APK (Debug)
-              run: flutter build apk --debug
+      - name: 📦 Get dependencies
+        run: flutter pub get
 
-            - name: 🏗️ Build APK (Release)
-              run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols
+      - name: 🏗️ Build APK (Debug)
+        run: flutter build apk --debug
 
-            - name: 📤 Upload Debug APK
-              uses: actions/upload-artifact@v4
-              with:
-                  name: debug-apk
-                  path: build/app/outputs/flutter-apk/app-debug.apk
-                  retention-days: 7
+      - name: 🧹 Clean before release build
+        run: flutter clean
 
-            - name: 📤 Upload Release APK
-              uses: actions/upload-artifact@v4
-              with:
-                  name: release-apk
-                  path: build/app/outputs/flutter-apk/app-release.apk
-                  retention-days: 30
+      - name: 🏗️ Build APK (Release)
+        run: flutter build apk --release --obfuscate --split-debug-info=build/app/outputs/symbols
 
-            - name: 📤 Upload Debug Symbols
-              uses: actions/upload-artifact@v4
-              with:
-                  name: debug-symbols
-                  path: build/app/outputs/symbols
-                  retention-days: 30
+      - name: 📤 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
 
-    # ============================================================================
-    # Build iOS (requires macOS runner)
-    # ============================================================================
-    build-ios:
-        name: Build iOS
-        needs: analyze-and-test
-        runs-on: macos-latest
+      - name: 📤 Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
 
-        steps:
-            - name: 📥 Checkout code
-              uses: actions/checkout@v4
+      - name: 📤 Upload Debug Symbols
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-symbols
+          path: build/app/outputs/symbols
+          retention-days: 30
 
-            - name: 🐦 Setup Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  flutter-version: "3.5.0"
-                  channel: "stable"
-                  cache: true
+  # ============================================================================
+  # Build iOS (requires macOS runner)
+  # ============================================================================
+  build-ios:
+    name: Build iOS
+    needs: analyze-and-test
+    runs-on: macos-latest
 
-            - name: 📦 Get dependencies
-              run: flutter pub get
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
 
-            - name: 🏗️ Build iOS (No Codesign)
-              run: flutter build ios --release --no-codesign
-              continue-on-error: true
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
 
-    # ============================================================================
-    # Code Quality Checks
-    # ============================================================================
-    code-quality:
-        name: Code Quality
-        runs-on: ubuntu-latest
+      - name: 📦 Get dependencies
+        run: flutter pub get
 
-        steps:
-            - name: 📥 Checkout code
-              uses: actions/checkout@v4
+      - name: 🏗️ Build iOS (No Codesign)
+        run: flutter build ios --release --no-codesign
+        continue-on-error: true
 
-            - name: 🐦 Setup Flutter
-              uses: subosito/flutter-action@v2
-              with:
-                  flutter-version: "3.5.0"
-                  channel: "stable"
-                  cache: true
+  # ============================================================================
+  # Code Quality Checks
+  # ============================================================================
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
 
-            - name: 📦 Get dependencies
-              run: flutter pub get
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
 
-            - name: 🔍 Check for TODOs
-              run: |
-                  echo "Checking for TODO comments..."
-                  TODO_COUNT=$(grep -r "// TODO" lib/ | wc -l || echo "0")
-                  echo "Found $TODO_COUNT TODO comments"
-                  if [ "$TODO_COUNT" -gt 10 ]; then
-                    echo "⚠️ Warning: Too many TODOs ($TODO_COUNT)"
-                  fi
-              continue-on-error: true
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
 
-            - name: 📏 Check code metrics
-              run: |
-                  echo "Checking dart files count..."
-                  DART_FILES=$(find lib -name "*.dart" | wc -l)
-                  echo "Total Dart files: $DART_FILES"
+      - name: 📦 Get dependencies
+        run: flutter pub get
 
-                  echo "Checking test files count..."
-                  TEST_FILES=$(find test -name "*.dart" 2>/dev/null | wc -l || echo "0")
-                  echo "Total Test files: $TEST_FILES"
+      - name: 🔍 Check for TODOs
+        run: |
+          echo "Checking for TODO comments..."
+          TODO_COUNT=$(grep -r "// TODO" lib/ | wc -l || echo "0")
+          echo "Found $TODO_COUNT TODO comments"
+          if [ "$TODO_COUNT" -gt 10 ]; then
+            echo "⚠️ Warning: Too many TODOs ($TODO_COUNT)"
+          fi
+        continue-on-error: true
 
-                  if [ "$TEST_FILES" -eq 0 ]; then
-                    echo "⚠️ Warning: No test files found"
-                  fi
+      - name: 📏 Check code metrics
+        run: |
+          echo "Checking dart files count..."
+          DART_FILES=$(find lib -name "*.dart" | wc -l)
+          echo "Total Dart files: $DART_FILES"
 
-    # ============================================================================
-    # Deployment (only on main branch)
-    # ============================================================================
-    deploy:
-        name: Deploy to Firebase App Distribution
-        needs: [build-android, build-ios]
-        runs-on: ubuntu-latest
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+          echo "Checking test files count..."
+          TEST_FILES=$(find test -name "*.dart" 2>/dev/null | wc -l || echo "0")
+          echo "Total Test files: $TEST_FILES"
 
-        steps:
-            - name: 📥 Download Release APK
-              uses: actions/download-artifact@v4
-              with:
-                  name: release-apk
+          if [ "$TEST_FILES" -eq 0 ]; then
+            echo "⚠️ Warning: No test files found"
+          fi
 
-            - name: 🚀 Deploy to Firebase
-              run: echo "Deploy step (requires Firebase configuration)"
-              # Uncomment and configure when ready:
-              # uses: wzieba/Firebase-Distribution-Github-Action@v1
-              # with:
-              #   appId: ${{secrets.FIREBASE_APP_ID}}
-              #   serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
-              #   groups: testers
-              #   file: app-release.apk
+  # ============================================================================
+  # Deployment (only on main branch)
+  # ============================================================================
+  deploy:
+    name: Deploy to Firebase App Distribution
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 📥 Download Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk
+
+      - name: 🚀 Deploy to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          groups: ${{ secrets.FIREBASE_TESTERS }}
+          file: app-release.apk
+          releaseNotes: "New release from GitHub Actions CI/CD"

@@ -11,7 +11,6 @@ class DownloadProgress {
     required this.totalBytes,
     required this.percentage,
     required this.status,
-
     this.errorMessage,
   });
 

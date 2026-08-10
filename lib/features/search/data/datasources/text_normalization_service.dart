@@ -399,10 +399,8 @@ class TextNormalizationService {
   ///
   /// Converts "محمد احمد" to "name_norm:محمد* name_norm:احمد*"
   static String? buildFtsMatchQuery(String normalized) {
-    final tokens = normalized
-        .split(' ')
-        .where((token) => token.isNotEmpty)
-        .toList();
+    final tokens =
+        normalized.split(' ').where((token) => token.isNotEmpty).toList();
 
     if (tokens.isEmpty) {
       return null;

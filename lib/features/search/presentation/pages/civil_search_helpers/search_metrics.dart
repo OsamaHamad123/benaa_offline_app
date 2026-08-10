@@ -60,14 +60,19 @@ class SearchMetrics {
       queryCount[metric.query] = (queryCount[metric.query] ?? 0) + 1;
     }
 
-    final sorted = queryCount.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final sorted = queryCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return sorted.take(limit).map((e) => e.key).toList();
   }
 
   /// Get queries with no results
   List<String> getNoResultQueries() {
-    return _searchHistory.where((m) => m.resultsCount == 0).map((m) => m.query).toSet().toList();
+    return _searchHistory
+        .where((m) => m.resultsCount == 0)
+        .map((m) => m.query)
+        .toSet()
+        .toList();
   }
 
   /// Get performance statistics

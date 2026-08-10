@@ -235,8 +235,7 @@ class SmartHintField extends StatefulWidget {
   State<SmartHintField> createState() => _SmartHintFieldState();
 }
 
-class _SmartHintFieldState extends State<SmartHintField>
-    with SingleTickerProviderStateMixin {
+class _SmartHintFieldState extends State<SmartHintField> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -416,8 +415,7 @@ class _SmartHintFieldState extends State<SmartHintField>
           ],
 
           // Bullet points
-          if (widget.hint.bulletPoints != null &&
-              widget.hint.bulletPoints!.isNotEmpty) ...[
+          if (widget.hint.bulletPoints != null && widget.hint.bulletPoints!.isNotEmpty) ...[
             SizedBox(height: 12.h),
             ...widget.hint.bulletPoints!.map(
               (point) => Padding(
@@ -465,6 +463,9 @@ class _SmartHintFieldState extends State<SmartHintField>
                 height: 120.h,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                cacheWidth: 600, // ✅ Image Optimization: تصغير في الذاكرة
+                cacheHeight: 360,
+                filterQuality: FilterQuality.medium,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 120.h,

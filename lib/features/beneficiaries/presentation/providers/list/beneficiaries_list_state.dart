@@ -37,7 +37,7 @@ class BeneficiariesListState {
     bool? hasMore,
     int? currentPage,
     int? pageSize,
-    String? error,
+    Object? error = _unset,
     int? totalCount,
     int? pendingSyncCount,
   }) {
@@ -48,7 +48,8 @@ class BeneficiariesListState {
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
-      error: error ?? this.error,
+      // sentinel: يسمح بتصفير الخطأ بتمرير error: null صراحةً
+      error: identical(error, _unset) ? this.error : error as String?,
       totalCount: totalCount ?? this.totalCount,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
     );
@@ -125,18 +126,16 @@ class FiltersState {
   }) {
     return FiltersState(
       searchQuery: searchQuery ?? this.searchQuery,
-      categoryId: identical(categoryId, _unset)
-          ? this.categoryId
-          : categoryId as int?,
+      categoryId:
+          identical(categoryId, _unset) ? this.categoryId : categoryId as int?,
       governorateId: identical(governorateId, _unset)
           ? this.governorateId
           : governorateId as int?,
       cityId: identical(cityId, _unset) ? this.cityId : cityId as int?,
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
-      dateFrom: identical(dateFrom, _unset)
-          ? this.dateFrom
-          : dateFrom as DateTime?,
+      dateFrom:
+          identical(dateFrom, _unset) ? this.dateFrom : dateFrom as DateTime?,
       dateTo: identical(dateTo, _unset) ? this.dateTo : dateTo as DateTime?,
       ageFrom: identical(ageFrom, _unset) ? this.ageFrom : ageFrom as int?,
       ageTo: identical(ageTo, _unset) ? this.ageTo : ageTo as int?,

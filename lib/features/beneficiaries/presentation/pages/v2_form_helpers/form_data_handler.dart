@@ -46,9 +46,8 @@ class BeneficiaryFormDataHandler {
 
     setState(() {
       // Map gender to Arabic display values
-      controllers.selectedGender = beneficiary.gender == Gender.male
-          ? 'ذكر'
-          : 'أنثى';
+      controllers.selectedGender =
+          beneficiary.gender == Gender.male ? 'ذكر' : 'أنثى';
       controllers.selectedMaritalStatus = beneficiary.maritalStatus?.name;
       controllers.selectedEducationLevel = beneficiary.educationLevel?.name;
       controllers.selectedEmploymentStatus = beneficiary.employmentStatus?.name;
@@ -81,9 +80,8 @@ class BeneficiaryFormDataHandler {
     ].where((s) => s.isNotEmpty).join(' ');
 
     // Parse gender
-    final gender = controllers.selectedGender == 'ذكر'
-        ? Gender.male
-        : Gender.female;
+    final gender =
+        controllers.selectedGender == 'ذكر' ? Gender.male : Gender.female;
 
     return Beneficiary(
       id: beneficiaryId ?? '',
@@ -130,8 +128,8 @@ class BeneficiaryFormDataHandler {
           : controllers.addressController.text.trim(),
       addressBeforeDisplacement:
           controllers.addressBeforeDisplacementController.text.trim().isEmpty
-          ? null
-          : controllers.addressBeforeDisplacementController.text.trim(),
+              ? null
+              : controllers.addressBeforeDisplacementController.text.trim(),
       maritalStatus: controllers.selectedMaritalStatus != null
           ? MaritalStatus.values.firstWhere(
               (e) => e.name == controllers.selectedMaritalStatus,
@@ -177,8 +175,8 @@ class BeneficiaryFormDataHandler {
       hasDisability: controllers.hasDisability,
       chronicDiseasesCount:
           controllers.chronicDiseasesController.text.trim().isEmpty
-          ? null
-          : int.tryParse(controllers.chronicDiseasesController.text.trim()),
+              ? null
+              : int.tryParse(controllers.chronicDiseasesController.text.trim()),
       familySize: controllers.numberOfDependentsController.text.trim().isEmpty
           ? null
           : int.tryParse(controllers.numberOfDependentsController.text.trim()),

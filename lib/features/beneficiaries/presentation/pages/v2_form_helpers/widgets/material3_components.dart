@@ -67,7 +67,9 @@ class M3TextField extends StatelessWidget {
       style: TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-        color: enabled ? theme.colorScheme.onSurface : theme.colorScheme.onSurface.withOpacity(0.6),
+        color: enabled
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.onSurface.withOpacity(0.6),
       ),
       decoration: InputDecoration(
         // Label with required indicator
@@ -125,7 +127,9 @@ class M3TextField extends StatelessWidget {
                 child: Icon(
                   prefixIcon,
                   size: 22,
-                  color: enabled ? theme.colorScheme.primary : theme.colorScheme.onSurface.withOpacity(0.4),
+                  color: enabled
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface.withOpacity(0.4),
                 ),
               )
             : null,

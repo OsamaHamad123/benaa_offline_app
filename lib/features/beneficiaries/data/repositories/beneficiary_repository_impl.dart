@@ -5,6 +5,7 @@ import '../datasources/beneficiary_local_datasource.dart';
 import '../models/beneficiary_model.dart';
 import '../../../../core/monitoring/performance_monitor.dart';
 import '../../../../core/error_handling/result.dart';
+import '../../../../core/error_handling/error_logger.dart';
 
 /// 📦 Beneficiary Repository Implementation
 ///
@@ -60,7 +61,18 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       final result = await localDataSource.create(companion);
       return Success(result as Beneficiary);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to create beneficiary: $e', stackTrace));
+      await ErrorLogger.logError(
+        e,
+        stackTrace,
+        context: {
+          'operation': 'create_beneficiary',
+          'beneficiary_id': beneficiary.id,
+          'national_id': beneficiary.nationalId,
+        },
+        hint: 'Failed to create beneficiary in database',
+      );
+      return Failure(
+          DatabaseFailure('Failed to create beneficiary: $e', stackTrace));
     }
   }
 
@@ -115,7 +127,18 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       await localDataSource.update(id, companion);
       return Success(beneficiary);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to update beneficiary: $e', stackTrace));
+      await ErrorLogger.logError(
+        e,
+        stackTrace,
+        context: {
+          'operation': 'update_beneficiary',
+          'beneficiary_id': beneficiary.id,
+          'national_id': beneficiary.nationalId,
+        },
+        hint: 'Failed to update beneficiary in database',
+      );
+      return Failure(
+          DatabaseFailure('Failed to update beneficiary: $e', stackTrace));
     }
   }
 
@@ -134,7 +157,8 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
 
       return Success(result as Beneficiary);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to get beneficiary: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to get beneficiary: $e', stackTrace));
     }
   }
 
@@ -157,15 +181,23 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
 
       final result = await localDataSource.getByNationalId(intNationalId);
       if (result == null) {
-        return Failure(NotFoundFailure('No beneficiary found with national ID: $nationalId'));
+        return Failure(NotFoundFailure(
+            'No beneficiary found with national ID: $nationalId'));
       }
 
       return Success(result as Beneficiary);
     } catch (e, stackTrace) {
-      debugPrint(
-        '⚠️ getByNationalId: Error querying national ID $nationalId: $e',
+      await ErrorLogger.logError(
+        e,
+        stackTrace,
+        context: {
+          'operation': 'get_by_national_id',
+          'national_id': nationalId,
+        },
+        hint: 'Failed to query beneficiary by national ID',
       );
-      return Failure(DatabaseFailure('Failed to query national ID: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to query national ID: $e', stackTrace));
     }
   }
 
@@ -180,7 +212,8 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       await localDataSource.delete(intId);
       return Success(null);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to delete beneficiary: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to delete beneficiary: $e', stackTrace));
     }
   }
 
@@ -219,7 +252,8 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
 
       return Success(results);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to list beneficiaries: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to list beneficiaries: $e', stackTrace));
     }
   }
 
@@ -229,18 +263,22 @@ class BeneficiaryRepositoryImpl implements BeneficiaryRepository {
       final result = await localDataSource.count(category: category?.code);
       return Success(result);
     } catch (e, stackTrace) {
-      return Failure(DatabaseFailure('Failed to count beneficiaries: $e', stackTrace));
+      return Failure(
+          DatabaseFailure('Failed to count beneficiaries: $e', stackTrace));
     }
   }
 
   @override
-  Future<Result<Map<String, dynamic>>> loadFromCivilRegistry(String nationalId) async {
+  Future<Result<Map<String, dynamic>>> loadFromCivilRegistry(
+      String nationalId) async {
     try {
       // This will be implemented when we integrate with civil registry feature
       // For now, return not found
-      return Failure(NotFoundFailure('Civil registry integration not yet implemented'));
+      return Failure(
+          NotFoundFailure('Civil registry integration not yet implemented'));
     } catch (e, stackTrace) {
-      return Failure(UnknownFailure('Failed to load from civil registry: $e', stackTrace));
+      return Failure(
+          UnknownFailure('Failed to load from civil registry: $e', stackTrace));
     }
   }
 }

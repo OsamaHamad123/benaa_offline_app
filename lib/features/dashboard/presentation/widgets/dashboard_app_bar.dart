@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/providers/providers.dart' as core_providers;
 import '../providers.dart';
+import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
+import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 import 'monitoring_dashboard.dart';
 import '../../../../core/drafts/form_draft_manager.dart';
 
@@ -40,7 +42,10 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
     return AppBar(
       title: Text(
         title,
-        style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold),
+        style: DashboardTextStyles.sectionTitle.copyWith(
+          fontSize: 20.sp,
+          color: Colors.white,
+        ),
       ),
       centerTitle: true,
       flexibleSpace: Container(
@@ -93,11 +98,7 @@ class DashboardAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
                   child: Text(
                     notificationCount > 9 ? '9+' : '$notificationCount',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: DashboardTextStyles.badge,
                     textAlign: TextAlign.center,
                   ),
                 ),

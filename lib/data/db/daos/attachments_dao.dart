@@ -39,14 +39,16 @@ class AttachmentsDao extends DatabaseAccessor<AppDatabase>
   Future<void> deleteBeneficiaryAttachments(String beneficiaryId) async {
     await (delete(
       attachments,
-    )..where((a) => a.beneficiaryId.equals(beneficiaryId))).go();
+    )..where((a) => a.beneficiaryId.equals(beneficiaryId)))
+        .go();
   }
 
   /// Get attachment by ID
   Future<Attachment?> getAttachment(String id) async {
     return await (select(
       attachments,
-    )..where((a) => a.id.equals(id))).getSingleOrNull();
+    )..where((a) => a.id.equals(id)))
+        .getSingleOrNull();
   }
 
   /// Update attachment sync state

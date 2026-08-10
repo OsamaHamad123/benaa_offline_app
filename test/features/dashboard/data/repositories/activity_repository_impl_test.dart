@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart' as domain;
+import 'package:benaa_offline_app/core/error_handling/result.dart';
+import 'package:benaa_offline_app/features/dashboard/domain/entities/activity.dart'
+    as domain;
 import 'package:benaa_offline_app/features/dashboard/data/datasources/activity_local_datasource.dart';
 import 'package:benaa_offline_app/features/dashboard/data/repositories/activity_repository_impl.dart';
 
@@ -90,12 +92,16 @@ void main() {
       expect(data[1].id, '2');
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
 
-      // act & assert
-      expect(() => repository.getAllActivities(), throwsA(isA<Exception>()));
+      // act
+      final result = await repository.getAllActivities();
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 
@@ -128,15 +134,16 @@ void main() {
       expect(data[0].type, tType);
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
 
-      // act & assert
-      expect(
-        () => repository.getActivitiesByType('any'),
-        throwsA(isA<Exception>()),
-      );
+      // act
+      final result = await repository.getActivitiesByType('any');
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 
@@ -173,15 +180,16 @@ void main() {
       expect(data[0].beneficiaryId, tBeneficiaryId);
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
 
-      // act & assert
-      expect(
-        () => repository.getActivitiesForBeneficiary('any'),
-        throwsA(isA<Exception>()),
-      );
+      // act
+      final result = await repository.getActivitiesForBeneficiary('any');
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 
@@ -203,7 +211,7 @@ void main() {
       expect(mockDataSource.activities[0].id, '1');
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
       final tActivity = domain.Activity(
@@ -213,11 +221,12 @@ void main() {
         timestamp: DateTime.now(),
       );
 
-      // act & assert
-      expect(
-        () => repository.logActivity(tActivity),
-        throwsA(isA<Exception>()),
-      );
+      // act
+      final result = await repository.logActivity(tActivity);
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 
@@ -240,12 +249,16 @@ void main() {
       expect(mockDataSource.activities.isEmpty, true);
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
 
-      // act & assert
-      expect(() => repository.deleteActivity('any'), throwsA(isA<Exception>()));
+      // act
+      final result = await repository.deleteActivity('any');
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 
@@ -274,12 +287,16 @@ void main() {
       expect(mockDataSource.activities.isEmpty, true);
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
 
-      // act & assert
-      expect(() => repository.clearAllActivities(), throwsA(isA<Exception>()));
+      // act
+      final result = await repository.clearAllActivities();
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 
@@ -311,7 +328,8 @@ void main() {
       final result = await repository.getActivitiesCount();
 
       // assert
-      expect(result, 3);
+      final count = result.getOrThrow();
+      expect(count, 3);
     });
 
     test('should return 0 when no activities exist', () async {
@@ -319,15 +337,20 @@ void main() {
       final result = await repository.getActivitiesCount();
 
       // assert
-      expect(result, 0);
+      final count = result.getOrThrow();
+      expect(count, 0);
     });
 
-    test('should throw exception when datasource fails', () async {
+    test('should return failure when datasource fails', () async {
       // arrange
       mockDataSource.shouldThrowError = true;
 
-      // act & assert
-      expect(() => repository.getActivitiesCount(), throwsA(isA<Exception>()));
+      // act
+      final result = await repository.getActivitiesCount();
+
+      // assert
+      expect(result.isFailure, true);
+      expect((result as Failure).error.message, contains('Database error'));
     });
   });
 }

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// Search Field Widget for Reports
-class ReportSearchField extends StatelessWidget {
+///
+/// StatefulWidget حتى يملك المتحكّم ويتخلّص منه بشكل صحيح (كان StatelessWidget
+/// ينشئ متحكّماً جديداً في كل build فيتسرّب، وزر المسح لا يظهر أبداً لأن الشرط
+/// كان يُقيَّم مرة واحدة على متحكّم فارغ). الآن يستمع للتغييرات ويعيد بناء الزر.
+class ReportSearchField extends StatefulWidget {
   final String? hint;
   final Function(String) onSearch;
   final VoidCallback? onClear;
@@ -17,49 +21,79 @@ class ReportSearchField extends StatelessWidget {
   });
 
   @override
+  State<ReportSearchField> createState() => _ReportSearchFieldState();
+}
+
+class _ReportSearchFieldState extends State<ReportSearchField> {
+  late final TextEditingController _controller;
+  late final bool _ownsController;
+
+  @override
+  void initState() {
+    super.initState();
+    _ownsController = widget.controller == null;
+    _controller = widget.controller ?? TextEditingController();
+    _controller.addListener(_onChanged);
+  }
+
+  void _onChanged() {
+    // إعادة بناء لإظهار/إخفاء زر المسح حسب وجود نص
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onChanged);
+    // لا نتخلّص من متحكّم يملكه الأب
+    if (_ownsController) _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final textController = controller ?? TextEditingController();
+    final theme = Theme.of(context);
+    final borderColor = theme.dividerColor;
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
       child: TextField(
-        controller: textController,
+        controller: _controller,
         decoration: InputDecoration(
-          hintText: hint ?? 'ابحث...',
+          hintText: widget.hint ?? 'ابحث...',
           prefixIcon: const Icon(Icons.search),
-          suffixIcon: textController.text.isNotEmpty
+          suffixIcon: _controller.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear),
                   onPressed: () {
-                    textController.clear();
-                    onSearch('');
-                    if (onClear != null) onClear!();
+                    _controller.clear();
+                    widget.onSearch('');
+                    widget.onClear?.call();
                   },
                 )
               : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: BorderSide(color: borderColor),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
-            borderSide: BorderSide(color: Colors.grey[300]!),
+            borderSide: BorderSide(color: borderColor),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12.r),
             borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
+              color: theme.colorScheme.primary,
               width: 2,
             ),
           ),
           filled: true,
-          fillColor: Colors.grey[50],
+          fillColor: theme.colorScheme.surface,
           contentPadding: EdgeInsets.symmetric(
             horizontal: 16.w,
             vertical: 14.h,
           ),
         ),
-        onChanged: onSearch,
+        onChanged: widget.onSearch,
       ),
     );
   }

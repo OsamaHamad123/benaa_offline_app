@@ -9,7 +9,7 @@ class ValueListenableBuilder3<A, B, C> extends StatelessWidget {
   final ValueListenable<B> second;
   final ValueListenable<C> third;
   final Widget Function(BuildContext context, A a, B b, C c, Widget? child)
-  builder;
+      builder;
   final Widget? child;
 
   const ValueListenableBuilder3({

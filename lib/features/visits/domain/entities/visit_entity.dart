@@ -30,18 +30,18 @@ class VisitEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-    id,
-    beneficiaryId,
-    visitDate,
-    staffName,
-    notes,
-    isSubmitted,
-    createdAt,
-    updatedAt,
-    syncState,
-    serverId,
-    lastSyncedAt,
-  ];
+        id,
+        beneficiaryId,
+        visitDate,
+        staffName,
+        notes,
+        isSubmitted,
+        createdAt,
+        updatedAt,
+        syncState,
+        serverId,
+        lastSyncedAt,
+      ];
 
   VisitEntity copyWith({
     String? id,

@@ -170,7 +170,6 @@ class ConflictResolver {
           Text('المعرف: ${data.id}'),
           Text(
             'آخر تعديل: ${_formatDate(data.updatedAt ?? DateTime.now())}',
-
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ],

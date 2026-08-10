@@ -79,7 +79,8 @@ class _BeneficiariesSearchBarState extends State<BeneficiariesSearchBar> {
                 )
               : null,
           filled: true,
-          fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+          fillColor:
+              Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,

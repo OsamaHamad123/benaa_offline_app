@@ -184,7 +184,10 @@ class _GovernorateReportSheetState extends ConsumerState<GovernorateReportSheet>
                   children: [
                     Text(
                       'التفاصيل',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     if (_searchQuery.isNotEmpty)
                       Text(

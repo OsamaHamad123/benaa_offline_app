@@ -45,7 +45,8 @@ class PersonInfoCard extends StatelessWidget {
     final rv = ResponsiveUtils.getValues(context);
 
     return Semantics(
-      label: 'بطاقة معلومات ${person.fullName}, الرقم الوطني ${person.nationalId}',
+      label:
+          'بطاقة معلومات ${person.fullName}, الرقم الوطني ${person.nationalId}',
       hint: 'اضغط لإضافة كمستفيد',
       button: true,
       child: Card(
@@ -320,8 +321,10 @@ class PersonInfoCard extends StatelessWidget {
 
   /// Additional info (mother name, birth date)
   Widget _buildAdditionalInfo(BuildContext context) {
-    final hasMotherName = person.motherName != null && person.motherName!.isNotEmpty;
-    final hasBirthDate = person.birthDate != null && person.birthDate!.isNotEmpty;
+    final hasMotherName =
+        person.motherName != null && person.motherName!.isNotEmpty;
+    final hasBirthDate =
+        person.birthDate != null && person.birthDate!.isNotEmpty;
 
     if (!hasMotherName && !hasBirthDate) {
       return const SizedBox.shrink();

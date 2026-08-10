@@ -44,10 +44,14 @@ class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProvid
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final baseColor =
-        widget.baseColor ?? (isDark ? theme.colorScheme.surfaceVariant : theme.colorScheme.surface.withOpacity(0.3));
-    final highlightColor =
-        widget.highlightColor ?? (isDark ? theme.colorScheme.surface : theme.colorScheme.surface.withOpacity(0.1));
+    final baseColor = widget.baseColor ??
+        (isDark
+            ? theme.colorScheme.surfaceVariant
+            : theme.colorScheme.surface.withOpacity(0.3));
+    final highlightColor = widget.highlightColor ??
+        (isDark
+            ? theme.colorScheme.surface
+            : theme.colorScheme.surface.withOpacity(0.1));
 
     return AnimatedBuilder(
       animation: _animation,
@@ -98,9 +102,10 @@ class SkeletonBox extends StatelessWidget {
 /// Skeleton Card - Card-shaped skeleton
 class SkeletonCard extends StatelessWidget {
   final double? height;
+  final double? width;
   final EdgeInsetsGeometry? padding;
 
-  const SkeletonCard({super.key, this.height, this.padding});
+  const SkeletonCard({super.key, this.height, this.width, this.padding});
 
   @override
   Widget build(BuildContext context) {
@@ -113,9 +118,11 @@ class SkeletonCard extends StatelessWidget {
         ),
         child: Container(
           height: height ?? 150.h,
+          width: width,
           padding: padding ?? EdgeInsets.all(16.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
@@ -124,12 +131,14 @@ class SkeletonCard extends StatelessWidget {
                   Expanded(child: SkeletonBox(height: 20.h)),
                 ],
               ),
-              SizedBox(height: 16.h),
-              SkeletonBox(height: 16.h, width: double.infinity),
-              SizedBox(height: 8.h),
-              SkeletonBox(height: 16.h, width: 200.w),
-              SizedBox(height: 8.h),
-              SkeletonBox(height: 16.h, width: 150.w),
+              if (height == null || (height! > 80.h)) ...[
+                SizedBox(height: 16.h),
+                SkeletonBox(height: 16.h, width: double.infinity),
+                SizedBox(height: 8.h),
+                SkeletonBox(height: 16.h, width: double.infinity),
+                SizedBox(height: 8.h),
+                SkeletonBox(height: 16.h, width: double.infinity),
+              ],
             ],
           ),
         ),

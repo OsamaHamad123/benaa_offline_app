@@ -21,21 +21,23 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
 
   /// 👨 الحصول على الأب المتوفى
   Future<FamilyDeceased?> getFather(int beneficiaryId) {
-    return (select(familyDeceasedTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              t.deceasedType.equals(1), // 1=father
-        ))
+    return (select(familyDeceasedTable)
+          ..where(
+            (t) =>
+                t.beneficiaryId.equals(beneficiaryId) &
+                t.deceasedType.equals(1), // 1=father
+          ))
         .getSingleOrNull();
   }
 
   /// 👩 الحصول على الأم المتوفية
   Future<FamilyDeceased?> getMother(int beneficiaryId) {
-    return (select(familyDeceasedTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              t.deceasedType.equals(2), // 2=mother
-        ))
+    return (select(familyDeceasedTable)
+          ..where(
+            (t) =>
+                t.beneficiaryId.equals(beneficiaryId) &
+                t.deceasedType.equals(2), // 2=mother
+          ))
         .getSingleOrNull();
   }
 
@@ -91,15 +93,16 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
   Future<List<FamilyDeceased>> searchDeceased(int beneficiaryId, String query) {
     final searchTerm = '%${query.toLowerCase()}%';
     final nationalIdInt = int.tryParse(query);
-    return (select(familyDeceasedTable)..where(
-          (t) =>
-              t.beneficiaryId.equals(beneficiaryId) &
-              (t.firstName.lower().like(searchTerm) |
-                  t.familyName.lower().like(searchTerm) |
-                  (nationalIdInt != null
-                      ? t.nationalId.equals(nationalIdInt)
-                      : const Constant(false))),
-        ))
+    return (select(familyDeceasedTable)
+          ..where(
+            (t) =>
+                t.beneficiaryId.equals(beneficiaryId) &
+                (t.firstName.lower().like(searchTerm) |
+                    t.familyName.lower().like(searchTerm) |
+                    (nationalIdInt != null
+                        ? t.nationalId.equals(nationalIdInt)
+                        : const Constant(false))),
+          ))
         .get();
   }
 
@@ -107,7 +110,8 @@ class FamilyDeceasedDao extends DatabaseAccessor<AppDatabase>
   Future<List<FamilyDeceased>> getUnsyncedDeceased() {
     return (select(
       familyDeceasedTable,
-    )..where((t) => t.syncState.equals('pending'))).get();
+    )..where((t) => t.syncState.equals('pending')))
+        .get();
   }
 
   /// ✅ تحديث حالة المزامنة

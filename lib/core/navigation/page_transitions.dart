@@ -171,7 +171,9 @@ class PageTransitions {
       child: child,
       transitionDuration: duration,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final offset = direction == SharedAxisDirection.horizontal ? const Offset(0.3, 0) : const Offset(0, 0.3);
+        final offset = direction == SharedAxisDirection.horizontal
+            ? const Offset(0.3, 0)
+            : const Offset(0, 0.3);
 
         return FadeTransition(
           opacity: Tween<double>(

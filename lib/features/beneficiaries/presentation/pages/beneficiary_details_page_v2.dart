@@ -23,6 +23,7 @@ import 'details_widgets/sections/needs_section.dart';
 import 'details_widgets/sections/attachments_section.dart';
 import 'details_widgets/sections/visits_section.dart';
 import 'details_widgets/sections/action_buttons.dart';
+import 'details_widgets/sections/sponsorships_section.dart';
 import '../widgets/family_section.dart';
 import '../../../visits/presentation/pages/record_visit_page_enhanced.dart';
 import '../../../visits/presentation/providers/visit_providers.dart'
@@ -36,7 +37,7 @@ import '../../../../core/providers/providers.dart';
 class BeneficiaryDetailsPageV2 extends ConsumerStatefulWidget {
   final String beneficiaryId;
 
-  const BeneficiaryDetailsPageV2({super.key, required this.beneficiaryId});
+  const BeneficiaryDetailsPageV2({required this.beneficiaryId, super.key});
 
   @override
   ConsumerState<BeneficiaryDetailsPageV2> createState() =>
@@ -116,23 +117,20 @@ class _BeneficiaryDetailsPageV2State
 
     return AppBar(
       title: const Text('تفاصيل المستفيد'),
-      backgroundColor: colorInfo != null
-          ? Color(colorInfo.light)
-          : Colors.transparent,
+      backgroundColor:
+          colorInfo != null ? Color(colorInfo.light) : Colors.transparent,
       actions: [
         IconButton(
           icon: const Icon(Icons.share_outlined),
           tooltip: 'مشاركة',
-          onPressed: beneficiary != null
-              ? () => _shareScreenshot(context)
-              : null,
+          onPressed:
+              beneficiary != null ? () => _shareScreenshot(context) : null,
         ),
         IconButton(
           icon: const Icon(Icons.edit_outlined),
           tooltip: 'تعديل',
-          onPressed: beneficiary != null
-              ? () => _navigateToEdit(context)
-              : null,
+          onPressed:
+              beneficiary != null ? () => _navigateToEdit(context) : null,
         ),
         PopupMenuButton<String>(
           onSelected: (value) => _handleMenuAction(context, value),
@@ -266,6 +264,8 @@ class _BeneficiaryDetailsPageV2State
                   items: InfoBuilders.buildSystemInfoItems(beneficiary),
                 ),
                 SizedBox(height: 20.h),
+                SponsorshipsSection(beneficiaryId: _beneficiaryIntId!),
+                SizedBox(height: 20.h),
                 AttachmentsSection(beneficiaryId: widget.beneficiaryId),
                 SizedBox(height: 20.h),
                 VisitsSection(
@@ -387,7 +387,8 @@ class _BeneficiaryDetailsPageV2State
       final db = ref.read(databaseProvider);
       final beneficiaries = await (db.select(
         db.beneficiaries,
-      )..where((t) => t.id.equals(_beneficiaryIntId))).get();
+      )..where((t) => t.id.equals(_beneficiaryIntId)))
+          .get();
 
       if (mounted) LoadingDialog.hide(context);
 
@@ -497,8 +498,7 @@ class _BeneficiaryDetailsPageV2State
           );
           context.pop();
         } else if (mounted) {
-          final errorMsg =
-              ref.read(beneficiaryDetailsProvider).errorMessage ??
+          final errorMsg = ref.read(beneficiaryDetailsProvider).errorMessage ??
               'خطأ غير معروف';
           EnhancedSnackbar.showError(context, message: 'خطأ: $errorMsg');
         }

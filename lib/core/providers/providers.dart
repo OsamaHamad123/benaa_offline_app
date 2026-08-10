@@ -70,15 +70,15 @@ final databaseReadyProvider = FutureProvider<bool>((ref) async {
 // Beneficiaries Search Provider with filters
 final beneficiariesSearchProvider = FutureProvider.family
     .autoDispose<List<Beneficiary>, BeneficiariesFilter>((ref, filter) async {
-      final db = ref.watch(databaseProvider);
-      return await db.beneficiariesDao.searchBeneficiariesFiltered(
-        query: filter.searchQuery,
-        category: filter.category,
-        governorate: filter.governorate,
-        limit: filter.limit,
-        offset: filter.offset,
-      );
-    });
+  final db = ref.watch(databaseProvider);
+  return await db.beneficiariesDao.searchBeneficiariesFiltered(
+    query: filter.searchQuery,
+    category: filter.category,
+    governorate: filter.governorate,
+    limit: filter.limit,
+    offset: filter.offset,
+  );
+});
 
 // Statistics Provider - Cached for 5 minutes
 final statisticsProvider = FutureProvider.autoDispose<Statistics>((ref) async {
@@ -117,11 +117,11 @@ final notificationsCountProvider = FutureProvider.autoDispose<int>((ref) async {
 });
 
 // Single Beneficiary Provider
-final beneficiaryProvider = FutureProvider.family
-    .autoDispose<Beneficiary?, int>((ref, id) async {
-      final db = ref.watch(databaseProvider);
-      return await db.beneficiariesDao.getBeneficiaryById(id);
-    });
+final beneficiaryProvider =
+    FutureProvider.family.autoDispose<Beneficiary?, int>((ref, id) async {
+  final db = ref.watch(databaseProvider);
+  return await db.beneficiariesDao.getBeneficiaryById(id);
+});
 
 // ============================================================================
 // DATA CLASSES

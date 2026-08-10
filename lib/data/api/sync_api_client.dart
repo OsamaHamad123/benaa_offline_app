@@ -12,23 +12,23 @@ class SyncApiClient {
   final String baseUrl;
 
   SyncApiClient({required this.baseUrl, String? authToken})
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: baseUrl,
-          connectTimeout: ApiConfig.connectTimeout,
-          receiveTimeout: ApiConfig.receiveTimeout,
-          sendTimeout: ApiConfig.sendTimeout,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            if (authToken != null) 'Authorization': 'Bearer $authToken',
-          },
-          validateStatus: (status) {
-            // قبول جميع status codes لمعالجتها يدوياً
-            return status != null && status < 500;
-          },
-        ),
-      ) {
+      : _dio = Dio(
+          BaseOptions(
+            baseUrl: baseUrl,
+            connectTimeout: ApiConfig.connectTimeout,
+            receiveTimeout: ApiConfig.receiveTimeout,
+            sendTimeout: ApiConfig.sendTimeout,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              if (authToken != null) 'Authorization': 'Bearer $authToken',
+            },
+            validateStatus: (status) {
+              // قبول جميع status codes لمعالجتها يدوياً
+              return status != null && status < 500;
+            },
+          ),
+        ) {
     _setupInterceptors();
   }
 

@@ -103,10 +103,10 @@ class DownloadProgress {
 /// Provider لـ Download Manager
 final civilDatabaseDownloadProvider =
     StateNotifierProvider<CivilDatabaseDownloadNotifier, DownloadProgress>((
-      ref,
-    ) {
-      return CivilDatabaseDownloadNotifier();
-    });
+  ref,
+) {
+  return CivilDatabaseDownloadNotifier();
+});
 
 /// مدير تحميل قاعدة بيانات السجل المدني
 class CivilDatabaseDownloadNotifier extends StateNotifier<DownloadProgress> {
@@ -127,8 +127,7 @@ class CivilDatabaseDownloadNotifier extends StateNotifier<DownloadProgress> {
     try {
       // التحقق من المساحة المتاحة
       final response = await _dio.head(downloadUrl);
-      final contentLength =
-          int.tryParse(
+      final contentLength = int.tryParse(
             response.headers.value(Headers.contentLengthHeader) ?? '0',
           ) ??
           0;

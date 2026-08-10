@@ -52,15 +52,14 @@ class StateOptimizer {
   static List<MapEntry<String, StateMetrics>> getStatesWithMostWaste({
     int limit = 10,
   }) {
-    final entries =
-        _metrics.entries
-            .where((e) => e.value.unnecessaryUpdateCount > 0)
-            .toList()
-          ..sort(
-            (a, b) => b.value.unnecessaryUpdateCount.compareTo(
-              a.value.unnecessaryUpdateCount,
-            ),
-          );
+    final entries = _metrics.entries
+        .where((e) => e.value.unnecessaryUpdateCount > 0)
+        .toList()
+      ..sort(
+        (a, b) => b.value.unnecessaryUpdateCount.compareTo(
+          a.value.unnecessaryUpdateCount,
+        ),
+      );
     return entries.take(limit).toList();
   }
 

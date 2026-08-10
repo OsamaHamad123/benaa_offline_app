@@ -35,10 +35,10 @@ class VisitState extends Equatable {
 
   @override
   List<Object?> get props => [
-    visits,
-    isLoading,
-    errorMessage,
-    totalVisits,
-    lastVisitDate,
-  ];
+        visits,
+        isLoading,
+        errorMessage,
+        totalVisits,
+        lastVisitDate,
+      ];
 }

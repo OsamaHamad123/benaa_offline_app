@@ -184,7 +184,8 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
       final success = (result as Success<bool>).value;
       if (success) {
         state = state.copyWith(
-          attachments: state.attachments.where((a) => a.id != attachmentId).toList(),
+          attachments:
+              state.attachments.where((a) => a.id != attachmentId).toList(),
         );
 
         // Log activity if available
@@ -218,7 +219,8 @@ class AttachmentsNotifier extends StateNotifier<AttachmentsState> {
 }
 
 /// Attachments Provider
-final attachmentsProvider = StateNotifierProvider.family<AttachmentsNotifier, AttachmentsState, String>(
+final attachmentsProvider =
+    StateNotifierProvider.family<AttachmentsNotifier, AttachmentsState, String>(
   (ref, beneficiaryId) {
     final getUseCase = ref.watch(getBeneficiaryAttachmentsUseCaseProvider);
     final addUseCase = ref.watch(addAttachmentUseCaseProvider);

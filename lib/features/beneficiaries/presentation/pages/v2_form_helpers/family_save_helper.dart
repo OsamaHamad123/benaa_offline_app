@@ -6,9 +6,10 @@ import '../../../../../data/db/drift_database.dart';
 class FamilySaveHelper {
   /// ⬇️ تحميل بيانات أفراد العائلة من قاعدة البيانات
   static Future<
-    ({List<Map<String, dynamic>> living, List<Map<String, dynamic>> deceased})
-  >
-  loadFamilyMembers({
+      ({
+        List<Map<String, dynamic>> living,
+        List<Map<String, dynamic>> deceased
+      })> loadFamilyMembers({
     required AppDatabase database,
     required String beneficiaryId,
   }) async {

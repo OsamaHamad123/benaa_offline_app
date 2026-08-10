@@ -35,9 +35,9 @@ class VisitsSection extends ConsumerWidget {
             Text(
               'سجل الزيارات',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
             ),
             const Spacer(),
             IconButton(

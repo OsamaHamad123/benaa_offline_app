@@ -97,7 +97,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
       if (widget.controller.text.isNotEmpty) {
         finalSuffixIcon = Icon(
           validationError == null ? Icons.check_circle : Icons.error,
-          color: validationError == null ? theme.colorScheme.primary : theme.colorScheme.error,
+          color: validationError == null
+              ? theme.colorScheme.primary
+              : theme.colorScheme.error,
           size: 20,
         );
       }
@@ -116,7 +118,10 @@ class _CustomTextFieldState extends State<CustomTextField> {
         isDense: true,
       ),
       keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction ?? (widget.maxLines > 1 ? TextInputAction.newline : TextInputAction.next),
+      textInputAction: widget.textInputAction ??
+          (widget.maxLines > 1
+              ? TextInputAction.newline
+              : TextInputAction.next),
       inputFormatters: widget.inputFormatters,
       maxLines: widget.maxLines,
       readOnly: widget.readOnly,
@@ -379,7 +384,10 @@ class EmptyStateCard extends StatelessWidget {
             Text(
               message,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.6),
                   ),
               textAlign: TextAlign.center,
             ),

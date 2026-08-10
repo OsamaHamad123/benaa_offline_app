@@ -48,7 +48,8 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
 
   void _onScroll() {
     _scrollThrottler(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
         if (!_isLoading && _hasMore) {
           _loadActivities();
         }
@@ -75,7 +76,8 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
       // Pagination logic
       final startIndex = _currentPage * _pageSize;
       final endIndex = startIndex + _pageSize;
-      final newActivities = allActivities.skip(startIndex).take(_pageSize).toList();
+      final newActivities =
+          allActivities.skip(startIndex).take(_pageSize).toList();
 
       setState(() {
         _activities.addAll(newActivities);
@@ -131,7 +133,8 @@ class _AllActivitiesPageState extends ConsumerState<AllActivitiesPage> {
                 button: true,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  style:
+                      ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                   child: const Text('مسح'),
                 ),
               ),

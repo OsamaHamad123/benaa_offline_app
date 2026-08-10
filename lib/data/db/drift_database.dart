@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:benaa_offline_app/data/db/tables/associations_table.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
@@ -19,6 +20,8 @@ import 'daos/taxonomies_dao.dart';
 import 'daos/sync_metadata_dao.dart';
 import 'daos/family_deceased_dao.dart';
 import 'daos/family_members_dao.dart';
+import 'daos/associations_dao.dart';
+import 'daos/sponsorships_dao.dart';
 
 part 'drift_database.g.dart';
 
@@ -34,6 +37,9 @@ part 'drift_database.g.dart';
     Activities,
     FamilyDeceasedTable,
     FamilyMembersTable,
+    Associations,
+    AssociationRepresentatives,
+    Sponsorships,
   ],
   daos: [
     BeneficiariesDao,
@@ -46,6 +52,8 @@ part 'drift_database.g.dart';
     SyncMetadataDao,
     FamilyDeceasedDao,
     FamilyMembersDao,
+    AssociationsDao,
+    SponsorshipsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -59,30 +67,118 @@ class AppDatabase extends _$AppDatabase {
   // - syncDao: Sync queue and taxonomies
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
     return MigrationStrategy(
       onCreate: (Migrator m) async {
         await m.createAll();
+        await _createImportBatchesTable();
         await _createPerformanceIndexes();
       },
       onUpgrade: (Migrator m, int from, int to) async {
+        // Keep migrations incremental and non-destructive.
+
         if (from < 12) {
           // v12: Removed Civil Registry tables (moved to separate database)
-          // Just recreate indexes - tables already removed from schema
-          await _createPerformanceIndexes();
-        } else {
-          // حذف قاعدة البيانات القديمة وإعادة إنشائها من الصفر
-          for (final table in allTables) {
-            await m.deleteTable(table.actualTableName);
-          }
-          await m.createAll();
+          // Legacy upgrades are not expected in production, but keep indexes consistent.
           await _createPerformanceIndexes();
         }
+
+        if (from < 13) {
+          // v13: Add Sponsorships (Kafalat) table
+          await m.createTable(sponsorships);
+        }
+
+        if (from < 14) {
+          // v14: Add import_batches table (Excel import audit)
+          await _createImportBatchesTable();
+        }
+
+        if (from < 15) {
+          // v15: Add sponsorship type + import batch link
+          await m.addColumn(sponsorships, sponsorships.sponsorshipType);
+          await m.addColumn(sponsorships, sponsorships.importBatchId);
+
+          // v15: Extend import_batches audit columns (safe if table exists)
+          await _ensureImportBatchesColumns();
+        }
+
+        if (from < 16) {
+          // v16: Add comprehensive sponsorship fields
+          // معلومات الكافل
+          await m.addColumn(sponsorships, sponsorships.sponsorName);
+
+          // معلومات المكفول
+          await m.addColumn(sponsorships, sponsorships.internalFileNo);
+          await m.addColumn(sponsorships, sponsorships.externalFileNo);
+          await m.addColumn(sponsorships, sponsorships.guardianName);
+          await m.addColumn(sponsorships, sponsorships.guardianIdNumber);
+          await m.addColumn(sponsorships, sponsorships.guardianPhone);
+          await m.addColumn(sponsorships, sponsorships.guardianAltPhone);
+
+          // تفاصيل الكفالة
+          await m.addColumn(sponsorships, sponsorships.durationMonths);
+
+          // معلومات بنكية
+          await m.addColumn(sponsorships, sponsorships.bankName);
+          await m.addColumn(sponsorships, sponsorships.accountHolderName);
+          await m.addColumn(sponsorships, sponsorships.accountHolderIdNumber);
+          await m.addColumn(sponsorships, sponsorships.accountNumber);
+          await m.addColumn(sponsorships, sponsorships.swiftCode);
+
+          // معلومات الموقع
+          await m.addColumn(sponsorships, sponsorships.governorate);
+          await m.addColumn(sponsorships, sponsorships.city);
+          await m.addColumn(sponsorships, sponsorships.address);
+        }
+
+        await _createPerformanceIndexes();
       },
     );
+  }
+
+  Future<void> _createImportBatchesTable() async {
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS import_batches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        file_name TEXT,
+        imported_at TEXT NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+        rows_total INTEGER NOT NULL DEFAULT 0,
+        rows_valid INTEGER NOT NULL DEFAULT 0,
+        rows_invalid INTEGER NOT NULL DEFAULT 0,
+        rows_duplicates INTEGER NOT NULL DEFAULT 0,
+        rows_inserted INTEGER NOT NULL DEFAULT 0,
+        rows_updated INTEGER NOT NULL DEFAULT 0,
+        rows_skipped INTEGER NOT NULL DEFAULT 0,
+        sponsorships_inserted INTEGER NOT NULL DEFAULT 0,
+        sponsorships_skipped INTEGER NOT NULL DEFAULT 0,
+        notes TEXT
+      );
+    ''');
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_import_batches_imported_at ON import_batches(imported_at DESC);',
+    );
+  }
+
+  Future<void> _ensureImportBatchesColumns() async {
+    // SQLite doesn't support "ADD COLUMN IF NOT EXISTS", so we inspect PRAGMA table_info.
+    final info = await customSelect('PRAGMA table_info(import_batches);').get();
+    final existing = info.map((r) => r.read<String>('name')).toSet();
+
+    if (!existing.contains('sponsorships_inserted')) {
+      await customStatement(
+        'ALTER TABLE import_batches ADD COLUMN sponsorships_inserted INTEGER NOT NULL DEFAULT 0;',
+      );
+    }
+
+    if (!existing.contains('sponsorships_skipped')) {
+      await customStatement(
+        'ALTER TABLE import_batches ADD COLUMN sponsorships_skipped INTEGER NOT NULL DEFAULT 0;',
+      );
+    }
   }
 
   /// ⚡ إنشاء Indexes للبحث السريع
@@ -216,6 +312,33 @@ class AppDatabase extends _$AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_attachments_type ON attachments(type);',
     );
 
+    // Sponsorships (Kafalat)
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_beneficiary ON sponsorships(beneficiary_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_association ON sponsorships(association_id);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_status ON sponsorships(status);',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_beneficiary_status ON sponsorships(beneficiary_id, status);',
+    );
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_association_status ON sponsorships(association_id, status);',
+    );
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_type ON sponsorships(sponsorship_type);',
+    );
+
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_sponsorships_association_status_type '
+      'ON sponsorships(association_id, status, sponsorship_type);',
+    );
+
     // Sync Queue - critical for sync performance
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity, created_at);',
@@ -231,11 +354,11 @@ class AppDatabase extends _$AppDatabase {
 
   // Civil registry database operations
   Future<void> attachCivilRegistry(String dbPath) async {
-    await customStatement("ATTACH DATABASE ? AS civil_registry", [dbPath]);
+    await customStatement('ATTACH DATABASE ? AS civil_registry', [dbPath]);
   }
 
   Future<void> detachCivilRegistry() async {
-    await customStatement("DETACH DATABASE civil_registry");
+    await customStatement('DETACH DATABASE civil_registry');
   }
 }
 
@@ -254,6 +377,23 @@ extension BeneficiaryExtension on Beneficiary {
 }
 
 // Database connection factory
+//
+// ⚠️ ملاحظة أمنية مهمة عن التشفير:
+// `PRAGMA key` لا يشفّر القاعدة إلا إذا كانت مكتبة sqlite3 الأصلية المُحمَّلة
+// هي SQLCipher. مع `sqlite3_flutter_libs` (التي تأتي عبر drift افتراضياً)
+// تكون SQLite عادية و`PRAGMA key` يُتجاهل بصمت → القاعدة غير مشفّرة على القرص.
+//
+// لتفعيل التشفير الفعلي (يتطلب بناءً على جهاز واختباره):
+//   1) في pubspec.yaml: أضف `sqlcipher_flutter_libs` واحذف `sqlite3_flutter_libs`.
+//   2) في main() قبل فتح القاعدة:
+//        import 'package:sqlite3/open.dart';
+//        import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
+//        await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
+//        open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+//   3) تحقّق أن `PRAGMA cipher_version` يرجع قيمة غير فارغة (الدالة أدناه تفعل ذلك).
+//
+// حتى يتم ذلك، تستدعي التهيئة verifyDatabaseEncryption() التي تسجّل تحذيراً
+// صريحاً إذا كانت القاعدة غير مشفّرة، بدل ادعاء تشفير غير موجود.
 LazyDatabase openEncryptedDb() {
   return LazyDatabase(() async {
     if (Platform.isAndroid) {
@@ -270,16 +410,43 @@ LazyDatabase openEncryptedDb() {
     return NativeDatabase.createInBackground(
       file,
       setup: (db) {
-        // Enable SQLCipher encryption
-        db.execute("PRAGMA key = '$key';");
-        db.execute("PRAGMA foreign_keys = ON;");
-        db.execute("PRAGMA journal_mode = WAL;");
+        // يُطبَّق فقط إذا كانت المكتبة SQLCipher؛ وإلا يُتجاهل بلا خطأ.
+        db.execute('PRAGMA key = \'$key\';');
+        db.execute('PRAGMA foreign_keys = ON;');
+        db.execute('PRAGMA journal_mode = WAL;');
 
         // Performance optimizations
-        db.execute("PRAGMA synchronous = NORMAL;");
-        db.execute("PRAGMA temp_store = MEMORY;");
-        db.execute("PRAGMA mmap_size = 30000000000;");
+        db.execute('PRAGMA synchronous = NORMAL;');
+        db.execute('PRAGMA temp_store = MEMORY;');
+        db.execute('PRAGMA mmap_size = 268435456;'); // 256MB بدل 30GB
       },
     );
   });
+}
+
+/// يتحقق فعلياً مما إذا كانت قاعدة بيانات التطبيق مشفّرة على القرص.
+///
+/// يقرأ أول 16 بايت من ملف app.db: إن بدأت بالسلسلة "SQLite format 3"
+/// فالقاعدة غير مشفّرة (SQLCipher يشفّر الترويسة أيضاً). يُرجع:
+///   - true  → مشفّرة فعلاً (ترويسة غير قابلة للقراءة كنص عادي)
+///   - false → غير مشفّرة (نص واضح) — يجب تفعيل SQLCipher كما هو موثّق أعلاه
+Future<bool> verifyDatabaseEncryption() async {
+  try {
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dbFolder.path, 'app.db'));
+    if (!await file.exists()) return false;
+
+    final header = await file.openRead(0, 16).first;
+    const magic = 'SQLite format 3';
+    final headerStr = String.fromCharCodes(header.take(magic.length));
+    final isPlaintext = headerStr == magic;
+    if (isPlaintext) {
+      // ignore: avoid_print
+      print('⚠️ [SECURITY] قاعدة البيانات غير مشفّرة على القرص. '
+          'فعّل SQLCipher كما هو موثّق في openEncryptedDb().');
+    }
+    return !isPlaintext;
+  } catch (_) {
+    return false;
+  }
 }

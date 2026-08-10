@@ -226,8 +226,8 @@ class _UltraOptimizedFamilyDialogState
             FamilyDialogHeader(
               title: widget.isDeceased
                   ? (widget.presetDeceasedType == 1
-                        ? 'إضافة أب متوفى'
-                        : 'إضافة أم متوفاة')
+                      ? 'إضافة أب متوفى'
+                      : 'إضافة أم متوفاة')
                   : 'إضافة يتيم',
               icon: widget.isDeceased ? Icons.person_off : Icons.child_care,
               onClose: () => Navigator.pop(context),
@@ -511,9 +511,8 @@ class _LightTextField extends StatelessWidget {
         maxLength: maxLength,
         maxLines: 1, // ⚡ Explicit single line
         enableInteractiveSelection: false, // ⚡ Disable selection UI for speed
-        textInputAction: nextFocus != null
-            ? TextInputAction.next
-            : TextInputAction.done,
+        textInputAction:
+            nextFocus != null ? TextInputAction.next : TextInputAction.done,
         onChanged: onChanged,
         onSubmitted: (_) {
           if (nextFocus != null) {

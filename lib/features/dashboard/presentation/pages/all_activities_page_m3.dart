@@ -18,8 +18,7 @@ class AllActivitiesPageM3 extends ConsumerStatefulWidget {
   const AllActivitiesPageM3({super.key});
 
   @override
-  ConsumerState<AllActivitiesPageM3> createState() =>
-      _AllActivitiesPageM3State();
+  ConsumerState<AllActivitiesPageM3> createState() => _AllActivitiesPageM3State();
 }
 
 class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
@@ -33,35 +32,12 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
     super.dispose();
   }
 
+  // ✅ استخدام Provider بدلاً من getter
   List<Activity> get _filteredActivities {
-    final state = ref.watch(dashboardProvider);
-    var activities = state.activities;
-
-    // Filter by type
-    if (_filterType != 'all') {
-      activities = activities
-          .where((activity) => activity.type == _filterType)
-          .toList();
-    }
-
-    // Filter by date
-    if (_selectedDate != null) {
-      activities = activities.where((activity) {
-        final activityDate = DateTime(
-          activity.timestamp.year,
-          activity.timestamp.month,
-          activity.timestamp.day,
-        );
-        final selectedDateOnly = DateTime(
-          _selectedDate!.year,
-          _selectedDate!.month,
-          _selectedDate!.day,
-        );
-        return activityDate == selectedDateOnly;
-      }).toList();
-    }
-
-    return activities..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return ref.watch(filteredActivitiesProvider({
+      'type': _filterType,
+      'date': _selectedDate,
+    }));
   }
 
   Map<String, List<Activity>> get _groupedActivities {
@@ -80,8 +56,7 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
   Widget build(BuildContext context) {
     final state = ref.watch(dashboardProvider);
     final groupedActivities = _groupedActivities;
-    final dates = groupedActivities.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
+    final dates = groupedActivities.keys.toList()..sort((a, b) => b.compareTo(a));
 
     return Scaffold(
       appBar: AppBar(
@@ -162,36 +137,28 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
                       label: 'المستفيدين',
                       value: 'beneficiary',
                       icon: Icons.person,
-                      count: state.activities
-                          .where((a) => a.type == 'beneficiary')
-                          .length,
+                      count: state.activities.where((a) => a.type == 'beneficiary').length,
                     ),
                     SizedBox(width: 8.w),
                     _buildFilterChip(
                       label: 'الزيارات',
                       value: 'visit',
                       icon: Icons.event_note,
-                      count: state.activities
-                          .where((a) => a.type == 'visit')
-                          .length,
+                      count: state.activities.where((a) => a.type == 'visit').length,
                     ),
                     SizedBox(width: 8.w),
                     _buildFilterChip(
                       label: 'المزامنة',
                       value: 'sync',
                       icon: Icons.sync,
-                      count: state.activities
-                          .where((a) => a.type == 'sync')
-                          .length,
+                      count: state.activities.where((a) => a.type == 'sync').length,
                     ),
                     SizedBox(width: 8.w),
                     _buildFilterChip(
                       label: 'المرفقات',
                       value: 'attachment',
                       icon: Icons.attach_file,
-                      count: state.activities
-                          .where((a) => a.type == 'attachment')
-                          .length,
+                      count: state.activities.where((a) => a.type == 'attachment').length,
                     ),
                   ],
                 ),
@@ -203,8 +170,8 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
       body: state.isLoadingActivities
           ? _buildLoadingSkeleton()
           : _filteredActivities.isEmpty
-          ? _buildEmptyState()
-          : _buildActivitiesList(dates, groupedActivities),
+              ? _buildEmptyState()
+              : _buildActivitiesList(dates, groupedActivities),
     );
   }
 
@@ -255,9 +222,8 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
     return EmptyStateWidget(
       icon: Icons.analytics_outlined,
       title: 'لا توجد أنشطة',
-      message: _filterType == 'all'
-          ? 'ستظهر هنا جميع أنشطتك'
-          : 'لا توجد أنشطة من نوع "${_getFilterLabel(_filterType)}"',
+      message:
+          _filterType == 'all' ? 'ستظهر هنا جميع أنشطتك' : 'لا توجد أنشطة من نوع "${_getFilterLabel(_filterType)}"',
       action: _selectedDate != null
           ? ElevatedButton.icon(
               onPressed: () => setState(() => _selectedDate = null),
@@ -671,10 +637,8 @@ class _AllActivitiesPageM3State extends ConsumerState<AllActivitiesPageM3> {
                   'ar',
                 ).format(activity.timestamp),
               ),
-              if (activity.beneficiaryName != null)
-                _buildDetailRow('المستفيد', activity.beneficiaryName!),
-              if (activity.metadata != null &&
-                  activity.metadata!.isNotEmpty) ...[
+              if (activity.beneficiaryName != null) _buildDetailRow('المستفيد', activity.beneficiaryName!),
+              if (activity.metadata != null && activity.metadata!.isNotEmpty) ...[
                 SizedBox(height: 16.h),
                 Text(
                   'معلومات إضافية:',

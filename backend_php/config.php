@@ -28,13 +28,14 @@ function envOrDefine($key, $default = null) {
 }
 
 // إعدادات قاعدة البيانات
-if (!defined('DB_HOST')) define('DB_HOST', envOrDefine('BENAA_DB_HOST', 'localhost'));
-if (!defined('DB_USER')) define('DB_USER', envOrDefine('BENAA_DB_USER'));
-if (!defined('DB_PASS')) define('DB_PASS', envOrDefine('BENAA_DB_PASS'));
-if (!defined('DB_NAME')) define('DB_NAME', envOrDefine('BENAA_DB_NAME'));
+// تُقبل الأسماء بصيغة BENAA_* أو الأسماء المجردة (DB_HOST, ...) في البيئة
+if (!defined('DB_HOST')) define('DB_HOST', envOrDefine('BENAA_DB_HOST', envOrDefine('DB_HOST', 'localhost')));
+if (!defined('DB_USER')) define('DB_USER', envOrDefine('BENAA_DB_USER', envOrDefine('DB_USER')));
+if (!defined('DB_PASS')) define('DB_PASS', envOrDefine('BENAA_DB_PASS', envOrDefine('DB_PASS')));
+if (!defined('DB_NAME')) define('DB_NAME', envOrDefine('BENAA_DB_NAME', envOrDefine('DB_NAME')));
 
 // إعدادات عامة
-if (!defined('JWT_SECRET')) define('JWT_SECRET', envOrDefine('BENAA_JWT_SECRET'));
+if (!defined('JWT_SECRET')) define('JWT_SECRET', envOrDefine('BENAA_JWT_SECRET', envOrDefine('JWT_SECRET')));
 if (!defined('TOKEN_EXPIRY')) define('TOKEN_EXPIRY', 86400); // 24 ساعة
 
 // حماية من محاولات تخمين كلمة المرور (Brute Force)
@@ -86,7 +87,7 @@ header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
 
 // CORS: يُسمح فقط بالأصل المحدد صراحةً في الإعدادات (التطبيق الجوال لا يحتاج CORS)
-$corsOrigin = envOrDefine('BENAA_CORS_ORIGIN', '');
+$corsOrigin = envOrDefine('BENAA_CORS_ORIGIN', envOrDefine('ALLOWED_ORIGIN', ''));
 if ($corsOrigin !== '') {
     header('Access-Control-Allow-Origin: ' . $corsOrigin);
     header('Vary: Origin');

@@ -27,8 +27,7 @@ class EnhancedFamilyMemberCard extends StatelessWidget {
     final String name =
         '${member['firstName'] ?? ''} ${member['familyName'] ?? ''}';
     final String age = member['age']?.toString() ?? '؟';
-    final String? nationalId =
-        member['nationalId']?.toString() ??
+    final String? nationalId = member['nationalId']?.toString() ??
         member['orphanNationalId']?.toString();
 
     return RepaintBoundary(

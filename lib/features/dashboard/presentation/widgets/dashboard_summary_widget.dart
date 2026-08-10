@@ -34,8 +34,8 @@ class DashboardSummaryWidget extends ConsumerWidget {
                   Text(
                     'لوحة المعلومات',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const Spacer(),
                   Icon(Icons.assessment, size: 20.sp, color: Colors.grey),
@@ -265,8 +265,8 @@ class _SyncProgressBar extends StatelessWidget {
                 percentage >= 80
                     ? Colors.green
                     : percentage >= 50
-                    ? Colors.orange
-                    : Colors.red,
+                        ? Colors.orange
+                        : Colors.red,
               ),
             ),
           ),

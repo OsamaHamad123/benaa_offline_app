@@ -172,9 +172,8 @@ class AnimatedSectionCard extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 20.sp,
-                    color: isComplete
-                        ? Colors.green
-                        : theme.colorScheme.primary,
+                    color:
+                        isComplete ? Colors.green : theme.colorScheme.primary,
                   ),
                 ),
                 SizedBox(width: 12.w),

@@ -89,7 +89,8 @@ class _VisitTimelineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final latestText = isLatest ? 'أحدث زيارة, ' : '';
     return Semantics(
-      label: '${latestText}زيارة من ${visit.staffName}, ${_formatDate(visit.visitDate)}',
+      label:
+          '${latestText}زيارة من ${visit.staffName}, ${_formatDate(visit.visitDate)}',
       hint: 'اضغط لعرض تفاصيل الزيارة',
       button: true,
       child: GestureDetector(
@@ -154,7 +155,8 @@ class _VisitTimelineCard extends StatelessWidget {
                   // Staff Name
                   Row(
                     children: [
-                      Icon(Icons.person_outline, size: 16.sp, color: Colors.blue),
+                      Icon(Icons.person_outline,
+                          size: 16.sp, color: Colors.blue),
                       SizedBox(width: 6.w),
                       Expanded(
                         child: Text(

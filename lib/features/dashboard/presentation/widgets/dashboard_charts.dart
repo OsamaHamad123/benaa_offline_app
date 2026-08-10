@@ -171,9 +171,8 @@ class GrowthChart extends StatelessWidget {
 
   double _getMaxY() {
     if (growthData.isEmpty) return 10;
-    final maxCount = growthData
-        .map((e) => e.count)
-        .reduce((a, b) => a > b ? a : b);
+    final maxCount =
+        growthData.map((e) => e.count).reduce((a, b) => a > b ? a : b);
     return (maxCount + 2).toDouble();
   }
 }
