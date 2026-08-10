@@ -21,12 +21,12 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_token (token)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- إضافة مستخدم للاختبار
--- Email: admin@benaa.com
--- Password: admin123
-INSERT INTO users (email, name, password_hash, role) VALUES 
-('admin@benaa.com', 'المدير', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
-ON DUPLICATE KEY UPDATE updated_at = NOW();
+-- ⚠️ لا تُنشئ حساباً بكلمة مرور افتراضية معروفة.
+-- أنشئ حساب المدير يدوياً بكلمة مرور قوية خاصة بك:
+--   1) أنشئ التجزئة:  php -r "echo password_hash('كلمة-مرور-قوية', PASSWORD_DEFAULT);"
+--   2) ثم نفّذ:
+-- INSERT INTO users (email, name, password_hash, role)
+-- VALUES ('you@example.com', 'المدير', '<الصق-التجزئة-هنا>', 'admin');
 
 -- 2. جدول محاولات تسجيل الدخول
 CREATE TABLE IF NOT EXISTS login_attempts (

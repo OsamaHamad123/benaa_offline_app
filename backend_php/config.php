@@ -1,22 +1,25 @@
 <?php
 /**
  * إعدادات قاعدة البيانات والاتصال
- * ضع هذا الملف في مجلد api على السيرفر.
+ * ضع هذا الملف في مجلد api على السيرفر
  *
- * ⚠️ الأسرار تُقرأ من متغيرات البيئة (environment variables) ولا تُكتب في الكود.
- * على الاستضافة، عرّفها في لوحة التحكم أو في ملف .env خارج مجلد الويب،
- * أو أنشئ ملف config.local.php (غير متتبَّع في git) يعرّف الثوابت التالية.
+ * ⚠️ الأسرار لا تُكتب هنا أبداً:
+ * تُقرأ من متغيرات البيئة (Environment Variables) أو من ملف
+ * config.local.php غير المتتبع في git (انظر config.local.example.php).
  */
 
-// تحميل إعدادات محلية غير متتبَّعة في git إن وُجدت (اختياري)
+// تحميل الإعدادات المحلية إن وُجدت (خارج نظام git)
 if (file_exists(__DIR__ . '/config.local.php')) {
     require_once __DIR__ . '/config.local.php';
 }
 
 /**
- * قارئ متغيّر بيئة مع قيمة افتراضية.
+ * قراءة إعداد من البيئة مع قيمة افتراضية اختيارية
  */
-function env_value($key, $default = null) {
+function envOrDefine($key, $default = null) {
+    if (defined($key)) {
+        return constant($key);
+    }
     $value = getenv($key);
     if ($value === false || $value === '') {
         return $default;
@@ -24,18 +27,30 @@ function env_value($key, $default = null) {
     return $value;
 }
 
-// إعدادات قاعدة البيانات — تُقرأ من البيئة (لا تضع بيانات إنتاج حقيقية هنا)
-if (!defined('DB_HOST')) define('DB_HOST', env_value('DB_HOST', 'localhost'));
-if (!defined('DB_USER')) define('DB_USER', env_value('DB_USER', 'CHANGE_ME'));
-if (!defined('DB_PASS')) define('DB_PASS', env_value('DB_PASS', 'CHANGE_ME'));
-if (!defined('DB_NAME')) define('DB_NAME', env_value('DB_NAME', 'CHANGE_ME'));
+// إعدادات قاعدة البيانات
+// تُقبل الأسماء بصيغة BENAA_* أو الأسماء المجردة (DB_HOST, ...) في البيئة
+if (!defined('DB_HOST')) define('DB_HOST', envOrDefine('BENAA_DB_HOST', envOrDefine('DB_HOST', 'localhost')));
+if (!defined('DB_USER')) define('DB_USER', envOrDefine('BENAA_DB_USER', envOrDefine('DB_USER')));
+if (!defined('DB_PASS')) define('DB_PASS', envOrDefine('BENAA_DB_PASS', envOrDefine('DB_PASS')));
+if (!defined('DB_NAME')) define('DB_NAME', envOrDefine('BENAA_DB_NAME', envOrDefine('DB_NAME')));
 
 // إعدادات عامة
-if (!defined('JWT_SECRET')) define('JWT_SECRET', env_value('JWT_SECRET', 'CHANGE_ME'));
-if (!defined('TOKEN_EXPIRY')) define('TOKEN_EXPIRY', (int)env_value('TOKEN_EXPIRY', 86400)); // 24 ساعة
+if (!defined('JWT_SECRET')) define('JWT_SECRET', envOrDefine('BENAA_JWT_SECRET', envOrDefine('JWT_SECRET')));
+if (!defined('TOKEN_EXPIRY')) define('TOKEN_EXPIRY', 86400); // 24 ساعة
 
-// أصل مسموح به لطلبات CORS (يمكن حصره في الإنتاج على نطاق لوحة الإدارة)
-if (!defined('ALLOWED_ORIGIN')) define('ALLOWED_ORIGIN', env_value('ALLOWED_ORIGIN', '*'));
+// حماية من محاولات تخمين كلمة المرور (Brute Force)
+if (!defined('MAX_LOGIN_ATTEMPTS')) define('MAX_LOGIN_ATTEMPTS', 5);
+if (!defined('LOGIN_LOCKOUT_MINUTES')) define('LOGIN_LOCKOUT_MINUTES', 15);
+
+// التأكد من اكتمال الإعدادات قبل التشغيل
+if (!DB_USER || !DB_PASS || !DB_NAME || !JWT_SECRET) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    die(json_encode([
+        'success' => false,
+        'message' => 'الخادم غير مُهيأ. راجع config.local.example.php',
+    ], JSON_UNESCAPED_UNICODE));
+}
 
 /**
  * الاتصال بقاعدة البيانات
@@ -44,18 +59,17 @@ function getDB() {
     static $conn = null;
 
     if ($conn === null) {
-        // كبت تحذيرات mysqli التلقائية حتى لا تتسرّب تفاصيل الاتصال
         mysqli_report(MYSQLI_REPORT_OFF);
         $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 
         if ($conn->connect_error) {
-            // لا نكشف تفاصيل الخطأ الداخلية للعميل
+            // لا تكشف تفاصيل الخطأ للعميل — سجلها على الخادم فقط
             error_log('DB connection failed: ' . $conn->connect_error);
             http_response_code(500);
             die(json_encode([
                 'success' => false,
-                'message' => 'تعذّر الاتصال بقاعدة البيانات'
-            ]));
+                'message' => 'فشل الاتصال بقاعدة البيانات'
+            ], JSON_UNESCAPED_UNICODE));
         }
 
         $conn->set_charset("utf8mb4");
@@ -65,12 +79,21 @@ function getDB() {
 }
 
 /**
- * إعدادات Headers للسماح بالطلبات من التطبيق
+ * إعدادات Headers للاستجابة
  */
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: ' . ALLOWED_ORIGIN);
-header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+
+// CORS: يُسمح فقط بالأصل المحدد صراحةً في الإعدادات (التطبيق الجوال لا يحتاج CORS)
+$corsOrigin = envOrDefine('BENAA_CORS_ORIGIN', envOrDefine('ALLOWED_ORIGIN', ''));
+if ($corsOrigin !== '') {
+    header('Access-Control-Allow-Origin: ' . $corsOrigin);
+    header('Vary: Origin');
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+}
 
 // معالجة OPTIONS request
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
@@ -111,13 +134,22 @@ function sendError($message, $code = 'ERROR', $statusCode = 400) {
  */
 function getBearerToken() {
     $headers = function_exists('getallheaders') ? getallheaders() : [];
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    $authHeader = $headers['Authorization'] ?? $headers['authorization']
+        ?? $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 
     if (empty($authHeader) || !str_starts_with($authHeader, 'Bearer ')) {
         return null;
     }
 
     return substr($authHeader, 7);
+}
+
+/**
+ * تجزئة الـ Token قبل تخزينه أو مقارنته
+ * (تُخزن التجزئة فقط في قاعدة البيانات حتى لا تكون الرموز صالحة عند تسرب البيانات)
+ */
+function hashToken($token) {
+    return hash_hmac('sha256', $token, JWT_SECRET);
 }
 
 /**
@@ -131,8 +163,9 @@ function verifyToken() {
     }
 
     $db = getDB();
-    $stmt = $db->prepare("SELECT id, email, name FROM users WHERE token = ? AND token_expires_at > NOW()");
-    $stmt->bind_param("s", $token);
+    $tokenHash = hashToken($token);
+    $stmt = $db->prepare("SELECT id, email, name FROM users WHERE token = ? AND token_expires_at > NOW() AND is_active = 1");
+    $stmt->bind_param("s", $tokenHash);
     $stmt->execute();
     $result = $stmt->get_result();
 

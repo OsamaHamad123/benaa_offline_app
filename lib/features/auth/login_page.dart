@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/storage/secure_store.dart';
 import '../../core/services/password_hash_service.dart';
+import '../../core/storage/secure_store.dart';
+import '../../data/services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../core/design_system/app_animations.dart';
 import '../../core/error_handling/error_handler.dart';
@@ -15,8 +16,7 @@ class LoginPage extends ConsumerStatefulWidget {
   ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage>
-    with SingleTickerProviderStateMixin {
+class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -69,41 +69,56 @@ class _LoginPageState extends ConsumerState<LoginPage>
     setState(() => _isLoading = true);
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text;
 
-      // TODO: Replace with actual API authentication
-      // For now, accept any non-empty credentials
-      if (_usernameController.text.isNotEmpty &&
-          _passwordController.text.isNotEmpty) {
-        // ✅ SECURITY: Hash password before storing
-        final hashedPassword = PasswordHashService.hashPassword(
-          _passwordController.text,
+      // 1) محاولة تسجيل الدخول عبر السيرفر
+      final authService = AuthService();
+      final result = await authService.login(
+        email: username,
+        password: password,
+      );
+
+      if (result.success) {
+        // حفظ ملخص كلمة المرور للسماح بالدخول لاحقاً دون اتصال
+        await SecureStore.saveOfflineLoginHash(
+          username,
+          PasswordHashService.hashPassword(password),
         );
+      } else if (result.isNetworkError) {
+        // 2) لا يوجد اتصال: تحقق محلي من ملخص كلمة المرور
+        // المخزن بعد آخر دخول ناجح عبر السيرفر
+        final storedHash = await SecureStore.getOfflineLoginHash(username);
+        final offlineOk = storedHash != null &&
+            PasswordHashService.verifyPassword(password, storedHash);
 
-        // Save credentials if remember me is checked
-        if (_rememberMe) {
-          await SecureStore.saveCredentials(
-            _usernameController.text,
-            hashedPassword, // Store hashed password instead of plain text
+        if (!offlineOk) {
+          throw Exception(
+            storedHash == null
+                ? 'لا يوجد اتصال بالإنترنت، ويتطلب أول تسجيل دخول اتصالاً بالسيرفر'
+                : 'بيانات الدخول غير صحيحة (credentials)',
           );
-        }
-
-        if (mounted) {
-          // Success feedback
-          EnhancedSnackbar.showSuccess(
-            context,
-            message: 'مرحباً ${_usernameController.text}!',
-          );
-
-          // Navigate to dashboard
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted) {
-            context.go('/dashboard');
-          }
         }
       } else {
-        throw Exception('بيانات الدخول غير صحيحة');
+        // السيرفر رفض البيانات
+        throw Exception(result.error ?? 'بيانات الدخول غير صحيحة (credentials)');
+      }
+
+      // إنشاء الجلسة المحلية (يعتمد عليها الـ router للدخول إلى التطبيق)
+      await SecureStore.saveCredentials(username, rememberUsername: _rememberMe);
+
+      if (mounted) {
+        // Success feedback
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: 'مرحباً ${_usernameController.text}!',
+        );
+
+        // Navigate to dashboard
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          context.go('/dashboard');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -126,12 +141,19 @@ class _LoginPageState extends ConsumerState<LoginPage>
   }
 
   String _getErrorMessage(String error) {
-    if (error.contains('network')) {
-      return 'لا يوجد اتصال بالإنترنت';
-    } else if (error.contains('timeout')) {
-      return 'انتهت مهلة الاتصال';
-    } else if (error.contains('credentials')) {
+    final message = error.replaceFirst('Exception: ', '');
+    if (message.contains('credentials')) {
       return 'اسم المستخدم أو كلمة المرور غير صحيحة';
+    }
+    if (message.contains('network')) {
+      return 'لا يوجد اتصال بالإنترنت';
+    }
+    if (message.contains('timeout')) {
+      return 'انتهت مهلة الاتصال';
+    }
+    // إن كانت الرسالة عربية مفهومة اعرضها كما هي
+    if (RegExp(r'[؀-ۿ]').hasMatch(message)) {
+      return message;
     }
     return 'حدث خطأ أثناء تسجيل الدخول';
   }
@@ -176,8 +198,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color:
-                                            AppColors.primary.withOpacity(0.3),
+                                        color: AppColors.primary.withOpacity(0.3),
                                         blurRadius: 20,
                                         offset: const Offset(0, 10),
                                       ),
@@ -201,10 +222,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     'منظومة بناء',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineLarge
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                           fontWeight: FontWeight.bold,
                                           color: AppColors.primary,
                                           fontSize: 32,
@@ -214,10 +232,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     'نظام إدارة المستفيدين',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -266,25 +281,25 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                 controller: _usernameController,
                                 enabled: !_isLoading,
                                 decoration: InputDecoration(
-                                  labelText: 'اسم المستخدم',
+                                  labelText: 'البريد الإلكتروني',
                                   prefixIcon: const Icon(
                                     Icons.person_outline_rounded,
                                   ),
-                                  hintText: 'أدخل اسم المستخدم',
+                                  hintText: 'أدخل البريد الإلكتروني',
                                   filled: true,
                                   fillColor: Colors.white,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال اسم المستخدم';
+                                    return 'الرجاء إدخال البريد الإلكتروني';
                                   }
                                   if (value.length < 3) {
-                                    return 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
+                                    return 'البريد الإلكتروني يجب أن يكون 3 أحرف على الأقل';
                                   }
                                   return null;
                                 },
                                 textInputAction: TextInputAction.next,
-                                keyboardType: TextInputType.text,
+                                keyboardType: TextInputType.emailAddress,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -306,9 +321,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   fillColor: Colors.white,
                                   suffixIcon: IconButton(
                                     icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_off_outlined
-                                          : Icons.visibility_outlined,
+                                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                     ),
                                     onPressed: () {
                                       setState(() {
@@ -399,10 +412,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                       const SizedBox(width: 8),
                                       Text(
                                         'تسجيل الدخول',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               color: Colors.white,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -424,10 +434,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   ),
                                   child: Text(
                                     'أو',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -443,8 +450,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   ? null
                                   : () {
                                       // TODO: Implement biometric authentication
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             'سيتم إضافة المصادقة البيومترية قريباً',
@@ -455,8 +461,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               icon: const Icon(Icons.fingerprint),
                               label: const Text('تسجيل الدخول بالبصمة'),
                               style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                             const SizedBox(height: 32),
@@ -468,10 +473,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     'الإصدار 1.0.0',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),
@@ -479,10 +481,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   Text(
                                     '© 2025 منظومة بناء',
                                     textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                   ),

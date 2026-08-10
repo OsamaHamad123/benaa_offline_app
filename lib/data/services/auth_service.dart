@@ -86,6 +86,7 @@ class AuthService {
         return AuthResult(
           success: false,
           error: response.message ?? 'فشل تسجيل الدخول',
+          errorCode: response.errorCode,
         );
       }
     } catch (e) {
@@ -93,6 +94,7 @@ class AuthService {
       return AuthResult(
         success: false,
         error: e is SyncException ? e.message : 'حدث خطأ غير متوقع',
+        errorCode: e is SyncException ? e.code : 'UNEXPECTED',
       );
     }
   }
@@ -249,8 +251,21 @@ class AuthResult {
   final UserDto? user;
   final String? token;
   final String? error;
+  final String? errorCode;
 
-  AuthResult({required this.success, this.user, this.token, this.error});
+  AuthResult({
+    required this.success,
+    this.user,
+    this.token,
+    this.error,
+    this.errorCode,
+  });
+
+  /// هل فشل الطلب بسبب تعذر الوصول للسيرفر (وليس رفض البيانات)؟
+  bool get isNetworkError =>
+      errorCode == 'NETWORK_ERROR' ||
+      errorCode == 'TIMEOUT' ||
+      errorCode == 'NO_CONNECTION';
 }
 
 /// معلومات المستخدم الحالي

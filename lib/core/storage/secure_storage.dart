@@ -1,4 +1,5 @@
 import 'package:benaa_offline_app/core/utils/unified_logger.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// 🔐 Secure Storage - تخزين آمن للبيانات الحساسة
@@ -237,8 +238,10 @@ class SecureStorage {
   // 🛠️ Utility Methods
   // ===========================
 
-  /// 📋 الحصول على جميع البيانات المحفوظة (للتصحيح فقط)
+  /// 📋 الحصول على جميع البيانات المحفوظة (للتصحيح فقط - Debug builds)
   Future<Map<String, String>> getAllData() async {
+    // لا تكشف محتويات التخزين الآمن في نسخ الإصدار
+    if (!kDebugMode) return {};
     try {
       return await _storage.readAll();
     } catch (e) {

@@ -6,7 +6,8 @@
 
 ```
 backend_php/
-├── config.php              ← إعدادات الاتصال بقاعدة البيانات
+├── config.php                    ← منطق الإعدادات (بدون أسرار)
+├── config.local.example.php      ← قالب الأسرار — انسخه إلى config.local.php على السيرفر
 ├── test.php               ← ملف اختبار API
 ├── sync.php               ← API المزامنة
 ├── database_setup.sql     ← سكريبت SQL لإنشاء الجداول
@@ -20,19 +21,26 @@ backend_php/
 
 ## ⚙️ خطوات الإعداد
 
-### **الخطوة 1: تعديل ملف الإعدادات**
+### **الخطوة 1: إنشاء ملف الإعدادات المحلي**
 
-افتح `config.php` وعدّل السطور التالية:
+**لا تضع الأسرار في `config.php` أبداً** — فهو متتبع في git.
+
+انسخ `config.local.example.php` إلى `config.local.php` على السيرفر واملأ القيم:
 
 ```php
-define('DB_PASS', 'ضع_كلمة_السر_هنا');      // ⚠️ كلمة سر قاعدة البيانات
-define('JWT_SECRET', 'your-secret-key-change-this'); // ⚠️ مفتاح سري عشوائي
+define('DB_USER', 'اسم_المستخدم');
+define('DB_PASS', 'كلمة_سر_قاعدة_البيانات');
+define('DB_NAME', 'اسم_قاعدة_البيانات');
+define('JWT_SECRET', 'مفتاح-عشوائي-قوي');
 ```
 
-**للحصول على كلمة السر:**
-- ادخل على phpMyAdmin
-- من القائمة اليمنى، اختر "تغيير كلمة السر"
-- أو استخدم الكلمة الموجودة في لوحة التحكم
+**لتوليد مفتاح سري قوي:**
+```bash
+php -r "echo bin2hex(random_bytes(32));"
+```
+
+بدلاً من الملف يمكنك ضبط متغيرات البيئة:
+`BENAA_DB_HOST`, `BENAA_DB_USER`, `BENAA_DB_PASS`, `BENAA_DB_NAME`, `BENAA_JWT_SECRET`
 
 ---
 
@@ -68,7 +76,7 @@ public_html/
 ### **الخطوة 3: إنشاء الجداول في قاعدة البيانات**
 
 1. افتح **phpMyAdmin**
-2. اختر قاعدة البيانات `u983550065_aso101`
+2. اختر قاعدة البيانات الخاصة بك
 3. اذهب إلى تبويب **SQL**
 4. انسخ محتوى ملف `database_setup.sql` بالكامل
 5. الصقه واضغط **Go**
@@ -109,16 +117,20 @@ static const String defaultBaseUrl = 'https://نطاقك.com/api';
 
 ---
 
-## 🔐 بيانات تسجيل الدخول للاختبار
+## 🔐 إنشاء حساب المدير
 
-بعد تشغيل السكريبت SQL:
+لا يُنشئ السكريبت أي حساب افتراضي. أنشئ حسابك بكلمة مرور قوية:
 
+```bash
+php -r "echo password_hash('كلمة-مرور-قوية', PASSWORD_DEFAULT);"
 ```
-Email: admin@benaa.com
-Password: admin123
-```
 
-**⚠️ غيّر هذه البيانات في الإنتاج!**
+ثم في phpMyAdmin:
+
+```sql
+INSERT INTO users (email, name, password_hash, role)
+VALUES ('you@example.com', 'المدير', '<الصق-التجزئة-هنا>', 'admin');
+```
 
 ---
 
@@ -131,8 +143,8 @@ POST https://نطاقك.com/api/auth/login.php
 
 Body (JSON):
 {
-  "email": "admin@benaa.com",
-  "password": "admin123",
+  "email": "you@example.com",
+  "password": "كلمة-المرور-التي-أنشأتها",
   "deviceId": "test_device"
 }
 
@@ -142,7 +154,7 @@ Response:
   "token": "abc123...",
   "user": {
     "id": "1",
-    "email": "admin@benaa.com",
+    "email": "you@example.com",
     "name": "المدير",
     "role": "admin"
   }
@@ -154,9 +166,10 @@ Response:
 ## 📝 ملاحظات مهمة
 
 ### **1. الأمان**
-- ⚠️ غيّر `JWT_SECRET` في `config.php`
-- ⚠️ غيّر كلمة السر الافتراضية
+- ⚠️ الأسرار في `config.local.php` أو متغيرات البيئة فقط — لا ترفعها إلى git أبداً
 - ⚠️ استخدم HTTPS في الإنتاج
+- 🔒 تُخزن رموز الجلسات (tokens) مُجزّأة في قاعدة البيانات
+- 🔒 تسجيل الدخول محمي بقفل مؤقت بعد 5 محاولات فاشلة خلال 15 دقيقة
 
 ### **2. الأداء**
 - الكود مبسّط للبداية
@@ -175,11 +188,11 @@ Response:
 ## ❓ حل المشاكل الشائعة
 
 ### **خطأ 500 Internal Server Error**
-- تحقق من كلمة السر في `config.php`
+- تحقق من كلمة السر في `config.local.php`
 - تحقق من أذونات الملفات (755 للمجلدات، 644 للملفات)
 
 ### **خطأ في الاتصال بقاعدة البيانات**
-- تأكد من صحة بيانات الاتصال في `config.php`
+- تأكد من صحة بيانات الاتصال في `config.local.php`
 - تأكد من أن قاعدة البيانات موجودة
 
 ### **خطأ 404 Not Found**

@@ -17,6 +17,8 @@ class SecureStore {
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userIdKey = 'user_id';
   static const String _usernameKey = 'username';
+  static const String _offlineLoginUserKey = 'offline_login_username';
+  static const String _offlineLoginHashKey = 'offline_login_password_hash';
 
   /// Get or generate database encryption key
   static Future<String> getDbKey() async {
@@ -91,20 +93,48 @@ class SecureStore {
     return token != null && token.isNotEmpty;
   }
 
-  /// Save user credentials (for login)
-  static Future<void> saveCredentials(String username, String password) async {
+  /// Create the local session after a successful login.
+  /// كلمات المرور لا تُخزن محلياً أبداً؛ [rememberUsername] يتحكم فقط
+  /// في حفظ اسم المستخدم للتعبئة المسبقة في شاشة الدخول.
+  static Future<void> saveCredentials(
+    String username, {
+    bool rememberUsername = true,
+  }) async {
     // Store username and create a mock token for offline mode
     await storeTokens(
       accessToken: 'offline_token_${DateTime.now().millisecondsSinceEpoch}',
       refreshToken: 'offline_refresh_${DateTime.now().millisecondsSinceEpoch}',
-      username: username,
+      username: rememberUsername ? username : null,
       userId: username,
     );
+    if (!rememberUsername) {
+      await _storage.delete(key: _usernameKey);
+    }
   }
 
   /// Clear user credentials (for logout)
   static Future<void> clearCredentials() async {
     await clearAuth();
+  }
+
+  /// حفظ ملخص PBKDF2 لكلمة المرور بعد نجاح الدخول عبر السيرفر،
+  /// للسماح بالتحقق محلياً عند انقطاع الاتصال. لا تُخزن كلمة المرور نفسها أبداً.
+  static Future<void> saveOfflineLoginHash(
+    String username,
+    String passwordHash,
+  ) async {
+    await Future.wait([
+      _storage.write(key: _offlineLoginUserKey, value: username),
+      _storage.write(key: _offlineLoginHashKey, value: passwordHash),
+    ]);
+  }
+
+  /// استرجاع ملخص كلمة المرور المخزن لهذا المستخدم (أو null إن لم يسبق له
+  /// الدخول عبر السيرفر من هذا الجهاز)
+  static Future<String?> getOfflineLoginHash(String username) async {
+    final storedUser = await _storage.read(key: _offlineLoginUserKey);
+    if (storedUser == null || storedUser != username) return null;
+    return _storage.read(key: _offlineLoginHashKey);
   }
 
   /// Store arbitrary secure value

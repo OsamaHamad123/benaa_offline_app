@@ -73,11 +73,10 @@ firebase-credentials.json
 assets/database/*.db
 assets/database/*.db-*
 
-sentry.properties
-
-sentry.properties
+# Backend secrets - never commit
 backend_php/config.local.php
+backend_php.zip
 
+sentry.properties
 sentry-wizard.exe
 analysis_results.txt
-backend_php.zip
