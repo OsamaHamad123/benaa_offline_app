@@ -37,7 +37,7 @@ class BeneficiariesListState {
     bool? hasMore,
     int? currentPage,
     int? pageSize,
-    String? error,
+    Object? error = _unset,
     int? totalCount,
     int? pendingSyncCount,
   }) {
@@ -48,7 +48,8 @@ class BeneficiariesListState {
       hasMore: hasMore ?? this.hasMore,
       currentPage: currentPage ?? this.currentPage,
       pageSize: pageSize ?? this.pageSize,
-      error: error ?? this.error,
+      // sentinel: يسمح بتصفير الخطأ بتمرير error: null صراحةً
+      error: identical(error, _unset) ? this.error : error as String?,
       totalCount: totalCount ?? this.totalCount,
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
     );

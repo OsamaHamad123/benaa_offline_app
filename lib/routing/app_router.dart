@@ -187,10 +187,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/update-normalization',
         builder: (context, state) => const UpdateNormalizationPage(),
       ),
-      GoRoute(
-        path: '/civil-test',
-        builder: (context, state) => const CivilRegistryTestPage(),
-      ),
+      // صفحة تشخيص للمطوّر فقط — لا تُسجَّل في نسخة الإنتاج
+      if (kDebugMode)
+        GoRoute(
+          path: '/civil-test',
+          builder: (context, state) => const CivilRegistryTestPage(),
+        ),
       GoRoute(
         path: '/attachments/:beneficiaryId',
         builder: (context, state) {
@@ -226,10 +228,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/performance-monitor',
         builder: (context, state) => const RealTimePerformanceMonitor(),
       ),
-      GoRoute(
-        path: '/sentry-test',
-        builder: (context, state) => const SentryTestPage(),
-      ),
+      // صفحة اختبار Sentry — للمطوّر فقط
+      if (kDebugMode)
+        GoRoute(
+          path: '/sentry-test',
+          builder: (context, state) => const SentryTestPage(),
+        ),
       GoRoute(
         path: '/visits',
         builder: (context, state) => const VisitsListPageM3(),
@@ -312,18 +316,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/activities',
         builder: (context, state) => const AllActivitiesPageM3(),
       ),
-      GoRoute(
-        path: '/import-test',
-        builder: (context, state) => const ImportTestDataPage(),
-      ),
+      // ⚠️ صفحات اختبار للمطوّر فقط — كانت تكتب بيانات تجريبية في قاعدة الإنتاج
+      // وتضرب خادماً حيّاً؛ لا تُسجَّل إلا في وضع التطوير.
+      if (kDebugMode)
+        GoRoute(
+          path: '/import-test',
+          builder: (context, state) => const ImportTestDataPage(),
+        ),
       GoRoute(
         path: '/mobile-sync',
         builder: (context, state) => const MobileSyncPage(),
       ),
-      GoRoute(
-        path: '/test-mobile-api',
-        builder: (context, state) => const TestMobileApiPage(),
-      ),
+      if (kDebugMode)
+        GoRoute(
+          path: '/test-mobile-api',
+          builder: (context, state) => const TestMobileApiPage(),
+        ),
       // Performance & Monitoring Dashboards
       GoRoute(
         path: '/performance',

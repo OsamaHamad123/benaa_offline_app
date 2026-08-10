@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// ignore: unused_import
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
 import 'core/providers/providers.dart' as core_providers;
@@ -24,6 +26,14 @@ import 'core/widgets/error_boundary.dart';
 /// - Full error stack traces
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تطبيق ميداني يعمل أوفلاين: في نسخة الإصدار لا نحاول جلب خط Cairo من الشبكة
+  // (كان الجهاز الميداني بلا إنترنت يفشل صامتاً في تحميل الخط عند أول تشغيل).
+  // ⚠️ لإظهار خط Cairo فعلاً أوفلاين: ضع ملفات Cairo-*.ttf في assets/fonts/
+  // وأعلِنها في قسم fonts داخل pubspec.yaml. بدون ذلك يُستخدم الخط الاحتياطي.
+  if (kReleaseMode) {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  }
 
   // Initialize safe widgets to prevent overflow errors
   FlutterErrorHandler.initialize();

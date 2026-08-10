@@ -61,16 +61,15 @@ class BeneficiaryLocalDataSource {
   }
 
   /// Get beneficiary by National ID
+  ///
+  /// لا نبتلع الأخطاء: إرجاع null يجب أن يعني "لا يوجد مستفيد" فقط، وليس
+  /// "فشل الاستعلام". ابتلاع الخطأ سابقاً كان يجعل فشلاً عابراً أثناء فحص
+  /// التكرار يبدو كأن الرقم الوطني غير موجود فيُسمح بإنشاء رقم مكرّر.
   Future<BeneficiaryModel?> getByNationalId(int nationalId) async {
-    try {
-      final query = db.select(db.beneficiaries)
-        ..where((b) => b.idNumber.equals(nationalId));
-      final data = await query.getSingleOrNull();
-      return data != null ? BeneficiaryModel.fromDrift(data) : null;
-    } catch (e) {
-      // إذا حدث خطأ في الاستعلام، إرجاع null (لا يوجد مستفيد)
-      return null;
-    }
+    final query = db.select(db.beneficiaries)
+      ..where((b) => b.idNumber.equals(nationalId));
+    final data = await query.getSingleOrNull();
+    return data != null ? BeneficiaryModel.fromDrift(data) : null;
   }
 
   /// Delete beneficiary

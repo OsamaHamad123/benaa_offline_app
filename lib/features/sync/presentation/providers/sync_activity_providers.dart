@@ -1,15 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// نستخدم syncManagerProvider الأساسي من core/sync/sync_manager.dart
+// (المُهيّأ بـ ApiClient حقيقي، مع ref.onDispose يوقف مؤقّته) بدل تعريف
+// مزوّد ثانٍ بعميل null كان ينشئ مؤقّت مزامنة مكرّراً يفسد حالة الطابور.
 import 'package:benaa_offline_app/core/sync/sync_manager.dart';
-import 'package:benaa_offline_app/core/providers/providers.dart';
 import 'package:benaa_offline_app/features/dashboard/presentation/providers/activity_providers.dart';
 import 'package:benaa_offline_app/features/sync/domain/usecases/sync_with_activity.dart';
-
-/// Provider: SyncManager
-final syncManagerProvider = Provider<SyncManager>((ref) {
-  final database = ref.watch(databaseProvider);
-  // ApiClient يمكن أن يكون null
-  return SyncManager(database, apiClient: null);
-});
 
 /// Provider: SyncWithActivity UseCase
 final syncWithActivityProvider = Provider<SyncWithActivity>((ref) {

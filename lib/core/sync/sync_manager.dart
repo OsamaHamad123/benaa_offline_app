@@ -15,7 +15,11 @@ import '../network/api_client.dart';
 final syncManagerProvider = Provider<SyncManager>((ref) {
   final database = ref.watch(databaseProvider);
   final apiClient = ref.watch(apiClientProvider);
-  return SyncManager(database, apiClient: apiClient);
+  final manager = SyncManager(database, apiClient: apiClient);
+  // مهم: عند إعادة بناء المزوّد أو التخلّص منه نوقف المؤقّت ونغلق الـ stream
+  // حتى لا يتراكم أكثر من SyncManager حيّ يطلق syncAll() في الخلفية.
+  ref.onDispose(manager.dispose);
+  return manager;
 });
 
 // Provider for sync status
@@ -46,18 +50,25 @@ class SyncStatus {
     bool? isSyncing,
     int? totalItems,
     int? completedItems,
-    String? currentEntity,
-    String? lastError,
+    Object? currentEntity = _unset,
+    Object? lastError = _unset,
   }) {
     return SyncStatus(
       isSyncing: isSyncing ?? this.isSyncing,
       totalItems: totalItems ?? this.totalItems,
       completedItems: completedItems ?? this.completedItems,
-      currentEntity: currentEntity ?? this.currentEntity,
-      lastError: lastError ?? this.lastError,
+      // sentinel: تمرير null صراحةً يمسح القيمة (لمسح الخطأ عند بدء مزامنة ناجحة)
+      currentEntity: identical(currentEntity, _unset)
+          ? this.currentEntity
+          : currentEntity as String?,
+      lastError:
+          identical(lastError, _unset) ? this.lastError : lastError as String?,
     );
   }
 }
+
+/// حارس للتمييز بين "غير مُمرَّر" و"null صريح" في copyWith.
+const Object _unset = Object();
 
 // أولويات المزامنة
 class SyncPriority {
@@ -77,6 +88,8 @@ class SyncManager {
 
   Timer? _autoSyncTimer;
   SyncStatus _currentStatus = SyncStatus();
+  bool _isSyncing = false; // حارس لمنع تشغيل مزامنتين متزامنتين
+  bool _disposed = false;
 
   SyncManager(this._db, {ApiClient? apiClient}) : _apiClient = apiClient {
     _startAutoSync();
@@ -84,6 +97,14 @@ class SyncManager {
 
   Stream<SyncStatus> get statusStream => _statusController.stream;
   SyncStatus get currentStatus => _currentStatus;
+
+  /// تحرير الموارد: إيقاف المؤقّت وإغلاق الـ stream.
+  void dispose() {
+    _disposed = true;
+    _autoSyncTimer?.cancel();
+    _autoSyncTimer = null;
+    _statusController.close();
+  }
 
   // بدء المزامنة التلقائية كل 5 دقائق
   void _startAutoSync() {
@@ -102,7 +123,9 @@ class SyncManager {
   // تحديث الحالة
   void _updateStatus(SyncStatus status) {
     _currentStatus = status;
-    _statusController.add(status);
+    if (!_disposed && !_statusController.isClosed) {
+      _statusController.add(status);
+    }
   }
 
   // ============================================================================
@@ -172,6 +195,10 @@ class SyncManager {
 
   // مزامنة الكل
   Future<void> syncAll() async {
+    // حارس: لا تشغّل مزامنة جديدة إذا كانت واحدة قيد التنفيذ (يمنع الازدواج بين
+    // المؤقّت الدوري والتشغيل اليدوي، ويمنع دفع نفس الصفوف مرتين).
+    if (_isSyncing || _disposed) return;
+
     // تحقق من الاتصال بالإنترنت
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
@@ -181,6 +208,7 @@ class SyncManager {
       return;
     }
 
+    _isSyncing = true;
     _updateStatus(_currentStatus.copyWith(isSyncing: true, lastError: null));
 
     try {
@@ -199,7 +227,7 @@ class SyncManager {
           _updateStatus(
             _currentStatus.copyWith(
               currentEntity: item.entity,
-              completedItems: processedCount++,
+              completedItems: ++processedCount,
             ),
           );
 
@@ -238,6 +266,8 @@ class SyncManager {
       _updateStatus(
         _currentStatus.copyWith(isSyncing: false, lastError: e.toString()),
       );
+    } finally {
+      _isSyncing = false;
     }
   }
 

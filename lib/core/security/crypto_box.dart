@@ -19,16 +19,19 @@ class CryptoBox {
     return CryptoBox._(key);
   }
 
-  /// Encrypt data
+  /// Encrypt data (IV is generated randomly and prepended to the ciphertext).
+  ///
+  /// ملاحظة: يجب أن يُسبَق النص المشفّر بالـ IV العشوائي حتى يمكن فك تشفيره لاحقاً.
+  /// كان الإصدار السابق يولّد IV عشوائياً ثم يهمله، بينما يفك التشفير بـ IV أصفار
+  /// (IV.fromLength) فيستحيل فك التشفير. الآن يعتمد الزوج على encryptFile/decryptFile
+  /// اللتين تُدرجان الـ IV وتستخرجانه بشكل متسق.
   enc.Encrypted encrypt(Uint8List data) {
-    final iv = enc.IV.fromSecureRandom(16);
-    return _encrypter.encryptBytes(data, iv: iv);
+    return enc.Encrypted(encryptFile(data));
   }
 
-  /// Decrypt data
+  /// Decrypt data (IV is read from the first 16 bytes of the ciphertext).
   Uint8List decrypt(enc.Encrypted encrypted) {
-    final iv = enc.IV.fromLength(16);
-    return Uint8List.fromList(_encrypter.decryptBytes(encrypted, iv: iv));
+    return decryptFile(Uint8List.fromList(encrypted.bytes));
   }
 
   /// Encrypt string

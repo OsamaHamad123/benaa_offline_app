@@ -179,8 +179,8 @@ class _BeneficiariesListPageV2State
                 duration: AppDurations.fast,
                 child: GestureDetector(
                   onTap: () {
-                    // Navigate to dedicated statistics page
-                    context.push('/statistics');
+                    // مسار '/statistics' غير موجود؛ نوجّه لصفحة التقارير الموجودة.
+                    context.push('/reports');
                   },
                   child: const StatisticsDashboard(),
                 ),

@@ -2,6 +2,9 @@ import 'package:equatable/equatable.dart';
 import '../../domain/entities/dashboard_statistics.dart';
 import '../../domain/entities/activity.dart';
 
+/// حارس للتمييز بين "غير مُمرَّر" و"null صريح" في copyWith.
+const Object _unset = Object();
+
 /// Dashboard State - Immutable state with Equatable
 class DashboardState extends Equatable {
   final DashboardStatistics? statistics;
@@ -41,7 +44,7 @@ class DashboardState extends Equatable {
     bool? isLoadingStats,
     bool? isLoadingActivities,
     bool? hasMoreActivities,
-    String? errorMessage,
+    Object? errorMessage = _unset,
     DateTime? lastRefreshTime,
   }) {
     return DashboardState(
@@ -51,7 +54,10 @@ class DashboardState extends Equatable {
       isLoadingStats: isLoadingStats ?? this.isLoadingStats,
       isLoadingActivities: isLoadingActivities ?? this.isLoadingActivities,
       hasMoreActivities: hasMoreActivities ?? this.hasMoreActivities,
-      errorMessage: errorMessage,
+      // sentinel: عدم التمرير يُبقي الخطأ، وتمرير null صراحةً يمسحه
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
       lastRefreshTime: lastRefreshTime ?? this.lastRefreshTime,
     );
   }

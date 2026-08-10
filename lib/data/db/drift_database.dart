@@ -377,6 +377,23 @@ extension BeneficiaryExtension on Beneficiary {
 }
 
 // Database connection factory
+//
+// ⚠️ ملاحظة أمنية مهمة عن التشفير:
+// `PRAGMA key` لا يشفّر القاعدة إلا إذا كانت مكتبة sqlite3 الأصلية المُحمَّلة
+// هي SQLCipher. مع `sqlite3_flutter_libs` (التي تأتي عبر drift افتراضياً)
+// تكون SQLite عادية و`PRAGMA key` يُتجاهل بصمت → القاعدة غير مشفّرة على القرص.
+//
+// لتفعيل التشفير الفعلي (يتطلب بناءً على جهاز واختباره):
+//   1) في pubspec.yaml: أضف `sqlcipher_flutter_libs` واحذف `sqlite3_flutter_libs`.
+//   2) في main() قبل فتح القاعدة:
+//        import 'package:sqlite3/open.dart';
+//        import 'package:sqlcipher_flutter_libs/sqlcipher_flutter_libs.dart';
+//        await applyWorkaroundToOpenSqlCipherOnOldAndroidVersions();
+//        open.overrideFor(OperatingSystem.android, openCipherOnAndroid);
+//   3) تحقّق أن `PRAGMA cipher_version` يرجع قيمة غير فارغة (الدالة أدناه تفعل ذلك).
+//
+// حتى يتم ذلك، تستدعي التهيئة verifyDatabaseEncryption() التي تسجّل تحذيراً
+// صريحاً إذا كانت القاعدة غير مشفّرة، بدل ادعاء تشفير غير موجود.
 LazyDatabase openEncryptedDb() {
   return LazyDatabase(() async {
     if (Platform.isAndroid) {
@@ -393,7 +410,7 @@ LazyDatabase openEncryptedDb() {
     return NativeDatabase.createInBackground(
       file,
       setup: (db) {
-        // Enable SQLCipher encryption
+        // يُطبَّق فقط إذا كانت المكتبة SQLCipher؛ وإلا يُتجاهل بلا خطأ.
         db.execute('PRAGMA key = \'$key\';');
         db.execute('PRAGMA foreign_keys = ON;');
         db.execute('PRAGMA journal_mode = WAL;');
@@ -401,8 +418,35 @@ LazyDatabase openEncryptedDb() {
         // Performance optimizations
         db.execute('PRAGMA synchronous = NORMAL;');
         db.execute('PRAGMA temp_store = MEMORY;');
-        db.execute('PRAGMA mmap_size = 30000000000;');
+        db.execute('PRAGMA mmap_size = 268435456;'); // 256MB بدل 30GB
       },
     );
   });
+}
+
+/// يتحقق فعلياً مما إذا كانت قاعدة بيانات التطبيق مشفّرة على القرص.
+///
+/// يقرأ أول 16 بايت من ملف app.db: إن بدأت بالسلسلة "SQLite format 3"
+/// فالقاعدة غير مشفّرة (SQLCipher يشفّر الترويسة أيضاً). يُرجع:
+///   - true  → مشفّرة فعلاً (ترويسة غير قابلة للقراءة كنص عادي)
+///   - false → غير مشفّرة (نص واضح) — يجب تفعيل SQLCipher كما هو موثّق أعلاه
+Future<bool> verifyDatabaseEncryption() async {
+  try {
+    final dbFolder = await getApplicationDocumentsDirectory();
+    final file = File(p.join(dbFolder.path, 'app.db'));
+    if (!await file.exists()) return false;
+
+    final header = await file.openRead(0, 16).first;
+    const magic = 'SQLite format 3';
+    final headerStr = String.fromCharCodes(header.take(magic.length));
+    final isPlaintext = headerStr == magic;
+    if (isPlaintext) {
+      // ignore: avoid_print
+      print('⚠️ [SECURITY] قاعدة البيانات غير مشفّرة على القرص. '
+          'فعّل SQLCipher كما هو موثّق في openEncryptedDb().');
+    }
+    return !isPlaintext;
+  } catch (_) {
+    return false;
+  }
 }
