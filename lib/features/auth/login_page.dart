@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/services/password_hash_service.dart';
 import '../../core/storage/secure_store.dart';
+import '../../data/services/auth_service.dart';
 import '../../theme/app_colors.dart';
 import '../../core/design_system/app_animations.dart';
 import '../../core/error_handling/error_handler.dart';
@@ -67,32 +69,56 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
     setState(() => _isLoading = true);
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final username = _usernameController.text.trim();
+      final password = _passwordController.text;
 
-      // TODO: Replace with actual API authentication
-      // For now, accept any non-empty credentials
-      if (_usernameController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
-        // لا تُخزن كلمة المرور محلياً بأي شكل — يُحفظ اسم المستخدم فقط
-        if (_rememberMe) {
-          await SecureStore.saveCredentials(_usernameController.text);
-        }
+      // 1) محاولة تسجيل الدخول عبر السيرفر
+      final authService = AuthService();
+      final result = await authService.login(
+        email: username,
+        password: password,
+      );
 
-        if (mounted) {
-          // Success feedback
-          EnhancedSnackbar.showSuccess(
-            context,
-            message: 'مرحباً ${_usernameController.text}!',
+      if (result.success) {
+        // حفظ ملخص كلمة المرور للسماح بالدخول لاحقاً دون اتصال
+        await SecureStore.saveOfflineLoginHash(
+          username,
+          PasswordHashService.hashPassword(password),
+        );
+      } else if (result.isNetworkError) {
+        // 2) لا يوجد اتصال: تحقق محلي من ملخص كلمة المرور
+        // المخزن بعد آخر دخول ناجح عبر السيرفر
+        final storedHash = await SecureStore.getOfflineLoginHash(username);
+        final offlineOk = storedHash != null &&
+            PasswordHashService.verifyPassword(password, storedHash);
+
+        if (!offlineOk) {
+          throw Exception(
+            storedHash == null
+                ? 'لا يوجد اتصال بالإنترنت، ويتطلب أول تسجيل دخول اتصالاً بالسيرفر'
+                : 'بيانات الدخول غير صحيحة (credentials)',
           );
-
-          // Navigate to dashboard
-          await Future.delayed(const Duration(milliseconds: 500));
-          if (mounted) {
-            context.go('/dashboard');
-          }
         }
       } else {
-        throw Exception('بيانات الدخول غير صحيحة');
+        // السيرفر رفض البيانات
+        throw Exception(result.error ?? 'بيانات الدخول غير صحيحة (credentials)');
+      }
+
+      // إنشاء الجلسة المحلية (يعتمد عليها الـ router للدخول إلى التطبيق)
+      await SecureStore.saveCredentials(username, rememberUsername: _rememberMe);
+
+      if (mounted) {
+        // Success feedback
+        EnhancedSnackbar.showSuccess(
+          context,
+          message: 'مرحباً ${_usernameController.text}!',
+        );
+
+        // Navigate to dashboard
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (mounted) {
+          context.go('/dashboard');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -115,12 +141,19 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
   }
 
   String _getErrorMessage(String error) {
-    if (error.contains('network')) {
-      return 'لا يوجد اتصال بالإنترنت';
-    } else if (error.contains('timeout')) {
-      return 'انتهت مهلة الاتصال';
-    } else if (error.contains('credentials')) {
+    final message = error.replaceFirst('Exception: ', '');
+    if (message.contains('credentials')) {
       return 'اسم المستخدم أو كلمة المرور غير صحيحة';
+    }
+    if (message.contains('network')) {
+      return 'لا يوجد اتصال بالإنترنت';
+    }
+    if (message.contains('timeout')) {
+      return 'انتهت مهلة الاتصال';
+    }
+    // إن كانت الرسالة عربية مفهومة اعرضها كما هي
+    if (RegExp(r'[؀-ۿ]').hasMatch(message)) {
+      return message;
     }
     return 'حدث خطأ أثناء تسجيل الدخول';
   }
@@ -248,25 +281,25 @@ class _LoginPageState extends ConsumerState<LoginPage> with SingleTickerProvider
                                 controller: _usernameController,
                                 enabled: !_isLoading,
                                 decoration: InputDecoration(
-                                  labelText: 'اسم المستخدم',
+                                  labelText: 'البريد الإلكتروني',
                                   prefixIcon: const Icon(
                                     Icons.person_outline_rounded,
                                   ),
-                                  hintText: 'أدخل اسم المستخدم',
+                                  hintText: 'أدخل البريد الإلكتروني',
                                   filled: true,
                                   fillColor: Colors.white,
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال اسم المستخدم';
+                                    return 'الرجاء إدخال البريد الإلكتروني';
                                   }
                                   if (value.length < 3) {
-                                    return 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل';
+                                    return 'البريد الإلكتروني يجب أن يكون 3 أحرف على الأقل';
                                   }
                                   return null;
                                 },
                                 textInputAction: TextInputAction.next,
-                                keyboardType: TextInputType.text,
+                                keyboardType: TextInputType.emailAddress,
                               ),
                             ),
                             const SizedBox(height: 16),
