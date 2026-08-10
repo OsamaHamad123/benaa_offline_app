@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'app.dart';
@@ -27,6 +29,12 @@ import 'core/widgets/safe_widgets.dart';
 /// - Optimized for production use
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // تطبيق ميداني يعمل أوفلاين: لا نحاول جلب الخطوط من الشبكة في نسخة الإصدار.
+  // ضع Cairo-*.ttf في assets/fonts/ وأعلِنها في pubspec لإظهار الخط أوفلاين.
+  if (kReleaseMode) {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  }
 
   // Initialize safe widgets to prevent overflow errors
   FlutterErrorHandler.initialize();

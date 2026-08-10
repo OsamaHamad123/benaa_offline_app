@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -28,12 +30,20 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
   MobileSyncStatus? _status;
   MobileSyncResult? _lastResult;
   Map<String, int>? _stats;
+  StreamSubscription<MobileSyncStatus>? _statusSub;
 
   @override
   void initState() {
     super.initState();
     _listenToSyncStatus();
     _loadStats();
+  }
+
+  @override
+  void dispose() {
+    // إلغاء الاشتراك حتى لا يتراكم المستمعون عند إعادة بناء الصفحة
+    _statusSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadStats() async {
@@ -78,7 +88,7 @@ class _MobileSyncPageState extends ConsumerState<MobileSyncPage> {
 
   void _listenToSyncStatus() {
     final service = ref.read(mobileSyncServiceProvider);
-    service.statusStream.listen((status) {
+    _statusSub = service.statusStream.listen((status) {
       if (mounted) {
         setState(() {
           _status = status;

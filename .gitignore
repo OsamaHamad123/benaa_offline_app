@@ -76,3 +76,8 @@ assets/database/*.db-*
 sentry.properties
 
 sentry.properties
+backend_php/config.local.php
+
+sentry-wizard.exe
+analysis_results.txt
+backend_php.zip

@@ -1252,6 +1252,7 @@ class _BeneficiaryFormPageV3State extends ConsumerState<BeneficiaryFormPageV3> w
     _tourShowTimer?.cancel();
     _controllers.removeListener(_onFormChanged);
     _controllers.dispose();
+    _dependencyController.dispose(); // كان يتسرّب عند كل فتح للنموذج
     _tabController.dispose();
     _firstFieldFocusNode.dispose();
     _formHistory.dispose();
