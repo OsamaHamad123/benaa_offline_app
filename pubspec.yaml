@@ -37,7 +37,7 @@ dependencies:
   csv: ^6.0.0
   cupertino_icons: ^1.0.8
   device_info_plus: ^10.1.0
-  dio: ^5.9.0
+  dio: ^5.11.1
   drift: ^2.20.3
   drift_sqflite: ^2.0.0
   encrypt: ^5.0.3
@@ -48,9 +48,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^8.1.6
-  flutter_cache_manager: ^3.4.1
-  flutter_hooks: ^0.20.5
-  flutter_image_compress: ^2.3.0
+  flutter_cache_manager: ^3.4.5
+  flutter_hooks: ^0.21.3+1
+  flutter_image_compress: ^2.5.1
   flutter_localizations:
     sdk: flutter
   flutter_riverpod: ^2.6.1
@@ -63,20 +63,20 @@ dependencies:
   go_router: ^14.6.2
   google_fonts: ^6.1.0
   hooks_riverpod: ^2.6.1
-  image_picker: ^1.1.2
+  image_picker: ^1.2.3
   intl: any
   json_annotation: ^4.9.0
-  logger: ^2.5.0
+  logger: ^2.8.0
   lottie: ^3.1.3
   mobile_scanner: ^5.2.3
   open_file: ^3.5.9
   package_info_plus: ^8.0.0
   path: ^1.9.0
-  path_provider: ^2.1.5
-  pdf: ^3.11.1
+  path_provider: ^2.1.6
+  pdf: ^3.12.0
   permission_handler: ^11.3.1
   photo_view: ^0.15.0
-  printing: ^5.13.4
+  printing: ^5.14.3
   pull_to_refresh: ^2.0.0
   retry: ^3.1.2
   riverpod: ^2.6.1
@@ -84,12 +84,12 @@ dependencies:
   screenshot: ^3.0.0
   sentry_flutter: ^9.30.1
   share_plus: ^10.1.3
-  shared_preferences: ^2.3.3
+  shared_preferences: ^2.5.5
   shimmer: ^3.0.0
-  sqflite: ^2.3.0
-  sqflite_common_ffi: ^2.3.0
-  sqflite_sqlcipher: 3.1.0 # Pinned to 3.1.0 for CI/CD compatibility
-  sqlite3_flutter_libs: ^0.5.24
+  sqflite: ^2.4.4
+  sqflite_common_ffi: ^2.4.3
+  sqflite_sqlcipher: 3.4.1 # Pinned to 3.1.0 for CI/CD compatibility
+  sqlite3_flutter_libs: ^0.6.0+eol
   timeline_tile: ^2.0.0
   url_launcher: ^6.3.1
   uuid: ^4.5.1
@@ -99,9 +99,9 @@ dependencies:
 # Force specific versions to avoid Gradle compilation issues
 
 dev_dependencies:
-  sentry_dart_plugin: ^3.2.0
+  sentry_dart_plugin: ^3.4.0
   # Code Generation
-  build_runner: ^2.4.13
+  build_runner: ^2.16.1
   drift_dev: ^2.20.3
 
   # The "flutter_lints" package below contains a set of recommended lints to
