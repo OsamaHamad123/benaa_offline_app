@@ -67,7 +67,7 @@ flutter run
 .\scripts\setup.ps1
 ```
 
-اقرأ `TESTING_SETUP_GUIDE.md` للتفاصيل الكاملة.
+خطوات الـ CI كلها في [`.github/workflows/flutter_ci.yml`](.github/workflows/flutter_ci.yml).
 
 ---
 
@@ -122,13 +122,6 @@ bundle exec fastlane deploy_firebase
 
 ## 🔥 Firebase App Distribution
 
-### إعداد سريع
-
-```powershell
-# اقرأ الدليل السريع
-cat FIREBASE_QUICK_START.md
-```
-
 ### الخطوات الأساسية:
 
 1. إنشاء مشروع Firebase
@@ -136,7 +129,7 @@ cat FIREBASE_QUICK_START.md
 3. إضافة GitHub Secrets
 4. Merge على main → النشر التلقائي!
 
-اقرأ `FIREBASE_SETUP_GUIDE.md` للتفاصيل الكاملة.
+النشر معرّف في [`.github/workflows/flutter_ci.yml`](.github/workflows/flutter_ci.yml) و [`android_fastlane_firebase.yml`](.github/workflows/android_fastlane_firebase.yml).
 
 ---
 
@@ -179,7 +172,7 @@ Quick-Commit "Add: feature description"
 Update-FromDevelop
 ```
 
-اقرأ `GIT_WORKFLOW_GUIDE.md` لسير العمل الكامل.
+اقرأ [`.github/BRANCH_STRATEGY.md`](.github/BRANCH_STRATEGY.md) لسير العمل الكامل.
 
 ---
 
@@ -187,14 +180,11 @@ Update-FromDevelop
 
 | الملف | الوصف |
 |-------|-------|
-| `START_HERE.md` | 🚀 ابدأ من هنا! |
-| `FIREBASE_QUICK_START.md` | 🔥 إعداد Firebase السريع |
-| `FIREBASE_SETUP_GUIDE.md` | 🔥 دليل Firebase الشامل |
-| `GIT_WORKFLOW_GUIDE.md` | دليل شامل للعمل مع Git وتجنب Conflicts |
-| `TESTING_SETUP_GUIDE.md` | إعداد نظام Testing و CI/CD |
-| `QUICK_START.md` | دليل البدء السريع |
-| `DATABASE_PATHS_GUIDE.md` | دليل قاعدة البيانات |
-| `COMPLETE_ENHANCEMENTS_FINAL_REPORT.md` | تقرير التحسينات |
+| [`.github/BRANCH_STRATEGY.md`](.github/BRANCH_STRATEGY.md) | سير العمل مع الفروع و Pull Requests |
+| [`.github/workflows/flutter_ci.yml`](.github/workflows/flutter_ci.yml) | الـ CI: التحليل والاختبارات والبناء والنشر |
+| [`docs/`](docs) | أدلة الوحدات وتصميمها |
+| [`docs/reports/`](docs/reports) | تقارير المراجعة والتدقيق السابقة |
+| [`SECURITY.md`](SECURITY.md) | سياسة الأمان |
 
 ---
 
@@ -250,7 +240,7 @@ flutter build windows --release
 - ✅ تشغيل `Test-BeforeCommit` قبل الـ push
 - ✅ كتابة tests للكود الجديد
 - ✅ تحديث التوثيق إذا لزم الأمر
-- ✅ اتباع `GIT_WORKFLOW_GUIDE.md`
+- ✅ اتباع [`.github/BRANCH_STRATEGY.md`](.github/BRANCH_STRATEGY.md)
 
 ---
 
