@@ -4,7 +4,8 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    # develop is where feature PRs land; test them before they merge, not after.
+    branches: [main, develop]
 
 jobs:
   # ============================================================================
