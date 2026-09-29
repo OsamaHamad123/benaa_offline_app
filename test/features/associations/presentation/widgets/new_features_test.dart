@@ -1,4 +1,3 @@
-import 'package:benaa_offline_app/features/associations/domain/entities/association.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/professional_association_card.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/swipe_actions_wrapper.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/associations_filters_bar.dart';
@@ -279,8 +278,6 @@ void main() {
 
     testWidgets('ProfessionalAssociationCard action buttons are clickable', (WidgetTester tester) async {
       // Arrange
-      bool editClicked = false;
-      bool deleteClicked = false;
 
       await tester.pumpWidget(
         ScreenUtilInit(
@@ -296,8 +293,8 @@ void main() {
                 currency: 'JOD',
                 isActive: true,
                 createdAt: DateTime.now(),
-                onEdit: () => editClicked = true,
-                onDelete: () => deleteClicked = true,
+                onEdit: () {},
+                onDelete: () {},
               ),
             ),
           ),

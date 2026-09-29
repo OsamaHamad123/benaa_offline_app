@@ -7,7 +7,6 @@ import 'trend_indicator.dart';
 import '../../../../theme/app_colors.dart';
 import '../utils/dashboard_colors.dart'; // ✅ Dashboard Colors
 import '../utils/dashboard_text_styles.dart'; // ✅ Dashboard Text Styles
-import '../utils/dashboard_haptics.dart'; // ✅ Dashboard Haptics
 import '../utils/dashboard_spacing.dart'; // ✅ Dashboard Spacing
 import '../../../../core/utils/haptic_patterns.dart';
 

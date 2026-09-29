@@ -20,7 +20,6 @@ import '../../../../core/monitoring/app_monitoring.dart';
 import '../../../../core/settings/enhanced_settings_page.dart';
 import '../../../../core/design_system/app_animations.dart';
 import '../../../../core/error_handling/error_handler.dart';
-import '../../../../core/utils/haptic_patterns.dart';
 import '../../../../theme/app_colors.dart';
 
 // Dashboard
@@ -29,7 +28,6 @@ import '../services/dashboard_navigation_service.dart';
 import '../utils/dashboard_colors.dart';
 import '../utils/dashboard_text_styles.dart';
 import '../utils/dashboard_haptics.dart';
-import '../utils/dashboard_spacing.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/activities_section.dart';
 import '../widgets/dashboard_charts.dart';

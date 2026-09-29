@@ -264,7 +264,7 @@ class _BeneficiaryDetailsPageV2State
                   items: InfoBuilders.buildSystemInfoItems(beneficiary),
                 ),
                 SizedBox(height: 20.h),
-                SponsorshipsSection(beneficiaryId: _beneficiaryIntId!),
+                SponsorshipsSection(beneficiaryId: _beneficiaryIntId),
                 SizedBox(height: 20.h),
                 AttachmentsSection(beneficiaryId: widget.beneficiaryId),
                 SizedBox(height: 20.h),

@@ -1,0 +1,8 @@
+# Test runner configuration.
+tags:
+  # Portfolio screenshot generator (test/screenshots/). It writes PNGs to
+  # docs/screenshots/ rather than asserting behaviour, so it is skipped in the
+  # normal `flutter test` run (and CI). Regenerate the screenshots with:
+  #   flutter test --run-skipped --tags screenshots test/screenshots/
+  screenshots:
+    skip: "Screenshot generator. Run: flutter test --run-skipped --tags screenshots test/screenshots/"

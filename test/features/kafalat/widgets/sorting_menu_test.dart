@@ -9,11 +9,14 @@ void main() {
     testWidgets('should display sort icon button', (tester) async {
       // Act
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SortingMenu(
-              currentSort: SortOption.dateNewest,
-              onSortChanged: (_) {},
+        ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => MaterialApp(
+            home: Scaffold(
+              body: SortingMenu(
+                currentSort: SortOption.dateNewest,
+                onSortChanged: (_) {},
+              ),
             ),
           ),
         ),
@@ -26,11 +29,14 @@ void main() {
     testWidgets('should show menu when tapped', (tester) async {
       // Act
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SortingMenu(
-              currentSort: SortOption.dateNewest,
-              onSortChanged: (_) {},
+        ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => MaterialApp(
+            home: Scaffold(
+              body: SortingMenu(
+                currentSort: SortOption.dateNewest,
+                onSortChanged: (_) {},
+              ),
             ),
           ),
         ),
@@ -41,24 +47,24 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - should show all 8 sort options
-      expect(find.text('📅 التاريخ: الأحدث أولاً'), findsOneWidget);
-      expect(find.text('📅 التاريخ: الأقدم أولاً'), findsOneWidget);
-      expect(find.text('💰 المبلغ: الأعلى أولاً'), findsOneWidget);
-      expect(find.text('💰 المبلغ: الأقل أولاً'), findsOneWidget);
-      expect(find.text('👤 الاسم: أ - ي'), findsOneWidget);
-      expect(find.text('👤 الاسم: ي - أ'), findsOneWidget);
-      expect(find.text('📄 رقم الملف: تصاعدي'), findsOneWidget);
-      expect(find.text('📄 رقم الملف: تنازلي'), findsOneWidget);
+      expect(SortOption.values, hasLength(8));
+      for (final option in SortOption.values) {
+        expect(find.text(option.label), findsOneWidget);
+      }
     });
 
-    testWidgets('should mark current sort option with checkmark', (tester) async {
+    testWidgets('should mark current sort option with checkmark',
+        (tester) async {
       // Act
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SortingMenu(
-              currentSort: SortOption.nameAZ,
-              onSortChanged: (_) {},
+        ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => MaterialApp(
+            home: Scaffold(
+              body: SortingMenu(
+                currentSort: SortOption.nameAZ,
+                onSortChanged: (_) {},
+              ),
             ),
           ),
         ),
@@ -69,24 +75,37 @@ void main() {
 
       // Assert - should show checkmark next to current option
       final nameAZItem = find.ancestor(
-        of: find.text('👤 الاسم: أ - ي'),
+        of: find.text(SortOption.nameAZ.label),
         matching: find.byType(PopupMenuItem<SortOption>),
       );
 
       expect(nameAZItem, findsOneWidget);
+      expect(
+        find.descendant(
+          of: nameAZItem,
+          matching: find.byIcon(Icons.check_rounded),
+        ),
+        findsOneWidget,
+      );
+      // ...and only next to the current option.
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
 
-    testWidgets('should call onSortChanged when option selected', (tester) async {
+    testWidgets('should call onSortChanged when option selected',
+        (tester) async {
       // Arrange
       SortOption? selectedSort;
 
       // Act
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SortingMenu(
-              currentSort: SortOption.dateNewest,
-              onSortChanged: (sort) => selectedSort = sort,
+        ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => MaterialApp(
+            home: Scaffold(
+              body: SortingMenu(
+                currentSort: SortOption.dateNewest,
+                onSortChanged: (sort) => selectedSort = sort,
+              ),
             ),
           ),
         ),
@@ -95,7 +114,7 @@ void main() {
       await tester.tap(find.byType(IconButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('💰 المبلغ: الأعلى أولاً'));
+      await tester.tap(find.text(SortOption.amountHighest.label));
       await tester.pumpAndSettle();
 
       // Assert
@@ -105,11 +124,14 @@ void main() {
     testWidgets('should close menu after selection', (tester) async {
       // Act
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SortingMenu(
-              currentSort: SortOption.dateNewest,
-              onSortChanged: (_) {},
+        ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => MaterialApp(
+            home: Scaffold(
+              body: SortingMenu(
+                currentSort: SortOption.dateNewest,
+                onSortChanged: (_) {},
+              ),
             ),
           ),
         ),
@@ -118,11 +140,11 @@ void main() {
       await tester.tap(find.byType(IconButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('📅 التاريخ: الأقدم أولاً'));
+      await tester.tap(find.text(SortOption.dateOldest.label));
       await tester.pumpAndSettle();
 
       // Assert - menu should be closed
-      expect(find.text('📅 التاريخ: الأقدم أولاً'), findsNothing);
+      expect(find.text(SortOption.dateOldest.label), findsNothing);
     });
 
     testWidgets('all sort options should be selectable', (tester) async {
@@ -130,11 +152,14 @@ void main() {
         SortOption? selectedSort;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: SortingMenu(
-                currentSort: SortOption.dateNewest,
-                onSortChanged: (sort) => selectedSort = sort,
+          ScreenUtilInit(
+            designSize: const Size(390, 844),
+            builder: (_, __) => MaterialApp(
+              home: Scaffold(
+                body: SortingMenu(
+                  currentSort: SortOption.dateNewest,
+                  onSortChanged: (sort) => selectedSort = sort,
+                ),
               ),
             ),
           ),
@@ -143,37 +168,21 @@ void main() {
         await tester.tap(find.byType(IconButton));
         await tester.pumpAndSettle();
 
-        // Find and tap the option
-        final optionText = _getSortOptionText(option);
-        await tester.tap(find.text(optionText));
+        // Find and tap the option (the menu scrolls when it is taller than
+        // the screen, so bring the option into view first, as a user would)
+        await tester.ensureVisible(find.text(option.label));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(option.label));
         await tester.pumpAndSettle();
 
         expect(selectedSort, option);
 
         // Clean up for next iteration
-        await tester.pumpWidget(Container());
+        await tester.pumpWidget(ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => Container(),
+        ));
       }
     });
   });
-}
-
-String _getSortOptionText(SortOption option) {
-  switch (option) {
-    case SortOption.dateNewest:
-      return '📅 التاريخ: الأحدث أولاً';
-    case SortOption.dateOldest:
-      return '📅 التاريخ: الأقدم أولاً';
-    case SortOption.amountHighest:
-      return '💰 المبلغ: الأعلى أولاً';
-    case SortOption.amountLowest:
-      return '💰 المبلغ: الأقل أولاً';
-    case SortOption.nameAZ:
-      return '👤 الاسم: أ - ي';
-    case SortOption.nameZA:
-      return '👤 الاسم: ي - أ';
-    case SortOption.fileNoAsc:
-      return '📄 رقم الملف: تصاعدي';
-    case SortOption.fileNoDesc:
-      return '📄 رقم الملف: تنازلي';
-  }
 }

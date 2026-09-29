@@ -178,8 +178,8 @@ class ReportsRepositoryImpl implements ReportsRepository {
   /// Convert gender code to Arabic name
   String _getGenderName(int gender) {
     return switch (gender) {
-      1 => 'ذكور',
-      2 => 'إناث',
+      1 => GenderCount.maleLabel,
+      2 => GenderCount.femaleLabel,
       _ => 'غير محدد',
     };
   }

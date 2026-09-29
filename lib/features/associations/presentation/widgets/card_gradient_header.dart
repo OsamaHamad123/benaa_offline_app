@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import '../../../../core/utils/responsive_utils_v2.dart';
 
 /// 🎨 رأس البطاقة مع gradient جذاب
 class CardGradientHeader extends StatelessWidget {

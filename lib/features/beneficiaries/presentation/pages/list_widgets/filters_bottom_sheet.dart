@@ -301,42 +301,48 @@ class _FilterChip extends StatelessWidget {
     final chipColor = color ?? theme.colorScheme.primary;
     final borderRadius = rv.isTablet ? 24.0 : 20.0;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: rv.isTablet ? 18 : 16,
-          vertical: rv.isTablet ? 12 : 10,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? chipColor : Colors.grey[100],
-          borderRadius: BorderRadius.circular(borderRadius),
-          border: Border.all(
-            color: isSelected ? chipColor : Colors.grey.shade300,
-            width: 2,
+    // Ink paints the chip's fill on the Material, so the splash is drawn on
+    // top of it; a Container's fill would cover the splash. The transparent
+    // Material sits above the sheet's own surface colour for the same reason.
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: Ink(
+          padding: EdgeInsets.symmetric(
+            horizontal: rv.isTablet ? 18 : 16,
+            vertical: rv.isTablet ? 12 : 10,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: rv.isTablet ? 18 : 16,
-                color: isSelected ? Colors.white : Colors.grey[700],
-              ),
-              SizedBox(width: rv.isTablet ? 8 : 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: rv.isTablet ? 16 : 14,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? Colors.white : Colors.grey[700],
-              ),
+          decoration: BoxDecoration(
+            color: isSelected ? chipColor : Colors.grey[100],
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: isSelected ? chipColor : Colors.grey.shade300,
+              width: 2,
             ),
-          ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: rv.isTablet ? 18 : 16,
+                  color: isSelected ? Colors.white : Colors.grey[700],
+                ),
+                SizedBox(width: rv.isTablet ? 8 : 6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: rv.isTablet ? 16 : 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -367,16 +373,22 @@ class _SwitchTile extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(rv.isTablet ? 14 : 12),
       ),
-      child: SwitchListTile(
-        title: Row(
-          children: [
-            Icon(icon, size: rv.isTablet ? 22 : 20, color: Colors.grey[700]),
-            SizedBox(width: rv.isTablet ? 14 : 12),
-            Text(title, style: TextStyle(fontSize: rv.isTablet ? 16 : 14)),
-          ],
+      // The sheet paints its surface colour over the bottom sheet's Material,
+      // so the tile needs a Material of its own above that colour for its ink
+      // splash and highlight to be visible.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile(
+          title: Row(
+            children: [
+              Icon(icon, size: rv.isTablet ? 22 : 20, color: Colors.grey[700]),
+              SizedBox(width: rv.isTablet ? 14 : 12),
+              Text(title, style: TextStyle(fontSize: rv.isTablet ? 16 : 14)),
+            ],
+          ),
+          value: value,
+          onChanged: onChanged,
         ),
-        value: value,
-        onChanged: onChanged,
       ),
     );
   }

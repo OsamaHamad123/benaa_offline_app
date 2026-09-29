@@ -4,6 +4,12 @@ library;
 
 /// Gender count entity
 class GenderCount {
+  /// Labels the repository puts in [gender]. Compare against these, never a
+  /// hand-typed string: the summary card once matched 'ذكر' while the repository
+  /// emitted 'ذكور', so both counts always showed 0.
+  static const String maleLabel = 'ذكور';
+  static const String femaleLabel = 'إناث';
+
   final String gender;
   final int count;
 

@@ -1,5 +1,19 @@
 version: 2
 updates:
+  # Dart and Flutter packages. Minor and patch only, in one grouped PR: a major
+  # version of a Flutter plugin usually needs code and native-build changes.
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
     directory: "/"

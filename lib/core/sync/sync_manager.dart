@@ -452,10 +452,4 @@ class SyncManager {
       throw Exception('Failed to sync taxonomies: $e');
     }
   }
-
-  // Dispose
-  void dispose() {
-    _autoSyncTimer?.cancel();
-    _statusController.close();
-  }
 }
