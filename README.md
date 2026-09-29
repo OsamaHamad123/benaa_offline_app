@@ -10,13 +10,6 @@
 
 ![Benaa app overview: dashboard, insights, beneficiaries list and activity log](docs/screenshots/overview.png)
 
-| | | |
-|:-:|:-:|:-:|
-| <img src="docs/screenshots/01_dashboard.png" width="240" alt="Dashboard"> | <img src="docs/screenshots/02_dashboard_insights.png" width="240" alt="Dashboard insights"> | <img src="docs/screenshots/03_beneficiaries.png" width="240" alt="Beneficiaries list"> |
-| Dashboard: live counts, sync progress and quick filters | Growth trend and cases that need a follow-up visit | Registered families with category, location and sync status |
-| <img src="docs/screenshots/04_beneficiary_visits.png" width="240" alt="Beneficiary file"> | <img src="docs/screenshots/05_activity_log.png" width="240" alt="Activity log"> | |
-| A family's file: attachments and home-visit timeline | Field activity log, filterable by type | |
-
 The screens are rendered headlessly from the real Flutter UI (Arabic, RTL) with fictional sample data; see `test/screenshots/`.
 
 ---
