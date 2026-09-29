@@ -162,14 +162,20 @@ class _GenderReportSheetState extends ConsumerState<GenderReportSheet> {
                     final total = totalAsync.value?.total ?? 0;
                     final males = genderCounts
                         .firstWhere(
-                          (g) => g.gender == 'ذكور',
-                          orElse: () => GenderCount(gender: 'ذكور', count: 0),
+                          (g) => g.gender == GenderCount.maleLabel,
+                          orElse: () => const GenderCount(
+                            gender: GenderCount.maleLabel,
+                            count: 0,
+                          ),
                         )
                         .count;
                     final females = genderCounts
                         .firstWhere(
-                          (g) => g.gender == 'إناث',
-                          orElse: () => GenderCount(gender: 'إناث', count: 0),
+                          (g) => g.gender == GenderCount.femaleLabel,
+                          orElse: () => const GenderCount(
+                            gender: GenderCount.femaleLabel,
+                            count: 0,
+                          ),
                         )
                         .count;
 

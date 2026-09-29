@@ -162,7 +162,9 @@ final filteredActivitiesProvider = Provider.family<List<Activity>, Map<String, d
   }
 
   // ✅ نقل الترتيب من build إلى Provider
-  return activities..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  // Sort a copy: without a filter, `activities` is still the state's own list,
+  // which is unmodifiable, so sorting it in place threw on first open.
+  return [...activities]..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 });
 
 /// Top governorates provider - ترتيب المحافظات حسب العدد

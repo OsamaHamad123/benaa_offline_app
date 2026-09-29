@@ -50,10 +50,10 @@ class GenderColors {
   static const Color female = Color(0xFFE91E63); // Pink
 
   static Color getColor(String gender) {
-    if (gender.toLowerCase() == 'ذكر' || gender.toLowerCase() == 'male') {
+    final value = gender.toLowerCase();
+    if (value == 'ذكر' || value == 'ذكور' || value == 'male') {
       return male;
-    } else if (gender.toLowerCase() == 'أنثى' ||
-        gender.toLowerCase() == 'female') {
+    } else if (value == 'أنثى' || value == 'إناث' || value == 'female') {
       return female;
     }
     return Colors.grey;
