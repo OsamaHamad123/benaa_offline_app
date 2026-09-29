@@ -60,6 +60,10 @@ class _EnhancedSearchBarState extends State<EnhancedSearchBar> {
   }
 
   void _clearSearch() {
+    // A search typed just before clearing is still waiting on its debounce;
+    // left running it would fire after the field is empty and filter by the
+    // old text.
+    _debounce?.cancel();
     _controller.clear();
     setState(() => _isSearching = false);
     widget.onSearch('');
