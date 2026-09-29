@@ -1,6 +1,6 @@
 # Benaa Offline App
 
-تطبيق Flutter للعمل الميداني مع قدرات كاملة للعمل أوفلاين، مع مزامنة دورية وقاعدة بيانات مشفرة.
+تطبيق Flutter للعمل الميداني مع قدرات كاملة للعمل أوفلاين، مع مزامنة دورية ومرفقات مشفرة.
 
 [![CI Status](https://github.com/OsamaHamad123/benaa_offline_app/workflows/CI%20-%20Testing%20&%20Analysis/badge.svg)](https://github.com/OsamaHamad123/benaa_offline_app/actions)
 
@@ -20,10 +20,10 @@
 ## المميزات
 
 - ✅ عمل كامل بدون إنترنت أثناء العمل الميداني
-- ✅ قاعدة بيانات SQLite مشفرة عبر SQLCipher
+- ✅ قاعدة بيانات SQLite محلية عبر Drift
 - ✅ مزامنة تلقائية ودفعات عند توفر الإنترنت
 - ✅ بحث سريع بالرقم الوطني/رقم الملف (< 200ms)
-- ✅ بحث نصي كامل FTS5 للأسماء (< 800ms على 100k سجل)
+- ✅ بحث بالأسماء العربية مع تطبيع النص
 - ✅ تشفير المرفقات (صور وPDF)
 - ✅ رفع المرفقات مجزأة (512KB لكل جزء)
 - ✅ توليد تقارير PDF وExcel
@@ -200,7 +200,7 @@ Update-FromDevelop
 
 ## 🏗️ البنية التقنية
 
-- **Drift + SQLCipher**: قاعدة بيانات مشفرة
+- **Drift**: قاعدة بيانات SQLite محلية
 - **Riverpod**: إدارة الحالة
 - **GoRouter**: التنقل
 - **Dio**: طلبات HTTP
@@ -256,7 +256,7 @@ flutter build windows --release
 
 ## 📝 License
 
-This project is private and proprietary.
+All rights reserved. The source is public for viewing only; no license to use, copy or modify it is granted.
 
 ---
 
