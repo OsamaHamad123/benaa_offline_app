@@ -155,7 +155,10 @@ class _VisitsListPageM3State extends ConsumerState<VisitsListPageM3>
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(60.h),
-          child: Container(
+          // Three chips with icons and a selected checkmark are wider than a
+          // 390-wide phone, so the row scrolls sideways instead of overflowing.
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
             child: Row(
               children: [
