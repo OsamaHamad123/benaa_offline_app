@@ -367,16 +367,22 @@ class _SwitchTile extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(rv.isTablet ? 14 : 12),
       ),
-      child: SwitchListTile(
-        title: Row(
-          children: [
-            Icon(icon, size: rv.isTablet ? 22 : 20, color: Colors.grey[700]),
-            SizedBox(width: rv.isTablet ? 14 : 12),
-            Text(title, style: TextStyle(fontSize: rv.isTablet ? 16 : 14)),
-          ],
+      // The sheet paints its surface colour over the bottom sheet's Material,
+      // so the tile needs a Material of its own above that colour for its ink
+      // splash and highlight to be visible.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile(
+          title: Row(
+            children: [
+              Icon(icon, size: rv.isTablet ? 22 : 20, color: Colors.grey[700]),
+              SizedBox(width: rv.isTablet ? 14 : 12),
+              Text(title, style: TextStyle(fontSize: rv.isTablet ? 16 : 14)),
+            ],
+          ),
+          value: value,
+          onChanged: onChanged,
         ),
-        value: value,
-        onChanged: onChanged,
       ),
     );
   }
