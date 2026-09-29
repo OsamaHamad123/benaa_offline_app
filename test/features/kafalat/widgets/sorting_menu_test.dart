@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:benaa_offline_app/features/kafalat/presentation/widgets/filters/sorting_menu.dart';
 

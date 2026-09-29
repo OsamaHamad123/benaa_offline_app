@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:benaa_offline_app/features/kafalat/presentation/widgets/filters/enhanced_search_bar.dart';
 
@@ -61,7 +60,6 @@ void main() {
 
     testWidgets('should clear text when clear button is tapped', (tester) async {
       // Arrange
-      var searchCalled = false;
       String? searchValue;
 
       // Act
@@ -71,7 +69,6 @@ void main() {
             body: EnhancedSearchBar(
               controller: controller,
               onSearch: (v) {
-                searchCalled = true;
                 searchValue = v;
               },
             ),

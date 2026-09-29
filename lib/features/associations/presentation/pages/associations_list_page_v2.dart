@@ -312,8 +312,6 @@ class _AssociationsListPageV2State extends ConsumerState<AssociationsListPageV2>
   /// قائمة الجمعيات مع تصميم Responsive Grid
   Widget _buildAssociationsList(List associations) {
     final state = ref.read(associationsProvider);
-    final responsive = ResponsiveUtils.getValues(context);
-
     // حساب الإحصائيات
     final totalCount = associations.length;
     final activeCount = associations.where((a) => a.isActive).length;

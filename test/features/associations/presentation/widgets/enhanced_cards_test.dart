@@ -190,7 +190,6 @@ void main() {
       // Arrange
       bool editTapped = false;
       bool deleteTapped = false;
-      bool cardTapped = false;
 
       final testAssociation = Association(
         id: '3',
@@ -213,7 +212,7 @@ void main() {
             home: Scaffold(
               body: ModernAssociationCard(
                 association: testAssociation,
-                onTap: () => cardTapped = true,
+                onTap: () {},
                 onDelete: () => deleteTapped = true,
                 onEdit: () => editTapped = true,
               ),

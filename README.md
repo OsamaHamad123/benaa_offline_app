@@ -2,7 +2,7 @@
 
 تطبيق Flutter للعمل الميداني مع قدرات كاملة للعمل أوفلاين، مع مزامنة دورية ومرفقات مشفرة.
 
-[![CI Status](https://github.com/OsamaHamad123/benaa_offline_app/workflows/CI%20-%20Testing%20&%20Analysis/badge.svg)](https://github.com/OsamaHamad123/benaa_offline_app/actions)
+[![Flutter CI](https://github.com/OsamaHamad123/benaa_offline_app/actions/workflows/flutter_ci.yml/badge.svg?branch=develop)](https://github.com/OsamaHamad123/benaa_offline_app/actions/workflows/flutter_ci.yml)
 
 ---
 
