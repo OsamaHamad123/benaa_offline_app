@@ -67,7 +67,10 @@ class StatsDashboardWidget extends StatelessWidget {
               Flexible(
                 child: Text(
                   'إحصائيات الكفالات',
-                  style: (isMobile ? theme.textTheme.titleSmall : theme.textTheme.titleMedium)?.copyWith(
+                  style: (isMobile
+                          ? theme.textTheme.titleSmall
+                          : theme.textTheme.titleMedium)
+                      ?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: theme.colorScheme.primary,
                   ),
@@ -93,7 +96,9 @@ class StatsDashboardWidget extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: isMobile ? 4.w : 8.w,
                 crossAxisSpacing: isMobile ? 4.w : 8.w,
-                childAspectRatio: crossAxisCount == 2 ? 1.4 : 1.0,
+                // Four square cells left the number and label 0px tall from 600px up:
+                // ScreenUtil scales the card's padding and icon with the screen width.
+                childAspectRatio: crossAxisCount == 2 ? 1.4 : 0.7,
                 children: [
                   StatCard(
                     icon: Icons.handshake_rounded,
@@ -146,13 +151,17 @@ class StatsDashboardWidget extends StatelessWidget {
                         size: 20.sp,
                       ),
                       SizedBox(width: 8.w),
-                      Text(
-                        'إجمالي المبالغ الشهرية',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Text(
+                          'إجمالي المبالغ الشهرية',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Spacer(),
+                      SizedBox(width: 8.w),
                       Text(
                         '${totalAmount!.toStringAsFixed(0)} ${currency ?? "IQD"}',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -192,7 +201,8 @@ class StatsDashboardWidget extends StatelessWidget {
                         child: LinearProgressIndicator(
                           value: activePercentage / 100,
                           minHeight: 8.h,
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerHighest,
                           valueColor: AlwaysStoppedAnimation<Color>(
                             Colors.green,
                           ),

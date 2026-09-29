@@ -41,7 +41,8 @@ void main() {
       expect(find.byType(FilledButton), findsOneWidget);
     });
 
-    testWidgets('creates OutlinedButton when outlined=true', (WidgetTester tester) async {
+    testWidgets('creates OutlinedButton when outlined=true',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -85,7 +86,8 @@ void main() {
   });
 
   group('AccessibleIconButton', () {
-    testWidgets('creates IconButton with minimum size', (WidgetTester tester) async {
+    testWidgets('creates IconButton with minimum size',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -149,8 +151,16 @@ void main() {
         ),
       );
 
+      // The ConstrainedBox AccessibleListTile wraps its ListTile in (the
+      // framework builds other ConstrainedBoxes around and inside it).
       final constrainedBox = tester.widget<ConstrainedBox>(
-        find.byType(ConstrainedBox),
+        find.ancestor(
+          of: find.byType(ListTile),
+          matching: find.descendant(
+            of: find.byType(AccessibleListTile),
+            matching: find.byType(ConstrainedBox),
+          ),
+        ),
       );
 
       expect(
@@ -173,7 +183,14 @@ void main() {
         ),
       );
 
-      expect(find.byType(Semantics), findsOneWidget);
+      // Scoped to the wrapper: MaterialApp and Scaffold add Semantics too.
+      final semantics = find.descendant(
+        of: find.byType(SemanticWrapper),
+        matching: find.byType(Semantics),
+      );
+      expect(semantics, findsOneWidget);
+      expect(
+          tester.widget<Semantics>(semantics).properties.label, 'Test Label');
       expect(find.text('Content'), findsOneWidget);
     });
   });

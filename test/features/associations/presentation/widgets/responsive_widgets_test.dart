@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:benaa_offline_app/features/associations/domain/entities/association.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/enhanced_associations_stats_card.dart';
 import 'package:benaa_offline_app/features/associations/presentation/widgets/modern_association_card.dart';
@@ -8,25 +10,42 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 void main() {
   // Helper لإنشاء widget test environment
-  Widget makeTestableWidget(Widget child, {double width = 400}) {
-    return ScreenUtilInit(
-      designSize: const Size(375, 812),
-      builder: (context, child) => MaterialApp(
-        home: Scaffold(
-          body: SizedBox(
-            width: width,
-            child: child,
+  //
+  // Lays [child] out at exactly [width] on a device at least as wide as the
+  // 390x844 phone the app is designed for (the designSize lib/app.dart gives
+  // ScreenUtilInit). The device size matters: ScreenUtil scales every .w/.sp
+  // value by screen width / 390, so on flutter_test's default 800x600 surface
+  // a 250-400px card had all its padding and fonts doubled.
+  Future<void> pumpAtWidth(
+    WidgetTester tester,
+    Widget child, {
+    double width = 400,
+  }) async {
+    tester.view.physicalSize = Size(math.max(width, 390), 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ScreenUtilInit(
+        designSize: const Size(390, 844),
+        builder: (context, child) => MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: width,
+              child: child,
+            ),
           ),
         ),
+        child: child,
       ),
-      child: child,
     );
   }
 
   // Association مثال للاختبار
   final testAssociation = Association(
     id: '1',
-    name: 'جمعية اختبار طويلة جداً لفحص الـ overflow والـ responsive behavior في البطاقة',
+    name:
+        'جمعية اختبار طويلة جداً لفحص الـ overflow والـ responsive behavior في البطاقة',
     shortName: 'اختبار',
     phone: '07701234567',
     email: 'test@example.com',
@@ -41,43 +60,47 @@ void main() {
 
   group('ModernAssociationCard Responsive Tests', () {
     testWidgets('Card يعرض المحتوى كاملاً في عرض عادي (400px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: testAssociation,
-            representativeName: 'مندوب اختبار',
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 400,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: testAssociation,
+          representativeName: 'مندوب اختبار',
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 400,
       );
 
       await tester.pumpAndSettle();
 
       // التحقق من عرض جميع العناصر
+      // The compact card shows name, phone, "bank • account number" on one
+      // line, and the representative; it has no email row.
       expect(find.text(testAssociation.name), findsOneWidget);
       expect(find.text(testAssociation.phone), findsOneWidget);
-      expect(find.text(testAssociation.email!), findsOneWidget);
-      expect(find.text(testAssociation.bankName), findsOneWidget);
+      expect(find.textContaining(testAssociation.bankName), findsOneWidget);
+      expect(
+        find.textContaining(testAssociation.accountNumber),
+        findsOneWidget,
+      );
+      expect(find.text('مندوب اختبار'), findsOneWidget);
 
       // التحقق من عدم وجود overflow
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('Card responsive في عرض ضيق (300px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: testAssociation,
-            representativeName: 'مندوب اختبار',
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 300,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: testAssociation,
+          representativeName: 'مندوب اختبار',
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 300,
       );
 
       await tester.pumpAndSettle();
@@ -88,17 +111,16 @@ void main() {
     });
 
     testWidgets('Card responsive في عرض ضيق جداً (250px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: testAssociation,
-            representativeName: 'مندوب اختبار',
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 250,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: testAssociation,
+          representativeName: 'مندوب اختبار',
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 250,
       );
 
       await tester.pumpAndSettle();
@@ -109,7 +131,7 @@ void main() {
 
     testWidgets('Card يتعامل مع نص طويل بشكل صحيح', (tester) async {
       final longTextAssociation = Association(
-        id:' 2',
+        id: ' 2',
         name: 'جمعية ' * 20, // اسم طويل جداً
         shortName: 'طويل' * 5,
         phone: '07701234567',
@@ -123,16 +145,15 @@ void main() {
         updatedAt: DateTime.now(),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: longTextAssociation,
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 300,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: longTextAssociation,
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 300,
       );
 
       await tester.pumpAndSettle();
@@ -144,15 +165,14 @@ void main() {
 
   group('EnhancedAssociationsStatsCard Responsive Tests', () {
     testWidgets('Stats Card عرض أفقي (500px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const EnhancedAssociationsStatsCard(
-            totalCount: 100,
-            activeCount: 80,
-            inactiveCount: 20,
-          ),
-          width: 500,
+      await pumpAtWidth(
+        tester,
+        const EnhancedAssociationsStatsCard(
+          totalCount: 100,
+          activeCount: 80,
+          inactiveCount: 20,
         ),
+        width: 500,
       );
 
       await tester.pumpAndSettle();
@@ -164,15 +184,14 @@ void main() {
     });
 
     testWidgets('Stats Card عرض عمودي (350px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const EnhancedAssociationsStatsCard(
-            totalCount: 100,
-            activeCount: 80,
-            inactiveCount: 20,
-          ),
-          width: 350,
+      await pumpAtWidth(
+        tester,
+        const EnhancedAssociationsStatsCard(
+          totalCount: 100,
+          activeCount: 80,
+          inactiveCount: 20,
         ),
+        width: 350,
       );
 
       await tester.pumpAndSettle();
@@ -183,15 +202,14 @@ void main() {
     });
 
     testWidgets('Stats Card مع أرقام كبيرة', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const EnhancedAssociationsStatsCard(
-            totalCount: 999999,
-            activeCount: 888888,
-            inactiveCount: 111111,
-          ),
-          width: 400,
+      await pumpAtWidth(
+        tester,
+        const EnhancedAssociationsStatsCard(
+          totalCount: 999999,
+          activeCount: 888888,
+          inactiveCount: 111111,
         ),
+        width: 400,
       );
 
       await tester.pumpAndSettle();
@@ -203,16 +221,15 @@ void main() {
 
   group('ResponsiveFormRow Tests', () {
     testWidgets('FormRow عرض عمودي في mobile (300px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ResponsiveFormRow(
-            children: [
-              const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
-            ],
-          ),
-          width: 300,
+      await pumpAtWidth(
+        tester,
+        ResponsiveFormRow(
+          children: [
+            const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
+            const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
+          ],
         ),
+        width: 300,
       );
 
       await tester.pumpAndSettle();
@@ -223,16 +240,15 @@ void main() {
     });
 
     testWidgets('FormRow عرض أفقي في tablet (700px)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ResponsiveFormRow(
-            children: [
-              const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
-            ],
-          ),
-          width: 700,
+      await pumpAtWidth(
+        tester,
+        ResponsiveFormRow(
+          children: [
+            const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
+            const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
+          ],
         ),
+        width: 700,
       );
 
       await tester.pumpAndSettle();
@@ -243,17 +259,16 @@ void main() {
     });
 
     testWidgets('FormRow مع عدد فردي من الحقول', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ResponsiveFormRow(
-            children: [
-              const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
-              const TextField(decoration: InputDecoration(labelText: 'حقل 3')),
-            ],
-          ),
-          width: 700,
+      await pumpAtWidth(
+        tester,
+        ResponsiveFormRow(
+          children: [
+            const TextField(decoration: InputDecoration(labelText: 'حقل 1')),
+            const TextField(decoration: InputDecoration(labelText: 'حقل 2')),
+            const TextField(decoration: InputDecoration(labelText: 'حقل 3')),
+          ],
         ),
+        width: 700,
       );
 
       await tester.pumpAndSettle();
@@ -265,16 +280,15 @@ void main() {
 
   group('Content Size Tests - فحص أحجام المحتوى', () {
     testWidgets('Card size يجب أن يكون أكبر من المحتوى', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: testAssociation,
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 400,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: testAssociation,
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 400,
       );
 
       await tester.pumpAndSettle();
@@ -299,15 +313,14 @@ void main() {
     });
 
     testWidgets('Stats Card height يجب أن يستوعب المحتوى', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const EnhancedAssociationsStatsCard(
-            totalCount: 100,
-            activeCount: 80,
-            inactiveCount: 20,
-          ),
-          width: 400,
+      await pumpAtWidth(
+        tester,
+        const EnhancedAssociationsStatsCard(
+          totalCount: 100,
+          activeCount: 80,
+          inactiveCount: 20,
         ),
+        width: 400,
       );
 
       await tester.pumpAndSettle();
@@ -324,16 +337,15 @@ void main() {
 
   group('Overflow Detection Tests', () {
     testWidgets('لا يوجد overflow في Card بعرض 280px', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: testAssociation,
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 280,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: testAssociation,
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 280,
       );
 
       // يجب ألا يحدث overflow
@@ -345,15 +357,14 @@ void main() {
     });
 
     testWidgets('لا يوجد overflow في Stats Card بعرض 320px', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const EnhancedAssociationsStatsCard(
-            totalCount: 100,
-            activeCount: 80,
-            inactiveCount: 20,
-          ),
-          width: 320,
+      await pumpAtWidth(
+        tester,
+        const EnhancedAssociationsStatsCard(
+          totalCount: 100,
+          activeCount: 80,
+          inactiveCount: 20,
         ),
+        width: 320,
       );
 
       await tester.pumpAndSettle();
@@ -365,16 +376,15 @@ void main() {
     testWidgets('Card rendering time', (tester) async {
       final stopwatch = Stopwatch()..start();
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernAssociationCard(
-            association: testAssociation,
-            onTap: () {},
-            onDelete: () {},
-            onEdit: () {},
-          ),
-          width: 400,
+      await pumpAtWidth(
+        tester,
+        ModernAssociationCard(
+          association: testAssociation,
+          onTap: () {},
+          onDelete: () {},
+          onEdit: () {},
         ),
+        width: 400,
       );
 
       await tester.pumpAndSettle();

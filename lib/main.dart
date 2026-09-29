@@ -14,7 +14,6 @@ import 'features/visits/presentation/providers/visit_providers.dart' as visit_pr
 import 'features/search/presentation/providers/search_dependencies.dart' as search_providers;
 import 'features/beneficiaries/presentation/providers/beneficiary_dependencies.dart' as beneficiary_providers;
 import 'features/dashboard/presentation/providers/activity_providers.dart' as dashboard_providers;
-import 'core/config/sentry_config.dart';
 import 'core/error_handling/error_logger.dart';
 import 'core/widgets/error_boundary.dart';
 
