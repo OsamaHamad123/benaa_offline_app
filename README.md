@@ -6,6 +6,14 @@
 
 ---
 
+## Screenshots
+
+![Benaa app overview: dashboard, insights, beneficiaries list and activity log](docs/screenshots/overview.png)
+
+The screens are rendered headlessly from the real Flutter UI (Arabic, RTL) with fictional sample data; see `test/screenshots/`.
+
+---
+
 ## 📋 المحتويات
 
 - [المميزات](#المميزات)
