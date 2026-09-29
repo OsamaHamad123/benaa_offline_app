@@ -140,6 +140,34 @@ void main() {
       expect(callCount, greaterThan(0));
     });
 
+    testWidgets('clearing cancels a search still waiting on its debounce',
+        (tester) async {
+      final searches = <String>[];
+
+      await tester.pumpWidget(
+        ScreenUtilInit(
+          designSize: const Size(390, 844),
+          builder: (_, __) => MaterialApp(
+            home: Scaffold(
+              body: EnhancedSearchBar(
+                controller: controller,
+                onSearch: searches.add,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.enterText(find.byType(TextField), 'test');
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.byIcon(Icons.clear_rounded));
+      // Well past the 300ms debounce the typed search would have fired on.
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(searches, ['']);
+      expect(controller.text, isEmpty);
+    });
+
     testWidgets('should use custom debounce duration', (tester) async {
       // Arrange
       var callCount = 0;
